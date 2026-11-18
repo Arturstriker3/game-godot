@@ -74,13 +74,6 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 		result.error = "sem aptidão territorial";
 		return result;
 	}
-	if (building->input_product < 0) {
-		const Deposit& deposit = city->deposits[building->output_product];
-		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
-			result.error = "reserva esgotada";
-			return result;
-		}
-	}
 
 	const double capacity_added = amount / std::max(1.0, building->capital_per_capacity);
 
@@ -226,13 +219,6 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 			&& city->suitability[output_product] <= 0.0) {
 		result.error = "sem aptidão territorial";
 		return result;
-	}
-	if (recipe < 0 && input_product < 0) {
-		const Deposit& deposit = city->deposits[output_product];
-		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
-			result.error = "reserva esgotada";
-			return result;
-		}
 	}
 	const bool state_owned = owner_name == "state";
 
@@ -517,13 +503,6 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 				return result;
 			}
 		}
-		if (recipe < 0) {
-			const Deposit& deposit = city->deposits[output_product];
-			if (deposit.tracked && deposit.remaining_kt <= 0.0) {
-				result.error = "reserva esgotada";
-				return result;
-			}
-		}
 	}
 	const double cost = capacity * capital_per_capacity;
 	const double partner_cost = cost * local_share;
@@ -718,15 +697,10 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 		result.error = "construção não é mina de estágio";
 		return result;
 	}
-	// A RESERVA é a condição física: sem ela não há estágio novo, mesmo que a
-	// mina ainda não tenha sido marcada como encerrada pelo tick.
-	const Deposit& deposit = city->deposits[building->output_product];
-	if (deposit.remaining_kt <= 0.0) {
-		result.error = "reserva esgotada";
-		return result;
-	}
-	if (building->bankrupt || building->depleted
-			|| building->loss_days >= kLossDaysBeforeClose) {
+	// D-083 (decisão do dono): a reserva NUNCA bloqueia o aprofundamento — ela é
+	// só referência de profundidade. O gate de "mina encerrada" é apenas a
+	// falência (`bankrupt`) ou o prejuízo persistente (`loss_days`).
+	if (building->bankrupt || building->loss_days >= kLossDaysBeforeClose) {
 		result.error = "mina encerrada";
 		return result;
 	}

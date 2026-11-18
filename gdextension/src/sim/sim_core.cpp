@@ -263,18 +263,14 @@ void SimCore::prologue() {
 	// Encerra as construções falidas no início do tick: assim o PIB do dia já
 	// não as inclui e o status fica consistente (a falência foi marcada no tick
 	// anterior, no fim da fase 7).
+	// D-083 (decisão do dono): o recurso NUNCA acaba — `depleted` nunca é marcado
+	// em lugar nenhum do núcleo (a produção não zera e o aprofundamento não é
+	// bloqueado por reserva), então não há o ramo de "mina com jazida esgotada"
+	// aqui. `ws_.depleted_mines` permanece 0 e é mantido no estado/save/status
+	// por contrato.
 	for (auto it = ws_.buildings.begin(); it != ws_.buildings.end();) {
 		if (it->bankrupt) {
 			++ws_.bankruptcies;
-			it = ws_.buildings.erase(it);
-			continue;
-		}
-		// Mina com jazida esgotada encerra a operação no dia seguinte: o fim da
-		// reserva é o fim econômico planejado, não uma insolvência. Contá-la
-		// como falência inflava o número (99 minas de ouro/diamante de jazidas
-		// de poucos dias em 730 d) e escondia as falências de verdade (§19).
-		if (it->depleted) {
-			++ws_.depleted_mines;
 			it = ws_.buildings.erase(it);
 			continue;
 		}

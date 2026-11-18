@@ -2145,10 +2145,11 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				entry[k.extracted_kt] = deposit.extracted_kt;
 				previous.extracted_kt = deposit.extracted_kt;
 			}
-			const bool depleted = deposit.remaining_kt <= 0.0;
-			if (first || slot.deposit_depleted[static_cast<std::size_t>(product)] != (depleted ? 1 : 0)) {
-				entry[k.depleted] = depleted;
-				slot.deposit_depleted[static_cast<std::size_t>(product)] = depleted ? 1 : 0;
+			// D-083 (decisão do dono): o recurso nunca acaba — publica `depleted`
+			// SEMPRE false (campo mantido por contrato de status/save).
+			if (first || slot.deposit_depleted[static_cast<std::size_t>(product)] != 0) {
+				entry[k.depleted] = false;
+				slot.deposit_depleted[static_cast<std::size_t>(product)] = 0;
 			}
 		}
 		// Dictionary é por referência no Godot 4: uma única atribuição basta —
@@ -2741,8 +2742,10 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				mine ? building.stage_reserve_kt : 0.0);
 			sync_double(k.stage_mined_kt, cached.stage_mined_kt,
 				mine ? building.stage_mined_kt : 0.0);
-			const bool can_deepen = mine && !building.bankrupt && !building.depleted
-				&& city.deposits[building.output_product].remaining_kt > 0.0;
+			// D-083 (decisão do dono): `can_deepen` só exige a mina não falida — a
+			// reserva NUNCA bloqueia o aprofundamento (a jazida é referência de
+			// profundidade, não um limite físico).
+			const bool can_deepen = mine && !building.bankrupt;
 			sync_double(k.next_deepen_cost, cached.next_deepen_cost,
 				can_deepen ? sim_core_.mine_deepen_cost(city, building) : 0.0);
 		}
@@ -2899,7 +2902,9 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 			cache.light_d_efficiency.push_back(extraction_efficiency(deposit));
 			cache.light_d_opex_factor.push_back(depth_opex_factor(deposit));
 			cache.light_d_extracted_kt.push_back(deposit.extracted_kt);
-			cache.light_d_depleted.push_back(deposit.remaining_kt <= 0.0 ? 1 : 0);
+			// D-083 (decisão do dono): o recurso nunca acaba — `d_depleted` é
+			// SEMPRE 0 (campo mantido por contrato do bloco `light`).
+			cache.light_d_depleted.push_back(0);
 		}
 		cache.light_d_offset.push_back(
 			static_cast<int32_t>(cache.light_d_product.size()));

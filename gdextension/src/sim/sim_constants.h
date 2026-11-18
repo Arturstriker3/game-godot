@@ -216,34 +216,47 @@ constexpr int kFirstRawProduct = 1;
 // petróleo, gás, carvão, urânio). Fazenda não tem estágio: produto sem jazida
 // (`deposit.tracked == false`) mantém o comportamento anterior.
 //
+// DECISÃO DO DONO (2026-11-17): o recurso NUNCA acaba. A reserva da jazida é só
+// REFERÊNCIA de profundidade (escala da curva de custo): aprofundar/expandir
+// nunca é bloqueado por reserva e a produção NUNCA zera por esgotamento — ela
+// segue no piso do estágio mesmo com `remaining_kt == 0`. Cada estágio novo fica
+// mais caro (curva crescente e CONVEXA), então em algum ponto é mais barato
+// abrir/aprofundar em outro lugar: a necessidade migra pelo mapa.
+//
 // Curva de declínio (declarada, calibrável depois): a produção efetiva do
 // estágio é `clamp(stage_remaining_kt / stage_reserve_kt, piso, 1)`. O estágio
 // nasce cheio (produção 100%) e decai LINEARMENTE com a reserva que ele ainda
 // pode extrair; ao esgotar, a mina fica no PISO — "quase nada", não zero: o
 // poço continua existindo (e empregando uma equipe mínima) até alguém pagar o
-// aprofundamento. A reserva da JAZIDA continua sendo a única fonte física: o
-// estágio só distribui o ritmo de extração no tempo (conservação intacta).
+// aprofundamento.
 constexpr double kMineStageFloor = 0.05;
 // Estágio das minas que JÁ EXISTEM no dia 0 (estado inicial da decisão do
 // dono): o "último estágio" de um poço histórico, com o estágio esgotado.
 // Aprofundar abre o estágio seguinte (kMineInitialStage + 1, + 2, ...).
 constexpr int kMineInitialStage = 3;
-// Fração da reserva RESTANTE da jazida que o estágio novo reivindica ao abrir.
-// 0,5 = cada aprofundamento trabalha metade do que sobrou; o resto fica para o
-// aprofundamento seguinte (por isso o 2º estágio é menor e mais caro por
-// tonelada, e a mina nunca "vira nova" de graça).
+// Fração da reserva de REFERÊNCIA (`initial_kt`) da jazida que o estágio novo
+// reivindica ao abrir — NÃO é fração do saldo restante. 0,5 = cada
+// aprofundamento trabalha metade da reserva de referência; a jazida não
+// "encolhe" de estágio em estágio (o recurso nunca acaba).
 constexpr double kMineStageReserveShare = 0.5;
 // Cada aprofundamento AUMENTA a capacidade nominal da mina neste fator (a obra
 // reabre o poço com mais poços de acesso/bombas). A produção só volta a 100% se
 // o novo estágio estiver cheio.
 constexpr double kMineDeepenCapacityFactor = 1.5;
-// Custo: capacidade nova × capital/t/dia × profundidade × (1 ÷ eficiência de
-// qualidade) × (1 + crescimento × estágio novo). A profundidade usa o MESMO
-// fator do opex (`depth_opex_factor`, 1..3); a qualidade entra pelo MESMO
-// `extraction_efficiency` (0,5..1 — minério pobre exige mover mais rocha).
-// Crescimento 0,35 por estágio: o 2º aprofundamento custa 1,35× o 1º (mais
-// fundo = mais caro), sem depender de calibração de reserva.
-constexpr double kMineDeepenStageCostGrowth = 0.35;
+// Custo do aprofundamento: capacidade nova × capital/t/dia × profundidade
+// (MESMO `depth_opex_factor` do opex, 1..3) ÷ eficiência de qualidade (0,5..1 —
+// minério pobre exige mover mais rocha) × `kMineDeepenStageCostFactor`^
+// (estágio novo) × (1 + `kMineDeepenExtractionCostFactor` × min(extraído ÷
+// referência, `kMineDeepenExtractionCostCap`)). O fator geométrico por estágio
+// torna a curva CRESCENTE e CONVEXA; o fator de extração encarece a obra à
+// medida que a jazida de referência já foi ultrapassada (teto declarado evita
+// custo explosivo).
+constexpr double kMineDeepenStageCostFactor = 1.25;
+// Cada fator de extração além da referência adiciona esta fração ao custo, e o
+// teto da razão extraído/referência evita custo infinito (a referência é
+// `max(initial_kt, remaining_kt)`, defensivo contra reserva zerada).
+constexpr double kMineDeepenExtractionCostFactor = 0.5;
+constexpr double kMineDeepenExtractionCostCap = 4.0;
 // Prazo da obra de aprofundamento: 90 dias + 30 por estágio já aberto
 // (estimativa declarada de obra de mina, mesmo espírito de
 // kConstructionMineDays; não é cronograma observado).

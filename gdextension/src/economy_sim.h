@@ -271,8 +271,9 @@ public:
 
 	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
-	 * (extração com esgotamento). As minas da cidade que produzem o produto
-	 * consomem esta reserva compartilhada; reserva zerada para a produção.
+	 * (D-083: referência de profundidade, não um limite físico — o recurso nunca
+	 * acaba). As minas da cidade debitam `remaining_kt` como contabilidade, mas
+	 * a reserva zerada NÃO para a produção nem bloqueia obra.
 	 * Idempotente: se o produto já tem reserva, mantém o saldo restante (um
 	 * save carregado não é "reabastecido") e só atualiza qualidade/profundidade.
 	 * @param product id de goods.json (ex.: "iron", "gold").
@@ -735,8 +736,9 @@ public:
 	/**
 	 * D-083 — APROFUNDAR/EXPANDIR mina: obra física §15 que abre o estágio
 	 * seguinte da mina, repõe a produção (curva de declínio do estágio) e sobe
-	 * a capacidade, consumindo a reserva restante da jazida. O custo sai do
-	 * caixa do DONO (Estado/grupo/firma) e vira demanda de construção.
+	 * a capacidade, reivindicando uma fatia da reserva de REFERÊNCIA da jazida
+	 * (o recurso nunca acaba — a reserva não é um limite físico). O custo sai
+	 * do caixa do DONO (Estado/grupo/firma) e vira demanda de construção.
 	 * Devolve {started, cost, capacity_added, stage, duration_days, project_id,
 	 * error}. Comando da fila A3 (`deepen_mine`).
 	 */

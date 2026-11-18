@@ -301,15 +301,11 @@ void plan_city(AiContext& ctx, int city_index) {
 				const double factor = view.b_stage_factor[at];
 				const double extra = cap * (kMineDeepenCapacityFactor - factor);
 				if (cap > 0.0 && extra > 0.0) {
-					const double quality = std::clamp(
-						ai_deposit_quality(view, city_index, product), 0.0, 1.0);
-					const double efficiency = 0.5 + 0.5 * quality;
-					const double stage = static_cast<double>(view.b_stage[at] + 1);
-					const double cost = cap
-						* (kMineDeepenCapacityFactor - 1.0) * capital_cost
-						* ai_deposit_opex_factor(view, city_index, product)
-						/ std::max(1e-9, efficiency)
-						* (1.0 + kMineDeepenStageCostGrowth * stage);
+					// D-083: o custo do aprofundamento vem do retrato do dia
+					// (`AiView::b_deepen_cost`, calculado pelo núcleo) — a IA não
+					// duplica a fórmula.
+					const double cost = ai_mine_deepen_cost(view, city_index,
+						mine_at);
 					const double daily_profit = margin * extra;
 					if (daily_profit > 0.0
 							&& cost / daily_profit <= kMinePaybackDays

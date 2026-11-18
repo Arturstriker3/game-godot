@@ -1730,7 +1730,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		building.strategic = bool(entry.get("strategic", false));
 		building.loss_days = int(entry.get("loss_days", 0));
 		building.bankrupt = bool(entry.get("bankrupt", false));
-		building.depleted = bool(entry.get("depleted", false));
+		// D-083 (decisão do dono): o recurso nunca acaba — ignora o `depleted`
+		// salvo (que antes marcava a jazida esgotada) e força `false`. O formato
+		// e a versão (v17) NÃO mudam.
+		building.depleted = false;
 		// D-083 (save v17): estágio de mina. Save v16 e anteriores (sem `stage`)
 		// entra no ÚLTIMO estágio com o estágio esgotado: é a mina histórica que
 		// produz quase nada e só volta pagando o aprofundamento.

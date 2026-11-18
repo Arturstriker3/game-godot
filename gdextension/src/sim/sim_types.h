@@ -252,7 +252,10 @@ namespace ogs {
 		int ramp_days = 0;
 		int loss_days = 0;
 		bool bankrupt = false; // fechada por insolvência (prejuízo persistente)
-		bool depleted = false; // jazida esgotada: encerra sem contar falência
+		// D-083 (decisão do dono): SEMPRE false — o recurso nunca acaba, então
+		// nenhuma mina encerra por depleção. Campo mantido por contrato de
+		// save/status (v17 ignora o valor salvo e força false ao carregar).
+		bool depleted = false;
 		// Planta estratégica semeada no bootstrap industrial (decisão §12.3):
 		// não fecha por insolvência enquanto não há demanda final (F3); o
 		// governo cobre o prejuízo. Marcada explicitamente para o save/status.
@@ -278,7 +281,8 @@ namespace ogs {
 		// `stage_reserve_kt` é o que o estágio corrente ainda pode extrair
 		// antes de cair ao piso e `stage_mined_kt` o que ele já extraiu. O
 		// estágio NÃO é uma reserva paralela: cada tonelada também debita
-		// `Deposit::remaining_kt` (a jazida é a única fonte física).
+		// `Deposit::remaining_kt` (contabilidade — a jazida é a referência de
+		// profundidade, não um limite físico; o recurso nunca acaba).
 		// `stage_reserve_kt <= 0` = estágio esgotado (produção no piso).
 		// Fazenda/indústria mantêm 0/0/0 e produção relativa 1,0.
 		int stage = 0;
@@ -600,17 +604,21 @@ namespace ogs {
 		unsigned long long name_seed = 0;
 	};
 
-	// Reserva mineral do território da cidade para um produto. Compartilhada
-	// pelas minas da cidade: cada tonelada extraída reduz remaining_kt. Sem
-	// tracked, o produto não tem reserva declarada e a extração é ilimitada
-	// (comportamento legado, p.ex. ferro sem dados de depósito).
+	// Reserva mineral do território da cidade para um produto. D-083 (decisão do
+	// dono): é só REFERÊNCIA de profundidade — escala a curva de custo do
+	// aprofundamento e a fatia que cada estágio reivindica; a extração NUNCA
+	// zera nem bloqueia obra. `remaining_kt` continua sendo debitado
+	// (contabilidade, cai a 0 e fica lá) e `extracted_kt` acumula o que já saiu
+	// (ultrapassar a referência encarece o aprofundamento). Sem `tracked`, o
+	// produto não tem reserva declarada e a extração é ilimitada (comportamento
+	// legado, p.ex. ferro sem dados de depósito).
 	struct Deposit {
 		bool tracked = false;
-		double initial_kt = 0.0;
-		double remaining_kt = 0.0;
-		double quality = 1.0;    // 0..1: eficiência da extração
-		double depth_m = 0.0;    // profundidade média: encarece o opex
-		double extracted_kt = 0.0;
+		double initial_kt = 0.0;   // reserva de REFERÊNCIA (escala de custo)
+		double remaining_kt = 0.0; // saldo contábil (pode chegar a 0 e seguir)
+		double quality = 1.0;      // 0..1: eficiência da extração
+		double depth_m = 0.0;      // profundidade média: encarece o opex
+		double extracted_kt = 0.0; // extraído acumulado (além da referência encarece)
 	};
 
 	// F4: frota nacional de frete. Os veículos são um estoque físico (1 t do

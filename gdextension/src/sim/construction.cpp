@@ -291,31 +291,22 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 			if (building.id == p.building_id && building.city == p.city) {
 				const double old_capacity = std::max(1e-9, building.capacity);
 				building.capacity += std::max(0.0, p.capacity);
-				// D-083: aprofundamento — abre o estágio novo na MESMA mina; ele
-				// reivindica uma fatia da reserva restante da jazida e volta a
-				// produzir 100% enquanto ela durar. A folha/opex sobem na mesma
+				// D-083: aprofundamento — abre o estágio novo na MESMA mina, usando
+				// a reserva de REFERÊNCIA da jazida (não o saldo restante), e volta
+				// a produzir 100% enquanto ela durar. A folha/opex sobem na mesma
 				// proporção da capacidade (a mina reaberta volta a operar cheia).
 				if (p.deepen_stage >= 0) {
 					for (City& city : ws.cities) {
 						if (city.id != p.city) {
 							continue;
 						}
-						const int product = building.output_product;
-						if (product < 0 || product >= kMaxProducts) {
-							break;
-						}
-						const Deposit& deposit = city.deposits[product];
-						building.stage_reserve_kt = std::max(1e-9,
-							deposit.remaining_kt * kMineStageReserveShare);
-						building.stage_mined_kt = 0.0;
+						SimCore::set_mine_stage(city, building, p.deepen_stage);
 						const double scale = building.capacity / old_capacity;
 						building.jobs *= scale;
 						building.opex *= scale;
+						building.loss_days = 0;
 						break;
 					}
-					building.stage = p.deepen_stage;
-					building.loss_days = 0;
-					building.depleted = false;
 				}
 				return;
 			}

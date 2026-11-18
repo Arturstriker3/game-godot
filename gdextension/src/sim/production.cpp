@@ -238,23 +238,21 @@ void SimCore::phase_production() {
 						* input_market.price;
 					building.input_value = input_used * input_market.price;
 				} else if (deposit.tracked) {
-					// Esgotamento: a mina só extrai o que resta da reserva da jazida
-					// (compartilhada pelas minas da cidade) e a debita na mesma medida.
-					const double available_tons = deposit.remaining_kt * kTonsPerKiloton;
-					output = std::clamp(output, 0.0, available_tons);
+					// D-083 (decisão do dono): o recurso NUNCA acaba. A extração NÃO
+					// é limitada pelo saldo restante da jazida — a reserva é só
+					// REFERÊNCIA de profundidade (escala da curva de custo do
+					// aprofundamento). Continuamos debitando `remaining_kt`
+					// (contabilidade: cai a 0 e fica lá) e somando `extracted_kt`
+					// (o que passou da referência encarece o aprofundamento).
 					const double extracted_kt = output / kTonsPerKiloton;
 					deposit.remaining_kt = std::max(0.0, deposit.remaining_kt - extracted_kt);
 					deposit.extracted_kt += extracted_kt;
-					// D-083: a extração também consome o ESTÁGIO corrente. Quando ele
-					// fecha, a produção fica no piso até alguém pagar o aprofundamento
-					// (a jazida, não o estágio, é o estoque físico).
+					// D-083: a extração também consome o ESTÁGIO corrente. Quando
+					// ele fecha, a produção fica no piso até alguém pagar o
+					// aprofundamento (o estágio, não a jazida, controla o ritmo).
 					if (building.stage_reserve_kt > 1e-12) {
 						building.stage_mined_kt = std::min(building.stage_reserve_kt,
 							building.stage_mined_kt + extracted_kt);
-					}
-					// Reserva zerada: a mina encerra no próximo dia SEM virar falência.
-					if (deposit.remaining_kt <= 1e-9) {
-						building.depleted = true;
 					}
 				}
 
@@ -424,12 +422,22 @@ double SimCore::mine_deepen_cost(const City& city,
 	}
 	const Deposit& deposit = city.deposits[building.output_product];
 	const int next_stage = building.stage + 1;
+	// Referência de profundidade da jazida (decisão do dono): a reserva NUNCA
+	// zera a produção nem bloqueia o aprofundamento — ela só escala o custo da
+	// obra. `max(initial, remaining)` é defensivo contra reserva zerada.
+	const double reference = std::max(deposit.initial_kt, deposit.remaining_kt);
 	// Qualidade: minério pobre exige mover mais rocha por tonelada útil — o
 	// MESMO fator da produção (0,5..1) entra invertido no custo (1..2).
 	const double quality = std::max(1e-9, extraction_efficiency(deposit));
+	// Quanto a extração já passou da referência, até o teto declarado: a mina
+	// que já trabalhou muito além da referência fica mais cara, nunca infinita.
+	const double extracted_ratio = std::clamp(
+		deposit.extracted_kt / std::max(1e-9, reference),
+		0.0, kMineDeepenExtractionCostCap);
 	return mine_deepen_capacity(building) * kCapitalPerCapacity
 		* depth_opex_factor(deposit) / quality
-		* (1.0 + kMineDeepenStageCostGrowth * static_cast<double>(next_stage));
+		* std::pow(kMineDeepenStageCostFactor, static_cast<double>(next_stage))
+		* (1.0 + kMineDeepenExtractionCostFactor * extracted_ratio);
 }
 int SimCore::mine_deepen_days(const Building& building) {
 	return kMineDeepenBaseDays
@@ -438,8 +446,12 @@ int SimCore::mine_deepen_days(const Building& building) {
 void SimCore::set_mine_stage(City& city, Building& building, int stage) {
 	building.stage = std::max(0, stage);
 	const Deposit& deposit = city.deposits[building.output_product];
+	// D-083 (decisão do dono): o estágio reivindica uma fatia da reserva de
+	// REFERÊNCIA da jazida (não do saldo restante) — o recurso nunca acaba e a
+	// extração não encerra a mina.
+	const double reference = std::max(deposit.initial_kt, deposit.remaining_kt);
 	building.stage_reserve_kt = std::max(1e-9,
-		deposit.remaining_kt * kMineStageReserveShare);
+		reference * kMineStageReserveShare);
 	building.stage_mined_kt = 0.0;
 }
 

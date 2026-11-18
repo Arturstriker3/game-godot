@@ -125,6 +125,10 @@ struct AiView {
 	// de operação e produção relativa do estágio (0,05..1,0). 0/1,0 nas demais.
 	std::vector<int> b_stage;
 	std::vector<double> b_stage_factor;
+	// D-083: custo do PRÓXIMO aprofundamento por construção (ordem de
+	// `b_offset`), calculado pelo próprio núcleo (`SimCore::mine_deepen_cost`)
+	// para a IA não duplicar a fórmula; 0.0 nas construções que não são mina.
+	std::vector<double> b_deepen_cost;
 	// Jazidas RASTREADAS por cidade (ordem de produto), offsets cities + 1.
 	std::vector<int> d_offset;
 	std::vector<int> d_product;
@@ -202,8 +206,9 @@ int ai_d_end(const AiView& view, int city);
 int ai_c_begin(const AiView& view, int city);
 int ai_c_end(const AiView& view, int city);
 
-// == `IndustryTemplates.has_deposit` / `.deposit_remaining > 0`: jazida
-// rastreada do produto com reserva restante > 0.
+// == `IndustryTemplates.has_deposit` (D-083): existe jazida RASTREADA do
+// produto na cidade (a reserva é referência de profundidade — NÃO se exige
+// `remaining_kt > 0`; o recurso nunca acaba).
 bool ai_has_deposit(const AiView& view, int city, int product);
 // Fator de profundidade da jazida (1.0 sem jazida) — o `opex_factor` que o
 // núcleo aplica ao opex de extração (== `variable_cost_mined`).
@@ -219,11 +224,14 @@ bool ai_has_pending_build(const AiView& view, int city, int product);
 // D-083: posição (índice nas tabelas planas da cidade) da mina do produto, ou
 // -1. `state_only` restringe a mina do Estado; falso aceita qualquer dono que
 // não seja o Estado (firma/grupo). O produto precisa ter jazida declarada.
+// Entre as construções do produto com o dono pedido, devolve a de MENOR custo
+// de próximo estágio (empate = primeira) — a ordem das construções no mundo é
+// adversa de propósito (teste mine_stage).
 int ai_mine_index(const AiView& view, int city, int product, bool state_only);
 // D-083: capacidade ADICIONADA pelo aprofundamento da mina em `index` e o custo
-// da obra, com a MESMA fórmula do núcleo (`SimCore::mine_deepen_*`). A IA
-// privada decide aprofundar por retorno com estes números, não pelo tamanho da
-// planta hipotética do template.
+// da obra. O custo vem do retrato do dia (`AiView::b_deepen_cost`), calculado
+// pelo próprio núcleo (`SimCore::mine_deepen_cost`) — a IA NÃO duplica a
+// fórmula. `city` é mantido por assinatura (a view já é por cidade).
 double ai_mine_deepen_capacity(const AiView& view, int index);
 double ai_mine_deepen_cost(const AiView& view, int city, int index);// == `IndustryTemplates.existing_capacity`: capacidade nominal instalada.
 double ai_existing_capacity(const AiView& view, int city, int product);
