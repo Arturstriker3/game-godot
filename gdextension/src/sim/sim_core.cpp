@@ -265,18 +265,14 @@ void SimCore::prologue() {
 	// Encerra as construções falidas no início do tick: assim o PIB do dia já
 	// não as inclui e o status fica consistente (a falência foi marcada no tick
 	// anterior, no fim da fase 7).
+	// D-086 (decisão do dono): o recurso NUNCA acaba — `depleted` nunca é marcado
+	// em lugar nenhum do núcleo (a produção não zera e o aprofundamento não é
+	// bloqueado por reserva), então não há o ramo de "mina com jazida esgotada"
+	// aqui. `ws_.depleted_mines` permanece 0 e é mantido no estado/save/status
+	// por contrato.
 	for (auto it = ws_.buildings.begin(); it != ws_.buildings.end();) {
 		if (it->bankrupt) {
 			++ws_.bankruptcies;
-			it = ws_.buildings.erase(it);
-			continue;
-		}
-		// Mina com jazida esgotada encerra a operação no dia seguinte: o fim da
-		// reserva é o fim econômico planejado, não uma insolvência. Contá-la
-		// como falência inflava o número (99 minas de ouro/diamante de jazidas
-		// de poucos dias em 730 d) e escondia as falências de verdade (§19).
-		if (it->depleted) {
-			++ws_.depleted_mines;
 			it = ws_.buildings.erase(it);
 			continue;
 		}
@@ -333,7 +329,11 @@ void SimCore::phase_reset() {
 			city.pop.stratum_food_spend[s] = 0.0;
 			city.pop.stratum_need[s] = 0.0;
 			city.pop.stratum_consumed[s] = 0.0;
-			city.pop.stratum_level[s] = 0;
+			// B2 (correção): `stratum_level` NÃO é fluxo do dia — é o teto de
+			// consumo que a fase de consumo recalcula e que o save persiste
+			// (`strata_level`). Zerá-lo aqui deixava `refresh_income_classes`
+			// publicando 100% basic enquanto o dia não chegava ao consumo
+			// (serviços liam a classe zerada). Mantém o valor do dia anterior.
 		}
 		city.pop.food_spend = 0.0;
 		city.pop.consumed = 0.0;
@@ -427,16 +427,23 @@ void SimCore::phase_accounting() {
 		const std::vector<int>& local_buildings =
 			ws_.buildings_by_city[city_index];
 		std::array<double, kMaxProducts> capacity_by_output{};
+		// D-086: a fatia de receita segue a capacidade EFETIVA do dia — mina com
+		// estágio esgotado produz 5% e não pode levar 100% da receita da cidade
+		// (isso maquiava o lucro da mina parada e afundava a mina ativa).
+		auto effective_capacity = [&city](const Building& building) {
+			return building.capacity * building.output_scale
+				* mine_stage_factor(city, building);
+		};
 		for (const int bi : local_buildings) {
 			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			capacity_by_output[building.output_product] +=
-				building.capacity * building.output_scale;
+				effective_capacity(building);
 		}
 		for (const int bi : local_buildings) {
 			Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
-			const double effective = building.capacity * building.output_scale;
+			const double effective = effective_capacity(building);
 			const double share = capacity_by_output[building.output_product] > 0.0
 				? effective / capacity_by_output[building.output_product] : 0.0;
 			building.revenue = city.revenue_by_product[building.output_product] * share;
@@ -589,8 +596,14 @@ void SimCore::phase_accounting() {
 			}
 			// Planta secundária ociosa não é insolvente: sem operação no dia,
 			// não acumula dias de prejuízo (o custo de stand-by já é pequeno).
-			const bool operating = building.recipe < 0 && building.input_product < 0
-				? true : building.utilization > 1e-9;
+			// D-086: mina com o estágio esgotado é o mesmo caso — o poço parado
+			// aguarda aprofundamento; ele não "faliu" e não pode desaparecer.
+			const bool secondary =
+				building.recipe >= 0 || building.input_product >= 0;
+			const bool mine_idle = !secondary && is_mine_building(city, building)
+				&& mine_stage_factor(city, building) <= kMineStageFloor + 1e-12;
+			const bool operating = mine_idle ? false
+				: secondary ? building.utilization > 1e-9 : true;
 			if (building.profit < 0.0 && operating) {
 				++building.loss_days;
 			} else {

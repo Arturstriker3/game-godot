@@ -3,6 +3,8 @@
 // docs/economy/core_refactor_plan.md). Sem dependência do engine Godot: só STL.
 // Extraídas do prólogo de economy_sim.cpp (antes viviam num namespace anônimo).
 
+#include <string>
+
 namespace ogs {
 
 constexpr double kPi = 3.14159265358979323846;
@@ -68,16 +70,26 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // (`seed_demography`); sem dado para a nação, o perfil paramétrico legado
 // continua valendo.
 // v17 (B2): estratos de renda (quintis) — bloco `pop.strata` (pessoas,
-// quintis-alvo, dispersão, participação no capital, poupança, dívida,
-// patrimônio, taxa, aluguel pago, nível, mistura educacional, posse e ciclo de
-// vida) e `rent_income_next`. Save v16 e anteriores migram semeando os quintis
-// pela proxy do Gini declarado no fim do load.
-// v18 (B3): região da cidade (estados inteiros) — bloco `city.region` (nome,
-// população total/urbana/interior, urbanização nacional, mix de emprego,
-// estados, coortes etárias e quintis do interior, caixa). Save v17 e anteriores
+// quintis-alvo, dispersão, capital, poupança, dívida, patrimônio, taxa,
+// aluguel pago/faturado, nível, educação, posse e ciclo de vida) e
+// `rent_income_next` por cidade. Save v16 e anteriores não têm o bloco: a
+// semeadura acontece no FIM do load (depois do `urban`, com a posse de moradia
+// carregada) e reparte a poupança escalar pela renda (`seed_strata`).
+// v18 (minas, D-086): cada mina/poço de extração mineral tem um ESTÁGIO de
+// operação (`stage`, `stage_reserve_kt`, `stage_mined_kt`) e a obra de
+// aprofundamento (`construction_projects[].deepen_stage`). Save v17 e
+// anteriores não têm as chaves: toda construção de extração primária entra no
+// ÚLTIMO estágio com o estágio esgotado — é exatamente o mundo que a decisão do
+// dono descreve (minas antigas produzindo quase nada). A migração é ADITIVA e
+// roda sobre o mesmo load: v16 → v17 (strata, acima) → v18 (estágio de mina).
+// v19 (B3, D-085): região da cidade (estados inteiros) — bloco `city.region`
+// (nome, população total/urbana/interior, urbanização nacional, mix de emprego,
+// estados, coortes etárias e quintis do interior, caixa). Save v18 e anteriores
 // migram: `region_pop = max(0, population - simulation_population)` (já no
 // save), coortes/estratos da nação e mix neutro (sem dado de urbanização).
-constexpr int kSaveVersion = 18;
+// A cadeia v16 → v19 é o mesmo caminho aditivo: cada etapa olha só as chaves
+// que faltam (strata em v17, estágio de mina em v18, região em v19).
+constexpr int kSaveVersion = 19;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -252,6 +264,69 @@ constexpr double kDepthOpexMaxFactor = 3.0;
 // então este valor só delimita onde começa a venda externa (minerais, algodão,
 // madeira).
 constexpr int kFirstRawProduct = 1;
+
+// ---------------------------------------------------------------------------
+// ESTÁGIO DE MINA (D-086, 2026-11-17) — mecânica, sem calibração de produção.
+//
+// MINA/POÇO = extração PRIMÁRIA de um produto com jazida rastreada (minerais,
+// petróleo, gás, carvão, urânio). Fazenda não tem estágio: produto sem jazida
+// (`deposit.tracked == false`) mantém o comportamento anterior.
+//
+// DECISÃO DO DONO (2026-11-17): o recurso NUNCA acaba. A reserva da jazida é só
+// REFERÊNCIA de profundidade (escala da curva de custo): aprofundar/expandir
+// nunca é bloqueado por reserva e a produção NUNCA zera por esgotamento — ela
+// segue no piso do estágio mesmo com `remaining_kt == 0`. Cada estágio novo fica
+// mais caro (curva crescente e CONVEXA), então em algum ponto é mais barato
+// abrir/aprofundar em outro lugar: a necessidade migra pelo mapa.
+//
+// Curva de declínio (declarada, calibrável depois): a produção efetiva do
+// estágio é `clamp(stage_remaining_kt / stage_reserve_kt, piso, 1)`. O estágio
+// nasce cheio (produção 100%) e decai LINEARMENTE com a reserva que ele ainda
+// pode extrair; ao esgotar, a mina fica no PISO — "quase nada", não zero: o
+// poço continua existindo (e empregando uma equipe mínima) até alguém pagar o
+// aprofundamento.
+constexpr double kMineStageFloor = 0.05;
+// Estágio das minas que JÁ EXISTEM no dia 0 (estado inicial da decisão do
+// dono): o "último estágio" de um poço histórico, com o estágio esgotado.
+// Aprofundar abre o estágio seguinte (kMineInitialStage + 1, + 2, ...).
+constexpr int kMineInitialStage = 3;
+// Fração da reserva de REFERÊNCIA (`initial_kt`) da jazida que o estágio novo
+// reivindica ao abrir — NÃO é fração do saldo restante. 0,5 = cada
+// aprofundamento trabalha metade da reserva de referência; a jazida não
+// "encolhe" de estágio em estágio (o recurso nunca acaba).
+constexpr double kMineStageReserveShare = 0.5;
+// Cada aprofundamento AUMENTA a capacidade nominal da mina neste fator (a obra
+// reabre o poço com mais poços de acesso/bombas). A produção só volta a 100% se
+// o novo estágio estiver cheio.
+constexpr double kMineDeepenCapacityFactor = 1.5;
+// Custo do aprofundamento: capacidade nova × capital/t/dia × profundidade
+// (MESMO `depth_opex_factor` do opex, 1..3) ÷ eficiência de qualidade (0,5..1 —
+// minério pobre exige mover mais rocha) × `kMineDeepenStageCostFactor`^
+// (estágio novo) × (1 + `kMineDeepenExtractionCostFactor` × min(extraído ÷
+// referência, `kMineDeepenExtractionCostCap`)). O fator geométrico por estágio
+// torna a curva CRESCENTE e CONVEXA; o fator de extração encarece a obra à
+// medida que a jazida de referência já foi ultrapassada (teto declarado evita
+// custo explosivo).
+constexpr double kMineDeepenStageCostFactor = 1.25;
+// Cada fator de extração além da referência adiciona esta fração ao custo, e o
+// teto da razão extraído/referência evita custo infinito (a referência é
+// `max(initial_kt, remaining_kt)`, defensivo contra reserva zerada).
+constexpr double kMineDeepenExtractionCostFactor = 0.5;
+constexpr double kMineDeepenExtractionCostCap = 4.0;
+// Prazo da obra de aprofundamento: 90 dias + 30 por estágio já aberto
+// (estimativa declarada de obra de mina, mesmo espírito de
+// kConstructionMineDays; não é cronograma observado).
+constexpr int kMineDeepenBaseDays = 90;
+constexpr int kMineDeepenDaysPerStage = 30;
+// Minerais de NICHO: mantêm o teto fixo de capacidade da mina estatal/privada
+// (kMaxStateMineCapacity = 10 t/d nos chamadores). Os demais (carvão, ferro,
+// cobre, petróleo, gás, bauxita, chumbo, fosfato, enxofre) passam a ser
+// dimensionados por retorno/demanda — a decisão do dono para a nova mecânica.
+inline bool is_niche_mineral(const std::string& resource) {
+	return resource == "gold" || resource == "diamond"
+		|| resource == "rare_earths" || resource == "tungsten"
+		|| resource == "uranium";
+}
 
 constexpr double kNeedPerCapita = 0.0003;
 // F3: reserva de alimento (dias) que a POP mantém em poupança antes de gastar

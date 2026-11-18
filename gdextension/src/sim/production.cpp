@@ -138,11 +138,13 @@ void SimCore::phase_production() {
 					? building.workers / building.jobs : 1.0;
 				const bool primary = building.recipe < 0 && building.input_product < 0;
 				// Extração: aptidão territorial × eficiência pela qualidade do minério
-				// (1.0 quando não há jazida declarada).
+				// (1.0 quando não há jazida declarada) × produção relativa do
+				// ESTÁGIO da mina (D-086: decai com a reserva do estágio, piso 5%).
 				Deposit& deposit = city.deposits[building.output_product];
 				const double suitability = primary
 					? std::clamp(city.suitability[building.output_product], 0.0, 1.0)
 						* extraction_efficiency(deposit)
+						* mine_stage_factor(city, building)
 					: 1.0;
 
 				// Capacidade e vendas na mesma unidade (toneladas efetivas).
@@ -236,16 +238,21 @@ void SimCore::phase_production() {
 						* input_market.price;
 					building.input_value = input_used * input_market.price;
 				} else if (deposit.tracked) {
-					// Esgotamento: a mina só extrai o que resta da reserva da jazida
-					// (compartilhada pelas minas da cidade) e a debita na mesma medida.
-					const double available_tons = deposit.remaining_kt * kTonsPerKiloton;
-					output = std::clamp(output, 0.0, available_tons);
+					// D-086 (decisão do dono): o recurso NUNCA acaba. A extração NÃO
+					// é limitada pelo saldo restante da jazida — a reserva é só
+					// REFERÊNCIA de profundidade (escala da curva de custo do
+					// aprofundamento). Continuamos debitando `remaining_kt`
+					// (contabilidade: cai a 0 e fica lá) e somando `extracted_kt`
+					// (o que passou da referência encarece o aprofundamento).
 					const double extracted_kt = output / kTonsPerKiloton;
 					deposit.remaining_kt = std::max(0.0, deposit.remaining_kt - extracted_kt);
 					deposit.extracted_kt += extracted_kt;
-					// Reserva zerada: a mina encerra no próximo dia SEM virar falência.
-					if (deposit.remaining_kt <= 1e-9) {
-						building.depleted = true;
+					// D-086: a extração também consome o ESTÁGIO corrente. Quando
+					// ele fecha, a produção fica no piso até alguém pagar o
+					// aprofundamento (o estágio, não a jazida, controla o ritmo).
+					if (building.stage_reserve_kt > 1e-12) {
+						building.stage_mined_kt = std::min(building.stage_reserve_kt,
+							building.stage_mined_kt + extracted_kt);
 					}
 				}
 
@@ -375,6 +382,79 @@ double SimCore::depth_opex_factor(const Deposit& deposit) {
 	return std::min(kDepthOpexMaxFactor,
 		1.0 + std::max(0.0, deposit.depth_m) / kDepthOpexScaleM);
 }
+
+// ---------------------------------------------------------------------------
+// D-086 — ESTÁGIO DE MINA. A mina tem profundidades de operação; cada estágio
+// trabalha uma fatia da reserva restante da jazida e a produção cai com ela.
+// As três primeiras funções são estáticas (leem só a cidade/construção) para
+// a fase de produção paralela usá-las sem estado.
+// ---------------------------------------------------------------------------
+bool SimCore::is_mine_building(const City& city, const Building& building) {
+	if (building.recipe >= 0 || building.input_product >= 0) {
+		return false;  // indústria: não é extração primária
+	}
+	if (building.output_product < 0 || building.output_product >= kMaxProducts) {
+		return false;
+	}
+	// Só existe estágio onde existe jazida declarada (o mapa de recursos é a
+	// fonte: produto sem depósito rastreado mantém a extração ilimitada legada).
+	return city.deposits[building.output_product].tracked;
+}
+double SimCore::mine_stage_factor(const City& city, const Building& building) {
+	if (!is_mine_building(city, building)) {
+		return 1.0;
+	}
+	if (building.stage_reserve_kt <= 1e-12) {
+		return kMineStageFloor;  // estágio esgotado: "quase nada"
+	}
+	const double remaining = std::max(0.0, building.stage_reserve_kt
+		- building.stage_mined_kt);
+	return std::clamp(remaining / building.stage_reserve_kt,
+		kMineStageFloor, 1.0);
+}
+double SimCore::mine_deepen_capacity(const Building& building) {
+	return std::max(0.0, building.capacity) * (kMineDeepenCapacityFactor - 1.0);
+}
+double SimCore::mine_deepen_cost(const City& city,
+		const Building& building) const {
+	if (!is_mine_building(city, building)) {
+		return 0.0;
+	}
+	const Deposit& deposit = city.deposits[building.output_product];
+	const int next_stage = building.stage + 1;
+	// Referência de profundidade da jazida (decisão do dono): a reserva NUNCA
+	// zera a produção nem bloqueia o aprofundamento — ela só escala o custo da
+	// obra. `max(initial, remaining)` é defensivo contra reserva zerada.
+	const double reference = std::max(deposit.initial_kt, deposit.remaining_kt);
+	// Qualidade: minério pobre exige mover mais rocha por tonelada útil — o
+	// MESMO fator da produção (0,5..1) entra invertido no custo (1..2).
+	const double quality = std::max(1e-9, extraction_efficiency(deposit));
+	// Quanto a extração já passou da referência, até o teto declarado: a mina
+	// que já trabalhou muito além da referência fica mais cara, nunca infinita.
+	const double extracted_ratio = std::clamp(
+		deposit.extracted_kt / std::max(1e-9, reference),
+		0.0, kMineDeepenExtractionCostCap);
+	return mine_deepen_capacity(building) * kCapitalPerCapacity
+		* depth_opex_factor(deposit) / quality
+		* std::pow(kMineDeepenStageCostFactor, static_cast<double>(next_stage))
+		* (1.0 + kMineDeepenExtractionCostFactor * extracted_ratio);
+}
+int SimCore::mine_deepen_days(const Building& building) {
+	return kMineDeepenBaseDays
+		+ kMineDeepenDaysPerStage * std::max(0, building.stage + 1);
+}
+void SimCore::set_mine_stage(City& city, Building& building, int stage) {
+	building.stage = std::max(0, stage);
+	const Deposit& deposit = city.deposits[building.output_product];
+	// D-086 (decisão do dono): o estágio reivindica uma fatia da reserva de
+	// REFERÊNCIA da jazida (não do saldo restante) — o recurso nunca acaba e a
+	// extração não encerra a mina.
+	const double reference = std::max(deposit.initial_kt, deposit.remaining_kt);
+	building.stage_reserve_kt = std::max(1e-9,
+		reference * kMineStageReserveShare);
+	building.stage_mined_kt = 0.0;
+}
+
 double SimCore::effective_productivity(const City& city) const {
 	// F7 calibração — TFP nacional. O cenário não traz valor adicionado por
 	// trabalhador; o índice de renda real (PIB PPP per capita / média mundial,

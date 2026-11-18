@@ -493,8 +493,33 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	const std::string existing = find_producer(ctx, city_index, product);
 	AiActionResult result;
 	if (!existing.empty()) {
-		// Expansão: id do produtor existente.
-		result = ai_emit_invest(ctx, city_id, existing, cost);
+		// D-086: mina existente é APROFUNDADA (obra que abre o estágio seguinte e
+		// repõe a produção), não expandida por investimento genérico — é o mesmo
+		// dinheiro e o mesmo §15, mas com o estágio no comando. O retorno é o do
+		// APROFUNDAMENTO (t/dia adicionadas × margem ÷ custo da obra), não o da
+		// planta hipotética do template: sem isso a decisão não compara
+		// "aprofundar × abrir nova" no critério do dono.
+		if (is_mineral) {
+			const int mine_at = ai_mine_index(view, city_index, product, false);
+			if (mine_at < 0) {
+				return false;
+			}
+			const std::size_t at = static_cast<std::size_t>(mine_at);
+			const double extra = ai_mine_deepen_capacity(view, mine_at)
+				+ std::max(0.0, view.b_capacity[at])
+					* (1.0 - view.b_stage_factor[at]);
+			const double deepen_cost = ai_mine_deepen_cost(view, city_index,
+				mine_at);
+			const double deepen_profit = margin * extra;
+			if (extra <= 0.0 || deepen_cost <= 0.0 || deepen_profit <= 0.0
+					|| deepen_cost / deepen_profit > payback_limit) {
+				return false;
+			}
+			result = ai_emit_deepen(ctx, city_id, existing);
+		} else {
+			// Expansão: id do produtor existente.
+			result = ai_emit_invest(ctx, city_id, existing, cost);
+		}
 	} else {
 		int input_product = tmpl.input;
 		double input_ratio = tmpl.input_ratio;

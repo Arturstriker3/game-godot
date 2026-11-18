@@ -271,8 +271,9 @@ public:
 
 	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
-	 * (extração com esgotamento). As minas da cidade que produzem o produto
-	 * consomem esta reserva compartilhada; reserva zerada para a produção.
+	 * (D-086: referência de profundidade, não um limite físico — o recurso nunca
+	 * acaba). As minas da cidade debitam `remaining_kt` como contabilidade, mas
+	 * a reserva zerada NÃO para a produção nem bloqueia obra.
 	 * Idempotente: se o produto já tem reserva, mantém o saldo restante (um
 	 * save carregado não é "reabastecido") e só atualiza qualidade/profundidade.
 	 * @param product id de goods.json (ex.: "iron", "gold").
@@ -733,6 +734,17 @@ public:
 		const String& partner_group = "");
 
 	/**
+	 * D-086 — APROFUNDAR/EXPANDIR mina: obra física §15 que abre o estágio
+	 * seguinte da mina, repõe a produção (curva de declínio do estágio) e sobe
+	 * a capacidade, reivindicando uma fatia da reserva de REFERÊNCIA da jazida
+	 * (o recurso nunca acaba — a reserva não é um limite físico). O custo sai
+	 * do caixa do DONO (Estado/grupo/firma) e vira demanda de construção.
+	 * Devolve {started, cost, capacity_added, stage, duration_days, project_id,
+	 * error}. Comando da fila A3 (`deepen_mine`).
+	 */
+	Dictionary deepen_mine(const String& city_id, const String& building_id);
+
+	/**
 	 * F9: abertura ao capital estrangeiro por (nação, setor).
 	 * `mode`: `open` (padrão), `restricted`, `joint_venture`, `closed`.
 	 * `min_local`: fração mínima do parceiro local em joint venture (0..1).
@@ -802,6 +814,9 @@ private:
 
 	Dictionary apply_invest(const String& city_id, const String& building_id,
 		double amount);
+	// D-086: aprofundar/expandir mina (obra física §15 → estágio seguinte).
+	Dictionary apply_deepen_mine(const String& city_id,
+		const String& building_id);
 	Dictionary apply_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
@@ -1003,6 +1018,10 @@ private:
 			double workers = -1.0, utilization = -1.0, revenue = -1.0;
 			double input_value = -1.0, costs = -1.0, profit = -1.0;
 			double loss_days = -1.0;
+			// D-086: estágio da mina (int) e produção relativa do estágio.
+			int stage = -1;
+			double stage_factor = -1.0, stage_reserve_kt = -1.0;
+			double stage_mined_kt = -1.0, next_deepen_cost = -1.0;
 		};
 		std::vector<BuildingCache> building_cache;
 		Array imported, exported, import_value, export_value;
@@ -1030,7 +1049,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct StatusKeys {
-		StringName age_bands, amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, income_strata, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups;
+		StringName age_bands, amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, income_strata, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups, stage, stage_factor, stage_reserve_kt, stage_mined_kt, next_deepen_cost;
 		StringName light, product_count, m_price, m_stock, m_supply, m_surplus,
 			m_sold, m_shortage, m_desired, p_need, p_consumed, p_satisfaction,
 			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group,

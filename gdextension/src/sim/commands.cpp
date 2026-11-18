@@ -46,6 +46,7 @@ constexpr TypeName kTypeNames[] = {
 	{CommandType::UrbanSocialHousing, "urban_social_housing"},
 	{CommandType::SetServiceCapacity, "set_service_capacity"},
 	{CommandType::SetServiceBusinessState, "set_service_business_state"},
+	{CommandType::DeepenMine, "deepen_mine"},
 };
 
 } // namespace

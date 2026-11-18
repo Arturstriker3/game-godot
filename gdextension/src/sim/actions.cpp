@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <string>
 
 namespace ogs {
 
@@ -72,13 +73,6 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 			&& city->suitability[building->output_product] <= 0.0) {
 		result.error = "sem aptidão territorial";
 		return result;
-	}
-	if (building->input_product < 0) {
-		const Deposit& deposit = city->deposits[building->output_product];
-		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
-			result.error = "reserva esgotada";
-			return result;
-		}
 	}
 
 	const double capacity_added = amount / std::max(1.0, building->capital_per_capacity);
@@ -226,13 +220,6 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 		result.error = "sem aptidão territorial";
 		return result;
 	}
-	if (recipe < 0 && input_product < 0) {
-		const Deposit& deposit = city->deposits[output_product];
-		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
-			result.error = "reserva esgotada";
-			return result;
-		}
-	}
 	const bool state_owned = owner_name == "state";
 
 	if (instant_construction || bootstrap_construction) {
@@ -278,6 +265,12 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 			building.last_utilization = 0.25;
 		}
 		ws.buildings.push_back(building);
+		// D-086: mina nova abre o estágio 0 reivindicando uma fatia da reserva da
+		// jazida (produção cheia no primeiro estágio). Produto sem jazida
+		// declarada não tem estágio e mantém a extração ilimitada legada.
+		if (SimCore::is_mine_building(*city, ws.buildings.back())) {
+			SimCore::set_mine_stage(*city, ws.buildings.back(), 0);
+		}
 		// Índice por cidade: insere SÓ a construção nova. O tick reconstrói o
 		// índice no início, após remover falidas.
 		const std::size_t city_index =
@@ -510,13 +503,6 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 				return result;
 			}
 		}
-		if (recipe < 0) {
-			const Deposit& deposit = city->deposits[output_product];
-			if (deposit.tracked && deposit.remaining_kt <= 0.0) {
-				result.error = "reserva esgotada";
-				return result;
-			}
-		}
 	}
 	const double cost = capacity * capital_per_capacity;
 	const double partner_cost = cost * local_share;
@@ -573,6 +559,10 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 			building.last_utilization = 0.25;
 		}
 		ws.buildings.push_back(building);
+		// D-086: mina nova abre o estágio 0 (mesma regra do build do Estado).
+		if (SimCore::is_mine_building(*city, ws.buildings.back())) {
+			SimCore::set_mine_stage(*city, ws.buildings.back(), 0);
+		}
 		const std::size_t city_index =
 			static_cast<std::size_t>(city - ws.cities.data());
 		if (city_index < ws.buildings_by_city.size()) {
@@ -662,6 +652,138 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 	result.owner = project.owner;
 	result.local_share = local_share;
 	result.project_id = id;
+	return result;
+}
+
+namespace {
+// D-086: caixa de quem paga o aprofundamento, pelo dono da MINA —
+// Estado → orçamento da cidade; grupo F9 → caixa do grupo; "private" (legado)
+// → caixa da firma. `commit_key` é a chave do limite de comprometimento de obra
+// (`committed_construction`). nullptr = dono sem caixa localizável.
+double* mine_owner_cash(SimCore& core, City& city, const Building& building,
+		std::string& commit_key) {
+	std::string group_id;
+	std::string origin_nation;
+	const int kind = core.owner_kind(building.owner, &group_id, &origin_nation);
+	if (kind == 0) {
+		commit_key = "state";
+		return &city.government_budget;
+	}
+	if (kind == 1 || kind == 2) {
+		commit_key = group_id;
+		Group* group = core.find_group(group_id);
+		return group == nullptr ? nullptr : &group->cash;
+	}
+	commit_key = "private";
+	return &city.firm_cash;
+}
+} // namespace
+
+DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		bool instant_construction) {
+	DeepenResult result;
+	City* city = core.find_city(city_id);
+	if (city == nullptr) {
+		result.error = "cidade desconhecida";
+		return result;
+	}
+	Building* building = find_building(ws, city->id, building_id);
+	if (building == nullptr) {
+		result.error = "construção desconhecida";
+		return result;
+	}
+	if (!SimCore::is_mine_building(*city, *building)) {
+		result.error = "construção não é mina de estágio";
+		return result;
+	}
+	// D-086 (decisão do dono): a reserva NUNCA bloqueia o aprofundamento — ela é
+	// só referência de profundidade. O gate de "mina encerrada" é apenas a
+	// falência (`bankrupt`) ou o prejuízo persistente (`loss_days`).
+	if (building->bankrupt || building->loss_days >= kLossDaysBeforeClose) {
+		result.error = "mina encerrada";
+		return result;
+	}
+	// Anti-duplicação: uma obra de aprofundamento por mina (a IA tentaria todo
+	// dia durante os meses de obra).
+	for (const ConstructionProject& in_flight : ws.construction_projects) {
+		if (in_flight.deepen_stage >= 0 && in_flight.city == city->id
+				&& in_flight.building_id == building->id) {
+			result.error = "obra em andamento";
+			return result;
+		}
+	}
+	const double cost = core.mine_deepen_cost(*city, *building);
+	const double capacity_added = SimCore::mine_deepen_capacity(*building);
+	const int stage = building->stage + 1;
+	if (cost <= 0.0 || capacity_added <= 0.0) {
+		result.error = "mina sem capacidade a repor";
+		return result;
+	}
+	std::string commit_key;
+	double* cash = mine_owner_cash(core, *city, *building, commit_key);
+	if (cash == nullptr) {
+		result.error = "dono sem caixa";
+		return result;
+	}
+	const double committed = committed_construction(ws, city->id, commit_key);
+	if (committed + cost > *cash) {
+		result.error = "capital insuficiente";
+		result.cost = cost;
+		return result;
+	}
+
+	result.cost = cost;
+	result.capacity_added = capacity_added;
+	result.stage = stage;
+	result.duration_days = kMineDeepenBaseDays
+		+ kMineDeepenDaysPerStage * stage;
+
+	if (instant_construction) {
+		// Hook de teste/laboratório: obra instantânea, custo integral debitado do
+		// dono e pago ao setor de construção doméstico (dinheiro conservado).
+		*cash -= cost;
+		city->service_cash += cost;
+		city->construction_revenue_pending += cost;
+		building->capacity += capacity_added;
+		core.set_mine_stage(*city, *building, stage);
+		result.started = true;
+		return result;
+	}
+
+	ConstructionProject project;
+	project.id = building->id + "-DEEP" + std::to_string(stage);
+	project.building_id = building->id;
+	project.city = city->id;
+	project.owner = building->owner;
+	std::string owner_group;
+	std::string owner_nation;
+	if (core.owner_kind(building->owner, &owner_group, &owner_nation) != 0) {
+		project.group_id = owner_group;
+	}
+	project.resource = building->resource;
+	project.input_product = building->input_product;
+	project.output_product = building->output_product;
+	project.recipe = building->recipe;
+	project.capacity = capacity_added;
+	project.input_per_output = building->input_per_output;
+	for (int level = 0; level < kEducationLevels; ++level) {
+		project.education_mix[level] = building->education_mix[level];
+	}
+	project.jobs = building->jobs * (capacity_added
+		/ std::max(1e-9, building->capacity));
+	project.wage = building->wage;
+	project.opex = building->opex * (capacity_added
+		/ std::max(1e-9, building->capacity));
+	project.expand_existing = true;
+	project.deepen_stage = stage;
+	project.total_cost = cost;
+	// Mesma regra do §15: o capital da obra é reservado no início.
+	project.reserved = cost;
+	*cash -= cost;
+	core.add_construction_project(project);
+	result.started = true;
+	result.project_id = project.id;
 	return result;
 }
 

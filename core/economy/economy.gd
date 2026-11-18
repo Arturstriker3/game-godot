@@ -163,7 +163,8 @@ func _ready() -> void:
 	# B3: anexa o bloco `region` (estados inteiros) a cada cidade antes de criar
 	# o mundo — o núcleo e o snapshot/CLI levam o dado junto.
 	RegionDataScript.attach(cities)
-	sim.initialize_world(cities, _load_ports(), geo.resolve_initial_farms(_load_buildings(), cities))
+	sim.initialize_world(cities, _load_ports(),
+			geo.resolve_initial_mines(geo.resolve_initial_farms(_load_buildings(), cities), cities))
 	# §19 (W0): solo, moradia e prefeitura por cidade. DEPOIS do mundo: os JSON
 	# casam pelo id da cidade. Binário anterior à §19 não tem o método (mantém o
 	# estado sem dado urbano, como antes).

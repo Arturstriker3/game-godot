@@ -162,12 +162,16 @@ func _run() -> void:
 	RegionDataScript.attach(cities)
 
 	# Com `--ai=1` o mundo nasce com a geografia real, como o harness de
-	# equivalência: a fazenda inicial é resolvida ANTES de criar o mundo.
+	# equivalência: a fazenda inicial é resolvida ANTES de criar o mundo e, em
+	# seguida, as minas históricas do D-086 (uma por cidade × mineral com
+	# jazida), já no último estágio.
 	var geo: Object = null
 	if _ai:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
+		if geo.has_method("resolve_initial_mines"):
+			buildings = geo.resolve_initial_mines(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.

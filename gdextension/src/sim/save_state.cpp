@@ -576,6 +576,10 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		// sem persistir a marca, o load "ressuscita" a construção por um dia.
 		entry["bankrupt"] = building.bankrupt;
 		entry["depleted"] = building.depleted;
+		// D-086 (save v18): estágio de mina e a fatia de reserva que ele trabalha.
+		entry["stage"] = building.stage;
+		entry["stage_reserve_kt"] = building.stage_reserve_kt;
+		entry["stage_mined_kt"] = building.stage_mined_kt;
 		buildings.append(entry);
 	}
 	data["buildings"] = buildings;
@@ -631,6 +635,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["housing_owner"] = project.housing_owner;
 		entry["housing_units"] = project.housing_units;
 		entry["land_cost"] = project.land_cost;
+		// D-086 (save v18): obra de APROFUNDAMENTO de mina (-1 = obra normal).
+		entry["deepen_stage"] = project.deepen_stage;
 		Array materials = make_array();
 		Array material_qty = make_array();
 		Array material_delivered = make_array();
@@ -1780,14 +1786,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				city.pop.savings = total;
 			}
 		}
-		// B3 (save v18): região da cidade (estados inteiros). Save v17 e
+		// B3 (save v19): região da cidade (estados inteiros). Save v18 e
 		// anteriores migram no mundo real: `region_pop = max(0, population -
 		// simulation_population)` (dado já no save), coortes/estratos da nação e
 		// mix neutro (sem dado de urbanização). Nada é inventado.
 		{
 			Region region;
 			const Dictionary saved_region = entry.get("region", Dictionary());
-			if (version >= 18 && !saved_region.is_empty()) {
+			if (version >= 19 && !saved_region.is_empty()) {
 				region.ready = bool(saved_region.get("ready", true));
 				region.name = std::string(
 					String(saved_region.get("name", "")).utf8().get_data());
@@ -1853,7 +1859,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				read_region_strata("people", region.stratum_people);
 				read_region_strata("savings", region.stratum_savings);
 			} else if (ws.world_mode) {
-				// v17 → v18: interior = população regional exibida - população de
+				// v18 → v19: interior = população regional exibida - população de
 				// simulação (ambos já no save). Cenário sintético (world_mode
 				// false) continua sem região (ausência explícita).
 				region.ready = true;
@@ -2015,7 +2021,25 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		building.strategic = bool(entry.get("strategic", false));
 		building.loss_days = int(entry.get("loss_days", 0));
 		building.bankrupt = bool(entry.get("bankrupt", false));
-		building.depleted = bool(entry.get("depleted", false));
+		// D-086 (decisão do dono): o recurso nunca acaba — ignora o `depleted`
+		// salvo (que antes marcava a jazida esgotada) e força `false`. O formato
+		// e a versão (v18) NÃO mudam.
+		building.depleted = false;
+		// D-086 (save v18): estágio de mina. Save v17 e anteriores (sem `stage`)
+		// entra no ÚLTIMO estágio com o estágio esgotado: é a mina histórica que
+		// produz quase nada e só volta pagando o aprofundamento.
+		if (entry.has("stage")) {
+			building.stage = std::max(0, int(entry.get("stage", 0)));
+			building.stage_reserve_kt = std::max(0.0,
+				double(entry.get("stage_reserve_kt", 0.0)));
+			building.stage_mined_kt = std::clamp(
+				double(entry.get("stage_mined_kt", 0.0)), 0.0,
+				building.stage_reserve_kt);
+		} else {
+			building.stage = kMineInitialStage;
+			building.stage_reserve_kt = 0.0;
+			building.stage_mined_kt = 0.0;
+		}
 		ws.buildings.push_back(building);
 	}
 
@@ -2121,6 +2145,8 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		project.pause_reason = std::string(
 			String(entry.get("pause_reason", "")).utf8().get_data());
 		project.created_day = int(entry.get("created_day", 0));
+		// D-086: obra de aprofundamento de mina. Save v17 e anteriores sem a chave: -1.
+		project.deepen_stage = std::max(-1, int(entry.get("deepen_stage", -1)));
 		const Array materials = entry.get("materials", Array());
 		const Array material_qty = entry.get("material_qty", Array());
 		const Array material_delivered = entry.get("material_delivered", Array());

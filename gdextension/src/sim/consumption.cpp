@@ -159,10 +159,10 @@ void SimCore::phase_income() {
 		pop.stratum_disposable[kEducationLevels - 1] +=
 			std::max(0.0, pop.capital_income);
 
-		// F7 calibração — classes de consumo do dia (Gini declarado) ou espelho
-		// dos estratos de escolaridade. Continuam publicadas (contrato de
-		// status/UI e testes legados); a B2 NÃO consome mais por elas: o
-		// consumo, a poupança e o patrimônio são por QUINTIL.
+		// F7 calibração — classes de consumo do dia (Gini declarado ancorado no
+		// índice de renda; ver `refresh_income_classes`). Continuam publicadas
+		// (contrato de status/UI e testes legados); a B2 NÃO consome mais por
+		// elas: o consumo, a poupança e o patrimônio são por QUINTIL.
 		refresh_income_classes(city);
 		// B2: renda dos cinco quintis a partir dos MESMOS totais do dia
 		// (conservação por construção — ver strata.cpp).
