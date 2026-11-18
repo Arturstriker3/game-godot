@@ -140,6 +140,35 @@ public:
 	void update_sector_employment(City& city);
 	// F7 calibração: recalcula os estratos de renda a partir da escolaridade.
 	void refresh_strata(Pop& pop) const;
+	// ------------------------------------------------------------------
+	// B2 — ESTRATOS DE RENDA (sim/strata.cpp).
+	// ------------------------------------------------------------------
+	// Semeia os 5 quintis de uma cidade: população (20% cada), composição
+	// educacional, dispersão salarial, participação no capital, posse de
+	// moradia e patrimônio. `shares` (5) = quintis de renda observados (soma
+	// ~1); `nullptr` = proxy lognormal do Gini declarado. Idempotente.
+	void seed_strata(City& city, const double* shares);
+	// Recalcula a população dos quintis a partir da população da cidade
+	// (demografia muda o total; o mix de quintis é preservado).
+	void rescale_strata_population(Pop& pop) const;
+	// Reparte a renda do dia nos quintis (salário × composição educacional ×
+	// dispersão, capital/aluguel pelos donos, transferência per capita). Soma
+	// exatamente os totais da cidade (conservação por construção).
+	void refresh_strata_income(City& city);
+	// Mobilidade mensal determinística entre quintis adjacentes (A6).
+	void phase_strata();
+	// Patrimônio mensal: poupança + imóvel (posse × preço §19) + participações.
+	void update_strata_wealth(City& city);
+	// Gini de renda dos quintis (0..1); 0 se não há estrato semeado.
+	double strata_gini(const Pop& pop) const;
+	// Taxa de poupança efetiva do estrato hoje (quintil × ciclo de vida).
+	void refresh_saving_rates(City& city);
+	// Cobrança/credito de dinheiro das famílias (fases posteriores à renda:
+	// aluguel, importação, serviços) rateado pela poupança dos quintis — a
+	// soma dos estratos acompanha `pop.savings` por construção.
+	void charge_households(Pop& pop, double amount) const;
+	void credit_households(Pop& pop, double amount) const;
+
 	// F7: fecha o dia do mercado de trabalho de uma cidade.
 	double labor_day(City& city);
 	// F7 — custo diário da cesta completa de um nível de necessidade aos preços

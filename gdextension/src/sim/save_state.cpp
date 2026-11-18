@@ -188,6 +188,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["construction_revenue"] = city.construction_revenue;
 		entry["construction_revenue_pending"] = city.construction_revenue_pending;
 		entry["capital_income_next"] = city.capital_income_next;
+		// B2: aluguel pendente às famílias donas (pago no dia seguinte, como o
+		// capital). Sem persistir, o load perde a fatura e a conservação muda.
+		entry["rent_income_next"] = city.rent_income_next;
 		entry["gdp"] = city.gdp;
 		entry["external_income_index"] = city.external_income_index;
 		// TFP: 0 = derivada do índice de renda (não duplica o dado no save).
@@ -286,7 +289,17 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		pop["consumed"] = city.pop.consumed;
 		pop["need"] = city.pop.need;
 		pop["satisfaction"] = city.pop.satisfaction;
-		pop["savings"] = city.pop.savings;
+		// B2: quando os quintis existem, a poupança gravada é a SOMA deles
+		// (mesma ordem do load) — o round-trip sem tick fica bit-exato; o
+		// escalar é só um cache da soma.
+		double savings_saved = city.pop.savings;
+		if (city.pop.strata_ready) {
+			savings_saved = 0.0;
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				savings_saved += city.pop.stratum_savings[s];
+			}
+		}
+		pop["savings"] = savings_saved;
 		Array desired_by_category = make_array();
 		Array consumed_by_category = make_array();
 		for (int product = 0; product < static_cast<int>(ws.food_products.size()); ++product) {
@@ -385,6 +398,68 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			city.pop.stratum_income_level[1],
 			city.pop.stratum_income_level[2]};
 		pop["labor"] = labor;
+		// B2 (save v17): cinco quintis de renda. Aditivo — o save anterior
+		// migra semeando a proxy do Gini declarado (strata.cpp).
+		Dictionary strata = make_object();
+		Array strata_income_share = make_array();
+		Array strata_people = make_array();
+		Array strata_wage_factor = make_array();
+		Array strata_capital_share = make_array();
+		Array strata_savings = make_array();
+		Array strata_debt = make_array();
+		Array strata_equity = make_array();
+		Array strata_wealth = make_array();
+		Array strata_saving_rate = make_array();
+		Array strata_net_income = make_array();
+		Array strata_rent_paid = make_array();
+		Array strata_level = make_array();
+		Array strata_education = make_array();
+		Array strata_tenure = make_array();
+		Array strata_lifecycle = make_array();
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			strata_income_share.append(city.pop.strata_income_share[s]);
+			strata_people.append(city.pop.stratum_people[s]);
+			strata_wage_factor.append(city.pop.stratum_wage_factor[s]);
+			strata_capital_share.append(city.pop.stratum_capital_share[s]);
+			strata_savings.append(city.pop.stratum_savings[s]);
+			strata_debt.append(city.pop.stratum_debt[s]);
+			strata_equity.append(city.pop.stratum_equity[s]);
+			strata_wealth.append(city.pop.stratum_wealth[s]);
+			strata_saving_rate.append(city.pop.stratum_saving_rate[s]);
+			strata_net_income.append(city.pop.stratum_net_income[s]);
+			strata_rent_paid.append(city.pop.stratum_rent_paid[s]);
+			strata_level.append(city.pop.stratum_level[s]);
+			Array education_row = make_array();
+			Array tenure_row = make_array();
+			for (int e = 0; e < kEducationLevels; ++e) {
+				education_row.append(city.pop.stratum_education_mix[s][e]);
+			}
+			for (int kind = 0; kind < kStrataTenureCount; ++kind) {
+				tenure_row.append(city.pop.stratum_tenure[s][kind]);
+			}
+			strata_education.append(education_row);
+			strata_tenure.append(tenure_row);
+		}
+		for (int band = 0; band < 5; ++band) {
+			strata_lifecycle.append(city.pop.lifecycle_saving[band]);
+		}
+		strata["ready"] = city.pop.strata_ready;
+		strata["income_share"] = strata_income_share;
+		strata["people"] = strata_people;
+		strata["wage_factor"] = strata_wage_factor;
+		strata["capital_share"] = strata_capital_share;
+		strata["savings"] = strata_savings;
+		strata["debt"] = strata_debt;
+		strata["equity"] = strata_equity;
+		strata["wealth"] = strata_wealth;
+		strata["saving_rate"] = strata_saving_rate;
+		strata["net_income"] = strata_net_income;
+		strata["rent_paid"] = strata_rent_paid;
+		strata["level"] = strata_level;
+		strata["education"] = strata_education;
+		strata["tenure"] = strata_tenure;
+		strata["lifecycle"] = strata_lifecycle;
+		pop["strata"] = strata;
 		entry["pop"] = pop;
 		entry["government_goods_spend"] = city.government_goods_spend;
 		// §15 (save v12): emprego setorial (agro/indústria/serviços + informal).
@@ -1266,6 +1341,8 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		city.construction_revenue_pending =
 			double(entry.get("construction_revenue_pending", 0.0));
 		city.capital_income_next = double(entry.get("capital_income_next", 0.0));
+		city.rent_income_next = std::max(0.0,
+			double(entry.get("rent_income_next", 0.0)));
 		city.gdp = double(entry.get("gdp", 0.0));
 		// F8: serviços (save v10). Sem o bloco (v9 e anteriores), os mercados
 		// ficam no preço-âncora do catálogo e os negócios são semeados no fim
@@ -1581,6 +1658,75 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					city.pop.dependents = std::max(0.0,
 						city.pop.population - city.pop.labor_force);
 				}
+			}
+		}
+		// B2 (save v17): cinco quintis de renda. Save v16 e anteriores não têm
+		// o bloco: a semeadura acontece no FIM do load (depois do bloco
+		// `urban`, para a posse de moradia já estar carregada) com a proxy do
+		// Gini declarado. A poupança escalar existente é repartida pela renda.
+		const Dictionary saved_strata = pop.get("strata", Dictionary());
+		if (version >= 17 && !saved_strata.is_empty()) {
+			const auto read_strata = [&saved_strata](const char* key,
+					double* out) {
+				const Array values = saved_strata.get(key, Array());
+				for (int s = 0; s < kIncomeStrata; ++s) {
+					if (s < values.size()) {
+						out[s] = std::max(0.0, double(values[s]));
+					}
+				}
+			};
+			read_strata("income_share", city.pop.strata_income_share);
+			read_strata("people", city.pop.stratum_people);
+			read_strata("wage_factor", city.pop.stratum_wage_factor);
+			read_strata("capital_share", city.pop.stratum_capital_share);
+			read_strata("savings", city.pop.stratum_savings);
+			read_strata("debt", city.pop.stratum_debt);
+			read_strata("equity", city.pop.stratum_equity);
+			read_strata("wealth", city.pop.stratum_wealth);
+			read_strata("saving_rate", city.pop.stratum_saving_rate);
+			read_strata("net_income", city.pop.stratum_net_income);
+			read_strata("rent_paid", city.pop.stratum_rent_paid);
+			const Array levels = saved_strata.get("level", Array());
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				city.pop.stratum_level[s] = s < levels.size()
+					? std::clamp(int(levels[s]), 0, kIncomeLevels - 1) : 0;
+			}
+			const Array education = saved_strata.get("education", Array());
+			for (int s = 0; s < kIncomeStrata && s < education.size(); ++s) {
+				if (education[s].get_type() != Variant::ARRAY) {
+					continue;
+				}
+				const Array row = education[s];
+				for (int e = 0; e < kEducationLevels && e < row.size(); ++e) {
+					city.pop.stratum_education_mix[s][e] =
+						std::max(0.0, double(row[e]));
+				}
+			}
+			const Array tenure = saved_strata.get("tenure", Array());
+			for (int s = 0; s < kIncomeStrata && s < tenure.size(); ++s) {
+				if (tenure[s].get_type() != Variant::ARRAY) {
+					continue;
+				}
+				const Array row = tenure[s];
+				for (int kind = 0; kind < kStrataTenureCount
+						&& kind < row.size(); ++kind) {
+					city.pop.stratum_tenure[s][kind] =
+						std::max(0.0, double(row[kind]));
+				}
+			}
+			const Array lifecycle = saved_strata.get("lifecycle", Array());
+			for (int band = 0; band < 5 && band < lifecycle.size(); ++band) {
+				city.pop.lifecycle_saving[band] =
+					std::max(0.0, double(lifecycle[band]));
+			}
+			city.pop.strata_ready = bool(saved_strata.get("ready", true));
+			// O escalar da cidade É a soma dos quintis (round-trip exato).
+			if (city.pop.strata_ready) {
+				double total = 0.0;
+				for (int s = 0; s < kIncomeStrata; ++s) {
+					total += city.pop.stratum_savings[s];
+				}
+				city.pop.savings = total;
 			}
 		}
 		city.government_goods_spend = double(entry.get("government_goods_spend", 0.0));
@@ -2357,6 +2503,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					ws.construction_projects.push_back(std::move(project));
 				}
 			}
+		}
+	}
+	// B2: cidade que não trouxe o bloco `strata` (save v16 ou cenário
+	// sintético) semeia agora, DEPOIS do bloco `urban` (posse de moradia já
+	// carregada). A poupança escalar existente é repartida pela renda.
+	for (City& city : ws.cities) {
+		if (!city.pop.strata_ready) {
+			core.seed_strata(city, nullptr);
 		}
 	}
 }

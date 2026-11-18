@@ -169,7 +169,7 @@ func _test_v11_old_save_compat() -> void:
 	sim.tick_day()
 	var full_save: Dictionary = sim.to_dict()
 
-	if int(full_save.get("version", 0)) != 16:
+	if int(full_save.get("version", 0)) != 17:
 		_fail("compat: esperava schema v16, veio %s" % str(full_save.get("version")))
 		return
 
