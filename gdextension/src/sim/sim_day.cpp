@@ -70,6 +70,14 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// 5b. §19 W3: mercado de moradia (aluguel, construção, aperto).
 	core.phase_housing();
 
+	// 5c. B4: migração (êxodo rural + cidade → cidade na mesma nação). Roda
+	// DEPOIS da moradia: lê a vaga (vacância) e o sinal de aperto do fechamento
+	// do dia, antes de serviços/comércio.
+	{
+		OGS_SIM_ZONE(kPhaseMigration);
+		core.phase_migration();
+	}
+
 	// F8: serviços.
 	core.phase_services();
 
