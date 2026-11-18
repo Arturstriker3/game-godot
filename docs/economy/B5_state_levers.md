@@ -123,7 +123,8 @@ cidade por cooldown. 365 d: **346 concessões** (o comando, o royalty e o status
   | `demo_365_noai.json` | `d189fe63…` → `98bbfde8…` (status `14d2c387…` inalterado) |
   Mudaram **por desenho** (B5 muda resultado; o demo AGRIA/PORTUS só muda o save, não o status).
 - **CLI×Godot 10 d**: `save` **byte-idêntico** (33.522.730 bytes, `--ai=1`, sem urbano).
-- **Bench 3×60 d**: ver §8.1 (release de medição).
+- **Bench 3×60 d** (CLI release, snapshot real): 21,74 / 22,57 / 21,88 dias/s (média **22,06**,
+  variação **±1,9%**), `ms_dia` 44,3–46,0; `docs/economy/perf/b5_bench.json`.
 
 **Pendências:**
 - Nível inicial de infra por dado real de cobertura (eletricidade/água) — geografia futura.

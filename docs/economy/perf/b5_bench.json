@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "phase": "B5",
+    "tool": "opengs_sim_cli (release, opengs_sim estático)",
+    "days": 60,
+    "ai": true,
+    "urban": false,
+    "cities": 849,
+    "buildings": 3222,
+    "money_total": 6523551982.90,
+    "note": "3 rodadas do CLI release sobre o snapshot do mundo real (geografia aplicada). days/s = 1000 / ms_dia."
+  },
+  "runs": [
+    {"ms_total": 2761.5, "ms_dia": 46.0, "days_per_s": 21.74},
+    {"ms_total": 2658.3, "ms_dia": 44.3, "days_per_s": 22.57},
+    {"ms_total": 2742.7, "ms_dia": 45.7, "days_per_s": 21.88}
+  ],
+  "mean_days_per_s": 22.06,
+  "min_days_per_s": 21.74,
+  "max_days_per_s": 22.57,
+  "variation_pct": 1.9
+}
