@@ -1,7 +1,7 @@
 ---
 description: Especialista sênior para os problemas mais difíceis — arquitetura profunda, refatorações arriscadas, bugs complexos e decisões de design de alto impacto. Não é padrão: invocar apenas explicitamente.
 mode: all
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-flash
 steps: 120
 ---
 

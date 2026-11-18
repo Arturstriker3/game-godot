@@ -1,0 +1,674 @@
+# Lista de referência de marcas reais de banco — uso EXCLUSIVO dos validadores.
+#
+# NÃO é dado de jogo. `data/definitions/economy/banks.json` guarda nomes
+# FICTÍCIOS (BusinessNameGenerator, setor finance); esta lista existe apenas para
+# provar que nenhum nome real sobrou no dado, nos títulos de fonte ou nos textos
+# de i18n. Os validadores normalizam (minúsculas, sem acento, pontuação -> espaço)
+# e procuram com fronteira de palavra; `url` nunca é varrida.
+#
+# Formato: `#` inicia comentário; duas seções; uma entrada por linha — o nome
+# comercial como aparece na fonte e, quando houver, a forma sem o sufixo
+# societário (`S.A.`, `Ltd.`, `AG`...). O padrão genérico
+# "Banco Central de <país>" / "Central Bank of <país>" é PERMITIDO e não entra
+# nesta lista.
+#
+# [commercial] banco privado, público ou filial estrangeira (nome, razão social
+#              ou sigla usada como marca).
+# [central]    banco central cujo nome próprio (e sigla) não pode reaparecer.
+[commercial]
+1st National Bank St. Lucia
+1st National Bank St. Lucia Limited
+ABN AMRO
+Absa
+Access Bank
+Access Bank Plc
+ACLEDA Bank
+ACLEDA Bank Plc.
+Afghanistan International Bank
+Afriland First Bank
+Afriland First Bank S.A.
+Agricultural Bank of China
+AIK Banka a.d. Beograd
+Akciju sabiedrība "Rietumu Banka"
+Al Rajhi Bank
+Al Rajhi Banking and Investment Corporation
+Amonatbank
+Antigua Commercial Bank
+Antigua Commercial Bank Limited
+Arab Bank
+Arab Bank plc
+Ardshinbank
+Ardshinbank CJSC
+AS LHV Pank
+AS "Rietumu Banka"
+ASA Banka
+ASA Banka d.d. Sarajevo
+Attijariwafa Bank
+Attijariwafa Bank S.A.
+Awash Bank
+Awash Bank S.C.
+Baiduri Bank
+Baiduri Bank Berhad
+Banca Transilvania
+Banca Transilvania S.A.
+Banco Agrario de Colombia
+Banco Agrario de Colombia, S.A.
+Banco Angolano de Investimentos
+Banco Angolano de Investimentos, S.A.
+Banco Bilbao Vizcaya Argentaria
+Banco Bilbao Vizcaya Argentaria, S.A.
+Banco Bilbao Vizcaya Argentaria, S.A. (BBVA)
+Banco Comercial Português
+Banco Comercial Português, S.A.
+Banco Comercial Português, S.A. (Millennium bcp)
+Banco Continental
+Banco Continental, S.A.
+Banco de Crédito del Perú
+Banco de Crédito del Perú, S.A.
+Banco de Crédito e Inversiones
+Banco de Desarrollo Rural
+Banco de Desarrollo Rural, S.A.
+Banco de Galicia y Buenos Aires
+Banco de Galicia y Buenos Aires S.A.U.
+Banco de la Nación
+Banco de la Nación Argentina
+Banco de la República Oriental del Uruguay
+Banco de Poupança e Crédito
+Banco de Poupança e Crédito, S.A.
+Banco de Reservas de la República Dominicana
+Banco de Venezuela, S.A. Banco Universal
+Banco del Estado de Chile
+Banco del Pacífico
+Banco del Pacífico, S.A.
+Banco do Brasil
+Banco do Brasil, S.A.
+Banco Ficohsa
+Banco Financiera Comercial Hondureña
+Banco Financiera Comercial Hondureña, S.A.
+Banco Galicia
+Banco General
+Banco General, S.A.
+Banco Industrial
+Banco Industrial, S.A.
+Banco Lafise Bancentro
+Banco Lafise Bancentro, S.A.
+Banco Mercantil del Norte, S.A., Institución de Banca Múltiple, Grupo Financiero Banorte
+Banco Mercantil Santa Cruz
+Banco Mercantil Santa Cruz, S.A.
+Banco Nacional de Comércio de Timor-Leste
+Banco Nacional de Costa Rica
+Banco Nacional de Cuba
+Banco Nacional de Desarrollo Agrícola
+Banco Nacional de Fomento
+Banco Nacional de Guinea Ecuatorial
+Banco Nacional de Guinea Ecuatorial (BANGE)
+Banco Nacional de Investimento
+Banco Nacional de Investimento, S.A.
+Banco Nacional de Panamá
+Banco Pichincha
+Banco Pichincha, C.A.
+Banco Popular Dominicano
+Banco Popular Dominicano, S.A. - Banco Múltiple
+Banco Santander
+Banco Santander, S.A.
+Banco Unión
+Banco Unión, S.A.
+Bancolombia
+Bancolombia, S.A.
+Banesco Banco Universal
+Banesco Banco Universal, C.A.
+BANGE
+Bangkok Bank
+Bangkok Bank Public Company Limited
+Bank Audi
+Bank Audi S.A.L.
+Bank Central Asia
+Bank Eskhata
+Bank Islam Brunei Darussalam
+Bank Islam Brunei Darussalam Berhad
+Bank Leumi
+Bank Leumi le-Israel B.M.
+Bank Melli Iran
+Bank Muscat
+Bank Muscat SAOG
+Bank of America
+Bank of Bahrain and Kuwait
+Bank of Bahrain and Kuwait B.S.C.
+Bank of Bhutan
+Bank of Bhutan Limited
+Bank of Ceylon
+Bank of China
+Bank of Commerce and Development
+Bank of Commerce and Development (BCD)
+Bank of Communications
+Bank of Cyprus
+Bank of Cyprus Public Company
+Bank of Cyprus Public Company Ltd
+Bank of Georgia
+Bank of Georgia JSC
+Bank of Industry
+Bank of Industry Limited
+Bank of Ireland
+Bank of Ireland Group plc
+Bank of Khartoum
+Bank of Kigali
+Bank of Kigali Plc
+Bank of Palestine
+Bank of Palestine P.L.C.
+Bank of Saint Lucia
+Bank of Saint Lucia Limited
+Bank of Somaliland
+Bank of Taiwan
+Bank of The Bahamas
+Bank of The Bahamas Limited
+Bank of Valletta
+Bank of Valletta p.l.c.
+Bank Pasargad
+Bank Pasargad Public Joint Stock Company
+Bank Rakyat Indonesia
+Bank Simpanan Nasional
+Bank Windhoek
+Bank Windhoek Limited
+Banka Poštanska štedionica a.d. Beograd
+Banorte
+Banque Commerciale du Burkina
+Banque Commerciale du Burkina (BCB)
+Banque Commerciale du Chari
+Banque Commerciale du Chari (BCC)
+Banque Commerciale du Niger
+Banque Commerciale du Niger (BCN)
+Banque de l'Habitat du Mali
+Banque de l'Habitat du Mali (BHM)
+Banque et Caisse d'Épargne de l'État, Luxembourg
+Banque Extérieure d'Algérie
+Banque Extérieure d'Algérie (BEA)
+Banque Internationale Arabe de Tunisie
+Banque Internationale Arabe de Tunisie (BIAT)
+Banque Internationale du Cameroun pour l'Épargne et le Crédit
+Banque Internationale du Cameroun pour l'Épargne et le Crédit (BICEC)
+Banque Internationale pour l'Industrie et le Commerce
+Banque Internationale pour l'Industrie et le Commerce (BIIC)
+Banque Nationale d'Investissement
+Banque Nationale d'Investissement (BNI)
+Banque Nationale de Crédit
+Banque Nationale de Mauritanie
+Banque Nationale de Mauritanie (BNM)
+Banque Nationale pour le Développement Économique
+Banque Nationale pour le Développement Économique (BNDE)
+Banque pour le Commerce Extérieur Lao
+Banque pour le Commerce Extérieur Lao Public
+Barclays
+BBS Bank
+BBS Bank Limited
+BBVA
+BCB
+BCC
+BCD
+BCN
+BDO Unibank
+BDO Unibank, Inc.
+BEA
+Belfius Bank
+Belfius Bank SA/NV
+Belize Bank
+Belize Bank Limited
+BGFIBank
+BGFIBank Gabon
+BHM
+Bhutan National Bank
+Bhutan National Bank Limited
+BIAT
+BICEC
+BIDV
+BIIC
+BMO
+BNCTL
+BNCTL, S.A.
+BNDE
+BNI
+BNI Madagascar
+BNI Madagascar S.A.
+BNM
+BNP Paribas
+BNP Paribas S.A.
+Botswana Savings Bank
+Bradesco
+British Business Bank
+British Business Bank plc
+BSP Financial Group
+BSP Financial Group Limited
+BTG Pactual
+Caisse d'Épargne de Madagascar
+Caisse d'Épargne de Madagascar (CEM)
+Caisse des Dépôts et Consignations
+Caixa Econômica Federal
+Caixa Geral de Depósitos
+Caixa Geral de Depósitos, S.A.
+CaixaBank
+Cassa Depositi e Prestiti
+Cassa Depositi e Prestiti S.p.A.
+CEC Bank
+CEC Bank S.A.
+CEM
+Centenary Bank
+Centenary Rural Development Bank
+Centenary Rural Development Bank Limited
+China Construction Bank
+China Minsheng Bank
+China Minsheng Bank Corp
+China Minsheng Bank Corp., Ltd.
+CIBC
+Citibank
+Citibank, N.A.
+Citigroup
+Commercial Bank of Ceylon
+Commercial Bank of Ceylon PLC
+Commercial Bank of Eritrea
+Commercial Bank of Ethiopia
+Commercial International Bank
+Commercial International Bank (Egypt)
+Commercial International Bank (Egypt) S.A.E.
+Commerzbank
+Commonwealth Bank
+Commonwealth Bank Limited
+Commonwealth Bank of Australia
+Consolidated Bank of Kenya
+Consolidated Bank of Kenya Limited
+Coris Bank International
+Coris Bank International S.A.
+CRDB Bank
+CRDB Bank Plc
+Credins Bank
+Credins Bank sh.a.
+Crédit Agricole
+Crédit Agricole du Maroc
+Credit Suisse
+CTBC Bank
+CTBC Bank Co
+CTBC Bank Co., Ltd.
+Dahabshiil Bank
+Dahabshiil Bank International
+Danske Bank
+Danske Bank A/S
+DBS
+DBS Bank
+DBS Bank Ltd.
+De Surinaamsche Bank
+De Surinaamsche Bank N.V.
+Deutsche Bank
+Deutsche Bank AG
+Development Bank of Japan
+Development Bank of Japan Inc.
+Development Bank of Namibia
+Development Bank of Namibia Limited
+Development Bank of North Macedonia AD Skopje
+Development Bank of Solomon Islands
+Development Bank of Southern Africa
+Development Bank of Southern Africa Limited
+DNB Bank
+DNB Bank ASA
+Dubai Islamic Bank
+Ecobank
+Ecobank Transnational Incorporated
+El Nilein Bank
+Eldik Bank
+Eldik Bank OJSC
+Erste Group Bank
+Erste Group Bank AG
+Eswatini Bank
+Eurobank
+Eurobank S.A.
+FBC Bank
+FBC Bank Limited
+Fidelity Bank Ghana
+Fidelity Bank Ghana Limited
+Fiji Development Bank
+First Abu Dhabi Bank
+First Abu Dhabi Bank PJSC
+First Citizens Bank
+First Citizens Bank Limited
+FirstRand
+FUIB
+GCB Bank
+GCB Bank PLC
+Global IME Bank
+Global IME Bank Limited
+Goldman Sachs
+Guaranty Trust Bank
+Guaranty Trust Bank Limited
+Guyana Bank for Trade and Industry
+Guyana Bank for Trade and Industry Limited
+Habib Bank
+Habib Bank Limited
+Halyk Bank
+Halyk Savings Bank of Kazakhstan
+Halyk Savings Bank of Kazakhstan JSC
+Hamkorbank
+Hamkorbank Joint-Stock Commercial Bank
+HDFC Bank
+HDFC Bank Limited
+Heartland Bank
+Heartland Bank Limited
+Housing Finance Bank
+Housing Finance Bank Limited
+Hrvatska poštanska banka
+Hrvatska poštanska banka d.d.
+HSBC
+HSBC Bank
+HSBC Bank plc
+HSBC Holdings
+HSBC Holdings plc
+ICBC
+Industrial and Commercial Bank of China
+Industrial and Commercial Bank of China Limited
+Industrial Bank of Korea
+Industrial Bank of Kuwait
+Industrial Bank of Kuwait K.S.C.
+ING
+ING Bank
+ING Bank N.V.
+Instituto de Crédito Oficial
+Interbank Burundi
+Interbank Burundi S.A.
+International Bank (Liberia)
+International Bank (Liberia) Limited
+International Bank of Azerbaijan
+International Bank of Azerbaijan OJSC
+Intesa Sanpaolo
+Intesa Sanpaolo S.p.A.
+Investiciono-razvojna banka Republike Srpske
+Investiciono-razvojna banka Republike Srpske a.d. Banja Luka
+Islami Bank Bangladesh
+Islami Bank Bangladesh PLC
+Íslandsbanki
+Íslandsbanki hf.
+Itaú
+Itaú Unibanco
+Itaú Unibanco, S.A.
+Ivory Bank
+Ivory Bank Limited
+Joint Stock Commercial Bank for Investment and Development of Vietnam
+Joint-Stock Company National Bank of Uzbekistan
+JPMorgan Chase
+JPMorgan Chase Bank, N.A.
+JPMorgan Chase Bank, National Association
+JPMorgan Chase & Co.
+Jumhouria Bank
+Kanbawza Bank
+Kanbawza Bank Limited
+Kapital Bank
+Kapital Bank Open Joint Stock Company
+KB Kookmin Bank
+KB Kookmin Bank Co
+KB Kookmin Bank Co., Ltd.
+KBC Bank
+KBC Bank NV
+KCB Bank Kenya
+KCB Bank Kenya Limited
+KentBank
+KentBank d.d.
+KfW
+Khan Bank
+Khan Bank LLC
+Kiwibank
+Kiwibank Limited
+Komercijalna banka AD Skopje
+Kommunalbanken
+Kommunalbanken AS
+Kreditanstalt für Wiederaufbau
+Krung Thai Bank
+Krung Thai Bank Public Company Limited
+Kuwait Finance House
+Kuwait Finance House K.S.C.P.
+Land Bank of the Philippines
+Landsbankinn
+Landsbankinn hf.
+LBDI
+Lesotho PostBank
+Lesotho PostBank Limited
+LHV Pank
+Liberian Bank for Development and Investment
+Liberian Bank for Development and Investment (LBDI)
+Lloyds
+Magyar Fejlesztési Bank
+Magyar Fejlesztési Bank Zrt.
+Malayan Banking Berhad (Maybank)
+Mashreqbank
+Mashreqbank PSC
+MBANK
+Mega Bank (Gambia)
+Mega Bank (Gambia) Limited
+Mizuho
+Moneta Money Bank
+Moneta Money Bank, a.s.
+Morgan Stanley
+MUFG
+MUFG Bank
+MUFG Bank, Ltd.
+Myanma Economic Bank
+Národní rozvojová banka
+Národní rozvojová banka, a.s.
+National Bank of Bahrain
+National Bank of Bahrain B.S.C.
+National Bank of Belize
+National Bank of Belize Limited
+National Bank of Canada
+National Bank of Egypt
+National Bank of Kuwait
+National Bank of Kuwait S.A.K.P.
+National Bank of Malawi
+National Bank of Malawi plc
+National Bank of Pakistan
+National Bank of Uzbekistan
+National Commercial Bank Jamaica
+National Commercial Bank Jamaica Limited
+National Commercial Bank of Dominica
+National Commercial Bank of Dominica Limited
+National Development Bank
+National Development Bank Limited
+National Savings and Credit Bank
+National Savings and Credit Bank (NATSAVE)
+NATSAVE
+NatWest
+Nedbank
+NLB
+NLB d.d.
+Nordea Bank Abp
+Nova Ljubljanska banka d.d., Ljubljana
+NSIA Banque Côte d'Ivoire
+NSIA Banque Côte d'Ivoire S.A.
+Nubank
+OCBC
+Oman Housing Bank
+Oman Housing Bank SAOC
+OP Financial Group
+OP Osuuskunta
+Open Joint Stock Company Bank Eskhata
+Orabank Togo
+Otbasy Bank
+Otbasy Bank Housing Construction Savings Bank
+Otbasy Bank Housing Construction Savings Bank JSC
+OTP Bank
+OTP Bank Nyrt.
+People's Own Savings Bank
+People's Own Savings Bank (POSB)
+Phongsavanh Bank
+Phongsavanh Bank Ltd
+POSB
+Powszechna Kasa Oszczędności Bank Polski
+Powszechna Kasa Oszczędności Bank Polski S.A.
+Powszechna Kasa Oszczędności Bank Polski Spółka Akcyjna
+Premier Bank
+Premier Bank Limited
+Prima banka Slovensko
+Prima banka Slovensko, a.s.
+PT Bank Central Asia
+PT Bank Central Asia Tbk
+PT Bank Rakyat Indonesia (Persero)
+PT Bank Rakyat Indonesia (Persero) Tbk
+Public Bank
+Public Bank Berhad
+Punjab National Bank
+Qatar Islamic Bank
+Qatar Islamic Bank (Q.P.S.C.)
+Qatar National Bank
+Qatar National Bank (Q.P.S.C.)
+Rabobank
+Rafidain Bank
+Raiffeisen Bank International
+Raiffeisen Bank International AG
+Rastriya Banijya Bank
+Rastriya Banijya Bank Limited
+Rawbank
+Rawbank S.A.
+RBC
+Republic Bank
+Republic Bank Limited
+Rietumu Banka
+Rokel Commercial Bank
+Rokel Commercial Bank (Sierra Leone)
+Rokel Commercial Bank (Sierra Leone) Limited
+Royal Bank of Canada
+Rural Development Bank
+Rwanda Development Bank
+Rwanda Development Bank Limited
+Santander
+Sberbank
+Scotiabank
+Shinhan Bank
+Šiaulių bankas
+Šiaulių bankas AB
+SID banka
+SID banka d.d.
+Sierra Leone Commercial Bank
+Sierra Leone Commercial Bank Limited
+Slovenska izvozna in razvojna banka
+Slovenska izvozna in razvojna banka, d.d.
+Slovenská záručná a rozvojová banka
+Slovenská záručná a rozvojová banka, a.s.
+Société Générale
+Société Générale Haïtienne de Banque
+Société Générale Haïtienne de Banque, S.A.
+Société Nigérienne de Banque
+Société Nigérienne de Banque (SONIBANK)
+Société Tunisienne de Banque
+Société Tunisienne de Banque, S.A.
+Sogebank
+Sonali Bank
+Sonali Bank PLC
+SONIBANK
+Spuerkeess (Banque et Caisse d'Épargne de l'État)
+St. Kitts-Nevis-Anguilla National Bank
+St. Kitts-Nevis-Anguilla National Bank Limited
+Standard Bank
+Standard Bank Group
+Standard Bank Group Limited
+Standard Bank of South Africa
+Standard Bank of South Africa Limited
+Standard Chartered
+Standard Chartered Bank
+State Bank
+State Bank LLC
+State Bank of India
+State Bank of Mongolia
+State Savings Bank of the Republic of Tajikistan Amonatbank
+Strategic Banking Corporation of Ireland
+Sumitomo Mitsui
+Svenska Handelsbanken
+Svenska Handelsbanken AB
+Swedbank
+Swedbank AB
+Tanzania Postal Bank
+Tanzania Postal Bank (TPB Bank Plc)
+TD Bank
+Techcombank
+The Bank of Nova Scotia
+The Saudi National Bank
+Trust Bank
+Trust Bank Limited
+Türkiye Cumhuriyeti Ziraat Bankası
+Türkiye Cumhuriyeti Ziraat Bankası A.Ş.
+Türkiye İş Bankası
+Türkiye İş Bankası A.Ş.
+UBS
+UBS Group
+UBS Group AG
+UniCredit
+UniCredit S.p.A.
+UOB
+Vietnam Technological and Commercial Joint Stock Bank
+VTB
+VTB Bank (PJSC)
+Wells Fargo
+Zapad banka AD Podgorica
+Ziraat Bankası
+Zürcher Kantonalbank
+Εθνική Τράπεζα της Ελλάδος
+Εθνική Τράπεζα της Ελλάδος Α.Ε.
+Ελληνική Αναπτυξιακή Τράπεζα
+Ελληνική Αναπτυξιακή Τράπεζα Α.Ε.
+ААТ «АСБ Беларусбанк»
+Акціонерне товариство Комерційний банк «ПриватБанк»
+Акціонерне товариство «Перший Український Міжнародний Банк»
+Альфа-Банк (Alfa-Bank)
+АО «Альфа-Банк»
+АСБ Беларусбанк
+АТ КБ «ПриватБанк» (PrivatBank)
+АТ «ПУМБ» (FUIB)
+Банка Поштанска штедионица а.д. Београд
+Българска банка за развитие
+Българска банка за развитие АД
+ЗАО «МТБанк»
+Комерцијална банка АД Скопје
+МТБанк
+ПАО Сбербанк
+Публичное акционерное общество «Сбербанк России»
+Първа инвестиционна банка (Fibank)
+Първа инвестиционна банка АД
+Сбербанк (Sberbank)
+
+[central]
+# O rótulo genérico "Banco Central de <país>" / "Central Bank of <país>" (e as
+# variantes "Banco Central da/del/de la/dos/das …") pode coincidir com o nome
+# próprio da autoridade monetária real. Ele é aceito por política e por isso
+# NÃO é exigido aqui: esta seção lista só o nome próprio (e a sigla) que não
+# pode reaparecer no dado. O validador rejeita entrada desta seção que seja
+# apenas o rótulo genérico.
+Banca Centrale Europea
+Banca d'Italia
+Banco Central do Brasil
+Banco Central Europeu
+Banco de España
+Banco de México
+Banco de Portugal
+Bangko Sentral ng Pilipinas
+Bank Ċentrali Ewropew
+Bank Indonesia
+Bank of England
+Banka Qendrore e Republikës së Kosovës
+Banque Centrale des États de l'Afrique de l'Ouest
+Banque centrale européenne
+Banque de France
+Banque des États de l'Afrique Centrale
+BCE
+BCEAO
+BEAC
+Centralna banka Crne Gore
+De Nederlandsche Bank
+Deutsche Bundesbank
+Eastern Caribbean Central Bank
+ECB
+ECCB
+Eiropas Centrālā banka
+European Central Bank
+Europese Centrale Bank
+Europos Centrinis Bankas
+Európska centrálna banka
+Evropska centralna banka
+Federal Reserve System
+Palestine Monetary Authority
+People's Bank of China
+Reserve Bank of Australia
+Reserve Bank of India
+South African Reserve Bank
+Swiss National Bank

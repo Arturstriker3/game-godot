@@ -200,6 +200,17 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 - **Requisitos:** conservação, save novo, testes (safra chega na época, estoque atravessa a entressafra,
   preço sazonal), goldens, CLI×Godot, 365 d (comida por país), bench.
 
+## Formação de preço (diretriz do dono, 2026-11-18)
+- **Livre mercado com base heterodoxa realista**, sem teto fixo de preço:
+  - **Custo (piso):** trabalho + insumos + capital/energia por unidade — valor do trabalho e da cadeia.
+  - **Markup da firma** que se ajusta a estoque, ocupação e concorrência (precificação por custo + margem).
+  - **Demanda por preferência:** hierarquia de necessidades (tipo pirâmide de Maslow — básico → vida →
+    luxo, já presente nas classes de consumo B2), gosto/vontade por estrato e região, elasticidade-renda.
+  - **Oferta e demanda efetiva** como pressão final (não demanda desejada a plena capacidade).
+- **Âncora inicial leve:** preços do dia 0 ancorados em preços reais (como o câmbio), depois livres.
+- **Distorções do governo** (macro político): impostos, subsídios, controle de preço, tarifa, cota,
+  estoque regulador — geram fila, mercado negro e custo fiscal.
+
 ## Ordem combinada com o dono (2026-11-18)
 1. **Terminar a base econômica:** B6 (patrimônio da região) e B7 (informalidade/serviços informais/
    mortalidade/insatisfação) → **Parte G (agricultura sazonal)** → Parte C (balanço, BC por moeda com
@@ -240,6 +251,11 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
   - **Reservas** de cada BC: ouro + moeda(s) de reserva; a **moeda de reserva/comércio global** começa no
     dólar (tende a ser a da maior economia) — mudança de hegemonia (outro país assumir) fica como **evento
     futuro** (ONU/diplomacia).
+  - **Ouro é mercadoria física:** reserva de ouro do BC é estoque comprado no mercado mundial (ou de mina
+    própria) — compete com joalheria/indústria e mexe no preço; não some, só muda de dono. Reservas iniciais
+    por país com dado real e fonte (ex. World Gold Council). No padrão ouro/Bretton Woods, déficit
+    comercial drena ouro e força contração; país com mina de ouro ganha alavanca. Hoje o ouro está entre
+    os minerais de nicho com teto fixo (D-083) — revisar quando entrar.
 - **Emissão de moeda (pedido do dono, 2026-11-18):**
   1. **Base monetária (M0)** criada pelo BC ao comprar títulos públicos, emprestar aos bancos ou financiar
      o Tesouro direto (monetização do déficit) — registrada como passivo do BC (invariante da C1).

@@ -1,7 +1,7 @@
 ---
 description: Coordena tarefas do OpenGS, escolhe o especialista, define escopo e critérios de aceite e valida a entrega sem editar arquivos.
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-flash
 steps: 20
 permissions:
   - action: edit
