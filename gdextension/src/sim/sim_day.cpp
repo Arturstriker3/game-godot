@@ -63,7 +63,7 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// da comida urbana (a região compra o que sobra da prateleira da cidade) e
 	// antes da moradia/serviços/comércio.
 	{
-		OGS_SIM_ZONE(kPhaseIncome);
+		OGS_SIM_ZONE(kPhaseRegion);
 		core.phase_region();
 	}
 

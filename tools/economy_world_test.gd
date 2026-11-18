@@ -402,7 +402,7 @@ func _test_world() -> void:
 			# de falências de construções (28 no caso da F9), como o sweep.
 			var meta: Dictionary = (baseline_data as Dictionary).get("meta", {})
 			var baseline_bk: int = 0
-			if typeof(meta.get("bankruptcy_limit", 0)) == TYPE_INT:
+			if meta.has("bankruptcy_limit"):
 				baseline_bk = int(meta["bankruptcy_limit"]) - BANKRUPTCY_TOLERANCE
 			elif typeof(meta.get("bankruptcies", 0)) == TYPE_INT:
 				baseline_bk = int(meta["bankruptcies"])

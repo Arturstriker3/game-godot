@@ -1012,6 +1012,9 @@ struct Region {
 		// retrato/fase da IA. Só medição — nenhum efeito no jogo.
 		kPhaseHousing, kPhaseLandMonth, kPhaseFleetDay, kPhaseServicesDecisions,
 		kPhaseAi, kPhaseAiView,
+		// B3: economia da região (estados inteiros) — consumo diário, salário
+		// semanal e demografia mensal do interior.
+		kPhaseRegion,
 		kPhaseCount
 	};
 

@@ -209,6 +209,41 @@ func _run() -> void:
 	_check_region_consumption()
 	_check_region_inert()
 	_check_determinism()
+	# Etapa 3: crescimento (população exibida acompanha B1 + demografia da região).
+	_check_region_growth()
+
+
+## (a)/(b) crescimento: o total exibido cresce com a B1 (urbano) e com a
+## demografia mensal do interior; o invariante urbano+interior == total se mantém.
+func _check_region_growth() -> void:
+	var sim := _make_world()
+	var sums0 := _population_sums(sim)
+	for day in 35:
+		sim.tick_day()
+	var sums := _population_sums(sim)
+	if sums["region"] <= sums0["region"]:
+		_fail("crescimento: interior não cresceu (%f <= %f)" % [
+			sums["region"], sums0["region"]])
+	if sums["urban"] <= sums0["urban"]:
+		_fail("crescimento: urbano não cresceu (%f <= %f)" % [
+			sums["urban"], sums0["urban"]])
+	if absf(sums["total"] - (sums["urban"] + sums["region"])) > 1.0:
+		_fail("crescimento: total %f != urbano+interior %f" % [
+			sums["total"], sums["urban"] + sums["region"]])
+	print("[b3] crescimento: interior %.0f→%.0f, urbano %.0f→%.0f (35d)." % [
+		sums0["region"], sums["region"], sums0["urban"], sums["urban"]])
+
+
+## Soma global de urbano, interior e total (do save) para o teste de crescimento.
+func _population_sums(sim: Object) -> Dictionary:
+	var urban := 0.0
+	var region := 0.0
+	var total := 0.0
+	for city: Dictionary in sim.to_dict().get("cities", []):
+		urban += float(city.get("sim_population", 0.0))
+		region += float(city.get("region", {}).get("region_pop", 0.0))
+		total += float(city.get("population", 0.0))
+	return {"urban": urban, "region": region, "total": total}
 
 
 ## SHA-256 de um texto (para comparar saves entre threads).

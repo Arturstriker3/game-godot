@@ -80,6 +80,77 @@ void region_charge(Region& region, double amount) {
 	}
 }
 
+// Demografia do interior (MENSAL, cadência A6): nascimentos, mortes e
+// envelhecimento, reaproveitando B1 (age_structures da nação, kAgeDeathWeight e
+// as mesmas taxas de envelhecimento 1/15,1/10,1/20,1/20). Atualiza region_pop,
+// os quintis (20% cada) e devolve para o chamador reconciliar a cidade.
+void region_demography_month(WorldState& ws, City& city) {
+	Region& region = city.region;
+	if (!region.ready || !region.demography_ready) {
+		return;
+	}
+	const auto found = ws.age_structures.find(city.nation);
+	if (found == ws.age_structures.end() || !found->second.valid) {
+		return;
+	}
+	const AgeStructure& structure = found->second;
+	double band[kAgeBands];
+	double total = 0.0;
+	for (int index = 0; index < kAgeBands; ++index) {
+		band[index] = std::max(0.0, region.age_band[index]);
+		total += band[index];
+	}
+	if (total <= 0.0) {
+		return;
+	}
+	// Fluxo do MÊS: taxas brutas medidas (por mil/ano), divididas por 12.
+	const double births = total * structure.births_per_1000 / 1000.0 / 12.0;
+	const double deaths = total * structure.deaths_per_1000 / 1000.0 / 12.0;
+	// Mortes por faixa: o CDR é o total; kAgeDeathWeight só diz como se reparte.
+	double shape[kAgeBands];
+	double shape_total = 0.0;
+	for (int index = 0; index < kAgeBands; ++index) {
+		shape[index] = band[index] * kAgeDeathWeight[index];
+		shape_total += shape[index];
+	}
+	double death_band[kAgeBands] = {};
+	for (int index = 0; index < kAgeBands; ++index) {
+		death_band[index] = shape_total > 0.0
+			? deaths * shape[index] / shape_total
+			: deaths / double(kAgeBands);
+	}
+	// Envelhecimento: fração anual da faixa dividida por 12 (a última faixa não
+	// tem para onde sair).
+	double aging[kAgeBands] = {};
+	for (int index = 0; index + 1 < kAgeBands; ++index) {
+		aging[index] = band[index] * kAgeAgingAnnual[index] / 12.0;
+	}
+	double next[kAgeBands];
+	next[0] = band[0] + births - death_band[0] - aging[0];
+	for (int index = 1; index + 1 < kAgeBands; ++index) {
+		next[index] = band[index] + aging[index - 1] - death_band[index]
+			- aging[index];
+	}
+	next[kAgeBands - 1] = band[kAgeBands - 1] + aging[kAgeBands - 2]
+		- death_band[kAgeBands - 1];
+	double new_total = 0.0;
+	for (int index = 0; index < kAgeBands; ++index) {
+		next[index] = std::max(0.0, next[index]);
+		new_total += next[index];
+	}
+	if (new_total <= 0.0) {
+		return;
+	}
+	for (int index = 0; index < kAgeBands; ++index) {
+		region.age_band[index] = next[index];
+	}
+	region.region_pop = new_total;
+	// Quintis acompanham a população (20% cada); a poupança/caixa não muda.
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		region.stratum_people[s] = new_total / double(kIncomeStrata);
+	}
+}
+
 } // namespace
 
 void SimCore::phase_region() {
@@ -108,12 +179,17 @@ void SimCore::phase_region() {
 			const double gross = region.employment * kFarmWage
 				* kRegionRuralWageDiscount * double(week_period);
 			const double paid = std::min(gross, std::max(0.0, city.firm_cash));
-			region.wage_income = paid;
-			region.taxes = paid * kTaxRate;
-			region.income = std::max(0.0, paid - region.taxes);
+			const double tax = paid * kTaxRate;
+			const double net = std::max(0.0, paid - tax);
 			city.firm_cash = std::max(0.0, city.firm_cash - paid);
-			city.government_budget += region.taxes;
-			region_credit(region, region.income);
+			city.government_budget += tax;
+			region_credit(region, net);
+			// Publicação em base DIÁRIA (o salário é pago por semana; o status
+			// expõe o equivalente diário, com o bruto semanal explícito).
+			const double days = double(std::max(1, week_period));
+			region.wage_income = paid / days;
+			region.taxes = tax / days;
+			region.income = net / days;
 		}
 
 		// --- Diário: consumo de comida no mercado da cidade-polo (sem frete). ---
@@ -185,11 +261,11 @@ void SimCore::phase_region() {
 				region.food_consumed / double(kIncomeStrata);
 		}
 
-		// --- Mensal (A6): estratos/poupança. A população do interior é FIXA
-		// nesta fase (a demografia regional é refinamento posterior, B4); o
-		// fecho mensal fica reservado para a mobilidade/sucessão. ---
+		// --- Mensal (A6): demografia do interior (nascimentos/mortes/
+		// envelhecimento, reaproveitando B1) e fecho dos quintis. ---
 		if (cadence_due(ws_.day, city_index, month_period)) {
-			// (nada por ora — reservado)
+			region_demography_month(ws_, city);
+			reconcile_city_population(city);
 		}
 	}
 }

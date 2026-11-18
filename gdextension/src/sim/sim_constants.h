@@ -154,10 +154,6 @@ constexpr double kRegionSavingsPerCapita = 0.50;
 // (Usa kNeedPerCapita diretamente; esta nota documenta a decisão.)
 // Imposto do interior: mesma alíquota kTaxRate, pago à prefeitura da
 // cidade-polo (contraparte no caixa municipal).
-// Fração da renda do interior gasta em serviços locais (espelho do
-// kServiceSpendShare urbano; sem setor de serviço próprio, é um custo de
-// acesso que volta ao caixa da cidade-polo como receita de serviço).
-constexpr double kRegionServiceSpendShare = 0.45;
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.

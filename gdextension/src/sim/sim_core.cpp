@@ -914,7 +914,11 @@ void SimCore::seed_region(City& city) {
 }
 
 void SimCore::reconcile_city_population(City& city) {
-	city.population = std::max(0.0, city.simulation_population)
+	// A população URBANA (unidade de simulação) acompanha a POP (soma das
+	// coortes, já atualizada pela demografia B1); o total exibido é urbano +
+	// interior (invariante B3). Sem esta passada o total não cresce com a B1.
+	city.simulation_population = std::max(0.0, city.pop.population);
+	city.population = city.simulation_population
 		+ (city.region.ready ? std::max(0.0, city.region.region_pop) : 0.0);
 }
 

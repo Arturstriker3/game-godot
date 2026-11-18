@@ -1559,6 +1559,7 @@ Dictionary EconomySim::get_profile() const {
 		"trade_food_prep", "trade_food_calc", "trade_food_settle",
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
+		"region",
 	};
 	Dictionary profile;
 	if (!profile_) {
@@ -4924,8 +4925,15 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 	out["employment"] = region.employment;
 	out["employment_mix"] = Array{region.employment_mix[0],
 		region.employment_mix[1], region.employment_mix[2]};
+	// Renda em base DIÁRIA (o salário do interior é pago por semana na cadência
+	// A6; `region.wage_income`/`income`/`taxes` já guardam o equivalente diário).
+	// Os totais semanais (brutos) ficam explícitos com o sufixo `_weekly`.
+	const double week = double(std::max(1, ws_.cadence.weekly_period));
 	out["wage_income"] = region.wage_income;
 	out["income"] = region.income;
+	out["taxes"] = region.taxes;
+	out["wage_income_weekly"] = region.wage_income * week;
+	out["income_weekly"] = region.income * week;
 	out["food_spend"] = region.food_spend;
 	out["food_need"] = region.food_need;
 	out["food_consumed"] = region.food_consumed;
