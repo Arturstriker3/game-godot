@@ -55,6 +55,8 @@ const TurboConfigScript := preload("res://core/economy/turbo_config.gd")
 ## B3: dado de região (estados inteiros) — anexa o bloco `region` a cada dict
 ## de cidade antes de initialize_world (state_regions.json + urban_share).
 const RegionDataScript := preload("res://core/economy/region_data.gd")
+## G (D-096): agricultura sazonal — declarada depois da geografia.
+const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
 
 ## 1º de janeiro de 2027, 00:00 UTC (D-084). 1798761600 = 2027-01-01T00:00:00Z.
 ## A base de dados (WPP/WorldPop 2026, extração 2025) NÃO é reprojetada: o
@@ -193,6 +195,18 @@ func _ready() -> void:
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
 	geo.apply_to_sim(sim, _cities_with_center())
+	# G (D-096): agricultura sazonal DEPOIS da geografia (a área por cidade vem
+	# da capacidade de terra que a geografia declara). Declara plano de safra,
+	# estoque inicial, perdas, prateleira e fertilizante; sem os arquivos o
+	# núcleo mantém a produção diária das fazendas (ausência explícita).
+	if sim.has_method("set_crop_plan"):
+		var agri := AgricultureServiceScript.new()
+		var agri_report := agri.apply_to_sim(sim, _load_cities(), geo)
+		print("[agricultura] planos=%d cidades=%d estoque=%.0f t base=%s" % [
+			int(agri_report.get("plans", 0)),
+			int(agri_report.get("cities", 0)),
+			float(agri_report.get("initial_stock_t", 0.0)),
+			str(agri_report.get("area_basis", {}))])
 	# A IA econômica (privado, governo, grupos) roda no núcleo, na virada do dia
 	# (A5). Ligada aqui: o primeiro `tick_day` já decide.
 	sim.set_ai_enabled(true)

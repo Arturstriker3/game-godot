@@ -155,6 +155,13 @@ namespace ogs {
 	// demanda não atendida, exportação (unidades), exportação (receita),
 	// cobertura privada, custo de insumos e custo de serviços.
 	static constexpr int kServiceFields = 12;
+	// G — safras por (cidade, produto). O teto cobre as 2 safras declaradas nos
+	// dados (1ª e 2ª soja da ARG, kharif/rabi da IND); 4 é folga de segurança.
+	static constexpr int kMaxCropSeasons = 4;
+	// G — bens da CADEIA alimentar com prazo de prateleira publicado
+	// (product_shelf_life.json: 12 produtos). O índice é a POSIÇÃO na lista
+	// `ws_.agri_chain` (resolvida no catálogo), não o índice do produto.
+	static constexpr int kMaxAgriChain = 12;
 	// Limite de negócios por cidade/setor e de aberturas por cidade/dia.
 	static constexpr int kServiceMaxPerSector = 4;
 	static constexpr int kServiceOpensPerDay = 5;
@@ -197,6 +204,63 @@ namespace ogs {
 	static_assert(offsetof(Market, stock) == 0, "Market: stock primeiro");
 	static_assert(offsetof(Market, surplus) == 7 * sizeof(double),
 		"Market: os 8 campos publicados precisam ser contíguos");
+
+	// ------------------------------------------------------------------
+	// G — PLANO DE SAFRA por (cidade, produto). É DADO (calendário FAO/USDA,
+	// rendimento FAOSTAT, área colhida) que chega pelo AgricultureService e
+	// viaja no bloco `definitions` do snapshot — não é estado do jogo. O
+	// ESTADO da safra (o que já foi entregue/plantado no ano) mora no mesmo
+	// struct e é serializado no save v24.
+	// ------------------------------------------------------------------
+	// Janela de uma safra em DIA DO ANO (1..365, calendário civil do jogo, que
+	// começa em 2027-01-01). `start > end` = janela que atravessa o ano.
+	struct CropSeasonPlan {
+		int plant_start_doy = 0;
+		int plant_end_doy = 0;
+		int harvest_start_doy = 0;
+		int harvest_end_doy = 0;
+		// Fração do orçamento anual desta safra. Sem dado de participação por
+		// safra nos arquivos, o AgricultureService declara 1/n (regra
+		// declarada) — nunca um número inventado por país.
+		double share = 1.0;
+	};
+	// Estado persistente de uma safra (save v24).
+	struct CropSeasonState {
+		// Ano civil (chave da instância) do último PLANTIO cobrado. 0 = nunca.
+		int planted_year = 0;
+		// Fator de rendimento da safra (1 = fertilizante comprado integral;
+		// < 1 = faltou insumo no mercado). Aplicado à entrega da colheita.
+		double yield_scale = 1.0;
+		// Rendimento CONGELADO no início da instância de colheita: o plantio
+		// seguinte (janelas agregadas se sobrepõem) não pode reescrever o
+		// orçamento de uma safra que já está sendo entregue.
+		double harvest_yield_scale = 1.0;
+		// Fertilizante efetivamente comprado no plantio (t do bem
+		// `fertilizer`), para auditoria.
+		double fertilizer_t = 0.0;
+		// Chave (ano civil de início da janela) da instância de colheita em
+		// curso e o que já foi entregue nela (t BRUTAS, antes da perda).
+		int harvest_year = 0;
+		double delivered_t = 0.0;
+		// Perda de entrada (pós-colheita) do mês, para o status por nação.
+		double loss_month_t = 0.0;
+		int loss_month_key = 0;
+	};
+	struct CropPlan {
+		std::string city;
+		int product = -1;
+		int city_index = -1;  // derivado (não serializado)
+		double area_ha = 0.0;
+		double yield_t_ha = 0.0;
+		// Fertilizante nitrogenado aplicado (dado IFA FUBC, kg N/ha).
+		double n_kg_ha = 0.0;
+		int season_count = 0;
+		CropSeasonPlan seasons[kMaxCropSeasons] = {};
+		CropSeasonState state[kMaxCropSeasons] = {};
+		// Derivado (NÃO serializado): toneladas líquidas entregues hoje por
+		// este plano. Serve ao status e ao teste de sazonalidade.
+		double delivered_today_t = 0.0;
+	};
 
 	// F3: uma categoria de necessidade (needs.json → levels.<nível>.categories).
 	// `substitutes` mantém a ordem declarada (do melhor ao último caso) e
@@ -1127,6 +1191,34 @@ struct Region {
 		// chega por `set_land_capacity` (GeographyService) e viaja no bloco
 		// `definitions` do snapshot.
 		double land_capacity[kMaxProducts] = {};
+		// ------------------------------------------------------------------
+		// G — AGRICULTURA SAZONAL (save v24). A DEFINIÇÃO da safra (área,
+		// rendimento, janelas) mora em `WorldState::crop_plans`, porque é
+		// esparsa (poucas entradas por cidade) e estática; aqui ficam o hook de
+		// qualidade do armazém e o livro de perdas do mês.
+		// ------------------------------------------------------------------
+		// Qualidade do armazém 0..1 (`set_storage_quality`). < 0 = DERIVAR da
+		// infra B5 do estado (ver `SimCore::city_storage_quality`).
+		double storage_quality = -1.0;
+		// Perdas do mês por bem da CADEIA (posição em `ws_.agri_chain`):
+		// perecibilidade (prazo de prateleira) e perda de armazenagem mensal.
+		// Diagnóstico (não entra no save; recalculado a cada mês).
+		double agri_loss_perishable[kMaxAgriChain] = {};
+		double agri_loss_storage[kMaxAgriChain] = {};
+		// G — consumo EM ESPÉCIE das famílias agrícolas por slot da cesta
+		// (t/dia). Sai do estoque do mercado SEM entrar em `market.demand`
+		// (consumption.cpp); é o que fecha a conta da entressafra. Diagnóstico.
+		double agri_in_kind[kMaxFoodProducts] = {};
+		// G — toneladas que CHEGARAM fisicamente ao estoque neste dia (o
+		// `imported` do mercado conta a compra e é zerado logo depois da
+		// chegada). Só para a conta da entressafra; zerado no phase_arrival.
+		double agri_arrived[kMaxProducts] = {};
+		// G — produção diária EQUIVALENTE da safra (t/dia): Σ área × rendimento
+		// ÷ 365 dos planos da cidade. Derivada (`rebuild_crop_indexes`); é o
+		// teto do autoconsumo das famílias agrícolas quando há plano sazonal —
+		// a fazenda não produz pela capacidade nominal, e o autoconsumo não pode
+		// comer um estoque que a lavoura não repõe.
+		double agri_seasonal_daily = 0.0;
 		// Reservas minerais por produto (extração com esgotamento).
 		Deposit deposits[kMaxProducts];
 		Pop pop;
@@ -1181,6 +1273,10 @@ struct Region {
 		kPhaseMigration,
 		// B7: insatisfação (medição pura, sem dinheiro/pessoas) no fim do dia.
 		kPhaseSocial,
+		// G: agricultura sazonal (colheita na janela, plantio/fertilizante,
+		// perdas de armazenagem e perecibilidade). Roda depois do reset e antes
+		// da produção — a safra entra no estoque do dia.
+		kPhaseAgriculture,
 		kPhaseCount
 	};
 

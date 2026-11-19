@@ -101,7 +101,17 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // (urbano) e `region.informal`/`region.mortality`/`region.dissatisfaction`
 // (interior). Save v21 e anteriores migram semeando a informalidade do dado da
 // nação (ou âncora de renda), a referência de saúde e os contadores zerados.
-constexpr int kSaveVersion = 22;
+// v23 (B6, feat/b6-region-property): reservada para a B6 (patrimônio da
+// região). NÃO é gravada por este binário — quando o merge dos dois ramos
+// acontecer, o degrau 22 → 23 → 24 já existe e só a constante muda.
+// v24 (G, D-096): agricultura sazonal — bloco raiz `agriculture` com o estado
+// por (cidade, produto, safra): ano do plantio, fator de rendimento por
+// fertilizante, ano da colheita em curso e o que já foi entregue. Save v23 e
+// anteriores migram com o estado zerado: a safra do ano corrente recomeça no
+// dia do load (a produção já entregue antes do save não é reinventada). O
+// bloco `definitions` ganha `crop_plans`/`crop_losses`/`shelf_life`, que são
+// dado (redeclarado pelo AgricultureService no jogo).
+constexpr int kSaveVersion = 24;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -1061,6 +1071,58 @@ constexpr double kDissatisfactionInformality = 0.10;
 constexpr double kDissatisfactionLand = 0.00;
 // Jovens (15-24) pesam mais na insatisfação com desemprego.
 constexpr double kDissatisfactionYouthWeight = 0.50;
+
+// ---------------------------------------------------------------------------
+// G — AGRICULTURA SAZONAL (D-096).
+//
+// O DADO é: área colhida e rendimento por país/cultura (FAOSTAT), janelas de
+// plantio/colheita (FAO/JRC/USDA), perda pós-colheita (APHLIS/FAO 2011),
+// fertilizante N por cultura (IFA FUBC), estoque de fim de safra (USDA PSD) e
+// dias de prateleira (FoodKeeper/FAO INPhO). O que segue é MODELO DECLARADO —
+// calibrável no laboratório, sem número por país inventado:
+// ---------------------------------------------------------------------------
+// Ano civil do dia 0 do jogo (1º de janeiro). É a MESMA âncora do autoload
+// (`Economy.START_UNIX` = 2027-01-01T00:00:00Z): o núcleo não tem calendário
+// próprio, ele deriva ano/dia-do-ano desta constante + `WorldState::day`.
+constexpr int kAgriStartYear = 2027;
+// Fração da perda pós-colheita que incide no ATO de entrada no silo (o dado
+// `loss_pct` cobre manuseio + armazenagem). 0,60 = a maior parte da perda
+// acontece antes/durante a entrada; o resto vira perda mensal de estoque. É
+// MODELO declarado (o dado não separa as duas etapas por país; quando
+// `storage_share_pct` existe ele é usado direto na perda mensal).
+constexpr double kAgriEntryLossShare = 0.60;
+// Agravamento da perda quando o armazém é ruim: fator = 1 + k*(1 - q), com
+// q = qualidade 0..1. Com q = 0 a perda é 2,5× a publicada; com q = 1, 1×.
+constexpr double kAgriStorageLossAggravation = 1.5;
+// Teto da perda somada, em fração (proteção contra dado extremo + q = 0).
+constexpr double kAgriLossCap = 0.95;
+// Perecibilidade: MEIA-VIDA do estoque parado = `storage_days` do produto
+// (regra declarada: sem lote/idade por tonelada no núcleo, o decaimento é
+// exponencial e o prazo de prateleira vira a meia-vida). Produto com
+// `data_status = no_data` (soja, farelo, ração) NÃO decai.
+constexpr double kAgriShelfHalfLife = 0.5;
+// Conteúdo de N do bem `fertilizer` (t de N por t de fertilizante). O bem é
+// genérico (ureia 46%, nitrato de amônio 34%, blends NPK 15-20%); 0,30 é a
+// média declarada de um mix, calibrável na Parte E (gás/fosfato).
+constexpr double kAgriFertilizerNContent = 0.30;
+// Piso de rendimento quando NENHUM fertilizante foi comprado: a safra de
+// sequeiro rende esta fração do rendimento com insumo. A deficiência de
+// nutrientes responde por boa parte do hiato de produtividade (FAO), mas zerar
+// a safra por falta de estoque no mercado transformaria a ausência da indústria
+// de fertilizante (Parte E, ainda não existe no mundo) em fome mundial. MODELO
+// declarado, calibrável com a Parte E.
+constexpr double kAgriNoFertilizerYieldFloor = 0.35;
+// Qualidade do armazém DERIVADA da infra B5 quando `set_storage_quality` não
+// foi chamado: piso (nenhuma infra) + ganho pela cobertura ponderada.
+// Energia pesa mais (aeração/refrigeração), depois estrada (silo chega ao
+// porto/mercado), por último água (limpeza/umidade). MODELO declarado.
+constexpr double kAgriStorageQualityFloor = 0.15;
+constexpr double kAgriStorageQualityGain = 0.85;
+constexpr double kAgriStorageQualityWeight[3] = {0.35, 0.45, 0.20};
+// Dias de estoque de referência quando o dado de estoque inicial não existe por
+// nação/cultura (`crop_stocks._meta.rule_days_default` = 60). O
+// AgricultureService aplica a regra; a constante fica aqui como registro.
+constexpr int kAgriStockRuleDays = 60;
 
 
 } // namespace ogs

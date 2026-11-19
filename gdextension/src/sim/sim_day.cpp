@@ -32,6 +32,11 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// 2. Zera os fluxos do dia.
 	core.phase_reset();
 
+	// 2b-G. Agricultura sazonal: plantio/fertilizante, colheita DENTRO da
+	// janela (zero fora), perda de armazenagem e perecibilidade. Antes da
+	// produção: a safra do dia já está no estoque quando a cidade compra.
+	core.phase_agriculture();
+
 	// 2a. B1: demografia (fluxo mensal por cidade, cadência A6). Roda antes do
 	// trabalho: a fase de labor já lê as coortes atualizadas do mês.
 	{

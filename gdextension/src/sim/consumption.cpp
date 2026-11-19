@@ -392,7 +392,12 @@ void SimCore::phase_income() {
 					/ std::max(city.pop.labor_force, 1e-9), 1.0, 6.0);
 			const double household_need = city.sector_workers[0]
 				* farm_household_size * kNeedPerCapita;
-			const double own_production = city.agri_output_tons
+			// G: com plano sazonal a produção do dia é a da SAFRA (média anual
+			// em t/dia), não a capacidade nominal da fazenda — o autoconsumo não
+			// pode drenar um estoque que a lavoura só repõe na colheita.
+			const double farm_output = city.agri_seasonal_daily > 0.0
+				? city.agri_seasonal_daily : city.agri_output_tons;
+			const double own_production = farm_output
 				* ws_.agri_own_consumption_share;
 			in_kind = std::min(
 				std::min(remaining_total, household_need), own_production);
@@ -414,6 +419,12 @@ void SimCore::phase_income() {
 				const double tons = take / factor;
 				market.stock = std::max(0.0, market.stock - tons);
 				pop.consumed_by_category[slot] += tons;
+				// G: consumo em espécie medido à parte (o `consumed_by_category`
+				// mistura compra de mercado + em espécie; a conta da entressafra
+				// precisa separar as duas).
+				if (slot < kMaxFoodProducts) {
+					city.agri_in_kind[slot] += tons;
+				}
 				scratch.consumed_total[city_index * n_products
 					+ static_cast<std::size_t>(product)] += tons;
 				scratch.consumed_today[city_index * n_products

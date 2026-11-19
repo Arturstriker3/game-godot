@@ -38,6 +38,7 @@ add_library(opengs_sim STATIC
     src/sim/logistics.cpp
     src/sim/trade.cpp
     src/sim/production.cpp
+    src/sim/agriculture.cpp
     src/sim/prices.cpp
     src/sim/consumption.cpp
     src/sim/labor.cpp

@@ -460,6 +460,17 @@ void SimCore::phase_arrival() {
 	// colaterais (estoque + liberação de frota) são os mesmos do laço original.
 	{
 	OGS_SIM_ZONE(kPhaseArrivalTransit);
+	// G: zera o medidor de CHEGADAS do dia (t que entram fisicamente no
+	// estoque). O `imported` do mercado conta a COMPRA e é zerado no
+	// `phase_reset` logo depois desta fase, então ele não serve para fechar a
+	// conta da entressafra. Só os bens da cadeia são zerados (12 por cidade).
+	for (City& city : ws_.cities) {
+		for (const int product : ws_.agri_chain) {
+			if (product >= 0 && product < ws_.products) {
+				city.agri_arrived[product] = 0.0;
+			}
+		}
+	}
 	const std::size_t count = ws_.in_transit.size();
 	std::size_t write = 0;
 	for (std::size_t read = 0; read < count; ++read) {
@@ -467,6 +478,7 @@ void SimCore::phase_arrival() {
 		if (shipment.arrival_day <= ws_.day) {
 			if (City* city = find_city(shipment.to_city)) {
 				city->markets[shipment.product].stock += shipment.amount;
+				city->agri_arrived[shipment.product] += shipment.amount;
 			}
 			// F4: libera os veículos reservados pelo pedido (o combustível já
 			// foi consumido no embarque).

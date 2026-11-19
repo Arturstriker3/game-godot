@@ -2,6 +2,7 @@
 #include "edge/save_load.h"
 #include "edge/value_bridge.h"
 #include "sim/actions.h"
+#include "sim/agriculture.h"
 #include "sim/profiling.h"
 #include "sim/save_definitions.h"
 #include "sim/save_state.h"
@@ -233,6 +234,22 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_suitability);
 	ClassDB::bind_method(D_METHOD("set_land_capacity", "city_id", "product", "value"),
 	                     &EconomySim::set_land_capacity);
+	// G (D-096) — agricultura sazonal.
+	ClassDB::bind_method(D_METHOD("set_crop_plan", "city_id", "product",
+	                     "area_ha", "yield_t_ha", "seasons"),
+	                     &EconomySim::set_crop_plan);
+	ClassDB::bind_method(D_METHOD("set_crop_initial_stock", "city_id", "product",
+	                     "tons"), &EconomySim::set_crop_initial_stock);
+	ClassDB::bind_method(D_METHOD("set_crop_loss", "product", "loss_pct",
+	                     "storage_share_pct"), &EconomySim::set_crop_loss);
+	ClassDB::bind_method(D_METHOD("set_shelf_life", "product", "days"),
+	                     &EconomySim::set_shelf_life);
+	ClassDB::bind_method(D_METHOD("set_fertilizer_n", "city_id", "product",
+	                     "n_kg_ha"), &EconomySim::set_fertilizer_n);
+	ClassDB::bind_method(D_METHOD("set_storage_quality", "city_id", "quality"),
+	                     &EconomySim::set_storage_quality);
+	ClassDB::bind_method(D_METHOD("get_agriculture_status"),
+	                     &EconomySim::get_agriculture_status);
 	ClassDB::bind_method(D_METHOD("set_deposit", "city_id", "product", "reserve_kt",
 	                     "quality", "depth_m"),
 	                     &EconomySim::set_deposit);
@@ -858,6 +875,21 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	ws_.foreign_cash = 0.0;
 	ws_.construction_cash = 0.0;
 	ws_.industry_seeded = false;
+	// G: mundo novo zera o plano de safras e o livro de perdas (o
+	// AgricultureService declara os planos depois, como a geografia).
+	ws_.crop_plans.clear();
+	ws_.crop_plan_lookup.clear();
+	ws_.crop_planned.clear();
+	ws_.crop_index_ready = false;
+	ws_.crop_loss_pct.clear();
+	ws_.crop_storage_share_pct.clear();
+	ws_.crop_shelf_days.clear();
+	ws_.crop_shelf_daily.clear();
+	ws_.agri_chain.clear();
+	ws_.fertilizer_product = -1;
+	ws_.agri_month_key = 0;
+	ws_.agri_delivered_today = 0.0;
+	ws_.agri_harvests_today = 0;
 	// F9: mundo novo, grupos/política novos (a semeadura roda no fim).
 	ws_.groups.clear();
 	ws_.group_lookup.clear();
@@ -1603,7 +1635,7 @@ Dictionary EconomySim::get_profile() const {
 		"trade_food_prep", "trade_food_calc", "trade_food_settle",
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
-		"region", "migration",
+		"region", "migration", "social", "agriculture",
 	};
 	Dictionary profile;
 	if (!profile_) {
@@ -7716,6 +7748,302 @@ void EconomySim::set_land_capacity(const String& city_id, const String& product,
 	}
 	sim_core_.set_land_capacity(std::string(city_id.utf8().get_data()), index,
 		value);
+}
+
+// ---------------------------------------------------------------------------
+// G — AGRICULTURA SAZONAL (D-096)
+// ---------------------------------------------------------------------------
+
+void EconomySim::set_crop_plan(const String& city_id, const String& product,
+		double area_ha, double yield_t_ha, const Array& seasons) {
+	// Dado de simulação declarado antes do dia 1 (como a geografia/estratos):
+	// entra direto no núcleo, sem fila de comandos.
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
+	if (index < 0) {
+		return;
+	}
+	std::vector<ogs::CropSeasonPlan> parsed;
+	parsed.reserve(static_cast<std::size_t>(seasons.size()));
+	for (int slot = 0; slot < seasons.size(); ++slot) {
+		const Variant entry = seasons[slot];
+		if (entry.get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary data = entry;
+		ogs::CropSeasonPlan season;
+		season.plant_start_doy = std::clamp(
+			int(data.get("plant_start", 0)), 0, 366);
+		season.plant_end_doy = std::clamp(
+			int(data.get("plant_end", 0)), 0, 366);
+		season.harvest_start_doy = std::clamp(
+			int(data.get("harvest_start", 0)), 0, 366);
+		season.harvest_end_doy = std::clamp(
+			int(data.get("harvest_end", 0)), 0, 366);
+		season.share = std::clamp(
+			double(data.get("share", 0.0)), 0.0, 1.0);
+		parsed.push_back(season);
+	}
+	sim_core_.set_crop_plan(std::string(city_id.utf8().get_data()), index,
+		area_ha, yield_t_ha, parsed);
+	// O índice (cidade × produto) muda com o plano: refaz agora para a
+	// supressão da produção diária valer no primeiro dia.
+	sim_core_.rebuild_crop_indexes();
+}
+
+void EconomySim::set_crop_initial_stock(const String& city_id,
+		const String& product, double tons) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
+	if (index < 0) {
+		return;
+	}
+	sim_core_.set_crop_initial_stock(std::string(city_id.utf8().get_data()),
+		index, tons);
+}
+
+void EconomySim::set_crop_loss(const String& product, double loss_pct,
+		double storage_share_pct) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
+	if (index < 0) {
+		return;
+	}
+	sim_core_.set_crop_loss(index, loss_pct, storage_share_pct);
+}
+
+void EconomySim::set_shelf_life(const String& product, int days) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
+	if (index < 0) {
+		return;
+	}
+	sim_core_.set_shelf_life(index, days);
+}
+
+void EconomySim::set_fertilizer_n(const String& city_id, const String& product,
+		double n_kg_ha) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
+	if (index < 0) {
+		return;
+	}
+	sim_core_.set_fertilizer_n(std::string(city_id.utf8().get_data()), index,
+		n_kg_ha);
+}
+
+void EconomySim::set_storage_quality(const String& city_id, double quality) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	sim_core_.set_storage_quality(std::string(city_id.utf8().get_data()),
+		quality);
+}
+
+Dictionary EconomySim::get_agriculture_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	if (ws_.crop_plans.empty()) {
+		return out;
+	}
+	const ogs::GameDate today = ogs::game_date_from_day(ws_.day);
+	Dictionary date;
+	date["year"] = today.year;
+	date["month"] = today.month;
+	date["day"] = today.day;
+	date["doy"] = today.doy;
+	out["day"] = ws_.day;
+	out["date"] = date;
+	out["delivered_today_t"] = ws_.agri_delivered_today;
+	out["harvests_today"] = ws_.agri_harvests_today;
+
+	// Slot de cada produto na lista da cadeia (índice do livro de perdas).
+	std::vector<int> slot_of(static_cast<std::size_t>(ws_.products), -1);
+	for (std::size_t slot = 0; slot < ws_.agri_chain.size(); ++slot) {
+		const int product = ws_.agri_chain[slot];
+		if (product >= 0 && product < ws_.products) {
+			slot_of[static_cast<std::size_t>(product)] =
+				static_cast<int>(slot);
+		}
+	}
+	// Slot de cada produto na cesta alimentar (consumo em espécie das famílias
+	// agrícolas, que NÃO passa por `market.demand`).
+	std::vector<int> food_slot_of(static_cast<std::size_t>(ws_.products), -1);
+	for (std::size_t slot = 0; slot < ws_.food_products.size(); ++slot) {
+		const int product = ws_.food_products[slot];
+		if (product >= 0 && product < ws_.products) {
+			food_slot_of[static_cast<std::size_t>(product)] =
+				static_cast<int>(slot);
+		}
+	}
+
+	// Acumuladores por nação (std::map: ordem determinística no dump).
+	struct CropAcc {
+		double stock_t = 0.0;
+		double demand_t_day = 0.0;
+		double imported_today_t = 0.0;
+		double exported_today_t = 0.0;
+		double arrived_today_t = 0.0;
+		double in_kind_today_t = 0.0;
+		double production_year_t = 0.0;
+		double loss_month_t = 0.0;
+		double entry_loss_month_t = 0.0;
+		double storage_loss_month_t = 0.0;
+		double delivered_today_t = 0.0;
+		double next_harvest_days = -1.0;
+		int next_harvest_doy = -1;
+		bool harvesting = false;
+	};
+	struct NationAcc {
+		double quality_sum = 0.0;
+		int quality_count = 0;
+		std::map<int, CropAcc> crops;  // produto -> acumulador
+	};
+	std::map<std::string, NationAcc> nations;
+
+	for (std::size_t city_index = 0; city_index < ws_.cities.size();
+			++city_index) {
+		const City& city = ws_.cities[city_index];
+		const double quality = ogs::SimCore::city_storage_quality(city);
+		for (const ogs::CropPlan& plan : ws_.crop_plans) {
+			if (plan.city_index != static_cast<int>(city_index)) {
+				continue;
+			}
+			NationAcc& nation = nations[city.nation];
+			nation.quality_sum += quality;
+			++nation.quality_count;
+			CropAcc& crop = nation.crops[plan.product];
+			const double stock = city.markets[plan.product].stock;
+			crop.stock_t += stock;
+			crop.demand_t_day += city.markets[plan.product].demand;
+			crop.imported_today_t += city.imported[plan.product];
+			crop.exported_today_t += city.exported[plan.product];
+			crop.arrived_today_t += city.agri_arrived[plan.product];
+			// Consumo em ESPÉCIE das famílias agrícolas: sai do estoque do
+			// mercado da cidade sem entrar em `market.demand` (consumption.cpp).
+			// Sem ele a conta da entressafra não fecha.
+			const int food_slot = plan.product >= 0
+				&& plan.product < ws_.products
+				? food_slot_of[static_cast<std::size_t>(plan.product)] : -1;
+			if (food_slot >= 0 && food_slot < kMaxFoodProducts) {
+				crop.in_kind_today_t += city.agri_in_kind[food_slot];
+			}
+			crop.delivered_today_t += plan.delivered_today_t;
+			if (plan.delivered_today_t > 0.0) {
+				crop.harvesting = true;
+			}
+			int chain_slot = plan.product >= 0 && plan.product < ws_.products
+				? slot_of[static_cast<std::size_t>(plan.product)] : -1;
+			if (chain_slot >= 0) {
+				const double storage_loss = city.agri_loss_perishable[
+						static_cast<std::size_t>(chain_slot)]
+					+ city.agri_loss_storage[
+						static_cast<std::size_t>(chain_slot)];
+				crop.loss_month_t += storage_loss;
+				crop.storage_loss_month_t += storage_loss;
+			}
+			for (int season = 0; season < plan.season_count; ++season) {
+				const ogs::CropSeasonPlan& window = plan.seasons[season];
+				const ogs::CropSeasonState& state = plan.state[season];
+				crop.loss_month_t += state.loss_month_t;
+				crop.entry_loss_month_t += state.loss_month_t;
+				// Produção da safra em curso: o acumulado da instância que
+				// contém hoje (janela que atravessa o ano continua contando).
+				const int instance = ogs::window_start_year(today.year,
+					today.doy, window.harvest_start_doy);
+				const int position = ogs::window_position(today.doy,
+					window.harvest_start_doy, window.harvest_end_doy);
+				if (state.harvest_year == today.year
+						|| (position >= 0 && state.harvest_year == instance)) {
+					crop.production_year_t += state.delivered_t;
+				}
+				// Próxima colheita: 0 quando já está colhendo; senão os dias
+				// até o início da próxima instância da janela.
+				double days = 0.0;
+				if (position < 0) {
+					const int year_days = ogs::game_year_days(today.year);
+					days = window.harvest_start_doy >= today.doy
+						? static_cast<double>(window.harvest_start_doy
+							- today.doy)
+						: static_cast<double>(year_days - today.doy
+							+ window.harvest_start_doy);
+				}
+				if (crop.next_harvest_days < 0.0
+						|| days < crop.next_harvest_days) {
+					crop.next_harvest_days = days;
+					crop.next_harvest_doy = window.harvest_start_doy;
+				}
+			}
+		}
+	}
+
+	Array nations_out;
+	for (const auto& pair : nations) {
+		Dictionary entry;
+		entry["nation"] = String(pair.first.c_str());
+		entry["storage_quality"] = pair.second.quality_count > 0
+			? pair.second.quality_sum / pair.second.quality_count : 0.0;
+		Array crops;
+		for (const auto& crop_pair : pair.second.crops) {
+			const CropAcc& crop = crop_pair.second;
+			Dictionary item;
+			item["product"] = String(sim_core_.product_name(crop_pair.first));
+			item["stock_t"] = crop.stock_t;
+			item["demand_t_day"] = crop.demand_t_day;
+			item["imported_today_t"] = crop.imported_today_t;
+			item["exported_today_t"] = crop.exported_today_t;
+			item["arrived_today_t"] = crop.arrived_today_t;
+			item["in_kind_today_t"] = crop.in_kind_today_t;
+			// Dias de consumo: estoque ÷ consumo do dia. Sem consumo
+			// observado não há número (-1 = sem observação).
+			item["days_cover"] = crop.demand_t_day > 0.0
+				? crop.stock_t / crop.demand_t_day : -1.0;
+			item["next_harvest_days"] = crop.next_harvest_days;
+			item["next_harvest_doy"] = crop.next_harvest_doy;
+			item["production_year_t"] = crop.production_year_t;
+			item["loss_month_t"] = crop.loss_month_t;
+			item["entry_loss_month_t"] = crop.entry_loss_month_t;
+			item["storage_loss_month_t"] = crop.storage_loss_month_t;
+			item["delivered_today_t"] = crop.delivered_today_t;
+			item["harvesting"] = crop.harvesting;
+			crops.append(item);
+		}
+		entry["crops"] = crops;
+		nations_out.append(entry);
+	}
+	out["nations"] = nations_out;
+	// Totais acumulados desde o dia 0, por bem da cadeia (diagnóstico do teste
+	// e da UI; não entram no save).
+	Dictionary totals;
+	Dictionary perishable;
+	Dictionary storage;
+	Dictionary entry;
+	// Estoque do dia por bem da cadeia (TODAS as cidades, inclusive as sem
+	// plano — é o estoque que a perecibilidade e a armazenagem alcançam).
+	Dictionary stock_by_product;
+	for (const int product : ws_.agri_chain) {
+		if (product < 0 || product >= ws_.products) {
+			continue;
+		}
+		double stock = 0.0;
+		for (const City& city : ws_.cities) {
+			stock += std::max(0.0, city.markets[product].stock);
+		}
+		stock_by_product[String(sim_core_.product_name(product))] = stock;
+	}
+	for (const int product : ws_.agri_chain) {
+		if (product < 0 || product >= ws_.products) {
+			continue;
+		}
+		const String name(sim_core_.product_name(product));
+		perishable[name] = ws_.agri_perishable_total[product];
+		storage[name] = ws_.agri_storage_total[product];
+		entry[name] = ws_.agri_entry_total[product];
+	}
+	totals["perishable_t"] = perishable;
+	totals["storage_t"] = storage;
+	totals["entry_t"] = entry;
+	totals["stock_t"] = stock_by_product;
+	out["totals"] = totals;
+	return out;
 }
 
 bool EconomySim::set_deposit(const String& city_id, const String& product,

@@ -70,6 +70,11 @@ public:
 	void phase_arrival();
 	// 2. Zera os fluxos do dia.
 	void phase_reset();
+	// 2b-G. Agricultura sazonal (sim/agriculture.cpp): plantio/fertilizante,
+	// colheita DENTRO da janela (fora dela o fluxo é zero), perda de
+	// armazenagem mensal e perecibilidade dos bens da cadeia. Roda antes da
+	// produção: a safra do dia já está no estoque quando o comércio abre.
+	void phase_agriculture();
 	// 2a. B1: demografia — cadência mensal (A6) por cidade. Move as coortes
 	// etárias um mês (nascimentos, mortes e envelhecimento) e reaplica o perfil
 	// que depende da idade. Laço SERIAL (determinístico).
@@ -117,6 +122,48 @@ public:
 	// e viaja no bloco `definitions` do snapshot. Produto fora de
 	// [0, ws_.products) ou cidade ausente é ignorado; valor é limitado a >= 0.
 	void set_land_capacity(const std::string& city_id, int product, double value);
+
+	// ------------------------------------------------------------------
+	// G — AGRICULTURA SAZONAL (sim/agriculture.cpp, D-096).
+	// API de DECLARAÇÃO (antes do dia 1, como set_land_capacity): o dado é
+	// reaplicado no load pelo `AgricultureService` / bloco `definitions`.
+	// ------------------------------------------------------------------
+	// Declara (ou substitui) o plano de safra de (cidade, produto): área
+	// colhida em ha, rendimento t/ha e 1..kMaxCropSeasons janelas em dia do
+	// ano com a fração do orçamento anual. Cidade/produto ausentes, área ou
+	// rendimento <= 0 ou nenhuma janela válida = SEM plano (a produção diária
+	// da fazenda continua; nada de safra vazia).
+	void set_crop_plan(const std::string& city_id, int product, double area_ha,
+		double yield_t_ha, const std::vector<CropSeasonPlan>& seasons);
+	// Estoque inicial (t) de (cidade, produto) no dia 1: ASSIGNA (não soma),
+	// para a chamada ser idempotente. Vem do `ending_stocks_t` observado ou da
+	// regra de 60 dias de consumo do próprio dado (nunca de um número
+	// inventado). Valor negativo é ignorado.
+	void set_crop_initial_stock(const std::string& city_id, int product,
+		double tons);
+	// Perda pós-colheita do produto (% do que entra) e a fatia de armazenagem
+	// declarada (% do total, ou < 0 = sem dado). Produto desconhecido é
+	// ignorado; percentuais ficam em [0, 100].
+	void set_crop_loss(int product, double loss_pct, double storage_share_pct);
+	// Prazo de prateleira (dias) do bem: o estoque parado perde metade em
+	// `days` dias. `days <= 0` = sem dado (não decai) mas o bem entra na lista
+	// da cadeia.
+	void set_shelf_life(int product, int days);
+	// Fertilizante nitrogenado (kg N/ha) da cultura na cidade. Só tem efeito
+	// quando o plano daquele (cidade, produto) já foi declarado.
+	void set_fertilizer_n(const std::string& city_id, int product,
+		double n_kg_ha);
+	// Qualidade do armazém 0..1 (hook de infraestrutura). Sem chamada, a
+	// qualidade é DERIVADA da infra B5 do estado (`city_storage_quality`).
+	void set_storage_quality(const std::string& city_id, double quality);
+	// Refaz o índice esparso (cidade × produto) dos planos ativos. Chamado
+	// pelos setters e no fim do load; o tick só LÊ.
+	void rebuild_crop_indexes();
+	// Plano sazonal ativo para (índice de cidade, produto)? A produção diária
+	// da fazenda é SUPRIMIDA nesse caso (sem contagem dupla).
+	bool crop_planned_at(std::size_t city_index, int product) const;
+	// Qualidade do armazém efetiva da cidade (explícita ou derivada da infra).
+	static double city_storage_quality(const City& city);
 	// A2: `full=false` é o caminho de todo tick (só o índice por cidade;
 	// cidades/nações/tarifas só mudam no carregamento).
 	void rebuild_indexes(bool full = true);

@@ -405,6 +405,7 @@ void SimCore::phase_reset() {
 		for (int product = 0; product < static_cast<int>(ws_.food_products.size()); ++product) {
 			city.pop.desired_by_category[product] = 0.0;
 			city.pop.consumed_by_category[product] = 0.0;
+			city.agri_in_kind[product] = 0.0;
 		}
 	}
 	for (Building& building : ws_.buildings) {

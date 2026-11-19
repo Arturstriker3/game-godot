@@ -98,6 +98,13 @@ void SimCore::phase_production() {
 		if (found == ws_.city_lookup.end()) {
 			continue;
 		}
+		// G — a lavoura com plano sazonal NÃO produz diariamente: a safra entra
+		// em `phase_agriculture` dentro da janela de colheita. Somar a
+		// capacidade da fazenda aqui contaria a mesma tonelada duas vezes.
+		if (crop_planned_at(static_cast<std::size_t>(found->second),
+				building.output_product)) {
+			continue;
+		}
 		capacity_by_city_product[static_cast<std::size_t>(found->second)]
 			[building.output_product] += building.capacity * building.output_scale;
 	}
@@ -128,7 +135,11 @@ void SimCore::phase_production() {
 						|| building.output_product >= ws_.products) {
 					continue;
 				}
-
+				// G — lavoura sazonal: a produção diária é suprimida (a safra
+				// vem de phase_agriculture na janela de colheita).
+				if (crop_planned_at(city_index, building.output_product)) {
+					continue;
+				}
 				const double city_capacity =
 					capacity_by_city_product[city_index][building.output_product];
 				const double capacity_share = city_capacity > 0.0
