@@ -233,11 +233,12 @@ func _ready() -> void:
 			float(agri_report.get("initial_stock_t", 0.0)),
 			str(agri_report.get("area_basis", {}))])
 	# G2 (D-101): ARMAZENAGEM — o mapa produto→tipo do bem, a capacidade
-	# inicial (dado real do JSON; regra declarada de meses de produção quando
-	# o dado falta) e a reserva pública do dia 1 (petróleo e grãos públicos).
-	# DEPOIS da agricultura (a produção que rateia a capacidade é a mesma do
-	# plano de safra) e antes da IA. `only_missing`: save v25 manda — nada de
-	# reescrever a capacidade/estoque que veio no save (nem o da IA).
+	# inicial (COBERTURA real do dado × produção do jogo; regra declarada de
+	# meses quando o dado não tem cobertura) e a reserva pública do dia 1
+	# (dias de importação/consumo × fluxo do jogo). DEPOIS da agricultura (a
+	# produção que rateia a capacidade é a mesma do plano de safra) e antes da
+	# IA. `only_missing`: save v25 manda — nada de reescrever a
+	# capacidade/estoque que veio no save (nem o da IA).
 	if sim.has_method("set_storage_capacity"):
 		var storage := StorageServiceScript.new()
 		var storage_report := storage.apply_to_sim(sim, cities, farms,

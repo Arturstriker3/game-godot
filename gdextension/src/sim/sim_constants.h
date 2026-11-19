@@ -1195,8 +1195,10 @@ constexpr double kPropertyTaxDefaultRate = 0.0;
 // é inventado; os valores abaixo são MODELO calibrável no laboratório.
 // ---------------------------------------------------------------------------
 // Capacidade inicial (regra declarada) como MESES de produção da região/cidade.
-// O `StorageService` aplica `capacidade = produção_anual × meses / 12` por tipo
-// quando o JSON real de capacidade não existe.
+// D-101: o `StorageService` aplica `capacidade = cobertura_real (meses) ×
+// produção anual do jogo / 12` — o dado real entra como COBERTURA, não como
+// tonelagem absoluta; esta constante é a cobertura usada quando o dado não tem
+// meses publicados para o tipo.
 constexpr double kStorageInitialMonths = 2.0;
 // Fatia da capacidade inicial declarada como RESERVA DO GOVERNO. O resto é
 // estoque privado (produtor/cooperativa/comerciante). Modelo declarado: a
