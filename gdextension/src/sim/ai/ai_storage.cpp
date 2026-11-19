@@ -304,16 +304,34 @@ bool AiStorageInvestor::government_decisions(AiContext& ctx,
 			STORAGE_GOVERNMENT);
 		const double held = ai_storage_stock(ctx.view, city_index, type,
 			STORAGE_GOVERNMENT);
-		// Compra na colheita/preço baixo: segura o preço e forma a reserva.
+		const bool food = ai_food_calories(ctx.view, product) > 0.0;
+		const bool food_secure =
+			satisfaction >= kStorageGovernmentBuySatisfactionFloor;
+		// Compra só do EXCEDENTE declarado pelo mercado (`surplus` = estoque
+		// acima de 3 dias de demanda) e, em comida, só onde a cidade já come
+		// com folga: ilha/micro-mercado não perde comida para a reserva.
+		// `surplus > 0` é o próprio teste de "mercado minúsculo" — mercado sem
+		// sobra não vende nada ao governo.
+		const double surplus = ai_market(ctx.view, city_index, product,
+			kAiSurplus);
 		if (harvesting && price <= ref * kStorageGovernmentLowPrice
-				&& budget > 0.0 && held < capacity) {
-			const double stock = ai_market(ctx.view, city_index, product,
-				kAiStock);
-			const double tons = std::min(std::min(stock
+				&& budget > 0.0 && held < capacity && surplus > 0.0
+				&& (!food || food_secure)) {
+			const double tons = std::min(std::min(surplus
 				* kStorageGovernmentBuyShare, capacity - held),
 				budget / price);
 			if (tons > 1e-6 && ai_emit_storage_trade(ctx, city, type,
 					STORAGE_GOVERNMENT, product, tons, true, false).created) {
+				return true;
+			}
+		}
+		// Libera onde falta: comida guardada volta de graça ao mercado da
+		// cidade com satisfação abaixo do piso de compra (a reserva existe
+		// para a mesa, não para o silo).
+		if (food && !food_secure && held > 1e-6) {
+			const double tons = held * kStorageGovernmentReleaseShare;
+			if (tons > 1e-6 && ai_emit_storage_trade(ctx, city, type,
+					STORAGE_GOVERNMENT, product, tons, false, true).created) {
 				return true;
 			}
 		}
@@ -322,7 +340,7 @@ bool AiStorageInvestor::government_decisions(AiContext& ctx,
 				&& held > 1e-6) {
 			const double tons = held * kStorageGovernmentReleaseShare;
 			if (tons > 1e-6 && ai_emit_storage_trade(ctx, city, type,
-					STORAGE_GOVERNMENT, product, tons, false, false).created) {
+				STORAGE_GOVERNMENT, product, tons, false, false).created) {
 				return true;
 			}
 		}

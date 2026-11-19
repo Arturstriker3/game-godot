@@ -14,7 +14,10 @@ extends SceneTree
 ##   (4) pulmão região→cidade: a colheita entra no silo e sai aos poucos;
 ##   (5) IA privada constrói quando o spread paga e não causa fome em paz;
 ##   (6) IPC e dias de reserva na camada nacional (leitura);
-##   (7) round-trip v25 e migração v24→v25 (sem inventar capacidade/tonelada).
+##   (7) round-trip v25 e migração v24→v25 (sem inventar capacidade/tonelada);
+##   (8) reserva nacional em ilha/micro-mercado: cidade com comida curta não
+##       perde comida para o silo do governo (compra só do excedente) e a
+##       reserva libera onde falta.
 
 const GeoScript := preload("res://core/economy/geography_service.gd")
 const StorageScript := preload("res://core/economy/storage_service.gd")
@@ -38,9 +41,10 @@ func _init() -> void:
 	_test_ai_storage()
 	_test_ipc()
 	_test_roundtrip_and_migration()
+	_test_government_reserve_keeps_food()
 	if _failures.is_empty():
 		print("[storage] OK: %d verificações (service, conservação, capacidade, "
-			% _checks + "pulmão, IA, IPC, save v25).")
+			% _checks + "pulmão, IA, IPC, save v25, reserva em ilha).")
 		quit(0)
 	else:
 		print("[storage] FALHAS (%d de %d):" % [_failures.size(), _checks])
@@ -446,6 +450,11 @@ func _test_ai_storage() -> void:
 	sim.set_crop_plan("AGRIA", "wheat", 400.0, 3.0,
 		[{"plant_start": 1, "plant_end": 60, "harvest_start": 61,
 		"harvest_end": 365, "share": 1.0}])
+	# Mundo "em paz": PORTUS menor não drena a comida de AGRIA, então a
+	# satisfação alimentar da cidade pode ser medida de verdade (antes esta
+	# verificação lia 1,0 sempre — o status não tem `satisfaction` na ficha e o
+	# helper caía no padrão; corrigido em D-101).
+	_set_population(sim, "PORTUS", 50000.0)
 	# Preço alto e caixa: a obra de silo paga o payback declarado (6 anos).
 	_inject_market(sim, "AGRIA", "wheat", 2000.0)
 	_set_price(sim, "AGRIA", "wheat", 90.0)
@@ -456,8 +465,16 @@ func _test_ai_storage() -> void:
 	for _day in 120:
 		var status: Dictionary = sim.tick_day()
 		bankruptcies = int(status.get("bankruptcies", bankruptcies))
-		satisfaction_min = minf(satisfaction_min,
-			_food_satisfaction(sim, "AGRIA"))
+		var sat_now := _food_satisfaction(sim, "AGRIA")
+		if sat_now < 0.85:
+			var cs: Dictionary = sim.get_city_status("AGRIA")
+			print("[dbg] d=%d sat=%.3f need=%.1f consumed=%.1f market=%.1f gov=%.1f priv=%.1f"
+				% [_day, sat_now, float(cs.get("need", 0.0)),
+				float(cs.get("consumed", 0.0)),
+				_market(sim, "AGRIA", _product(sim, "wheat")),
+				_storage_stock(sim, "AGRIA", "silo", "government", "wheat"),
+				_storage_stock(sim, "AGRIA", "silo", "private", "wheat")])
+		satisfaction_min = minf(satisfaction_min, sat_now)
 	var log_entries: Array = sim.get_command_log()
 	var builds := 0
 	for entry in log_entries:
@@ -471,9 +488,26 @@ func _test_ai_storage() -> void:
 				and float(site.get("capacity_t", 0.0)) > 0.0:
 			built += float(site.get("capacity_t", 0.0))
 	_check(built > 0.0, "IA: armazém privado construído (%.1f t)" % built)
+	var base_world := _make_world(false)
+	var base_sim = base_world["sim"]
+	base_sim.set_storage_product_type("wheat", "silo")
+	_set_population(base_sim, "PORTUS", 50000.0)
+	base_sim.set_crop_plan("AGRIA", "wheat", 400.0, 3.0,
+		[{"plant_start": 1, "plant_end": 60, "harvest_start": 61,
+		"harvest_end": 365, "share": 1.0}])
+	_inject_market(base_sim, "AGRIA", "wheat", 2000.0)
+	_set_price(base_sim, "AGRIA", "wheat", 90.0)
+	_set_cash(base_sim, "AGRIA", 2000000.0, 2000000.0)
+	var base_min := 1.0
+	for _day in 120:
+		base_sim.tick_day()
+		base_min = minf(base_min, _food_satisfaction(base_sim, "AGRIA"))
 	_check(satisfaction_min >= 0.85,
 		"IA: paz — satisfação alimentar nunca caiu abaixo de 0,85 (mín %.3f)"
 		% satisfaction_min)
+	_check(satisfaction_min + 1e-9 >= base_min,
+		"IA: a armazenagem não deixa a cidade com mais fome que o mundo sem IA"
+		+ " (mín %.3f vs %.3f)" % [satisfaction_min, base_min])
 	_check(bankruptcies == 0, "IA: nenhuma falência em 120 d (%d)" % bankruptcies)
 	_check(absf(_money(sim) - money0) <= maxf(1.0, absf(money0) * 1e-6),
 		"IA: dinheiro conservado em 120 d (drift %.3f)" % (_money(sim) - money0))
@@ -600,6 +634,81 @@ func _test_roundtrip_and_migration() -> void:
 
 
 # ---------------------------------------------------------------------------
+# (8) Reserva nacional em ilha/micro-mercado (D-101)
+# ---------------------------------------------------------------------------
+
+## PORTUS é a "ilha pequena": sem fazenda própria (produção local zero), comida
+## curta (satisfação < 0,95) e um silo do GOVERNO com capacidade. A safra do dia
+## cai no mercado e o preço recua na colheita — era exatamente aí que a regra
+## antiga (10 % do estoque do mercado, sem piso de satisfação nem excedente)
+## levava comida da mesa para a reserva. Agora o silo do governo não cresce em
+## cidade faminta e a reserva já guardada volta ao mercado.
+func _test_government_reserve_keeps_food() -> void:
+	var world := _make_world(true)
+	var sim = world["sim"]
+	sim.set_storage_product_type("wheat", "silo")
+	_zero_farms(sim, "PORTUS")
+	# População acima do que a produção local + o mercado da ilha cobrem: a
+	# satisfação alimentar fica abaixo do piso de compra (como nas ilhas
+	# pequenas da D-101).
+	_set_population(sim, "PORTUS", 2000000.0)
+	sim.set_storage_capacity("PORTUS", "silo", "government", 5000.0)
+	sim.set_storage_capacity("PORTUS", "silo", "private", 0.0)
+	# Janela de colheita quase o ano inteiro: `harvest_active` é verdadeiro nos
+	# dias medidos, como numa ilha que colhe pouco e sempre.
+	sim.set_crop_plan("PORTUS", "wheat", 400.0, 1.0,
+		[{"plant_start": 1, "plant_end": 1, "harvest_start": 2,
+		"harvest_end": 365, "share": 1.0}])
+	_inject_market(sim, "PORTUS", "wheat", 200.0)
+	_set_cash(sim, "PORTUS", 200000.0, 200000.0)
+	var wheat := _product(sim, "wheat")
+	var gov_start := _storage_stock(sim, "PORTUS", "silo", "government",
+		"wheat")
+	var hungry_days := 0
+	var bought := 0.0
+	var released := 0.0
+	for _day in 45:
+		sim.tick_day()
+		if _food_satisfaction(sim, "PORTUS") < 0.95:
+			hungry_days += 1
+		var site := _site(sim, "PORTUS", "silo", "government")
+		bought += float(site.get("bought_today_t", 0.0))
+		released += float(site.get("released_today_t", 0.0))
+	_check(hungry_days >= 30,
+		"ilha: cenário é de comida curta (%d/45 dias com satisfação < 0,95)"
+		% hungry_days)
+	var gov_after_buy := _storage_stock(sim, "PORTUS", "silo", "government",
+		"wheat")
+	_check(gov_after_buy <= gov_start + 1e-6,
+		"ilha: o silo do governo NÃO cresceu na cidade faminta (%.3f → %.3f t)"
+		% [gov_start, gov_after_buy])
+	_check(bought <= 1e-6,
+		"ilha: nenhuma compra do governo para a reserva (%.3f t compradas)"
+		% bought)
+
+	# Libera onde falta: a reserva já guardada volta ao mercado (sem pagamento)
+	# enquanto a satisfação estiver abaixo do piso de compra.
+	sim.set_storage_stock("PORTUS", "silo", "government", "wheat", 100.0)
+	var seeded := _storage_stock(sim, "PORTUS", "silo", "government", "wheat")
+	var market_before := _market(sim, "PORTUS", wheat)
+	var released_now := 0.0
+	for _day in 10:
+		sim.tick_day()
+		released_now += float(_site(sim, "PORTUS", "silo", "government").get(
+			"released_today_t", 0.0))
+	var gov_final := _storage_stock(sim, "PORTUS", "silo", "government",
+		"wheat")
+	_check(seeded >= 99.0 and gov_final < seeded * 0.99,
+		"ilha: reserva libera onde falta (%.1f → %.1f t em 10 d)"
+		% [seeded, gov_final])
+	_check(released_now > 0.0,
+		"ilha: liberação medida no site do governo (%.1f t)" % released_now)
+	_check(_market(sim, "PORTUS", wheat) >= market_before,
+		"ilha: o mercado não perdeu comida para o silo (%.1f t)"
+		% _market(sim, "PORTUS", wheat))
+
+
+# ---------------------------------------------------------------------------
 # Apoio
 # ---------------------------------------------------------------------------
 
@@ -706,12 +815,44 @@ func _money(sim: Object) -> float:
 	return float(sim.get_status().get("money_total", 0.0))
 
 
+## Satisfação ALIMENTAR (a mesma que a IA lê: `pop.satisfaction`, que é
+## consumido/necessidade do dia). A ficha da cidade traz o bloco `pop`; quando
+## ele não vem, a conta é refeita com `consumed/need`.
 func _food_satisfaction(sim: Object, city: String) -> float:
-	for row in Array(sim.get_status().get("cities", [])):
-		var entry: Dictionary = row
-		if String(entry.get("id", "")) == city:
-			return float(entry.get("satisfaction", 1.0))
-	return 1.0
+	var info: Dictionary = sim.get_city_status(city)
+	if info.is_empty():
+		return 1.0
+	var pop: Dictionary = info.get("pop", {})
+	if pop.has("satisfaction"):
+		return float(pop.get("satisfaction", 1.0))
+	var need := float(info.get("need", 0.0))
+	if need <= 0.0:
+		return 1.0
+	return clampf(float(info.get("consumed", 0.0)) / need, 0.0, 1.0)
+
+
+## Define a população da cidade no retrato do dia (população, população
+## simulada e POP — os três campos que o save carrega).
+func _set_population(sim: Object, city_id: String, people: float) -> void:
+	var snapshot: Dictionary = sim.to_dict()
+	for city in Array(snapshot.get("cities", [])):
+		if String((city as Dictionary).get("id", "")) == city_id:
+			city["population"] = people
+			city["simulation_population"] = people
+			var pop: Dictionary = city.get("pop", {})
+			pop["population"] = people
+	sim.from_dict(snapshot)
+
+
+## Zera a produção das construções de uma cidade no retrato do dia (a "ilha"
+## sem fazenda própria). `capacity` é o campo do save, e o núcleo relê no
+## `from_dict` — nenhuma tonelada é criada ou destruída.
+func _zero_farms(sim: Object, city_id: String) -> void:
+	var snapshot: Dictionary = sim.to_dict()
+	for building in Array(snapshot.get("buildings", [])):
+		if String((building as Dictionary).get("city", "")) == city_id:
+			building["capacity"] = 0.0
+	sim.from_dict(snapshot)
 
 
 func _inject_market(sim: Object, city_id: String, product: String,

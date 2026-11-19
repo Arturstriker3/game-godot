@@ -1248,10 +1248,16 @@ constexpr double kStoragePrivateBuildCashShare = 0.25;
 // deste piso, e libera o estoque de comida (anti-fome em tempo de paz).
 constexpr double kStoragePrivateBuySatisfactionFloor = 0.90;
 constexpr double kStoragePrivateReleaseSatisfaction = 0.85;
-// IA do governo: compra na colheita até esta fração do estoque de mercado e
-// libera na entressafra/crise até esta fração do estoque guardado.
+// IA do governo: compra na colheita até esta fração do EXCEDENTE do mercado
+// (`Market::surplus`, o estoque acima de 3 dias de demanda) e libera na
+// entressafra, na falta e na crise até esta fração do estoque guardado.
 constexpr double kStorageGovernmentBuyShare = 0.10;
 constexpr double kStorageGovernmentReleaseShare = 0.20;
+// IA do governo: a reserva de COMIDA só se forma onde a cidade já come com
+// folga — consumido/necessidade >= este piso. Abaixo dele a tonelada vai para
+// a mesa (liberação), nunca para o silo: ilha/micro-mercado não perde comida
+// para a reserva nacional. Declarado em D-101 (fecha a piora do portão).
+constexpr double kStorageGovernmentBuySatisfactionFloor = 0.95;
 // IA do governo: preço "baixo" / "alto" vs. referência (histórico/base).
 constexpr double kStorageGovernmentLowPrice = 0.95;
 constexpr double kStorageGovernmentHighPrice = 1.05;
