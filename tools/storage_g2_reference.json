@@ -1,0 +1,745 @@
+{
+  "_meta": {
+    "dataset": "storage_g2_reference",
+    "note": "valores publicados por nacao, curados a partir das fontes citadas; cada fonte traz o trecho literal que sustenta o numero",
+    "retrieved": "2026-11-19",
+    "unit_rule": "o valor aqui ja esta na unidade canonica do campo; a unidade original e a conversao estao no note",
+    "version": "g2"
+  },
+  "entries": [
+    {
+      "estimate": false,
+      "iso3": "USA",
+      "metric": "grain_storage_capacity_mt",
+      "note": "Unidade original: bushels. Tabelas do relatorio: on-farm 13,618 million bu + off-farm 11,870,800 thousand bu = 25,488.8 million bu; convertido a 56 lb/bu (equivalente milho) = 0.0254012 t/bu -> 647.4 Mt. Inclui on-farm (bins, cribs, sheds) e off-farm (elevators, warehouses, terminals, merchant mills, oilseed crushers); exclui instalacoes usadas so para arroz ou amendoim. Nao e um dado de 'capacidade por grao' e sim capacidade fisica total.",
+      "source_key": "usda_nass_grain_stocks_capacity",
+      "unit": "Mt",
+      "value": 647.4,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "BRA",
+      "metric": "grain_storage_capacity_mt",
+      "note": "Unidade original: milhoes de toneladas. Dado do IBGE - Pesquisa de Estoques, 2o semestre de 2025 (release oficial: agenciadenoticias.ibge.gov.br/.../47075, bloqueado para leitura direta por 403). Inclui silos, armazens graneleiros/granelizados e armazens convencionais/estruturais/inflaveis de estabelecimentos ativos; total publico + privado. Complemento do proprio IBGE no texto: silos 124,7 Mt (53,3%), graneleiros 85,8 Mt, convencionais/estruturais/inflaveis 23,3 Mt. | Release posterior do IBGE (1o semestre de 2026) informa 237,6 Mt (+1,7%), nao usado aqui por estar atras de Cloudflare no momento da coleta; diferenca de 1,6% sobre o valor adotado.",
+      "source_key": "ibge_pesquisa_estoques_2s2025",
+      "unit": "Mt",
+      "value": 233.8,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "CHN",
+      "metric": "grain_storage_capacity_mt",
+      "note": "Unidade original: milhoes de toneladas. Fala do chefe da NFSRA (Liu Huanxin) em coletiva, 14/10/2025. E 'capacidade total de armazens' (standard warehouse capacity) do pais - inclui reservas estatais e armazens de empresas; nao inclui silos de fazenda informais. Valor e piso ('exceeded 730').",
+      "source_key": "nfsra_warehouse_capacity",
+      "unit": "Mt",
+      "value": 730,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "IND",
+      "metric": "grain_public_capacity_t",
+      "note": "Unidade original: lakh metric tonnes (LMT); 917.83 LMT = 91,783,000 t. Capacidade publica (FCI + agencias estaduais), coberta + CAP (Cover and Plinth), para graos do central pool. Nao inclui armazens privados nem silos de cooperativas. Pagina oficial do PIB (PRID 2172351) retorna 403; texto confirmado na replicacao da Prasar Bharati.",
+      "source_key": "pib_fci_state_storage_2025",
+      "unit": "t",
+      "value": 91783000,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "IND",
+      "metric": "grain_public_stocks_t",
+      "note": "Unidade original: lakh tonnes; 736.61 lakh t = 73,661,000 t. Estoque do central pool em 01/07/2025: 37,783,000 t de arroz + 35,878,000 t de trigo (mais paddy e coarse grains). Mesmo dia do ano anterior: 608.75 lakh t.",
+      "source_key": "fci_central_pool_stock_jul2025",
+      "unit": "t",
+      "value": 73661000,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "UKR",
+      "metric": "grain_storage_capacity_mt",
+      "note": "Unidade original: milhoes de toneladas. Somente capacidade de ELEVADORES (armazenagem simultanea), nao inclui silos/bags nas fazendas. Serie: 52.1 Mt (out/2024) -> 52.67 Mt (fim de 2025). Top 3 regioes: Poltava 5,575 mil t; Odesa 5,445 mil t; Vinnytsia 4,447 mil t.",
+      "source_key": "elevatorist_ukraine_elevators_2025",
+      "unit": "Mt",
+      "value": 52.67,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "KAZ",
+      "metric": "grain_storage_capacity_mt",
+      "note": "Unidade original: milhoes de toneladas. Total 30,7 Mt = 13,3 Mt em empresas licenciadas de recebimento de graos + 17,4 Mt em produtores agricolas. Declaracao de 04/11/2025.",
+      "source_key": "kaz_minagri_storage_2025",
+      "unit": "Mt",
+      "value": 30.7,
+      "year": 2025
+    },
+    {
+      "estimate": true,
+      "iso3": "RUS",
+      "metric": "grain_storage_capacity_mt",
+      "note": "Unidade original: milhoes de toneladas. ESTIMATIVA de reportagem (Reuters, 11/11/2026, com consultorias do setor) - nao ha publicacao unica oficial (Rosstat/Ministerio) com esse total. Valor 'about 160' e aproximado; 40% atende padrao moderno. Alternativa divulgada no mesmo periodo por consultoria: 118-122 Mt de capacidade 'profissional' (Tridge), o que mostra dispersao - usar com cautela.",
+      "source_key": "reuters_russia_storage_2026",
+      "unit": "Mt",
+      "value": 160,
+      "year": 2026
+    },
+    {
+      "estimate": false,
+      "iso3": "FRA",
+      "metric": "grain_storage_capacity_mt",
+      "note": "Unidade original: milhoes de toneladas. Refere-se a rede de silos de coleta/cooperativas e negocios (4568 silos), nao a silos de fazenda. Publicado em 20/03/2026 no lancamento do plano setorial.",
+      "source_key": "cooperation_agricole_silos_2026",
+      "unit": "Mt",
+      "value": 44,
+      "year": 2026
+    },
+    {
+      "estimate": false,
+      "iso3": "IDN",
+      "metric": "grain_public_capacity_t",
+      "note": "Unidade original: milhoes de toneladas de arroz. Capacidade nacional de armazens do Bulog (rede publica de estoque de arroz/CBP): 6,21 Mt; 86% ocupada em 18/05/2026, restando ~839 mil t. Dado apresentado em audiencia na Comissao IV (19/05/2026).",
+      "source_key": "bulog_warehouse_capacity_2026",
+      "unit": "t",
+      "value": 6210000,
+      "year": 2026
+    },
+    {
+      "estimate": false,
+      "iso3": "PHL",
+      "metric": "grain_public_capacity_t",
+      "note": "Unidade original: toneladas (em palay ou arroz). Capacidade total da rede de armazens da National Food Authority (publica). Valor citado em 20/01/2025; reportagens de marco/2025 falam em ~1 milhao de t e plano de +800 mil t, indicando numero na faixa de 1,0-1,2 Mt.",
+      "source_key": "nfa_warehouse_capacity_2025",
+      "unit": "t",
+      "value": 1200000,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "USA",
+      "metric": "cold_storage_capacity_m3",
+      "note": "Coluna 2020 da Tabela 1 em milhões de m³: 156,21 milhões de m³ = 156.210.000 m³. Cobertura: espaço de armazém refrigerado total do país (3PL + privado), não só 3PL.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 156210000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "CHN",
+      "metric": "cold_storage_capacity_m3",
+      "note": "130,95 milhões de m³ (coluna 2020 da Tabela 1) = 130.950.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 130950000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "IND",
+      "metric": "cold_storage_capacity_m3",
+      "note": "150 milhões de m³ (coluna 2020) = 150.000.000 m³; 96% do espaço é 3PL. O relatório descreve a capacidade indiana como 'estável' desde 2018.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 150000000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "JPN",
+      "metric": "cold_storage_capacity_m3",
+      "note": "39,257 milhões de m³ (coluna 2020) = 39.257.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 39257000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "GBR",
+      "metric": "cold_storage_capacity_m3",
+      "note": "35,926 milhões de m³ (coluna 2020, linha 'Great Britain') = 35.926.000 m³; apenas 38% em 3PL.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 35926000,
+      "year": 2020
+    },
+    {
+      "estimate": true,
+      "iso3": "CAN",
+      "metric": "cold_storage_capacity_m3",
+      "note": "27,5163 milhões de m³ = 27.516.300 m³. O próprio relatório marca este valor com a nota 3 ('2020 estimate includes private space') e explica que o salto vs. 2018 vem da inclusão de espaço privado pela primeira vez — por isso estimate=true.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 27516300,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "ESP",
+      "metric": "cold_storage_capacity_m3",
+      "note": "23,0 milhões de m³ = 23.000.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 23000000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "KOR",
+      "metric": "cold_storage_capacity_m3",
+      "note": "21,5 milhões de m³ = 21.500.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 21500000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "BRA",
+      "metric": "cold_storage_capacity_m3",
+      "note": "19,447 milhões de m³ = 19.447.000 m³ (51% em 3PL).",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 19447000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "DEU",
+      "metric": "cold_storage_capacity_m3",
+      "note": "14,18 milhões de m³ = 14.180.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 14180000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "MEX",
+      "metric": "cold_storage_capacity_m3",
+      "note": "14 milhões de m³ = 14.000.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 14000000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "NED",
+      "metric": "cold_storage_capacity_m3",
+      "note": "15,0 milhões de m³ = 15.000.000 m³; maior índice per capita do mundo em 2020 (0,945 m³ por residente urbano).",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 15000000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "AUS",
+      "metric": "cold_storage_capacity_m3",
+      "note": "8,365 milhões de m³ = 8.365.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 8365000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "FRA",
+      "metric": "cold_storage_capacity_m3",
+      "note": "6,52 milhões de m³ = 6.520.000 m³ (só espaço 3PL).",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 6520000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "ITA",
+      "metric": "cold_storage_capacity_m3",
+      "note": "6,15 milhões de m³ = 6.150.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 6150000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "POL",
+      "metric": "cold_storage_capacity_m3",
+      "note": "5,45 milhões de m³ = 5.450.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 5450000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "ZAF",
+      "metric": "cold_storage_capacity_m3",
+      "note": "2,71 milhões de m³ = 2.710.000 m³.",
+      "source_key": "gcca_2020",
+      "unit": "m3",
+      "value": 2710000,
+      "year": 2020
+    },
+    {
+      "estimate": false,
+      "iso3": "RUS",
+      "metric": "gas_storage_capacity_twh",
+      "note": "24 instalações, WGV 68,99 bcm (abril de 2025). Em TWh (1 bcm = 11,0 TWh): ~759 TWh. | convertido de 68.9900 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 758.89,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "UKR",
+      "metric": "gas_storage_capacity_twh",
+      "note": "13 instalações, WGV 32,18 bcm (abril de 2025). Em TWh com 1 bcm = 11,0 TWh: ~354 TWh. | convertido de 32.1800 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 353.98,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "CAN",
+      "metric": "gas_storage_capacity_twh",
+      "note": "64 instalações, WGV 25,52 bcm (abril de 2025). Em TWh: ~281 TWh. | convertido de 25.5200 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 280.72,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "DEU",
+      "metric": "gas_storage_capacity_twh",
+      "note": "44 instalações, WGV 22,49 bcm (abril de 2025). Em TWh: ~247 TWh. | convertido de 22.4900 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 247.39,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "CHN",
+      "metric": "gas_storage_capacity_twh",
+      "note": "25 instalações, WGV 19,83 bcm (abril de 2025); o IGU registra +6 bcm em relação a 2022, maior aumento do mundo. Em TWh: ~218 TWh. | convertido de 19.8300 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 218.13,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "ITA",
+      "metric": "gas_storage_capacity_twh",
+      "note": "13 instalações, WGV 17,66 bcm (abril de 2025). Em TWh: ~194 TWh. | convertido de 17.6600 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 194.26,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "NED",
+      "metric": "gas_storage_capacity_twh",
+      "note": "5 instalações, WGV 13,74 bcm (abril de 2025); com a expansão de Norg, o país passa a França. Em TWh: ~151 TWh. | convertido de 13.7400 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 151.14,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "FRA",
+      "metric": "gas_storage_capacity_twh",
+      "note": "14 instalações, WGV 11,77 bcm (abril de 2025). Em TWh: ~129 TWh. | convertido de 11.7700 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 129.47,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "AUT",
+      "metric": "gas_storage_capacity_twh",
+      "note": "9 instalações, WGV 8,58 bcm (abril de 2025). Em TWh: ~94 TWh. | convertido de 8.5800 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 94.38,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "HUN",
+      "metric": "gas_storage_capacity_twh",
+      "note": "5 instalações, WGV 6,10 bcm (abril de 2025). Em TWh: ~67 TWh. | convertido de 6.1000 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 67.1,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "IRN",
+      "metric": "gas_storage_capacity_twh",
+      "note": "2 instalações, WGV 6,00 bcm (abril de 2025). Em TWh: ~66 TWh. | convertido de 6.0000 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 66.0,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "TUR",
+      "metric": "gas_storage_capacity_twh",
+      "note": "2 instalações (Silivri e Tuz Gölü), WGV 5,84 bcm (abril de 2025). No PDF o nome do país aparece como 'T?RKIYE' por falha de codificação da fonte tipográfica. Em TWh: ~64 TWh. | convertido de 5.8400 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 64.24,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "CZE",
+      "metric": "gas_storage_capacity_twh",
+      "note": "9 instalações, WGV 3,90 bcm (abril de 2025). Em TWh: ~43 TWh. | convertido de 3.9000 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 42.9,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "KAZ",
+      "metric": "gas_storage_capacity_twh",
+      "note": "3 instalações, WGV 3,65 bcm (abril de 2025). Em TWh: ~40 TWh. | convertido de 3.6500 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 40.15,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "POL",
+      "metric": "gas_storage_capacity_twh",
+      "note": "9 instalações, WGV 3,56 bcm (abril de 2025). Em TWh: ~39 TWh. | convertido de 3.5600 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 39.16,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "SVK",
+      "metric": "gas_storage_capacity_twh",
+      "note": "3 instalações, WGV 3,23 bcm (abril de 2025). Em TWh: ~36 TWh. | convertido de 3.2300 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 35.53,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "ESP",
+      "metric": "gas_storage_capacity_twh",
+      "note": "O IGU conta 1 instalação com WGV 3,17 bcm (abril de 2025). O banco da GIE lista 5 instalações operacionais somando 35,93 TWh (~3,27 bcm) — mesma ordem de grandeza. Em TWh: ~35 TWh. | convertido de 3.1700 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 34.87,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "GBR",
+      "metric": "gas_storage_capacity_twh",
+      "note": "8 instalações, WGV 2,30 bcm (abril de 2025), sem contar Rough. Em TWh: ~25 TWh. | convertido de 2.3000 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 25.3,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "DNK",
+      "metric": "gas_storage_capacity_twh",
+      "note": "2 instalações, WGV 1,09 bcm (abril de 2025). Em TWh: ~12 TWh. | convertido de 1.0900 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 11.99,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "BEL",
+      "metric": "gas_storage_capacity_twh",
+      "note": "1 instalação (Loenhout), WGV 0,95 bcm (abril de 2025). Em TWh: ~10 TWh. | convertido de 0.9500 bcm a 11,0 TWh/bcm",
+      "source_key": "igu_ugs_2025",
+      "unit": "bcm",
+      "value": 10.45,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "ROU",
+      "metric": "gas_storage_capacity_twh",
+      "note": "O IGU 2025 deixa a Romênia sem WGV; este valor vem do banco da GIE. Soma das 6 instalações operacionais = 33,859 TWh ÷ 11,0 TWh/bcm = 3,078 bcm (arredondado 3,08). Conversão: 1 bcm = 11,0 TWh. | convertido de 3.0800 bcm a 11,0 TWh/bcm",
+      "source_key": "gie_storage_db_2026",
+      "unit": "bcm",
+      "value": 33.88,
+      "year": 2026
+    },
+    {
+      "estimate": false,
+      "iso3": "USA",
+      "metric": "oil_public_capacity_kt",
+      "note": "Capacidade autorizada de 714 milhões de barris. Conversão com 1 bbl = 0,1364 t: 714 Mbbl × 0,1364 = 97,39 Mt ≈ 97.390 kt. O DOE informa 'Current authorized storage capacity - 714 million barrels' (https://www.energy.gov/hgeo/opr/spr-quick-facts).",
+      "source_key": "eia_tie_67504",
+      "unit": "kt",
+      "value": 97390,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "USA",
+      "metric": "oil_public_days_net_imports",
+      "note": "Dias de cobertura das importações líquidas apenas com o SPR (estoque público), calculados pelo DOE com 411 MMbbl no fim de 2025. A exigência da IEA é de 90 dias somando estoques públicos e privados.",
+      "source_key": "doe_spr_quick_facts",
+      "unit": "days",
+      "value": 125,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "JPN",
+      "metric": "oil_public_stocks_kt",
+      "note": "Somente estoque do governo (exclui estoque privado obrigatório e joint stockpiling). 263 Mbbl ≈ 35.873 kt (1 bbl = 0,1364 t). A lei japonesa exige 70 dias de demanda em estoque privado além da reserva governamental de 90 dias. | convertido de 263.0000 Mbbl a 0,1364 t/bbl",
+      "source_key": "eia_tie_67504",
+      "unit": "Mbbl",
+      "value": 35873.2,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "KOR",
+      "metric": "oil_public_stocks_kt",
+      "note": "Média de 2025, estoque governamental. 79 Mbbl ≈ 10.776 kt (1 bbl = 0,1364 t). | convertido de 79.0000 Mbbl a 0,1364 t/bbl",
+      "source_key": "eia_tie_67504",
+      "unit": "Mbbl",
+      "value": 10775.6,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "KOR",
+      "metric": "oil_public_capacity_kt",
+      "note": "Capacidade de 146 milhões de barris em 9 bases. Conversão com 1 bbl = 0,1364 t: 146 Mbbl × 0,1364 = 19,91 Mt ≈ 19.914 kt. O mesmo texto informa 100 Mbbl em estoque em agosto de 2026 (a EIA usa 79 Mbbl como média de 2025).",
+      "source_key": "knoc_facilities",
+      "unit": "kt",
+      "value": 19914,
+      "year": 2026
+    },
+    {
+      "estimate": false,
+      "iso3": "IND",
+      "metric": "oil_public_stocks_kt",
+      "note": "Estoque em março de 2025, citado pela EIA a partir da ISPRL; não inclui 3 Mbbl da ADNOC em Mangalore. 21,4 Mbbl ≈ 2.919 kt (1 bbl = 0,1364 t). | convertido de 21.4000 Mbbl a 0,1364 t/bbl",
+      "source_key": "eia_tie_67504",
+      "unit": "Mbbl",
+      "value": 2918.96,
+      "year": 2025
+    },
+    {
+      "estimate": false,
+      "iso3": "IND",
+      "metric": "oil_public_capacity_kt",
+      "note": "5,33 MMT = 5.330 kt (unidade original já é tonelada). A Fase II aprovada (6,5 MMT em Chandikhol e Padur) ainda não está construída.",
+      "source_key": "mopng_spr",
+      "unit": "kt",
+      "value": 5330,
+      "year": 2026
+    },
+    {
+      "estimate": true,
+      "iso3": "CHN",
+      "metric": "oil_public_stocks_kt",
+      "note": "ESTIMATIVA da EIA: a China não publica estoques. 360 Mbbl é a parcela do governo; a EIA estima ~1,4 bilhão de barris somando estoques comerciais (usados como estratégicos desde 2024). 360 Mbbl ≈ 49.104 kt (1 bbl = 0,1364 t). | convertido de 360.0000 Mbbl a 0,1364 t/bbl",
+      "source_key": "eia_tie_67504",
+      "unit": "Mbbl",
+      "value": 49104.0,
+      "year": 2025
+    }
+  ],
+  "sources": {
+    "bulog_warehouse_capacity_2026": {
+      "license": "© DPR RI, uso com citação",
+      "page": "",
+      "publisher": "Dewan Perwakilan Rakyat Republik Indonesia (DPR RI), Comissao IV",
+      "quote": "Sementara itu, kapasitas gudang Bulog secara nasional disebut telah terisi hingga 86 persen dari total kapasitas nasional sebesar 6,21 juta ton beras.",
+      "title": "Gudang Bulog Hampir Penuh, Legislator Ingatkan Risiko Kerusakan Beras",
+      "url": "https://dpr.go.id/kegiatan-dpr/berita/Gudang-Bulog-Hampir-Penuh-Legislator-Ingatkan-Risiko-Kerusakan-Beras-65232",
+      "year": 2026
+    },
+    "cooperation_agricole_silos_2026": {
+      "license": "© Process Alimentaire, uso com citação",
+      "page": "",
+      "publisher": "Process Alimentaire (plano 'Infrastructures 2030' da section Metiers du Grain / La Cooperation Agricole)",
+      "quote": "La France compte 4568 silos pour une capacite totale de stockage de 44 millions de tonnes pour une production annuelle de 60 millions de tonnes. 40 % d'entre eux ont plus de 50 ans et seulement 15 % moins de 25 ans.",
+      "title": "4,3 milliards d'euros pour la resilience des silos francais",
+      "url": "https://www.processalimentaire.com/procedes/43-milliards-d-euros-pour-la-resilience-des-silos-francais",
+      "year": 2026
+    },
+    "doe_spr_quick_facts": {
+      "license": "uso com citação",
+      "page": "seção 'Current authorized storage capacity' (última atualização: 9 de novembro de 2026)",
+      "publisher": "U.S. Department of Energy, Office of Petroleum Reserves",
+      "quote": "At the end of CY 2025 (as of December 31, 2025), the SPR’s crude oil inventory was 411 MMbbl. This is equivalent to approximately 125 days (more than 4 months) of U.S. crude oil net imports.",
+      "title": "SPR Quick Facts",
+      "url": "https://www.energy.gov/hgeo/opr/spr-quick-facts",
+      "year": 2025
+    },
+    "eia_tie_67504": {
+      "license": "uso com citação",
+      "page": "seção 'United States' (publicado em 20 de abril de 2026)",
+      "publisher": "U.S. Energy Information Administration (EIA), Today in Energy",
+      "quote": "In December 2025, the SPR held 413 million barrels.",
+      "title": "China, the United States, and Japan hold most strategic oil inventories in 2025",
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=67504",
+      "year": 2025
+    },
+    "elevatorist_ukraine_elevators_2025": {
+      "license": "© USM Media / Elevatorist, uso com citação",
+      "page": "",
+      "publisher": "USM Media (Ukrainian Shipping Magazine), citando Elevatorist.com",
+      "quote": "As of the end of 2025, Ukraine's total elevator capacity increased to 52.67 million tons of simultaneous grain storage. [...] In October 2024, this figure was 52.1 million tons.",
+      "title": "Last year, Ukraine's grain elevator capacity increased to 52.67 million tons",
+      "url": "https://en.usm.media/last-year-ukraines-grain-elevator-capacity-increased-to-52-67-million-tons",
+      "year": 2025
+    },
+    "fci_central_pool_stock_jul2025": {
+      "license": "© iGrain India, uso com citação (dados FCI)",
+      "page": "",
+      "publisher": "iGrain India (a partir de dados do Food Corporation of India / Government of India)",
+      "quote": "New Delhi. On 1 July 2025, a total of 736.61 lakh tonnes of foodgrains were present in the central pool operated by Food Corporation of India (FCI), which included 377.83 lakh tonnes of rice and 358.78 lakh tonnes of wheat.",
+      "title": "Central Pool Grain Stocks Surpass Last Year's Levels",
+      "url": "https://www.igrain.in/posts/central-pool-grain-stocks-surpass-last-years-levels",
+      "year": 2025
+    },
+    "gcca_2020": {
+      "license": "uso com citação",
+      "page": "2 (Table 1: Refrigerated Warehouse Capacity and Market Development Index, by Country, 2016-2020)",
+      "publisher": "Global Cold Chain Alliance (GCCA) / International Association of Refrigerated Warehouses (IARW), por Victoria Salin (Texas A&M)",
+      "quote": "United States 118.07 0.440 130.965 0.490 156.21 0.577 82",
+      "title": "2020 GCCA Global Cold Storage Capacity Report",
+      "url": "https://www.gcca.org/wp-content/uploads/2023/02/2020-GCCA-Global-Cold-Storage-Capacity-Report-FINAL-v2.pdf",
+      "year": 2020
+    },
+    "gie_storage_db_2026": {
+      "license": "uso com citação",
+      "page": "planilha 1 (aba única), linhas de RO; cabeçalho 'Storage Map 2026 / data as of August 2026'",
+      "publisher": "Gas Infrastructure Europe (GIE)",
+      "quote": "Romania | RO0101 | Depogaz Ploiești (ex Romgaz) | Balanceanca | operational | 0.53 ; RO0102 | Bilciuresti | 14.016999999999998 ; RO0103 | Ghercesti | 2.6749999999999998 ; RO0104 | Sarmasel | 9.6300000000000008 ; RO0105 | Urziceni | 3.8519999999999994 ; RO0201 | Depomures | Târgu Mureş | 3.15455 (coluna 'Working gas (technical) TWh')",
+      "title": "GIE Storage Database (Storage Map 2026, data as of August 2026)",
+      "url": "https://www.gie.eu/wp-content/uploads/filr/1410/26082026_Storage-Database_public_v3.xlsx",
+      "year": 2026
+    },
+    "ibge_pesquisa_estoques_2s2025": {
+      "license": "© IBGE / Canal Rural, uso com citação",
+      "page": "",
+      "publisher": "Canal Rural (reproduzindo IBGE, Pesquisa de Estoques)",
+      "quote": "A pesquisa tambem mostra que a capacidade util disponivel para armazenamento agricola no Brasil foi de 233,8 milhoes de toneladas em estabelecimentos ativos no segundo semestre de 2025. O volume representa alta de 1,1% em relacao ao semestre anterior.",
+      "title": "Estoques agricolas somam 44,1 milhoes de toneladas no 2o semestre de 2025, diz IBGE",
+      "url": "https://www.canalrural.com.br/agricultura/estoques-agricolas-somam-441-milhoes-de-toneladas-no-2o-semestre-de-2025-diz-ibge/",
+      "year": 2025
+    },
+    "igu_ugs_2025": {
+      "license": "uso com citação",
+      "page": "9-10 (seção 1.4 'WGV in operation by nation')",
+      "publisher": "International Gas Union (IGU), Storage Committee",
+      "quote": "Tabela 1.4 'WGV in operation by nation' (dados de abril/2025, bcm): USA 138,09; RUSSIA 68,99; UKRAINE 32,18; CANADA 25,52; GERMANY 22,49; CHINA 19,83; ITALY 17,66; NETHERLANDS 13,74; FRANCE 11,77; AUSTRIA 8,58",
+      "title": "Underground Gas Storage: A Critical Pillar for Energy Security (2025 edition)",
+      "url": "https://www.datocms-assets.com/146580/1761301320-underground-gas-storage_report.pdf",
+      "year": 2025
+    },
+    "kaz_minagri_storage_2025": {
+      "license": "© APK-Inform, uso com citação",
+      "page": "",
+      "publisher": "APK-Inform (declaracao do Ministro da Agricultura, Aidarbek Saparov, em reuniao de governo)",
+      "quote": "The head of the Ministry of Agriculture noted that the total grain storage capacity in the republic is 30.7 million tons, including at operating licensed grain-receiving enterprises - 13.3 million tons, at agricultural producers - 17.4 million tons.",
+      "title": "53% of the new wheat harvest in Kazakhstan's elevators is high quality",
+      "url": "https://apk-inform.com/en/news/1551302",
+      "year": 2025
+    },
+    "knoc_facilities": {
+      "license": "uso com citação",
+      "page": "Operations > Stockpiling Projects > Operation of Stockpiling Facilities (atualizado em 2026-08-31)",
+      "publisher": "Korea National Oil Corporation (KNOC)",
+      "quote": "KNOC is running nine stockpiling bases with a capacity of 146 million barrels of oil, and currently holds 100 million barrels of reserves, excluding international joint stockpiling reserves as of August, 2026.",
+      "title": "Operation of Stockpiling Facilities",
+      "url": "https://www.knoc.co.kr/ENG/sub03/sub03_3_3.jsp",
+      "year": 2026
+    },
+    "mopng_spr": {
+      "license": "uso com citação",
+      "page": "página única (última atualização: 06-10-2026)",
+      "publisher": "Ministry of Petroleum and Natural Gas, Government of India (Project Development Cell)",
+      "quote": "Indian Strategic Petroleum Reserve Limited (ISPRL) has already completed the construction of underground rock caverns for SPR with total crude oil storage capacity of 5.33 Million Metric Tonne (MMT) at three locations, viz. (i) Vishakhapatnam (1.33 MMT), (ii) Mangalore (1.50 MMT) and (iii) Padur (2.5 MMT).",
+      "title": "Strategic Crude Oil Storage",
+      "url": "https://www.mopng.gov.in/en/pdc/investible-projects/oil-amp-gas-infrastructure/strategic-crude-oil-storage",
+      "year": 2026
+    },
+    "nfa_warehouse_capacity_2025": {
+      "license": "© Philippine Star, uso com citação",
+      "page": "",
+      "publisher": "The Philippine Star (declaracao do ex-secretario de Agricultura Leonardo Montemayor sobre dados da NFA)",
+      "quote": "The NFA, through its nationwide network of warehouses, has a total storage capacity of 1,200,000 tons in palay or rice form. In what warehouses and locations is congestion happening?",
+      "title": "Explain warehouse congestion, NFA urged",
+      "url": "https://www.philstar.com/headlines/2025/01/20/2415461/explain-warehouse-congestion-nfa-urged",
+      "year": 2025
+    },
+    "nfsra_warehouse_capacity": {
+      "license": "© Global Times, uso com citação (coletiva da NFSRA)",
+      "page": "",
+      "publisher": "Global Times (coletiva do National Food and Strategic Reserves Administration - NFSRA)",
+      "quote": "Speaking of grain circulation and storage, Liu said that with the continued advancement of storage and logistics projects, the country's total warehouse capacity has exceeded 730 million tons, an increase of 58 million tons from five years earlier.",
+      "title": "China ensures ample grain supply during 14th Five-Year Plan; annual grain purchases reach 400 million tons: official",
+      "url": "https://globaltimes.cn/page/202510/1345610.shtml",
+      "year": 2025
+    },
+    "pib_fci_state_storage_2025": {
+      "license": "© Prasar Bharati / PIB, uso com citação",
+      "page": "",
+      "publisher": "DD India / Prasar Bharati, a partir de nota do Press Information Bureau (PIB)",
+      "quote": "The Food Corporation of India (FCI) and state agencies manage a combined covered and Cover and Plinth (CAP) storage capacity of 917.83 lakh metric tonnes (LMT) for central pool grains. [...] As of July 1, 2025, the total storage capacity with FCI and state agencies stood at 917.83 LMT.",
+      "title": "India strengthens food security with record harvest and enhanced storage infrastructure",
+      "url": "https://ddindia.co.in/2025/09/india-strengthens-food-security-with-record-harvest-and-enhanced-storage-infrastructure",
+      "year": 2025
+    },
+    "reuters_russia_storage_2026": {
+      "license": "© Reuters, uso com citação",
+      "page": "",
+      "publisher": "Reuters (reproduzido por Euronext Live), por Olga Popova e Gleb Bryanski",
+      "quote": "Russia has storage capacity of about 160 million tons, most of it built in the Soviet era, but experts estimate that only 40% meets modern standards, while the rest is only suitable for short-term storage, with high risks of losses.",
+      "title": "Russia turns to giant plastic bags to store unexported grain as Black Sea trade stalls",
+      "url": "https://live.euronext.com/en/financial-news/russia-turns-giant-plastic-bags-store-unexported-grain-black-sea-trade-stalls",
+      "year": 2026
+    },
+    "usda_nass_grain_stocks_capacity": {
+      "license": "domínio público (USDA NASS)",
+      "page": "p. 30-32 (On-Farm Storage Capacity; Off-Farm Storage Facilities)",
+      "publisher": "USDA National Agricultural Statistics Service (NASS), Agricultural Statistics Board",
+      "quote": "The United States on-farm storage capacity totaled 13.6 billion bushels on December 1, 2025, up less than 1 percent from the December 1, 2024 estimate. [...] Capacity of off-farm commercial grain storage in the United States totaled 11.9 billion bushels on December 1, 2025, up less than 1 percent from the December 1, 2024 total.",
+      "title": "Grain Stocks, released January 12, 2026",
+      "url": "https://esmis.nal.usda.gov/sites/default/release-files/795726/grst0126.txt",
+      "year": 2025
+    }
+  }
+}

@@ -1,0 +1,5320 @@
+{
+  "_meta": {
+    "data_snapshot": {
+      "cold_k": 0.1698,
+      "cold_sample": 17,
+      "grain_k": 1.1007,
+      "grain_sample": 7,
+      "spr": {
+        "date": "11/13",
+        "kt": 37695.6,
+        "release_date": "11/18/2026",
+        "thousand_barrels": 276361
+      },
+      "us_gas": {
+        "design_mmcf": 9319291,
+        "design_twh": 2902.8,
+        "release_date": "10/30/2026",
+        "working_mmcf": 4793009,
+        "working_twh": 1493.0
+      }
+    },
+    "dataset": "storage_capacity",
+    "generated_by": "tools/build_storage_g2.py",
+    "nations": 179,
+    "no_data_rule": "sem valor publicado e sem base de calculo -> null com basis='none' e motivo em note; nunca ha numero inventado",
+    "retrieved": "2026-11-19",
+    "rules": {
+      "cold": {
+        "formula": "capacity_m3 = k_frio * populacao",
+        "k_basis": "mediana de m3 observados / populacao nas nacoes com dado publicado (n=17)",
+        "k_frio_m3_per_capita": 0.1698,
+        "kind": "per_capita",
+        "when": "somente quando nao existe capacidade publicada para o pais"
+      },
+      "gas": {
+        "game_rule": "sem capacid. documentada -> o jogo comeca com 0 TWh e a capacidade e construida (armazem de gas)",
+        "kind": "none",
+        "why": "nao existe base global publica; GIE/AGSI+ exige chave de API e so cobre a Europa"
+      },
+      "grain": {
+        "formula": "capacity_mt = k_graos * producao_anual_de_graos_t / 1e6",
+        "k_basis": "mediana de capacidade observada / producao anual observada nas nacoes com dado publicado (n=7)",
+        "k_graos": 1.1007,
+        "kind": "months_of_production",
+        "production_basis": "FAOSTAT QCL wheat+rice+maize+soy, ultimo ano <=2024 (crop_yields.json)",
+        "when": "somente quando nao existe capacidade publicada para o pais"
+      },
+      "oil_public": {
+        "game_rule": "sem reserva publica documentada -> o jogo comeca com 0 t de reserva estrategica",
+        "kind": "none"
+      }
+    },
+    "units": {
+      "cold_capacity_m3": "metros cubicos de camara fria",
+      "gas_working_capacity_twh": "TWh de gas natural (capacidade de trabalho)",
+      "grain_capacity_mt": "milhoes de toneladas metricas (1 Mt = 1e6 t)"
+    },
+    "version": "g2"
+  },
+  "coverage": {
+    "cold_none": 0,
+    "cold_none_ids": [],
+    "cold_observed": 17,
+    "cold_rule": 162,
+    "cold_rule_ids": [
+      "AFG",
+      "AGO",
+      "ALB",
+      "ARE",
+      "ARG",
+      "ARM",
+      "ATG",
+      "AUT",
+      "AZE",
+      "BDI",
+      "BEL",
+      "BEN",
+      "BFA",
+      "BGD",
+      "BGR",
+      "BHR",
+      "BHS",
+      "BIH",
+      "BLR",
+      "BLZ",
+      "BOL",
+      "BRB",
+      "BRN",
+      "BTN",
+      "BWA",
+      "CAF",
+      "CHE",
+      "CHL",
+      "CIV",
+      "CMR",
+      "COD",
+      "COG",
+      "COL",
+      "CRI",
+      "CUB",
+      "CYP",
+      "CZE",
+      "DJI",
+      "DMA",
+      "DNK",
+      "DOM",
+      "DZA",
+      "ECU",
+      "EGY",
+      "ERI",
+      "EST",
+      "ETH",
+      "FIN",
+      "FJI",
+      "GAB",
+      "GEO",
+      "GHA",
+      "GIN",
+      "GMB",
+      "GNB",
+      "GNQ",
+      "GRC",
+      "GRD",
+      "GTM",
+      "GUY",
+      "HND",
+      "HRV",
+      "HTI",
+      "HUN",
+      "IDN",
+      "IRL",
+      "IRN",
+      "IRQ",
+      "ISL",
+      "ISR",
+      "JAM",
+      "JOR",
+      "KAZ",
+      "KEN",
+      "KGZ",
+      "KHM",
+      "KNA",
+      "KWT",
+      "LAO",
+      "LBN",
+      "LBR",
+      "LBY",
+      "LCA",
+      "LKA",
+      "LSO",
+      "LTU",
+      "LUX",
+      "LVA",
+      "MAR",
+      "MDA",
+      "MDG",
+      "MKD",
+      "MLI",
+      "MLT",
+      "MMR",
+      "MNE",
+      "MNG",
+      "MOZ",
+      "MRT",
+      "MWI",
+      "MYS",
+      "NAM",
+      "NER",
+      "NGA",
+      "NIC",
+      "NOR",
+      "NPL",
+      "NZL",
+      "OMN",
+      "PAK",
+      "PAN",
+      "PER",
+      "PHL",
+      "PNG",
+      "PRK",
+      "PRT",
+      "PRY",
+      "PSX",
+      "QAT",
+      "ROU",
+      "RUS",
+      "RWA",
+      "SAH",
+      "SAU",
+      "SDN",
+      "SEN",
+      "SGP",
+      "SLB",
+      "SLE",
+      "SLV",
+      "SOL",
+      "SOM",
+      "SRB",
+      "SSD",
+      "SUR",
+      "SVK",
+      "SVN",
+      "SWE",
+      "SWZ",
+      "SYR",
+      "TCD",
+      "TGO",
+      "THA",
+      "TJK",
+      "TKM",
+      "TLS",
+      "TTO",
+      "TUN",
+      "TUR",
+      "TWN",
+      "TZA",
+      "UGA",
+      "UKR",
+      "URY",
+      "UZB",
+      "VCT",
+      "VEN",
+      "VNM",
+      "XKX",
+      "YEM",
+      "ZMB",
+      "ZWE"
+    ],
+    "gas_none": 157,
+    "gas_none_ids": [
+      "AFG",
+      "AGO",
+      "ALB",
+      "ARE",
+      "ARG",
+      "ARM",
+      "ATG",
+      "AUS",
+      "AZE",
+      "BDI",
+      "BEN",
+      "BFA",
+      "BGD",
+      "BGR",
+      "BHR",
+      "BHS",
+      "BIH",
+      "BLR",
+      "BLZ",
+      "BOL",
+      "BRA",
+      "BRB",
+      "BRN",
+      "BTN",
+      "BWA",
+      "CAF",
+      "CHE",
+      "CHL",
+      "CIV",
+      "CMR",
+      "COD",
+      "COG",
+      "COL",
+      "CRI",
+      "CUB",
+      "CYP",
+      "DJI",
+      "DMA",
+      "DOM",
+      "DZA",
+      "ECU",
+      "EGY",
+      "ERI",
+      "EST",
+      "ETH",
+      "FIN",
+      "FJI",
+      "GAB",
+      "GEO",
+      "GHA",
+      "GIN",
+      "GMB",
+      "GNB",
+      "GNQ",
+      "GRC",
+      "GRD",
+      "GTM",
+      "GUY",
+      "HND",
+      "HRV",
+      "HTI",
+      "IDN",
+      "IND",
+      "IRL",
+      "IRQ",
+      "ISL",
+      "ISR",
+      "JAM",
+      "JOR",
+      "JPN",
+      "KEN",
+      "KGZ",
+      "KHM",
+      "KNA",
+      "KOR",
+      "KWT",
+      "LAO",
+      "LBN",
+      "LBR",
+      "LBY",
+      "LCA",
+      "LKA",
+      "LSO",
+      "LTU",
+      "LUX",
+      "LVA",
+      "MAR",
+      "MDA",
+      "MDG",
+      "MEX",
+      "MKD",
+      "MLI",
+      "MLT",
+      "MMR",
+      "MNE",
+      "MNG",
+      "MOZ",
+      "MRT",
+      "MWI",
+      "MYS",
+      "NAM",
+      "NER",
+      "NGA",
+      "NIC",
+      "NOR",
+      "NPL",
+      "NZL",
+      "OMN",
+      "PAK",
+      "PAN",
+      "PER",
+      "PHL",
+      "PNG",
+      "PRK",
+      "PRT",
+      "PRY",
+      "PSX",
+      "QAT",
+      "RWA",
+      "SAH",
+      "SAU",
+      "SDN",
+      "SEN",
+      "SGP",
+      "SLB",
+      "SLE",
+      "SLV",
+      "SOL",
+      "SOM",
+      "SRB",
+      "SSD",
+      "SUR",
+      "SVN",
+      "SWE",
+      "SWZ",
+      "SYR",
+      "TCD",
+      "TGO",
+      "THA",
+      "TJK",
+      "TKM",
+      "TLS",
+      "TTO",
+      "TUN",
+      "TWN",
+      "TZA",
+      "UGA",
+      "URY",
+      "UZB",
+      "VCT",
+      "VEN",
+      "VNM",
+      "XKX",
+      "YEM",
+      "ZAF",
+      "ZMB",
+      "ZWE"
+    ],
+    "gas_observed": 22,
+    "grain_none": 9,
+    "grain_none_ids": [
+      "BHR",
+      "GNQ",
+      "ISL",
+      "KNA",
+      "SAH",
+      "SGP",
+      "SOL",
+      "TWN",
+      "XKX"
+    ],
+    "grain_observed": 7,
+    "grain_rule": 163,
+    "grain_rule_ids": [
+      "AFG",
+      "AGO",
+      "ALB",
+      "ARE",
+      "ARG",
+      "ARM",
+      "ATG",
+      "AUS",
+      "AUT",
+      "AZE",
+      "BDI",
+      "BEL",
+      "BEN",
+      "BFA",
+      "BGD",
+      "BGR",
+      "BHS",
+      "BIH",
+      "BLR",
+      "BLZ",
+      "BOL",
+      "BRB",
+      "BRN",
+      "BTN",
+      "BWA",
+      "CAF",
+      "CAN",
+      "CHE",
+      "CHL",
+      "CIV",
+      "CMR",
+      "COD",
+      "COG",
+      "COL",
+      "CRI",
+      "CUB",
+      "CYP",
+      "CZE",
+      "DEU",
+      "DJI",
+      "DMA",
+      "DNK",
+      "DOM",
+      "DZA",
+      "ECU",
+      "EGY",
+      "ERI",
+      "ESP",
+      "EST",
+      "ETH",
+      "FIN",
+      "FJI",
+      "GAB",
+      "GBR",
+      "GEO",
+      "GHA",
+      "GIN",
+      "GMB",
+      "GNB",
+      "GRC",
+      "GRD",
+      "GTM",
+      "GUY",
+      "HND",
+      "HRV",
+      "HTI",
+      "HUN",
+      "IDN",
+      "IND",
+      "IRL",
+      "IRN",
+      "IRQ",
+      "ISR",
+      "ITA",
+      "JAM",
+      "JOR",
+      "JPN",
+      "KEN",
+      "KGZ",
+      "KHM",
+      "KOR",
+      "KWT",
+      "LAO",
+      "LBN",
+      "LBR",
+      "LBY",
+      "LCA",
+      "LKA",
+      "LSO",
+      "LTU",
+      "LUX",
+      "LVA",
+      "MAR",
+      "MDA",
+      "MDG",
+      "MEX",
+      "MKD",
+      "MLI",
+      "MLT",
+      "MMR",
+      "MNE",
+      "MNG",
+      "MOZ",
+      "MRT",
+      "MWI",
+      "MYS",
+      "NAM",
+      "NED",
+      "NER",
+      "NGA",
+      "NIC",
+      "NOR",
+      "NPL",
+      "NZL",
+      "OMN",
+      "PAK",
+      "PAN",
+      "PER",
+      "PHL",
+      "PNG",
+      "POL",
+      "PRK",
+      "PRT",
+      "PRY",
+      "PSX",
+      "QAT",
+      "ROU",
+      "RWA",
+      "SAU",
+      "SDN",
+      "SEN",
+      "SLB",
+      "SLE",
+      "SLV",
+      "SOM",
+      "SRB",
+      "SSD",
+      "SUR",
+      "SVK",
+      "SVN",
+      "SWE",
+      "SWZ",
+      "SYR",
+      "TCD",
+      "TGO",
+      "THA",
+      "TJK",
+      "TKM",
+      "TLS",
+      "TTO",
+      "TUN",
+      "TUR",
+      "TZA",
+      "UGA",
+      "URY",
+      "UZB",
+      "VCT",
+      "VEN",
+      "VNM",
+      "YEM",
+      "ZAF",
+      "ZMB",
+      "ZWE"
+    ],
+    "nations_total": 179,
+    "observed_totals": {
+      "cold_capacity_m3": 676181300.0,
+      "gas_working_capacity_twh": 4392.93,
+      "grain_capacity_mt": 1898.57
+    },
+    "totals": {
+      "cold_capacity_m3": 1346566549.7,
+      "gas_working_capacity_twh": 4392.93,
+      "grain_capacity_mt": 3559.362
+    }
+  },
+  "nations": {
+    "AFG": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 7444730.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 43844111",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 6.73772,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 6121305 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Afghanistan"
+    },
+    "AGO": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 6628998.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 39040039",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.835892,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3484957 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Angola"
+    },
+    "ALB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 398958.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2349580",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.652328,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 592648 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Albania"
+    },
+    "ARE": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1954932.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 11513149",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.022285,
+        "months_of_production": 13.208339,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 20246 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "United Arab Emirates"
+    },
+    "ARG": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 7785564.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 45851378",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 138.118871,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 125482757 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Argentina"
+    },
+    "ARM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 524121.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 3086700",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.139322,
+        "months_of_production": 13.208433,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 126576 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Armenia"
+    },
+    "ATG": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 15996.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 94209",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.5e-05,
+        "months_of_production": 13.095238,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 50 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Antigua and Barbuda"
+    },
+    "AUS": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 8365000.0,
+        "estimate": false,
+        "note": "8,365 milhões de m³ = 8.365.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 38.790327,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 35241507 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Australia"
+    },
+    "AUT": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1563546.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 9208163",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "9 instalações, WGV 8,58 bcm (abril de 2025). Em TWh: ~94 TWh. | convertido de 8.5800 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 94.38,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 4.275669,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3884500 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Austria"
+    },
+    "AZE": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1739939.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10246996",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.442515,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2219056 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Azerbaijan"
+    },
+    "BDI": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2443422.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 14390003",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.810699,
+        "months_of_production": 13.208407,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 736530 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Burundi"
+    },
+    "BEL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2027714.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 11941781",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "1 instalação (Loenhout), WGV 0,95 bcm (abril de 2025). Em TWh: ~10 TWh. | convertido de 0.9500 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 10.45,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.752127,
+        "months_of_production": 13.208398,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1591830 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Belgium"
+    },
+    "BEN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2515495.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 14814460",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.574945,
+        "months_of_production": 13.208398,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3247884 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Benin"
+    },
+    "BFA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 4087863.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 24074580",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.753165,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2501286 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Burkina Faso"
+    },
+    "BGD": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 29831635.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 175686899",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 73.132749,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 66442036 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Bangladesh"
+    },
+    "BGR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1092374.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 6433302",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 9.671532,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 8786710 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Bulgaria"
+    },
+    "BHR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 271742.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1600366",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Bahrain"
+    },
+    "BHS": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 68435.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 403033",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.000666,
+        "months_of_production": 13.212101,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 605 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "The Bahamas"
+    },
+    "BIH": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 533188.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 3140095",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.181205,
+        "months_of_production": 13.208398,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1073140 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Bosnia and Herzegovina"
+    },
+    "BLR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1542801.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 9085991",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 4.898115,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4450000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Belarus"
+    },
+    "BLZ": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 71812.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 422924",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.162982,
+        "months_of_production": 13.20842,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 148071 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Belize"
+    },
+    "BOL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2136396.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 12581843",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.571301,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5061598 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Bolivia"
+    },
+    "BRA": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 19447000.0,
+        "estimate": false,
+        "note": "19,447 milhões de m³ = 19.447.000 m³ (51% em 3PL).",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "observed",
+        "capacity_mt": 233.8,
+        "estimate": false,
+        "months_of_production": 10.101834,
+        "note": "Unidade original: milhoes de toneladas. Dado do IBGE - Pesquisa de Estoques, 2o semestre de 2025 (release oficial: agenciadenoticias.ibge.gov.br/.../47075, bloqueado para leitura direta por 403). Inclui silos, armazens graneleiros/granelizados e armazens convencionais/estruturais/inflaveis de estabelecimentos ativos; total publico + privado. Complemento do proprio IBGE no texto: silos 124,7 Mt (53,3%), graneleiros 85,8 Mt, convencionais/estruturais/inflaveis 23,3 Mt. | Release posterior do IBGE (1o semestre de 2026) informa 237,6 Mt (+1,7%), nao usado aqui por estar atras de Cloudflare no momento da coleta; diferenca de 1,6% sobre o valor adotado.",
+        "source": "ibge_pesquisa_estoques_2s2025",
+        "year": 2025
+      },
+      "name": "Brazil"
+    },
+    "BRB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 47989.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 282623",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 4.7e-05,
+        "months_of_production": 13.239437,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 43 t em 2023",
+        "source": null,
+        "year": 2023
+      },
+      "name": "Barbados"
+    },
+    "BRN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 79182.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 466330",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.003976,
+        "months_of_production": 13.208937,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3612 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Brunei"
+    },
+    "BTN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 135276.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 796682",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.077149,
+        "months_of_production": 13.208429,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 70091 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Bhutan"
+    },
+    "BWA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 435048.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2562122",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.021274,
+        "months_of_production": 13.208195,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 19328 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Botswana"
+    },
+    "CAF": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 936155.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5513282",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.278331,
+        "months_of_production": 13.208383,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 252868 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Central African Republic"
+    },
+    "CAN": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 27516300.0,
+        "estimate": true,
+        "note": "27,5163 milhões de m³ = 27.516.300 m³. O próprio relatório marca este valor com a nota 3 ('2020 estimate includes private space') e explica que o salto vs. 2018 vem da inclusão de espaço privado pela primeira vez — por isso estimate=true.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "64 instalações, WGV 25,52 bcm (abril de 2025). Em TWh: ~281 TWh. | convertido de 25.5200 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 280.72,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 64.778165,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 58851790 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Canada"
+    },
+    "CHE": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1543895.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 9092436",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.523973,
+        "months_of_production": 13.208404,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 476036 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Switzerland"
+    },
+    "CHL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3372214.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 19859921",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.024622,
+        "months_of_production": 13.208397,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1839395 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Chile"
+    },
+    "CHN": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 130950000.0,
+        "estimate": false,
+        "note": "130,95 milhões de m³ (coluna 2020 da Tabela 1) = 130.950.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "25 instalações, WGV 19,83 bcm (abril de 2025); o IGU registra +6 bcm em relação a 2022, maior aumento do mundo. Em TWh: ~218 TWh. | convertido de 19.8300 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 218.13,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "observed",
+        "capacity_mt": 730.0,
+        "estimate": false,
+        "months_of_production": 13.208685,
+        "note": "Unidade original: milhoes de toneladas. Fala do chefe da NFSRA (Liu Huanxin) em coletiva, 14/10/2025. E 'capacidade total de armazens' (standard warehouse capacity) do pais - inclui reservas estatais e armazens de empresas; nao inclui silos de fazenda informais. Valor e piso ('exceeded 730').",
+        "source": "nfsra_warehouse_capacity",
+        "year": 2025
+      },
+      "name": "People's Republic of China"
+    },
+    "CIV": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 5554420.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 32711547",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 4.427414,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4022362 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Ivory Coast"
+    },
+    "CMR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 5073511.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 29879337",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.931042,
+        "months_of_production": 13.208402,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2662889 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Cameroon"
+    },
+    "COD": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 19158953.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 112832473",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 4.805377,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4365746 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Democratic Republic of the Congo"
+    },
+    "COG": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1101057.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 6484437",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.01541,
+        "months_of_production": 13.208571,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 14000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Republic of the Congo"
+    },
+    "COL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 9071672.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 53425635",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.011126,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4552672 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Colombia"
+    },
+    "CRI": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 874970.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5152950",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.079554,
+        "months_of_production": 13.208404,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 72276 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Costa Rica"
+    },
+    "CUB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1857137.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10937203",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.336078,
+        "months_of_production": 13.208407,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 305331 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Cuba"
+    },
+    "CYP": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 232754.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1370754",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.02317,
+        "months_of_production": 13.208551,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 21050 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Cyprus"
+    },
+    "CZE": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1848591.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10886878",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "9 instalações, WGV 3,90 bcm (abril de 2025). Em TWh: ~43 TWh. | convertido de 3.9000 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 42.9,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.956196,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5411280 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Czech Republic"
+    },
+    "DEU": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 14180000.0,
+        "estimate": false,
+        "note": "14,18 milhões de m³ = 14.180.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "44 instalações, WGV 22,49 bcm (abril de 2025). Em TWh: ~247 TWh. | convertido de 22.4900 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 247.39,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 26.052468,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 23669000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Germany"
+    },
+    "DJI": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 201056.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1184076",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.9e-05,
+        "months_of_production": 13.103448,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 17 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Djibouti"
+    },
+    "DMA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 11184.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 65871",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.000214,
+        "months_of_production": 13.223481,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 194 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Dominica"
+    },
+    "DNK": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1020356.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 6009169",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "2 instalações, WGV 1,09 bcm (abril de 2025). Em TWh: ~12 TWh. | convertido de 1.0900 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 11.99,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.754124,
+        "months_of_production": 13.208398,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3410670 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Denmark"
+    },
+    "DOM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1956178.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 11520487",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.155129,
+        "months_of_production": 13.208404,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1049449 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Dominican Republic"
+    },
+    "DZA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 8054516.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 47435312",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.315653,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3012313 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Algeria"
+    },
+    "ECU": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3105624.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 18289896",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.068133,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2787438 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Ecuador"
+    },
+    "EGY": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 20098546.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 118365995",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 25.438278,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 23111000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Egypt"
+    },
+    "ERI": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 612469.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 3607003",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.049531,
+        "months_of_production": 13.208267,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 45000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Eritrea"
+    },
+    "ESP": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 23000000.0,
+        "estimate": false,
+        "note": "23,0 milhões de m³ = 23.000.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "O IGU conta 1 instalação com WGV 3,17 bcm (abril de 2025). O banco da GIE lista 5 instalações operacionais somando 35,93 TWh (~3,27 bcm) — mesma ordem de grandeza. Em TWh: ~35 TWh. | convertido de 3.1700 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 34.87,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 12.39911,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 11264750 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Spain"
+    },
+    "EST": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 232027.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1366475",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.819746,
+        "months_of_production": 13.208395,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 744750 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Estonia"
+    },
+    "ETH": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 23003154.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 135472051",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 20.262997,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 18409191 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Ethiopia"
+    },
+    "FIN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 958764.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5646436",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.83585,
+        "months_of_production": 13.208407,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 759380 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Finland"
+    },
+    "FJI": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 158449.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 933154",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.012128,
+        "months_of_production": 13.208331,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 11018 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Fiji"
+    },
+    "FRA": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 6520000.0,
+        "estimate": false,
+        "note": "6,52 milhões de m³ = 6.520.000 m³ (só espaço 3PL).",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "14 instalações, WGV 11,77 bcm (abril de 2025). Em TWh: ~129 TWh. | convertido de 11.7700 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 129.47,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "observed",
+        "capacity_mt": 44.0,
+        "estimate": false,
+        "months_of_production": 12.647294,
+        "note": "Unidade original: milhoes de toneladas. Refere-se a rede de silos de coleta/cooperativas e negocios (4568 silos), nao a silos de fazenda. Publicado em 20/03/2026 no lancamento do plano setorial.",
+        "source": "cooperation_agricole_silos_2026",
+        "year": 2026
+      },
+      "name": "France"
+    },
+    "GAB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 440313.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2593130",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.056963,
+        "months_of_production": 13.208378,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 51752 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Gabon"
+    },
+    "GBR": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 35926000.0,
+        "estimate": false,
+        "note": "35,926 milhões de m³ (coluna 2020, linha 'Great Britain') = 35.926.000 m³; apenas 38% em 3PL.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "8 instalações, WGV 2,30 bcm (abril de 2025), sem contar Rough. Em TWh: ~25 TWh. | convertido de 2.3000 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 25.3,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 12.269266,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 11146785 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "United Kingdom"
+    },
+    "GEO": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 668293.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 3935766",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.399114,
+        "months_of_production": 13.208406,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 362600 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Georgia"
+    },
+    "GHA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 5953913.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 35064272",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 6.36777,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5785200 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Ghana"
+    },
+    "GIN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2563933.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 15099727",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.081932,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4617000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Guinea"
+    },
+    "GMB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 479191.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2822093",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.086257,
+        "months_of_production": 13.208431,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 78365 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "The Gambia"
+    },
+    "GNB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 381967.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2249515",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.284971,
+        "months_of_production": 13.208389,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 258900 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Guinea Bissau"
+    },
+    "GNQ": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 329145.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1938431",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Equatorial Guinea"
+    },
+    "GRC": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1768290.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10413962",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.665807,
+        "months_of_production": 13.208398,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2421920 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Greece"
+    },
+    "GRD": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 19918.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 117303",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.000195,
+        "months_of_production": 13.205418,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 177 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Grenada"
+    },
+    "GTM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3173202.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 18687881",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.574044,
+        "months_of_production": 13.208398,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2338552 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Guatemala"
+    },
+    "GUY": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 141950.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 835986",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.232567,
+        "months_of_production": 13.208398,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1119803 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Guyana"
+    },
+    "HND": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1868793.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 11005850",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.83349,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 757236 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Honduras"
+    },
+    "HRV": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 658178.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 3876200",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.467623,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3150380 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Croatia"
+    },
+    "HTI": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2021654.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 11906095",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.341217,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 310000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Haiti"
+    },
+    "HUN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1615519.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 9514251",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "5 instalações, WGV 6,10 bcm (abril de 2025). Em TWh: ~67 TWh. | convertido de 6.1000 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 67.1,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 11.929541,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 10838140 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Hungary"
+    },
+    "IDN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 48515465.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 285721236",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 75.407863,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 68509006 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Indonesia"
+    },
+    "IND": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 150000000.0,
+        "estimate": false,
+        "note": "150 milhões de m³ (coluna 2020) = 150.000.000 m³; 96% do espaço é 3PL. O relatório descreve a capacidade indiana como 'estável' desde 2018.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 425.445742,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 386522887 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "India"
+    },
+    "IRL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 931245.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5484367",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.427633,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 388510 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Ireland"
+    },
+    "IRN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 15692522.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 92417681",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "2 instalações, WGV 6,00 bcm (abril de 2025). Em TWh: ~66 TWh. | convertido de 6.0000 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 66.0,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 22.782976,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 20698625 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Iran"
+    },
+    "IRQ": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 7984127.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 47020774",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 6.562058,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5961713 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Iraq"
+    },
+    "ISL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 66630.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 392404",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Iceland"
+    },
+    "ISR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1718851.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10122800",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.147517,
+        "months_of_production": 13.208408,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 134021 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Israel"
+    },
+    "ITA": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 6150000.0,
+        "estimate": false,
+        "note": "6,15 milhões de m³ = 6.150.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "13 instalações, WGV 17,66 bcm (abril de 2025). Em TWh: ~194 TWh. | convertido de 17.6600 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 194.26,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 15.110498,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 13728080 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Italy"
+    },
+    "JAM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 481735.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2837077",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.002622,
+        "months_of_production": 13.209068,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2382 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Jamaica"
+    },
+    "JOR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1956212.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 11520684",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.042078,
+        "months_of_production": 13.208331,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 38229 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Jordan"
+    },
+    "JPN": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 39257000.0,
+        "estimate": false,
+        "note": "39,257 milhões de m³ (coluna 2020) = 39.257.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 12.573922,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 11423569 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Japan"
+    },
+    "KAZ": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3539269.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 20843754",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "3 instalações, WGV 3,65 bcm (abril de 2025). Em TWh: ~40 TWh. | convertido de 3.6500 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 40.15,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "observed",
+        "capacity_mt": 30.7,
+        "estimate": false,
+        "months_of_production": 18.145686,
+        "note": "Unidade original: milhoes de toneladas. Total 30,7 Mt = 13,3 Mt em empresas licenciadas de recebimento de graos + 17,4 Mt em produtores agricolas. Declaracao de 04/11/2025.",
+        "source": "kaz_minagri_storage_2025",
+        "year": 2025
+      },
+      "name": "Kazakhstan"
+    },
+    "KEN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 9769017.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 57532493",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.10149,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4634769 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Kenya"
+    },
+    "KGZ": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1246852.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 7343064",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.673858,
+        "months_of_production": 13.208403,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1520721 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Kyrgyzstan"
+    },
+    "KHM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3030587.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 17847982",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 17.205042,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 15631000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Cambodia"
+    },
+    "KNA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 7967.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 46922",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Saint Kitts and Nevis"
+    },
+    "KOR": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 21500000.0,
+        "estimate": false,
+        "note": "21,5 milhões de m³ = 21.500.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.574434,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5064444 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "South Korea"
+    },
+    "KWT": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 826127.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 4865298",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.033115,
+        "months_of_production": 13.208488,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 30085 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Kuwait"
+    },
+    "LAO": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1336843.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 7873046",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 4.704303,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4273919 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Laos"
+    },
+    "LBN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 993231.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5849421",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.108969,
+        "months_of_production": 13.208364,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 99000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Lebanon"
+    },
+    "LBR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 973158.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5731206",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.358636,
+        "months_of_production": 13.208387,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 325826 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Liberia"
+    },
+    "LBY": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1266462.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 7458555",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.103246,
+        "months_of_production": 13.208415,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 93800 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Libya"
+    },
+    "LCA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 30589.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 180149",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.9e-05,
+        "months_of_production": 13.371429,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 35 t em 1979",
+        "source": null,
+        "year": 1979
+      },
+      "name": "Saint Lucia"
+    },
+    "LKA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3694168.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 21756000",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.424409,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4928145 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Sri Lanka"
+    },
+    "LSO": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 401292.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2363325",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.066731,
+        "months_of_production": 13.208392,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 60626 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Lesotho"
+    },
+    "LTU": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 490513.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2888774",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 4.769421,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4333080 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Lithuania"
+    },
+    "LUX": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 116647.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 686970",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.07444,
+        "months_of_production": 13.208339,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 67630 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Luxembourg"
+    },
+    "LVA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 313753.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1847785",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.714216,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2465900 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Latvia"
+    },
+    "MAR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 6525544.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 38430770",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.77586,
+        "months_of_production": 13.208402,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2521904 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Morocco"
+    },
+    "MDA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 400817.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2360527",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.138921,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1943237 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Moldova"
+    },
+    "MDG": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 5559367.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 32740678",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.763318,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5236048 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Madagascar"
+    },
+    "MEX": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 14000000.0,
+        "estimate": false,
+        "note": "14 milhões de m³ = 14.000.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 30.225009,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 27459807 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Mexico"
+    },
+    "MKD": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 309190.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1820909",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.416489,
+        "months_of_production": 13.20841,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 378385 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "North Macedonia"
+    },
+    "MLI": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 4278759.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 25198821",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 7.45472,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 6772709 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Mali"
+    },
+    "MLT": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 98433.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 579704",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.013663,
+        "months_of_production": 13.20873,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 12413 t em 2017",
+        "source": null,
+        "year": 2017
+      },
+      "name": "Malta"
+    },
+    "MMR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 9313640.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 54850648",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 32.932944,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 29920000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Myanmar"
+    },
+    "MNE": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 105807.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 623129",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.005871,
+        "months_of_production": 13.207604,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5334 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Montenegro"
+    },
+    "MNG": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 606012.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 3568978",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.437262,
+        "months_of_production": 13.208397,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 397258 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Mongolia"
+    },
+    "MOZ": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 6050254.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 35631653",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.821376,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2563256 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Mozambique"
+    },
+    "MRT": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 902498.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5315065",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.497242,
+        "months_of_production": 13.208397,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 451751 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Mauritania"
+    },
+    "MWI": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3772297.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 22216120",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.777955,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3432321 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Malawi"
+    },
+    "MYS": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 6109036.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 35977838",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.31618,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2104279 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Malaysia"
+    },
+    "NAM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 525160.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 3092816",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.053256,
+        "months_of_production": 13.208333,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 48384 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Namibia"
+    },
+    "NED": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 15000000.0,
+        "estimate": false,
+        "note": "15,0 milhões de m³ = 15.000.000 m³; maior índice per capita do mundo em 2020 (0,945 m³ por residente urbano).",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "5 instalações, WGV 13,74 bcm (abril de 2025); com a expansão de Norg, o país passa a França. Em TWh: ~151 TWh. | convertido de 13.7400 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 151.14,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.870522,
+        "months_of_production": 13.208406,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 790880 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Netherlands"
+    },
+    "NER": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 4740447.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 27917831",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.237607,
+        "months_of_production": 13.208406,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 215869 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Niger"
+    },
+    "NGA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 40332217.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 237527782",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 23.651651,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 21487827 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Nigeria"
+    },
+    "NIC": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1189873.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 7007502",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.951913,
+        "months_of_production": 13.208406,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 864825 t em 2023",
+        "source": null,
+        "year": 2023
+      },
+      "name": "Nicaragua"
+    },
+    "NOR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 952725.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5610870",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.253161,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 230000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Norway"
+    },
+    "NPL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 5029156.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 29618118",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 12.342642,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 11213448 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Nepal"
+    },
+    "NZL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 904134.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5324700",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.780524,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 709116 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "New Zealand"
+    },
+    "OMN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 932998.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5494691",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.015665,
+        "months_of_production": 13.208263,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 14232 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Oman"
+    },
+    "PAK": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 43336280.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 255219554",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 61.198566,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 55599678 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Pakistan"
+    },
+    "PAN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 776187.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 4571189",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.506318,
+        "months_of_production": 13.208402,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 459996 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Panama"
+    },
+    "PER": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 5871117.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 34576665",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 6.08936,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5532261 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Peru"
+    },
+    "PHL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 19830426.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 116786962",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 29.967459,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 27225819 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Philippines"
+    },
+    "PNG": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1827526.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10762817",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.015199,
+        "months_of_production": 13.208195,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 13809 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Papua New Guinea"
+    },
+    "POL": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 5450000.0,
+        "estimate": false,
+        "note": "5,45 milhões de m³ = 5.450.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "9 instalações, WGV 3,56 bcm (abril de 2025). Em TWh: ~39 TWh. | convertido de 3.5600 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 39.16,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 23.651632,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 21487810 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Poland"
+    },
+    "PRK": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 4511761.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 26571036",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 5.305455,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 4820073 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "North Korea"
+    },
+    "PRT": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1834667.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10804871",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.95871,
+        "months_of_production": 13.208404,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 871000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Portugal"
+    },
+    "PRY": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1190820.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 7013078",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 18.560232,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 16862208 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Paraguay"
+    },
+    "PSX": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 919228.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5413596",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.036115,
+        "months_of_production": 13.208375,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 32811 t em 2022",
+        "source": null,
+        "year": 2022
+      },
+      "name": "Palestine"
+    },
+    "QAT": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 504682.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2972215",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.00179,
+        "months_of_production": 13.208707,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1626 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Qatar"
+    },
+    "ROU": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3229642.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 19020271",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "O IGU 2025 deixa a Romênia sem WGV; este valor vem do banco da GIE. Soma das 6 instalações operacionais = 33,859 TWh ÷ 11,0 TWh/bcm = 3,078 bcm (arredondado 3,08). Conversão: 1 bcm = 11,0 TWh. | convertido de 3.0800 bcm a 11,0 TWh/bcm",
+        "source": "gie_storage_db_2026",
+        "working_capacity_twh": 33.88,
+        "year": 2026
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 17.164195,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 15593890 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Romania"
+    },
+    "RUS": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 24368563.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 143513328",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "24 instalações, WGV 68,99 bcm (abril de 2025). Em TWh (1 bcm = 11,0 TWh): ~759 TWh. | convertido de 68.9900 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 758.89,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "observed",
+        "capacity_mt": 160.0,
+        "estimate": true,
+        "months_of_production": 18.320453,
+        "note": "Unidade original: milhoes de toneladas. ESTIMATIVA de reportagem (Reuters, 11/11/2026, com consultorias do setor) - nao ha publicacao unica oficial (Rosstat/Ministerio) com esse total. Valor 'about 160' e aproximado; 40% atende padrao moderno. Alternativa divulgada no mesmo periodo por consultoria: 118-122 Mt de capacidade 'profissional' (Tridge), o que mostra dispersao - usar com cautela.",
+        "source": "reuters_russia_storage_2026",
+        "year": 2026
+      },
+      "name": "Russia"
+    },
+    "RWA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2473874.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 14569341",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.904929,
+        "months_of_production": 13.208394,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 822140 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Rwanda"
+    },
+    "SAH": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 46356.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 273008",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Western Sahara"
+    },
+    "SAU": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 6278109.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 36973555",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.978347,
+        "months_of_production": 13.208405,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 888840 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Saudi Arabia"
+    },
+    "SDN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 8772232.6,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 51662147",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.594717,
+        "months_of_production": 13.208395,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 540308 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Sudan"
+    },
+    "SEN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3214647.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 18931966",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.591182,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2354122 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Senegal"
+    },
+    "SGP": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1037677.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 6111175",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Singapore"
+    },
+    "SLB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 142401.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 838645",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.003034,
+        "months_of_production": 13.21045,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2756 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Solomon Islands"
+    },
+    "SLE": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1497601.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 8819794",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.569299,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1425728 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Sierra Leone"
+    },
+    "SLV": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1080862.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 6365503",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.882079,
+        "months_of_production": 13.208407,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 801380 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "El Salvador"
+    },
+    "SOL": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 142401.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 838645",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Somaliland"
+    },
+    "SOM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3337374.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 19654739",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.07932,
+        "months_of_production": 13.208388,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 72063 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Somalia"
+    },
+    "SRB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1112044.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 6549143",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 9.195967,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 8354653 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Serbia"
+    },
+    "SSD": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2069656.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 12188788",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.214637,
+        "months_of_production": 13.208431,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 195000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "South Sudan"
+    },
+    "SUR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 108646.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 639850",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.248799,
+        "months_of_production": 13.208421,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 226037 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Suriname"
+    },
+    "SVK": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 919265.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 5413813",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "3 instalações, WGV 3,23 bcm (abril de 2025). Em TWh: ~36 TWh. | convertido de 3.2300 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 35.53,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.439137,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3124500 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Slovakia"
+    },
+    "SVN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 361841.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 2130986",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.605341,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 549960 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Slovenia"
+    },
+    "SWE": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1799306.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10596620",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.242772,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2946100 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Sweden"
+    },
+    "SWZ": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 213298.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1256174",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.084448,
+        "months_of_production": 13.208449,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 76722 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Eswatini"
+    },
+    "SYR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 4350348.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 25620427",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.032481,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 2755048 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Syria"
+    },
+    "TCD": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3566429.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 21003705",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.817363,
+        "months_of_production": 13.208395,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 742585 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Chad"
+    },
+    "TGO": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1458858.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 8591626",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.623028,
+        "months_of_production": 13.208399,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1474542 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Togo"
+    },
+    "THA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 12161052.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 71619863",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 41.966604,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 38127196 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Thailand"
+    },
+    "TJK": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1831587.4,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 10786734",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.523703,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1384304 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Tajikistan"
+    },
+    "TKM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 1293680.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 7618847",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.565498,
+        "months_of_production": 13.208396,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1422275 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Turkmenistan"
+    },
+    "TLS": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 240864.2,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1418517",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.14624,
+        "months_of_production": 13.20843,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 132861 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "East Timor"
+    },
+    "TTO": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 232246.3,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1367764",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.004116,
+        "months_of_production": 13.208536,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3739 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Trinidad and Tobago"
+    },
+    "TUN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2096787.7,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 12348573",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.265805,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1150000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Tunisia"
+    },
+    "TUR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 14582178.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 85878556",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "2 instalações (Silivri e Tuz Gölü), WGV 5,84 bcm (abril de 2025). No PDF o nome do país aparece como 'T?RKIYE' por falha de codificação da fonte tipográfica. Em TWh: ~64 TWh. | convertido de 5.8400 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 64.24,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 33.129969,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 30099000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Turkey"
+    },
+    "TWN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3982121.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 23451837",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Taiwan"
+    },
+    "TZA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 11978687.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 70545865",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 15.737675,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 14297879 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Tanzania"
+    },
+    "UGA": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 8725155.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 51384894",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 6.031836,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 5480000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Uganda"
+    },
+    "UKR": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 6618867.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 38980376",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "observed",
+        "estimate": false,
+        "note": "13 instalações, WGV 32,18 bcm (abril de 2025). Em TWh com 1 bcm = 11,0 TWh: ~354 TWh. | convertido de 32.1800 bcm a 11,0 TWh/bcm",
+        "source": "igu_ugs_2025",
+        "working_capacity_twh": 353.98,
+        "year": 2025
+      },
+      "grain": {
+        "basis": "observed",
+        "capacity_mt": 52.67,
+        "estimate": false,
+        "months_of_production": 11.295499,
+        "note": "Unidade original: milhoes de toneladas. Somente capacidade de ELEVADORES (armazenagem simultanea), nao inclui silos/bags nas fazendas. Serie: 52.1 Mt (out/2024) -> 52.67 Mt (fim de 2025). Top 3 regioes: Poltava 5,575 mil t; Odesa 5,445 mil t; Vinnytsia 4,447 mil t.",
+        "source": "elevatorist_ukraine_elevators_2025",
+        "year": 2025
+      },
+      "name": "Ukraine"
+    },
+    "URY": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 574720.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 3384688",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 6.877144,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 6247973 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Uruguay"
+    },
+    "USA": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 156210000.0,
+        "estimate": false,
+        "note": "Coluna 2020 da Tabela 1 em milhões de m³: 156,21 milhões de m³ = 156.210.000 m³. Cobertura: espaço de armazém refrigerado total do país (3PL + privado), não só 3PL.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "observed",
+        "note": "EIA working gas capacity 4,793,009 MMcf (coluna de 2024; release 10/30/2026) / 35.3147 bcf-por-bcm x 11.0 TWh/bcm",
+        "release_date": "10/30/2026",
+        "source": "eia_us_gas_capacity",
+        "working_capacity_twh": 1493.0,
+        "year": 2024
+      },
+      "grain": {
+        "basis": "observed",
+        "capacity_mt": 647.4,
+        "estimate": false,
+        "months_of_production": 13.86803,
+        "note": "Unidade original: bushels. Tabelas do relatorio: on-farm 13,618 million bu + off-farm 11,870,800 thousand bu = 25,488.8 million bu; convertido a 56 lb/bu (equivalente milho) = 0.0254012 t/bu -> 647.4 Mt. Inclui on-farm (bins, cribs, sheds) e off-farm (elevators, warehouses, terminals, merchant mills, oilseed crushers); exclui instalacoes usadas so para arroz ou amendoim. Nao e um dado de 'capacidade por grao' e sim capacidade fisica total.",
+        "source": "usda_nass_grain_stocks_capacity",
+        "year": 2025
+      },
+      "name": "United States of America"
+    },
+    "UZB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 6291672.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 37053428",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 8.797195,
+        "months_of_production": 13.208401,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 7992364 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Uzbekistan"
+    },
+    "VCT": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 16967.1,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 99924",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.000482,
+        "months_of_production": 13.205479,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 438 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Saint Vincent and the Grenadines"
+    },
+    "VEN": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 4842168.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 28516896",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 3.803544,
+        "months_of_production": 13.208398,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 3455569 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Venezuela"
+    },
+    "VNM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 17251429.9,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 101598527",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 52.722153,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 47898749 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Vietnam"
+    },
+    "XKX": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 267753.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 1576876",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "none",
+        "capacity_mt": null,
+        "months_of_production": null,
+        "note": "sem capacidade publicada e sem producao de graos no FAOSTAT",
+        "source": null,
+        "year": null
+      },
+      "name": "Kosovo"
+    },
+    "YEM": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 7093204.5,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 41773878",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 0.171709,
+        "months_of_production": 13.208385,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 156000 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Yemen"
+    },
+    "ZAF": {
+      "cold": {
+        "basis": "observed",
+        "capacity_m3": 2710000.0,
+        "estimate": false,
+        "note": "2,71 milhões de m³ = 2.710.000 m³.",
+        "source": "gcca_2020",
+        "year": 2020
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 18.300208,
+        "months_of_production": 13.2084,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 16625972 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "South Africa"
+    },
+    "ZMB": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 3720975.8,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 21913874",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 2.096058,
+        "months_of_production": 13.208402,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1904295 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Zambia"
+    },
+    "ZWE": {
+      "cold": {
+        "basis": "rule",
+        "capacity_m3": 2878245.0,
+        "note": "regra k_frio x populacao (ver _meta.rules.cold); populacao 16950795",
+        "source": null,
+        "year": null
+      },
+      "gas": {
+        "basis": "none",
+        "note": "sem capacidade documentada (GIE/AGSI+ so Europa, com chave); jogo comeca com 0",
+        "source": null,
+        "working_capacity_twh": null,
+        "year": null
+      },
+      "grain": {
+        "basis": "rule",
+        "capacity_mt": 1.369341,
+        "months_of_production": 13.208403,
+        "note": "regra k_graos x producao anual (ver _meta.rules.grain); producao 1244064 t em 2024",
+        "source": null,
+        "year": 2024
+      },
+      "name": "Zimbabwe"
+    }
+  },
+  "sources": {
+    "bulog_warehouse_capacity_2026": {
+      "license": "© DPR RI, uso com citação",
+      "page": "",
+      "publisher": "Dewan Perwakilan Rakyat Republik Indonesia (DPR RI), Comissao IV",
+      "quote": "Sementara itu, kapasitas gudang Bulog secara nasional disebut telah terisi hingga 86 persen dari total kapasitas nasional sebesar 6,21 juta ton beras.",
+      "title": "Gudang Bulog Hampir Penuh, Legislator Ingatkan Risiko Kerusakan Beras",
+      "url": "https://dpr.go.id/kegiatan-dpr/berita/Gudang-Bulog-Hampir-Penuh-Legislator-Ingatkan-Risiko-Kerusakan-Beras-65232",
+      "year": 2026
+    },
+    "cooperation_agricole_silos_2026": {
+      "license": "© Process Alimentaire, uso com citação",
+      "page": "",
+      "publisher": "Process Alimentaire (plano 'Infrastructures 2030' da section Metiers du Grain / La Cooperation Agricole)",
+      "quote": "La France compte 4568 silos pour une capacite totale de stockage de 44 millions de tonnes pour une production annuelle de 60 millions de tonnes. 40 % d'entre eux ont plus de 50 ans et seulement 15 % moins de 25 ans.",
+      "title": "4,3 milliards d'euros pour la resilience des silos francais",
+      "url": "https://www.processalimentaire.com/procedes/43-milliards-d-euros-pour-la-resilience-des-silos-francais",
+      "year": 2026
+    },
+    "doe_spr_quick_facts": {
+      "license": "uso com citação",
+      "page": "seção 'Current authorized storage capacity' (última atualização: 9 de novembro de 2026)",
+      "publisher": "U.S. Department of Energy, Office of Petroleum Reserves",
+      "quote": "At the end of CY 2025 (as of December 31, 2025), the SPR’s crude oil inventory was 411 MMbbl. This is equivalent to approximately 125 days (more than 4 months) of U.S. crude oil net imports.",
+      "title": "SPR Quick Facts",
+      "url": "https://www.energy.gov/hgeo/opr/spr-quick-facts",
+      "year": 2025
+    },
+    "eia_spr": {
+      "license": "domínio público (EIA)",
+      "publisher": "U.S. Energy Information Administration (EIA)",
+      "query": "ultima semana publicada",
+      "quote": "Weekly U.S. Ending Stocks of Crude Oil in SPR (Thousand Barrels) — 2026-Nov, semana 11/13: 276.361 (Release Date: 11/18/2026)",
+      "title": "Weekly U.S. Ending Stocks of Crude Oil in SPR (WCSSTUS1), thousand barrels",
+      "url": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCSSTUS1&f=W",
+      "year": 2026
+    },
+    "eia_tie_67504": {
+      "license": "uso com citação",
+      "page": "seção 'United States' (publicado em 20 de abril de 2026)",
+      "publisher": "U.S. Energy Information Administration (EIA), Today in Energy",
+      "quote": "In December 2025, the SPR held 413 million barrels.",
+      "title": "China, the United States, and Japan hold most strategic oil inventories in 2025",
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=67504",
+      "year": 2025
+    },
+    "eia_us_gas_capacity": {
+      "license": "domínio público (EIA)",
+      "publisher": "U.S. Energy Information Administration (EIA)",
+      "query": "Total Working Gas Capacity, coluna mais recente (MMcf -> TWh a 11,0 TWh/bcm)",
+      "quote": "Total Working Gas Capacity — 4.793.009 (milhoes de pes cubicos), coluna corrente; Total Storage Capacity 9.319.291 (Release Date: 10/30/2026)",
+      "title": "Underground Natural Gas Storage Capacity — U.S., annual (working gas capacity)",
+      "url": "https://www.eia.gov/dnav/ng/ng_stor_cap_dcu_nus_a.htm",
+      "year": 2026
+    },
+    "elevatorist_ukraine_elevators_2025": {
+      "license": "© USM Media / Elevatorist, uso com citação",
+      "page": "",
+      "publisher": "USM Media (Ukrainian Shipping Magazine), citando Elevatorist.com",
+      "quote": "As of the end of 2025, Ukraine's total elevator capacity increased to 52.67 million tons of simultaneous grain storage. [...] In October 2024, this figure was 52.1 million tons.",
+      "title": "Last year, Ukraine's grain elevator capacity increased to 52.67 million tons",
+      "url": "https://en.usm.media/last-year-ukraines-grain-elevator-capacity-increased-to-52-67-million-tons",
+      "year": 2025
+    },
+    "eurostat_stk_oem": {
+      "license": "© European Union, reutilização com atribuição (CC BY 4.0)",
+      "publisher": "Eurostat",
+      "query": "ultimo mes publicado por pais; dias x max(importacao liquida diaria, consumo interno diario)",
+      "quote": "Monthly – Emergency Stocks held by the MS in accordance with the EU Directive (in Days Equivalent) – Number – Germany: 95,58 (2025-10); Monthly – Daily net imports for compliance – Thousand tonnes – Germany: 206,987 (2025-10)",
+      "title": "Emergency oil stocks in days equivalent — monthly data (nrg_stk_oem), series STK_EUE_DIR, IMP_DNC e IC_DC",
+      "url": "https://ec.europa.eu/eurostat/databrowser/view/nrg_stk_oem/default/table",
+      "year": 2026
+    },
+    "faostat_qcl_production": {
+      "license": "CC BY 4.0",
+      "publisher": "FAO — Food and Agriculture Organization of the United Nations",
+      "query": "reaproveitado de data/definitions/agriculture/crop_yields.json (base da regra de grãos)",
+      "title": "FAOSTAT — Crops and livestock products (QCL), produção de trigo, arroz, milho e soja (elemento 5510)",
+      "url": "https://www.fao.org/faostat/en/#data/QCL",
+      "year": 2024
+    },
+    "fci_central_pool_stock_jul2025": {
+      "license": "© iGrain India, uso com citação (dados FCI)",
+      "page": "",
+      "publisher": "iGrain India (a partir de dados do Food Corporation of India / Government of India)",
+      "quote": "New Delhi. On 1 July 2025, a total of 736.61 lakh tonnes of foodgrains were present in the central pool operated by Food Corporation of India (FCI), which included 377.83 lakh tonnes of rice and 358.78 lakh tonnes of wheat.",
+      "title": "Central Pool Grain Stocks Surpass Last Year's Levels",
+      "url": "https://www.igrain.in/posts/central-pool-grain-stocks-surpass-last-years-levels",
+      "year": 2025
+    },
+    "gcca_2020": {
+      "license": "uso com citação",
+      "page": "2 (Table 1: Refrigerated Warehouse Capacity and Market Development Index, by Country, 2016-2020)",
+      "publisher": "Global Cold Chain Alliance (GCCA) / International Association of Refrigerated Warehouses (IARW), por Victoria Salin (Texas A&M)",
+      "quote": "United States 118.07 0.440 130.965 0.490 156.21 0.577 82",
+      "title": "2020 GCCA Global Cold Storage Capacity Report",
+      "url": "https://www.gcca.org/wp-content/uploads/2023/02/2020-GCCA-Global-Cold-Storage-Capacity-Report-FINAL-v2.pdf",
+      "year": 2020
+    },
+    "gie_storage_db_2026": {
+      "license": "uso com citação",
+      "page": "planilha 1 (aba única), linhas de RO; cabeçalho 'Storage Map 2026 / data as of August 2026'",
+      "publisher": "Gas Infrastructure Europe (GIE)",
+      "quote": "Romania | RO0101 | Depogaz Ploiești (ex Romgaz) | Balanceanca | operational | 0.53 ; RO0102 | Bilciuresti | 14.016999999999998 ; RO0103 | Ghercesti | 2.6749999999999998 ; RO0104 | Sarmasel | 9.6300000000000008 ; RO0105 | Urziceni | 3.8519999999999994 ; RO0201 | Depomures | Târgu Mureş | 3.15455 (coluna 'Working gas (technical) TWh')",
+      "title": "GIE Storage Database (Storage Map 2026, data as of August 2026)",
+      "url": "https://www.gie.eu/wp-content/uploads/filr/1410/26082026_Storage-Database_public_v3.xlsx",
+      "year": 2026
+    },
+    "ibge_pesquisa_estoques_2s2025": {
+      "license": "© IBGE / Canal Rural, uso com citação",
+      "page": "",
+      "publisher": "Canal Rural (reproduzindo IBGE, Pesquisa de Estoques)",
+      "quote": "A pesquisa tambem mostra que a capacidade util disponivel para armazenamento agricola no Brasil foi de 233,8 milhoes de toneladas em estabelecimentos ativos no segundo semestre de 2025. O volume representa alta de 1,1% em relacao ao semestre anterior.",
+      "title": "Estoques agricolas somam 44,1 milhoes de toneladas no 2o semestre de 2025, diz IBGE",
+      "url": "https://www.canalrural.com.br/agricultura/estoques-agricolas-somam-441-milhoes-de-toneladas-no-2o-semestre-de-2025-diz-ibge/",
+      "year": 2025
+    },
+    "igu_ugs_2025": {
+      "license": "uso com citação",
+      "page": "9-10 (seção 1.4 'WGV in operation by nation')",
+      "publisher": "International Gas Union (IGU), Storage Committee",
+      "quote": "Tabela 1.4 'WGV in operation by nation' (dados de abril/2025, bcm): USA 138,09; RUSSIA 68,99; UKRAINE 32,18; CANADA 25,52; GERMANY 22,49; CHINA 19,83; ITALY 17,66; NETHERLANDS 13,74; FRANCE 11,77; AUSTRIA 8,58",
+      "title": "Underground Gas Storage: A Critical Pillar for Energy Security (2025 edition)",
+      "url": "https://www.datocms-assets.com/146580/1761301320-underground-gas-storage_report.pdf",
+      "year": 2025
+    },
+    "imf_ifs_gold": {
+      "license": "© IMF, uso com citação (consulta via api.db.nomics.world, provider IMF/IFS)",
+      "publisher": "International Monetary Fund (IMF)",
+      "query": "INDICATOR=RAFAGOLDV_OZT, FREQ=M, ultima observacao por area",
+      "quote": "Monthly – United States – International Reserves, Official Reserve Assets, Gold (Including Gold Deposits and, If Appropriate, Gold Swapped), Volume in Millions of Fine Troy Ounces — 261,49892624 (2025-06); Alemanha 107,714; Italia 78,83; Franca 78,352 (milhoes de oncas troy finas)",
+      "title": "International Financial Statistics (IFS) — Official Reserve Assets, Gold, volume in millions of fine troy ounces (RAFAGOLDV_OZT)",
+      "url": "https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.STA%3AIFS%283.0.0%29",
+      "year": 2026
+    },
+    "kaz_minagri_storage_2025": {
+      "license": "© APK-Inform, uso com citação",
+      "page": "",
+      "publisher": "APK-Inform (declaracao do Ministro da Agricultura, Aidarbek Saparov, em reuniao de governo)",
+      "quote": "The head of the Ministry of Agriculture noted that the total grain storage capacity in the republic is 30.7 million tons, including at operating licensed grain-receiving enterprises - 13.3 million tons, at agricultural producers - 17.4 million tons.",
+      "title": "53% of the new wheat harvest in Kazakhstan's elevators is high quality",
+      "url": "https://apk-inform.com/en/news/1551302",
+      "year": 2025
+    },
+    "knoc_facilities": {
+      "license": "uso com citação",
+      "page": "Operations > Stockpiling Projects > Operation of Stockpiling Facilities (atualizado em 2026-08-31)",
+      "publisher": "Korea National Oil Corporation (KNOC)",
+      "quote": "KNOC is running nine stockpiling bases with a capacity of 146 million barrels of oil, and currently holds 100 million barrels of reserves, excluding international joint stockpiling reserves as of August, 2026.",
+      "title": "Operation of Stockpiling Facilities",
+      "url": "https://www.knoc.co.kr/ENG/sub03/sub03_3_3.jsp",
+      "year": 2026
+    },
+    "mopng_spr": {
+      "license": "uso com citação",
+      "page": "página única (última atualização: 06-10-2026)",
+      "publisher": "Ministry of Petroleum and Natural Gas, Government of India (Project Development Cell)",
+      "quote": "Indian Strategic Petroleum Reserve Limited (ISPRL) has already completed the construction of underground rock caverns for SPR with total crude oil storage capacity of 5.33 Million Metric Tonne (MMT) at three locations, viz. (i) Vishakhapatnam (1.33 MMT), (ii) Mangalore (1.50 MMT) and (iii) Padur (2.5 MMT).",
+      "title": "Strategic Crude Oil Storage",
+      "url": "https://www.mopng.gov.in/en/pdc/investible-projects/oil-amp-gas-infrastructure/strategic-crude-oil-storage",
+      "year": 2026
+    },
+    "nfa_warehouse_capacity_2025": {
+      "license": "© Philippine Star, uso com citação",
+      "page": "",
+      "publisher": "The Philippine Star (declaracao do ex-secretario de Agricultura Leonardo Montemayor sobre dados da NFA)",
+      "quote": "The NFA, through its nationwide network of warehouses, has a total storage capacity of 1,200,000 tons in palay or rice form. In what warehouses and locations is congestion happening?",
+      "title": "Explain warehouse congestion, NFA urged",
+      "url": "https://www.philstar.com/headlines/2025/01/20/2415461/explain-warehouse-congestion-nfa-urged",
+      "year": 2025
+    },
+    "nfsra_warehouse_capacity": {
+      "license": "© Global Times, uso com citação (coletiva da NFSRA)",
+      "page": "",
+      "publisher": "Global Times (coletiva do National Food and Strategic Reserves Administration - NFSRA)",
+      "quote": "Speaking of grain circulation and storage, Liu said that with the continued advancement of storage and logistics projects, the country's total warehouse capacity has exceeded 730 million tons, an increase of 58 million tons from five years earlier.",
+      "title": "China ensures ample grain supply during 14th Five-Year Plan; annual grain purchases reach 400 million tons: official",
+      "url": "https://globaltimes.cn/page/202510/1345610.shtml",
+      "year": 2025
+    },
+    "pib_fci_state_storage_2025": {
+      "license": "© Prasar Bharati / PIB, uso com citação",
+      "page": "",
+      "publisher": "DD India / Prasar Bharati, a partir de nota do Press Information Bureau (PIB)",
+      "quote": "The Food Corporation of India (FCI) and state agencies manage a combined covered and Cover and Plinth (CAP) storage capacity of 917.83 lakh metric tonnes (LMT) for central pool grains. [...] As of July 1, 2025, the total storage capacity with FCI and state agencies stood at 917.83 LMT.",
+      "title": "India strengthens food security with record harvest and enhanced storage infrastructure",
+      "url": "https://ddindia.co.in/2025/09/india-strengthens-food-security-with-record-harvest-and-enhanced-storage-infrastructure",
+      "year": 2025
+    },
+    "reuters_russia_storage_2026": {
+      "license": "© Reuters, uso com citação",
+      "page": "",
+      "publisher": "Reuters (reproduzido por Euronext Live), por Olga Popova e Gleb Bryanski",
+      "quote": "Russia has storage capacity of about 160 million tons, most of it built in the Soviet era, but experts estimate that only 40% meets modern standards, while the rest is only suitable for short-term storage, with high risks of losses.",
+      "title": "Russia turns to giant plastic bags to store unexported grain as Black Sea trade stalls",
+      "url": "https://live.euronext.com/en/financial-news/russia-turns-giant-plastic-bags-store-unexported-grain-black-sea-trade-stalls",
+      "year": 2026
+    },
+    "usda_nass_grain_stocks_capacity": {
+      "license": "domínio público (USDA NASS)",
+      "page": "p. 30-32 (On-Farm Storage Capacity; Off-Farm Storage Facilities)",
+      "publisher": "USDA National Agricultural Statistics Service (NASS), Agricultural Statistics Board",
+      "quote": "The United States on-farm storage capacity totaled 13.6 billion bushels on December 1, 2025, up less than 1 percent from the December 1, 2024 estimate. [...] Capacity of off-farm commercial grain storage in the United States totaled 11.9 billion bushels on December 1, 2025, up less than 1 percent from the December 1, 2024 total.",
+      "title": "Grain Stocks, released January 12, 2026",
+      "url": "https://esmis.nal.usda.gov/sites/default/release-files/795726/grst0126.txt",
+      "year": 2025
+    },
+    "wdi_population": {
+      "license": "CC BY 4.0",
+      "publisher": "World Bank",
+      "query": "reaproveitado de data/definitions/world/nations_source.csv (base da regra de frio)",
+      "title": "World Bank WDI SP.POP.TOTL — população, último ano disponível",
+      "url": "https://data.worldbank.org/indicator/SP.POP.TOTL",
+      "year": 2025
+    }
+  }
+}
