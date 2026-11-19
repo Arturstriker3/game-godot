@@ -1,0 +1,3332 @@
+{
+	"_meta": {
+		"dataset": "livestock_cycle",
+		"version": "g1",
+		"generated_by": "tools/build_agri_livestock.py",
+		"retrieved": "2026-11-18",
+		"nations": 179,
+		"max_year": 2024,
+		"game_chain": "feed -> meat (recipe 'meat'); milk não é bem do jogo",
+		"faostat_items": {
+			"cattle_carcass": {
+				"item": 867,
+				"item_name": "Meat of cattle with the bone, fresh or chilled",
+				"element": 5417,
+				"element_name": "Yield/Carcass Weight",
+				"unit": "kg/An"
+			},
+			"milk_cow": {
+				"item": 882,
+				"item_name": "Raw milk of cattle",
+				"element": 5417,
+				"element_name": "Yield/Carcass Weight",
+				"unit": "kg/An"
+			},
+			"note": "o briefing citava o elemento 5419 ('Yield', hg/An) para o leite; esse elemento não existe no QCL em cache (E_Elements.csv) e o leite por animal do item 882 é publicado no elemento 5417, em kg/An, já em kg (sem divisão por 10). O item 882 chama-se 'Raw milk of cattle' no arquivo."
+		},
+		"coverage": {
+			"cattle_carcass_observed": 175,
+			"cattle_carcass_no_data": 4,
+			"milk_observed": 171,
+			"milk_no_data": 8,
+			"cattle_carcass_stale_before_2020": [
+				"IND",
+				"NPL"
+			],
+			"milk_stale_before_2020": [],
+			"cattle_carcass_no_data_nations": [
+				"SAH",
+				"SOL",
+				"TWN",
+				"XKX"
+			],
+			"milk_no_data_nations": [
+				"GNQ",
+				"KNA",
+				"SAH",
+				"SGP",
+				"SOL",
+				"TLS",
+				"TWN",
+				"XKX"
+			]
+		},
+		"faostat_area_note": "CHN usa a área 'China' (351, M49 159): no QCL em cache os itens 867 e 882 só são publicados sob ela; 'China; mainland' (41) não tem linhas desses itens. Hong Kong (96), Macao (128) e Taiwan (214) são áreas separadas.",
+		"seasonality_rule": "produção contínua: o jogo trata como fluxo diário plano; não há série mensal publicada usada aqui"
+	},
+	"sources": {
+		"FAOSTAT_QCL": {
+			"title": "FAOSTAT - Crops and livestock products (QCL), Production",
+			"publisher": "FAO",
+			"url": "https://bulks-faostat.fao.org/production/Production_Crops_Livestock_E_All_Data_(Normalized).zip",
+			"license": "CC BY 4.0",
+			"accessed": "2026-11-18",
+			"year_max": 2024
+		},
+		"CYCLE_LITERATURE": {
+			"title": "FAO World Animal Review — unidade de produção mista (x6512e19) e Primitive extensive beef production (x6512e25)",
+			"publisher": "FAO",
+			"url": "https://www.fao.org/4/x6512e/X6512E19.htm",
+			"url_extensive": "https://www.fao.org/4/x6512e/X6512E25.htm",
+			"accessed": "2026-11-18",
+			"note": "páginas HTML sem paginação; a citação é a seção indicada em cada produto"
+		},
+		"MILK_LITERATURE": {
+			"title": "Milk yield and lactation length in tropical cattle",
+			"publisher": "FAO",
+			"url": "https://www.fao.org/4/u9550t/u9550T0s.htm",
+			"accessed": "2026-11-18",
+			"note": "página HTML sem paginação; citação pela seção"
+		}
+	},
+	"products": {
+		"meat": {
+			"in_game": true,
+			"kind": "final",
+			"flow": "continuous",
+			"seasonality": "continuous",
+			"monthly_factor": null,
+			"slaughter_age_months": 17,
+			"carcass_kg_per_head": null,
+			"source": "CYCLE_LITERATURE",
+			"data_status": "observed",
+			"notes": "pecuária de corte: fluxo diário plano (sem safra). 'Age at slaughter (400 kg) 17 months' (FAO x6512e19). A mesma revista registra, no extremo oposto, 'age at slaughter: 6-7 years' no sistema extensivo primitivo (FAO x6512e25): a idade de abate é propriedade do sistema, e o jogo usa o valor da unidade modelada. Peso de carcaça por cabeça é por nação em `nations` (FAOSTAT item 867)."
+		},
+		"milk": {
+			"in_game": false,
+			"kind": "reference",
+			"flow": "continuous",
+			"seasonality": "continuous",
+			"monthly_factor": null,
+			"lactation_days": 305,
+			"calving_interval_months": 12,
+			"source": "MILK_LITERATURE",
+			"data_status": "observed",
+			"notes": "sem bem 'milk' no jogo: entra só como referência declarada. 'The standard period of 305 days has been chosen because this is approximately the normal lactation length of cows calving at intervals of 12 months' (FAO u9550T0s). O jogo deve tratar a produção como fluxo diário plano; leite por animal/ano por nação em `nations` (FAOSTAT item 882), não usado para consumo até existir o bem."
+		}
+	},
+	"nations": {
+		"AFG": {
+			"name": "Afghanistan",
+			"faostat_area": "Afghanistan",
+			"cattle": {
+				"carcass_kg_per_head": 131.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 523.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"AGO": {
+			"name": "Angola",
+			"faostat_area": "Angola",
+			"cattle": {
+				"carcass_kg_per_head": 172.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 495.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ALB": {
+			"name": "Albania",
+			"faostat_area": "Albania",
+			"cattle": {
+				"carcass_kg_per_head": 112.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 3216.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"ARE": {
+			"name": "United Arab Emirates",
+			"faostat_area": "United Arab Emirates",
+			"cattle": {
+				"carcass_kg_per_head": 250.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1184.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ARG": {
+			"name": "Argentina",
+			"faostat_area": "Argentina",
+			"cattle": {
+				"carcass_kg_per_head": 228.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 7059.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ARM": {
+			"name": "Armenia",
+			"faostat_area": "Armenia",
+			"cattle": {
+				"carcass_kg_per_head": 121.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2566.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"ATG": {
+			"name": "Antigua and Barbuda",
+			"faostat_area": "Antigua and Barbuda",
+			"cattle": {
+				"carcass_kg_per_head": 159.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 958.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"AUS": {
+			"name": "Australia",
+			"faostat_area": "Australia",
+			"cattle": {
+				"carcass_kg_per_head": 298.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 6518.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"AUT": {
+			"name": "Austria",
+			"faostat_area": "Austria",
+			"cattle": {
+				"carcass_kg_per_head": 334.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 7504.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"AZE": {
+			"name": "Azerbaijan",
+			"faostat_area": "Azerbaijan",
+			"cattle": {
+				"carcass_kg_per_head": 109.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1778.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BDI": {
+			"name": "Burundi",
+			"faostat_area": "Burundi",
+			"cattle": {
+				"carcass_kg_per_head": 208.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 452.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BEL": {
+			"name": "Belgium",
+			"faostat_area": "Belgium",
+			"cattle": {
+				"carcass_kg_per_head": 308.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 8868.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"BEN": {
+			"name": "Benin",
+			"faostat_area": "Benin",
+			"cattle": {
+				"carcass_kg_per_head": 223.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 225.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"BFA": {
+			"name": "Burkina Faso",
+			"faostat_area": "Burkina Faso",
+			"cattle": {
+				"carcass_kg_per_head": 107.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 135.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BGD": {
+			"name": "Bangladesh",
+			"faostat_area": "Bangladesh",
+			"cattle": {
+				"carcass_kg_per_head": 73.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1547.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BGR": {
+			"name": "Bulgaria",
+			"faostat_area": "Bulgaria",
+			"cattle": {
+				"carcass_kg_per_head": 161.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 3735.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"BHR": {
+			"name": "Bahrain",
+			"faostat_area": "Bahrain",
+			"cattle": {
+				"carcass_kg_per_head": 120.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2504.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BHS": {
+			"name": "The Bahamas",
+			"faostat_area": "Bahamas",
+			"cattle": {
+				"carcass_kg_per_head": 166.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1016.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BIH": {
+			"name": "Bosnia and Herzegovina",
+			"faostat_area": "Bosnia and Herzegovina",
+			"cattle": {
+				"carcass_kg_per_head": 254.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 3474.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"BLR": {
+			"name": "Belarus",
+			"faostat_area": "Belarus",
+			"cattle": {
+				"carcass_kg_per_head": 245.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 6126.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"BLZ": {
+			"name": "Belize",
+			"faostat_area": "Belize",
+			"cattle": {
+				"carcass_kg_per_head": 204.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 861.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BOL": {
+			"name": "Bolivia",
+			"faostat_area": "Bolivia (Plurinational State of)",
+			"cattle": {
+				"carcass_kg_per_head": 205.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 2515.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BRA": {
+			"name": "Brazil",
+			"faostat_area": "Brazil",
+			"cattle": {
+				"carcass_kg_per_head": 258.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 2433.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"BRB": {
+			"name": "Barbados",
+			"faostat_area": "Barbados",
+			"cattle": {
+				"carcass_kg_per_head": 167.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1388.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BRN": {
+			"name": "Brunei",
+			"faostat_area": "Brunei Darussalam",
+			"cattle": {
+				"carcass_kg_per_head": 261.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 565.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"BTN": {
+			"name": "Bhutan",
+			"faostat_area": "Bhutan",
+			"cattle": {
+				"carcass_kg_per_head": 75.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 816.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"BWA": {
+			"name": "Botswana",
+			"faostat_area": "Botswana",
+			"cattle": {
+				"carcass_kg_per_head": 206.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 5834.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"CAF": {
+			"name": "Central African Republic",
+			"faostat_area": "Central African Republic",
+			"cattle": {
+				"carcass_kg_per_head": 161.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 246.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"CAN": {
+			"name": "Canada",
+			"faostat_area": "Canada",
+			"cattle": {
+				"carcass_kg_per_head": 378.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 10345.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"CHE": {
+			"name": "Switzerland",
+			"faostat_area": "Switzerland",
+			"cattle": {
+				"carcass_kg_per_head": 239.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 7086.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"CHL": {
+			"name": "Chile",
+			"faostat_area": "Chile",
+			"cattle": {
+				"carcass_kg_per_head": 260.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 4209.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"CHN": {
+			"name": "People's Republic of China",
+			"faostat_area": "China",
+			"cattle": {
+				"carcass_kg_per_head": 153.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2713.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"CIV": {
+			"name": "Ivory Coast",
+			"faostat_area": "Côte d'Ivoire",
+			"cattle": {
+				"carcass_kg_per_head": 165.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 113.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"CMR": {
+			"name": "Cameroon",
+			"faostat_area": "Cameroon",
+			"cattle": {
+				"carcass_kg_per_head": 157.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 595.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"COD": {
+			"name": "Democratic Republic of the Congo",
+			"faostat_area": "Democratic Republic of the Congo",
+			"cattle": {
+				"carcass_kg_per_head": 152.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 871.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"COG": {
+			"name": "Republic of the Congo",
+			"faostat_area": "Congo",
+			"cattle": {
+				"carcass_kg_per_head": 152.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1299.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"COL": {
+			"name": "Colombia",
+			"faostat_area": "Colombia",
+			"cattle": {
+				"carcass_kg_per_head": 227.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 2065.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"CRI": {
+			"name": "Costa Rica",
+			"faostat_area": "Costa Rica",
+			"cattle": {
+				"carcass_kg_per_head": 230.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 5239.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"CUB": {
+			"name": "Cuba",
+			"faostat_area": "Cuba",
+			"cattle": {
+				"carcass_kg_per_head": 201.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1065.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"CYP": {
+			"name": "Cyprus",
+			"faostat_area": "Cyprus",
+			"cattle": {
+				"carcass_kg_per_head": 275.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 8408.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"CZE": {
+			"name": "Czech Republic",
+			"faostat_area": "Czechia",
+			"cattle": {
+				"carcass_kg_per_head": 307.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 9871.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"DEU": {
+			"name": "Germany",
+			"faostat_area": "Germany",
+			"cattle": {
+				"carcass_kg_per_head": 336.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 9410.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"DJI": {
+			"name": "Djibouti",
+			"faostat_area": "Djibouti",
+			"cattle": {
+				"carcass_kg_per_head": 108.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 347.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"DMA": {
+			"name": "Dominica",
+			"faostat_area": "Dominica",
+			"cattle": {
+				"carcass_kg_per_head": 180.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 940.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"DNK": {
+			"name": "Denmark",
+			"faostat_area": "Denmark",
+			"cattle": {
+				"carcass_kg_per_head": 267.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 10483.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"DOM": {
+			"name": "Dominican Republic",
+			"faostat_area": "Dominican Republic",
+			"cattle": {
+				"carcass_kg_per_head": 141.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1570.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"DZA": {
+			"name": "Algeria",
+			"faostat_area": "Algeria",
+			"cattle": {
+				"carcass_kg_per_head": 208.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2595.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ECU": {
+			"name": "Ecuador",
+			"faostat_area": "Ecuador",
+			"cattle": {
+				"carcass_kg_per_head": 224.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2507.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"EGY": {
+			"name": "Egypt",
+			"faostat_area": "Egypt",
+			"cattle": {
+				"carcass_kg_per_head": 277.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2982.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ERI": {
+			"name": "Eritrea",
+			"faostat_area": "Eritrea",
+			"cattle": {
+				"carcass_kg_per_head": 101.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 167.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ESP": {
+			"name": "Spain",
+			"faostat_area": "Spain",
+			"cattle": {
+				"carcass_kg_per_head": 289.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 9788.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"EST": {
+			"name": "Estonia",
+			"faostat_area": "Estonia",
+			"cattle": {
+				"carcass_kg_per_head": 251.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 11353.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"ETH": {
+			"name": "Ethiopia",
+			"faostat_area": "Ethiopia",
+			"cattle": {
+				"carcass_kg_per_head": 109.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 269.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"FIN": {
+			"name": "Finland",
+			"faostat_area": "Finland",
+			"cattle": {
+				"carcass_kg_per_head": 327.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 9675.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"FJI": {
+			"name": "Fiji",
+			"faostat_area": "Fiji",
+			"cattle": {
+				"carcass_kg_per_head": 239.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 333.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"FRA": {
+			"name": "France",
+			"faostat_area": "France",
+			"cattle": {
+				"carcass_kg_per_head": 326.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 7871.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"GAB": {
+			"name": "Gabon",
+			"faostat_area": "Gabon",
+			"cattle": {
+				"carcass_kg_per_head": 103.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1312.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"GBR": {
+			"name": "United Kingdom",
+			"faostat_area": "United Kingdom of Great Britain and Northern Ireland",
+			"cattle": {
+				"carcass_kg_per_head": 328.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 8644.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"GEO": {
+			"name": "Georgia",
+			"faostat_area": "Georgia",
+			"cattle": {
+				"carcass_kg_per_head": 82.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1392.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"GHA": {
+			"name": "Ghana",
+			"faostat_area": "Ghana",
+			"cattle": {
+				"carcass_kg_per_head": 103.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 129.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"GIN": {
+			"name": "Guinea",
+			"faostat_area": "Guinea",
+			"cattle": {
+				"carcass_kg_per_head": 109.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 240.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"GMB": {
+			"name": "The Gambia",
+			"faostat_area": "Gambia",
+			"cattle": {
+				"carcass_kg_per_head": 120.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1311.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"GNB": {
+			"name": "Guinea Bissau",
+			"faostat_area": "Guinea-Bissau",
+			"cattle": {
+				"carcass_kg_per_head": 118.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 162.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"GNQ": {
+			"name": "Equatorial Guinea",
+			"faostat_area": "Equatorial Guinea",
+			"cattle": {
+				"carcass_kg_per_head": 110.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT QCL não traz leite por animal (> 0) para esta área até 2024"
+			}
+		},
+		"GRC": {
+			"name": "Greece",
+			"faostat_area": "Greece",
+			"cattle": {
+				"carcass_kg_per_head": 234.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 8201.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"GRD": {
+			"name": "Grenada",
+			"faostat_area": "Grenada",
+			"cattle": {
+				"carcass_kg_per_head": 200.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 807.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"GTM": {
+			"name": "Guatemala",
+			"faostat_area": "Guatemala",
+			"cattle": {
+				"carcass_kg_per_head": 270.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 723.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"GUY": {
+			"name": "Guyana",
+			"faostat_area": "Guyana",
+			"cattle": {
+				"carcass_kg_per_head": 293.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 1062.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"HND": {
+			"name": "Honduras",
+			"faostat_area": "Honduras",
+			"cattle": {
+				"carcass_kg_per_head": 199.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1370.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"HRV": {
+			"name": "Croatia",
+			"faostat_area": "Croatia",
+			"cattle": {
+				"carcass_kg_per_head": 268.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 6592.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"HTI": {
+			"name": "Haiti",
+			"faostat_area": "Haiti",
+			"cattle": {
+				"carcass_kg_per_head": 159.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 246.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"HUN": {
+			"name": "Hungary",
+			"faostat_area": "Hungary",
+			"cattle": {
+				"carcass_kg_per_head": 261.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 7804.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"IDN": {
+			"name": "Indonesia",
+			"faostat_area": "Indonesia",
+			"cattle": {
+				"carcass_kg_per_head": 408.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1664.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"IND": {
+			"name": "India",
+			"faostat_area": "India",
+			"cattle": {
+				"carcass_kg_per_head": 103.0,
+				"year": 1990,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2021.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"IRL": {
+			"name": "Ireland",
+			"faostat_area": "Ireland",
+			"cattle": {
+				"carcass_kg_per_head": 316.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 5779.0,
+				"year": 2023,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"IRN": {
+			"name": "Iran",
+			"faostat_area": "Iran (Islamic Republic of)",
+			"cattle": {
+				"carcass_kg_per_head": 170.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 3784.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"IRQ": {
+			"name": "Iraq",
+			"faostat_area": "Iraq",
+			"cattle": {
+				"carcass_kg_per_head": 212.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 542.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ISL": {
+			"name": "Iceland",
+			"faostat_area": "Iceland",
+			"cattle": {
+				"carcass_kg_per_head": 216.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 6283.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"ISR": {
+			"name": "Israel",
+			"faostat_area": "Israel",
+			"cattle": {
+				"carcass_kg_per_head": 301.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 13725.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"ITA": {
+			"name": "Italy",
+			"faostat_area": "Italy",
+			"cattle": {
+				"carcass_kg_per_head": 253.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 7475.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"JAM": {
+			"name": "Jamaica",
+			"faostat_area": "Jamaica",
+			"cattle": {
+				"carcass_kg_per_head": 259.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 2120.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"JOR": {
+			"name": "Jordan",
+			"faostat_area": "Jordan",
+			"cattle": {
+				"carcass_kg_per_head": 314.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 8449.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"JPN": {
+			"name": "Japan",
+			"faostat_area": "Japan",
+			"cattle": {
+				"carcass_kg_per_head": 450.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 8905.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"KAZ": {
+			"name": "Kazakhstan",
+			"faostat_area": "Kazakhstan",
+			"cattle": {
+				"carcass_kg_per_head": 176.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 2524.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"KEN": {
+			"name": "Kenya",
+			"faostat_area": "Kenya",
+			"cattle": {
+				"carcass_kg_per_head": 116.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 1103.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"KGZ": {
+			"name": "Kyrgyzstan",
+			"faostat_area": "Kyrgyzstan",
+			"cattle": {
+				"carcass_kg_per_head": 229.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1986.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"KHM": {
+			"name": "Cambodia",
+			"faostat_area": "Cambodia",
+			"cattle": {
+				"carcass_kg_per_head": 120.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 200.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"KNA": {
+			"name": "Saint Kitts and Nevis",
+			"faostat_area": "Saint Kitts and Nevis",
+			"cattle": {
+				"carcass_kg_per_head": 189.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT QCL não traz leite por animal (> 0) para esta área até 2024"
+			}
+		},
+		"KOR": {
+			"name": "South Korea",
+			"faostat_area": "Republic of Korea",
+			"cattle": {
+				"carcass_kg_per_head": 332.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "X"
+			},
+			"milk": {
+				"kg_per_head_year": 9138.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"KWT": {
+			"name": "Kuwait",
+			"faostat_area": "Kuwait",
+			"cattle": {
+				"carcass_kg_per_head": 261.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 5392.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"LAO": {
+			"name": "Laos",
+			"faostat_area": "Lao People's Democratic Republic",
+			"cattle": {
+				"carcass_kg_per_head": 130.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 177.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"LBN": {
+			"name": "Lebanon",
+			"faostat_area": "Lebanon",
+			"cattle": {
+				"carcass_kg_per_head": 216.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 3438.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"LBR": {
+			"name": "Liberia",
+			"faostat_area": "Liberia",
+			"cattle": {
+				"carcass_kg_per_head": 115.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1271.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"LBY": {
+			"name": "Libya",
+			"faostat_area": "Libya",
+			"cattle": {
+				"carcass_kg_per_head": 193.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1140.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"LCA": {
+			"name": "Saint Lucia",
+			"faostat_area": "Saint Lucia",
+			"cattle": {
+				"carcass_kg_per_head": 184.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1404.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"LKA": {
+			"name": "Sri Lanka",
+			"faostat_area": "Sri Lanka",
+			"cattle": {
+				"carcass_kg_per_head": 127.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1225.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"LSO": {
+			"name": "Lesotho",
+			"faostat_area": "Lesotho",
+			"cattle": {
+				"carcass_kg_per_head": 150.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1400.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"LTU": {
+			"name": "Lithuania",
+			"faostat_area": "Lithuania",
+			"cattle": {
+				"carcass_kg_per_head": 274.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 7598.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"LUX": {
+			"name": "Luxembourg",
+			"faostat_area": "Luxembourg",
+			"cattle": {
+				"carcass_kg_per_head": 373.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 8784.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"LVA": {
+			"name": "Latvia",
+			"faostat_area": "Latvia",
+			"cattle": {
+				"carcass_kg_per_head": 217.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 8491.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MAR": {
+			"name": "Morocco",
+			"faostat_area": "Morocco",
+			"cattle": {
+				"carcass_kg_per_head": 200.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1391.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MDA": {
+			"name": "Moldova",
+			"faostat_area": "Republic of Moldova",
+			"cattle": {
+				"carcass_kg_per_head": 126.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 3796.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MDG": {
+			"name": "Madagascar",
+			"faostat_area": "Madagascar",
+			"cattle": {
+				"carcass_kg_per_head": 106.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 306.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"MEX": {
+			"name": "Mexico",
+			"faostat_area": "Mexico",
+			"cattle": {
+				"carcass_kg_per_head": 253.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 5727.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"MKD": {
+			"name": "North Macedonia",
+			"faostat_area": "North Macedonia",
+			"cattle": {
+				"carcass_kg_per_head": 323.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 3669.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MLI": {
+			"name": "Mali",
+			"faostat_area": "Mali",
+			"cattle": {
+				"carcass_kg_per_head": 120.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 143.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MLT": {
+			"name": "Malta",
+			"faostat_area": "Malta",
+			"cattle": {
+				"carcass_kg_per_head": 285.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 6557.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MMR": {
+			"name": "Myanmar",
+			"faostat_area": "Myanmar",
+			"cattle": {
+				"carcass_kg_per_head": 181.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1462.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"MNE": {
+			"name": "Montenegro",
+			"faostat_area": "Montenegro",
+			"cattle": {
+				"carcass_kg_per_head": 209.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 3569.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MNG": {
+			"name": "Mongolia",
+			"faostat_area": "Mongolia",
+			"cattle": {
+				"carcass_kg_per_head": 126.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 128.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MOZ": {
+			"name": "Mozambique",
+			"faostat_area": "Mozambique",
+			"cattle": {
+				"carcass_kg_per_head": 142.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 745.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"MRT": {
+			"name": "Mauritania",
+			"faostat_area": "Mauritania",
+			"cattle": {
+				"carcass_kg_per_head": 126.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 351.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"MWI": {
+			"name": "Malawi",
+			"faostat_area": "Malawi",
+			"cattle": {
+				"carcass_kg_per_head": 109.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 431.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"MYS": {
+			"name": "Malaysia",
+			"faostat_area": "Malaysia",
+			"cattle": {
+				"carcass_kg_per_head": 337.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 944.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"NAM": {
+			"name": "Namibia",
+			"faostat_area": "Namibia",
+			"cattle": {
+				"carcass_kg_per_head": 313.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 449.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"NED": {
+			"name": "Netherlands",
+			"faostat_area": "Netherlands (Kingdom of the)",
+			"cattle": {
+				"carcass_kg_per_head": 205.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 9396.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"NER": {
+			"name": "Niger",
+			"faostat_area": "Niger",
+			"cattle": {
+				"carcass_kg_per_head": 280.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 327.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"NGA": {
+			"name": "Nigeria",
+			"faostat_area": "Nigeria",
+			"cattle": {
+				"carcass_kg_per_head": 96.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 236.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"NIC": {
+			"name": "Nicaragua",
+			"faostat_area": "Nicaragua",
+			"cattle": {
+				"carcass_kg_per_head": 202.0,
+				"year": 2023,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 1277.0,
+				"year": 2023,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"NOR": {
+			"name": "Norway",
+			"faostat_area": "Norway",
+			"cattle": {
+				"carcass_kg_per_head": 282.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 7069.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"NPL": {
+			"name": "Nepal",
+			"faostat_area": "Nepal",
+			"cattle": {
+				"carcass_kg_per_head": 85.0,
+				"year": 1990,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1206.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"NZL": {
+			"name": "New Zealand",
+			"faostat_area": "New Zealand",
+			"cattle": {
+				"carcass_kg_per_head": 158.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 4682.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"OMN": {
+			"name": "Oman",
+			"faostat_area": "Oman",
+			"cattle": {
+				"carcass_kg_per_head": 124.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1743.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"PAK": {
+			"name": "Pakistan",
+			"faostat_area": "Pakistan",
+			"cattle": {
+				"carcass_kg_per_head": 130.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 1461.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"PAN": {
+			"name": "Panama",
+			"faostat_area": "Panama",
+			"cattle": {
+				"carcass_kg_per_head": 219.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 1257.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"PER": {
+			"name": "Peru",
+			"faostat_area": "Peru",
+			"cattle": {
+				"carcass_kg_per_head": 148.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 2387.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"PHL": {
+			"name": "Philippines",
+			"faostat_area": "Philippines",
+			"cattle": {
+				"carcass_kg_per_head": 132.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 2265.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"PNG": {
+			"name": "Papua New Guinea",
+			"faostat_area": "Papua New Guinea",
+			"cattle": {
+				"carcass_kg_per_head": 107.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 102.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"POL": {
+			"name": "Poland",
+			"faostat_area": "Poland",
+			"cattle": {
+				"carcass_kg_per_head": 300.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 8182.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"PRK": {
+			"name": "North Korea",
+			"faostat_area": "Democratic People's Republic of Korea",
+			"cattle": {
+				"carcass_kg_per_head": 150.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2342.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"PRT": {
+			"name": "Portugal",
+			"faostat_area": "Portugal",
+			"cattle": {
+				"carcass_kg_per_head": 253.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 9102.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"PRY": {
+			"name": "Paraguay",
+			"faostat_area": "Paraguay",
+			"cattle": {
+				"carcass_kg_per_head": 185.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2646.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"PSX": {
+			"name": "Palestine",
+			"faostat_area": "Palestine",
+			"cattle": {
+				"carcass_kg_per_head": 287.0,
+				"year": 2022,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 7697.0,
+				"year": 2022,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"QAT": {
+			"name": "Qatar",
+			"faostat_area": "Qatar",
+			"cattle": {
+				"carcass_kg_per_head": 120.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1415.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ROU": {
+			"name": "Romania",
+			"faostat_area": "Romania",
+			"cattle": {
+				"carcass_kg_per_head": 135.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 3540.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"RUS": {
+			"name": "Russia",
+			"faostat_area": "Russian Federation",
+			"cattle": {
+				"carcass_kg_per_head": 225.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 5157.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"RWA": {
+			"name": "Rwanda",
+			"faostat_area": "Rwanda",
+			"cattle": {
+				"carcass_kg_per_head": 90.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 504.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SAH": {
+			"name": "Western Sahara",
+			"faostat_area": null,
+			"cattle": {
+				"carcass_kg_per_head": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT QCL não publica área para o Saara Ocidental"
+			},
+			"milk": {
+				"kg_per_head_year": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT QCL não publica área para o Saara Ocidental"
+			}
+		},
+		"SAU": {
+			"name": "Saudi Arabia",
+			"faostat_area": "Saudi Arabia",
+			"cattle": {
+				"carcass_kg_per_head": 213.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 12934.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SDN": {
+			"name": "Sudan",
+			"faostat_area": "Sudan",
+			"cattle": {
+				"carcass_kg_per_head": 109.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 365.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SEN": {
+			"name": "Senegal",
+			"faostat_area": "Senegal",
+			"cattle": {
+				"carcass_kg_per_head": 165.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 269.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SGP": {
+			"name": "Singapore",
+			"faostat_area": "Singapore",
+			"cattle": {
+				"carcass_kg_per_head": 400.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT QCL não traz leite por animal (> 0) para esta área até 2024"
+			}
+		},
+		"SLB": {
+			"name": "Solomon Islands",
+			"faostat_area": "Solomon Islands",
+			"cattle": {
+				"carcass_kg_per_head": 185.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1345.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SLE": {
+			"name": "Sierra Leone",
+			"faostat_area": "Sierra Leone",
+			"cattle": {
+				"carcass_kg_per_head": 244.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1278.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SLV": {
+			"name": "El Salvador",
+			"faostat_area": "El Salvador",
+			"cattle": {
+				"carcass_kg_per_head": 142.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1177.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SOL": {
+			"name": "Somaliland",
+			"faostat_area": null,
+			"cattle": {
+				"carcass_kg_per_head": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT não tem entrada para Somalilândia (o dado de 'Somalia' é outro país)"
+			},
+			"milk": {
+				"kg_per_head_year": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT não tem entrada para Somalilândia (o dado de 'Somalia' é outro país)"
+			}
+		},
+		"SOM": {
+			"name": "Somalia",
+			"faostat_area": "Somalia",
+			"cattle": {
+				"carcass_kg_per_head": 108.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 387.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SRB": {
+			"name": "Serbia",
+			"faostat_area": "Serbia",
+			"cattle": {
+				"carcass_kg_per_head": 267.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 3976.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"SSD": {
+			"name": "South Sudan",
+			"faostat_area": "South Sudan",
+			"cattle": {
+				"carcass_kg_per_head": 137.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 332.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SUR": {
+			"name": "Suriname",
+			"faostat_area": "Suriname",
+			"cattle": {
+				"carcass_kg_per_head": 206.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2709.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SVK": {
+			"name": "Slovakia",
+			"faostat_area": "Slovakia",
+			"cattle": {
+				"carcass_kg_per_head": 293.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 8033.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"SVN": {
+			"name": "Slovenia",
+			"faostat_area": "Slovenia",
+			"cattle": {
+				"carcass_kg_per_head": 303.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 6621.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"SWE": {
+			"name": "Sweden",
+			"faostat_area": "Sweden",
+			"cattle": {
+				"carcass_kg_per_head": 325.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 9693.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"SWZ": {
+			"name": "Eswatini",
+			"faostat_area": "Eswatini",
+			"cattle": {
+				"carcass_kg_per_head": 225.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 294.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"SYR": {
+			"name": "Syria",
+			"faostat_area": "Syrian Arab Republic",
+			"cattle": {
+				"carcass_kg_per_head": 121.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2562.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"TCD": {
+			"name": "Chad",
+			"faostat_area": "Chad",
+			"cattle": {
+				"carcass_kg_per_head": 133.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 197.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"TGO": {
+			"name": "Togo",
+			"faostat_area": "Togo",
+			"cattle": {
+				"carcass_kg_per_head": 109.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 191.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"THA": {
+			"name": "Thailand",
+			"faostat_area": "Thailand",
+			"cattle": {
+				"carcass_kg_per_head": 155.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 4601.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"TJK": {
+			"name": "Tajikistan",
+			"faostat_area": "Tajikistan",
+			"cattle": {
+				"carcass_kg_per_head": 353.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 799.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"TKM": {
+			"name": "Turkmenistan",
+			"faostat_area": "Turkmenistan",
+			"cattle": {
+				"carcass_kg_per_head": 230.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 2255.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"TLS": {
+			"name": "East Timor",
+			"faostat_area": "Timor-Leste",
+			"cattle": {
+				"carcass_kg_per_head": 96.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT QCL não traz leite por animal (> 0) para esta área até 2024"
+			}
+		},
+		"TTO": {
+			"name": "Trinidad and Tobago",
+			"faostat_area": "Trinidad and Tobago",
+			"cattle": {
+				"carcass_kg_per_head": 150.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 430.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"TUN": {
+			"name": "Tunisia",
+			"faostat_area": "Tunisia",
+			"cattle": {
+				"carcass_kg_per_head": 222.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 3873.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"TUR": {
+			"name": "Turkey",
+			"faostat_area": "Türkiye",
+			"cattle": {
+				"carcass_kg_per_head": 292.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 3380.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"TWN": {
+			"name": "Taiwan",
+			"faostat_area": null,
+			"cattle": {
+				"carcass_kg_per_head": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT só publica Taiwan como agregado 'China; Taiwan Province of', excluído por regra"
+			},
+			"milk": {
+				"kg_per_head_year": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT só publica Taiwan como agregado 'China; Taiwan Province of', excluído por regra"
+			}
+		},
+		"TZA": {
+			"name": "Tanzania",
+			"faostat_area": "United Republic of Tanzania",
+			"cattle": {
+				"carcass_kg_per_head": 145.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 578.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"UGA": {
+			"name": "Uganda",
+			"faostat_area": "Uganda",
+			"cattle": {
+				"carcass_kg_per_head": 170.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1001.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"UKR": {
+			"name": "Ukraine",
+			"faostat_area": "Ukraine",
+			"cattle": {
+				"carcass_kg_per_head": 183.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 6139.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"URY": {
+			"name": "Uruguay",
+			"faostat_area": "Uruguay",
+			"cattle": {
+				"carcass_kg_per_head": 253.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2902.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"USA": {
+			"name": "United States of America",
+			"faostat_area": "United States of America",
+			"cattle": {
+				"carcass_kg_per_head": 382.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 10961.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			}
+		},
+		"UZB": {
+			"name": "Uzbekistan",
+			"faostat_area": "Uzbekistan",
+			"cattle": {
+				"carcass_kg_per_head": 192.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 2100.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"VCT": {
+			"name": "Saint Vincent and the Grenadines",
+			"faostat_area": "Saint Vincent and the Grenadines",
+			"cattle": {
+				"carcass_kg_per_head": 301.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "A"
+			},
+			"milk": {
+				"kg_per_head_year": 1425.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"VEN": {
+			"name": "Venezuela",
+			"faostat_area": "Venezuela (Bolivarian Republic of)",
+			"cattle": {
+				"carcass_kg_per_head": 227.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1315.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"VNM": {
+			"name": "Vietnam",
+			"faostat_area": "Viet Nam",
+			"cattle": {
+				"carcass_kg_per_head": 148.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 3869.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"XKX": {
+			"name": "Kosovo",
+			"faostat_area": null,
+			"cattle": {
+				"carcass_kg_per_head": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT não tem entrada para Kosovo"
+			},
+			"milk": {
+				"kg_per_head_year": null,
+				"year": null,
+				"source": null,
+				"data_status": "no_data",
+				"reason": "FAOSTAT não tem entrada para Kosovo"
+			}
+		},
+		"YEM": {
+			"name": "Yemen",
+			"faostat_area": "Yemen",
+			"cattle": {
+				"carcass_kg_per_head": 60.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 651.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ZAF": {
+			"name": "South Africa",
+			"faostat_area": "South Africa",
+			"cattle": {
+				"carcass_kg_per_head": 348.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 3877.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ZMB": {
+			"name": "Zambia",
+			"faostat_area": "Zambia",
+			"cattle": {
+				"carcass_kg_per_head": 162.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 1301.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		},
+		"ZWE": {
+			"name": "Zimbabwe",
+			"faostat_area": "Zimbabwe",
+			"cattle": {
+				"carcass_kg_per_head": 276.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			},
+			"milk": {
+				"kg_per_head_year": 431.0,
+				"year": 2024,
+				"source": "FAOSTAT_QCL",
+				"data_status": "observed",
+				"flag": "E"
+			}
+		}
+	}
+}
