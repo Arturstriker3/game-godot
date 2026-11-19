@@ -343,6 +343,14 @@ public:
 		const String& owner, double tons);
 	/** G2 — override do tipo de armazém de um produto (JSON da G2). */
 	void set_storage_product_type(const String& product, const String& type);
+	/**
+	 * D-101 — ASSIGNA o estoque guardado (t) de um produto no armazem
+	 * (cidade, tipo, dono): semente do dia 1 da reserva estrategica do JSON.
+	 * So para tipo operacional que aceita o produto do mapeamento; o valor e
+	 * limitado a capacidade do site. Nao cria nem destroi toneladas.
+	 */
+	void set_storage_stock(const String& city_id, const String& type,
+		const String& owner, const String& product, double tons);
 	/** G2 — obra de armazém pela fila §15 (paga pelo dono). */
 	Dictionary storage_build(const String& city_id, const String& type,
 		const String& owner, double tons);

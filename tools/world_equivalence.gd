@@ -33,6 +33,9 @@ const RegionDataScript := preload("res://core/economy/region_data.gd")
 ## G (D-096): o replay A0/S0 representa o jogo, então declara os planos de
 ## safra como o autoload. `--agriculture=0` mantém o A/B de controle.
 const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
+## G2 (D-101): armazenagem — capacidade do país, mapa produto→tipo e reserva
+## pública do dia 1, como o autoload declara (o replay roda o jogo de verdade).
+const StorageServiceScript := preload("res://core/economy/storage_service.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -128,6 +131,14 @@ func _load_dict(path: String) -> Dictionary:
 		_fail(path + " nao e um objeto JSON")
 		return {}
 	return data
+
+
+## Soma os valores numéricos de um dicionário (relatório do StorageService).
+func _sum_values(row: Dictionary) -> float:
+	var total := 0.0
+	for key in row.keys():
+		total += float(row[key])
+	return total
 
 
 ## Cidades no formato que o GeographyService.apply_to_sim espera.
@@ -227,6 +238,17 @@ func _run() -> void:
 				int(agri_report.get("plans", 0)),
 				int(agri_report.get("cities", 0)),
 				float(agri_report.get("initial_stock_t", 0.0))])
+		# G2 (D-101): armazenagem, DEPOIS da agricultura e antes da IA, como no
+		# autoload. `only_missing`: nada é reescrito por cima do save.
+		if sim.has_method("set_storage_capacity"):
+			var storage := StorageServiceScript.new()
+			var storage_report := storage.apply_to_sim(sim, cities, buildings,
+				{"only_missing": true})
+			print("[equiv] armazenagem: tipos=%d sites=%d capacidade=%.0f t reserva=%.0f t" % [
+				int(storage_report.get("product_types_applied", 0)),
+				int(storage_report.get("sites_written", 0)),
+				_sum_values(storage_report.get("capacity_t", {})),
+				_sum_values(storage_report.get("initial_stock_t", {}))])
 		# A IA econômica roda no núcleo, como fase do dia (A5). Os grupos são
 		# nomeados SEM `places`: esta corrida não carrega a cultura das cidades.
 		sim.set_ai_enabled(true)

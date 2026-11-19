@@ -261,6 +261,8 @@ void EconomySim::_bind_methods() {
 		"product", "tons", "buy", "relief"), &EconomySim::storage_trade);
 	ClassDB::bind_method(D_METHOD("get_storage_status"),
 		&EconomySim::get_storage_status);
+	ClassDB::bind_method(D_METHOD("set_storage_stock", "city_id", "type",
+		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
 		&EconomySim::get_storage_product_types);
 	ClassDB::bind_method(D_METHOD("set_deposit", "city_id", "product", "reserve_kt",
@@ -8151,6 +8153,23 @@ void EconomySim::set_storage_product_type(const String& product,
 		return;
 	}
 	sim_core_.set_storage_product_type(resolved_product, type_index);
+}
+
+void EconomySim::set_storage_stock(const String& city_id, const String& type,
+		const String& owner, const String& product, double tons) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	int type_index = -1;
+	int scope = -1;
+	const int resolved_product = product_index(product);
+	if (resolved_product < 0
+			|| !ogs::storage_type_from_name(std::string(type.utf8().get_data()),
+				type_index)
+			|| !ogs::storage_scope_from_name(std::string(owner.utf8().get_data()),
+				scope)) {
+		return;
+	}
+	sim_core_.set_storage_stock(std::string(city_id.utf8().get_data()),
+		type_index, scope, resolved_product, tons);
 }
 
 Dictionary EconomySim::storage_build(const String& city_id,

@@ -25,6 +25,7 @@ extends SceneTree
 
 const GeoScript := preload("res://core/economy/geography_service.gd")
 const AgriScript := preload("res://core/economy/agriculture_service.gd")
+const StorageScript := preload("res://core/economy/storage_service.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
@@ -166,6 +167,24 @@ func _run() -> Dictionary:
 			"initial_stock": _initial_stock,
 			"farms": AgriScript.farms_of(buildings),
 		})
+	# G2 (D-101): armazenagem — mapa produto→tipo, capacidade inicial (dado do
+	# JSON ou regra declarada) e a reserva pública do dia 1. Mesmo ponto do
+	# autoload: depois da agricultura (a produção que rateia a capacidade é a
+	# mesma do plano de safra) e antes da IA.
+	var storage_report: Dictionary = {}
+	if sim.has_method("set_storage_capacity"):
+		var storage := StorageScript.new()
+		storage_report = storage.apply_to_sim(sim, cities, buildings,
+			{"only_missing": true, "initial_stock": _initial_stock})
+		print("[g2] armazenagem: tipos=%d/%d sites=%d capacidade=%.0f t "
+			% [int(storage_report.get("product_types_applied", 0)),
+			int(storage_report.get("product_types_total", 0)),
+			int(storage_report.get("sites_written", 0)),
+			_sum_values(storage_report.get("capacity_t", {}))]
+			+ "reserva_oleo=%.0f t reserva_graos=%.0f t ouro=%.0f t"
+			% [float(storage_report.get("initial_stock_t", {}).get("oil", 0.0)),
+			float(storage_report.get("initial_stock_t", {}).get("grain", 0.0)),
+			float(storage_report.get("gold_reserve_t", 0.0))])
 	sim.set_ai_enabled(true)
 	if _profile:
 		sim.set_profiling(true)
@@ -197,6 +216,7 @@ func _run() -> Dictionary:
 	var acc: Dictionary = {}
 	var loss_seen: Dictionary = {}   # valor do mês anterior (perda é mensal)
 	_seed_accumulators(sim, acc)
+	var storage_start := _storage_sample(sim)
 
 	for day in _days:
 		var summary: Dictionary = sim.tick_day()
@@ -255,6 +275,7 @@ func _run() -> Dictionary:
 			stock_by_month[int(day_now)] = {
 				"month": int(month),
 				"crops": monthly_sum.duplicate(),
+				"storage": _storage_sample(sim),
 			}
 
 	var status_final: Dictionary = sim.get_status()
@@ -326,6 +347,14 @@ func _run() -> Dictionary:
 			"every_days": PRICE_EVERY,
 			"hemispheres": hemispheres,
 			"series": price_series,
+		},
+		"storage": {
+			"report": storage_report,
+			"start": storage_start,
+			"final": _storage_sample(sim, true),
+			"monthly": _storage_monthly(stock_by_month),
+			"built_after_start": _storage_delta(storage_start,
+				_storage_sample(sim)),
 		},
 		"trajectory_hash": _sha("\n".join(hash_lines)),
 	}
@@ -792,6 +821,102 @@ func _sha(text: String) -> String:
 	context.start(HashingContext.HASH_SHA256)
 	context.update(text.to_utf8_buffer())
 	return context.finish().hex_encode()
+
+
+## Soma os valores numéricos de um dicionário (relatório do StorageService).
+func _sum_values(row: Dictionary) -> float:
+	var total := 0.0
+	for key in row.keys():
+		total += float(row[key])
+	return total
+
+
+## Retrato da armazenagem (G2): totais, por tipo e, no fechamento, por nação.
+func _storage_sample(sim: Object, with_nations: bool = false) -> Dictionary:
+	if not sim.has_method("get_storage_status"):
+		return {}
+	var status: Dictionary = sim.get_storage_status()
+	var by_type: Dictionary = {}
+	for row in Array(status.get("types", [])):
+		var item: Dictionary = row
+		var type := String(item.get("type", ""))
+		var capacity := float(item.get("capacity_t", 0.0))
+		var gov := float(item.get("government_stock_t", 0.0))
+		var priv := float(item.get("private_stock_t", 0.0))
+		if capacity <= 0.0 and gov <= 0.0 and priv <= 0.0:
+			continue
+		by_type[type] = {"capacity_t": capacity,
+			"government_stock_t": gov, "private_stock_t": priv}
+	var totals: Dictionary = status.get("totals", {})
+	var out := {
+		"day": int(status.get("day", 0)),
+		"capacity_t": float(totals.get("capacity_t", 0.0)),
+		"government_stock_t": float(totals.get("government_stock_t", 0.0)),
+		"private_stock_t": float(totals.get("private_stock_t", 0.0)),
+		"sites": int(totals.get("sites", 0)),
+		"by_type": by_type,
+	}
+	if with_nations:
+		var nations: Dictionary = {}
+		for tag in status.get("nations", {}):
+			var row: Dictionary = status["nations"][tag]
+			if float(row.get("capacity_t", 0.0)) <= 0.0 \
+					and float(row.get("government_stock_t", 0.0)) <= 0.0 \
+					and float(row.get("private_stock_t", 0.0)) <= 0.0:
+				continue
+			nations[String(tag)] = {
+				"capacity_t": float(row.get("capacity_t", 0.0)),
+				"government_stock_t": float(row.get("government_stock_t", 0.0)),
+				"private_stock_t": float(row.get("private_stock_t", 0.0)),
+				"government_days_cover": row.get("government_days_cover", {}),
+				"ipc": float(row.get("ipc", 0.0)),
+				"private_by_product": row.get("private_by_product", {}),
+			}
+		out["nations"] = nations
+	return out
+
+
+## Série mês a mês da armazenagem (o retrato já vai em `stock_by_month`).
+func _storage_monthly(stock_by_month: Dictionary) -> Array:
+	var rows: Array = []
+	for day in stock_by_month.keys():
+		var row: Dictionary = stock_by_month[day]
+		var storage: Dictionary = row.get("storage", {})
+		if storage.is_empty():
+			continue
+		rows.append({"day": int(day), "month": int(row.get("month", 0)),
+			"capacity_t": float(storage.get("capacity_t", 0.0)),
+			"government_stock_t": float(storage.get("government_stock_t", 0.0)),
+			"private_stock_t": float(storage.get("private_stock_t", 0.0)),
+			"sites": int(storage.get("sites", 0)),
+			"by_type": storage.get("by_type", {})})
+	rows.sort_custom(func(a, b): return int(a["day"]) < int(b["day"]))
+	return rows
+
+
+## O que foi CONSTRUÍDO depois do dia 1 (a IA privada de armazém): capacidade e
+## sites ganhos por tipo, desde a semente do StorageService.
+func _storage_delta(start: Dictionary, final: Dictionary) -> Dictionary:
+	var by_type: Dictionary = {}
+	var start_types: Dictionary = start.get("by_type", {})
+	var final_types: Dictionary = final.get("by_type", {})
+	var types: Dictionary = {}
+	for type in start_types.keys():
+		types[type] = true
+	for type in final_types.keys():
+		types[type] = true
+	for type in types.keys():
+		var before := float(start_types.get(type, {}).get("capacity_t", 0.0))
+		var after := float(final_types.get(type, {}).get("capacity_t", 0.0))
+		if absf(after - before) > 1e-9:
+			by_type[type] = after - before
+	return {
+		"capacity_added_t": _sum_values(by_type),
+		"capacity_added_by_type": by_type,
+		"sites_start": int(start.get("sites", 0)),
+		"sites_end": int(final.get("sites", 0)),
+		"sites_added": int(final.get("sites", 0)) - int(start.get("sites", 0)),
+	}
 
 
 func _load(path: String) -> Variant:

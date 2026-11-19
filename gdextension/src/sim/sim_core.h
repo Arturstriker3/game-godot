@@ -192,6 +192,14 @@ public:
 	// estrutura (cofre/paiol) fica com capacidade 0 nesta parte.
 	void set_storage_capacity(const std::string& city_id, int type, int scope,
 		double tons);
+	// D-101: ASSIGNA o estoque GUARDADO (t) de um produto no armazem
+	// (cidade, tipo, dono) - a semente do dia 1 da reserva estrategica do
+	// JSON (petroleo publico, graos publicos). So vale para tipo operacional
+	// que aceita o produto do mapeamento; cofre/paiol nao guardam estoque.
+	// Nada e criado nem destruido: o valor substitui o que existe naquele
+	// produto e o chamador preserva o total (conservacao).
+	void set_storage_stock(const std::string& city_id, int type, int scope,
+		int product, double tons);
 	// Override do tipo de um produto (carregador do JSON de mapeamento). Sem
 	// chamada vale a tabela declarada por nome em storage.cpp.
 	void set_storage_product_type(int product, int type);

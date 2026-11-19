@@ -374,6 +374,47 @@ void SimCore::set_storage_product_type(int product, int type) {
 	ogs::set_storage_product_type(ws_, product, type);
 }
 
+void SimCore::set_storage_stock(const std::string& city_id, int type,
+		int scope, int product, double tons) {
+	City* city = find_city(city_id);
+	if (city == nullptr || type < 0 || type >= kStorageTypeCount
+			|| scope < 0 || scope >= kStorageScopeCount
+			|| product < 0 || product >= ws_.products
+			|| storage_type_is_structure_only(type)) {
+		return;
+	}
+	if (!ws_.storage_index_ready
+			|| ws_.storage_product_type.size()
+				!= static_cast<std::size_t>(std::max(0, ws_.products))) {
+		ogs::rebuild_storage_indexes(ws_);
+	}
+	// So guarda o produto no tipo que o aceita (mapeamento produto->tipo em
+	// vigor). Estoque num tipo errado sairia do livre/liberacao sem poder ser
+	// devolvido.
+	const int product_type = static_cast<std::size_t>(product)
+			< ws_.storage_product_type.size()
+		? ws_.storage_product_type[static_cast<std::size_t>(product)] : -1;
+	if (!storage_type_accepts(type, product_type)) {
+		return;
+	}
+	const int city_index = static_cast<int>(city - ws_.cities.data());
+	const int index = ensure_storage_site(ws_, city_index, type, scope);
+	if (index < 0) {
+		return;
+	}
+	StorageSite& site = ws_.storage_sites[static_cast<std::size_t>(index)];
+	if (static_cast<std::size_t>(product) >= site.stock.size()) {
+		site.stock.resize(static_cast<std::size_t>(ws_.products), 0.0);
+		site.inflow_stock.resize(static_cast<std::size_t>(ws_.products), 0.0);
+	}
+	// ASSIGNA, como o set_storage_capacity. O estoque nao passa da capacidade
+	// do site: a reserva do dado que nao cabe e deixada de fora (o relatorio do
+	// StorageService conta as toneladas nao acomodadas).
+	const double capacity = std::max(0.0, site.capacity_t);
+	site.stock[static_cast<std::size_t>(product)] =
+		std::min(std::max(0.0, tons), capacity);
+}
+
 // ---------------------------------------------------------------------------
 // Fase
 // ---------------------------------------------------------------------------
