@@ -159,6 +159,7 @@ func _run() -> Dictionary:
 		agri_report = agri.apply_to_sim(sim, cities, geo, {
 			"calendar_nations": agri.calendar_nations(cities),
 			"initial_stock": _initial_stock,
+			"farms": AgriScript.farms_of(buildings),
 		})
 	sim.set_ai_enabled(true)
 	# D-099: censo das fazendas iniciais × plano de safra — quem a regra de

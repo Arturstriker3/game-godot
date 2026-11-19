@@ -186,8 +186,9 @@ func _ready() -> void:
 	# B3: anexa o bloco `region` (estados inteiros) a cada cidade antes de criar
 	# o mundo — o núcleo e o snapshot/CLI levam o dado junto.
 	RegionDataScript.attach(cities)
-	sim.initialize_world(cities, _load_ports(),
-			geo.resolve_initial_mines(geo.resolve_initial_farms(_load_buildings(), cities), cities))
+	var farms := geo.resolve_initial_mines(
+		geo.resolve_initial_farms(_load_buildings(), cities), cities)
+	sim.initialize_world(cities, _load_ports(), farms)
 	# B5 (D-089): infraestrutura INICIAL do estado a partir do dado real (World
 	# Bank). DEPOIS do mundo (as regiões existem) e antes do primeiro dia; o
 	# dado é o mesmo do snapshot/CLI e dos harnesses de equivalência.
@@ -221,7 +222,8 @@ func _ready() -> void:
 		# autoload: a conquista troca o dono, não a época da safra.
 		calendar_nations = agri.calendar_nations(cities)
 		var agri_report := agri.apply_to_sim(sim, cities, geo,
-			{"calendar_nations": calendar_nations})
+			{"calendar_nations": calendar_nations,
+			"farms": AgricultureServiceScript.farms_of(farms)})
 		print("[agricultura] planos=%d cidades=%d estoque=%.0f t base=%s" % [
 			int(agri_report.get("plans", 0)),
 			int(agri_report.get("cities", 0)),
@@ -260,10 +262,14 @@ func refresh_agriculture() -> Dictionary:
 		calendar_nations = agri.calendar_nations(_load_cities())
 	var geo := GeographyService.new()
 	geo.load_data()
-	return agri.apply_to_sim(sim, _load_cities(), geo, {
+	var cities := _load_cities()
+	var farms := geo.resolve_initial_mines(
+		geo.resolve_initial_farms(_load_buildings(), cities), cities)
+	return agri.apply_to_sim(sim, cities, geo, {
 		"calendar_nations": calendar_nations,
 		"only_missing": true,
 		"initial_stock": false,
+		"farms": AgricultureServiceScript.farms_of(farms),
 	})
 
 

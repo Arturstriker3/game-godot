@@ -68,10 +68,10 @@ var _urban := true
 ## `--ai=1`: monta com geografia real (e nomes de grupo), como o harness de
 ## equivalência. A IA em si NÃO é ligada — o export não roda dia nenhum.
 var _ai := false
-## `--agriculture=1`: declara os planos de safra (AgricultureService) depois da
-## geografia, como o autoload. O plano sai em `definitions`; o CLI o aplica no
-## load, então replay e CLI colhem o mesmo.
-var _agriculture := false
+## `--agriculture=1` (padrão): declara os planos de safra (AgricultureService)
+## depois da geografia, como o autoload. O plano sai em `definitions`; o CLI o
+## aplica no load, então replay e CLI colhem o mesmo. `--agriculture=0` é o A/B.
+var _agriculture := true
 
 var _failures: Array[String] = []
 
@@ -240,7 +240,8 @@ func _run() -> void:
 			return
 		var agri := AgricultureServiceScript.new()
 		var agri_report: Dictionary = agri.apply_to_sim(sim, cities, geo,
-			{"calendar_nations": agri.calendar_nations(cities)})
+			{"calendar_nations": agri.calendar_nations(cities),
+			"farms": AgricultureServiceScript.farms_of(buildings)})
 		print("[snapshot] agricultura: planos=%d estoque=%.0f t" % [
 			int(agri_report.get("plans", 0)),
 			float(agri_report.get("initial_stock_t", 0.0))])

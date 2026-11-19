@@ -52,6 +52,9 @@ const MONTH_DAYS := [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 ## Regra declarada de estoque inicial quando o dado não tem `ending_stocks_t`:
 ## nenhum valor é inventado (o núcleo fica sem estoque para aquele par).
 const STOCK_RULE_DAYS := 60.0
+## Dias do ano de referência do calendário (365, sem bissexto — mesma base do
+## `MONTH_DAYS`). Usado só pelo fallback declarado da fazenda de primário.
+const YEAR_DAYS := 365
 
 var _calendar: Dictionary = {}
 var _yields: Dictionary = {}
@@ -97,6 +100,26 @@ func calendar_nations(cities: Array) -> Dictionary:
 	return out
 
 
+## Mapa `{ city_id: {product, capacity_t_day} }` das fazendas INICIAIS — as que
+## a geografia planta, uma por cidade (`resolve_initial_farms`). A capacidade é
+## a que a fazenda já declara ao núcleo: o fallback da D-099 não inventa safra,
+## usa o orçamento que o par já produzia. Cidade sem fazenda de cultura fica
+## fora do mapa.
+static func farms_of(buildings: Array) -> Dictionary:
+	var out: Dictionary = {}
+	for building in buildings:
+		var row: Dictionary = building
+		var city_id := String(row.get("city_id", ""))
+		var product := String(row.get("resource", ""))
+		if city_id == "" or not CROPS.has(product):
+			continue
+		out[city_id] = {
+			"product": product,
+			"capacity_t_day": float(row.get("output_tons_per_day", 0.0)),
+		}
+	return out
+
+
 ## Empurra os dados para o núcleo. `cities` no formato de `cities.json`
 ## (id/nation/population) e `geo` = GeographyService já carregado (a fonte da
 ## capacidade de terra por cidade). Devolve o relatório do que foi declarado.
@@ -106,7 +129,10 @@ func calendar_nations(cities: Array) -> Dictionary:
 ##     vale `city.nation`. É o que impede a conquista de trocar a safra;
 ##   * `only_missing` — não redeclara par (cidade, cultura) que já tem plano
 ##     no núcleo (load de save: o plano veio em `definitions`);
-##   * `initial_stock` — `false` não semeia o estoque do dia 1 (sonda).
+##   * `initial_stock` — `false` não semeia o estoque do dia 1 (sonda);
+##   * `farms` — `{ city_id: {product, capacity_t_day} }` das fazendas iniciais
+##     (ver `farms_of`); é o que dá plano à fazenda fora do calendário/rendimento
+##     do dado (fallback declarado da D-099).
 func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 		options: Dictionary = {}) -> Dictionary:
 	var report: Dictionary = {
@@ -119,6 +145,8 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 		# do portão de comida (Bloco 2) precisa saber QUAIS, não só quantos.
 		"skipped_calendar_pairs": [],
 		"skipped_yield_pairs": [],
+		"fallback_plans": [],
+		"fallback_reasons": {},
 		"area_basis": {"land_capacity": 0, "population": 0},
 		"initial_stock_t": 0.0,
 		"loss_basis": "production_weighted_national",
@@ -143,6 +171,7 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 	var calendar_map: Dictionary = options.get("calendar_nations", {})
 	var only_missing := bool(options.get("only_missing", false))
 	var already_planned := {} if not only_missing else _planned_pairs(sim)
+	var planned_now: Dictionary = already_planned.duplicate()
 	var by_nation: Dictionary = {}
 	var capacity: Dictionary = {}   # nation -> {crop: [capacities por cidade]}
 	var city_ids: Array = []
@@ -230,6 +259,7 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 					share_sum += share
 					continue
 				sim.set_crop_plan(city_id, crop, city_area, yield_t_ha, seasons)
+				planned_now[city_id + "|" + crop] = true
 				var fert_entry: Dictionary = nation_fert.get(crop, {})
 				var n_kg_ha := _num(fert_entry.get("n_kg_ha"))
 				if n_kg_ha > 0.0:
@@ -247,7 +277,96 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 			report["area_ha"][nation + "|" + crop] = area_ha * share_sum
 	report["cities"] = by_nation.size()
 	report["skipped_existing"] = skipped_existing
+	# 4. Fallback declarado (D-099): toda fazenda de primário recebe plano.
+	_declare_fallback_plans(sim, cities, calendar_map, options, report,
+		planned_now)
 	return report
+
+
+## D-099 — FALLBACK DECLARADO DA FAZENDA DE PRIMÁRIO.
+##
+## O plano de safra normal só nasce do dado (calendário + área/rendimento
+## FAOSTAT). Sobram pares (nação, cultura) fora do dado — `all_year` (a cultura
+## cresce o ano todo, o calendário não tem janela), `no_data` (sem calendário
+## observado) e `no_yield` (calendário existe, área/rendimento não). A fazenda
+## que a geografia planta nesses pares ficava SEM plano: produzia todo dia, não
+## tinha a folha sazonal da D-096 nem o colateral da D-099, e falia mesmo com o
+## estoque da cidade cheio (14 de milho e 10 de arroz no aceite de 365 d).
+##
+## A regra, explícita e sem número inventado:
+##   * o ORÇAMENTO anual é a capacidade que a própria fazenda já declara na
+##     cidade (`output_tons_per_day × 365`) — o fallback não cria safra nova,
+##     só dá ao par o plano que ele já produzia;
+##   * a JANELA é o calendário da nação quando existe; sem calendário (ou com
+##     `all_year`), uma janela CONTÍNUA declarada de ano inteiro (plantio e
+##     colheita em 1..365, `share` 1), que entrega 1/365 por dia, como a
+##     produção diária anterior;
+##   * `área_ha = orçamento` e `yield_t_ha = 1` codificam o orçamento em
+##     t-equivalentes (o núcleo só usa `área × rendimento`); fertilizante não é
+##     declarado no fallback porque não há `n_kg_ha` para o par.
+##
+## Cada plano entra no relatório com o motivo (`all_year`, `no_calendar`,
+## `no_yield`) para o aceite não esconder qual dado faltou.
+func _declare_fallback_plans(sim: Object, cities: Array, calendar_map: Dictionary,
+		options: Dictionary, report: Dictionary, declared: Dictionary) -> void:
+	var farms: Dictionary = options.get("farms", {})
+	var added: Array = []
+	var by_reason: Dictionary = {}
+	if farms.is_empty():
+		report["fallback_plans"] = added
+		report["fallback_reasons"] = by_reason
+		return
+	for city in cities:
+		var city_id := String(city.get("id", ""))
+		var farm: Dictionary = farms.get(city_id, {})
+		if farm.is_empty():
+			continue
+		var crop := String(farm.get("product", ""))
+		var capacity := _num(farm.get("capacity_t_day"))
+		if not CROPS.has(crop) or capacity <= 0.0:
+			continue
+		var key := city_id + "|" + crop
+		if declared.has(key):
+			continue
+		var nation := String(calendar_map.get(city_id, city.get("nation", "")))
+		var entry: Dictionary = _calendar.get(nation, {}).get("crops", {}) \
+			.get(crop, {})
+		var seasons := _season_windows(entry)
+		var reason := "calendar"
+		if seasons.is_empty():
+			seasons = _continuous_windows()
+			reason = "all_year" if bool(entry.get("all_year", false)) \
+				else "no_calendar"
+		elif not _has_yield(nation, crop):
+			reason = "no_yield"
+		var budget := capacity * float(YEAR_DAYS)
+		sim.set_crop_plan(city_id, crop, budget, 1.0, seasons)
+		declared[key] = true
+		report["plans"] = int(report["plans"]) + 1
+		added.append({"pair": key, "reason": reason, "t_year": budget})
+		by_reason[reason] = int(by_reason.get(reason, 0)) + 1
+	report["fallback_plans"] = added
+	report["fallback_reasons"] = by_reason
+
+
+## `true` quando o dado de rendimento do par (nação, cultura) existe.
+func _has_yield(nation: String, crop: String) -> bool:
+	var entry: Dictionary = _yields.get(nation, {}).get("crops", {}).get(crop, {})
+	return _num(entry.get("area_harvested_ha")) > 0.0 \
+		and _num(entry.get("yield_t_ha")) > 0.0
+
+
+## Janela CONTÍNUA declarada (ano inteiro). Modela `all_year: true` do dado e é
+## o fallback de quem não tem calendário: 1/365 da safra por dia, como a
+## produção diária que a fazenda já tinha.
+func _continuous_windows() -> Array:
+	return [{
+		"plant_start": 1,
+		"plant_end": 365,
+		"harvest_start": 1,
+		"harvest_end": 365,
+		"share": 1.0,
+	}]
 
 
 ## Pares (cidade|cultura) que JÁ têm plano no núcleo — lidos das DEFINIÇÕES do

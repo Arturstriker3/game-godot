@@ -63,6 +63,11 @@ var _cities: Array = []
 var _stocks_data: Dictionary = {}
 ## "NAT|crop" -> {stock0, next_harvest_days, imported, demand_peak, zero_day}
 var _crop_stats: Dictionary = {}
+## "NAT|crop" -> motivo do plano contínuo declarado (D-099).
+var _fallback_pairs: Dictionary = {}
+## city_id -> nação do calendário (o apply_to_sim sem `calendar_nations` usa
+## `city.nation`, e o id da cidade tem o prefixo da província, não o da nação).
+var _nation_of: Dictionary = {}
 
 
 func _init() -> void:
@@ -72,6 +77,20 @@ func _init() -> void:
 		return
 	var sim: Object = world["sim"]
 	_calendar = _load_dict(CROP_CALENDAR_PATH).get("nations", {})
+	# D-099: pares (nação|cultura) com plano CONTÍNUO declarado (fazenda fora
+	# do calendário/rendimento do dado): a janela de colheita deles é o ano
+	# inteiro, por declaração — o teste de "fora da janela" os respeita e cobra
+	# o motivo no relatório.
+	for row in Array(world["report"].get("fallback_plans", [])):
+		var plan: Dictionary = row
+		var parts := String(plan.get("pair", "")).split("|")
+		var reason := String(plan.get("reason", ""))
+		# `no_yield` usa o calendário do dado (a janela não é contínua); só
+		# `all_year`/`no_calendar` declaram janela de ano inteiro.
+		if parts.size() == 2 and reason != "no_yield":
+			var tag := String(_nation_of.get(String(parts[0]), ""))
+			if tag != "":
+				_fallback_pairs[tag + "|" + String(parts[1])] = reason
 	_test_declared(world["report"])
 	var snapshot := _test_entre_safra(sim)
 	_test_seasonal_payroll(snapshot)
@@ -98,6 +117,9 @@ func _finish() -> void:
 
 func _build_world() -> Dictionary:
 	_cities = _load_array(CITIES_PATH)
+	for city in _cities:
+		var row: Dictionary = city
+		_nation_of[String(row.get("id", ""))] = String(row.get("nation", ""))
 	var ports := _load_array(PORTS_PATH)
 	var buildings := _load_array(BUILDINGS_PATH)
 	var goods := _load_array(GOODS_PATH)
@@ -122,7 +144,9 @@ func _build_world() -> Dictionary:
 		})
 	geo.apply_to_sim(sim, centers)
 	var agri := AgriScript.new()
-	var report: Dictionary = agri.apply_to_sim(sim, _cities, geo)
+	var report: Dictionary = agri.apply_to_sim(sim, _cities, geo, {
+		"farms": AgriScript.farms_of(buildings),
+	})
 	if not sim.has_method("get_agriculture_status"):
 		_fail("binário sem get_agriculture_status (rode o build)")
 		return {}
@@ -166,6 +190,17 @@ func _test_declared(report: Dictionary) -> void:
 		_fail("nenhum plano de safra declarado")
 	if stock <= 0.0:
 		_fail("nenhum estoque inicial declarado")
+	# D-099: toda fazenda de primário fora do calendário/rendimento do dado
+	# recebe plano contínuo declarado — o motivo tem de estar no relatório.
+	var fallback: Array = Array(report.get("fallback_plans", []))
+	print("[agri] fallback declarado=%d motivos=%s" % [
+		fallback.size(), str(report.get("fallback_reasons", {}))])
+	for row in fallback:
+		var reason := String((row as Dictionary).get("reason", ""))
+		if not reason in ["all_year", "no_calendar", "no_yield", "calendar"]:
+			_fail("fallback com motivo desconhecido: " + reason)
+	if fallback.is_empty():
+		_fail("nenhuma fazenda fora do dado recebeu plano (fallback D-099)")
 
 
 func _test_entre_safra(sim: Object) -> Dictionary:
@@ -442,6 +477,9 @@ func _nation_delivered(status: Dictionary, tag: String) -> float:
 ## e fim), convertida com o calendário de referência de 365 dias — a MESMA
 ## conversão que o AgricultureService declara ao núcleo.
 func _in_harvest_window(tag: String, crop: String, doy: int) -> bool:
+	# Fallback declarado (D-099): a janela é o ano inteiro, por declaração.
+	if _fallback_pairs.has(tag + "|" + crop):
+		return true
 	var entry: Dictionary = _calendar.get(tag, {}).get("crops", {}).get(crop, {})
 	for season in entry.get("seasons", []):
 		var harvest: Dictionary = season.get("harvest", {})
@@ -460,6 +498,9 @@ func _in_harvest_window(tag: String, crop: String, doy: int) -> bool:
 ## Dias entre 2027-01-01 e a primeira abertura da janela de colheita da cultura
 ## (-1 = sem calendário).
 func _days_to_first_harvest(tag: String, crop: String) -> float:
+	# Fallback declarado (D-099): colheita contínua desde o dia 1.
+	if _fallback_pairs.has(tag + "|" + crop):
+		return 0.0
 	var entry: Dictionary = _calendar.get(tag, {}).get("crops", {}).get(crop, {})
 	var best := -1.0
 	for season in entry.get("seasons", []):

@@ -30,6 +30,9 @@ const LandPropertyScript := preload("res://core/economy/land_property.gd")
 const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 ## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
 const RegionDataScript := preload("res://core/economy/region_data.gd")
+## G (D-096): o replay A0/S0 representa o jogo, então declara os planos de
+## safra como o autoload. `--agriculture=0` mantém o A/B de controle.
+const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -55,6 +58,7 @@ const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_financ
 var _days := 60
 var _ai := true
 var _urban := true
+var _agriculture := true
 var _seed := 0
 var _threads := 0
 var _out := ""
@@ -71,6 +75,8 @@ func _init() -> void:
 			_ai = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--urban="):
 			_urban = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--agriculture="):
+			_agriculture = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--seed="):
 			_seed = int(arg.split("=", true, 1)[1])
 		elif arg.begins_with("--threads="):
@@ -210,6 +216,17 @@ func _run() -> void:
 
 	if geo != null:
 		geo.apply_to_sim(sim, _cities_with_center(cities))
+		# G (D-096): planos de safra DEPOIS da geografia, como no autoload. O
+		# replay A0/S0 roda o jogo de verdade; `--agriculture=0` é o A/B.
+		if _agriculture and sim.has_method("set_crop_plan"):
+			var agri := AgricultureServiceScript.new()
+			var agri_report := agri.apply_to_sim(sim, cities, geo,
+				{"calendar_nations": agri.calendar_nations(cities),
+				"farms": AgricultureServiceScript.farms_of(buildings)})
+			print("[equiv] agricultura: planos=%d cidades=%d estoque=%.0f t" % [
+				int(agri_report.get("plans", 0)),
+				int(agri_report.get("cities", 0)),
+				float(agri_report.get("initial_stock_t", 0.0))])
 		# A IA econômica roda no núcleo, como fase do dia (A5). Os grupos são
 		# nomeados SEM `places`: esta corrida não carrega a cultura das cidades.
 		sim.set_ai_enabled(true)
@@ -243,6 +260,7 @@ func _run() -> void:
 			"days": _days,
 			"ai": _ai,
 			"urban": _urban,
+			"agriculture": _agriculture,
 			"seed": _seed,
 			"threads": _threads,
 			"products": Array(status_dict.get("products", [])).size(),

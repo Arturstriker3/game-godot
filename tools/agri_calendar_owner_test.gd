@@ -56,6 +56,7 @@ var _failures: Array[String] = []
 var _cities: Array = []
 var _geo: Object = null
 var _original: Dictionary = {}   # {city_id: nation} do início do mundo
+var _farms: Dictionary = {}      # {city_id: {product, capacity_t_day}} (D-099)
 
 
 func _init() -> void:
@@ -131,8 +132,9 @@ func _build_world() -> Dictionary:
 	_geo.apply_to_sim(sim, centers)
 	var agri := AgriScript.new()
 	var original := agri.calendar_nations(_cities)
+	_farms = AgriScript.farms_of(buildings)
 	var report: Dictionary = agri.apply_to_sim(sim, _cities, _geo,
-		{"calendar_nations": original})
+		{"calendar_nations": original, "farms": _farms})
 	if int(report.get("plans", 0)) <= 0:
 		_fail("nenhum plano declarado")
 		return {}
@@ -228,6 +230,7 @@ func _test_guarded_reapply(snapshot: Dictionary, target: Dictionary) -> void:
 			"calendar_nations": _original,
 			"only_missing": true,
 			"initial_stock": false,
+			"farms": _farms,
 		})
 	var after := _harvest_months(_plan_of(restored, city_id, CROP).get("seasons", []))
 	var skipped := int(report.get("skipped_existing", 0))
@@ -278,6 +281,7 @@ func _test_harvest_months(snapshot: Dictionary, target: Dictionary) -> void:
 		"calendar_nations": _original,
 		"only_missing": true,
 		"initial_stock": false,
+		"farms": _farms,
 	})
 	# Janelas do dado: original (BRA) e do dono (USA).
 	var calendars: Dictionary = _load_dict(CROP_CALENDAR_PATH)
