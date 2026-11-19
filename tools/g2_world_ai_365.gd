@@ -55,6 +55,9 @@ const PRICE_EVERY := 30
 var _days := 365
 var _agriculture := true
 var _initial_stock := true
+## `--profile=1` liga `set_profiling(true)` no núcleo e publica o custo por fase
+## (`get_profile`), como o `b6_world_ai_365`. Só medição: não muda o mundo.
+var _profile := false
 var _out := "res://docs/economy/perf/g2_world_ai_365_rerun.json"
 
 
@@ -66,6 +69,8 @@ func _init() -> void:
 			_agriculture = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--no-initial-stock="):
 			_initial_stock = arg.split("=", true, 1)[1] == "0"
+		elif arg.begins_with("--profile="):
+			_profile = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--out="):
 			_out = arg.split("=", true, 1)[1]
 	var boom := _run()
@@ -162,6 +167,8 @@ func _run() -> Dictionary:
 			"farms": AgriScript.farms_of(buildings),
 		})
 	sim.set_ai_enabled(true)
+	if _profile:
+		sim.set_profiling(true)
 	# D-099: censo das fazendas iniciais × plano de safra — quem a regra de
 	# liquidez NÃO cobre (par cidade×cultura sem calendário/rendimento).
 	var farm_census := _farm_plan_census(sim, buildings, cities)
@@ -283,7 +290,7 @@ func _run() -> Dictionary:
 				"cause": String(row["cause"]),
 			})
 	var hemispheres := _hemispheres(price_series)
-	return {
+	var out := {
 		"days": _days,
 		"threads": 1,
 		"final_day": int(status_final.get("day", 0)),
@@ -321,6 +328,28 @@ func _run() -> Dictionary:
 			"series": price_series,
 		},
 		"trajectory_hash": _sha("\n".join(hash_lines)),
+	}
+	out["profile"] = _profile_block(sim) if _profile else {}
+	return out
+
+
+## Custo por fase do núcleo (`get_profile`, µs acumulados no ano) — só medição.
+func _profile_block(sim: Object) -> Dictionary:
+	var raw: Dictionary = sim.get_profile()
+	var total_us := 0.0
+	var per_phase: Dictionary = {}
+	for key: Variant in raw:
+		var value := float(raw[key])
+		per_phase[String(key)] = value
+		total_us += value
+	var per_day: Dictionary = {}
+	for key in per_phase:
+		per_day[key] = float(per_phase[key]) / float(maxi(1, _days))
+	return {
+		"total_us": total_us,
+		"total_us_per_day": total_us / float(maxi(1, _days)),
+		"per_phase_us": per_phase,
+		"per_phase_us_per_day": per_day,
 	}
 
 

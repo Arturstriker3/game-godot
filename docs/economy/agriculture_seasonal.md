@@ -610,9 +610,14 @@ média mensal) na rodada de 365 d com o fallback:
 | norte (USA/CHN/IND/FRA) | 1,019–1,041 | 1,036–1,065 | 1,000 | 1,024–1,035 | 1,000 |
 | sul (BRA/ARG/AUS/ZAF) | 1,075–1,080 | 1,000–1,057 | 1,000 | 1,000 | 1,000 |
 
-A amplitude no ano é de **2–3 pontos percentuais** (arroz) e **zero** em
-milho/batata. O volume sazonal entra (a safra chega concentrada — §10), mas o
-**preço não acompanha**, e a causa é medida:
+A amplitude no ano é de **2-3 pontos percentuais** (arroz) e **zero** em
+milho/batata. O volume sazonal entra (a safra chega concentrada - §10), mas o
+**preço não acompanha**, e a causa é medida. Nas **520 amostras** nação×cultura
+do ano (4 por hemisfério × 5 culturas × 13 meses): **416 (80,0%) estão em
+exatamente 1,000×** a base e **85 (16,3%) em exatamente 1,080×** (paridade de
+importação) - só **19 (3,7%)** estão fora desses dois pontos. Não é uma
+distribuição em torno da base: o preço **salta** entre a âncora e a paridade,
+que é o comportamento de arbitrador, não de safra.
 
 1. **comércio cidade↔cidade e importação arbitram antes da escassez local
    aparecer**: o preço local converge para a âncora (razão 1,000) ou para a
@@ -656,17 +661,30 @@ duas linhas que o `world_equivalence.gd` recebeu.
 0 violações.
 
 **Bateria completa (um teste por vez, Godot 4.7.2 debug).** 78 scripts
-`tools/*_test.gd` + `services_test.tscn` (cena): **79/79 verdes, 0 falhas** —
-inclui `agriculture_seasonal_test`, `agri_calendar_owner_test`,
+`tools/*_test.gd` — **7 deles são cenas** e rodam como `.tscn` — mais a cena
+`services_test.tscn`: **79/79 verdes, 0 falhas** — inclui
+`agriculture_seasonal_test`, `agri_calendar_owner_test`,
 `economy_integration_test`, `economy_ai_test`, `economy_long_run_test`,
-`economy_save_load_roundtrip_test` e `turbo_equivalence_test`.
+`economy_save_load_roundtrip_test` e `turbo_equivalence_test`. Na retomada,
+**2 testes falharam por regressão da G e foram corrigidos**: a ficha de
+produção (`core/ui/screens/production_screen.gd`) recusava a origem com
+estoque 0, e a safra fica **fora de janela** (o estoque do bem vem da
+colheita, não da produção do dia); e o tooltip de seta de rotas
+(`tools/trade_flow_tooltip_test.gd`) enquadrava a câmera longe demais agora que
+o mundo tem safra. Depois das correções a bateria fechou 79/79 e o **CLI×Godot
+foi reconfirmado com o mesmo hash** (`EF1B21CC…`).
 
-**Custo da fase G no perfil.** `_profile` de 60 d (debug, mundo real, IA):
-`agriculture` **0,0–0,1 ms/dia** (a fase só roda o calendário e a janela; a
-entrega é O(planos) e não percorre o mundo) — o custo real da G no dia está na
-**folha sazonal** (`labor`: +0,1–0,3 ms/dia pelo `crop_liquidity_factor`) e na
-supressão da produção diária, que **reduz** `production`. Detalhe por fase em
-`docs/economy/perf/g2_profile.json`.
+**Custo da fase G no perfil.** `_profile` de 60 d (debug, mundo real, IA,
+`tools/g2_world_ai_365.gd --profile=1`, **A/B com `--agriculture=0`**, 1
+thread): `agriculture` **11,09 µs/dia** com a G ligada e 0,00 no controle — a
+fase roda o calendário e a janela, e a entrega é O(planos), não percorre o
+mundo. O custo indireto está na **folha sazonal**: `labor` **+33,46 µs/dia**
+(pelo `crop_liquidity_factor`) e `production` **+9,25 µs/dia** (a produção
+diária da fazenda dá lugar à colheita). O custo **direto** das fases da G é
+**~53,8 µs/dia (0,05 ms)**; o total do dia sobe **1,10 ms (7,90 × 6,80 ms)**
+porque o mundo que a G produz movimenta mais `trade`/`status_cities` — custo de
+um mundo diferente, não overhead da fase. Perfil completo (todas as fases, on e
+off, com o delta) em `docs/economy/perf/g2_profile.json`.
 
 
 
