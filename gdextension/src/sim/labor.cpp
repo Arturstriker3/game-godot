@@ -567,14 +567,19 @@ double SimCore::labor_day(City& city) {
 			// passivo da firma e ativo das famílias. A folha reduzida pela
 			// D-099 (liquidez da lavoura) NÃO é dívida: ela não é devida.
 			// O pagamento em si não muda (dinheiro conservado como antes).
+			//
+			// O estoque é o "a pagar" do PERÍODO CORRENTE (como toda folha em
+			// atraso): a folha não paga do dia substitui a anterior. Acumular e
+			// liquidar com juros é a C3 (balanço da empresa); fingir que a
+			// carência do dia 1 vira uma dívida eterna inflaria o patrimônio
+			// das famílias sem lastro. Nada de dinheiro se move aqui.
 			if (pay_scale < 1.0) {
 				const double due_wages = building.jobs * plant_payroll
 					* operating * crop_liquidity;
-				const double arrears = due_wages - building.paid_wages;
-				if (arrears > 0.0) {
-					building.wage_arrears += arrears;
-					city.pop.arrears_receivable += arrears;
-				}
+				building.wage_arrears = std::max(0.0,
+					due_wages - building.paid_wages);
+			} else {
+				building.wage_arrears = 0.0;
 			}
 		}
 	}
@@ -582,13 +587,23 @@ double SimCore::labor_day(City& city) {
 	const double paid_service_bill = std::min(full_service_bill,
 		std::max(0.0, city.service_cash));
 	// C1: atraso da folha do setor de serviços (caixa insuficiente) — passivo
-	// das firmas de serviço e ativo das famílias. O pagamento não muda.
+	// das firmas de serviço e ativo das famílias. Vale a mesma regra do
+	// período corrente (substitui o do dia anterior). O pagamento não muda.
 	{
 		const double service_arrears = full_service_bill - paid_service_bill;
-		if (service_arrears > 0.0) {
-			city.service_wage_arrears += service_arrears;
-			city.pop.arrears_receivable += service_arrears;
+		city.service_wage_arrears = std::max(0.0, service_arrears);
+	}
+	// C1: o "a pagar" das famílias é a soma das folhas não pagas do período
+	// (plantas + serviços). Recalculado aqui — não é um segundo acumulador.
+	{
+		double households_arrears = city.service_wage_arrears;
+		if (city_index < ws_.buildings_by_city.size()) {
+			for (const int bi : ws_.buildings_by_city[city_index]) {
+				households_arrears += ws_.buildings[static_cast<std::size_t>(bi)]
+					.wage_arrears;
+			}
 		}
+		city.pop.arrears_receivable = households_arrears;
 	}
 	// Ganchos do laboratório mantidos: `service_wage_adjust` é a velocidade com
 	// que o salário pago do setor converge para a média do mercado de trabalho

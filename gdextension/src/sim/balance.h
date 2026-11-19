@@ -62,6 +62,10 @@ struct Ledger {
 	double firms_cash = 0.0;     // caixa bruto das firmas (sem pagáveis)
 	double receivables = 0.0;
 	double payables = 0.0;
+	// Composição do atrasado (leitura; a soma é `payables`).
+	double arrears_plants = 0.0;    // folha das plantas (D-099)
+	double arrears_service = 0.0;   // folha do setor de serviços
+	double arrears_rural = 0.0;     // folha rural (paga pelo caixa da cidade)
 	double monetary_base = 0.0;  // passivo da autoridade monetária (money_total)
 	double money_total = 0.0;    // contagem canônica (SimCore::money_total)
 

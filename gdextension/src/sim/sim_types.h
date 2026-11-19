@@ -361,12 +361,13 @@ namespace ogs {
 		// quando o caixa da empresa não cobre a folha e o opex).
 		double paid_wages = 0.0;
 		double paid_opex = 0.0;
-		// C1 (save v26) — PASSIVO da firma: salário atrasado. É a parcela da
-		// folha contratada que o caixa da cidade não cobriu (`pay_scale`);
-		// a folha reduzida da D-099 por ILIQUIDEZ da safra NÃO é dívida (ela
-		// não é devida — o contrato é a folha efetiva). O par é o ativo das
-		// famílias em `Pop::arrears_receivable`/`Region::arrears_receivable`;
-		// some (dos dois lados) quando a planta fecha.
+		// C1 (save v26) — PASSIVO da firma: salário atrasado do PERÍODO
+		// corrente. É a parcela da folha contratada que o caixa da cidade não
+		// cobriu (`pay_scale`); a folha reduzida pela D-099 por ILIQUIDEZ da
+		// safra NÃO é dívida (não é devida — o contrato é a folha efetiva).
+		// O par é o ativo das famílias em `Pop::arrears_receivable` (plantas +
+		// serviços) e `Region::arrears_receivable` (rural); some dos dois lados
+		// quando a planta fecha. A rolagem/liquidação com juros é a C3.
 		double wage_arrears = 0.0;
 		// F7: mistura de escolaridade das vagas da construção (soma 1). Fazenda
 		// e extração quase só básico; indústria segue a receita/setor.

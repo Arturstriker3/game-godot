@@ -3788,6 +3788,9 @@ Dictionary EconomySim::get_status() {
 		balance["cash_residual"] = book.cash_residual();
 		balance["receivables"] = book.receivables;
 		balance["payables"] = book.payables;
+		balance["arrears_plants"] = book.arrears_plants;
+		balance["arrears_service"] = book.arrears_service;
+		balance["arrears_rural"] = book.arrears_rural;
 		balance["monetary_base"] = book.monetary_base;
 		balance["financial_sum"] = book.financial_sum();
 		balance["ok"] = std::abs(book.financial_sum()) <= 1e-3
@@ -8498,6 +8501,9 @@ Dictionary EconomySim::get_balance_status() const {
 		invariant["cash_residual"] = book.cash_residual();
 		invariant["receivables"] = book.receivables;
 		invariant["payables"] = book.payables;
+		invariant["arrears_plants"] = book.arrears_plants;
+		invariant["arrears_service"] = book.arrears_service;
+		invariant["arrears_rural"] = book.arrears_rural;
 		invariant["monetary_base"] = book.monetary_base;
 		invariant["financial_sum"] = book.financial_sum();
 		invariant["ok"] = std::abs(book.financial_sum()) <= 1e-3

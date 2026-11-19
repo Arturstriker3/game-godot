@@ -209,8 +209,8 @@ func _run() -> void:
 	for city_id in SAMPLE_CITIES:
 		before[city_id] = JSON.stringify(sim.get_urban_city(city_id), "", true, true)
 	var snapshot: Dictionary = sim.to_dict()
-	if int(snapshot.get("version", 0)) != 25:
-		_fail("save version %s != 25" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 26:
+		_fail("save version %s != 26" % str(snapshot.get("version")))
 	var restored = EconomySim.new()
 	restored.set_goods(_load_array(GOODS_PATH))
 	restored.set_recipes(_load_array(RECIPES_PATH))

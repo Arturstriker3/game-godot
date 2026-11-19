@@ -71,10 +71,16 @@ Ledger ledger(const WorldState& ws, double money_total) {
 		// é PASSIVO delas (mesma obrigação do ativo acima).
 		out.firms_cash += city.firm_cash + city.service_cash;
 		out.payables += city.service_wage_arrears + city.rural_wage_arrears;
+		out.arrears_service += city.service_wage_arrears;
+		out.arrears_rural += city.rural_wage_arrears;
+
+		// Governo: orçamento público da cidade (o "tesouro nacional" do modelo).
+		out.government += city.government_budget;
 	}
 	// Atrasado por planta (o passivo individual do prédio).
 	for (const Building& building : ws.buildings) {
 		out.payables += building.wage_arrears;
+		out.arrears_plants += building.wage_arrears;
 	}
 	// Caixas de setor e de grupo (dinheiro do mundo, como em money_total).
 	for (const Group& group : ws.groups) {
@@ -89,7 +95,7 @@ Ledger ledger(const WorldState& ws, double money_total) {
 	out.firms = out.firms_cash - out.payables;
 
 	// Governo: orçamento nacional por cidade + prefeituras (caixa e obras).
-	out.government = city_gov::money_total(ws);
+	out.government += city_gov::money_total(ws);
 
 	// Setor externo: `foreign_cash` pode ser negativo por desenho (o exterior
 	// financia importação). É a posição do exterior, não dinheiro doméstico.
@@ -190,7 +196,7 @@ Sheet government(const WorldState& ws, const std::string& nation) {
 		if (!nation.empty() && city.nation != nation) {
 			continue;
 		}
-		sheet.cash += std::max(0.0, city.government_budget);
+		sheet.cash += city.government_budget;
 		if (index < gov_count) {
 			const CityGov& gov = ws.city_gov[index];
 			sheet.cash += std::max(0.0, gov.cash);
