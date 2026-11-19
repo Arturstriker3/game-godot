@@ -388,6 +388,12 @@ func _test_pulmao() -> void:
 	sim.set_storage_product_type("wheat", "silo")
 	# Silo PRIVADO na cidade (é o silo regional na arquitetura: fica no polo).
 	sim.set_storage_capacity("AGRIA", "silo", "private", 20000.0)
+	# Cidade com comida segura (consumido/necessidade >= piso de segurança
+	# alimentar): é a condição declarada para o pulmão reter a colheita — com a
+	# cidade faminta a safra vai direto ao mercado (D-101).
+	_set_population(sim, "PORTUS", 50000.0)
+	_inject_market(sim, "AGRIA", "wheat", 2000.0)
+	_set_cash(sim, "AGRIA", 2000000.0, 2000000.0)
 	# Safra declarada o ano inteiro, começando no dia 1: a colheita entra todo
 	# dia no silo (janela que abre no dia 1 entrega a primeira parcela hoje; uma
 	# janela que abre depois só entrega quando ela chega). A área é escolhida
@@ -426,6 +432,9 @@ func _test_pulmao() -> void:
 	# vazio (a colheita ficou retida e só escoa 1/60 por dia).
 	var plain := _make_world(false)
 	var sim2 = plain["sim"]
+	_set_population(sim2, "PORTUS", 50000.0)
+	_inject_market(sim2, "AGRIA", "wheat", 2000.0)
+	_set_cash(sim2, "AGRIA", 2000000.0, 2000000.0)
 	sim2.set_crop_plan("AGRIA", "wheat", 4000.0, 3.0,
 		[{"plant_start": 1, "plant_end": 1, "harvest_start": 1,
 		"harvest_end": 365, "share": 1.0}])

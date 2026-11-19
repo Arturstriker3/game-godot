@@ -125,9 +125,20 @@ existe mercado nacional — só a leitura agregada.
   preço) pagaria a obra em 6 anos; compra na colheita (preço ≤ 0,98 ×
   referência) e vende perto da próxima safra (≥ 1,03 × referência); libera
   comida de graça se a satisfação local cair abaixo de 0,85.
-- **Governo**: compra até 10 % do estoque do mercado com preço ≤ 0,95 ×
-  referência na colheita; libera 20 % do guardado com preço ≥ 1,05 ×
-  referência na entressafra; **socorro** (sem pagamento) abaixo de 0,80.
+- **Governo**: compra até 10 % do **excedente** do mercado (`Market::surplus`
+  = estoque acima de 3 dias de demanda) com preço ≤ 0,95 × referência na
+  colheita; libera 20 % do guardado com preço ≥ 1,05 × referência na
+  entressafra, **libera onde falta** (satisfação < 0,95, sem pagamento) e dá
+  **socorro** (sem pagamento) abaixo de 0,80.
+- **Piso de segurança alimentar (`kStorageFoodSecureSatisfaction` = 0,95,
+  D-101)**: vale para toda decisão que RETIRA comida do mercado. Satisfação =
+  consumido/necessidade do dia, o mesmo número que a IA lê. Sem ele, a reserva
+  do governo comprava justamente onde faltava comida (ilhas pequenas: ATG, DMA,
+  GRD, KNA, LCA) e o portão de comida piorava.
+- **Pulmão**: cidade abaixo do piso **não entrega a colheita** ao silo — a
+  safra do dia vai direto ao mercado. A leitura é a satisfação de ontem
+  (`satisfaction_prev`), porque o `phase_reset` do dia zera o campo corrente.
+  Era o que fazia a ilha perder a safra por 60 dias dentro do silo privado.
 
 **Resultado em 365 d**: 5.923 t de capacidade de silo construídas (sites
 existentes; 0 site novo). Com a cobertura real de grãos em 13,6 meses, a
@@ -147,47 +158,64 @@ que construir — comportamento esperado, não bug.
 
 ## 7. Medições de 365 dias (mundo real, IA, `threads=1`)
 
-`tools/g2_world_ai_365.gd`, 365 d, 849 cidades, 179 nações. Evidência:
-`docs/economy/perf/g2_world_ai_365_d101.json` (o arquivo `_rerun.json` segue
-sendo o artefato da D-097).
+`tools/g2_world_ai_365.gd`, 365 d, 849 cidades, 179 nações. Evidências:
+`docs/economy/perf/g2_world_ai_365_d101.json` (1ª rodada, antes das regras de
+comida) e `docs/economy/perf/g2_world_ai_365_d101_final.json` (final; o arquivo
+`_rerun.json` segue sendo o artefato da D-097).
 
-| métrica | base D-099 | **G2 (D-101)** |
-|---|---:|---:|
-| falências | 2 | **2** (1 cobre, 1 ferro; 0 com plano de safra) |
-| portão de comida (< 0,975) | 84/179 | **91/179** |
-| mediana do portão | 0,9832 | **0,9740** |
-| pior nação | PSX 0,2038 | SLB 0,1991 |
-| drift de dinheiro | +0,000811 | **+0,002589** (limite 0,01) |
-| violações de invariante | 0 | **0** |
-| hash da trajetória | `80d7dc1c.` | **`80d7dc1c.`** (igual) |
+| métrica | base D-099 | G2 (1ª rodada) | **G2 (final)** |
+|---|---:|---:|---:|
+| falências | 2 | 2 | **2** (1 cobre, 1 ferro; 0 com plano de safra) |
+| portão de comida (< 0,975) | 84/179 | 91/179 | **85/179** |
+| mediana do portão | 0,9832 | 0,9740 | **0,9798** |
+| pior nação | PSX 0,2038 | SLB 0,1991 | SLB 0,1594 |
+| drift de dinheiro | +0,000811 | +0,002589 | **+0,002208** (limite 0,01) |
+| violações de invariante | 0 | 0 | **0** |
+| hash da trajetória | `80d7dc1c.` | `80d7dc1c.` | **`80d7dc1c.`** (igual) |
 
-O **portão piorou 7 nações** (e a mediana caiu 0,9 p.p.) por causa da própria
-armazenagem: no dia 365 há **90,9 Mt de grãos em silos privados** e a
-liberação da IA privada depende do preço subir ≥ 3 % sobre a referência — o
-que **não acontece** com o estoque inicial de 937,9 Mt do dia 1 (preço quase
-plano, §7.3). O grão fica parado em vez de voltar ao mercado. As 13 nações que
-entraram no portão são as pequenas/insulares (ATG, DMA, GRD, KNA, LCA), de
-estoque inicial curto (CIV, CRI, CUB, IDN, MEX, PER, AUS) e NOR; 6 saíram
-(CHL, IRN, JOR, LVA, MDA, RUS). Próximo passo declarado: regra de
-**ciclo de estoque** do privado (liberação mínima por tempo de guarda) — não
-calibrada nesta parte para não inventar número.
+Evidência final: `docs/economy/perf/g2_world_ai_365_d101_final.json`; a segunda
+execução (`_final2.json`, mesma build) sai **byte-idêntica** (determinismo).
+
+**A piora do portão (84 → 91) foi fechada em duas regras de comida**, não em
+calibração de preço nem em esconder o número:
+
+1. **Reserva só do excedente, e só com comida segura** (§5): o governo deixou
+   de comprar do estoque total do mercado e passou a comprar do `surplus`
+   (estoque acima de 3 dias de demanda), apenas com satisfação ≥ 0,95, e a
+   liberar o guardado onde falta. 91 → 88.
+2. **Pulmão não desvia safra de cidade abaixo do piso** (§5): a colheita de
+   quem está com déficit vai direto ao mercado. 88 → 85.
+
+**Resultado honesto: 85/179, um acima da meta de 84.** As nações que ainda
+entraram no portão nesta rodada são NOR, CRI, DMA, PER, GRD, LCA e MEX (7), e
+saíram MDA, PRK, LVA, RUS, LBR e CHL (6). O efeito restante é medido e não é a
+compra da reserva: é o **primeiro ano de enchimento do pulmão** — o silo
+privado retém ~60 dias de colheita até encher, e num mundo com estoque inicial
+de 937,9 Mt o preço não reage (preço quase plano, §7.3), então o grão retido
+demora a voltar. As nações importadoras dependentes (MEX, CRI) também perdem
+importação quando o preço local cai. O silo privado no dia 365 cai de 90,9 Mt
+(1ª rodada) para **59,7 Mt** com a regra nova. Próximo passo declarado (não
+calibrado aqui, para não inventar número): **ciclo de estoque** do privado com
+liberação mínima por tempo de guarda, e semente do silo privado no estado
+estacionário para o ano 1 não pagar o enchimento.
 
 ### 7.1 Estoques mês a mês (t)
 
 | dia | silo privado | silo governo | tanque governo | pátio privado |
 |---:|---:|---:|---:|---:|
-| 30 | 11.786.115 | 7.476.005 | 73.729 | 0 |
-| 60 | 25.981.713 | 7.121.630 | 73.601 | 0 |
-| 90 | 48.825.363 | 6.806.849 | 73.561 | 0 |
-| 120 | 63.212.637 | 6.512.878 | 73.544 | 0 |
-| 150 | 92.824.006 | 6.253.722 | 73.544 | 0 |
-| 180 | 108.950.963 | 5.998.006 | 73.544 | 1 |
-| 210 | 132.171.693 | 5.966.092 | 73.544 | 1 |
-| 240 | 132.352.763 | 6.163.642 | 73.544 | 2 |
-| 270 | 127.097.114 | 6.104.289 | 73.544 | 14 |
-| 300 | 138.736.926 | 5.909.510 | 73.544 | 44 |
-| 330 | 135.960.916 | 5.641.787 | 73.544 | 99 |
-| 360 | 96.964.123 | 5.410.522 | 73.544 | 160 |
+| 30 | 7.901.330 | 7.476.005 | 73.729 | 0 |
+| 60 | 19.192.877 | 7.121.491 | 73.601 | 0 |
+| 90 | 38.980.440 | 6.805.363 | 73.561 | 0 |
+| 120 | 49.194.390 | 6.507.762 | 73.544 | 0 |
+| 150 | 54.153.994 | 6.246.553 | 73.544 | 0 |
+| 180 | 58.632.466 | 5.989.414 | 73.544 | 1 |
+| 210 | 75.262.772 | 5.939.011 | 73.544 | 1 |
+| 240 | 72.922.034 | 6.208.145 | 73.544 | 2 |
+| 270 | 63.450.434 | 6.026.732 | 73.544 | 14 |
+| 300 | 75.841.228 | 5.755.179 | 73.544 | 46 |
+| 330 | 81.670.450 | 5.434.062 | 73.544 | 104 |
+| 360 | 62.898.090 | 5.127.649 | 73.544 | 169 |
+| 365 | 59.659.785 | 5.080.226 | 73.544 | 178 |
 
 A reserva pública de petróleo cai de 73.916 t (dia 1) para 73.544 t no ano
 (manutenção/liberações do governo): 372 t, 0,5 %.
@@ -196,27 +224,32 @@ A reserva pública de petróleo cai de 73.916 t (dia 1) para 73.544 t no ano
 
 | país | IPC | estoque governo (t) | estoque privado (t) | capacidade (t) |
 |---|---:|---:|---:|---:|
-| USA | 1,0105 | 72.609 | 4.721.036 | 12.700.741 |
-| BRA | 1,0105 | 0 | 666.973 | 7.863.009 |
-| CHN | 1,0311 | 0 | 15.514.997 | 95.701.217 |
-| IND | 1,0096 | 4.647.837 | 13.458.828 | 33.613.387 |
-| FRA | 1,0089 | 30.347 | 830.701 | 3.806.299 |
-| NGA | 1,0170 | 4.696 | 1.944.034 | 10.956.915 |
-| ARG | 1,0089 | 0 | 1.297.073 | 2.610.215 |
-| DEU | 1,0089 | 153.228 | 752.005 | 4.324.780 |
-| JPN | 1,1180 | 23 | 527.366 | 4.020.131 |
-| RUS | 1,0089 | 64.527 | 3.117.442 | 34.587.145 |
-| IDN | 1,0716 | 4.817 | 995.403 | 10.591.651 |
-| MEX | 1,1133 | 31 | 1.818.797 | 9.636.958 |
+| USA | 1,0105 | 72.605 | 13.543 | 12.698.733 |
+| BRA | 1,0105 | 0 | 17.095 | 7.863.009 |
+| CHN | 1,0314 | 0 | 0 | 95.701.217 |
+| IND | 1,0100 | 4.647.648 | 13.458.823 | 33.613.387 |
+| FRA | 1,0089 | 939 | 387.009 | 3.804.892 |
+| NGA | 1,0214 | 1.999 | 1.911.442 | 10.956.915 |
+| ARG | 1,0089 | 0 | 0 | 2.610.215 |
+| DEU | 1,0089 | 29.397 | 686.732 | 4.324.780 |
+| JPN | 1,2937 | 0 | 205.548 | 4.020.131 |
+| RUS | 1,0089 | 25.821 | 3.110.591 | 34.587.145 |
+| IDN | 1,0913 | 0 | 928.145 | 10.591.651 |
+| MEX | 1,1082 | 0 | 993.883 | 9.636.958 |
+
+O estoque privado no dia 365 é **59,7 Mt** (era 90,9 Mt antes da regra do
+pulmão): as cidades abaixo do piso alimentar deixaram de entregar a colheita ao
+silo, então o grão fica no mercado. A IA construiu **5.252 t** de capacidade
+(0 site novo: a cobertura inicial de 13,6 meses já supera o alvo de 2 meses).
 
 ### 7.3 Sazonalidade de preço por hemisfério (razão ao preço-base, 13 amostras de 30 d)
 
 | cultura | norte (mín–máx) | amplitude | sul (mín–máx) | amplitude |
 |---|---|---:|---|---:|
-| trigo | 1,0218 (m3) – 1,0401 (m10) | 1,8 % | 1,0791 (m7) – 1,1096 (m5) | 3,1 % |
-| arroz | 1,0349 (m3) – 1,0642 (m4) | 2,9 % | 1,0000 (m1) – 1,0376 (m3) | 3,8 % |
+| trigo | 1,0196 (m6) – 1,0418 (m10) | 2,2 % | 1,0603 (m6) – 1,0800 (m9) | 1,9 % |
+| arroz | 1,0349 (m3) – 1,0642 (m4) | 2,8 % | 1,0000 (m1) – 1,0426 (m7) | 4,3 % |
 | milho | 1,0000 – 1,0000 | 0,0 % | 1,0000 – 1,0000 | 0,0 % |
-| soja | 1,0260 (m8) – 1,0402 (m10) | 1,4 % | 1,0000 – 1,0000 | 0,0 % |
+| soja | 1,0241 (m8) – 1,0354 (m9) | 1,1 % | 1,0000 – 1,0000 | 0,0 % |
 | batata | 1,0000 – 1,0000 | 0,0 % | 1,0000 – 1,0000 | 0,0 % |
 
 A sazonalidade **continua pequena** (o mesmo diagnóstico da D-097): o estoque
@@ -230,12 +263,19 @@ instrumento para medir o mecanismo.
 
 ## 8. Testes, goldens e equivalência
 
-- **`tools/storage_g2_test.gd`**: **107 verificações verdes** — serviço
-  (113/113 produtos, cobertura × fluxo, reserva por dias, ouro não aplicado,
-  `only_missing`), conservação de dinheiro e de bens (compra/liberação/socorro/
-  obra), capacidade limitando compra e liberação, pulmão (janela de safra no
-  dia 1, A/B com e sem silo), IA privada construindo com spread e caixa, IPC
-  nacional e save v25 + migração v24→v25.
+- **`tools/storage_g2_test.gd`**: **114 verificações verdes** (rodado pelo
+  `tools/run_tests.ps1`) — serviço (113/113 produtos, cobertura × fluxo, reserva
+  por dias, ouro não aplicado, `only_missing`), conservação de dinheiro e de
+  bens (compra/liberação/socorro/obra), capacidade limitando compra e liberação,
+  pulmão (janela de safra no dia 1, A/B com e sem silo, **só em cidade com
+  comida segura**), IA privada construindo com spread e caixa, IPC nacional,
+  save v25 + migração v24→v25 e o bloco (8) da regra nova: **ilha faminta não
+  perde comida para o silo do governo** (45 d com satisfação < 0,95: 0 compra,
+  silo sem crescer) e **a reserva libera onde falta** (100 t → mercado em 10 d,
+  sem pagamento). O helper de satisfação do teste lia o padrão 1,0 (a ficha da
+  cidade não tem o campo solto, tem o bloco `pop`); corrigido, o cenário (5)
+  virou um mundo em paz de verdade (PORTUS menor) e a checagem de "não causar
+  fome" passou a valer contra a mesma cidade **sem** IA.
 - **A0 60 d (IA + urbano), 2 rodadas**: idênticas (0 diferenças). Golden
   regenerado: `save 925c3096. → 8b8be710.`, `status 40203cc9. → db07f756.`
   (o mundo muda por desenho: 3.973 sites de armazém; `service_businesses`
@@ -259,9 +299,13 @@ instrumento para medir o mecanismo.
 2. **Reserva pública de petróleo sem fluxo em 30 nações**: o estoque real
    existe, mas o país não produz óleo no jogo para escalar os dias
    (`reserve_unscaled`).
-3. **Portão de comida**: 84 → 91 nações abaixo de 0,975 — causa medida
-   (90,9 Mt guardados pelo privado, liberação dependente de preço). Próximo
-   passo: regra de ciclo de estoque (não calibrada aqui).
+3. **Portão de comida**: 84 → **85** nações abaixo de 0,975 (era 91 antes da
+   regra). A meta de 84 **não foi atingida por 1 nação**. Causa restante
+   medida: o primeiro ano de enchimento do pulmão (o silo privado retém ~60
+   dias de colheita até encher) e a queda de importação das nações
+   importadoras quando o preço local cai. Próximo passo declarado: ciclo de
+   estoque do privado (liberação mínima por tempo de guarda) e semente do silo
+   privado no estado estacionário — nenhum dos dois calibrado aqui.
 4. **Sazonalidade** segue pequena no primeiro ano (estoque inicial de 937,9 Mt);
    é a mesma dívida da D-097, não um efeito da armazenagem.
 5. **Consumo do jogo**: a reserva é escalada pela **produção** do jogo porque
