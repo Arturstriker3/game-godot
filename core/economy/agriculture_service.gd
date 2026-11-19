@@ -82,13 +82,18 @@ func load_data() -> bool:
 ## Empurra os dados para o núcleo. `cities` no formato de `cities.json`
 ## (id/nation/population) e `geo` = GeographyService já carregado (a fonte da
 ## capacidade de terra por cidade). Devolve o relatório do que foi declarado.
-func apply_to_sim(sim: Object, cities: Array, geo: Object = null) -> Dictionary:
+func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
+		options: Dictionary = {}) -> Dictionary:
 	var report: Dictionary = {
 		"plans": 0,
 		"cities": 0,
 		"area_ha": {},
 		"skipped_no_calendar": 0,
 		"skipped_no_yield": 0,
+		# Os pares (NAT|crop) que ficaram sem plano, por motivo — o diagnóstico
+		# do portão de comida (Bloco 2) precisa saber QUAIS, não só quantos.
+		"skipped_calendar_pairs": [],
+		"skipped_yield_pairs": [],
 		"area_basis": {"land_capacity": 0, "population": 0},
 		"initial_stock_t": 0.0,
 		"loss_basis": "production_weighted_national",
@@ -147,12 +152,14 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null) -> Dictionary:
 			var seasons := _season_windows(calendar_entry)
 			if seasons.is_empty():
 				report["skipped_no_calendar"] = int(report["skipped_no_calendar"]) + 1
+				(report["skipped_calendar_pairs"] as Array).append(nation + "|" + crop)
 				continue
 			var yield_entry: Dictionary = nation_yields.get(crop, {})
 			var area_ha := _num(yield_entry.get("area_harvested_ha"))
 			var yield_t_ha := _num(yield_entry.get("yield_t_ha"))
 			if area_ha <= 0.0 or yield_t_ha <= 0.0:
 				report["skipped_no_yield"] = int(report["skipped_no_yield"]) + 1
+				(report["skipped_yield_pairs"] as Array).append(nation + "|" + crop)
 				continue
 			# Participação de cada cidade: capacidade de terra da nação para a
 			# cultura; sem capacidade, população de simulação (declarado).
@@ -187,7 +194,7 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null) -> Dictionary:
 				# dias de consumo JÁ aplicada pelo construtor do dado). O mesmo
 				# rateio da área: o silo fica onde está a lavoura (declarado).
 				var stock_t := _initial_stock_t(nation_stocks.get(crop, {}))
-				if stock_t > 0.0:
+				if stock_t > 0.0 and bool(options.get("initial_stock", true)):
 					sim.set_crop_initial_stock(city_id, crop, stock_t * share)
 					report["initial_stock_t"] = float(
 						report["initial_stock_t"]) + stock_t * share
