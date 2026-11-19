@@ -234,6 +234,14 @@ obra). Evidência: `docs/economy/perf/b5_infra_ab_365.json`.
 - Falências (4, teto 28) e drift (≤ 0,0018 em ~6,5 bi = ruído de serialização)
   não mudam; **nenhum invariante violado** nos três mundos.
 
+> **Correção do contador (2026-11-19).** O JSON deste A/B (HEAD `e6655af6`) foi gerado
+> quando o `b5_world_ai_365.gd` somava com `++violation_count`/`++stalled_days`; em
+> GDScript 4.7.2 `++x` não incrementa, então `invariant_violations`/`stalled_days` eram 0
+> por construção. O harness já usa `+= 1` desde o B6 (`b3bd829c`); reexecutado no HEAD
+> `1069b879`, o A/B dá **0 violações e 0 dias travados nas três variantes** — a conclusão
+> se mantém, agora com contador real. (O JSON não foi regerado para não trocar os demais
+> números da tabela por drift de balance posterior.)
+
 **Decisão:** o dado real entra como estado inicial — é o dado, e elimina **702**
 obras de infra que a IA abria sobre cobertura que já existia. A penalidade de
 acesso **fica em 0,30**: o A/B mostra que ela não governa o portão de comida, e

@@ -107,12 +107,12 @@ func _init() -> void:
 		sim.tick_day()
 		var summary: Dictionary = sim.get_day_summary()
 		for violation: Variant in summary.get("invariant_violations", []):
-			++violation_count
+			violation_count += 1
 			if violations.size() < 10:
 				violations.append("iteração %d: %s" % [day + 1, String(violation)])
 		var day_now := int(summary.get("day", 0))
 		if day_now <= day_before:
-			++stalled_days
+			stalled_days += 1
 		day_before = day_now
 
 	var status: Dictionary = sim.get_status()
@@ -242,4 +242,5 @@ func _init() -> void:
 	if violation_count > 0:
 		for sample: String in violations:
 			print("[b7-365] violação: " + sample)
-	quit(0)
+	# Mesmo contrato do b5/b6: invariante violado falha o harness.
+	quit(1 if violation_count > 0 else 0)
