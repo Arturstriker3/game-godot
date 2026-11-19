@@ -103,6 +103,13 @@ var last_summary: Dictionary = {}
 var speed: int = 1
 var _nations: Dictionary = {}  # tag -> {id, name, flag}
 
+## G (decisão do dono): calendário de safra gravado na REGIÃO no início do mundo
+## — `{ city_id: nação original }`, do `cities.json` (antes de qualquer
+## conquista). A produção usa este calendário para sempre: trocar o dono não
+## muda a época da safra. O plano resultante (janelas em dia do ano) viaja no
+## save (`definitions.crop_plans`).
+var calendar_nations: Dictionary = {}
+
 ## A4: retrato das telas de dados, montado sob demanda uma vez por dia
 ## (Economy.ui_snapshot()). Vazio enquanto nenhuma tela precisou dele.
 var _ui_snapshot: Dictionary = {}
@@ -201,7 +208,11 @@ func _ready() -> void:
 	# núcleo mantém a produção diária das fazendas (ausência explícita).
 	if sim.has_method("set_crop_plan"):
 		var agri := AgricultureServiceScript.new()
-		var agri_report := agri.apply_to_sim(sim, _load_cities(), geo)
+		# O calendário é herdado da nação ORIGINAL da região e fica guardado no
+		# autoload: a conquista troca o dono, não a época da safra.
+		calendar_nations = agri.calendar_nations(cities)
+		var agri_report := agri.apply_to_sim(sim, cities, geo,
+			{"calendar_nations": calendar_nations})
 		print("[agricultura] planos=%d cidades=%d estoque=%.0f t base=%s" % [
 			int(agri_report.get("plans", 0)),
 			int(agri_report.get("cities", 0)),
@@ -225,6 +236,26 @@ func _ready() -> void:
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready. O dia
 	# roda direto na thread do pool; o primeiro status sai no _process.
 	_start_day.call_deferred()
+
+
+## G: reaplica no núcleo o que FALTAR depois de carregar um save. O plano já
+## veio em `definitions` (janelas herdadas no início do mundo), então nada é
+## redeclarado por cima; um par que falte, se houver, nasce com o calendário
+## ORIGINAL da região — nunca com o dono atual. Sem semente de estoque: o
+## estoque do dia 1 está no save.
+func refresh_agriculture() -> Dictionary:
+	if sim == null or not sim.has_method("set_crop_plan"):
+		return {}
+	var agri := AgricultureServiceScript.new()
+	if calendar_nations.is_empty():
+		calendar_nations = agri.calendar_nations(_load_cities())
+	var geo := GeographyService.new()
+	geo.load_data()
+	return agri.apply_to_sim(sim, _load_cities(), geo, {
+		"calendar_nations": calendar_nations,
+		"only_missing": true,
+		"initial_stock": false,
+	})
 
 
 ## F9: nome da maior cidade de cada nacao (usado como {place} no nome dos

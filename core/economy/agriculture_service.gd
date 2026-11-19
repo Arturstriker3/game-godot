@@ -79,9 +79,34 @@ func load_data() -> bool:
 	return _loaded
 
 
+## Calendário de safra GRAVADO NA REGIÃO ANO INÍCIO DO JOGO (decisão do dono):
+## cada cidade herda o calendário da nação ORIGINAL (a do `cities.json`, antes
+## de qualquer conquista) e a produção usa esse calendário para sempre. Trocar
+## o dono da região não muda a época da safra.
+##
+## Devolve `{ city_id: nação_do_calendário }`. Chamador monta isso uma vez no
+## início do mundo e guarda; no load, reaplica com ele em `options`.
+func calendar_nations(cities: Array) -> Dictionary:
+	var out: Dictionary = {}
+	for city in cities:
+		var city_id := String(city.get("id", ""))
+		var nation := String(city.get("nation", ""))
+		if city_id == "" or nation == "":
+			continue
+		out[city_id] = nation
+	return out
+
+
 ## Empurra os dados para o núcleo. `cities` no formato de `cities.json`
 ## (id/nation/population) e `geo` = GeographyService já carregado (a fonte da
 ## capacidade de terra por cidade). Devolve o relatório do que foi declarado.
+##
+## Opções (todas opcionais):
+##   * `calendar_nations` — `{ city_id: nação_original }` (ver acima); sem ela
+##     vale `city.nation`. É o que impede a conquista de trocar a safra;
+##   * `only_missing` — não redeclara par (cidade, cultura) que já tem plano
+##     no núcleo (load de save: o plano veio em `definitions`);
+##   * `initial_stock` — `false` não semeia o estoque do dia 1 (sonda).
 func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 		options: Dictionary = {}) -> Dictionary:
 	var report: Dictionary = {
@@ -112,15 +137,25 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 	_declare_shelf_life(sim, report)
 	_declare_losses(sim, report)
 
-	# 2. Agrupa as cidades por nação e soma a capacidade de terra por cultura.
+	# 2. Agrupa as cidades pela NAÇÃO DO CALENDÁRIO — a original do início do
+	#    mundo, não a dona atual (conquista não troca a época da safra) — e soma
+	#    a capacidade de terra por cultura.
+	var calendar_map: Dictionary = options.get("calendar_nations", {})
+	var only_missing := bool(options.get("only_missing", false))
+	var already_planned := {} if not only_missing else _planned_pairs(sim)
 	var by_nation: Dictionary = {}
 	var capacity: Dictionary = {}   # nation -> {crop: [capacities por cidade]}
 	var city_ids: Array = []
+	var inherited := 0
+	var skipped_existing := 0
 	for city in cities:
 		var city_id := String(city.get("id", ""))
-		var nation := String(city.get("nation", ""))
+		var owner := String(city.get("nation", ""))
+		var nation := String(calendar_map.get(city_id, owner))
 		if city_id == "" or nation == "":
 			continue
+		if nation != owner:
+			inherited += 1
 		if not by_nation.has(nation):
 			by_nation[nation] = []
 			capacity[nation] = {}
@@ -139,6 +174,8 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 			if geo != null and geo.has_method("city_land_capacity_t_day"):
 				value = float(geo.city_land_capacity_t_day(city_id, crop))
 			capacity[nation][crop][city_id] = maxf(value, 0.0)
+	report["inherited_calendar_cities"] = inherited
+	report["skipped_existing"] = 0
 
 	# 3. Plano por (cidade, produto).
 	for nation in by_nation.keys():
@@ -185,6 +222,13 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 				var city_area := area_ha * share
 				if city_area <= 0.0:
 					continue
+				# Load de save: o plano já veio em `definitions` (com o calendário
+				# herdado e o estoque do dia 1). Redeclarar aqui, com o dono
+				# atual, é justamente o que trocaria a época da safra.
+				if only_missing and already_planned.has(city_id + "|" + crop):
+					skipped_existing += 1
+					share_sum += share
+					continue
 				sim.set_crop_plan(city_id, crop, city_area, yield_t_ha, seasons)
 				var fert_entry: Dictionary = nation_fert.get(crop, {})
 				var n_kg_ha := _num(fert_entry.get("n_kg_ha"))
@@ -202,7 +246,25 @@ func apply_to_sim(sim: Object, cities: Array, geo: Object = null,
 				share_sum += share
 			report["area_ha"][nation + "|" + crop] = area_ha * share_sum
 	report["cities"] = by_nation.size()
+	report["skipped_existing"] = skipped_existing
 	return report
+
+
+## Pares (cidade|cultura) que JÁ têm plano no núcleo — lidos das DEFINIÇÕES do
+## snapshot (o mesmo bloco que o save carrega). Usado no load de save.
+func _planned_pairs(sim: Object) -> Dictionary:
+	var out: Dictionary = {}
+	if not sim.has_method("to_snapshot"):
+		return out
+	var snapshot: Dictionary = sim.to_snapshot()
+	var definitions: Dictionary = snapshot.get("definitions", {})
+	for row in Array(definitions.get("crop_plans", [])):
+		var plan: Dictionary = row
+		var city := String(plan.get("city", ""))
+		var product := String(plan.get("product", ""))
+		if city != "" and product != "":
+			out[city + "|" + product] = true
+	return out
 
 
 ## Janelas de safra em dia do ano. Vazio = sem calendário (o par não recebe

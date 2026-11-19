@@ -380,3 +380,50 @@ mundo publicado.
   primeiro ano; revisar se a regra de meia-vida é a leitura certa da prateleira
   (decisão de dado/regra, não de calibração silenciosa).
 
+## 9. Calendário gravado na região — conquista não troca a safra (D-098)
+
+Decisão do dono: o calendário de plantio/colheita é **gravado na região no
+início do jogo**, herdado da nação **original** (a do `cities.json`), e a
+produção usa esse calendário **para sempre**. Trocar o dono da região não muda a
+época da safra.
+
+**O que já garantia isso e o que faltava.** O núcleo nunca olhou a nação para
+colher: `phase_agriculture` lê só o plano (cidade, produto, janelas em dia do
+ano, área, rendimento) e o plano viaja no save em `definitions.crop_plans`, com
+o estado da safra no bloco `agriculture` (v24). O furo era a **redeclaração**:
+`AgricultureService.apply_to_sim` derivava o plano de `city.nation`. Um save
+carregado e redeclarado depois de uma conquista trocaria a janela pelo
+calendário do dono novo.
+
+**Como ficou.** Três peças, todas em GDScript (o núcleo não muda):
+
+1. `AgricultureService.calendar_nations(cities)` devolve
+   `{ city_id: nação_original }`. O autoload `Economy` monta isso **uma vez**
+   em `_ready` e guarda em `Economy.calendar_nations`;
+2. `apply_to_sim(..., {"calendar_nations": ...})` agrupa e deriva os planos
+   pela nação do calendário, não pela dona atual (e reporta
+   `inherited_calendar_cities`);
+3. `apply_to_sim(..., {"only_missing": true})` — o caminho de load,
+   `Economy.refresh_agriculture()` — **não redeclara** par (cidade, cultura) que
+   já veio no save (`skipped_existing`) e não semeia estoque inicial
+   (`initial_stock: false`).
+
+O calendário efetivo que fica no save é o próprio plano: as janelas em dia do
+ano dentro de `definitions.crop_plans`. Um load não as reescreve.
+
+**Teste** `tools/agri_calendar_owner_test.gd` (sem IA, mundo real de 849
+cidades):
+
+| passo | resultado |
+|---|---|
+| plano inicial de BRA-BEL, soja | colheita **[3, 4, 5]** (dado BRA) |
+| calendário do dado | BRA soja [3,4,5] × USA soja [9,10,11] |
+| conquista simulada **no save** (cidade `BRA`→`USA`, snapshot recarregado) | janela **[3, 4, 5]** (inalterada) |
+| reaplicação no load com guarda (`calendar_nations` + `only_missing`) | **3.384** planos pulados, janela inalterada, 0 t de estoque ressemeado |
+| reaplicação **sem** a guarda (dono novo) | janela vira **[9, 10, 11]** — a regressão que a decisão fecha |
+| 200 d no mundo conquistado | soja do dono novo só colhe em **[3, 4, 5]** |
+
+`agriculture_seasonal_test` continua verde (3.384 planos, estoque inicial
+937,9 M t, 157/157 zerados provados, save v24/v22).
+
+
