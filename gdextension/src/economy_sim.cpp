@@ -261,6 +261,8 @@ void EconomySim::_bind_methods() {
 		"product", "tons", "buy", "relief"), &EconomySim::storage_trade);
 	ClassDB::bind_method(D_METHOD("get_storage_status"),
 		&EconomySim::get_storage_status);
+	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
+		&EconomySim::get_storage_product_types);
 	ClassDB::bind_method(D_METHOD("set_deposit", "city_id", "product", "reserve_kt",
 	                     "quality", "depth_m"),
 	                     &EconomySim::set_deposit);
@@ -8681,6 +8683,22 @@ Dictionary EconomySim::get_storage_status() const {
 		nation_rows[String(tag.c_str())] = row;
 	}
 	out["nations"] = nation_rows;
+	return out;
+}
+
+Dictionary EconomySim::get_storage_product_types() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	for (std::size_t product = 0; product < ws_.storage_product_type.size();
+			++product) {
+		if (product >= ws_.product_names.size()) {
+			continue;
+		}
+		const int type = ws_.storage_product_type[product];
+		out[String(ws_.product_names[product].c_str())] =
+			String(ogs::storage_type_name(type)
+				? ogs::storage_type_name(type) : "");
+	}
 	return out;
 }
 

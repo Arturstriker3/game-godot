@@ -357,6 +357,9 @@ public:
 	 * quintis. Montado sob demanda (testes/UI).
 	 */
 	Dictionary get_storage_status() const;
+	/** G2 — mapeamento produto→tipo de armazém em vigor (tabela declarada +
+	 *  overrides do JSON). `{produto: tipo}`; usado pelo StorageService. */
+	Dictionary get_storage_product_types() const;
 
 	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
