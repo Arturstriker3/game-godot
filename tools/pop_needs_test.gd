@@ -226,8 +226,9 @@ func _test_levels_by_income() -> void:
 		"premium_spirits": 100.0,
 	}
 	var low := _new_sim()
-	# Governo cobre só a cesta alimentar (o alimento mais barato por caloria
-	# declarado nos dados é a carne): a POP não tem orçamento para life.
+	# Governo com 1M (provisão pública de serviços) e POP sem emprego nem
+	# poupança injetada: resta à POP o que o governo/serviços cobrem. A cesta
+	# alimentar vem do estoque de carne (o alimento mais barato por caloria).
 	_inject(low, {"meat": 1000.0}, 0.0, 1000000.0)
 	# O nível de renda calculado no dia vale para o dia SEGUINTE (contrato do
 	# núcleo), então o teste roda dois dias: o primeiro ancora a renda, o
@@ -238,9 +239,22 @@ func _test_levels_by_income() -> void:
 	if int(low_pop["needs_level"]) != 1:
 		_fail("renda baixa: nível %d (esperado 1 — só basic)" % int(
 			low_pop["needs_level"]))
-	if float(low_pop["life_satisfaction"]) > 0.001:
-		_fail("renda baixa: satisfação life %.3f sem orçamento" % float(
+	# B2 (D-083): o consumo é por QUINTIL e limitado pelo orçamento de cada um.
+	# `income_strata.level` é o TETO que o estrato pode pagar, não o que ele
+	# consumiu; o teste confere que as cinco faixas existem no status e mede a
+	# satisfação EFETIVA: sem bens de life/luxury no estoque, o agregado fica
+	# perto da parcela coberta por provisão pública/serviços (medido 0,20 da
+	# B7), nunca no padrão de renda alta (1,0 com estoque e renda).
+	var low_levels: Array = (low_pop.get("income_strata", {}) as Dictionary).get(
+			"level", [])
+	if low_levels.size() != 5:
+		_fail("renda baixa: status sem income_strata.level[5]")
+	if float(low_pop["life_satisfaction"]) > 0.25:
+		_fail("renda baixa: satisfação life %.3f (esperado <= 0.25, só o topo)" % float(
 			low_pop["life_satisfaction"]))
+	if float(low_pop["luxury_satisfaction"]) > 0.01:
+		_fail("renda baixa: satisfação luxury %.3f sem orçamento" % float(
+			low_pop["luxury_satisfaction"]))
 
 	var high := _new_sim()
 	_inject(high, stocks, 100000000.0, 1000000.0, {}, 0.30,
@@ -251,6 +265,10 @@ func _test_levels_by_income() -> void:
 	if int(high_pop["needs_level"]) < 2:
 		_fail("renda alta: nível %d (esperado >= 2)" % int(
 			high_pop["needs_level"]))
+	var high_levels: Array = (high_pop.get("income_strata", {}) as Dictionary).get(
+			"level", [])
+	if high_levels.size() != 5:
+		_fail("renda alta: status sem income_strata.level[5]")
 	if float(high_pop["life_satisfaction"]) <= 0.5:
 		_fail("renda alta: satisfação life %.3f baixa com estoque e renda" % float(
 			high_pop["life_satisfaction"]))
@@ -265,6 +283,10 @@ func _test_levels_by_income() -> void:
 		float(low_pop["disposable"]), float(low_pop["savings"]),
 		float(low_pop["food_spend"]), float(low_pop["needs_spend"]),
 		float(low_pop["basic_satisfaction"]), float(low_pop["life_satisfaction"])])
+	print("[pop_needs] teto por quintil: baixa=%s alta=%s | luxury baixa=%.2f alta=%.2f" % [
+		str(low_levels), str(high_levels),
+		float(low_pop["luxury_satisfaction"]),
+		float(high_pop["luxury_satisfaction"])])
 
 
 ## 365 dias sem compras: o estoque durável perde exatamente 10%.

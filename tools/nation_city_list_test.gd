@@ -55,7 +55,7 @@ func _run() -> void:
 
 	var expected := _nation_cities()
 	if expected.is_empty():
-		_failures.append("resumo sem cidades da nacao %s" % NATION)
+		_failures.append("cenário sem cidades da nação %s" % NATION)
 		_finish()
 		return
 	_check_rows(expected)
@@ -139,13 +139,27 @@ func _run() -> void:
 	_finish()
 
 
-## Cidades GBR do resumo, ordenadas por populacao decrescente (o contrato da
-## lista). O teste compara com a mesma ordenacao, nao com um numero fixo.
+## Cidades GBR lidas das colunas por cidade (A4: o resumo diário não carrega
+## mais `cities`), ordenadas por populacao decrescente (o contrato da lista). O
+## teste compara com a mesma ordenacao, nao com um numero fixo.
 func _nation_cities() -> Array:
+	var columns: Dictionary = _economy.call("city_columns")
+	var ids: PackedStringArray = columns.get("id", PackedStringArray())
+	var names: PackedStringArray = columns.get("name", PackedStringArray())
+	var nations: PackedStringArray = columns.get("nation", PackedStringArray())
+	var population: PackedFloat64Array = columns.get("population",
+			PackedFloat64Array())
+	var deficit: PackedFloat64Array = columns.get("deficit", PackedFloat64Array())
 	var cities: Array = []
-	for city in _summary().get("cities", []):
-		if String(city.get("nation", "")) == NATION:
-			cities.append(city)
+	for index in ids.size():
+		if nations[index] != NATION:
+			continue
+		cities.append({
+			"id": ids[index],
+			"name": names[index],
+			"population": population[index],
+			"deficit": deficit[index],
+		})
 	cities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a.get("population", 0.0)) > float(b.get("population", 0.0)))
 	return cities
@@ -216,10 +230,6 @@ func _row_texts(row: Control) -> Array[String]:
 		for child in node.get_children():
 			pending.append(child)
 	return out
-
-
-func _summary() -> Dictionary:
-	return _hud.get("_summary")
 
 
 func _frames(count: int) -> void:

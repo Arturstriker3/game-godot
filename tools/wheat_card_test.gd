@@ -3,9 +3,15 @@ extends SceneTree
 ## Verifica em runtime que a ficha agrícola monta a linha "Clima · Solo · Relevo"
 ## (composta de i18n amigável) sem erro, para um índice de trigo real.
 ##
+## A ficha é conferida em pt-BR: a preferência salva em `user://settings.cfg`
+## pode estar em en/es de uma sessão anterior (era a causa da falha do M2, com a
+## linha saindo em inglês). Os rótulos esperados vêm do próprio I18n, então o
+## teste não depende de texto colado no arquivo.
+##
 ##   godot --headless --path . --script res://tools/wheat_card_test.gd
 
 const MAIN_SCENE := "res://game/main_game.tscn"
+const LOCALE := "pt_BR"
 
 
 func _init() -> void:
@@ -13,6 +19,13 @@ func _init() -> void:
 
 
 func _run() -> void:
+	var i18n: Node = root.get_node_or_null("I18n")
+	if i18n == null:
+		print("FAIL: autoload I18n ausente")
+		quit(1)
+		return
+	i18n.call("set_locale", LOCALE)
+
 	var game: Node3D = (load(MAIN_SCENE) as PackedScene).instantiate()
 	root.add_child(game)
 	for _i in 8:
@@ -37,12 +50,14 @@ func _run() -> void:
 		labels.append(String(node.text))
 	var terrain := ""
 	for text in labels:
-		if text.contains("CLIMA") or text.contains("Clima"):
+		if text.contains(String(i18n.call("t", "map.legend.climate"))):
 			terrain = text
 			break
 	print("linha de terreno:", terrain)
 	var upper := terrain.to_upper()
-	var ok := upper.contains("CLIMA") and upper.contains("SOLO") and upper.contains("RELEVO")
+	var ok := upper.contains(String(i18n.call("t", "map.legend.climate")).to_upper()) \
+			and upper.contains(String(i18n.call("t", "map.legend.soil")).to_upper()) \
+			and upper.contains(String(i18n.call("t", "map.legend.relief")).to_upper())
 	if not ok:
 		print("FAIL: linha de terreno ausente ou incompleta")
 	print("labels:", labels)
