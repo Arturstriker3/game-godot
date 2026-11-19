@@ -192,7 +192,7 @@ func _check_v17_migration() -> void:
 	_load_chains(migrated)
 	migrated.from_dict(v17)
 	var after: Dictionary = migrated.to_dict()
-	if int(after.get("version", 0)) != 22:
+	if int(after.get("version", 0)) != 24:
 		_fail("migração: versão deveria ser 22 (é %s)" % str(after.get("version")))
 		return
 	var checked := 0

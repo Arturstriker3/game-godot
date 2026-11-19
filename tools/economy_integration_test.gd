@@ -293,7 +293,7 @@ func _check_save_load(sim) -> void:
 	# (`city.region`); v20 (B4) os acumuladores de migração (`region.migration`).
 	# Mudança esperada: a versão do schema sobe — o conteúdo das regras antigas
 	# não muda.
-	if int(snapshot.get("version", 0)) != 22:
+	if int(snapshot.get("version", 0)) != 24:
 		_fail("save: versão do schema deveria ser 22 (é %s)" % str(snapshot.get("version")))
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):

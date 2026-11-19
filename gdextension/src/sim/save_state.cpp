@@ -263,6 +263,49 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	data["bankruptcies"] = ws.bankruptcies;
 	data["depleted_mines"] = ws.depleted_mines;
 	data["industry_seeded"] = ws.industry_seeded;
+	// G (v24) — estado da safra por (cidade, produto, safra): ano do plantio,
+	// fator de rendimento por fertilizante e o que já foi entregue na colheita
+	// do ano. Só entram as entradas com estado (o plano em si é DEFINIÇÃO e vai
+	// no bloco `definitions`).
+	{
+		Dictionary agriculture = make_object();
+		agriculture["month_key"] = ws.agri_month_key;
+		Array plans = make_array();
+		for (const CropPlan& plan : ws.crop_plans) {
+			Array seasons = make_array();
+			bool touched = false;
+			for (int index = 0; index < plan.season_count; ++index) {
+				const CropSeasonState& state = plan.state[index];
+				Dictionary item = make_object();
+				item["planted_year"] = state.planted_year;
+				item["yield_scale"] = state.yield_scale;
+				item["harvest_yield_scale"] = state.harvest_yield_scale;
+				item["fertilizer_t"] = state.fertilizer_t;
+				item["harvest_year"] = state.harvest_year;
+				item["delivered_t"] = state.delivered_t;
+				item["loss_month_t"] = state.loss_month_t;
+				item["loss_month_key"] = state.loss_month_key;
+				if (state.planted_year != 0 || state.harvest_year != 0
+						|| state.delivered_t != 0.0
+						|| state.yield_scale != 1.0
+						|| state.fertilizer_t != 0.0) {
+					touched = true;
+				}
+				seasons.append(item);
+			}
+			if (!touched) {
+				continue;
+			}
+			Dictionary entry = make_object();
+			entry["city"] = Value(plan.city);
+			entry["product"] = Value(ws.product_names[
+				static_cast<std::size_t>(plan.product)]);
+			entry["seasons"] = seasons;
+			plans.append(entry);
+		}
+		agriculture["plans"] = plans;
+		data["agriculture"] = agriculture;
+	}
 
 	// Lista canônica de produtos (id na posição do índice). O contrato é por
 	// `order`; os 21 primeiros são os mesmos do save v3.
@@ -2959,6 +3002,58 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			core.seed_strata(city, nullptr);
 		}
 	}
+	// G (v24) — estado da safra por (cidade, produto, safra). Save v23 e
+	// anteriores não têm o bloco: o estado nasce zerado (a safra do ano
+	// corrente recomeça do zero no dia do load; nada é inventado para trás).
+	if (version >= 24) {
+		const Dictionary agriculture = data.get("agriculture", Dictionary());
+		ws.agri_month_key = int(agriculture.get("month_key", 0));
+		const Array plans = agriculture.get("plans", Array());
+		for (int index = 0; index < plans.size(); ++index) {
+			const Dictionary entry = plans[index];
+			const std::string city = std::string(
+				String(entry.get("city", String())).utf8().get_data());
+			const std::string product = std::string(
+				String(entry.get("product", String())).utf8().get_data());
+			if (city.empty() || product.empty()) {
+				continue;
+			}
+			const auto product_found = ws.product_lookup.find(product);
+			if (product_found == ws.product_lookup.end()) {
+				continue;
+			}
+			const auto plan_found = ws.crop_plan_lookup.find(
+				city + "|" + std::to_string(product_found->second));
+			if (plan_found == ws.crop_plan_lookup.end()) {
+				continue;
+			}
+			CropPlan& plan = ws.crop_plans[
+				static_cast<std::size_t>(plan_found->second)];
+			const Array seasons = entry.get("seasons", Array());
+			const int count = std::min(plan.season_count, seasons.size());
+			for (int slot = 0; slot < count; ++slot) {
+				const Dictionary item = seasons[slot];
+				CropSeasonState& state = plan.state[slot];
+				state.planted_year = int(item.get("planted_year", 0));
+				state.yield_scale = std::clamp(
+					double(item.get("yield_scale", 1.0)), 0.0, 1.0);
+				state.harvest_yield_scale = std::clamp(
+					double(item.get("harvest_yield_scale",
+						double(item.get("yield_scale", 1.0)))), 0.0, 1.0);
+				state.fertilizer_t = safe_nonneg(
+					double(item.get("fertilizer_t", 0.0)));
+				state.harvest_year = int(item.get("harvest_year", 0));
+				state.delivered_t = safe_nonneg(
+					double(item.get("delivered_t", 0.0)));
+				state.loss_month_t = safe_nonneg(
+					double(item.get("loss_month_t", 0.0)));
+				state.loss_month_key = int(item.get("loss_month_key", 0));
+			}
+		}
+	}
+	// Índices derivados dos planos (cidade × produto) e a resolução do bem
+	// `fertilizer`: só agora as cidades existem.
+	core.rebuild_crop_indexes();
 }
 
 } // namespace ogs::save
