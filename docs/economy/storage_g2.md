@@ -147,7 +147,9 @@ que construir — comportamento esperado, não bug.
 
 ## 7. Medições de 365 dias (mundo real, IA, `threads=1`)
 
-`tools/g2_world_ai_365.gd`, 365 d, 849 cidades, 179 nações.
+`tools/g2_world_ai_365.gd`, 365 d, 849 cidades, 179 nações. Evidência:
+`docs/economy/perf/g2_world_ai_365_d101.json` (o arquivo `_rerun.json` segue
+sendo o artefato da D-097).
 
 | métrica | base D-099 | **G2 (D-101)** |
 |---|---:|---:|
