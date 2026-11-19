@@ -19,6 +19,8 @@ addons/godot_mcp/
 tools/data/*
 # exceção: fatos históricos documentados do câmbio (curadoria, versionada)
 !tools/data/fx_historical_facts.json
+# caches brutos de construtores (baixados com --fetch; não versionar)
+tools/_tmp_*/
 
 # Log de tarefas do bridge de agentes (gerado em runtime)
 tools/claude_bridge/log/
