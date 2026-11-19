@@ -35,6 +35,9 @@ extends SceneTree
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 const GroupNamerScript := preload("res://core/economy/group_namer.gd")
+## G (D-096/D-098): agricultura sazonal — o plano (janelas herdadas da nação
+## original da cidade) viaja em `definitions` e o CLI o aplica no load.
+const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
 ## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
 const RegionDataScript := preload("res://core/economy/region_data.gd")
 
@@ -64,6 +67,10 @@ var _urban := true
 ## `--ai=1`: monta com geografia real (e nomes de grupo), como o harness de
 ## equivalência. A IA em si NÃO é ligada — o export não roda dia nenhum.
 var _ai := false
+## `--agriculture=1`: declara os planos de safra (AgricultureService) depois da
+## geografia, como o autoload. O plano sai em `definitions`; o CLI o aplica no
+## load, então replay e CLI colhem o mesmo.
+var _agriculture := false
 
 var _failures: Array[String] = []
 
@@ -76,6 +83,8 @@ func _init() -> void:
 			_urban = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--ai="):
 			_ai = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--agriculture="):
+			_agriculture = arg.split("=", true, 1)[1] != "0"
 
 	if _out == "":
 		print("[snapshot] FALHA: --out=<arquivo.json> e obrigatorio")
@@ -217,6 +226,20 @@ func _run() -> void:
 	if geo != null:
 		geo.apply_to_sim(sim, _cities_with_center(cities))
 		GroupNamerScript.name_groups(sim)
+
+	# G (D-096/D-098): agricultura sazonal, como o autoload — DEPOIS da
+	# geografia (a área por cidade vem da capacidade de terra). O calendário é o
+	# herdado da nação ORIGINAL da cidade e vai no plano salvo em `definitions`.
+	if _agriculture:
+		if not sim.has_method("set_crop_plan"):
+			_fail("binario sem set_crop_plan (rode o build)")
+			return
+		var agri := AgricultureServiceScript.new()
+		var agri_report: Dictionary = agri.apply_to_sim(sim, cities, geo,
+			{"calendar_nations": agri.calendar_nations(cities)})
+		print("[snapshot] agricultura: planos=%d estoque=%.0f t" % [
+			int(agri_report.get("plans", 0)),
+			float(agri_report.get("initial_stock_t", 0.0))])
 
 	# O bootstrap industrial (§12.3) roda no PRIMEIRO tick do jogo, não na
 	# criação do mundo: sem ele a foto do dia 0 não é o estado de partida.
