@@ -64,9 +64,10 @@ estrada/luz/água valoriza.
 aluguel de mercado — é patrimônio do dono.
 
 **Anel periurbano.** Preço = preço popular do polo × desconto de distância
-(35% por 100 km do raio efetivo derivado da área real dos estados,
-`kPropertyRingDistanceDiscount`) × (1 − 30% × penalidade da estrada B5,
-`kPropertyRingRoadPenalty`). O aluguel sobe com a fatia da população que vive
+`1 ÷ (1 + 0,35 × raio efetivo/100 km)` (`kPropertyRingDistanceDiscount` = 0,35
+por 100 km do raio derivado da área real dos estados; ~26% aos 100 km) ×
+`(1 − 0,30 × (1 − cobertura da estrada B5))` (`kPropertyRingRoadPenalty` = 0,30
+com estrada 0). O aluguel sobe com a fatia da população que vive
 no anel (`kPropertyRingRentPressure` = 0,75). Quando o polo está cheio (limite
 de vaga da B4), o excedente do êxodo **assenta no anel** em vez de ser barrado:
 absorção de 0,5%/mês da população urbana (`kPropertyRingMonthlyAbsorb`). O
@@ -102,7 +103,13 @@ potencial e os cinco quintis de `land_value`, `home_value`, `ring_value` e
 `wealth`) entra no save **v23**. Um save v22 (e anteriores) não tem o bloco: a
 região carrega **inerte** (`property_ready` falso) e o GDScript reaplica o dado
 depois do load; a alíquota nasce 0. Nada é inventado para trás. Round-trip
-v23 é idêntico (coberto por `tools/economy_save_load_roundtrip_test.gd`).
+v23 do bloco é coberto por `tools/b6_property_test.gd` (caso f: v23 bit-exato e
+v22 sintético com o bloco apagado → região inerte → `LandProperty.apply`
+semeia e grava v23); o round-trip do resto do save continua em
+`tools/economy_save_load_roundtrip_test.gd`. **Não existe fixture de save v22
+arquivada** no repositório: a migração foi validada pelo v22 sintético e pela
+leitura do código (`if (version >= 23)` em `save_state.cpp`), não por um save
+capturado antes da B6.
 
 ## Aceite medido (2026-11-19, build debug)
 
@@ -120,15 +127,17 @@ v23 é idêntico (coberto por `tools/economy_save_load_roundtrip_test.gd`).
 | anel | 40,65 mi de pessoas (0,665% da população regional); 3,89 mi/mês de aluguel pago |
 | imposto (alíquota 0) | 0 arrecadado; receita potencial publicada |
 | Gini de riqueza do mundo (quintis) | 0,4899 (top SWZ 0,6179; bottom SOL 0,0040) |
-| portão de comida (avg 30 d < 0,975) | 147/179 nações (base B5 ~148 — sem regressão) |
+| portão de comida (avg 30 d < 0,975) | 147/179 nações (base B5 ~148; A/B de 60 d: 134 com B6 × 133 sem — diferença de 1 nação) |
 
 Goldens regerados em 2 rodadas idênticas: A0 urbano
 `02721cfb…`/`f59e7968…`, `real_60_ai` `e9a6a344…`/`9c9785a0…`,
 `real_60_noai` `b8bc6c07…`/`3a0dd9af…`, `demo_365_noai`
-`82be1864…`/`a7a8e16a…`. Custo da fase: a fase `property` mede **9,0 µs/dia**
-de 7.546 µs/dia de tick perfilado (**0,12%**) em 60 d; no parede, 60 d com B6
-15,4 s × 14,1 s sem B6 (host ocupado — número indicativo). 365 d com IA:
-143 s (≈2,6 d/s) no build debug.
+`82be1864…`/`a7a8e16a…`. Custo da fase (`docs/economy/perf/b6_bench.json`,
+60 d × 2 rodadas, A/B com `--control=1`): a fase `property` fica em
+**7,6–14,9 µs/dia** (0,09–0,22% do tick perfilado) e o braço **sem** B6 mede
+**7,4–7,5 µs/dia** — o custo é o laço por cidade, não a semeadura; no parede,
+15,1/14,5 s com B6 × 15,7/15,3 s sem (host compartilhado — ruído). 365 d com
+IA: 143 s (≈2,6 d/s) no build debug.
 
 ## Limites (abertos de propósito)
 
