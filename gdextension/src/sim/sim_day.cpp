@@ -78,6 +78,13 @@ void tick_day(WorldState& ws, SimCore& core) {
 		core.phase_migration();
 	}
 
+	// 5c1. B6: patrimônio da região (cadência MENSAL) — valoriza a terra pela
+	// renda primária × infra B5 × commodities, fecha moradia/anel, cobra o
+	// aluguel do anel (conservado) e publica a distribuição por quintil. Roda
+	// DEPOIS da migração (o anel do mês já recebeu o excedente) e antes dos
+	// serviços/comércio.
+	core.phase_property();
+
 	// F8: serviços.
 	core.phase_services();
 

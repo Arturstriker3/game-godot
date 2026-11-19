@@ -34,6 +34,7 @@ extends SceneTree
 ## - Saída: 0 ok, 1 falha. Toda falha vira linha `[snapshot] FALHA: ...`.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const LandPropertyScript := preload("res://core/economy/land_property.gd")
 const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 ## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
 const RegionDataScript := preload("res://core/economy/region_data.gd")
@@ -200,6 +201,9 @@ func _run() -> void:
 	# B5 (D-089): infra inicial do estado (dado real World Bank), como o autoload:
 	# o snapshot/CLI precisa carregar os mesmos níveis do jogo.
 	GeographyServiceScript.apply_initial_infra(sim)
+	# B6 (D-095): patrimônio da região (hectares + Gini fundiário) do dado real,
+	# igual ao autoload. Sem isso o snapshot/CLI rodaria sem a B6.
+	LandPropertyScript.apply(sim)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
 	if _urban:
