@@ -2,7 +2,7 @@ extends SceneTree
 
 ## B6 — PATRIMÔNIO IMOBILIÁRIO DA REGIÃO (D-095): terra produtiva, moradia do
 ## interior e anel periurbano; propriedade por quintil; Gini de riqueza; save
-## v23 com migração v22→v23.
+## v24 com a cadeia aditiva v22→v23 (B6)→v24 (G).
 ##
 ## Valida:
 ##   (a) valorização por OBRA DE INFRA (infra B5 sobe → valor da terra sobe);
@@ -13,13 +13,15 @@ extends SceneTree
 ##       fundiário dado; sem dado usa a repartição de renda);
 ##   (e) CONSERVAÇÃO DE DINHEIRO com o aluguel do anel (money_total inalterado,
 ##       débito/crédito casados);
-##   (f) SAVE v23: round-trip bit-exato sem tick + migração v22→v23 (região
-##       inerte até o dado ser reaplicado; alíquota 0).
+##   (f) SAVE v24: round-trip bit-exato sem tick, migração v22→v24 (região
+##       inerte até o dado ser reaplicado; alíquota 0) e a CADEIA v23→v24 (save
+##       da versão que já tinha patrimônio e ainda não tinha agricultura).
 ##
 ## Uso: godot --headless --path . --script res://tools/b6_property_test.gd
 
 const RegionDataScript := preload("res://core/economy/region_data.gd")
 const LandPropertyScript := preload("res://core/economy/land_property.gd")
+const AgricultureScript := preload("res://core/economy/agriculture_service.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -37,7 +39,7 @@ const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 const LAND_PROPERTY_PATH := "res://data/definitions/economy/land_property.json"
 
-const SAVE_VERSION := 23
+const SAVE_VERSION := 24
 const INFRA_LEVEL := 3
 const INFRA_VALUE_MULTIPLIER := 1.5   # 1 + kPropertyInfraValueGain (0,50)
 const RING_MONTHLY_ABSORB := 0.005    # kPropertyRingMonthlyAbsorb
@@ -48,7 +50,7 @@ var _failures: Array = []
 func _init() -> void:
 	_run()
 	if _failures.is_empty():
-		print("[b6] OK: terra/moradia/anel, quintis, conservação e save v23.")
+		print("[b6] OK: terra/moradia/anel, quintis, conservação e save v24.")
 		quit(0)
 	else:
 		print("[b6] FALHAS (%d):" % _failures.size())
@@ -412,6 +414,14 @@ func _restore(save: Dictionary) -> Object:
 	return sim
 
 
+## Load pelo SNAPSHOT (definições + save), que é o caminho real do jogo: as
+## definições (inclusive os planos de safra) vêm no próprio snapshot.
+func _restore_snapshot(snapshot: Dictionary) -> Object:
+	var sim = EconomySim.new()
+	sim.from_snapshot(snapshot)
+	return sim
+
+
 ## (c) Anel periurbano: com a B4 sozinha o excedente do êxodo é barrado pela
 ## vaga; com a B6 ele assenta no anel. Pessoas conservadas nos dois mundos.
 func _check_ring_overflow() -> void:
@@ -606,7 +616,7 @@ func _check_money_conservation() -> void:
 		print("[b6] (e) drift de dinheiro %.12f em %d dias." % [drift, days])
 
 
-## (f) Save v23: round-trip sem tick bit-exato e migração v22→v23.
+## (f) Save v24: round-trip sem tick bit-exato e migração v22→v23→v24.
 func _check_save() -> void:
 	var sim := _make_world()
 	for day in 31:
@@ -665,5 +675,48 @@ func _check_save() -> void:
 			float(property.get("land_ha", 0.0))])
 	_check(float(reseeded.get("tax_rate", -1.0)) == 0.0,
 		"(f) v22 reaplicado deveria manter alíquota 0")
-	print("[b6] (f) save v23: round-trip bit-exato; v22→v23 inerte e reaplicado (%.0f ha)." % [
-		float(reseeded.get("land_ha", 0.0))])
+
+	# CADEIA v23→v24: a v23 já tinha o patrimônio (`property`) e ainda NÃO tinha
+	# a agricultura. O save de um mundo COM safra em curso, gravado como v23
+	# (bloco `agriculture` removido), tem de voltar v24 com o bloco `property`
+	# BIT-EXATO sem tick e o estado da safra ZERADO: os planos voltam das
+	# definições, mas nada de colheita/plantio é inventado para trás.
+	var agri := _make_world()
+	AgricultureScript.new().apply_to_sim(agri, _json(CITIES_PATH))
+	for step in 31:
+		agri.tick_day()
+	var snapshot: Dictionary = agri.to_snapshot()
+	var agri_save: Dictionary = snapshot.get("save", {})
+	var agri_plans := Array((agri_save.get("agriculture", {}) as Dictionary)
+		.get("plans", [])).size()
+	var v23_snapshot: Dictionary = snapshot.duplicate(true)
+	var v23_save: Dictionary = v23_snapshot.get("save", {})
+	v23_save["version"] = 23
+	v23_save.erase("agriculture")
+	v23_snapshot["save"] = v23_save
+	var chained := _restore_snapshot(v23_snapshot)
+	var chained_save: Dictionary = chained.to_dict()
+	_check(int(chained_save.get("version", 0)) == SAVE_VERSION,
+		"(f) v23 deveria ser lido e gravado como v%d (é %s)" % [
+			SAVE_VERSION, chained_save.get("version")])
+	var chained_diff := _first_diff(_property_blocks(agri_save),
+		_property_blocks(chained_save))
+	_check(chained_diff == "",
+		"(f) v23: bloco `property` não é bit-exato no round-trip (%s)" % chained_diff)
+	var chained_status: Dictionary = chained.get_agriculture_status()
+	_check(not chained_status.is_empty(),
+		"(f) v23 deveria reaplicar os planos do bloco `definitions`")
+	var zeroed: Dictionary = chained_save.get("agriculture", {}) as Dictionary
+	var zeroed_plans := Array(zeroed.get("plans", [])).size()
+	_check(zeroed_plans == 0,
+		"(f) v23 não deveria inventar estado de safra (%d entradas)" % zeroed_plans)
+	_check(int(zeroed.get("month_key", -1)) == 0,
+		"(f) v23 deveria nascer com month_key 0 (é %s)" % str(
+			zeroed.get("month_key")))
+	var chained_first: Dictionary = chained.tick_day()
+	var chained_violations: Array = chained_first.get("invariant_violations", [])
+	_check(chained_violations.is_empty(),
+		"(f) v23: invariante violado no 1º dia: %s" % str(
+			chained_violations.slice(0, 1)))
+	print("[b6] (f) save v24: round-trip bit-exato; v22→v23 inerte e reaplicado (%.0f ha); v23→v24 property bit-exato, safra zerada (origem %d planos com estado), 1º dia limpo." % [
+		float(reseeded.get("land_ha", 0.0)), agri_plans])

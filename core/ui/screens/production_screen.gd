@@ -376,10 +376,11 @@ func _recipe_name(recipe: Dictionary) -> String:
 	return translated if translated != key else id
 
 
-## Célula "onde é produzido": cidades com oferta do bem, com o tipo de origem
-## (jazida quando a cidade tem reserva, fazenda quando tem aptidão agrícola,
-## fábrica quando a oferta vem de receita). Nada é inventado: só entra cidade
-## que publicou oferta > 0 no mercado do bem.
+## Célula "onde é produzido": cidades com oferta **ou estoque** do bem, com o
+## tipo de origem (jazida quando a cidade tem reserva, fazenda quando tem
+## aptidão agrícola, fábrica quando a oferta vem de receita). Nada é inventado:
+## só entra cidade que publicou oferta ou estoque > 0 no mercado do bem — desde
+## a agricultura sazonal (G) a safra pode estar só em estoque no dia.
 func _origin_cell(good_id: String) -> Dictionary:
 	var sites := _origin_sites(good_id)
 	if sites.is_empty():
@@ -407,8 +408,12 @@ func _origin_sites(good_id: String) -> Array:
 	var cities: Array = _summary.get("cities", [])
 	for city_index in cities.size():
 		var city: Dictionary = cities[city_index]
-		var supply := float(_light_market(light, city_index, index).get("supply", 0.0))
-		if supply <= 0.0:
+		var market := _light_market(light, city_index, index)
+		if market.is_empty():
+			continue
+		var supply := float(market.get("supply", 0.0))
+		var stock := float(market.get("stock", 0.0))
+		if supply <= 0.0 and stock <= 0.0:
 			continue
 		var kind := "factory"
 		if _light_remaining(light, city_index, index) > 0.0:
@@ -420,9 +425,12 @@ func _origin_sites(good_id: String) -> Array:
 			"name": String(city.get("name", "")),
 			"kind": kind,
 			"supply": supply,
+			"stock": stock,
 		})
 	sites.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return float(a.get("supply", 0.0)) > float(b.get("supply", 0.0)))
+		if float(a.get("supply", 0.0)) != float(b.get("supply", 0.0)):
+			return float(a.get("supply", 0.0)) > float(b.get("supply", 0.0))
+		return float(a.get("stock", 0.0)) > float(b.get("stock", 0.0)))
 	return sites
 
 

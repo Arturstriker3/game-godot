@@ -1,6 +1,6 @@
 extends SceneTree
 
-## B7 — INFORMALIDADE, SERVIÇOS INFORMAIS, MORTALIDADE E INSATISFAÇÃO + save v22.
+## B7 — INFORMALIDADE, SERVIÇOS INFORMAIS, MORTALIDADE E INSATISFAÇÃO + save v24.
 ##
 ## Valida (1) a conservação de dinheiro e pessoas com a informalidade ativa,
 ## (2) o informal sem imposto de renda/contribuição, (3) o serviço informal
@@ -8,7 +8,7 @@ extends SceneTree
 ## receita creditada é o débito efetivado), (4) a mortalidade subindo com a
 ## fome e concentrando o excesso em 0–14/65+, (5) a insatisfação reagindo
 ## dentro de [0,1] (com a normalização por bloco no interior) e (6) o
-## round-trip do save v22 + migração v21.
+## round-trip do save v24 + migração v21.
 ##
 ## Uso: godot --headless --path . --script res://tools/b7_informality_test.gd
 
@@ -29,7 +29,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 23
+const SAVE_VERSION := 24
 const TAX_RATE := 0.15
 
 var _failures: Array = []
@@ -39,7 +39,7 @@ func _init() -> void:
 	_run()
 	if _failures.is_empty():
 		print("[b7] OK: informalidade, serviços informais, mortalidade, "
-			+ "insatisfação e save v22.")
+			+ "insatisfação e save v24.")
 		quit(0)
 	else:
 		print("[b7] FALHAS (%d):" % _failures.size())
@@ -131,7 +131,7 @@ func _run() -> void:
 	var sim := _make_world()
 	var save: Dictionary = sim.to_dict()
 	_check(int(save.get("version", 0)) == SAVE_VERSION,
-		"save deve ser v22 (é %s)" % str(save.get("version")))
+		"save deve ser v24 (é %s)" % str(save.get("version")))
 	var ci := _pick_city(save)
 	if ci < 0:
 		_fail("nenhuma cidade com quintis e demografia prontos")
@@ -472,14 +472,14 @@ func _run() -> void:
 				"região: componentes somam o índice (%.4f vs %.4f)"
 				% [r_food + r_infl + r_inf, r_idx])
 
-	# --- (6) Round-trip v22 (blocos B7 preservados) e migração v21 → v22. ---
+	# --- (6) Round-trip v24 (blocos B7 preservados) e migração v21 → v24. ---
 	if true:
 		var rt: Dictionary = sim.to_dict()
 		var rt2 := EconomySim.new()
 		_load_chains(rt2)
 		rt2.from_dict(rt)
 		var rt3: Dictionary = rt2.to_dict()
-		_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip mantém v22")
+		_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip mantém v24")
 		# Os blocos B7 precisam voltar idênticos (a identidade byte a byte do
 		# save inteiro é coberta por economy_save_load_roundtrip_test, que usa
 		# "load + continuar == rodar direto" — alguns fluxos derivados do
@@ -518,13 +518,13 @@ func _run() -> void:
 		migrated.from_dict(v21)
 		var after: Dictionary = migrated.to_dict()
 		_check(int(after.get("version", 0)) == SAVE_VERSION,
-			"v21 deve migrar para v22 (é %s)" % str(after.get("version")))
+			"v21 deve migrar para v24 (é %s)" % str(after.get("version")))
 		# A migração semeia a informalidade (dado/âncora) e os contadores zerados.
 		var mcity: Dictionary = after.get("cities", [])[ci]
 		var minformal: Dictionary = mcity.get("pop", {}).get("informal", {})
 		var mshare := float(minformal.get("share", -1.0))
 		_check(mshare >= 0.0 and mshare <= 1.0,
-			"v21→v22: informal_share semeado em [0,1] (%.3f)" % mshare)
+			"v21→v24: informal_share semeado em [0,1] (%.3f)" % mshare)
 		var mmort: Dictionary = mcity.get("pop", {}).get("mortality", {})
 		_check(absf(float(mmort.get("excess_total", -1.0))) < 1e-9,
-			"v21→v22: excess_deaths_total nasce 0")
+			"v21→v24: excess_deaths_total nasce 0")

@@ -48,6 +48,14 @@ func _run() -> void:
 	_hud.set_map_mode("routes")
 	for _i in 40:
 		await process_frame
+	# A safra sazonal (G) concentra os maiores fluxos fora da Europa e deixa,
+	# no enquadramento padrão (mediana das cidades), só micro-setas entre
+	# cidades vizinhas — cobertas inteiras pelos ícones. O teste afasta a
+	# câmera (220 u, ainda dentro do limite de 500) para haver seta visível
+	# com ponto livre; o hover é o mesmo caminho do jogo.
+	_camera.position.z = 220.0
+	for _i in 60:
+		await process_frame
 	# Daqui em diante quem dirige o hover é o teste (o _process do jogo faria
 	# o mesmo a cada frame, com a posição real do mouse).
 	_game.set_process(false)

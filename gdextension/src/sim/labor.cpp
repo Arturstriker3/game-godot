@@ -43,6 +43,14 @@ void SimCore::phase_labor() {
 				mine_stage_factor(owner_city, building),
 				building.last_utilization), kMineStageFloor, 1.0);
 		}
+		// D-096 (folha sazonal): fazenda COM plano de safra parada na
+		// entressafra opera a 0% — sem equipe e sem opex, porque não há safra
+		// para pagar a conta (era a causa das falências de primárias em 365 d).
+		const std::size_t city_index = static_cast<std::size_t>(
+			&owner_city - ws_.cities.data());
+		if (!crop_working_at(city_index, building.output_product)) {
+			return 0.0;
+		}
 		return 1.0;
 	};
 	// S16: o trabalho é independente por cidade (escreve só na própria cidade e
@@ -65,7 +73,16 @@ void SimCore::phase_labor() {
 				// a operação do dia anterior (piso de 5% de stand-by). Mina no
 				// último estágio idem (D-086).
 				const double operating = operating_of(city, building);
-				opex_total += building.opex * opex_factor(city, building) * operating;
+				// D-099: a fazenda com plano paga o opex só até o que a safra
+				// cobre (mesmo fator da folha) — a decisão é a folha/opex
+				// REDUZIDOS, nunca dinheiro criado.
+				const double daily_cost = building.opex
+					* opex_factor(city, building) * operating
+					+ building.jobs * building.wage * operating;
+				const double liquidity = crop_liquidity_factor(city, building,
+					daily_cost);
+				opex_total += building.opex * opex_factor(city, building)
+					* operating * liquidity;
 			}
 			labor_day(city);
 			// Opex é comprado de serviços domésticos (manutenção, energia), não é
@@ -77,8 +94,13 @@ void SimCore::phase_labor() {
 			for (const int bi : local_buildings) {
 				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 				const double operating = operating_of(city, building);
+				const double daily_cost = building.opex
+					* opex_factor(city, building) * operating
+					+ building.jobs * building.wage * operating;
+				const double liquidity = crop_liquidity_factor(city, building,
+					daily_cost);
 				building.paid_opex = building.opex * opex_factor(city, building)
-					* operating * opex_scale;
+					* operating * opex_scale * liquidity;
 			}
 			const double paid_opex = opex_total * opex_scale;
 			city.firm_cash -= paid_opex;
@@ -367,6 +389,13 @@ double SimCore::labor_day(City& city) {
 			if (building.jobs <= 0.0) {
 				continue;
 			}
+			// D-096: a fazenda sazonal fora da janela não abre vaga — a cidade
+			// não pode contar emprego que não existe na entressafra.
+			const double seasonal = crop_working_at(city_index,
+				building.output_product) ? 1.0 : 0.0;
+			if (seasonal <= 0.0) {
+				continue;
+			}
 			for (int level = 0; level < kEducationLevels; ++level) {
 				vacancy[level] += building.jobs * building.education_mix[level];
 			}
@@ -431,7 +460,12 @@ double SimCore::labor_day(City& city) {
 				plant_payroll += building.education_mix[level] * fill[level]
 					* pop.wage_by_level[level];
 			}
-			building.workers = building.jobs * workers_fraction;
+			// D-096: fora da janela de plantio/colheita a fazenda sazonal não
+			// emprega ninguém (equipe liberada). `building.jobs` continua sendo
+			// a CAPACIDADE publicada; `workers` é o emprego do dia.
+			const double seasonal = crop_working_at(city_index,
+				building.output_product) ? 1.0 : 0.0;
+			building.workers = building.jobs * workers_fraction * seasonal;
 			building.wage = contract_wage;
 			// D-086: mina no último estágio opera no piso — a folha acompanha a
 			// taxa de operação (mesma regra do opex em phase_labor).
@@ -443,8 +477,15 @@ double SimCore::labor_day(City& city) {
 				operating = std::clamp(std::min(
 					mine_stage_factor(city, building),
 					building.last_utilization), kMineStageFloor, 1.0);
+			} else {
+				// D-096: a folha da fazenda sazonal segue o bit do calendário.
+				operating = seasonal;
 			}
-			buildings_payroll += building.jobs * plant_payroll * operating;
+			const double crop_liquidity = crop_liquidity_factor(city, building,
+				building.jobs * plant_payroll * operating
+				+ building.opex * operating);
+			buildings_payroll += building.jobs * plant_payroll * operating
+				* crop_liquidity;
 		}
 	}
 	double service_fraction = 0.0;
@@ -501,6 +542,11 @@ double SimCore::labor_day(City& city) {
 				operating = std::clamp(std::min(
 					mine_stage_factor(city, building),
 					building.last_utilization), kMineStageFloor, 1.0);
+			} else {
+				// D-096: fora da janela de plantio/colheita a fazenda sazonal
+				// não paga folha (equipe liberada).
+				operating = crop_working_at(city_index,
+					building.output_product) ? 1.0 : 0.0;
 			}
 			double plant_payroll = 0.0;
 			for (int level = 0; level < kEducationLevels; ++level) {
@@ -509,6 +555,13 @@ double SimCore::labor_day(City& city) {
 			}
 			building.paid_wages =
 				building.jobs * plant_payroll * operating * pay_scale;
+			// D-099: a fazenda com plano paga só o que a safra cobre (fator da
+			// lavoura em pé/estoque). Vale sobre a folha já limitada pelo
+			// caixa da cidade — dinheiro continua conservado.
+			const double crop_liquidity = crop_liquidity_factor(city, building,
+				building.jobs * plant_payroll * operating
+				+ building.opex * operating);
+			building.paid_wages *= crop_liquidity;
 		}
 	}
 	const double full_service_bill = city.service_jobs * service_payroll_per_job;

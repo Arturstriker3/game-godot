@@ -273,6 +273,20 @@ void SimCore::prologue() {
 	for (auto it = ws_.buildings.begin(); it != ws_.buildings.end();) {
 		if (it->bankrupt) {
 			++ws_.bankruptcies;
+			// D-099: composição para o aceite do 365 d (runtime, não vai ao
+			// save). A primária COM plano de safra é o caso que a regra de
+			// liquidez poupa; o contador mostra quem ainda fecha.
+			if (it->output_product >= 0
+					&& it->output_product < kMaxProducts) {
+				++ws_.bankrupt_by_output[it->output_product];
+			}
+			if (it->recipe < 0 && it->input_product < 0
+					&& it->city_index >= 0
+					&& it->city_index < static_cast<int>(ws_.cities.size())
+					&& crop_planned_at(static_cast<std::size_t>(it->city_index),
+						it->output_product)) {
+				++ws_.bankrupt_planned_primary;
+			}
 			it = ws_.buildings.erase(it);
 			continue;
 		}
@@ -405,6 +419,7 @@ void SimCore::phase_reset() {
 		for (int product = 0; product < static_cast<int>(ws_.food_products.size()); ++product) {
 			city.pop.desired_by_category[product] = 0.0;
 			city.pop.consumed_by_category[product] = 0.0;
+			city.agri_in_kind[product] = 0.0;
 		}
 	}
 	for (Building& building : ws_.buildings) {
@@ -633,7 +648,49 @@ void SimCore::phase_accounting() {
 				&& mine_stage_factor(city, building) <= kMineStageFloor + 1e-12;
 			const bool operating = mine_idle ? false
 				: secondary ? building.utilization > 1e-9 : true;
-			if (building.profit < 0.0 && operating) {
+			// D-099 (liquidez × solvência): fazenda PRIMÁRIA cujo par
+			// (cidade, produto) tem plano de safra não está insolvente
+			// enquanto a colheita não vendida está no estoque da cidade. O
+			// teste antigo olhava só caixa/receita: a soja de AUS-DAR não tem
+			// comprador local (`sold` = 0), então a folha da janela de colheita
+			// não tinha receita e a fazenda fechava mesmo com o celeiro cheio.
+			// O estoque do produto, na FATIA da firma (a mesma regra de
+			// rateio da receita: capacidade efetiva ÷ capacidade do produto),
+			// vale a preço de mercado da cidade e é ativo — não é isenção: se
+			// o estoque não cobre o prejuízo do dia, `loss_days` volta a
+			// acumular e a firma fecha. A lavoura em pé (safra ainda não
+			// entregue do plano) entra como o mesmo ativo: é a carência até a
+			// próxima colheita que a decisão pede — o custo de plantio é
+			// capital de giro da safra, não prejuízo. Nada de dinheiro é criado
+			// (estoque e lavoura são avaliados, não vendidos) e a folha
+			// continua limitada ao caixa da cidade (pay_scale em `labor_day`),
+			// então a folha devida é REDUZIDA quando falta liquidez; a dívida
+			// com os trabalhadores e a venda com desconto ficam para a
+			// contabilidade da C1/C3.
+			bool covered_by_stock = false;
+			if (!secondary && operating && building.output_product >= 0
+					&& building.output_product < ws_.products
+					&& crop_planned_at(city_index, building.output_product)) {
+				const double product_capacity =
+					capacity_by_output[building.output_product];
+				const double effective = effective_capacity(building);
+				const double share = product_capacity > 0.0
+					? effective / product_capacity : 0.0;
+				const Market& market =
+					city.markets[building.output_product];
+				const double price = std::max(0.0, market.price);
+				// Estoque do produto na cidade (colheita já entregue e não
+				// vendida) + safra ainda no campo/por entregar do plano. Os
+				// dois são avaliados a preço de mercado e rateados pela
+				// capacidade, como a receita.
+				const double collateral = (std::max(0.0, market.stock)
+					+ crop_standing_value(city.id,
+						building.output_product, price))
+					* price * share;
+				covered_by_stock = collateral > 0.0
+					&& collateral >= -building.profit;
+			}
+			if (building.profit < 0.0 && operating && !covered_by_stock) {
 				++building.loss_days;
 			} else {
 				building.loss_days = 0;

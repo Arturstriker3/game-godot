@@ -58,6 +58,8 @@ const RegionDataScript := preload("res://core/economy/region_data.gd")
 ## B6: hectares de terra agrícola e Gini fundiário por região (dado + regra de
 ## rateio declarada em land_property.json).
 const LandPropertyScript := preload("res://core/economy/land_property.gd")
+## G (D-096): agricultura sazonal — declarada depois da geografia.
+const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
 
 ## 1º de janeiro de 2027, 00:00 UTC (D-084). 1798761600 = 2027-01-01T00:00:00Z.
 ## A base de dados (WPP/WorldPop 2026, extração 2025) NÃO é reprojetada: o
@@ -103,6 +105,13 @@ var sim: RefCounted
 var last_summary: Dictionary = {}
 var speed: int = 1
 var _nations: Dictionary = {}  # tag -> {id, name, flag}
+
+## G (decisão do dono): calendário de safra gravado na REGIÃO no início do mundo
+## — `{ city_id: nação original }`, do `cities.json` (antes de qualquer
+## conquista). A produção usa este calendário para sempre: trocar o dono não
+## muda a época da safra. O plano resultante (janelas em dia do ano) viaja no
+## save (`definitions.crop_plans`).
+var calendar_nations: Dictionary = {}
 
 ## A4: retrato das telas de dados, montado sob demanda uma vez por dia
 ## (Economy.ui_snapshot()). Vazio enquanto nenhuma tela precisou dele.
@@ -177,8 +186,9 @@ func _ready() -> void:
 	# B3: anexa o bloco `region` (estados inteiros) a cada cidade antes de criar
 	# o mundo — o núcleo e o snapshot/CLI levam o dado junto.
 	RegionDataScript.attach(cities)
-	sim.initialize_world(cities, _load_ports(),
-			geo.resolve_initial_mines(geo.resolve_initial_farms(_load_buildings(), cities), cities))
+	var farms := geo.resolve_initial_mines(
+		geo.resolve_initial_farms(_load_buildings(), cities), cities)
+	sim.initialize_world(cities, _load_ports(), farms)
 	# B5 (D-089): infraestrutura INICIAL do estado a partir do dado real (World
 	# Bank). DEPOIS do mundo (as regiões existem) e antes do primeiro dia; o
 	# dado é o mesmo do snapshot/CLI e dos harnesses de equivalência.
@@ -202,6 +212,23 @@ func _ready() -> void:
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
 	geo.apply_to_sim(sim, _cities_with_center())
+	# G (D-096): agricultura sazonal DEPOIS da geografia (a área por cidade vem
+	# da capacidade de terra que a geografia declara). Declara plano de safra,
+	# estoque inicial, perdas, prateleira e fertilizante; sem os arquivos o
+	# núcleo mantém a produção diária das fazendas (ausência explícita).
+	if sim.has_method("set_crop_plan"):
+		var agri := AgricultureServiceScript.new()
+		# O calendário é herdado da nação ORIGINAL da região e fica guardado no
+		# autoload: a conquista troca o dono, não a época da safra.
+		calendar_nations = agri.calendar_nations(cities)
+		var agri_report := agri.apply_to_sim(sim, cities, geo,
+			{"calendar_nations": calendar_nations,
+			"farms": AgricultureServiceScript.farms_of(farms)})
+		print("[agricultura] planos=%d cidades=%d estoque=%.0f t base=%s" % [
+			int(agri_report.get("plans", 0)),
+			int(agri_report.get("cities", 0)),
+			float(agri_report.get("initial_stock_t", 0.0)),
+			str(agri_report.get("area_basis", {}))])
 	# A IA econômica (privado, governo, grupos) roda no núcleo, na virada do dia
 	# (A5). Ligada aqui: o primeiro `tick_day` já decide.
 	sim.set_ai_enabled(true)
@@ -220,6 +247,30 @@ func _ready() -> void:
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready. O dia
 	# roda direto na thread do pool; o primeiro status sai no _process.
 	_start_day.call_deferred()
+
+
+## G: reaplica no núcleo o que FALTAR depois de carregar um save. O plano já
+## veio em `definitions` (janelas herdadas no início do mundo), então nada é
+## redeclarado por cima; um par que falte, se houver, nasce com o calendário
+## ORIGINAL da região — nunca com o dono atual. Sem semente de estoque: o
+## estoque do dia 1 está no save.
+func refresh_agriculture() -> Dictionary:
+	if sim == null or not sim.has_method("set_crop_plan"):
+		return {}
+	var agri := AgricultureServiceScript.new()
+	if calendar_nations.is_empty():
+		calendar_nations = agri.calendar_nations(_load_cities())
+	var geo := GeographyService.new()
+	geo.load_data()
+	var cities := _load_cities()
+	var farms := geo.resolve_initial_mines(
+		geo.resolve_initial_farms(_load_buildings(), cities), cities)
+	return agri.apply_to_sim(sim, cities, geo, {
+		"calendar_nations": calendar_nations,
+		"only_missing": true,
+		"initial_stock": false,
+		"farms": AgricultureServiceScript.farms_of(farms),
+	})
 
 
 ## F9: nome da maior cidade de cada nacao (usado como {place} no nome dos

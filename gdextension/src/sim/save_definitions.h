@@ -19,6 +19,11 @@
 //                         GEOGRAFIA: chega pelo GeographyService e não entra
 //                         no save; viaja aqui só para o snapshot ser
 //                         autossuficiente).
+//   * crop_plans/crop_losses/shelf_life -> agricultura sazonal (G, D-096): o
+//                         plano (área × rendimento, janelas), a perda
+//                         pós-colheita e o prazo de prateleira. Dado que chega
+//                         pelo AgricultureService; o ESTADO da safra vai no
+//                         save v24 (bloco `agriculture`).
 //   * age_structure_2026.json -> set_age_structure   (faixas etárias, fração
 //                         18-49, TFR e taxas brutas por nação — definição
 //                         estática do B1; o save de estado ainda não a lê).

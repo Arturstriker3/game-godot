@@ -270,6 +270,69 @@ public:
 		double value);
 
 	/**
+	 * G (D-096) — declara o PLANO DE SAFRA de (cidade, produto): área colhida
+	 * (ha), rendimento (t/ha) e 1..4 janelas em DIA DO ANO (1..365/366, dia 0
+	 * = 2027-01-01) com a fração do orçamento anual de cada safra.
+	 *
+	 * `seasons` é um Array de Dictionary `{plant_start, plant_end,
+	 * harvest_start, harvest_end, share}`. Sem janela de colheita válida o
+	 * plano é recusado (a produção diária da fazenda continua) — nada de safra
+	 * vazia. Sobrescrever o plano preserva o ESTADO da safra já registrado (o
+	 * service redeclara o plano no load do jogo).
+	 * @param city_id Identificador da cidade.
+	 * @param product id de goods.json (os 5 primários de comida).
+	 * @param area_ha Área colhida (dado FAOSTAT, rateada entre as cidades).
+	 * @param yield_t_ha Rendimento do dado (FAOSTAT).
+	 * @param seasons Janelas de plantio/colheita + share.
+	 */
+	void set_crop_plan(const String& city_id, const String& product,
+		double area_ha, double yield_t_ha, const Array& seasons);
+
+	/**
+	 * G — estoque inicial (t) de (cidade, produto) no dia 1: ASSIGNA (não
+	 * soma), para a chamada ser idempotente. Vem do `ending_stocks_t`
+	 * observado (USDA PSD) ou da regra de 60 dias de consumo do próprio dado.
+	 */
+	void set_crop_initial_stock(const String& city_id, const String& product,
+		double tons);
+
+	/**
+	 * G — perda pós-colheita do produto (% do que entra) e a fatia de
+	 * armazenagem declarada (% do total; < 0 = sem dado, o núcleo usa a fração
+	 * declarada da perda total).
+	 */
+	void set_crop_loss(const String& product, double loss_pct,
+		double storage_share_pct);
+
+	/**
+	 * G — prazo de prateleira (dias) do bem: o estoque parado perde metade em
+	 * `days` dias (regra declarada no núcleo). `days <= 0` = sem dado (não
+	 * decai), mas o bem entra na lista da cadeia.
+	 */
+	void set_shelf_life(const String& product, int days);
+
+	/**
+	 * G — fertilizante nitrogenado (kg N/ha) da cultura na cidade. Só tem
+	 * efeito depois do `set_crop_plan` daquele (cidade, produto).
+	 */
+	void set_fertilizer_n(const String& city_id, const String& product,
+		double n_kg_ha);
+
+	/**
+	 * G — qualidade do armazém 0..1 (hook de infraestrutura; a Parte B5/E pode
+	 * declarar). Sem chamada, a qualidade é DERIVADA da infra do estado
+	 * (estrada/energia/água).
+	 */
+	void set_storage_quality(const String& city_id, double quality);
+
+	/**
+	 * G — ficha da agricultura sazonal, montada SOB DEMANDA (testes e UI):
+	 * por nação, o estoque por cultura, os dias de consumo, a próxima colheita,
+	 * a produção do ano e a perda do mês. `{}` quando não há plano declarado.
+	 */
+	Dictionary get_agriculture_status() const;
+
+	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
 	 * (D-086: referência de profundidade, não um limite físico — o recurso nunca
 	 * acaba). As minas da cidade debitam `remaining_kt` como contabilidade, mas
@@ -511,6 +574,14 @@ public:
 
 	/** F8: falências de negócios de serviço acumuladas. */
 	int get_service_bankruptcies() const;
+
+	/**
+	 * D-099: composição das falências de CONSTRUÇÃO acumuladas (contadores de
+	 * runtime, zerados no load): `by_product` (por índice de bem, na ordem do
+	 * catálogo), `planned_primary` (primárias com plano de safra) e `total`.
+	 * Diagnóstico do aceite de 365 d; não entra em `get_status()`.
+	 */
+	Dictionary get_bankruptcy_diag() const;
 
 	/**
 	 * Investe capital da empresa na expansão de uma construção existente.

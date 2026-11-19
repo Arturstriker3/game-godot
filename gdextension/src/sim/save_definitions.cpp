@@ -13,7 +13,11 @@
 //     "balance":    { <parâmetros do set_balance> },
 //     "land_capacity": [ { "city", "product", "value" } ],
 //     "age_structure": [ { "nation", "bands", "frac_18_49",
-//                          "births_per_1000", "deaths_per_1000", "tfr" } ]
+//                          "births_per_1000", "deaths_per_1000", "tfr" } ],
+//     "crop_plans": [ { "city", "product", "area_ha", "yield_t_ha",
+//                       "n_kg_ha", "seasons" } ],
+//     "crop_losses": [ { "product", "loss_pct", "storage_share_pct" } ],
+//     "shelf_life":  [ { "product", "days" } ]
 //   }
 //
 // Regra de leitura: nenhuma chave é obrigatória. Chave ausente (ou de tipo
@@ -736,6 +740,167 @@ void land_capacity_from(WorldState& ws, const Value& array) {
 }
 
 // ---------------------------------------------------------------------------
+// 7b. Agricultura sazonal (G, D-096)
+//
+// DEFINIÇÃO (dado): planos de safra por (cidade, produto), perda pós-colheita
+// e prateleira por produto. NÃO é estado do jogo — quem declara é o
+// `AgricultureService` no jogo (e o bloco é reaplicado no load). O ESTADO da
+// safra (ano/entregue/fertilizante) mora no save v24, bloco `agriculture`.
+//
+// Formato:
+//   "crop_plans":  [ { "city", "product", "area_ha", "yield_t_ha",
+//                      "n_kg_ha", "seasons": [ { "plant_start", "plant_end",
+//                      "harvest_start", "harvest_end", "share" } ] } ]
+//   "crop_losses": [ { "product", "loss_pct", "storage_share_pct" } ]
+//   "shelf_life":  [ { "product", "days" } ]
+// ---------------------------------------------------------------------------
+
+Value crop_plans_to(const WorldState& ws) {
+	Value out = empty_array();
+	for (const CropPlan& plan : ws.crop_plans) {
+		Value entry;
+		entry["city"] = Value(plan.city);
+		entry["product"] = Value(ws.product_names[
+			static_cast<std::size_t>(plan.product)]);
+		entry["area_ha"] = Value(plan.area_ha);
+		entry["yield_t_ha"] = Value(plan.yield_t_ha);
+		entry["n_kg_ha"] = Value(plan.n_kg_ha);
+		Value seasons = empty_array();
+		for (int index = 0; index < plan.season_count; ++index) {
+			const CropSeasonPlan& season = plan.seasons[index];
+			Value item;
+			item["plant_start"] = Value(season.plant_start_doy);
+			item["plant_end"] = Value(season.plant_end_doy);
+			item["harvest_start"] = Value(season.harvest_start_doy);
+			item["harvest_end"] = Value(season.harvest_end_doy);
+			item["share"] = Value(season.share);
+			seasons.append(item);
+		}
+		entry["seasons"] = seasons;
+		out.append(entry);
+	}
+	return out;
+}
+
+void crop_plans_from(WorldState& ws, const Value& array) {
+	SimCore core(ws);
+	for (int index = 0; index < array.size(); ++index) {
+		const Value& entry = array[index];
+		if (entry.get_type() != Value::DICTIONARY) {
+			continue;
+		}
+		const std::string city = read_string(entry, "city");
+		const std::string product = read_string(entry, "product");
+		if (city.empty() || product.empty()) {
+			continue;
+		}
+		const auto found = ws.product_lookup.find(product);
+		if (found == ws.product_lookup.end()) {
+			continue;
+		}
+		const Value* seasons = read_array(entry, "seasons");
+		if (seasons == nullptr) {
+			continue;
+		}
+		std::vector<CropSeasonPlan> parsed;
+		for (int slot = 0; slot < seasons->size(); ++slot) {
+			const Value& item = (*seasons)[slot];
+			if (item.get_type() != Value::DICTIONARY) {
+				continue;
+			}
+			CropSeasonPlan season;
+			season.plant_start_doy = std::clamp(
+				read_int(item, "plant_start", 0), 0, 366);
+			season.plant_end_doy = std::clamp(
+				read_int(item, "plant_end", 0), 0, 366);
+			season.harvest_start_doy = std::clamp(
+				read_int(item, "harvest_start", 0), 0, 366);
+			season.harvest_end_doy = std::clamp(
+				read_int(item, "harvest_end", 0), 0, 366);
+			season.share = std::clamp(
+				read_double(item, "share", 0.0), 0.0, 1.0);
+			parsed.push_back(season);
+		}
+		core.set_crop_plan(city, found->second,
+			read_double(entry, "area_ha", 0.0),
+			read_double(entry, "yield_t_ha", 0.0), parsed);
+		core.set_fertilizer_n(city, found->second,
+			read_double(entry, "n_kg_ha", 0.0));
+	}
+}
+
+Value crop_losses_to(const WorldState& ws) {
+	Value out = empty_array();
+	const int count = std::min(ws.products,
+		static_cast<int>(ws.crop_loss_pct.size()));
+	for (int product = 0; product < count; ++product) {
+		const double loss = ws.crop_loss_pct[static_cast<std::size_t>(product)];
+		if (loss <= 0.0) {
+			continue;
+		}
+		Value entry;
+		entry["product"] = Value(ws.product_names[
+			static_cast<std::size_t>(product)]);
+		entry["loss_pct"] = Value(loss);
+		const double storage = ws.crop_storage_share_pct[
+			static_cast<std::size_t>(product)];
+		if (storage >= 0.0) {
+			entry["storage_share_pct"] = Value(storage);
+		}
+		out.append(entry);
+	}
+	return out;
+}
+
+void crop_losses_from(WorldState& ws, const Value& array) {
+	SimCore core(ws);
+	for (int index = 0; index < array.size(); ++index) {
+		const Value& entry = array[index];
+		if (entry.get_type() != Value::DICTIONARY) {
+			continue;
+		}
+		const std::string product = read_string(entry, "product");
+		const auto found = ws.product_lookup.find(product);
+		if (found == ws.product_lookup.end()) {
+			continue;
+		}
+		core.set_crop_loss(found->second, read_double(entry, "loss_pct", 0.0),
+			read_double(entry, "storage_share_pct", -1.0));
+	}
+}
+
+Value shelf_life_to(const WorldState& ws) {
+	Value out = empty_array();
+	const int count = std::min(ws.products,
+		static_cast<int>(ws.crop_shelf_days.size()));
+	for (int product = 0; product < count; ++product) {
+		const int days = ws.crop_shelf_days[static_cast<std::size_t>(product)];
+		Value entry;
+		entry["product"] = Value(ws.product_names[
+			static_cast<std::size_t>(product)]);
+		entry["days"] = Value(days);
+		out.append(entry);
+	}
+	return out;
+}
+
+void shelf_life_from(WorldState& ws, const Value& array) {
+	SimCore core(ws);
+	for (int index = 0; index < array.size(); ++index) {
+		const Value& entry = array[index];
+		if (entry.get_type() != Value::DICTIONARY) {
+			continue;
+		}
+		const std::string product = read_string(entry, "product");
+		const auto found = ws.product_lookup.find(product);
+		if (found == ws.product_lookup.end()) {
+			continue;
+		}
+		core.set_shelf_life(found->second, read_int(entry, "days", 0));
+	}
+}
+
+// ---------------------------------------------------------------------------
 // 8. Estrutura etária por nação (age_structure_2026.json -> set_age_structure)
 //
 // DEFINIÇÃO estática (B1): o mapa é ordenado pela tag (`std::map`), então o
@@ -819,6 +984,10 @@ Value definitions_to(const WorldState& ws) {
 	out["balance"] = balance_to(ws);
 	out["land_capacity"] = land_capacity_to(ws);
 	out["age_structure"] = age_structure_to(ws);
+	// G — agricultura sazonal (dado; o estado vai no save v24).
+	out["crop_plans"] = crop_plans_to(ws);
+	out["crop_losses"] = crop_losses_to(ws);
+	out["shelf_life"] = shelf_life_to(ws);
 	return out;
 }
 
@@ -850,6 +1019,15 @@ void definitions_from(WorldState& ws, const Value& data) {
 	}
 	if (const Value* array = read_array(data, "age_structure")) {
 		age_structure_from(ws, *array);
+	}
+	if (const Value* array = read_array(data, "crop_plans")) {
+		crop_plans_from(ws, *array);
+	}
+	if (const Value* array = read_array(data, "crop_losses")) {
+		crop_losses_from(ws, *array);
+	}
+	if (const Value* array = read_array(data, "shelf_life")) {
+		shelf_life_from(ws, *array);
 	}
 }
 

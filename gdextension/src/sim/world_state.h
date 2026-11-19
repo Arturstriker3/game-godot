@@ -140,6 +140,61 @@ struct WorldState {
 	// referência de saúde só é lida na semeadura/formalização.
 	std::map<std::string, double> informal_rates;
 	std::map<std::string, double> health_access;
+	// ------------------------------------------------------------------
+	// G — AGRICULTURA SAZONAL (save v24). Ver gdextension/src/sim/agriculture.h
+	// e docs/economy/agriculture_seasonal.md.
+	//
+	// DEFINIÇÃO (dado): `crop_plans` (área × rendimento e janelas por cidade/
+	// produto), `crop_loss_pct`/`crop_storage_share_pct` (perda pós-colheita e
+	// a fatia de armazenagem), `crop_shelf_days` (prateleira) e `agri_chain`
+	// (os 12 bens da cadeia, cujo produto é resolvido no catálogo). Tudo chega
+	// pelo AgricultureService e viaja no bloco `definitions` do snapshot.
+	//
+	// ESTADO (save): dentro de `CropPlan::state` (ano/entregue/fertilizante).
+	// ------------------------------------------------------------------
+	std::vector<CropPlan> crop_plans;
+	// Índice derivado por chave `cidade|produto` -> posição em `crop_plans`
+	// (só leitura depois da carga; não serializado).
+	std::map<std::string, int> crop_plan_lookup;
+	// Índice derivado: `crop_planned[cidade × products + produto] != 0` quando
+	// existe plano sazonal ativo — a produção diária da fazenda é SUPRIMIDA
+	// nesse caso (não contar a mesma tonelada duas vezes).
+	std::vector<char> crop_planned;
+	// Índice derivado do DIA (não serializado): `crop_working[cidade × products
+	// + produto] != 0` quando o par COM plano está dentro de uma janela de
+	// plantio ou de colheita. Fora delas a fazenda sazonal fica parada — sem
+	// equipe, folha ou opex — e não acumula dia de prejuízo na entressafra
+	// (D-096: a folha cheia sem safra falia 324 fazendas em 365 d, 85/85
+	// primárias no dia 75). Recalculado por `phase_agriculture` a partir do
+	// calendário e de `day`; nunca entra no save.
+	std::vector<char> crop_working;
+	bool crop_index_ready = false;
+	// Perda pós-colheita por produto (% do que entra) e a fatia de armazenagem
+	// declarada (-1 = sem dado). Indexados pelo produto (-1 se fora).
+	std::vector<double> crop_loss_pct;          // % (0..100)
+	std::vector<double> crop_storage_share_pct; // % (0..100) ou -1
+	// Dias de prateleira por produto (0 = sem dado: NÃO decai).
+	std::vector<int> crop_shelf_days;
+	// Fração diária de perda por perecibilidade (derivada da meia-vida, para o
+	// tick não pagar `pow`).
+	std::vector<double> crop_shelf_daily;
+	// Bens da cadeia com prateleira publicada, na ordem do arquivo
+	// (product_shelf_life.json). Vazio = pereccibilidade desligada.
+	std::vector<int> agri_chain;
+	// Índice do bem `fertilizer` no catálogo (-1 = não existe).
+	int fertilizer_product = -1;
+	// Chave de mês do livro de perdas (derivada; 0 = nunca aplicado).
+	int agri_month_key = 0;
+	// Acumulados desde o dia 0 (derivados, não serializados) — diagnósticos do
+	// status/teste: perecibilidade, perda de armazenagem e perda de entrada.
+	double agri_perishable_total[kMaxProducts] = {};
+	double agri_storage_total[kMaxProducts] = {};
+	double agri_entry_total[kMaxProducts] = {};
+	// Memória de cálculo do dia (derivada, não serializada): quantas safras
+	// entregaram hoje e quantas toneladas brutas entraram. Serve ao status e ao
+	// teste de sazonalidade.
+	double agri_delivered_today = 0.0;
+	int agri_harvests_today = 0;
 	// B5 (D-089) - gancho de LABORATÓRIO (set_balance): penalidade MÁXIMA de
 	// acesso (estrada 0) usada por `SimCore::infra_access_multiplier`. Padrão =
 	// kInfraAccessPenaltyMax; só o A/B da infra a zera para isolar o frete.
@@ -209,6 +264,11 @@ struct WorldState {
 	std::vector<Port> ports;
 	std::vector<TradeOrder> last_orders;
 	int bankruptcies = 0;
+	// D-099: composição das falências do mundo para o diagnóstico do 365 d
+	// (contadores de RUNTIME, não serializados; zeram no load). Por produto
+	// (`output_product`) e quantas eram primárias COM plano de safra.
+	int bankrupt_by_output[kMaxProducts] = {};
+	int bankrupt_planned_primary = 0;
 	int depleted_mines = 0;
 	double transport_cash = 0.0;
 	double foreign_cash = 0.0;
