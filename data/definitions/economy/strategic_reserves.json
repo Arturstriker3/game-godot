@@ -1,0 +1,5609 @@
+{
+  "_meta": {
+    "conversions": {
+      "gas_bcm_to_twh": "1 bcm = 11.0 TWh (PCI 38,6 MJ/m3), convencao declarada",
+      "gold": "1 onca troy fina = 31,1034768 g; IMF IFS publica milhoes de oncas troy finas",
+      "oil_bbl_to_t": "1 barril de cru = 0.1364 t (7,33 bbl/t), aplicado so onde a fonte publica em barris"
+    },
+    "data_snapshot": {
+      "cold_k": 0.1698,
+      "cold_sample": 17,
+      "grain_k": 1.1007,
+      "grain_sample": 7,
+      "spr": {
+        "date": "11/13",
+        "kt": 37695.6,
+        "release_date": "11/18/2026",
+        "thousand_barrels": 276361
+      },
+      "us_gas": {
+        "design_mmcf": 9319291,
+        "design_twh": 2902.8,
+        "release_date": "10/30/2026",
+        "working_mmcf": 4793009,
+        "working_twh": 1493.0
+      }
+    },
+    "dataset": "strategic_reserves",
+    "generated_by": "tools/build_storage_g2.py",
+    "nations": 179,
+    "no_data_rule": "sem valor publicado -> null com basis='none' e motivo; reserva publica ausente vale 0 no jogo (regra declarada), nao no dado",
+    "retrieved": "2026-11-19",
+    "units": {
+      "gold_tonnes": "toneladas de ouro fino",
+      "grain_public_stocks_t": "toneladas",
+      "oil_public_days_net_imports": "dias de importacao liquida cobertos",
+      "oil_public_stocks_kt": "mil toneladas metricas de petroleo cru"
+    },
+    "version": "g2"
+  },
+  "coverage": {
+    "gold_none": 18,
+    "gold_none_ids": [
+      "AGO",
+      "ATG",
+      "BWA",
+      "DJI",
+      "DMA",
+      "GMB",
+      "GRD",
+      "GUY",
+      "KNA",
+      "LBR",
+      "LCA",
+      "MDG",
+      "PAN",
+      "PRK",
+      "SAH",
+      "SDN",
+      "SWZ",
+      "VCT"
+    ],
+    "gold_observed": 161,
+    "grain_public_observed": 3,
+    "nations_total": 179,
+    "oil_none": 140,
+    "oil_none_ids": [
+      "AFG",
+      "AGO",
+      "ARE",
+      "ARG",
+      "ARM",
+      "ATG",
+      "AUS",
+      "AZE",
+      "BDI",
+      "BEN",
+      "BFA",
+      "BGD",
+      "BHR",
+      "BHS",
+      "BIH",
+      "BLR",
+      "BLZ",
+      "BOL",
+      "BRA",
+      "BRB",
+      "BRN",
+      "BTN",
+      "BWA",
+      "CAF",
+      "CAN",
+      "CHE",
+      "CHL",
+      "CIV",
+      "CMR",
+      "COD",
+      "COG",
+      "COL",
+      "CRI",
+      "CUB",
+      "DJI",
+      "DMA",
+      "DOM",
+      "DZA",
+      "ECU",
+      "EGY",
+      "ERI",
+      "ETH",
+      "FJI",
+      "GAB",
+      "GBR",
+      "GHA",
+      "GIN",
+      "GMB",
+      "GNB",
+      "GNQ",
+      "GRC",
+      "GRD",
+      "GTM",
+      "GUY",
+      "HND",
+      "HTI",
+      "IDN",
+      "IRN",
+      "IRQ",
+      "ISL",
+      "ISR",
+      "JAM",
+      "JOR",
+      "KAZ",
+      "KEN",
+      "KGZ",
+      "KHM",
+      "KNA",
+      "KWT",
+      "LAO",
+      "LBN",
+      "LBR",
+      "LBY",
+      "LCA",
+      "LKA",
+      "LSO",
+      "MAR",
+      "MDG",
+      "MEX",
+      "MLI",
+      "MMR",
+      "MNG",
+      "MOZ",
+      "MRT",
+      "MWI",
+      "MYS",
+      "NAM",
+      "NER",
+      "NGA",
+      "NIC",
+      "NPL",
+      "NZL",
+      "OMN",
+      "PAK",
+      "PAN",
+      "PER",
+      "PHL",
+      "PNG",
+      "PRK",
+      "PRY",
+      "PSX",
+      "QAT",
+      "RUS",
+      "RWA",
+      "SAH",
+      "SAU",
+      "SDN",
+      "SEN",
+      "SGP",
+      "SLB",
+      "SLE",
+      "SLV",
+      "SOL",
+      "SOM",
+      "SSD",
+      "SUR",
+      "SWZ",
+      "SYR",
+      "TCD",
+      "TGO",
+      "THA",
+      "TJK",
+      "TKM",
+      "TLS",
+      "TTO",
+      "TUN",
+      "TWN",
+      "TZA",
+      "UGA",
+      "UKR",
+      "URY",
+      "UZB",
+      "VCT",
+      "VEN",
+      "VNM",
+      "XKX",
+      "YEM",
+      "ZAF",
+      "ZMB",
+      "ZWE"
+    ],
+    "oil_observed": 39,
+    "totals": {
+      "gold_tonnes": 32839.707,
+      "oil_public_stocks_kt": 237471.404
+    }
+  },
+  "nations": {
+    "AFG": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.703009,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2021-05",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 21.866
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Afghanistan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "AGO": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Angola",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ALB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.11,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-05",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 3.4214
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Albania",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 0.0,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC)); sem denominador (importacao/consumo) publicado no mesmo mes",
+        "public_stocks_kt": null,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "ARE": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 2.374134,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-04",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 73.8438
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "United Arab Emirates",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ARG": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.984962,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 61.7392
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Argentina",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ARM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Armenia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ATG": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Antigua and Barbuda",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "AUS": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 2.568,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 79.8737
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Australia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "AUT": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 9.002,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 279.9935
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Austria",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 91.236,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 2414.013,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "AZE": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Azerbaijan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BDI": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.000966,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-06",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0301
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Burundi",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BEL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 7.311,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 227.3975
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Belgium",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 105.889,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 4043.477,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "BEN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Benin",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BFA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Burkina Faso",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BGD": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.459164,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 14.2816
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Bangladesh",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BGR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.3141,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 40.8731
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Bulgaria",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 82.941,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 1109.916,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "BHR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.15,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-02",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 4.6655
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Bahrain",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BHS": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-11",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "The Bahamas",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BIH": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.112,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 3.4836
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Bosnia and Herzegovina",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BLR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.7315,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 53.8557
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Belarus",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BLZ": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Belize",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BOL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.723391,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-04",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 22.5
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Bolivia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BRA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 4.168462,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 129.6537
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Brazil",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BRB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-09",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Barbados",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BRN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.146433,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 4.5546
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Brunei",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BTN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.003215,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-05",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.1
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Bhutan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "BWA": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Botswana",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CAF": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2023-10",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Central African Republic",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CAN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Canada",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CHE": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 33.435,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 1039.9447
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Switzerland",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CHL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0079,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.2457
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Chile",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CHN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 73.9,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 2298.5469
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "People's Republic of China",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "estimate": true,
+        "note": "ESTIMATIVA da EIA: a China não publica estoques. 360 Mbbl é a parcela do governo; a EIA estima ~1,4 bilhão de barris somando estoques comerciais (usados como estratégicos desde 2024). 360 Mbbl ≈ 49.104 kt (1 bbl = 0,1364 t). | convertido de 360.0000 Mbbl a 0,1364 t/bbl",
+        "public_stocks_kt": 49104.0,
+        "source": "eia_tie_67504",
+        "year": 2025
+      }
+    },
+    "CIV": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Ivory Coast",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CMR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2023-09",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Cameroon",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "COD": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-08",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Democratic Republic of the Congo",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "COG": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2019-03",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Republic of the Congo",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "COL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.150307,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 4.6751
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Colombia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CRI": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Costa Rica",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CUB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "1978-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Cuba",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "CYP": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.446,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 13.8722
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Cyprus",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 90.314,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 581.622,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "CZE": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 2.044159,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 63.5805
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Czech Republic",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 78.963,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 1880.741,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "DEU": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 107.714,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 3350.2799
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Germany",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 95.58,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 19783.817,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "DJI": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Djibouti",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "DMA": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Dominica",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "DNK": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 2.1396,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 66.549
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Denmark",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 72.96,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 1306.568,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "DOM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.018296,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.5691
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Dominican Republic",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "DZA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 5.58,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 173.5574
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Algeria",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ECU": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.844963,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 26.2813
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Ecuador",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "EGY": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 4.12976,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-05",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 128.4499
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Egypt",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ERI": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2019-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Eritrea",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ESP": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 9.053,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 281.5798
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Spain",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 92.202,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 12882.556,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "EST": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.008,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.2488
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Estonia",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 82.582,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 288.376,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "ETH": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Ethiopia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "FIN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.407,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 43.7626
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Finland",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 183.965,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 3319.28,
+        "source": "eurostat_stk_oem",
+        "year": "2025-09"
+      }
+    },
+    "FJI": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.001,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0311
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Fiji",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "FRA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 78.352,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 2437.0196
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "France",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 93.841,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 16599.534,
+        "source": "eurostat_stk_oem",
+        "year": "2025-09"
+      }
+    },
+    "GAB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2019-01",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Gabon",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GBR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 9.976041,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 310.2896
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "United Kingdom",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GEO": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.229478,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 7.1376
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Georgia",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 0.0,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC)); sem denominador (importacao/consumo) publicado no mesmo mes",
+        "public_stocks_kt": null,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "GHA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.281,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-01",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 8.7401
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Ghana",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GIN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.202337,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-11",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 6.2934
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Guinea",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GMB": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "The Gambia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GNB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Guinea Bissau",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GNQ": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-10",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Equatorial Guinea",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GRC": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 3.686,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-05",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 114.6474
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Greece",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GRD": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Grenada",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GTM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.2216,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 6.8925
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Guatemala",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "GUY": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Guyana",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "HND": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.022386,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.6963
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Honduras",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "HRV": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Croatia",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 91.176,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 774.358,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "HTI": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.058213,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-04",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 1.8106
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Haiti",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "HUN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 3.537,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 110.013
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Hungary",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 97.465,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 1424.646,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "IDN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 2.526003,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 78.5675
+      },
+      "grain_public": {
+        "basis": "observed",
+        "capacity_t": 6210000.0,
+        "note": "Unidade original: milhoes de toneladas de arroz. Capacidade nacional de armazens do Bulog (rede publica de estoque de arroz/CBP): 6,21 Mt; 86% ocupada em 18/05/2026, restando ~839 mil t. Dado apresentado em audiencia na Comissao IV (19/05/2026).",
+        "source": "bulog_warehouse_capacity_2026",
+        "stocks_t": null,
+        "year": 2026
+      },
+      "name": "Indonesia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "IND": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 28.292089,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 879.9823
+      },
+      "grain_public": {
+        "basis": "observed",
+        "capacity_t": 91783000.0,
+        "note": "Unidade original: lakh tonnes; 736.61 lakh t = 73,661,000 t. Estoque do central pool em 01/07/2025: 37,783,000 t de arroz + 35,878,000 t de trigo (mais paddy e coarse grains). Mesmo dia do ano anterior: 608.75 lakh t.",
+        "source": "fci_central_pool_stock_jul2025",
+        "stocks_t": 73661000.0,
+        "year": 2025
+      },
+      "name": "India",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": 5330.0,
+        "days_net_imports": null,
+        "estimate": false,
+        "note": "Estoque em março de 2025, citado pela EIA a partir da ISPRL; não inclui 3 Mbbl da ADNOC em Mangalore. 21,4 Mbbl ≈ 2.919 kt (1 bbl = 0,1364 t). | convertido de 21.4000 Mbbl a 0,1364 t/bbl",
+        "public_stocks_kt": 2918.96,
+        "source": "eia_tie_67504",
+        "year": 2025
+      }
+    },
+    "IRL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.387,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 12.037
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Ireland",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 86.394,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 1769.695,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "IRN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 5.42058,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "1996-03",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 168.5989
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Iran",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "IRQ": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 5.23,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-01",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 162.6712
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Iraq",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ISL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0638,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 1.9844
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Iceland",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ISR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2019-02",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Israel",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ITA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 78.83,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 2451.8871
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Italy",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 90.292,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 10397.485,
+        "source": "eurostat_stk_oem",
+        "year": "2025-09"
+      }
+    },
+    "JAM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2021-07",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Jamaica",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "JOR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 2.345517,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-05",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 72.9537
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Jordan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "JPN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 27.198881,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 845.9798
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Japan",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "estimate": false,
+        "note": "Somente estoque do governo (exclui estoque privado obrigatório e joint stockpiling). 263 Mbbl ≈ 35.873 kt (1 bbl = 0,1364 t). A lei japonesa exige 70 dias de demanda em estoque privado além da reserva governamental de 90 dias. | convertido de 263.0000 Mbbl a 0,1364 t/bbl",
+        "public_stocks_kt": 35873.2,
+        "source": "eia_tie_67504",
+        "year": 2025
+      }
+    },
+    "KAZ": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 9.925827,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 308.7277
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Kazakhstan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "KEN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.000561,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0174
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Kenya",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "KGZ": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.164065,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-02",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 36.2065
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Kyrgyzstan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "KHM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.749953,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 54.4296
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Cambodia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "KNA": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Saint Kitts and Nevis",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "KOR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 3.358068,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 104.4476
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "South Korea",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": 19914.0,
+        "days_net_imports": null,
+        "estimate": false,
+        "note": "Média de 2025, estoque governamental. 79 Mbbl ≈ 10.776 kt (1 bbl = 0,1364 t). | convertido de 79.0000 Mbbl a 0,1364 t/bbl",
+        "public_stocks_kt": 10775.6,
+        "source": "eia_tie_67504",
+        "year": 2025
+      }
+    },
+    "KWT": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 2.538972,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 78.9709
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Kuwait",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "LAO": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.028323,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2020-02",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.8809
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Laos",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "LBN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 9.222,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 286.8363
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Lebanon",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "LBR": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Liberia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "LBY": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 4.715,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 146.6529
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Libya",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "LCA": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Saint Lucia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "LKA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0151,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.4697
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Sri Lanka",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "LSO": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-09",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Lesotho",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "LTU": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.187,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 5.8164
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Lithuania",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 93.516,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 600.186,
+        "source": "eurostat_stk_oem",
+        "year": "2025-08"
+      }
+    },
+    "LUX": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.072,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 2.2395
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Luxembourg",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 93.509,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 630.438,
+        "source": "eurostat_stk_oem",
+        "year": "2025-11"
+      }
+    },
+    "LVA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.214,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 6.6561
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Latvia",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 94.589,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 419.313,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "MAR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.711032,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 22.1156
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Morocco",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MDA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.002383,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0741
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Moldova",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 0.0,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC)); sem denominador (importacao/consumo) publicado no mesmo mes",
+        "public_stocks_kt": null,
+        "source": "eurostat_stk_oem",
+        "year": "2025-08"
+      }
+    },
+    "MDG": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Madagascar",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MEX": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 3.863392,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 120.1649
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Mexico",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MKD": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.221617,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 6.8931
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "North Macedonia",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 0.0,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC)); sem denominador (importacao/consumo) publicado no mesmo mes",
+        "public_stocks_kt": null,
+        "source": "eurostat_stk_oem",
+        "year": "2025-09"
+      }
+    },
+    "MLI": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Mali",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MLT": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.01,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.311
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Malta",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 102.937,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 129.906,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "MMR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.2337,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-03",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 7.2689
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Myanmar",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MNE": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Montenegro",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 0.0,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC)); sem denominador (importacao/consumo) publicado no mesmo mes",
+        "public_stocks_kt": null,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "MNG": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.234755,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 7.3017
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Mongolia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MOZ": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.126575,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-04",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 3.9369
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Mozambique",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MRT": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.032915,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2019-08",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 1.0238
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Mauritania",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MWI": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.012837,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2015-11",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.3993
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Malawi",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "MYS": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.25,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 38.8793
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Malaysia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "NAM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2019-03",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Namibia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "NED": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 19.691,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 612.4586
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Netherlands",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 94.377,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 4037.259,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "NER": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Niger",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "NGA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.687,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2018-01",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 21.3681
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Nigeria",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "NIC": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Nicaragua",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "NOR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Norway",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 0.0,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC)); sem denominador (importacao/consumo) publicado no mesmo mes",
+        "public_stocks_kt": null,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "NPL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.256813,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-07",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 7.9878
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Nepal",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "NZL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "New Zealand",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "OMN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.216299,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 6.7277
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Oman",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "PAK": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 2.081886,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 64.7539
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Pakistan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "PAN": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Panama",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "PER": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.11468,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-01",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 34.6704
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Peru",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "PHL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 4.144288,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-05",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 128.9018
+      },
+      "grain_public": {
+        "basis": "observed",
+        "capacity_t": 1200000.0,
+        "note": "Unidade original: toneladas (em palay ou arroz). Capacidade total da rede de armazens da National Food Authority (publica). Valor citado em 20/01/2025; reportagens de marco/2025 falam em ~1 milhao de t e plano de +800 mil t, indicando numero na faixa de 1,0-1,2 Mt.",
+        "source": "nfa_warehouse_capacity_2025",
+        "stocks_t": null,
+        "year": 2025
+      },
+      "name": "Philippines",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "PNG": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.063,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-06",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 1.9595
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Papua New Guinea",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "POL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 16.572977,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 515.4772
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Poland",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 92.522,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 7839.852,
+        "source": "eurostat_stk_oem",
+        "year": "2025-09"
+      }
+    },
+    "PRK": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "North Korea",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "PRT": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 12.303,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 382.6661
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Portugal",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 93.95,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 2456.793,
+        "source": "eurostat_stk_oem",
+        "year": "2025-11"
+      }
+    },
+    "PRY": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.263425,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-08",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 8.1934
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Paraguay",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "PSX": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2018-06",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Palestine",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "QAT": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 3.703674,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 115.1971
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Qatar",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ROU": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 3.3317,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 103.6275
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Romania",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 98.408,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 2224.808,
+        "source": "eurostat_stk_oem",
+        "year": "2025-09"
+      }
+    },
+    "RUS": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 75.1,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-06",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 2335.8711
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Russia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "RWA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2004-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Rwanda",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SAH": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Western Sahara",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SAU": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 10.386941,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-05",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 323.07
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Saudi Arabia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SDN": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Sudan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SEN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Senegal",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SGP": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 6.563,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 204.1321
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Singapore",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SLB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.001,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-03",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0311
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Solomon Islands",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SLE": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Sierra Leone",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SLV": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.04411,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 1.372
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "El Salvador",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SOL": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.001,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-03",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0311
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Somaliland",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SOM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.019226,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "1990-03",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.598
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Somalia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SRB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.617569,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 50.312
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Serbia",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 44.167,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 338.452,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "SSD": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2023-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "South Sudan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SUR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.039026,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 1.2139
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Suriname",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SVK": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 1.019,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 31.6944
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Slovakia",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 90.214,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 784.952,
+        "source": "eurostat_stk_oem",
+        "year": "2025-11"
+      }
+    },
+    "SVN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.12,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 3.7324
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Slovenia",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 103.446,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 608.056,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "SWE": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 4.042,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 125.7203
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Sweden",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 114.659,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC))",
+        "public_stocks_kt": 2457.945,
+        "source": "eurostat_stk_oem",
+        "year": "2025-10"
+      }
+    },
+    "SWZ": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Eswatini",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "SYR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.83,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2011-06",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 25.8159
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Syria",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TCD": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2022-09",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Chad",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TGO": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-03",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Togo",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "THA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 7.54,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 234.5202
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Thailand",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TJK": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.238408,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2023-02",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 7.4153
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Tajikistan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TKM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2000-04",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Turkmenistan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TLS": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "East Timor",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TTO": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.062934,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-04",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 1.9575
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Trinidad and Tobago",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TUN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.22,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 6.8428
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Tunisia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TUR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 25.354,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 788.5976
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Turkey",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": null,
+        "days_net_imports": 0.0,
+        "note": "relacao mensal da diretiva 2009/119/CE (STK_EUE_DIR x max(IMP_DNC, IC_DC)); sem denominador (importacao/consumo) publicado no mesmo mes",
+        "public_stocks_kt": null,
+        "source": "eurostat_stk_oem",
+        "year": "2025-09"
+      }
+    },
+    "TWN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 13.63,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-05",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 423.9404
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Taiwan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "TZA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2014-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Tanzania",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "UGA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2019-04",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Uganda",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "UKR": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.88,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-07",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 27.3711
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Ukraine",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "URY": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.003216,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 0.1
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Uruguay",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "USA": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 261.498926,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 8133.5258
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "United States of America",
+      "oil": {
+        "basis": "observed",
+        "capacity_kt": 97390.0,
+        "days_net_imports": 125.0,
+        "note": "EIA weekly SPR 11/13: 276,361 mil barris x 0.1364 t/bbl",
+        "public_stocks_kt": 37695.6,
+        "source": "eia_spr",
+        "year": 2026
+      }
+    },
+    "UZB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 12.3,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2024-12",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 382.5728
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Uzbekistan",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "VCT": {
+      "gold": {
+        "basis": "none",
+        "millions_fine_oz": null,
+        "note": "area sem serie RAFAGOLDV_OZT no IFS",
+        "period": null,
+        "source": null,
+        "tonnes": null
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Saint Vincent and the Grenadines",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "VEN": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 5.1834,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2018-06",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 161.2218
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Venezuela",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "VNM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2020-05",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Vietnam",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "XKX": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2019-03",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.0
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Kosovo",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "YEM": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.05,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2014-07",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 1.5552
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Yemen",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ZAF": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 4.034,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 125.4714
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "South Africa",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ZMB": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.0105,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2021-06",
+        "source": "imf_ifs_gold",
+        "stale": true,
+        "tonnes": 0.3266
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Zambia",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    },
+    "ZWE": {
+      "gold": {
+        "basis": "observed",
+        "millions_fine_oz": 0.111766,
+        "note": "IMF IFS RAFAGOLDV_OZT; inclui depositos de ouro e ouro emprestado",
+        "period": "2025-06",
+        "source": "imf_ifs_gold",
+        "stale": false,
+        "tonnes": 3.4763
+      },
+      "grain_public": {
+        "basis": "none",
+        "capacity_t": null,
+        "note": "sem estoque publico de graos publicado",
+        "source": null,
+        "stocks_t": null,
+        "year": null
+      },
+      "name": "Zimbabwe",
+      "oil": {
+        "basis": "none",
+        "capacity_kt": null,
+        "days_net_imports": null,
+        "note": "sem reserva publica documentada nas fontes consultadas; jogo comeca com 0",
+        "public_stocks_kt": null,
+        "source": null,
+        "year": null
+      }
+    }
+  },
+  "sources": {
+    "bulog_warehouse_capacity_2026": {
+      "license": "© DPR RI, uso com citação",
+      "page": "",
+      "publisher": "Dewan Perwakilan Rakyat Republik Indonesia (DPR RI), Comissao IV",
+      "quote": "Sementara itu, kapasitas gudang Bulog secara nasional disebut telah terisi hingga 86 persen dari total kapasitas nasional sebesar 6,21 juta ton beras.",
+      "title": "Gudang Bulog Hampir Penuh, Legislator Ingatkan Risiko Kerusakan Beras",
+      "url": "https://dpr.go.id/kegiatan-dpr/berita/Gudang-Bulog-Hampir-Penuh-Legislator-Ingatkan-Risiko-Kerusakan-Beras-65232",
+      "year": 2026
+    },
+    "cooperation_agricole_silos_2026": {
+      "license": "© Process Alimentaire, uso com citação",
+      "page": "",
+      "publisher": "Process Alimentaire (plano 'Infrastructures 2030' da section Metiers du Grain / La Cooperation Agricole)",
+      "quote": "La France compte 4568 silos pour une capacite totale de stockage de 44 millions de tonnes pour une production annuelle de 60 millions de tonnes. 40 % d'entre eux ont plus de 50 ans et seulement 15 % moins de 25 ans.",
+      "title": "4,3 milliards d'euros pour la resilience des silos francais",
+      "url": "https://www.processalimentaire.com/procedes/43-milliards-d-euros-pour-la-resilience-des-silos-francais",
+      "year": 2026
+    },
+    "doe_spr_quick_facts": {
+      "license": "uso com citação",
+      "page": "seção 'Current authorized storage capacity' (última atualização: 9 de novembro de 2026)",
+      "publisher": "U.S. Department of Energy, Office of Petroleum Reserves",
+      "quote": "At the end of CY 2025 (as of December 31, 2025), the SPR’s crude oil inventory was 411 MMbbl. This is equivalent to approximately 125 days (more than 4 months) of U.S. crude oil net imports.",
+      "title": "SPR Quick Facts",
+      "url": "https://www.energy.gov/hgeo/opr/spr-quick-facts",
+      "year": 2025
+    },
+    "eia_spr": {
+      "license": "domínio público (EIA)",
+      "publisher": "U.S. Energy Information Administration (EIA)",
+      "query": "ultima semana publicada",
+      "quote": "Weekly U.S. Ending Stocks of Crude Oil in SPR (Thousand Barrels) — 2026-Nov, semana 11/13: 276.361 (Release Date: 11/18/2026)",
+      "title": "Weekly U.S. Ending Stocks of Crude Oil in SPR (WCSSTUS1), thousand barrels",
+      "url": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCSSTUS1&f=W",
+      "year": 2026
+    },
+    "eia_tie_67504": {
+      "license": "uso com citação",
+      "page": "seção 'United States' (publicado em 20 de abril de 2026)",
+      "publisher": "U.S. Energy Information Administration (EIA), Today in Energy",
+      "quote": "In December 2025, the SPR held 413 million barrels.",
+      "title": "China, the United States, and Japan hold most strategic oil inventories in 2025",
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=67504",
+      "year": 2025
+    },
+    "eia_us_gas_capacity": {
+      "license": "domínio público (EIA)",
+      "publisher": "U.S. Energy Information Administration (EIA)",
+      "query": "Total Working Gas Capacity, coluna mais recente (MMcf -> TWh a 11,0 TWh/bcm)",
+      "quote": "Total Working Gas Capacity — 4.793.009 (milhoes de pes cubicos), coluna corrente; Total Storage Capacity 9.319.291 (Release Date: 10/30/2026)",
+      "title": "Underground Natural Gas Storage Capacity — U.S., annual (working gas capacity)",
+      "url": "https://www.eia.gov/dnav/ng/ng_stor_cap_dcu_nus_a.htm",
+      "year": 2026
+    },
+    "elevatorist_ukraine_elevators_2025": {
+      "license": "© USM Media / Elevatorist, uso com citação",
+      "page": "",
+      "publisher": "USM Media (Ukrainian Shipping Magazine), citando Elevatorist.com",
+      "quote": "As of the end of 2025, Ukraine's total elevator capacity increased to 52.67 million tons of simultaneous grain storage. [...] In October 2024, this figure was 52.1 million tons.",
+      "title": "Last year, Ukraine's grain elevator capacity increased to 52.67 million tons",
+      "url": "https://en.usm.media/last-year-ukraines-grain-elevator-capacity-increased-to-52-67-million-tons",
+      "year": 2025
+    },
+    "eurostat_stk_oem": {
+      "license": "© European Union, reutilização com atribuição (CC BY 4.0)",
+      "publisher": "Eurostat",
+      "query": "ultimo mes publicado por pais; dias x max(importacao liquida diaria, consumo interno diario)",
+      "quote": "Monthly – Emergency Stocks held by the MS in accordance with the EU Directive (in Days Equivalent) – Number – Germany: 95,58 (2025-10); Monthly – Daily net imports for compliance – Thousand tonnes – Germany: 206,987 (2025-10)",
+      "title": "Emergency oil stocks in days equivalent — monthly data (nrg_stk_oem), series STK_EUE_DIR, IMP_DNC e IC_DC",
+      "url": "https://ec.europa.eu/eurostat/databrowser/view/nrg_stk_oem/default/table",
+      "year": 2026
+    },
+    "faostat_qcl_production": {
+      "license": "CC BY 4.0",
+      "publisher": "FAO — Food and Agriculture Organization of the United Nations",
+      "query": "reaproveitado de data/definitions/agriculture/crop_yields.json (base da regra de grãos)",
+      "title": "FAOSTAT — Crops and livestock products (QCL), produção de trigo, arroz, milho e soja (elemento 5510)",
+      "url": "https://www.fao.org/faostat/en/#data/QCL",
+      "year": 2024
+    },
+    "fci_central_pool_stock_jul2025": {
+      "license": "© iGrain India, uso com citação (dados FCI)",
+      "page": "",
+      "publisher": "iGrain India (a partir de dados do Food Corporation of India / Government of India)",
+      "quote": "New Delhi. On 1 July 2025, a total of 736.61 lakh tonnes of foodgrains were present in the central pool operated by Food Corporation of India (FCI), which included 377.83 lakh tonnes of rice and 358.78 lakh tonnes of wheat.",
+      "title": "Central Pool Grain Stocks Surpass Last Year's Levels",
+      "url": "https://www.igrain.in/posts/central-pool-grain-stocks-surpass-last-years-levels",
+      "year": 2025
+    },
+    "gcca_2020": {
+      "license": "uso com citação",
+      "page": "2 (Table 1: Refrigerated Warehouse Capacity and Market Development Index, by Country, 2016-2020)",
+      "publisher": "Global Cold Chain Alliance (GCCA) / International Association of Refrigerated Warehouses (IARW), por Victoria Salin (Texas A&M)",
+      "quote": "United States 118.07 0.440 130.965 0.490 156.21 0.577 82",
+      "title": "2020 GCCA Global Cold Storage Capacity Report",
+      "url": "https://www.gcca.org/wp-content/uploads/2023/02/2020-GCCA-Global-Cold-Storage-Capacity-Report-FINAL-v2.pdf",
+      "year": 2020
+    },
+    "gie_storage_db_2026": {
+      "license": "uso com citação",
+      "page": "planilha 1 (aba única), linhas de RO; cabeçalho 'Storage Map 2026 / data as of August 2026'",
+      "publisher": "Gas Infrastructure Europe (GIE)",
+      "quote": "Romania | RO0101 | Depogaz Ploiești (ex Romgaz) | Balanceanca | operational | 0.53 ; RO0102 | Bilciuresti | 14.016999999999998 ; RO0103 | Ghercesti | 2.6749999999999998 ; RO0104 | Sarmasel | 9.6300000000000008 ; RO0105 | Urziceni | 3.8519999999999994 ; RO0201 | Depomures | Târgu Mureş | 3.15455 (coluna 'Working gas (technical) TWh')",
+      "title": "GIE Storage Database (Storage Map 2026, data as of August 2026)",
+      "url": "https://www.gie.eu/wp-content/uploads/filr/1410/26082026_Storage-Database_public_v3.xlsx",
+      "year": 2026
+    },
+    "ibge_pesquisa_estoques_2s2025": {
+      "license": "© IBGE / Canal Rural, uso com citação",
+      "page": "",
+      "publisher": "Canal Rural (reproduzindo IBGE, Pesquisa de Estoques)",
+      "quote": "A pesquisa tambem mostra que a capacidade util disponivel para armazenamento agricola no Brasil foi de 233,8 milhoes de toneladas em estabelecimentos ativos no segundo semestre de 2025. O volume representa alta de 1,1% em relacao ao semestre anterior.",
+      "title": "Estoques agricolas somam 44,1 milhoes de toneladas no 2o semestre de 2025, diz IBGE",
+      "url": "https://www.canalrural.com.br/agricultura/estoques-agricolas-somam-441-milhoes-de-toneladas-no-2o-semestre-de-2025-diz-ibge/",
+      "year": 2025
+    },
+    "igu_ugs_2025": {
+      "license": "uso com citação",
+      "page": "9-10 (seção 1.4 'WGV in operation by nation')",
+      "publisher": "International Gas Union (IGU), Storage Committee",
+      "quote": "Tabela 1.4 'WGV in operation by nation' (dados de abril/2025, bcm): USA 138,09; RUSSIA 68,99; UKRAINE 32,18; CANADA 25,52; GERMANY 22,49; CHINA 19,83; ITALY 17,66; NETHERLANDS 13,74; FRANCE 11,77; AUSTRIA 8,58",
+      "title": "Underground Gas Storage: A Critical Pillar for Energy Security (2025 edition)",
+      "url": "https://www.datocms-assets.com/146580/1761301320-underground-gas-storage_report.pdf",
+      "year": 2025
+    },
+    "imf_ifs_gold": {
+      "license": "© IMF, uso com citação (consulta via api.db.nomics.world, provider IMF/IFS)",
+      "publisher": "International Monetary Fund (IMF)",
+      "query": "INDICATOR=RAFAGOLDV_OZT, FREQ=M, ultima observacao por area",
+      "quote": "Monthly – United States – International Reserves, Official Reserve Assets, Gold (Including Gold Deposits and, If Appropriate, Gold Swapped), Volume in Millions of Fine Troy Ounces — 261,49892624 (2025-06); Alemanha 107,714; Italia 78,83; Franca 78,352 (milhoes de oncas troy finas)",
+      "title": "International Financial Statistics (IFS) — Official Reserve Assets, Gold, volume in millions of fine troy ounces (RAFAGOLDV_OZT)",
+      "url": "https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.STA%3AIFS%283.0.0%29",
+      "year": 2026
+    },
+    "kaz_minagri_storage_2025": {
+      "license": "© APK-Inform, uso com citação",
+      "page": "",
+      "publisher": "APK-Inform (declaracao do Ministro da Agricultura, Aidarbek Saparov, em reuniao de governo)",
+      "quote": "The head of the Ministry of Agriculture noted that the total grain storage capacity in the republic is 30.7 million tons, including at operating licensed grain-receiving enterprises - 13.3 million tons, at agricultural producers - 17.4 million tons.",
+      "title": "53% of the new wheat harvest in Kazakhstan's elevators is high quality",
+      "url": "https://apk-inform.com/en/news/1551302",
+      "year": 2025
+    },
+    "knoc_facilities": {
+      "license": "uso com citação",
+      "page": "Operations > Stockpiling Projects > Operation of Stockpiling Facilities (atualizado em 2026-08-31)",
+      "publisher": "Korea National Oil Corporation (KNOC)",
+      "quote": "KNOC is running nine stockpiling bases with a capacity of 146 million barrels of oil, and currently holds 100 million barrels of reserves, excluding international joint stockpiling reserves as of August, 2026.",
+      "title": "Operation of Stockpiling Facilities",
+      "url": "https://www.knoc.co.kr/ENG/sub03/sub03_3_3.jsp",
+      "year": 2026
+    },
+    "mopng_spr": {
+      "license": "uso com citação",
+      "page": "página única (última atualização: 06-10-2026)",
+      "publisher": "Ministry of Petroleum and Natural Gas, Government of India (Project Development Cell)",
+      "quote": "Indian Strategic Petroleum Reserve Limited (ISPRL) has already completed the construction of underground rock caverns for SPR with total crude oil storage capacity of 5.33 Million Metric Tonne (MMT) at three locations, viz. (i) Vishakhapatnam (1.33 MMT), (ii) Mangalore (1.50 MMT) and (iii) Padur (2.5 MMT).",
+      "title": "Strategic Crude Oil Storage",
+      "url": "https://www.mopng.gov.in/en/pdc/investible-projects/oil-amp-gas-infrastructure/strategic-crude-oil-storage",
+      "year": 2026
+    },
+    "nfa_warehouse_capacity_2025": {
+      "license": "© Philippine Star, uso com citação",
+      "page": "",
+      "publisher": "The Philippine Star (declaracao do ex-secretario de Agricultura Leonardo Montemayor sobre dados da NFA)",
+      "quote": "The NFA, through its nationwide network of warehouses, has a total storage capacity of 1,200,000 tons in palay or rice form. In what warehouses and locations is congestion happening?",
+      "title": "Explain warehouse congestion, NFA urged",
+      "url": "https://www.philstar.com/headlines/2025/01/20/2415461/explain-warehouse-congestion-nfa-urged",
+      "year": 2025
+    },
+    "nfsra_warehouse_capacity": {
+      "license": "© Global Times, uso com citação (coletiva da NFSRA)",
+      "page": "",
+      "publisher": "Global Times (coletiva do National Food and Strategic Reserves Administration - NFSRA)",
+      "quote": "Speaking of grain circulation and storage, Liu said that with the continued advancement of storage and logistics projects, the country's total warehouse capacity has exceeded 730 million tons, an increase of 58 million tons from five years earlier.",
+      "title": "China ensures ample grain supply during 14th Five-Year Plan; annual grain purchases reach 400 million tons: official",
+      "url": "https://globaltimes.cn/page/202510/1345610.shtml",
+      "year": 2025
+    },
+    "pib_fci_state_storage_2025": {
+      "license": "© Prasar Bharati / PIB, uso com citação",
+      "page": "",
+      "publisher": "DD India / Prasar Bharati, a partir de nota do Press Information Bureau (PIB)",
+      "quote": "The Food Corporation of India (FCI) and state agencies manage a combined covered and Cover and Plinth (CAP) storage capacity of 917.83 lakh metric tonnes (LMT) for central pool grains. [...] As of July 1, 2025, the total storage capacity with FCI and state agencies stood at 917.83 LMT.",
+      "title": "India strengthens food security with record harvest and enhanced storage infrastructure",
+      "url": "https://ddindia.co.in/2025/09/india-strengthens-food-security-with-record-harvest-and-enhanced-storage-infrastructure",
+      "year": 2025
+    },
+    "reuters_russia_storage_2026": {
+      "license": "© Reuters, uso com citação",
+      "page": "",
+      "publisher": "Reuters (reproduzido por Euronext Live), por Olga Popova e Gleb Bryanski",
+      "quote": "Russia has storage capacity of about 160 million tons, most of it built in the Soviet era, but experts estimate that only 40% meets modern standards, while the rest is only suitable for short-term storage, with high risks of losses.",
+      "title": "Russia turns to giant plastic bags to store unexported grain as Black Sea trade stalls",
+      "url": "https://live.euronext.com/en/financial-news/russia-turns-giant-plastic-bags-store-unexported-grain-black-sea-trade-stalls",
+      "year": 2026
+    },
+    "usda_nass_grain_stocks_capacity": {
+      "license": "domínio público (USDA NASS)",
+      "page": "p. 30-32 (On-Farm Storage Capacity; Off-Farm Storage Facilities)",
+      "publisher": "USDA National Agricultural Statistics Service (NASS), Agricultural Statistics Board",
+      "quote": "The United States on-farm storage capacity totaled 13.6 billion bushels on December 1, 2025, up less than 1 percent from the December 1, 2024 estimate. [...] Capacity of off-farm commercial grain storage in the United States totaled 11.9 billion bushels on December 1, 2025, up less than 1 percent from the December 1, 2024 total.",
+      "title": "Grain Stocks, released January 12, 2026",
+      "url": "https://esmis.nal.usda.gov/sites/default/release-files/795726/grst0126.txt",
+      "year": 2025
+    },
+    "wdi_population": {
+      "license": "CC BY 4.0",
+      "publisher": "World Bank",
+      "query": "reaproveitado de data/definitions/world/nations_source.csv (base da regra de frio)",
+      "title": "World Bank WDI SP.POP.TOTL — população, último ano disponível",
+      "url": "https://data.worldbank.org/indicator/SP.POP.TOTL",
+      "year": 2025
+    }
+  }
+}
