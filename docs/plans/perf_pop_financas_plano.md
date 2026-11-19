@@ -200,6 +200,40 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 - **Requisitos:** conservação, save novo, testes (safra chega na época, estoque atravessa a entressafra,
   preço sazonal), goldens, CLI×Godot, 365 d (comida por país), bench.
 
+## PARTE G2 — Armazenagem, reserva nacional e camada nacional (aprovado pelo dono, 2026-11-19)
+- **Mercado continua por cidade** (estoque/preço próprios; comércio cidade↔cidade com frete e porto).
+  **Não criar mercado nacional** — a camada nacional é de leitura e política.
+- **6 tipos de armazém (construções, fila A3/§15, capacidade, obra, manutenção):**
+
+  | Armazém | Guarda | Onde |
+  |---|---|---|
+  | Silo graneleiro | trigo, arroz, milho, soja, ração, farelo, farinha | **Região** + porto |
+  | Câmara fria / frigorífico | carne, batata, perecíveis (precisa energia — Parte E) | **Cidade** + porto |
+  | Tanque de petróleo/combustíveis | petróleo, combustível, etanol, químicos líquidos | **Região** (campo/refinaria) + porto |
+  | Armazenagem de gás | gás | **Região** |
+  | Pátio de granéis | carvão, minérios, fosfato, enxofre, madeira, algodão | **Região** (mina) + porto |
+  | Armazém geral | semiprocessados e finais (aço, peças, roupas, ferramentas, remédios) | **Cidade** |
+
+  Especiais: **cofre** (ouro, diamante, urânio, terras raras — liga às reservas do BC, C2) na cidade;
+  **paiol militar** (munição/explosivos/ração de combate) fica para a economia de guerra.
+- **Dono:** governo (reserva nacional, fora de venda) **e privado** (produtor/cooperativa/comerciante guarda
+  para vender na entressafra — especulação real).
+- **Região como pulmão da cidade-polo:** a colheita entra no silo da região e sai para o mercado da cidade
+  aos poucos, pagando o custo de acesso (estrada B5). Região com silo+estrada vende na entressafra; sem
+  silo, vende tudo na colheita barata — deve fazer a sazonalidade de preço aparecer.
+- **Reserva do governo:** comprar (tira do mercado local, segura preço na colheita) / liberar (devolve ao
+  mercado local; para outra cidade via logística). Perdas/perecibilidade pelos dados da G e infra B5.
+  Guerra: conquista captura, bombardeio destrói.
+- **Saldo da nação (leitura):** soma das reservas por produto, capacidade, dias de consumo cobertos.
+- **IPC nacional** e preço médio por produto (média das cidades ponderada pela cesta por quintil) — base de
+  inflação, BC (C2) e indicadores.
+- **Capacidade inicial:** dado real do país quando houver (capacidade de silos, reserva estratégica de
+  petróleo), senão regra declarada (meses de produção).
+- **Ordem:** logo depois da Parte G.
+- **Fica para amadurecer na Parte F (nós logísticos):** armazenagem no porto (pátio/armazém alfandegado/
+  tanque portuário) e no **aeroporto**, transbordo entre modos, custos de manuseio por tonelada, níveis de
+  volume — ver Parte F.
+
 ## Formação de preço (diretriz do dono, 2026-11-18)
 - **Livre mercado com base heterodoxa realista**, sem teto fixo de preço:
   - **Custo (piso):** trabalho + insumos + capital/energia por unidade — valor do trabalho e da cadeia.
@@ -213,7 +247,7 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 
 ## Ordem combinada com o dono (2026-11-18)
 1. **Terminar a base econômica:** B6 (patrimônio da região) e B7 (informalidade/serviços informais/
-   mortalidade/insatisfação) → **Parte G (agricultura sazonal)** → Parte C (balanço, BC por moeda com
+   mortalidade/insatisfação) → **Parte G (agricultura sazonal)** → **G2 (armazéns, reserva nacional, IPC)** → Parte C (balanço, BC por moeda com
    emissão/regimes/padrão monetário, bancos, **bolsa por país (C5) com confiança/expectativas** puxando
    investimento e consumo) → E (energia) e F (transporte).
 2. **Fase H — Saúde do código (antes das telas; pedido do dono, 2026-11-18):**
@@ -420,6 +454,36 @@ núcleo, sem painel). A ideia é generalizar o mesmo mecanismo do porto.
 - **Ferrovia (decisão do dono — efeito pequeno, só para existir):** multiplicador leve na carga por
   caminhão nas rotas terrestres; sem veículo nem malha própria. Fica como um número ajustável.
 - Aceite: gargalo aparece (fila) quando o nível é baixo; expandir resolve; dinheiro/balanço consistente.
+- **A amadurecer com o dono (2026-11-19) — nós logísticos e armazenagem em trânsito:**
+  - Porto já tem capacidade t/dia por nível, fila, sobrestadia (demurrage) e expansão — falta **armazenagem
+    portuária** (pátio, armazém alfandegado, tanque portuário) com capacidade própria, e taxa de manuseio
+    por tonelada (embarque/desembarque) separada do frete.
+  - **Aeroporto** por cidade com nível (t/dia e voos/dia): carga pequena, cara e urgente (remédio, peças de
+    precisão, eletrônicos, ouro, perecível de alto valor) e transporte militar; custo por tonelada muito
+    maior que navio/caminhão; terminal de carga com armazenagem pequena.
+  - **Transbordo** região→cidade (estrada), cidade↔cidade (estrada/ferrovia), cidade→porto→navio→porto,
+    cidade→aeroporto→avião: tempo e custo em cada troca de modo; carga acima da capacidade espera no
+    armazém do nó (fila) e paga estadia.
+  - Decisões pendentes: níveis e volumes por nó; quem é dono do porto/aeroporto (estatal/concessão F9);
+    regra de escolha de rota/modo; capacidade inicial com dado real (movimentação portuária/aeroportuária).
+- **Decidido com o dono (2026-11-19):**
+  - **Terrestre fica como está:** caminhão direto na mesma massa de terra (frete por t·km), acesso
+    região→cidade pela estrada B5, ferrovia só como desconto leve no frete.
+  - **Transbordo ABSTRATO (sem estoque nos nós):** custo da rota = Σ trechos + **taxa fixa por troca de
+    modo** (por tonelada) + **dias de manuseio**; a carga não fica parada no porto. O único limite real é a
+    **capacidade do nó** (porto/aeroporto: fila, atraso, sobrestadia — como o porto já faz). "Armazenagem
+    portuária" = tamanho de fila que o nó aguenta (sobe com nível). Armazenagem real só nos armazéns da G2.
+  - **Rota calculada e guardada por par de cidades**, recalculada só quando algo muda (expansão, destruição,
+    fronteira fechada, guerra); o comércio diário só consulta.
+  - **Avião só para carga que compensa:** produtos marcados urgentes/alto valor por tonelada (remédio,
+    vacina, peça de precisão, ouro, eletrônicos, perecível caro) quando o valor supera muito o frete ou a
+    falta é grave; grão/minério/petróleo nunca.
+  - **6 níveis de porto** (×4–5 cada): 1 local/pesqueiro, 2 regional, 3 nacional, 4 principal, 5 hub
+    internacional, 6 megaporto; obra de expansão cada vez mais cara e longa; nível inicial pelo movimento
+    real (com fonte). **Aeroporto** na mesma escala de 6 níveis, capacidade bem menor.
+  - **Cuidado de escala:** volumes do jogo ainda não estão na escala real (ex.: ferro ~17,8 mil t/d no
+    jogo); capacidade em toneladas fica relativa ao volume do jogo até a calibração e passa a números reais
+    quando a produção estiver calibrada.
 
 ---
 
