@@ -43,6 +43,14 @@ void SimCore::phase_labor() {
 				mine_stage_factor(owner_city, building),
 				building.last_utilization), kMineStageFloor, 1.0);
 		}
+		// D-096 (folha sazonal): fazenda COM plano de safra parada na
+		// entressafra opera a 0% — sem equipe e sem opex, porque não há safra
+		// para pagar a conta (era a causa das falências de primárias em 365 d).
+		const std::size_t city_index = static_cast<std::size_t>(
+			&owner_city - ws_.cities.data());
+		if (!crop_working_at(city_index, building.output_product)) {
+			return 0.0;
+		}
 		return 1.0;
 	};
 	// S16: o trabalho é independente por cidade (escreve só na própria cidade e
@@ -367,6 +375,13 @@ double SimCore::labor_day(City& city) {
 			if (building.jobs <= 0.0) {
 				continue;
 			}
+			// D-096: a fazenda sazonal fora da janela não abre vaga — a cidade
+			// não pode contar emprego que não existe na entressafra.
+			const double seasonal = crop_working_at(city_index,
+				building.output_product) ? 1.0 : 0.0;
+			if (seasonal <= 0.0) {
+				continue;
+			}
 			for (int level = 0; level < kEducationLevels; ++level) {
 				vacancy[level] += building.jobs * building.education_mix[level];
 			}
@@ -431,7 +446,12 @@ double SimCore::labor_day(City& city) {
 				plant_payroll += building.education_mix[level] * fill[level]
 					* pop.wage_by_level[level];
 			}
-			building.workers = building.jobs * workers_fraction;
+			// D-096: fora da janela de plantio/colheita a fazenda sazonal não
+			// emprega ninguém (equipe liberada). `building.jobs` continua sendo
+			// a CAPACIDADE publicada; `workers` é o emprego do dia.
+			const double seasonal = crop_working_at(city_index,
+				building.output_product) ? 1.0 : 0.0;
+			building.workers = building.jobs * workers_fraction * seasonal;
 			building.wage = contract_wage;
 			// D-086: mina no último estágio opera no piso — a folha acompanha a
 			// taxa de operação (mesma regra do opex em phase_labor).
@@ -443,6 +463,9 @@ double SimCore::labor_day(City& city) {
 				operating = std::clamp(std::min(
 					mine_stage_factor(city, building),
 					building.last_utilization), kMineStageFloor, 1.0);
+			} else {
+				// D-096: a folha da fazenda sazonal segue o bit do calendário.
+				operating = seasonal;
 			}
 			buildings_payroll += building.jobs * plant_payroll * operating;
 		}
@@ -501,6 +524,11 @@ double SimCore::labor_day(City& city) {
 				operating = std::clamp(std::min(
 					mine_stage_factor(city, building),
 					building.last_utilization), kMineStageFloor, 1.0);
+			} else {
+				// D-096: fora da janela de plantio/colheita a fazenda sazonal
+				// não paga folha (equipe liberada).
+				operating = crop_working_at(city_index,
+					building.output_product) ? 1.0 : 0.0;
 			}
 			double plant_payroll = 0.0;
 			for (int level = 0; level < kEducationLevels; ++level) {

@@ -160,6 +160,14 @@ struct WorldState {
 	// existe plano sazonal ativo — a produção diária da fazenda é SUPRIMIDA
 	// nesse caso (não contar a mesma tonelada duas vezes).
 	std::vector<char> crop_planned;
+	// Índice derivado do DIA (não serializado): `crop_working[cidade × products
+	// + produto] != 0` quando o par COM plano está dentro de uma janela de
+	// plantio ou de colheita. Fora delas a fazenda sazonal fica parada — sem
+	// equipe, folha ou opex — e não acumula dia de prejuízo na entressafra
+	// (D-096: a folha cheia sem safra falia 324 fazendas em 365 d, 85/85
+	// primárias no dia 75). Recalculado por `phase_agriculture` a partir do
+	// calendário e de `day`; nunca entra no save.
+	std::vector<char> crop_working;
 	bool crop_index_ready = false;
 	// Perda pós-colheita por produto (% do que entra) e a fatia de armazenagem
 	// declarada (-1 = sem dado). Indexados pelo produto (-1 se fora).

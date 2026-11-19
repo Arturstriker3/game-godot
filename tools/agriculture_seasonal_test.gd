@@ -16,7 +16,10 @@ extends SceneTree
 ##   (d) perecibilidade: batata decai ~meia-vida em 61 d, trigo quase não, e os
 ##       `no_data` (soja/farelo/ração) não decaem;
 ##   (e) save v24 (round-trip do bloco `agriculture`) e load de um save v22
-##       (estado da safra nasce zerado, planos reaplicados pelas definições).
+##       (estado da safra nasce zerado, planos reaplicados pelas definições);
+##   (f) folha sazonal (D-096): fora das janelas de plantio/colheita a fazenda
+##       com plano não paga equipe nem opex e não acumula `loss_days`; na
+##       colheita a equipe volta.
 ##
 ## Sem IA e sem camada urbana: mede o NÚCLEO (o mesmo caminho do dia no jogo,
 ## menos as decisões que não tocam a agricultura).
@@ -71,6 +74,7 @@ func _init() -> void:
 	_calendar = _load_dict(CROP_CALENDAR_PATH).get("nations", {})
 	_test_declared(world["report"])
 	var snapshot := _test_entre_safra(sim)
+	_test_seasonal_payroll(snapshot)
 	_test_storage_quality(snapshot)
 	_test_perishability(snapshot)
 	_test_save(sim)
@@ -80,7 +84,7 @@ func _init() -> void:
 func _finish() -> void:
 	if _failures.is_empty():
 		print("[agri] OK: safra na janela, entressafra provada, perda por armazém, "
-			+ "perecibilidade e save v24/v22.")
+			+ "perecibilidade, folha sazonal e save v24/v22.")
 		quit(0)
 	else:
 		for failure in _failures:
@@ -502,6 +506,185 @@ func _days_to_next_harvest(tag: String, crop: String, doy: int) -> float:
 		if best < 0.0 or days < best:
 			best = days
 	return best
+
+
+# ---------------------------------------------------------------------------
+# (f) folha sazonal: parada na entressafra, folha na colheita
+# ---------------------------------------------------------------------------
+
+## Fora de TODAS as janelas (plantio e colheita) do plano, a fazenda sazonal
+## não tem equipe nem custo e não acumula dia de prejuízo; na colheita volta a
+## pagar. O status NÃO publica `paid_wages`/`paid_opex` separados: publica
+## `costs = paid_wages + paid_opex + input_value`, e o insumo só é comprado na
+## janela de PLANTIO — fora dela `costs − input_value` é exatamente a folha +
+## opex pagos. `workers` é o emprego do dia (o `jobs` publicado segue sendo a
+## capacidade da fazenda).
+##
+## Mede os DOIS lados no mesmo mundo: primeiro um dia de COLHEITA com folha
+## paga (exige caixa da firma: com caixa zero a folha é zero em qualquer
+## estação, por liquidez), depois o primeiro dia fora de todas as janelas.
+func _test_seasonal_payroll(snapshot: Dictionary) -> void:
+	var plans: Array = snapshot.get("definitions", {}).get("crop_plans", [])
+	var products: Array = snapshot.get("save", {}).get("products", [])
+	var probe: Object = _restore(snapshot)
+	var pick: Dictionary = _pick_paid_farm(probe, plans, products)
+	if pick.is_empty():
+		_fail("folha sazonal: nenhuma fazenda com plano e folha paga na colheita")
+		return
+	var city_id := String(pick["city"])
+	var building_id := String(pick["building"])
+	var label := "%s/%s" % [city_id, String(pick["product"])]
+	var windows: Array = pick["windows"]
+	# (1) Colheita: a equipe e a folha voltam.
+	var harvest: Dictionary = _building_entry(probe, city_id, building_id)
+	if harvest.is_empty():
+		_fail("folha sazonal: %s sumiu do status na colheita" % label)
+		return
+	var harvest_doy := _doy(probe)
+	var paid_harvest := float(harvest.get("costs", 0.0)) \
+		- float(harvest.get("input_value", 0.0))
+	var workers_harvest := float(harvest.get("workers", 0.0))
+	if workers_harvest <= 0.0:
+		_fail("folha sazonal: %s não empregou na colheita (doy %d)" % [
+			label, harvest_doy])
+	if paid_harvest <= 0.0:
+		_fail("folha sazonal: %s não pagou folha/opex na colheita (doy %d)" % [
+			label, harvest_doy])
+	# (2) Fora de TODAS as janelas do plano: equipe liberada, custo zero e
+	# nenhum dia de prejuízo acumulado.
+	if not _advance_outside(probe, windows):
+		_fail("folha sazonal: %s não tem dia fora das janelas em um ano" % label)
+		return
+	var outside: Dictionary = _building_entry(probe, city_id, building_id)
+	if outside.is_empty():
+		_fail("folha sazonal: %s sumiu do status fora da janela" % label)
+		return
+	var outside_doy := _doy(probe)
+	var paid_outside := float(outside.get("costs", 0.0)) \
+		- float(outside.get("input_value", 0.0))
+	if paid_outside > 1e-9:
+		_fail("folha sazonal: %s pagou %.2f (folha+opex) fora da janela" % [
+			label, paid_outside])
+	if absf(float(outside.get("input_value", 0.0))) > 1e-9:
+		_fail("folha sazonal: %s comprou insumo fora do plantio (%.2f)" % [
+			label, float(outside.get("input_value", 0.0))])
+	if float(outside.get("workers", 0.0)) > 1e-9:
+		_fail("folha sazonal: %s empregou %.2f fora da janela" % [
+			label, float(outside.get("workers", 0.0))])
+	if int(outside.get("loss_days", 0)) != 0:
+		_fail("folha sazonal: %s acumulou %d dia(s) de prejuízo fora da janela" % [
+			label, int(outside.get("loss_days", 0))])
+	print("[agri] folha sazonal %s: colheita (doy %d) custo=%.2f equipe=%.2f; "
+		% [label, harvest_doy, paid_harvest, workers_harvest]
+		+ "fora (doy %d) custo=%.2f equipe=%.2f loss_days=%d" % [
+			outside_doy, paid_outside, float(outside.get("workers", 0.0)),
+			int(outside.get("loss_days", 0))])
+
+
+## Primeira (cidade, produto) com plano cuja fazenda primária está HOJE numa
+## janela de colheita e pagou folha/opex (caixa > 0). Devolve as janelas do
+## plano (definições do save). Sem candidato, avança até 20 dias e tenta de
+## novo (dia 121 do mundo tem várias janelas abertas).
+func _pick_paid_farm(sim: Object, plans: Array, products: Array) -> Dictionary:
+	for attempt in 21:
+		var pick := _find_paid_farm(sim, plans, products)
+		if not pick.is_empty():
+			return pick
+		sim.tick_day()
+	return {}
+
+
+func _find_paid_farm(sim: Object, plans: Array, products: Array) -> Dictionary:
+	var doy := _doy(sim)
+	var cache := {}
+	for plan in plans:
+		var city := String(plan.get("city", ""))
+		var product := String(plan.get("product", ""))
+		var windows: Array = plan.get("seasons", [])
+		if city == "" or product == "" or windows.is_empty():
+			continue
+		if not _plan_in_harvest(windows, doy):
+			continue
+		var product_index := products.find(product)
+		if product_index < 0:
+			continue
+		var status: Dictionary = cache.get(city, {})
+		if status.is_empty():
+			status = sim.get_city_status(city)
+			if status.is_empty():
+				continue
+			cache[city] = status
+		for entry in status.get("buildings", []):
+			if int(entry.get("output_product", -1)) != product_index:
+				continue
+			if int(entry.get("input_product", 0)) >= 0:
+				continue
+			if String(entry.get("recipe", "")) != "":
+				continue
+			if float(entry.get("workers", 0.0)) <= 0.0:
+				continue
+			if float(entry.get("costs", 0.0)) \
+					- float(entry.get("input_value", 0.0)) <= 0.0:
+				continue
+			return {
+				"city": city,
+				"product": product,
+				"building": String(entry.get("id", "")),
+				"windows": windows,
+			}
+	return {}
+
+
+func _building_entry(sim: Object, city_id: String, building_id: String) -> Dictionary:
+	var status: Dictionary = sim.get_city_status(city_id)
+	for entry in status.get("buildings", []):
+		if String(entry.get("id", "")) == building_id:
+			return entry
+	return {}
+
+
+func _doy(sim: Object) -> int:
+	return int(sim.get_agriculture_status().get("date", {}).get("doy", 0))
+
+
+## Avança até um dia FORA de todas as janelas e deixa o status desse dia
+## publicado (o tick do dia parado já rodou).
+func _advance_outside(sim: Object, windows: Array, max_days: int = 400) -> bool:
+	for step in max_days:
+		if _plan_in_any_window(_doy(sim), windows):
+			sim.tick_day()
+			continue
+		sim.tick_day()
+		if not _plan_in_any_window(_doy(sim), windows):
+			return true
+	return false
+
+
+func _plan_in_any_window(doy: int, windows: Array) -> bool:
+	for season in windows:
+		if _doy_in_window(doy, int(season.get("plant_start", 0)),
+				int(season.get("plant_end", 0))):
+			return true
+		if _doy_in_window(doy, int(season.get("harvest_start", 0)),
+				int(season.get("harvest_end", 0))):
+			return true
+	return false
+
+
+func _plan_in_harvest(windows: Array, doy: int) -> bool:
+	for season in windows:
+		if _doy_in_window(doy, int(season.get("harvest_start", 0)),
+				int(season.get("harvest_end", 0))):
+			return true
+	return false
+
+
+func _doy_in_window(doy: int, start: int, end: int) -> bool:
+	if start <= 0 or end <= 0:
+		return false
+	if start <= end:
+		return doy >= start and doy <= end
+	return doy >= start or doy <= end
 
 
 # ---------------------------------------------------------------------------

@@ -162,6 +162,10 @@ public:
 	// Plano sazonal ativo para (índice de cidade, produto)? A produção diária
 	// da fazenda é SUPRIMIDA nesse caso (sem contagem dupla).
 	bool crop_planned_at(std::size_t city_index, int product) const;
+	// D-096 — a fazenda sazonal TRABALHA hoje? `true` para todo par sem plano
+	// (comportamento anterior) e, com plano, o bit de plantio/colheita do dia:
+	// fora das duas janelas a equipe é liberada e o par não paga folha/opex.
+	bool crop_working_at(std::size_t city_index, int product) const;
 	// Qualidade do armazém efetiva da cidade (explícita ou derivada da infra).
 	static double city_storage_quality(const City& city);
 	// A2: `full=false` é o caminho de todo tick (só o índice por cidade;

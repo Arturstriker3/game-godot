@@ -277,6 +277,9 @@ void SimCore::rebuild_crop_indexes() {
 	const std::size_t products = static_cast<std::size_t>(
 		std::max(0, ws_.products));
 	ws_.crop_planned.assign(cities * products, 0);
+	// Bit de trabalho do dia: zerado aqui; `phase_agriculture` o preenche com o
+	// calendário de hoje (fora das janelas a fazenda sazonal não trabalha).
+	ws_.crop_working.assign(cities * products, 0);
 	for (City& city : ws_.cities) {
 		city.agri_seasonal_daily = 0.0;
 	}
@@ -304,6 +307,26 @@ bool SimCore::crop_planned_at(std::size_t city_index, int product) const {
 		return false;
 	}
 	return ws_.crop_planned[at] != 0;
+}
+
+bool SimCore::crop_working_at(std::size_t city_index, int product) const {
+	// Par SEM plano sazonal trabalha sempre: as demais construções e a fazenda
+	// sem calendário seguem o comportamento anterior, intocado.
+	if (!crop_planned_at(city_index, product)) {
+		return true;
+	}
+	const std::size_t products = static_cast<std::size_t>(ws_.products);
+	if (products == 0) {
+		return true;
+	}
+	const std::size_t at = city_index * products
+		+ static_cast<std::size_t>(product);
+	// Plano ativo sem bit do dia (índice recém-criado): não paga equipe cheia
+	// sem a evidência do calendário.
+	if (at >= ws_.crop_working.size()) {
+		return false;
+	}
+	return ws_.crop_working[at] != 0;
 }
 
 double SimCore::city_storage_quality(const City& city) {
@@ -362,6 +385,34 @@ void SimCore::phase_agriculture() {
 	const std::size_t chain = ws_.agri_chain.size();
 	const std::size_t product_count = static_cast<std::size_t>(
 		std::max(0, ws_.products));
+
+	// 1b. TRABALHO DO DIA (D-096, folha sazonal): a fazenda COM plano só
+	// mantém equipe e paga folha/opex dentro das janelas de PLANTIO ou de
+	// COLHEITA. Fora delas o bit é 0 e `phase_labor` (que roda depois) zera
+	// vagas, equipe, folha e opex do par — sem safra, não há receita para
+	// sustentar folha cheia, e a construção deixava de acumular `loss_days` na
+	// entressafra. O bit é derivado do calendário + `ws_.day`: não vai ao save.
+	ws_.crop_working.assign(cities * product_count, 0);
+	for (const CropPlan& plan : ws_.crop_plans) {
+		if (plan.city_index < 0 || plan.product < 0
+				|| plan.product >= ws_.products) {
+			continue;
+		}
+		bool working = false;
+		for (int index = 0; index < plan.season_count; ++index) {
+			const CropSeasonPlan& season = plan.seasons[index];
+			if (doy_in_window(today.doy, season.plant_start_doy,
+					season.plant_end_doy)
+					|| doy_in_window(today.doy, season.harvest_start_doy,
+						season.harvest_end_doy)) {
+				working = true;
+				break;
+			}
+		}
+		ws_.crop_working[static_cast<std::size_t>(plan.city_index)
+			* product_count + static_cast<std::size_t>(plan.product)] =
+			working ? 1 : 0;
+	}
 
 	// 1. Perecibilidade (diária) e perda de armazenagem (mensal) por cidade.
 	//    A perda de armazenagem só roda quando o mês vira: a primeira aplicação
