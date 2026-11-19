@@ -218,6 +218,16 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
   **paiol militar** (munição/explosivos/ração de combate) fica para a economia de guerra.
 - **Dono:** governo (reserva nacional, fora de venda) **e privado** (produtor/cooperativa/comerciante guarda
   para vender na entressafra — especulação real).
+- **Governo × privado no jogo:** governo guarda por segurança (compra na colheita, libera na entressafra/
+  crise/guerra; custo fiscal; alavanca contra fome/inflação; alvo militar). Privado guarda por lucro (compra
+  barato, vende caro; suaviza preço; enriquece a região com silo; pode especular na crise; grandes grupos
+  concentram poder). Escolha de país estatista × liberal.
+- **IA privada de armazém (C++, mesmo esquema de payback das minas):** (1) construir quando o spread
+  safra→entressafra × volume da região paga obra+manutenção+perda no prazo; (2) guardar/vender pela data
+  da próxima colheita (calendário da região) e pelo histórico de preço visto (sem bola de cristal — pode
+  errar); (3) especulação na crise emerge da regra (não é programada); perfis conservador × especulador;
+  cadência semanal/mensal por região/cidade; testes contra IA "burra" (nunca constrói) e "gananciosa"
+  (fome em tempo de paz).
 - **Região como pulmão da cidade-polo:** a colheita entra no silo da região e sai para o mercado da cidade
   aos poucos, pagando o custo de acesso (estrada B5). Região com silo+estrada vende na entressafra; sem
   silo, vende tudo na colheita barata — deve fazer a sazonalidade de preço aparecer.
