@@ -465,16 +465,8 @@ func _test_ai_storage() -> void:
 	for _day in 120:
 		var status: Dictionary = sim.tick_day()
 		bankruptcies = int(status.get("bankruptcies", bankruptcies))
-		var sat_now := _food_satisfaction(sim, "AGRIA")
-		if sat_now < 0.85:
-			var cs: Dictionary = sim.get_city_status("AGRIA")
-			print("[dbg] d=%d sat=%.3f need=%.1f consumed=%.1f market=%.1f gov=%.1f priv=%.1f"
-				% [_day, sat_now, float(cs.get("need", 0.0)),
-				float(cs.get("consumed", 0.0)),
-				_market(sim, "AGRIA", _product(sim, "wheat")),
-				_storage_stock(sim, "AGRIA", "silo", "government", "wheat"),
-				_storage_stock(sim, "AGRIA", "silo", "private", "wheat")])
-		satisfaction_min = minf(satisfaction_min, sat_now)
+		satisfaction_min = minf(satisfaction_min,
+			_food_satisfaction(sim, "AGRIA"))
 	var log_entries: Array = sim.get_command_log()
 	var builds := 0
 	for entry in log_entries:
