@@ -73,7 +73,16 @@ void SimCore::phase_labor() {
 				// a operação do dia anterior (piso de 5% de stand-by). Mina no
 				// último estágio idem (D-086).
 				const double operating = operating_of(city, building);
-				opex_total += building.opex * opex_factor(city, building) * operating;
+				// D-099: a fazenda com plano paga o opex só até o que a safra
+				// cobre (mesmo fator da folha) — a decisão é a folha/opex
+				// REDUZIDOS, nunca dinheiro criado.
+				const double daily_cost = building.opex
+					* opex_factor(city, building) * operating
+					+ building.jobs * building.wage * operating;
+				const double liquidity = crop_liquidity_factor(city, building,
+					daily_cost);
+				opex_total += building.opex * opex_factor(city, building)
+					* operating * liquidity;
 			}
 			labor_day(city);
 			// Opex é comprado de serviços domésticos (manutenção, energia), não é
@@ -85,8 +94,13 @@ void SimCore::phase_labor() {
 			for (const int bi : local_buildings) {
 				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 				const double operating = operating_of(city, building);
+				const double daily_cost = building.opex
+					* opex_factor(city, building) * operating
+					+ building.jobs * building.wage * operating;
+				const double liquidity = crop_liquidity_factor(city, building,
+					daily_cost);
 				building.paid_opex = building.opex * opex_factor(city, building)
-					* operating * opex_scale;
+					* operating * opex_scale * liquidity;
 			}
 			const double paid_opex = opex_total * opex_scale;
 			city.firm_cash -= paid_opex;
@@ -467,7 +481,11 @@ double SimCore::labor_day(City& city) {
 				// D-096: a folha da fazenda sazonal segue o bit do calendário.
 				operating = seasonal;
 			}
-			buildings_payroll += building.jobs * plant_payroll * operating;
+			const double crop_liquidity = crop_liquidity_factor(city, building,
+				building.jobs * plant_payroll * operating
+				+ building.opex * operating);
+			buildings_payroll += building.jobs * plant_payroll * operating
+				* crop_liquidity;
 		}
 	}
 	double service_fraction = 0.0;
@@ -537,6 +555,13 @@ double SimCore::labor_day(City& city) {
 			}
 			building.paid_wages =
 				building.jobs * plant_payroll * operating * pay_scale;
+			// D-099: a fazenda com plano paga só o que a safra cobre (fator da
+			// lavoura em pé/estoque). Vale sobre a folha já limitada pelo
+			// caixa da cidade — dinheiro continua conservado.
+			const double crop_liquidity = crop_liquidity_factor(city, building,
+				building.jobs * plant_payroll * operating
+				+ building.opex * operating);
+			building.paid_wages *= crop_liquidity;
 		}
 	}
 	const double full_service_bill = city.service_jobs * service_payroll_per_job;

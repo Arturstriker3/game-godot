@@ -1399,6 +1399,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	ws.foreign_cash = double(data.get("foreign_cash", 0.0));
 	ws.construction_cash = double(data.get("construction_cash", 0.0));
 	ws.bankruptcies = int(data.get("bankruptcies", 0));
+	// D-099: a composição das falências é diagnóstico de RUNTIME, não vai ao
+	// save/fluxo de dicionário — carregar um mundo zera os contadores.
+	for (int product = 0; product < kMaxProducts; ++product) {
+		ws.bankrupt_by_output[product] = 0;
+	}
+	ws.bankrupt_planned_primary = 0;
 	ws.depleted_mines = int(data.get("depleted_mines", 0));
 	ws.industry_seeded = bool(data.get("industry_seeded", false));
 

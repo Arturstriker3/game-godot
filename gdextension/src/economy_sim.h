@@ -576,6 +576,14 @@ public:
 	int get_service_bankruptcies() const;
 
 	/**
+	 * D-099: composição das falências de CONSTRUÇÃO acumuladas (contadores de
+	 * runtime, zerados no load): `by_product` (por índice de bem, na ordem do
+	 * catálogo), `planned_primary` (primárias com plano de safra) e `total`.
+	 * Diagnóstico do aceite de 365 d; não entra em `get_status()`.
+	 */
+	Dictionary get_bankruptcy_diag() const;
+
+	/**
 	 * Investe capital da empresa na expansão de uma construção existente.
 	 * O valor sai do caixa da empresa e é pago ao setor de construção.
 	 * @param city_id Cidade da construção.

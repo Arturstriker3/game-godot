@@ -94,6 +94,10 @@ func _finish(out: Dictionary) -> void:
 		% [int(food["below_count"]), int(food["nations"]), GATE,
 		float(food["median"]), String(food["min_nation"]), float(food["min"])]
 		+ "hash=%s" % String(out["trajectory_hash"]))
+	var composition: Dictionary = out.get("bankrupt_composition", {})
+	print("[g2] falencias: total=%d com_plano_safra=%d produtos=%s" % [
+		int(composition.get("total", 0)), int(composition.get("with_crop_plan", 0)),
+		str(composition.get("by_product", {}))])
 	for row in Array(food["below"]).slice(0, 15):
 		print("[g2]   %s comida=%.3f causa=%s" % [String(row["tag"]),
 			float(row["food"]), String(row.get("cause", ""))])
@@ -115,8 +119,8 @@ func _run() -> Dictionary:
 	var base_price: Dictionary = {}
 	for row in goods:
 		var item: Dictionary = row
-		base_price[String(item.get("id", ""))] = \
-			float(item.get("base_price", 1.0))
+		var good_id := String(item.get("id", ""))
+		base_price[good_id] = float(item.get("base_price", 1.0))
 	RegionDataScript.attach(cities)
 	var sim = EconomySim.new()
 	sim.set_goods(goods)
@@ -157,6 +161,12 @@ func _run() -> Dictionary:
 			"initial_stock": _initial_stock,
 		})
 	sim.set_ai_enabled(true)
+	# D-099: censo das fazendas iniciais × plano de safra — quem a regra de
+	# liquidez NÃO cobre (par cidade×cultura sem calendário/rendimento).
+	var farm_census := _farm_plan_census(sim, buildings, cities)
+	print("[g2] fazendas: %s | sem plano: %s" % [
+		str(farm_census.get("by_product", {})),
+		str(farm_census.get("unplanned_by_nation", {}))])
 
 	# Cidade-sonda de cada nação da amostra (a maior): preço local por cultura.
 	var probes := _probe_cities(cities)
@@ -241,6 +251,9 @@ func _run() -> Dictionary:
 
 	var status_final: Dictionary = sim.get_status()
 	var money_end := float(status_final.get("money_total", 0.0))
+	# D-099: composição das falências que restarem (produto, plano de safra e
+	# fábrica) — evidência para não "esconder" o número no aceite.
+	var bankrupt_composition := _bankrupt_composition(sim)
 	var food := _food_gate(history)
 	var agri_final: Dictionary = sim.get_agriculture_status() \
 		if sim.has_method("get_agriculture_status") else {}
@@ -277,6 +290,8 @@ func _run() -> Dictionary:
 		"invariant_violations": violation_count,
 		"invariant_violation_samples": violation_samples,
 		"bankruptcies": int(status_final.get("bankruptcies", -1)),
+		"bankrupt_composition": bankrupt_composition,
+		"farm_census": farm_census,
 		"money_start": money_start,
 		"money_end": money_end,
 		"money_drift": money_end - money_start,
@@ -438,6 +453,52 @@ func _planned_pairs(sim: Object) -> Dictionary:
 		var row: Dictionary = plan
 		out[String(row.get("city", "")) + "|" + String(row.get("product", ""))] = true
 	return out
+
+
+## D-099: quem ainda falece no dia final. O núcleo conta as construções
+## removidas por falência por produto e quantas eram primárias COM plano de
+## safra (`get_bankruptcy_diag`, contadores de runtime, zerados no load).
+## Diagnóstico: não altera o mundo nem entra no status.
+func _bankrupt_composition(sim: Object) -> Dictionary:
+	var diag: Dictionary = sim.get_bankruptcy_diag() \
+		if sim.has_method("get_bankruptcy_diag") else {}
+	return {
+		"total": int(diag.get("total", 0)),
+		"with_crop_plan": int(diag.get("with_crop_plan", 0)),
+		"by_product": Dictionary(diag.get("by_product", {})),
+	}
+
+
+## D-099: censo das fazendas iniciais (a construção que o `resolve_initial_farms`
+## planta em cada cidade) contra os planos declarados. Uma fazenda SEM plano é
+## exatamente a que a regra de liquidez não cobre: par (cidade, cultura) fora do
+## calendário/rendimento do dado.
+func _farm_plan_census(sim: Object, buildings: Array, cities: Array) -> Dictionary:
+	var planned := _planned_pairs(sim)
+	var nation_of: Dictionary = {}
+	for city in cities:
+		var row: Dictionary = city
+		nation_of[String(row.get("id", ""))] = String(row.get("nation", ""))
+	var by_product: Dictionary = {}
+	var unplanned: Dictionary = {}
+	for building in buildings:
+		var farm: Dictionary = building
+		var product := String(farm.get("resource", ""))
+		if not CROPS.has(product):
+			continue
+		var city_id := String(farm.get("city_id", ""))
+		var entry: Dictionary = by_product.get(product,
+			{"farms": 0, "planned": 0})
+		entry["farms"] = int(entry["farms"]) + 1
+		if planned.has(city_id + "|" + product):
+			entry["planned"] = int(entry["planned"]) + 1
+		else:
+			var tag := String(nation_of.get(city_id, ""))
+			var counts: Dictionary = unplanned.get(product, {})
+			counts[tag] = int(counts.get(tag, 0)) + 1
+			unplanned[product] = counts
+		by_product[product] = entry
+	return {"by_product": by_product, "unplanned_by_nation": unplanned}
 
 
 func _nations_table(food: Dictionary, agri_status: Dictionary,

@@ -166,6 +166,18 @@ public:
 	// (comportamento anterior) e, com plano, o bit de plantio/colheita do dia:
 	// fora das duas janelas a equipe é liberada e o par não paga folha/opex.
 	bool crop_working_at(std::size_t city_index, int product) const;
+	// D-099: valor (a `price`) da safra AINDA NÃO ENTREGUE do plano ativo de
+	// (cidade, produto) — lavoura em pé + parcela da colheita em curso que
+	// falta entregar. 0 para par sem plano. Ativo da fazenda na carência de
+	// falência; não cria dinheiro (é avaliação, não venda).
+	double crop_standing_value(const std::string& city_id,
+		int product, double price) const;
+	// D-099 (folha da safra): fator 0..1 aplicado à folha+opex de uma fazenda
+	// primária com plano quando o custo diário cheio excede o que a safra
+	// (estoque + lavoura em pé, na fatia da firma) paga em kLossDaysBeforeClose
+	// dias. 1.0 para todo o resto. A folha devida é REDUZIDA (nada é criado).
+	double crop_liquidity_factor(const City& city, const Building& building,
+		double daily_cost) const;
 	// Qualidade do armazém efetiva da cidade (explícita ou derivada da infra).
 	static double city_storage_quality(const City& city);
 	// A2: `full=false` é o caminho de todo tick (só o índice por cidade;

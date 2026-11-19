@@ -264,6 +264,11 @@ struct WorldState {
 	std::vector<Port> ports;
 	std::vector<TradeOrder> last_orders;
 	int bankruptcies = 0;
+	// D-099: composição das falências do mundo para o diagnóstico do 365 d
+	// (contadores de RUNTIME, não serializados; zeram no load). Por produto
+	// (`output_product`) e quantas eram primárias COM plano de safra.
+	int bankrupt_by_output[kMaxProducts] = {};
+	int bankrupt_planned_primary = 0;
 	int depleted_mines = 0;
 	double transport_cash = 0.0;
 	double foreign_cash = 0.0;

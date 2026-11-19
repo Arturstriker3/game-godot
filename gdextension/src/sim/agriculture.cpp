@@ -363,6 +363,99 @@ double aggravated_loss(double fraction, double quality) {
 
 } // namespace
 
+double SimCore::crop_standing_value(const std::string& city_id,
+		int product, double price) const {
+	// D-099: valor da safra AINDA NO CAMPO (e da parcela da colheita em curso
+	// ainda não entregue), a preço de mercado. É o ativo que sustenta a
+	// carência da fazenda com plano até a próxima colheita: o custo de plantio
+	// é capital de giro da lavoura em pé, não prejuízo operacional.
+	// Devolve 0 para par sem plano — aí não há safra prometida.
+	if (price <= 0.0 || city_id.empty() || product < 0) {
+		return 0.0;
+	}
+	const auto found = ws_.crop_plan_lookup.find(
+		city_id + "|" + std::to_string(product));
+	if (found == ws_.crop_plan_lookup.end()
+			|| found->second < 0
+			|| found->second >= static_cast<int>(ws_.crop_plans.size())) {
+		return 0.0;
+	}
+	const CropPlan& plan =
+		ws_.crop_plans[static_cast<std::size_t>(found->second)];
+	if (plan.season_count <= 0) {
+		return 0.0;
+	}
+	const GameDate today = game_date_from_day(ws_.day);
+	const double annual = plan.area_ha * plan.yield_t_ha;
+	double standing_t = 0.0;
+	for (int index = 0; index < plan.season_count; ++index) {
+		const CropSeasonPlan& season = plan.seasons[index];
+		const CropSeasonState& state = plan.state[index];
+		const int key = window_start_year(today.year, today.doy,
+			season.harvest_start_doy);
+		const bool current = state.harvest_year == key;
+		const double scale = current ? state.harvest_yield_scale
+			: state.yield_scale;
+		const double delivered = current ? state.delivered_t : 0.0;
+		const double expected = annual * std::max(0.0, season.share) * scale;
+		standing_t += std::max(0.0, expected - delivered);
+	}
+	return standing_t * price;
+}
+
+double SimCore::crop_liquidity_factor(const City& city,
+		const Building& building, double daily_cost) const {
+	// D-099: a folha da fazenda COM plano é a folha que a safra paga. O
+	// assalariado semeado para a produção diária anterior à G fica grande
+	// demais para a área FAOSTAT (ex.: KEN-MOM/soja, 3.253 vagas para uma
+	// lavoura de poucas mil t): a firma pagava mais do que a colheita vale e
+	// falia. Aqui o custo do dia é limitado ao valor do ativo da safra
+	// (estoque + lavoura em pé, na fatia da firma) rateado em
+	// kLossDaysBeforeClose dias. O que não se paga é folha REDUZIDA — dinheiro
+	// não é criado; emprego e receita continuam como estão.
+	if (daily_cost <= 1e-12 || building.recipe >= 0
+			|| building.input_product >= 0 || building.output_product < 0
+			|| building.output_product >= ws_.products) {
+		return 1.0;
+	}
+	if (ws_.cities.empty()) {
+		return 1.0;
+	}
+	const std::ptrdiff_t city_offset = &city - ws_.cities.data();
+	if (city_offset < 0
+			|| city_offset >= static_cast<std::ptrdiff_t>(ws_.cities.size())) {
+		return 1.0;
+	}
+	const std::size_t city_index = static_cast<std::size_t>(city_offset);
+	if (!crop_planned_at(city_index, building.output_product)
+			|| city_index >= ws_.buildings_by_city.size()) {
+		return 1.0;
+	}
+	double total_capacity = 0.0;
+	for (const int bi : ws_.buildings_by_city[city_index]) {
+		const Building& other = ws_.buildings[static_cast<std::size_t>(bi)];
+		if (other.recipe < 0 && other.input_product < 0
+				&& other.output_product == building.output_product) {
+			total_capacity += other.capacity * other.output_scale;
+		}
+	}
+	if (total_capacity <= 1e-12) {
+		return 1.0;
+	}
+	const double own = building.capacity * building.output_scale;
+	const double share = std::clamp(own / total_capacity, 0.0, 1.0);
+	const Market& market = city.markets[building.output_product];
+	const double price = std::max(0.0, market.price);
+	const double asset = (std::max(0.0, market.stock)
+		+ crop_standing_value(city.id, building.output_product, price))
+		* price * share;
+	const double cap = asset / double(kLossDaysBeforeClose);
+	if (daily_cost <= cap) {
+		return 1.0;
+	}
+	return std::clamp(cap / daily_cost, 0.0, 1.0);
+}
+
 void SimCore::phase_agriculture() {
 	ws_.agri_delivered_today = 0.0;
 	ws_.agri_harvests_today = 0;

@@ -326,6 +326,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::get_service_business_count);
 	ClassDB::bind_method(D_METHOD("get_service_bankruptcies"),
 	                     &EconomySim::get_service_bankruptcies);
+	ClassDB::bind_method(D_METHOD("get_bankruptcy_diag"),
+	                     &EconomySim::get_bankruptcy_diag);
 	ClassDB::bind_method(D_METHOD("seed_industry"),
 	                     &EconomySim::seed_industry);
 	ClassDB::bind_method(D_METHOD("invest", "city_id", "building_id", "amount"),
@@ -874,6 +876,12 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	ws_.ports.clear();
 	ws_.last_orders.clear();
 	ws_.bankruptcies = 0;
+	// D-099: composição das falências é diagnóstico de runtime — mundo novo
+	// começa do zero.
+	for (int product = 0; product < kMaxProducts; ++product) {
+		ws_.bankrupt_by_output[product] = 0;
+	}
+	ws_.bankrupt_planned_primary = 0;
 	ws_.depleted_mines = 0;
 	ws_.transport_cash = 0.0;
 	ws_.foreign_cash = 0.0;
@@ -6292,6 +6300,22 @@ int EconomySim::get_service_business_count() const {
 
 int EconomySim::get_service_bankruptcies() const {
 	return ws_.service_bankruptcies;
+}
+
+Dictionary EconomySim::get_bankruptcy_diag() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary by_product;
+	for (int product = 0; product < ws_.products; ++product) {
+		if (ws_.bankrupt_by_output[product] > 0) {
+			by_product[String(sim_core_.product_name(product))] =
+				ws_.bankrupt_by_output[product];
+		}
+	}
+	Dictionary out;
+	out["total"] = ws_.bankruptcies;
+	out["with_crop_plan"] = ws_.bankrupt_planned_primary;
+	out["by_product"] = by_product;
+	return out;
 }
 
 // A5: a lógica dos aplicadores vive em sim/actions.cpp (C++ puro); aqui só a
