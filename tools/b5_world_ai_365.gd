@@ -189,12 +189,12 @@ func _run() -> void:
 		# onde sai a comida por nação). `get_day_summary()` NÃO traz `light`.
 		var day_status: Dictionary = sim.tick_day()
 		for violation: Variant in day_status.get("invariant_violations", []):
-			++violation_count
+			violation_count += 1
 			if violations.size() < 10:
 				violations.append("iteração %d: %s" % [day + 1, String(violation)])
 		var day_now := int(day_status.get("day", 0))
 		if day_now <= day_before:
-			++stalled_days
+			stalled_days += 1
 		day_before = day_now
 		var day_food := _nation_food_day(day_status)
 		if not day_food.is_empty():
