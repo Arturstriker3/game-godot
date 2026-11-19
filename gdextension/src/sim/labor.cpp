@@ -562,11 +562,34 @@ double SimCore::labor_day(City& city) {
 				building.jobs * plant_payroll * operating
 				+ building.opex * operating);
 			building.paid_wages *= crop_liquidity;
+			// C1: a folha DEVIDA do dia (já com a redução da safra da D-099) e
+			// o que o caixa não cobriu. Essa diferença é SALÁRIO ATRASADO —
+			// passivo da firma e ativo das famílias. A folha reduzida pela
+			// D-099 (liquidez da lavoura) NÃO é dívida: ela não é devida.
+			// O pagamento em si não muda (dinheiro conservado como antes).
+			if (pay_scale < 1.0) {
+				const double due_wages = building.jobs * plant_payroll
+					* operating * crop_liquidity;
+				const double arrears = due_wages - building.paid_wages;
+				if (arrears > 0.0) {
+					building.wage_arrears += arrears;
+					city.pop.arrears_receivable += arrears;
+				}
+			}
 		}
 	}
 	const double full_service_bill = city.service_jobs * service_payroll_per_job;
 	const double paid_service_bill = std::min(full_service_bill,
 		std::max(0.0, city.service_cash));
+	// C1: atraso da folha do setor de serviços (caixa insuficiente) — passivo
+	// das firmas de serviço e ativo das famílias. O pagamento não muda.
+	{
+		const double service_arrears = full_service_bill - paid_service_bill;
+		if (service_arrears > 0.0) {
+			city.service_wage_arrears += service_arrears;
+			city.pop.arrears_receivable += service_arrears;
+		}
+	}
 	// Ganchos do laboratório mantidos: `service_wage_adjust` é a velocidade com
 	// que o salário pago do setor converge para a média do mercado de trabalho
 	// e `service_wage_max` limita o valor (parâmetros de balanceamento, não

@@ -382,6 +382,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["sim_population"] = city.simulation_population;
 		entry["firm_cash"] = city.firm_cash;
 		entry["service_cash"] = city.service_cash;
+		// C1 (save v26): salário atrasado das firmas da cidade (passivo).
+		entry["service_wage_arrears"] = city.service_wage_arrears;
+		entry["rural_wage_arrears"] = city.rural_wage_arrears;
 		entry["government_budget"] = city.government_budget;
 		entry["service_jobs"] = city.service_jobs;
 		entry["service_wage"] = city.service_wage;
@@ -505,6 +508,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			}
 		}
 		pop["savings"] = savings_saved;
+		// C1 (save v26): salário atrasado a receber (ativo das famílias;
+		// não é poupança e não entra em `money_total`).
+		pop["arrears"] = city.pop.arrears_receivable;
 		Array desired_by_category = make_array();
 		Array consumed_by_category = make_array();
 		for (int product = 0; product < static_cast<int>(ws.food_products.size()); ++product) {
@@ -718,8 +724,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 				state_entry["area_km2"] = state.area_km2;
 				region_states.append(state_entry);
 			}
-			region_entry["states"] = region_states;
-			Array region_age_bands = make_array();
+			region_entry["states"] = region_states;			Array region_age_bands = make_array();
 			if (region.demography_ready) {
 				for (int band = 0; band < kAgeBands; ++band) {
 					region_age_bands.append(std::max(0.0, region.age_band[band]));
@@ -740,6 +745,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			region_strata["people"] = region_people;
 			region_strata["savings"] = region_savings;
 			region_entry["strata"] = region_strata;
+			// C1 (save v26): salário rural atrasado a receber (ativo das
+			// famílias do interior).
+			region_entry["arrears"] = region.arrears_receivable;
 			// B4 (save v20): migração — acumuladores (o fluxo do mês é derivado).
 			Dictionary region_migration = make_object();
 			region_migration["rural_in_total"] = region.migration_rural_in_total;
@@ -887,6 +895,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		// B5 (save v21): royalty/imposto de concessão (fração da receita paga
 		// ao Estado). 0 fora de concessão.
 		entry["royalty"] = building.royalty;
+		// C1 (save v26): salário atrasado da planta (passivo da firma).
+		entry["wage_arrears"] = building.wage_arrears;
 		buildings.append(entry);
 	}
 	data["buildings"] = buildings;
@@ -1693,6 +1703,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		city.simulation_population = read_sim_population(entry, city.population);
 		city.firm_cash = double(entry.get("firm_cash", 0.0));
 		city.service_cash = double(entry.get("service_cash", 0.0));
+		// C1 (save v26): salário atrasado das firmas da cidade. v25 e
+		// anteriores não têm a chave — nasce 0.
+		city.service_wage_arrears = version >= 26
+			? std::max(0.0, double(entry.get("service_wage_arrears", 0.0))) : 0.0;
+		city.rural_wage_arrears = version >= 26
+			? std::max(0.0, double(entry.get("rural_wage_arrears", 0.0))) : 0.0;
 		city.government_budget = double(entry.get("government_budget", 0.0));
 		// Save antigo não tem o índice: mantém a média mundial (1,0).
 		city.external_income_index = std::clamp(
@@ -1840,6 +1856,9 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		city.pop.need = double(pop.get("need", 0.0));
 		city.pop.satisfaction = double(pop.get("satisfaction", 0.0));
 		city.pop.savings = double(pop.get("savings", 0.0));
+		// C1 (save v26): salário atrasado a receber. v25 e anteriores = 0.
+		city.pop.arrears_receivable = version >= 26
+			? std::max(0.0, double(pop.get("arrears", 0.0))) : 0.0;
 		// F3: estado das necessidades (aditivo; save anterior = zero).
 		core.init_pop_needs(city.pop);
 		Dictionary needs_state = pop.get("needs", Dictionary());
@@ -2211,6 +2230,11 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				read_region_strata("income_share", region.strata_income_share);
 				read_region_strata("people", region.stratum_people);
 				read_region_strata("savings", region.stratum_savings);
+				// C1 (save v26): salário rural atrasado a receber. v25 e
+				// anteriores = 0.
+				region.arrears_receivable = version >= 26
+					? std::max(0.0, double(saved_region.get("arrears", 0.0)))
+					: 0.0;
 				// B4 (save v20): acumuladores de migração. v19 e anteriores não
 				// têm o bloco — nascem zerados (a migração conta do dia 0 do
 				// save novo; nada é inventado para trás).
@@ -2509,6 +2533,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		// não têm a chave: 0 (sem concessão — nada inventado para trás).
 		building.royalty = std::clamp(
 			double(entry.get("royalty", 0.0)), 0.0, 1.0);
+		// C1 (save v26): salário atrasado da planta. v25 e anteriores não têm
+		// a chave — nasce 0 (nada inventado para trás).
+		building.wage_arrears = version >= 26
+			? std::max(0.0, double(entry.get("wage_arrears", 0.0))) : 0.0;
 		ws.buildings.push_back(building);
 	}
 

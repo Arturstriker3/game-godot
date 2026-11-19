@@ -121,7 +121,15 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // ou tonelada inventada para trás); o StorageService reaplica a capacidade
 // inicial do dado/regra declarada depois do load. Obras de armazém em curso
 // viajam em `construction_projects` com `kind = CONSTRUCTION_STORAGE`.
-constexpr int kSaveVersion = 25;
+// v26 (C1, D-102): contabilidade por balanço — o SALÁRIO ATRASADO da D-099
+// (parcela da folha que o caixa não cobriu) passa a ser registrado como
+// passivo da firma (`Building::wage_arrears`, `City::service_wage_arrears`,
+// `City::rural_wage_arrears`) e ativo das famílias
+// (`Pop::arrears_receivable`, `Region::arrears_receivable`). Save v25 e
+// anteriores carregam com atrasado ZERO (nada é inventado para trás: o
+// fenômeno anterior não deixa registro retroativo). O resto do balanço é
+// LEITURA derivada do estado existente e não ocupa o save.
+constexpr int kSaveVersion = 26;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

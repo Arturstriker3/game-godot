@@ -361,6 +361,13 @@ namespace ogs {
 		// quando o caixa da empresa não cobre a folha e o opex).
 		double paid_wages = 0.0;
 		double paid_opex = 0.0;
+		// C1 (save v26) — PASSIVO da firma: salário atrasado. É a parcela da
+		// folha contratada que o caixa da cidade não cobriu (`pay_scale`);
+		// a folha reduzida da D-099 por ILIQUIDEZ da safra NÃO é dívida (ela
+		// não é devida — o contrato é a folha efetiva). O par é o ativo das
+		// famílias em `Pop::arrears_receivable`/`Region::arrears_receivable`;
+		// some (dos dois lados) quando a planta fecha.
+		double wage_arrears = 0.0;
 		// F7: mistura de escolaridade das vagas da construção (soma 1). Fazenda
 		// e extração quase só básico; indústria segue a receita/setor.
 		double education_mix[kEducationLevels] = {0.90, 0.09, 0.01};
@@ -561,6 +568,12 @@ namespace ogs {
 		double need = 0.0;
 		double satisfaction = 0.0;
 		double savings = 0.0;
+		// C1 (save v26) — ATIVO financeiro das famílias: salário atrasado a
+		// receber (o espelho do passivo das firmas da cidade + região). NÃO é
+		// poupança e NÃO entra em `money_total` (é uma obrigação, não dinheiro).
+		// O rateio por quintil é DERIVADO na leitura (participação da folha do
+		// dia anterior), não é um segundo número persistido.
+		double arrears_receivable = 0.0;
 		// Consumo por categoria/slot da cesta alimentar (data-driven).
 		std::vector<double> desired_by_category;
 		std::vector<double> consumed_by_category;
@@ -1070,6 +1083,10 @@ struct Region {
 	// Caixa do interior (dinheiro do mundo) e fluxos do dia (derivados; não
 	// precisam ser persistidos — são recalculados a cada dia).
 	double cash = 0.0;
+	// C1 (save v26) — ATIVO financeiro das famílias do interior: salário
+	// rural atrasado a receber (o espelho do passivo `City::rural_wage_arrears`,
+	// pago pelo caixa da firma da cidade-polo). Não é dinheiro.
+	double arrears_receivable = 0.0;
 	double wage_income = 0.0;   // salário do setor primário (semana)
 	double income = 0.0;        // renda disponível do dia
 	double employment = 0.0;    // empregados no setor primário
@@ -1203,6 +1220,11 @@ struct Region {
 		double simulation_population = 0.0;
 		double firm_cash = 0.0;
 		double service_cash = 0.0;
+		// C1 (save v26) — PASSIVOS das firmas da cidade, por origem do atraso:
+		// folha do setor de serviços e folha rural (paga pelo caixa da firma da
+		// cidade-polo). O atraso por planta fica em `Building::wage_arrears`.
+		double service_wage_arrears = 0.0;
+		double rural_wage_arrears = 0.0;
 		double government_budget = 0.0;
 		// Multiplicador da renda externa (PIB PPP per capita da nação,
 		// normalizado pela média mundial ponderada = 1,0). Ver

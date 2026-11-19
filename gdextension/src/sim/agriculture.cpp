@@ -23,6 +23,7 @@
 
 #include "agriculture.h"
 
+#include "balance.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "sim_core.h"
@@ -431,24 +432,18 @@ double SimCore::crop_liquidity_factor(const City& city,
 			|| city_index >= ws_.buildings_by_city.size()) {
 		return 1.0;
 	}
-	double total_capacity = 0.0;
-	for (const int bi : ws_.buildings_by_city[city_index]) {
-		const Building& other = ws_.buildings[static_cast<std::size_t>(bi)];
-		if (other.recipe < 0 && other.input_product < 0
-				&& other.output_product == building.output_product) {
-			total_capacity += other.capacity * other.output_scale;
-		}
-	}
-	if (total_capacity <= 1e-12) {
-		return 1.0;
-	}
-	const double own = building.capacity * building.output_scale;
-	const double share = std::clamp(own / total_capacity, 0.0, 1.0);
+	// C1: o ativo da lavoura vem do BALANÇO (`balance::marketable_assets`), a
+	// mesma conta que a D-099 fazia aqui — a regra provisória passou a ter um
+	// único dono. `share` 0 = par sem capacidade: comportamento original (1.0).
 	const Market& market = city.markets[building.output_product];
 	const double price = std::max(0.0, market.price);
-	const double asset = (std::max(0.0, market.stock)
-		+ crop_standing_value(city.id, building.output_product, price))
-		* price * share;
+	const double share = balance::firm_production_share(ws_, city_index,
+		building);
+	if (share <= 0.0) {
+		return 1.0;
+	}
+	const double asset = balance::marketable_assets(ws_, city_index, building,
+		price, crop_standing_value(city.id, building.output_product, price));
 	const double cap = asset / double(kLossDaysBeforeClose);
 	if (daily_cost <= cap) {
 		return 1.0;

@@ -365,6 +365,17 @@ public:
 	 * quintis. Montado sob demanda (testes/UI).
 	 */
 	Dictionary get_storage_status() const;
+	/**
+	 * C1 (D-102) — BALANÇO POR AGENTE (leitura). Devolve, sob demanda:
+	 *   * `world` — balanço agregado de famílias, firmas, governo e exterior;
+	 *   * `by_nation` — o mesmo por nação (país das cidades);
+	 *   * `invariant` — soma mundial das posições financeiras (0), resíduo de
+	 *     caixa contra o `money_total` e a base monetária (passivo do emissor);
+	 *   * `firms.solvency` — contagem de plantas líquidas/ilíquidas/insolventes.
+	 * Nada aqui move dinheiro; o status diário publica o bloco `balance` com o
+	 * resumo do mundo.
+	 */
+	Dictionary get_balance_status() const;
 	/** G2 — mapeamento produto→tipo de armazém em vigor (tabela declarada +
 	 *  overrides do JSON). `{produto: tipo}`; usado pelo StorageService. */
 	Dictionary get_storage_product_types() const;
