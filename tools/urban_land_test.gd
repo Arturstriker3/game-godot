@@ -364,6 +364,6 @@ func _test_determinism_and_roundtrip() -> void:
 	var after_portus: Dictionary = _urban(restored, "PORTUS")
 	if JSON.stringify(before_portus, "", true) != JSON.stringify(after_portus, "", true):
 		_fail("save/load: estado urbano divergiu (PORTUS)")
-	if int(one.to_dict().get("version", 0)) != 22:
+	if int(one.to_dict().get("version", 0)) != 23:
 		_fail("save version != 21")
 	print("[urban-w1] threads 1/8 identicos; save/load urbano identico (v21)")

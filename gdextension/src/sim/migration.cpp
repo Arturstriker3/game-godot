@@ -173,15 +173,23 @@ double urban_vacancy_people(const WorldState& ws, std::size_t ci) {
 // Utilidade urbana de uma cidade (por trabalhador/dia): salário × chance de
 // emprego − aluguel + serviços. Lê os sinais do fechamento anterior (estado
 // persistido — moradia/salários do dia já rodado), como a mobilidade B2.
-double city_utility(const WorldState& ws, std::size_t ci) {
+// B6: o custo de moradia é o que o migrante REALMENTE pagaria — o aluguel
+// urbano se há vaga no polo; sem vaga, o aluguel do ANEL periurbano (por
+// pessoa/dia), que é o destino do excedente. Sem dado de propriedade, o anel
+// custa 0 e o comportamento é o da B4 sozinha.
+double city_utility(WorldState& ws, SimCore& core, std::size_t ci) {
 	const City& city = ws.cities[ci];
 	const double labor_force = std::max(1.0, city.pop.labor_force);
 	// Salário urbano × chance de emprego = (folha ÷ empregados) × (empregados ÷
 	// força de trabalho) = folha ÷ força. A folha só paga os empregados, então
 	// o quociente JÁ embute a chance de emprego (evita o duplo desconto).
 	const double expected = std::max(0.0, city.pop.wage_income) / labor_force;
-	const double rent = std::max(0.0, housing::daily_rent_obligation(ws, ci))
+	double rent = std::max(0.0, housing::daily_rent_obligation(ws, ci))
 		/ labor_force;
+	if (urban_vacancy_people(ws, ci) <= kMigEps) {
+		// Polo cheio: quem chega assenta no anel e paga o aluguel de lá.
+		rent = core.ring_home_cost_per_day(city);
+	}
 	const double services = std::max(0.0, city.service_revenue)
 		/ std::max(1.0, city.simulation_population);
 	return expected - rent + kMigrationServiceWeight * services;
@@ -201,8 +209,13 @@ double migrate_region_to_urban(WorldState& ws, SimCore& core, std::size_t ci) {
 	if (region_pop <= kMigEps) {
 		return 0.0;
 	}
+	// B6: quem já mora no anel não é mais população rural (não entra no êxodo).
+	const double rural_pop = std::max(0.0, region_pop - region.ring_population);
+	if (rural_pop <= kMigEps) {
+		return 0.0;
+	}
 	const double rural_income = std::max(0.0, region.income) / region_pop;
-	const double urban_net = city_utility(ws, ci);
+	const double urban_net = city_utility(ws, core, ci);
 	const double gap = rural_income > kMigEps
 		? (urban_net - rural_income) / rural_income : 0.0;
 	if (gap <= kMigrationGapThreshold) {
@@ -210,7 +223,7 @@ double migrate_region_to_urban(WorldState& ws, SimCore& core, std::size_t ci) {
 	}
 	const double drive = std::clamp(
 		(gap - kMigrationGapThreshold) / kMigrationGapScale, 0.0, 1.0);
-	double migrants = region_pop * kMigrationMonthlyMax * drive;
+	double migrants = rural_pop * kMigrationMonthlyMax * drive;
 	// B5: região sem infraestrutura expulsa mais gente (fator sobre o fluxo,
 	// sinal correto: infra baixa → fator > 1; pessoas continuam conservadas).
 	migrants *= core.infra_exodus_multiplier(region);
@@ -218,28 +231,57 @@ double migrate_region_to_urban(WorldState& ws, SimCore& core, std::size_t ci) {
 	if (region.famine_months >= kFamineMigrationMonths) {
 		migrants *= (1.0 + kFamineMigrationBoost);
 	}
-	migrants = std::min(migrants, urban_vacancy_people(ws, ci));
+	// B6: o limite de vagas considera o ANEL periurbano. Quando o polo está
+	// cheio, o excedente do êxodo assenta no anel (vaga mensal declarada) em
+	// vez de ser barrado — sem criar pessoas: o morador do anel continua em
+	// `region_pop` (é um SUBCONJUNTO do interior).
+	const double urban_room = urban_vacancy_people(ws, ci);
+	const double ring_room = core.ring_vacancy_people(city);
+	const double room_total = urban_room + ring_room;
+	if (room_total <= kMigEps) {
+		return 0.0;
+	}
+	migrants = std::min(migrants, room_total);
 	if (migrants <= kMigEps) {
 		return 0.0;
 	}
 
-	Pool src{region.age_band, region.stratum_people, region.stratum_savings,
-		&region.cash};
-	Pool dst{pop.age_band, pop.stratum_people, pop.stratum_savings,
-		&pop.savings};
-	double age_out[kAgeBands];
-	double strata_out[kIncomeStrata];
-	double savings_out[kIncomeStrata];
-	const double moved = pool_take(src, migrants, kMigrationAgeWeight,
-		kMigrationStrataWeight, age_out, strata_out, savings_out);
-	pool_add(dst, age_out, strata_out, savings_out);
+	const double planned_urban = std::min(migrants, urban_room);
+	double moved_urban = 0.0;
+	if (planned_urban > kMigEps) {
+		Pool src{region.age_band, region.stratum_people, region.stratum_savings,
+			&region.cash};
+		Pool dst{pop.age_band, pop.stratum_people, pop.stratum_savings,
+			&pop.savings};
+		double age_out[kAgeBands];
+		double strata_out[kIncomeStrata];
+		double savings_out[kIncomeStrata];
+		moved_urban = pool_take(src, planned_urban, kMigrationAgeWeight,
+			kMigrationStrataWeight, age_out, strata_out, savings_out);
+		pool_add(dst, age_out, strata_out, savings_out);
+	}
+	double moved_ring = 0.0;
+	const double planned_ring = migrants - moved_urban;
+	if (planned_ring > kMigEps) {
+		moved_ring = std::min(planned_ring, std::max(0.0,
+			region.region_pop - region.ring_population));
+		if (moved_ring > kMigEps) {
+			region.ring_population += moved_ring;
+			region.migration_ring_in_total += moved_ring;
+			region.migration_month_ring_in += moved_ring;
+		}
+	}
 
-	region.migration_rural_in_total += moved;
-	region.migration_month_rural_in = moved;
-	// O interior perdeu gente e o urbano ganhou: reaplica os totais derivados.
+	region.migration_rural_in_total += moved_urban;
+	region.migration_month_rural_in = moved_urban;
+	if (moved_urban + moved_ring <= kMigEps) {
+		return 0.0;
+	}
+	// O interior perdeu gente (para o urbano) e o urbano ganhou: reaplica os
+	// totais derivados. O anel não muda o total do interior.
 	core.apply_demography(city);
 	core.apply_region_demography(city);
-	return moved;
+	return moved_urban + moved_ring;
 }
 
 // Cidade → cidade (mesma nação): a cidade fonte `ci` empurra para cidades de
@@ -354,7 +396,7 @@ void SimCore::phase_migration() {
 	const std::size_t n = ws_.cities.size();
 	std::vector<double> utility(n, 0.0);
 	for (std::size_t i = 0; i < n; ++i) {
-		utility[i] = city_utility(ws_, i);
+		utility[i] = city_utility(ws_, *this, i);
 	}
 	// Passada 1 — RESET dos fluxos do mês para as cidades que fecham HOJE.
 	// Roda ANTES de qualquer migração: a entrada cidade→cidade de outra cidade
@@ -368,6 +410,7 @@ void SimCore::phase_migration() {
 			continue;  // sem dado de região = inerte
 		}
 		region.migration_month_rural_in = 0.0;
+		region.migration_month_ring_in = 0.0;
 		region.migration_month_city_in = 0.0;
 		region.migration_month_city_out = 0.0;
 		region.migration_month_net = 0.0;

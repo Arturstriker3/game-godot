@@ -422,6 +422,25 @@ public:
 	void set_region_infra(const Variant& data);
 
 	/**
+	 * B6 (D-095) — PATRIMÔNIO DA REGIÃO a partir do dado (`land_property.json`
+	 * + a regra de rateio nacional→estado aplicada no GDScript). `data` =
+	 * `{city_id: {land_ha, land_gini, gini_observed}}` (ou por estado). Idempotente:
+	 * só age quando a região ainda não tem patrimônio (`property_ready` falso) —
+	 * um save v23 carrega o estado gravado, e um save v22 recebe o dado agora.
+	 * Cidade sem hectares > 0 não é tocada (ausência explícita). Arquivo ausente
+	 * = `{}` = nada muda.
+	 */
+	void set_region_property(const Variant& data);
+
+	/**
+	 * B6 — alíquota ANUAL do imposto sobre a propriedade (0,0 por padrão) de
+	 * todas as regiões da nação. Campo persistido e publicado como receita
+	 * potencial; nada é arrecadado enquanto for 0 (impostos são do macro
+	 * político). Fora de [0,1] é limitado.
+	 */
+	void set_property_tax_rate(const String& nation, double rate);
+
+	/**
 	 * §19 (W0): carrega solo urbano, moradia e finanças municipais dos quatro
 	 * JSON (`urban_land`, `housing_city`, `housing`, `municipal_finance`, já
 	 * parseados pelo GDScript). Chame DEPOIS de criar o mundo: o casamento é
@@ -1111,7 +1130,10 @@ private:
 		b_costs, b_site_suitability, d_offset, d_resource, d_product,
 		d_initial_kt, d_remaining_kt, d_quality, d_depth_m, d_efficiency,
 		d_opex_factor, d_extracted_kt, d_depleted,
-		c_offset, c_output_product, c_capacity, c_expand;
+		c_offset, c_output_product, c_capacity, c_expand,
+		// B6: Gini de riqueza (poupança + imóvel + terra + participações) da
+		// cidade e da nação.
+		wealth_gini;
 		StatusKeys();
 	};
 

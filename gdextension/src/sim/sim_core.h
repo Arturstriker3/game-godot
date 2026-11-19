@@ -290,6 +290,46 @@ public:
 	// Fase social no fim do dia: insatisfação (medição pura, sem dinheiro/pessoas).
 	void phase_social();
 
+	// ------------------------------------------------------------------
+	// B6 — PATRIMÔNIO IMOBILIÁRIO DA REGIÃO (sim/property.cpp). Terra
+	// produtiva, moradia do interior e anel periurbano da cidade-polo.
+	// Cadência MENSAL (A6). Valor de ativo NÃO é dinheiro: o único fluxo é o
+	// aluguel do anel (débito e crédito dentro da região). D-095,
+	// docs/economy/B6_region_property.md.
+	// ------------------------------------------------------------------
+	// Fase mensal: valoriza a terra (renda primária × infra B5 × commodities),
+	// fecha preço/aluguel da moradia e do anel, cobra o aluguel do anel
+	// (conservado), calcula a receita potencial do imposto e publica a
+	// distribuição por quintil + patrimônio. Laço SERIAL determinístico.
+	void phase_property();
+	// Semeia os hectares e o Gini fundiário (dado + regra de rateio aplicada no
+	// GDScript). Idempotente: só age quando `property_ready` é falso — um save
+	// v23 carrega o estado gravado. Sem hectares > 0 não faz nada (ausência).
+	void seed_region_property(City& city, double land_ha, double land_gini,
+		bool gini_observed);
+	// Valor de mercado dos ativos da região hoje (terra + moradia + anel).
+	double region_property_value(const Region& region) const;
+	// Vagas (pessoas/mês) do anel periurbano quando o polo está cheio: fração
+	// declarada da população urbana. 0 sem dado de propriedade (B4 preservada
+	// em save/cenário sem a B6).
+	double ring_vacancy_people(const City& city) const;
+	// Custo de moradia DIÁRIO por pessoa de quem vai para o anel (insumo do
+	// diferencial de utilidade da B4). 0 sem dado.
+	double ring_home_cost_per_day(const City& city) const;
+	// Índice de commodities da região (preço ÷ base D0 dos primários da
+	// cidade-polo, ponderado pela capacidade); 1.0 sem produtor primário.
+	double region_commodity_index(const City& city) const;
+	// Multiplicador de valor da terra pela infra B5 (>= 1; 1 sem cobertura).
+	static double property_infra_multiplier(const Region& region);
+	// Gini de uma distribuição por quintil (0..1); 0 sem massa.
+	static double quintile_gini(const double* values, int count);
+	// Crédito/débito no caixa da região repartidos pela renda/poupança dos
+	// quintis (B3). Públicos para a B6 cobrar o aluguel do anel com a MESMA
+	// regra de repartição do resto da região (o par soma zero: dinheiro
+	// conservado).
+	void region_credit(Region& region, double amount);
+	void region_charge(Region& region, double amount);
+
 	// F7: fecha o dia do mercado de trabalho de uma cidade.
 	double labor_day(City& city);
 	// F7 — custo diário da cesta completa de um nível de necessidade aos preços

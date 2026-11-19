@@ -1020,6 +1020,43 @@ struct Region {
 	double satisfaction_prev = 1.0;
 	double informal_crisis_factor = 1.0;
 	bool informality_seeded = false;
+	// ------------------------------------------------------------------
+	// B6 — PATRIMÔNIO IMOBILIÁRIO DA REGIÃO (save v23), cadência MENSAL (A6):
+	// terra produtiva, moradia do interior e ANEL PERIURBANO da cidade-polo.
+	// Os valores de ativo NÃO são dinheiro (`money_total` não os inclui): o
+	// único fluxo é o aluguel do anel, debitado e creditado DENTRO da região.
+	// `property_ready` = os hectares vieram do dado (`land_property.json` + a
+	// regra de rateio aplicada no GDScript); falso = região inerte para a B6
+	// (save v22 carregado antes de o dado ser reaplicado).
+	// `ring_population` é um SUBCONJUNTO de `region_pop` (moradores da
+	// periferia da cidade-polo, ainda contados no interior): pessoas nunca são
+	// criadas nem somadas duas vezes em `city.population`.
+	// ------------------------------------------------------------------
+	bool property_ready = false;
+	double land_ha = 0.0;                 // hectares agrícolas (dado × rateio)
+	double land_gini = 0.0;               // Gini fundiário efetivo (0..1)
+	bool land_gini_observed = false;      // veio do dado (não do fallback)
+	double land_value_per_ha = 0.0;       // XGS/ha (mercado)
+	double land_book_value_per_ha = 0.0;  // base contábil (1ª avaliação)
+	double land_income_month = 0.0;       // renda primária do mês (fecho)
+	double commodity_index = 1.0;         // preço ÷ preço-base D0 dos primários
+	double housing_price = 0.0;           // XGS/unidade (moradia do interior)
+	double housing_book_price = 0.0;      // base contábil da moradia
+	double housing_rent = 0.0;            // XGS/unidade/mês
+	double ring_population = 0.0;         // pessoas no anel (⊆ region_pop)
+	double ring_price = 0.0;              // XGS/unidade no anel
+	double ring_book_price = 0.0;         // base contábil do anel
+	double ring_rent = 0.0;               // XGS/unidade/mês no anel
+	double ring_rent_paid_month = 0.0;    // aluguel do anel pago no fecho
+	double migration_ring_in_total = 0.0; // excedente assentado no anel (acum.)
+	double migration_month_ring_in = 0.0; // idem, último fecho
+	double property_tax_rate = 0.0;       // alíquota anual (0 = sem imposto)
+	double property_tax_potential = 0.0;  // receita potencial do mês
+	// Distribuição por quintil (valor de mercado; NÃO é dinheiro).
+	double stratum_land_value[kIncomeStrata] = {};
+	double stratum_home_value[kIncomeStrata] = {};
+	double stratum_ring_value[kIncomeStrata] = {};
+	double stratum_wealth[kIncomeStrata] = {};
 };
 
 
@@ -1181,6 +1218,8 @@ struct Region {
 		kPhaseMigration,
 		// B7: insatisfação (medição pura, sem dinheiro/pessoas) no fim do dia.
 		kPhaseSocial,
+		// B6: patrimônio da região (terra/moradia/anel), cadência mensal.
+		kPhaseProperty,
 		kPhaseCount
 	};
 
