@@ -487,5 +487,187 @@ estoque inicial (`g2_price_probe_no_initial_stock.json`).
 causa já medida no 2a (preço ~1,0× base com o estoque herdado × gate de retorno
 de 60 d da IA). Não é regra da G; precisa de decisão de núcleo.
 
+## 11. D-099 — liquidez × solvência da fazenda (folha e opex reduzidos, sem criar dinheiro)
+
+**O problema medido.** Depois da D-096 a folha da fazenda continuou dimensionada
+para a produção **diária** de antes da G, mas a receita da safra chega
+concentrada na janela. Dois casos concretos:
+
+- **soja de AUS-DAR**: a safra é colhida e entra no estoque da cidade, mas o
+  comprador local não existe (`sold` = 0 no dia); a folha da janela não tinha
+  receita e a fazenda fechava **com o celeiro cheio**;
+- **soja de KEN-MOM**: 3.253 vagas semeadas para uma lavoura de poucas mil t
+  (assalariado da era da produção diária); o custo do dia excedia o valor da
+  colheita e a firma falia mesmo vendendo tudo.
+
+O teste antigo olhava só `profit < 0` por `kLossDaysBeforeClose` dias: não
+distinguia **iliquidez** (a safra existe e está no estoque/pé, só não foi
+vendida hoje) de **insolvência** (o ativo não cobre o custo).
+
+**A regra (núcleo, `sim/agriculture.cpp` + `sim/labor.cpp`).**
+
+1. `crop_standing_value(cidade, produto, preço)` — valor da safra **ainda não
+   entregue** do plano ativo (lavoura em pé + parcela da colheita em curso), a
+   preço de mercado da cidade. É avaliação, não venda: não cria dinheiro.
+2. `crop_liquidity_factor(cidade, construção, custo_dia)` — para fazenda
+   **primária com plano**, o custo do dia (folha + opex) é limitado ao ativo
+   `(estoque do produto + lavoura em pé) × preço × fatia da firma`, rateado em
+   `kLossDaysBeforeClose` dias. O que não se paga é **folha REDUZIDA** (o
+   `paid_wages`/`paid_opex` da construção cai; o caixa da cidade limita antes,
+   em `pay_scale`) — nada é criado. Fora da janela de plantio/colheita a
+   fazenda com plano já não paga nada (bit da D-096).
+3. Falência: a fazenda primária com plano **não acumula `loss_days`** enquanto
+   o ativo cobre o prejuízo do dia; se o ativo não cobre (estoque e lavoura
+   avaliados abaixo do custo), `loss_days` volta a acumular e a firma fecha.
+
+**Aceite (365 d, mundo real com IA, `tools/g2_world_ai_365.gd`).**
+
+| medida | antes da D-099 (2b) | com a D-099 |
+|---|---|---|
+| falências de construção | 322 | **28** |
+| dias travados / violações | 0 / 0 | **0 / 0** |
+| drift de dinheiro | +0,002581 | **+0,001452** |
+| portão de comida (< 0,975) | 105/179 | **93/179** (mediana 0,9692) |
+| hash da trajetória | `6c45e927…` | **`b0e44403…`** (2 rodadas) |
+
+As 28 restantes tinham **`with_crop_plan = 0`** (nenhuma era fazenda com plano):
+`{maize 14, rice 10, potato 2, iron 1, copper 1}`. Ou seja, a regra protege
+**todas** as fazendas com plano; quem ainda fechava era a fazenda **sem** plano
+(§12) e duas minas.
+
+**Diagnóstico sem mexer no mundo.** `EconomySim::get_bankruptcy_diag()` devolve
+`{total, with_crop_plan, by_product}` a partir de contadores de **runtime** em
+`WorldState` (`bankrupt_by_output`, `bankrupt_planned_primary`), zerados em
+`initialize_world`/`from_value` e **fora** de `get_status()` e do save. Rodei a
+mesma rodada antes e depois de mover o diagnóstico para fora do status: hash
+`b0e44403…` idêntico — o diagnóstico não muda o mundo.
+
+## 12. Fallback declarado — toda fazenda de primário tem plano
+
+**Quem eram as 24.** O censo do harness (`_farm_plan_census`) comparou as
+fazendas iniciais com os planos declarados:
+
+| cultura | fazendas | sem plano (antes) | onde |
+|---|---|---|---|
+| milho | 115 | **14** | EST 2, FIN 3, LVA 2, MNG 4, NOR 3 |
+| arroz | 197 | **14** | PER 5, TWN 3, GNQ 2, DMA 1, GRD 1, LCA 1, SGP 1 |
+| batata | 4 | **2** | ISL 2 |
+| trigo | 347 | 13 | BHR, DJI, NZL, SAH, SOL, XKX |
+| soja | 186 | 30 | SDN, TCD, CAF, DZA, RUS, … |
+
+As 24 que faliam são exatamente as 14 de milho + 10 de arroz **sem plano**
+(mais as 2 de batata, ISL): composição das falências `{maize 14, rice 10,
+potato 2}` + 2 minas. A origem, pelo `AgricultureService`:
+
+- **`no_yield` (66 planos de fallback)** — calendário existe, mas a FAOSTAT não
+  publica área/rendimento do par (EST/FIN/LVA/NOR/MNG milho; TWN/DMA/GNQ/GRD/
+  LCA/SGP arroz; quase todo o trigo/soja sem plano). Não é `no_data`: o dado
+  falta no rendimento.
+- **`no_calendar` (7)** — `data_status: no_data` (ISL batata; NZL milho).
+- **`all_year` (5)** — o dado declara **colheita contínua** (`all_year: true`,
+  PER arroz, batata tropical) e o serviço tratava isso como "sem calendário":
+  era **falha de lógica da G** (o dado existe; faltava a janela de ano inteiro).
+
+**A regra (GDScript, `AgricultureService._declare_fallback_plans`).** Só para
+(cidade, cultura) em que **existe fazenda primária** — o autoload passa
+`farms_of(buildings)` (`{city_id: {product, capacity_t_day}}`):
+
+- **orçamento anual** = capacidade que a própria fazenda já declara
+  (`output_tons_per_day × 365`) — o fallback **não cria safra nova**, dá ao par
+  o plano da produção que ele já tinha;
+- **janela** = calendário da nação quando existe (`no_yield`); senão uma janela
+  **contínua declarada** de ano inteiro (plantio e colheita em 1..365, `share`
+  1), que entrega 1/365 por dia — a mesma produção diária anterior (`all_year`
+  e `no_calendar`);
+- `área_ha = orçamento` e `yield_t_ha = 1` codificam o orçamento em
+  t-equivalentes (o núcleo só usa `área × rendimento`); sem fertilizante no
+  fallback (não há `n_kg_ha` para o par). Cada plano vai para o relatório com o
+  motivo (`fallback_plans`/`fallback_reasons`) — nada escondido.
+
+**Resultado.** 3.462 planos (3.384 + **78** de fallback: 66 `no_yield`, 7
+`no_calendar`, 5 `all_year`); censo depois: **toda** fazenda com plano
+(milho 115/115, arroz 197/197, batata 4/4, trigo 347/347, soja 186/186).
+
+| medida | D-099 (28 falências) | + fallback |
+|---|---|---|
+| falências | 28 | **2** (`iron` 1, `copper` 1 — minas, não fazendas) |
+| `with_crop_plan` | 0 | **0** (as 2 são minas) |
+| portão (< 0,975) | 93/179 | **84/179** (mediana 0,9832) |
+| drift | +0,001452 | **+0,000811** |
+| hash | `b0e44403…` | **`80d7dc1c…`** (o mundo mudou por desenho) |
+
+`agriculture_seasonal_test` cobre o fallback: 78 planos declarados, motivos
+conferidos, janela contínua respeitada no teste de "fora da janela" e a
+entressafra segue com 0 entrega fora da janela.
+
+## 13. Sazonalidade de preço — causa medida (por que o preço não se move)
+
+O índice de preço por hemisfério/cultura (razão à base, ponderado pela venda,
+média mensal) na rodada de 365 d com o fallback:
+
+| hemisfério | trigo | arroz | milho | soja | batata |
+|---|---|---|---|---|---|
+| norte (USA/CHN/IND/FRA) | 1,019–1,041 | 1,036–1,065 | 1,000 | 1,024–1,035 | 1,000 |
+| sul (BRA/ARG/AUS/ZAF) | 1,075–1,080 | 1,000–1,057 | 1,000 | 1,000 | 1,000 |
+
+A amplitude no ano é de **2–3 pontos percentuais** (arroz) e **zero** em
+milho/batata. O volume sazonal entra (a safra chega concentrada — §10), mas o
+**preço não acompanha**, e a causa é medida:
+
+1. **comércio cidade↔cidade e importação arbitram antes da escassez local
+   aparecer**: o preço local converge para a âncora (razão 1,000) ou para a
+   paridade de importação (1,080) — os valores exatos 1,000/1,080 na série são
+   o sintoma do arbitrador, não da safra;
+2. **o estoque carregado absorve o pico**: no dia 365 o mundo carrega ~400 Mt
+   de trigo e ~345 Mt de soja (§10), muito acima do fluxo diário; a colheita
+   entra e sai do silo sem pressionar o preço;
+3. o preço é livre (D-091/D-092), mas a formação mira a âncora com passo
+   diário; sem um agente que **estoche por sazonalidade**, o desvio não
+   persiste.
+
+A prova do mecanismo continua sendo a sonda **sem estoque inicial** (2a): IND
+trigo −36% (fev–mar), FRA −62% (jun–jul), BRA soja −38% na colheita. **G2**
+(governo × privado e IA privada de armazém) é o que deve fechar a lacuna: com
+estoque privado respondendo à entressafra, o preço passa a carregar o prêmio
+sazonal em vez de a âncora o achatar.
+
+## 14. Fechamento do Bloco 2b — goldens, CLI×Godot, bateria e custo da fase
+
+**Goldens (2 rodadas cada, debug).**
+
+| golden | save | status | observação |
+|---|---|---|---|
+| A0 60 d (IA + urbano + G) | `925c3096…` | `40203cc9…` | money 6.523.551.982,900041; 39.841 negócios |
+| `real_60_ai` (S0) | `b6207c15…` | `9c9785a0…` | **inalterado** — o harness S0 não declara agricultura |
+| `real_60_noai` (S0) | `39879f90…` | `3a0dd9af…` | igual ao arquivo em disco (save v24) |
+| `demo_365_noai` (AGRIA/PORTUS) | `dad1e86c…` | `a7a8e16a…` | idem; 630.000 XGS, 110 negócios, 0 falência |
+
+O A0 é o replay que representa o jogo (declara os planos como o autoload) e
+mudou por desenho; os S0 `real_60_*`/`demo_365_noai` continuam com o mesmo par
+de hashes do arquivo versionado. **Pendência declarada:** o harness S0
+(`economy_refactor_equiv.gd`) não chama o `AgricultureService` — a G não entra
+nesses dois goldens; se o dono quiser o S0 igual ao jogo, é a mesma ligação de
+duas linhas que o `world_equivalence.gd` recebeu.
+
+**CLI × Godot (10 d, G padrão).** Snapshot do `export_world_snapshot.gd`
+(3.462 planos) + replay Godot `--ai=1 --threads=1` × `opengs_sim_cli`:
+**byte-idênticos**, 80.615.107 bytes, SHA-256
+`EF1B21CC4B01622EB7C4992AC0993987E10B1A994BCC8EFD35DF953A392B57D0`,
+0 violações.
+
+**Bateria completa (um teste por vez, Godot 4.7.2 debug).** 78 scripts
+`tools/*_test.gd` + `services_test.tscn` (cena): **79/79 verdes, 0 falhas** —
+inclui `agriculture_seasonal_test`, `agri_calendar_owner_test`,
+`economy_integration_test`, `economy_ai_test`, `economy_long_run_test`,
+`economy_save_load_roundtrip_test` e `turbo_equivalence_test`.
+
+**Custo da fase G no perfil.** `_profile` de 60 d (debug, mundo real, IA):
+`agriculture` **0,0–0,1 ms/dia** (a fase só roda o calendário e a janela; a
+entrega é O(planos) e não percorre o mundo) — o custo real da G no dia está na
+**folha sazonal** (`labor`: +0,1–0,3 ms/dia pelo `crop_liquidity_factor`) e na
+supressão da produção diária, que **reduz** `production`. Detalhe por fase em
+`docs/economy/perf/g2_profile.json`.
+
+
 
 
