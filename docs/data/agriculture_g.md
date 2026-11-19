@@ -6,9 +6,15 @@
 > inicial é de **fim de safra**, e ninguém nasce com silo vazio.
 >
 > Branch `data/g-agriculture`, worktree `G:/projetos/opengs-wt-data-agri`, base
-> `balance/global-resources` `ebd24157`. **Nada mesclado.** A integração no núcleo
+> `balance/global-resources` `ebd24157`. Entra em `balance/global-resources` por merge `--no-ff`
+> (2026-11-18); a integração no núcleo
 > (produção = área × rendimento, janela de colheita, consumo do estoque, perda por
 > armazenagem) é trabalho do `@gerente-simulacao`.
+>
+> **Numeração:** **D-094 é desta entrega** (dados da Parte G). A **B6**
+> (`feat/b6-region-property`) ainda não gravou número no `GAME_STATE.md` e vinha
+> planejando usar D-094; como este dado entra primeiro, **a B6 usa a próxima
+> decisão livre (D-095 em diante)** — não renumerar esta.
 
 - Pasta: `data/definitions/agriculture/`
 - Construtores: `tools/build_agri_{yields,calendar,losses,fertilizer,livestock}.py`
@@ -34,7 +40,7 @@ alimenta o núcleo; existe só para prova de fonte.
 
 | arquivo | conteúdo | entradas | observado / regra / sem dado |
 |---|---|---|---|
-| `crop_calendar.json` | plantio e colheita país×cultura, 1–2 safras, hemisfério | 895 (179×5) | 237 / 658 / 0 |
+| `crop_calendar.json` | plantio e colheita país×cultura, 1–2 safras, hemisfério | 895 (179×5) | 274 / 592 / 29 |
 | `crop_yields.json` | rendimento t/ha, área colhida ha, produção t, ano | 895 | 654 / — / 241 |
 | `crop_stocks.json` | estoque de fim de safra, consumo, dias de consumo | 895 | 354 / 390 / 151 |
 | `postharvest_losses.json` | perda pós-colheita % (e % da fase de armazenagem) | 895 | 86 + 677 regional / 132 |
@@ -53,6 +59,10 @@ Todos com `_meta` (dataset, versão, gerador, `retrieved: 2026-11-18`, 179 naç�
 | `USDA_PSD` | USDA FAS — Production, Supply and Distribution (CSV público grãos + oleaginosas) | domínio público (USDA) | **Ending Stocks** (atributo 176, 1000 MT→t) e **Domestic Consumption** (125) |
 | `FAO_CROP_CALENDAR` | FAO — Crop Calendar, resumo nacional por zona agroecológica (CSV via `api.data.apps.fao.org`) | CC BY 4.0 | janelas de plantio/colheita (57 países) |
 | `JRC_ASAP` | EC JRC — *Crop calendar dataset compatible with land surface phenology*, doi:10.2905/JRC.PXQH3Q0 | EU reuse notice | janelas em dekads (75 países) |
+| `USDA_NASS_AH628` | USDA NASS — *Field Crops Usual Planting and Harvesting Dates* (AH-628, out/2010) | domínio público (USDA) | EUA: milho, soja, trigo, arroz e batata (5 pares) |
+| `USDA_AH664` | USDA WAOB/JAWF — *Major World Crop Areas and Climatic Profiles* (AH-664, rev. set/1994) | domínio público (USDA) | calendários por país/região lidos do gráfico (28 pares): BRA, CHN, IND, CAN, MEX, ARG, FRA, DEU, POL, ITA, RUS, UKR, AUS, TUR e outros |
+| `USDA_GAIN` | USDA FAS — *Global Agricultural Information Network*, relatórios nacionais citados em `evidence.report` | domínio público (USDA) | pares com texto (ARG soja, UKR, outros) |
+| `FAO_GIEWS` | FAO GIEWS — *Country Briefs* (ex.: Iran, ref. 10/nov/2026) | © FAO, uso com citação | conferência textual das duas pontas onde o gráfico é regional (`IRN/wheat`) |
 | `IFA_FUBC_2018` / `IFA_FUBC_HISTORIC` | IFA — *Fertilizer use by crop and country 2017-2018*, doi:10.5061/dryad.2rbnzs7qh | CC0 1.0 | `Aver_N_rate_kg_ha` por país×cultura |
 | `APHLIS` | APHLIS — perdas pós-colheita por país/cultura (tabelas públicas) | citado na fonte | perda total e da fase de armazenagem (África) |
 | `FAO_2011` | FAO — *Global food losses and food waste* (Gustavsson et al., 2011), Annex 4 p. 26–27 | citado na fonte | taxa regional por grupo (cereais / raízes / oleaginosas) |
@@ -65,17 +75,30 @@ inventado para preencher buraco.
 ## 4. Como cada número foi obtido
 
 ### 4.1 Calendário (`crop_calendar.json`)
+- **Camada primária** (`tools/agri_calendar_primary.json`, **37 pares**): a janela vem de
+  documento, com `evidence` = {report, quote, url, page, basis} em cada entrada. Tem prioridade
+  sobre tudo e cobre **15/15 do top-15 de trigo, arroz e milho**, **10/15 da soja** e **5/15 da
+  batata** (top-15 = produção do próprio `crop_yields.json`). Fontes: USDA NASS **AH-628** (EUA,
+  5 pares, tabela por estado), USDA **AH-664** (28 pares, leitura do gráfico de calendário com a
+  página impressa e a legenda citadas), **USDA GAIN** (4 pares, texto) e o **FAO GIEWS Country
+  Brief — Iran** (10/nov/2026) no `IRN/wheat`, onde o gráfico do AH-664 é regional (Oriente
+  Médio) e só a conferência textual dá as duas pontas. A camada primária **não** passa pela
+  agregação: as safras entram como o documento as descreve.
 - FAO: agregação das zonas agroecológicas por país/cultura — plantio do menor início ao maior
   fim, colheita idem. Blocos separados por ≥3 meses viram **duas safras**; 3+ blocos caem em
   fallback de 1 safra agregada (47 casos, `window_labels` preserva o rótulo bruto).
 - JRC: dekads 1–36 convertidas para mês do primeiro dia da dekad (`source_year: null` — a fonte
   não publica ano).
-- Prioridade FAO > JRC > regra. `all_year: true` = 33 pares em que a fonte declara ano inteiro
-  (sem meses inventados).
-- **Regra declarada** (658 entradas): herda as janelas de um país observado, em três níveis —
-  350 `same_region` (mesma faixa de latitude e mesma região do jogo), 263 `same_band_nearest`
-  e 45 `adjacent_band` (faixa vizinha, para os países frios e NZL). O doador, a distância e o
-  nível ficam em `rule: {tier, donor, distance_km}`.
+- Prioridade **PRIMARY > FAO > JRC > regra**. `all_year: true` = 33 pares em que a fonte declara
+  ano inteiro (sem meses inventados).
+- **Regra declarada** (592 entradas): herda as janelas de um país observado **do mesmo hemisfério
+  e da mesma faixa de latitude** (`agri_common.climate_band`), em dois níveis — 440 `same_region`
+  (o mais próximo dentro da mesma `region` do jogo) e 152 `same_band_other_region` (outra região,
+  **só** quando não há doador no próprio continente, com `cross_continent: true` e
+  `justification`). Faixa de latitude vizinha (clima diferente) e hemisfério oposto **não** são
+  mais aceitos: 29 pares ficam `no_data` com `reason` em pt-BR (§6.1). O doador, a distância e o
+  nível ficam em `rule: {tier, donor, distance_km}`, e o build **falha** se algum par do top-15
+  ficar em regra sem estar declarado em `_meta.top15_exceptions`.
 
 ### 4.2 Rendimento e área (`crop_yields.json`)
 FAOSTAT QCL, último ano ≤2024 com área > 0: `yield_t_ha = production_t / area_harvested_ha`
@@ -128,18 +151,26 @@ ração) — sem fonte acessível, ficou nulo em vez de estimado.
 | UKR trigo | 4,595 | 4.883.800 (2024) | 726.000 (PSD, 31 d) | 103,8 |
 | EGY trigo | 6,778 | 1.386.892 (2024) | 2.911.000 (PSD, 53 d) | 180,4 |
 
-Calendário da amostra: **EGY trigo é observado** (FAO: plantio 15–30/nov, colheita 25/abr–25/mai).
-As demais caem em regra: BRA soja ← BOL (`same_region`, 2.137 km, duas safras: jun/out–nov e
-nov–jan/mar–mai), IND arroz e trigo ← MMR, CHN arroz ← BGD, USA milho ← PRK (10.726 km),
-UKR trigo ← AZE.
+Calendário da amostra: **todos observados** — USA milho (AH-628: plantio abr–jun, colheita
+set–nov), USA soja e USA trigo (AH-628), BRA soja (AH-664 p. 80: plantio out–dez, colheita
+mar–mai), IND arroz (AH-664: kharif jun–ago/out–nov e rabi nov–jan/mar–abr), CHN trigo, RUS
+trigo, AUS trigo, FRA trigo (AH-664), ARG soja (USDA GAIN: 1ª out–dez/abr–mai, 2ª dez–jan/mai–jul)
+e EGY trigo (FAO: plantio 15–30/nov, colheita 25/abr–25/mai). Nenhum caso da amostra cai em regra
+de vizinho — era exatamente esse o defeito corrigido (`USA milho ← PRK` não existe mais).
 
 ## 6. Limitações declaradas (não são erros; são o buraco que a fonte deixa)
 
-1. **Calendário: 73,5% é herdado.** FAO e JRC não publicam calendário nacional para USA, BRA,
-   CHN, IND, RUS, UKR e a maior parte da Europa. O USDA IPAD publica os calendários apenas como
-   **imagem** (chart), não como dado legível por máquina — por isso não entrou. Consequência
-   visível: `USA maize ← PRK 10.726 km`, `UKR wheat ← AZE 1.689 km`. O doador sempre está no
-   JSON; o núcleo deve tratar `rule_neighbor` como aproximação, não como observação.
+1. **Calendário: 66,1% é herdado** (era 73,5%). O top-15 de trigo, arroz e milho é 100%
+   observado; falta batata (10 dos 15 pares) e soja de RUS/UKR/URY/NGA/BEN — nenhum documento
+   acessível declara **as duas pontas** da janela para eles: o **USDA IPAD** (fonte canônica de
+   crop calendar) respondeu **HTTP 503** durante toda a coleta (reconferido em 18/nov/2026), o
+   AH-664 não tem capítulo de batata, e ABARES/CPRI-ICAR e os relatórios GAIN de batata da UE
+   não trazem meses por país. Esses 15 pares estão declarados em `_meta.top15_exceptions` e
+   seguem em regra estrita (mesmo hemisfério **e** mesma faixa). A regra ficou mais estreita:
+   faixa vizinha e hemisfério oposto saíram, então **29 pares** (nórdicos/bálticos em batata,
+   arroz e soja; NZL em tudo; RUS em arroz/batata/soja) passaram de "herdado" para `no_data` com
+   motivo — é ausência honesta, não erro. `USA maize ← PRK 10.726 km`, que aparecia no GAME_STATE,
+   **não existe mais**.
 2. **Janelas agregadas largas** quando a fonte tem 3+ safras (BGD Aman/Aus/Boro, MMR): 47 pares
    ficaram em 1 safra agregada; 185 safras têm colheita agregada começando antes do fim do
    plantio agregado (efeito de misturar zonas). `note` marca os casos.

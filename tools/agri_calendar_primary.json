@@ -1,0 +1,625 @@
+{
+	"_meta": {
+		"dataset": "agriculture_crop_calendar_primary",
+		"version": "p1",
+		"retrieved": "2026-11-18",
+		"purpose": "Calendário de plantio/colheita dos MAIORES produtores de cada primário do jogo, tirado de documento (não de vizinho). Camada de prioridade máxima do build_agri_calendar.py.",
+		"month_convention": "janela = [mês do início, mês do fim], inclusive, no calendário civil do país. Fonte textual: mês do primeiro e do último evento citado. Fonte em gráfico (USDA AH-664): leitura das faixas PLANT/HARVEST contra o eixo JAN..DEC da página citada.",
+		"evidence": "toda entrada traz `evidence` = {report, quote, url, page, basis}; `page` é a página impressa do documento (não a do PDF). `quote` traz o trecho literal ou, quando a fonte é gráfico, a legenda exata + a transcrição das faixas.",
+		"top15_exceptions": [
+			"CAN/potato",
+			"CHN/potato",
+			"DEU/potato",
+			"FRA/potato",
+			"IND/potato",
+			"NED/potato",
+			"NGA/soy",
+			"POL/potato",
+			"RUS/potato",
+			"RUS/soy",
+			"TUR/potato",
+			"UKR/potato",
+			"UKR/soy",
+			"URY/soy",
+			"BEN/soy"
+		],
+		"top15_exceptions_reason": "Nenhum documento acessível declara as DUAS pontas da janela para estes pares. O que sobrou é sobretudo BATATA (CAN, CHN, DEU, FRA, IND, NED, POL, RUS, TUR e UKR = 10 dos 15): o USDA AH-664 não tem capítulo de batata, ABARES e CPRI/ICAR (batata da Índia) não responderam e os relatórios USDA GAIN de batata da UE não trazem meses por país. O resto é soja de RUS/UKR/URY/NGA/BEN, sem documento acessível com as duas pontas. USDA IPAD (fonte canônica de crop calendar) respondeu HTTP 503 nesta rede durante toda a coleta. Estes pares continuam em `rule_neighbor` com doador do MESMO hemisfério e faixa (regra estrita) e estão listados aqui — não foram preenchidos por estimativa.",
+		"notes": [
+			"AH-664 é de 1994: é calendário climatológico (normais), não calendário de um ano. Onde existe fonte mais recente (GAIN 2025/2026, WAP 2026) ela é citada junto.",
+			"Leitura de gráfico é declarável: a página e a legenda exata estão em `evidence`; qualquer pessoa refaz a leitura no PDF citado."
+		]
+	},
+	"sources": {
+		"USDA_NASS_AH628": {
+			"title": "Field Crops Usual Planting and Harvesting Dates (Agricultural Handbook 628, October 2010)",
+			"publisher": "USDA National Agricultural Statistics Service",
+			"url": "https://esmis.nal.usda.gov/sites/default/release-files/vm40xr56k/dv13zw65p/z603r1055/planting-10-29-2010.txt",
+			"year": 2010,
+			"license": "domínio público (USDA)",
+			"accessed": "2026-11-18"
+		},
+		"USDA_AH664": {
+			"title": "Major World Crop Areas and Climatic Profiles (Agricultural Handbook 664, revised September 1994)",
+			"publisher": "USDA World Agricultural Outlook Board / Joint Agricultural Weather Facility (NOAA/USDA)",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"year": 1994,
+			"license": "domínio público (USDA)",
+			"accessed": "2026-11-18"
+		},
+		"USDA_GAIN": {
+			"title": "USDA FAS Global Agricultural Information Network (Attaché Reports) — relatórios nacionais citados em `evidence.report`",
+			"publisher": "USDA Foreign Agricultural Service",
+			"url": "https://gain.fas.usda.gov/",
+			"year": 2026,
+			"license": "domínio público (USDA)",
+			"accessed": "2026-11-18"
+		}
+	},
+	"entries": [
+		{
+			"nation": "USA",
+			"crop": "wheat",
+			"source": "USDA_NASS_AH628",
+			"source_year": 2010,
+			"report": "Field Crops Usual Planting and Harvesting Dates, AH-628 (Oct 2010), tabelas 'Winter Wheat' e 'Spring Wheat' por estado",
+			"url": "https://esmis.nal.usda.gov/sites/default/release-files/vm40xr56k/dv13zw65p/z603r1055/planting-10-29-2010.txt",
+			"page": 34,
+			"basis": "trigo de inverno: KS 8.800, OK 3.500, CO 2.450, TX 2.450, MT 2.420 mil acres (56,9% da área); trigo de primavera (sem durum): ND 6.300 e MT 2.350 (66,8%)",
+			"seasons": [
+				{"label": "winter_wheat", "planting": [9, 11], "harvest": [5, 8]},
+				{"label": "spring_wheat", "planting": [4, 6], "harvest": [7, 9]}
+			],
+			"quote": "Kansas .........:   8,800    Sep 10 Sep 15 - Oct 20 Nov 1   Jun 15 Jun 20 - Jul 5  Jul 15",
+			"note": "Inverno: CO começa 1/set, TX termina o plantio em 23/nov; colheita de TX em 25/mai até MT em 17/ago. Primavera: ND 16/abr a 3/jun; colheita MT 30/jul a ND 25/set."
+		},
+		{
+			"nation": "USA",
+			"crop": "rice",
+			"source": "USDA_NASS_AH628",
+			"source_year": 2010,
+			"report": "Field Crops Usual Planting and Harvesting Dates, AH-628 (Oct 2010), tabela 'All Rice' por estado",
+			"url": "https://esmis.nal.usda.gov/sites/default/release-files/vm40xr56k/dv13zw65p/z603r1055/planting-10-29-2010.txt",
+			"page": 21,
+			"basis": "AR 1.470 + CA 556 mil acres = 65,3% da área de arroz do relatório",
+			"seasons": [
+				{"label": "main", "planting": [4, 6], "harvest": [8, 11]}
+			],
+			"quote": "Arkansas .......:   1,470    Apr 6  Apr 14 - May 19 Jun 2   Aug 29 Sep 9 - Oct 10  Oct 24",
+			"note": "Plantio AR 6/abr–2/jun e CA 20/abr–10/jun; colheita AR 29/ago–24/out e CA 5/set–10/nov."
+		},
+		{
+			"nation": "USA",
+			"crop": "maize",
+			"source": "USDA_NASS_AH628",
+			"source_year": 2010,
+			"report": "Field Crops Usual Planting and Harvesting Dates, AH-628 (Oct 2010), tabela 'Corn for Grain' por estado",
+			"url": "https://esmis.nal.usda.gov/sites/default/release-files/vm40xr56k/dv13zw65p/z603r1055/planting-10-29-2010.txt",
+			"page": 9,
+			"basis": "IA 13.400, IL 11.800, NE 8.850, MN 7.150 mil acres = 51,8% da área de milho-grão",
+			"seasons": [
+				{"label": "main", "planting": [4, 6], "harvest": [9, 11]}
+			],
+			"quote": "Iowa ...........:  13,400    Apr 19  Apr 25 - May 18 May 26  Sep 21 Oct 5 - Nov 9   Nov 21",
+			"note": "Plantio IL 14/abr–5/jun; colheita IL 14/set–MN 23/nov."
+		},
+		{
+			"nation": "USA",
+			"crop": "potato",
+			"source": "USDA_NASS_AH628",
+			"source_year": 2010,
+			"report": "Field Crops Usual Planting and Harvesting Dates, AH-628 (Oct 2010), linhas 'Potatoes, fall' das tabelas por estado",
+			"url": "https://esmis.nal.usda.gov/sites/default/release-files/vm40xr56k/dv13zw65p/z603r1055/planting-10-29-2010.txt",
+			"page": 43,
+			"basis": "ID 319,0; WA 145,0; ND 75,0; CO 55,2; MN 45,0; MI 43,5 mil acres (682,7 de 818,4 mil acres com tabela de batata). Maine e Wisconsin não têm tabela de batata no AH-628",
+			"seasons": [
+				{"label": "fall_crop", "planting": [3, 6], "harvest": [7, 10]}
+			],
+			"quote": "Potatoes, fall .........:    319.0   Apr 6  Apr 28 - May 19 Jun 9   Aug 15 Sep 22 - Oct 13 Oct 27",
+			"note": "AH-628 não tem tabela nacional de batata; usa as linhas 'Potatoes, fall' dos estados do basis (plantio WA 30/mar–MN 10/jun; colheita WA 10/jul–WA 30/out). FL (primavera) e NJ/MD/CO (verão) têm janelas próprias."
+		},
+		{
+			"nation": "USA",
+			"crop": "soy",
+			"source": "USDA_NASS_AH628",
+			"source_year": 2010,
+			"report": "Field Crops Usual Planting and Harvesting Dates, AH-628 (Oct 2010), tabela 'Soybean' por estado",
+			"url": "https://esmis.nal.usda.gov/sites/default/release-files/vm40xr56k/dv13zw65p/z603r1055/planting-10-29-2010.txt",
+			"page": 25,
+			"basis": "IA 9.530, IL 9.350, MN 7.120, IN 5.440, MO 5.300, NE 4.760 mil acres = 54,3%",
+			"seasons": [
+				{"label": "main", "planting": [5, 7], "harvest": [9, 11]}
+			],
+			"quote": "Iowa ...........:   9,530    May 2  May 8 - Jun 2   Jun 16  Sep 21 Sep 28 - Oct 20 Oct 31",
+			"note": "Plantio IN 1/mai–MO 4/jul; colheita IL 19/set–MO 23/nov."
+		},
+		{
+			"nation": "CHN",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'China: Wheat' (p. 163), gráficos 'Winter wheat crop calendar for most of China' e 'Spring wheat crop calendar for northern China'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 163,
+			"basis": "trigo de inverno = 90% da produção (GAIN CH2025-0064); primavera 10-15% (AH-664)",
+			"seasons": [
+				{"label": "winter", "planting": [9, 10], "harvest": [5, 6]},
+				{"label": "spring", "planting": [3, 5], "harvest": [7, 8]}
+			],
+			"quote": "'Winter wheat crop calendar for most of China' — PLANT de meados de SET ao fim de OUT, HEAD ABR, HARVEST de meados de MAI ao fim de JUN; 'Spring wheat crop calendar for northern China' — PLANT de meados de MAR a MAI, HARVEST de meados de JUL ao fim de AGO (gráficos lidos no eixo JAN..DEC)",
+			"note": "Leitura de gráfico (p. 163). O texto do GAIN CH2025-0064 diz 'winter wheat planting ... in October and November'; a barra desenhada começa em meados de setembro — adotada a barra e registrado o conflito."
+		},
+		{
+			"nation": "CHN",
+			"crop": "rice",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'China: Single-crop rice' (p. 161) e 'China: Double-crop rice' (p. 162)",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 161,
+			"basis": "arroz de safra única = 44-48% da produção; dupla safra (precoce + tardia) = ~52-56% (AH-664)",
+			"seasons": [
+				{"label": "early", "planting": [3, 3], "harvest": [6, 7]},
+				{"label": "single_late", "planting": [4, 7], "harvest": [8, 11]}
+			],
+			"quote": "'Single-crop rice crop calendar for most of China' — PLANT ABR-MAI, HARVEST AGO-OUT; 'Early double-crop rice crop calendar for southern China' — PLANT MAR, HARVEST JUN-JUL; 'Late double-crop rice' — PLANT JUN-JUL, HARVEST OUT-NOV (gráficos lidos no eixo JAN..DEC)",
+			"note": "A safra única e a tardia foram agregadas em uma janela (limite de 2 safras no contrato)."
+		},
+		{
+			"nation": "CHN",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'China: Corn' (p. 164), gráficos 'Corn crop calendar for North China Plain and Manchuria' e '... for most of southern China'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 164,
+			"basis": "80% do milho chinês está na Planície Norte da China (FAO GIEWS CHN, 29/jan/2026), coberta pelo primeiro gráfico",
+			"seasons": [
+				{"label": "north", "planting": [4, 5], "harvest": [8, 10]},
+				{"label": "south", "planting": [2, 3], "harvest": [7, 9]}
+			],
+			"quote": "'Corn crop calendar for North China Plain and Manchuria' — PLANT ABR-MAI, HARVEST AGO-OUT; 'Corn crop calendar for most of southern China' — PLANT FEV-MAR, HARVEST JUL-SET (gráficos lidos no eixo JAN..DEC)",
+			"note": "Sazonalidade de duas regiões; a do norte concentra a produção."
+		},
+		{
+			"nation": "CHN",
+			"crop": "soy",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'China: Soybeans' (p. 165), gráfico 'Soybean crop calendar for North China Plain & Manchuria'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 165,
+			"basis": "Planície Norte da China e Manchúria (região do gráfico); o próprio gráfico anota que no sul o ciclo é 1-2 meses mais cedo",
+			"seasons": [
+				{"label": "main", "planting": [4, 5], "harvest": [9, 10]}
+			],
+			"quote": "'Soybean crop calendar for North China Plain & Manchuria' — PLANT ABR-MAI, HARVEST SET-OUT; nota do gráfico: 'Across southern China, soybeans are planted and harvested 1-2 months earlier than depicted above.'",
+			"note": "Janela do gráfico; o sul (1-2 meses mais cedo) não foi agregado para não alargar a janela artificialmente."
+		},
+		{
+			"nation": "IND",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'India: Winter wheat' (p. 177), gráfico 'Winter wheat calendar for most of India'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 177,
+			"basis": "trigo rabi (única safra de trigo da Índia); GAIN IN2025-0023 cita plantio em out-nov e colheita de março ao fim de abril",
+			"seasons": [
+				{"label": "rabi", "planting": [10, 12], "harvest": [3, 4]}
+			],
+			"quote": "'Winter wheat calendar for most of India' — PLANT de meados de OUT a meados de DEZ, HEAD JAN-FEV, HARVEST de MAR a fins de ABR (gráfico lido no eixo JAN..DEC). GAIN IN2025-0023: 'favorable wheat planting conditions in October-November' e 'harvest ... end April'",
+			"note": null
+		},
+		{
+			"nation": "IND",
+			"crop": "rice",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'India: Kharif rice' (p. 175) e 'India: Rabi rice' (p. 176)",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 175,
+			"basis": "kharif = ~80% da produção anual, rabi = ~12% (FAO GIEWS IND, 13/fev/2026)",
+			"seasons": [
+				{"label": "kharif", "planting": [5, 8], "harvest": [9, 12]},
+				{"label": "rabi", "planting": [11, 2], "harvest": [3, 6]}
+			],
+			"quote": "'Kharif rice calendar for most of India' — PLANT de meados de MAI ao fim de AGO, HEAD JUL-NOV, HARVEST de meados de SET ao fim de DEZ; 'Rabi rice calendar for most of India' — PLANT NOV-FEV, HEAD JAN-ABR, HARVEST de MAR ao início de JUN (gráficos lidos no eixo JAN..DEC)",
+			"note": "Leitura de gráfico (p. 175 kharif, p. 176 rabi). O GAIN IN2025-0023 diz 'rice ... June/early July and progresses through September' e 'winter planted (November-January) rabi crop'; o início do kharif no gráfico é meados de mai — adotada a barra."
+		},
+		{
+			"nation": "IND",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'India: Corn' (p. 180), gráfico 'Corn calendar for most of India'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 180,
+			"basis": "calendário principal (kharif); o gráfico mostra uma colheita secundária em janeiro",
+			"seasons": [
+				{"label": "kharif", "planting": [5, 7], "harvest": [11, 12]}
+			],
+			"quote": "'Corn calendar for most of India' — PLANT de meados de MAI a meados de JUL, HARVEST NOV-DEZ (gráfico lido no eixo JAN..DEC)",
+			"note": "A colheita secundária de janeiro (safra rabi, ~pequena) não entrou para não virar 2ª safra de peso artificial."
+		},
+		{
+			"nation": "IND",
+			"crop": "soy",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'India: Soybeans' (p. 182), gráfico 'Soybean calendar for most of India'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 182,
+			"basis": "safra kharif (soja indiana é cultura de monção)",
+			"seasons": [
+				{"label": "kharif", "planting": [6, 7], "harvest": [9, 12]}
+			],
+			"quote": "'Soybean calendar for most of India' — PLANT JUN-JUL, FLOWER/POD SET JUL-AGO, HARVEST de meados de SET a meados de DEZ (gráfico lido no eixo JAN..DEC)",
+			"note": "A faixa de colheita do gráfico é larga (colheita escalonada por estado); a concentração é out-nov."
+		},
+		{
+			"nation": "IRN",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Winter wheat crop calendar' da Região J — Middle East and Egypt (p. 155), gráfico regional; plantio e fim da colheita conferidos no texto de FAO GIEWS Country Brief — Iran (ref. 10/nov/2026)",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 155,
+			"basis": "o gráfico da p. 155 é regional (Oriente Médio + Egito), não só Irã — por isso as duas pontas foram conferidas no texto da FAO: plantio 'started in late September and is expected to continue until mid-November' e colheita 'was completed in July'. O Irã é o maior produtor de trigo da região (31% do total, pizza da própria p. 155). O início da colheita (abril) vem do gráfico; a cauda da faixa até agosto é de outros países da região e NÃO foi usada. GIEWS: https://www.fao.org/giews/countrybrief/country.jsp?code=IRN",
+			"seasons": [
+				{"label": "winter", "planting": [9, 11], "harvest": [4, 7]}
+			],
+			"quote": "'Winter wheat crop calendar' (Região J: Middle East and Egypt) — PLANT de SET a NOV, HARVEST de ABR a AGO (gráfico lido no eixo JAN..DEC). FAO GIEWS Country Brief — Iran, 10/nov/2026: 'Planting of the 2027 winter cereal crops started in late September and is expected to continue until mid-November.' e 'Harvesting of the 2026 winter cereal crops was completed in July.'",
+			"note": "Gráfico regional conferido contra o texto da FAO; o fim da colheita (julho) é o da FAO, não o da cauda regional do gráfico."
+		},
+		{
+			"nation": "BRA",
+			"crop": "soy",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Brazil: Soybeans' (p. 80), gráfico 'Soybean crop calendar for most of Center-South Brazil'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 80,
+			"basis": "Centro-Sul (RS 27%, PR 21%, MT 16%, MS 11%, GO 9%, MG 5%, SP 5%, SC 2% = 96% da produção no AH-664)",
+			"seasons": [
+				{"label": "main", "planting": [10, 12], "harvest": [3, 5]}
+			],
+			"quote": "'Soybean crop calendar for most of Center-South Brazil' — PLANT de início de OUT a DEZ, FLOWER JAN-FEV, FILL FEV-MAR, HARVEST de MAR ao fim de MAI (gráfico lido no eixo JAN..DEC)",
+			"note": null
+		},
+		{
+			"nation": "BRA",
+			"crop": "rice",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Brazil: Rice' (p. 79), gráficos 'Rice crop calendar for most of North & Northeast Brazil' e '... for most of Center-South Brazil'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 79,
+			"basis": "RS = 47% e SC = 3% da produção (Centro-Sul); Norte/Nordeste = MA 5%, TO 3%, PA 2%",
+			"seasons": [
+				{"label": "center_south", "planting": [10, 12], "harvest": [2, 4]},
+				{"label": "north_northeast", "planting": [1, 3], "harvest": [6, 8]}
+			],
+			"quote": "'Rice crop calendar for most of Center-South Brazil' — PLANT OUT-DEZ, HARVEST FEV-ABR; 'Rice crop calendar for most of North & Northeast Brazil' — PLANT JAN-MAR, HARVEST JUN-AGO (gráficos lidos no eixo JAN..DEC)",
+			"note": "Duas regiões produtoras com ciclos distintos; a ordem das safras segue a importância (Centro-Sul primeiro)."
+		},
+		{
+			"nation": "BRA",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Brazil: Corn' (p. 77), gráficos 'First-crop corn crop calendar for most of Center-South Brazil' e 'Second-crop corn crop calendar for most of Center-South Brazil'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 77,
+			"basis": "primeira safra do Centro-Sul = 90-95% da produção de milho e segunda safra = 80-90% do milho de 2ª safra está no Centro-Sul (notas dos próprios gráficos). O terceiro gráfico da página (Nordeste) não entrou: a camada primária aceita no máximo 2 safras por par",
+			"seasons": [
+				{"label": "first_crop", "planting": [10, 12], "harvest": [2, 6]},
+				{"label": "second_crop", "planting": [1, 2], "harvest": [6, 9]}
+			],
+			"quote": "'First-crop corn crop calendar for most of Center-South Brazil' — PLANT de meados de OUT a DEZ, HARVEST de FEV a JUN; 'Second-crop corn crop calendar for most of Center-South Brazil' — PLANT JAN-FEV, HARVEST de JUN a SET (gráficos lidos no eixo JAN..DEC). Notas do gráfico: 'First-crop corn accounts for 90-95% of total corn production.' e '80-90% of second-crop corn is grown in the Center-South region of Brazil.'",
+			"note": "Leitura de gráfico; a faixa de colheita da 1ª safra é larga (fev-jun, colheita escalonada por estado)."
+		},
+		{
+			"nation": "CAN",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Canadian Prairies: Spring wheat' (p. 43), gráfico 'Spring wheat calendar for most of Canada'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 43,
+			"basis": "Pradarias (SK 55%, AB 26%, MB 17% = 98% do trigo de primavera)",
+			"seasons": [
+				{"label": "spring", "planting": [5, 6], "harvest": [8, 9]}
+			],
+			"quote": "'Spring wheat calendar for most of Canada' — PLANT MAI-JUN, HEAD JUL, HARVEST AGO-SET (gráfico lido no eixo JAN..DEC). GAIN CA2025-0020 confirma plantio em maio ('begin planting wheat in early to mid-May')",
+			"note": "Trigo de primavera (o de inverno, no Ontário, é minoria e não entra)."
+		},
+		{
+			"nation": "CAN",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Ontario and Quebec; Corn and soybeans' (p. 49), gráfico 'Corn calendar for most of Canada'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 49,
+			"basis": "o gráfico é 'for most of Canada', mas a página é a de Ontário e Quebec, onde está concentrado o milho canadense (as Pradarias ficam com o trigo, p. 43)",
+			"seasons": [
+				{"label": "main", "planting": [5, 6], "harvest": [9, 11]}
+			],
+			"quote": "'Corn calendar for most of Canada' — PLANT de fins de MAI a fins de JUN, TASS/SILK JUL-AGO, HARVEST de SET a NOV (gráfico lido no eixo JAN..DEC)",
+			"note": "Leitura de gráfico; as faixas são desenhadas com cerca de 2 meses de largura."
+		},
+		{
+			"nation": "CAN",
+			"crop": "soy",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Ontario and Quebec; Corn and soybeans' (p. 49), gráfico 'Soybean calendar for most of Canada'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 49,
+			"basis": "o gráfico é 'for most of Canada', mas a página é a de Ontário e Quebec, onde está concentrada a soja canadense",
+			"seasons": [
+				{"label": "main", "planting": [5, 6], "harvest": [9, 11]}
+			],
+			"quote": "'Soybean calendar for most of Canada' — PLANT de fins de MAI a fins de JUN, FLOWER JUL-AGO, HARVEST de SET a NOV (gráfico lido no eixo JAN..DEC)",
+			"note": "Leitura de gráfico; a faixa de colheita começa no fim de setembro e termina no fim de novembro."
+		},
+		{
+			"nation": "FRA",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'France: Wheat' (p. 98), gráfico 'Winter wheat crop calendar for most of France'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 98,
+			"basis": "trigo de inverno, praticamente toda a área francesa",
+			"seasons": [
+				{"label": "winter", "planting": [10, 11], "harvest": [7, 8]}
+			],
+			"quote": "'Winter wheat crop calendar for most of France' — PLANT de OUT a meados de NOV, HARVEST de JUL a meados de AGO (gráfico lido no eixo JAN..DEC)",
+			"note": null
+		},
+		{
+			"nation": "FRA",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'France: Corn' (p. 99), gráfico 'Corn crop calendar for most of France'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 99,
+			"basis": "calendário nacional de milho; a França responde por 49% da produção de milho da União Europeia (pizza da própria p. 99, média 1988/89-1992/93)",
+			"seasons": [
+				{"label": "main", "planting": [3, 5], "harvest": [9, 11]}
+			],
+			"quote": "'Corn crop calendar for most of France' — PLANT de fins de MAR a MAI, HARVEST de SET a NOV (gráfico lido no eixo JAN..DEC)",
+			"note": "Leitura de gráfico; as faixas são desenhadas com cerca de 2 meses de largura."
+		},
+		{
+			"nation": "DEU",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Germany: Wheat' (p. 104), gráfico 'Winter wheat crop calendar for most of Germany'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 104,
+			"basis": "trigo de inverno, a cultura dominante; ex-Alemanha Ocidental = 74% e ex-Alemanha Oriental = 26% da produção alemã (pizza da p. 104, média 1986/87-1990/91) e a Alemanha = 19% da produção de trigo da União Europeia",
+			"seasons": [
+				{"label": "winter", "planting": [9, 10], "harvest": [7, 8]}
+			],
+			"quote": "'Winter wheat crop calendar for most of Germany' — PLANT de fins de SET a OUT, HVST de JUL a AGO (gráfico lido no eixo JAN..DEC)",
+			"note": "Leitura de gráfico; trigo de inverno, a cultura dominante na Alemanha."
+		},
+		{
+			"nation": "POL",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Poland: Wheat' (p. 118), gráfico 'Winter wheat crop calendar for most of Poland'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 118,
+			"basis": "calendário nacional de trigo de inverno ('for most of Poland'); a tabela histórica da própria p. 118 dá a área e a produção nacionais (média 1988/89-1992/93: 2.299 mil ha, 8.342 mil t)",
+			"seasons": [
+				{"label": "winter", "planting": [9, 10], "harvest": [7, 8]}
+			],
+			"quote": "'Winter wheat crop calendar for most of Poland' — PLANT de SET a OUT, HARVEST de JUL a AGO (gráfico lido no eixo JAN..DEC)",
+			"note": "Leitura de gráfico."
+		},
+		{
+			"nation": "ITA",
+			"crop": "soy",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Italy: Soybeans' (p. 116), gráfico 'Soybean crop calendar for most of Italy'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 116,
+			"basis": "calendário nacional de soja ('for most of Italy'); a tabela histórica da própria p. 116 dá a área e a produção nacionais",
+			"seasons": [
+				{"label": "main", "planting": [4, 5], "harvest": [10, 11]}
+			],
+			"quote": "'Soybean crop calendar for most of Italy' — PLANT de ABR a MAI, HARVEST de OUT a NOV (gráfico lido no eixo JAN..DEC)",
+			"note": "Leitura de gráfico."
+		},
+		{
+			"nation": "AUS",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Australia: Winter wheat' (p. 220), gráfico 'Winter wheat crop calendar for most of Australia'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 220,
+			"basis": "trigo de inverno australiano (cinturão sul/sudeste e WA)",
+			"seasons": [
+				{"label": "winter", "planting": [5, 7], "harvest": [10, 12]}
+			],
+			"quote": "'Winter wheat crop calendar for most of Australia' — PLANT de MAI ao fim de JUL, HEAD AGO-SET, HARVEST de início de OUT ao fim de DEZ (gráfico lido no eixo JAN..DEC)",
+			"note": "Leitura de gráfico (p. 220). O WAP de 6/nov/2026 registra semeadura desde abril ('Wheat sowing in Australia began in April, and harvest began in October and will continue through December.') — conflito registrado; mantida a barra do calendário (mai-jul)."
+		},
+		{
+			"nation": "RUS",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Former Soviet Union: Winter wheat' (p. 139), gráfico 'Winter wheat crop calendar for most of FSU'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 139,
+			"basis": "Rússia = 45% do trigo de inverno da ex-URSS (gráfico de pizza da p. 139); calendário regional do cinturão de inverno",
+			"seasons": [
+				{"label": "winter", "planting": [8, 10], "harvest": [7, 8]}
+			],
+			"quote": "'Winter wheat crop calendar for most of FSU' — PLANT de meados de AGO ao início de OUT, HEAD MAI-JUN, HARVEST de JUL a meados de AGO (gráfico lido no eixo JAN..DEC)",
+			"note": "Calendário regional da ex-URSS (não um mapa só da Rússia); o trigo de primavera da Sibéria, mais tardio, não está nesta página. FAO GIEWS RUS (10/abr/2026) diz plantio de inverno 'concluded in November 2025' — conflito registrado, mantida a barra do gráfico (ago-out)."
+		},
+		{
+			"nation": "RUS",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Former Soviet Union: Corn for grain' (p. 144), gráfico 'Corn calendar for most of FSU'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 144,
+			"basis": "o gráfico é da ex-URSS, não de um país: Rússia = 26% e Ucrânia = 54% da produção de milho da ex-URSS (pizza da p. 144, média 1986/87-1990/91). Vale para a Rússia porque o milho-grão do gráfico é o do cinturão sul (Cáucaso Norte e margem do Volga), que é onde a Rússia planta milho — a produção russa fora dessa faixa é insignificante",
+			"seasons": [
+				{"label": "main", "planting": [5, 5], "harvest": [10, 11]}
+			],
+			"quote": "'Corn calendar for most of FSU' — PLANT em MAI, TASSEL JUN-JUL, HARVEST de OUT a meados de NOV (gráfico lido no eixo JAN..DEC)",
+			"note": "Calendário regional da ex-URSS; a barra de plantio cobre maio e avança poucos dias em junho."
+		},
+		{
+			"nation": "UKR",
+			"crop": "wheat",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Former Soviet Union: Winter wheat' (p. 139), gráfico 'Winter wheat crop calendar for most of FSU'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 139,
+			"basis": "Ucrânia = 43% do trigo de inverno da ex-URSS (gráfico de pizza da p. 139)",
+			"seasons": [
+				{"label": "winter", "planting": [9, 10], "harvest": [7, 8]}
+			],
+			"quote": "'Winter wheat crop calendar for most of FSU' — PLANT de SET a meados de OUT, HEAD MAI-JUN, HARVEST de JUL a meados de AGO (gráfico lido no eixo JAN..DEC)",
+			"note": "Calendário regional da ex-URSS (Ucrânia é 43% da área de trigo de inverno do gráfico)."
+		},
+		{
+			"nation": "UKR",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Former Soviet Union: Corn for grain' (p. 144), gráfico 'Corn calendar for most of FSU'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 144,
+			"basis": "o gráfico é da ex-URSS, não de um país: Ucrânia = 54% e Rússia = 26% da produção de milho da ex-URSS (pizza da p. 144, média 1986/87-1990/91). Vale para a Ucrânia porque o milho-grão do gráfico é o do cinturão sul (Ucrânia, Moldávia e Cáucaso Norte), e a Ucrânia é o maior produtor do bloco",
+			"seasons": [
+				{"label": "main", "planting": [5, 5], "harvest": [10, 11]}
+			],
+			"quote": "'Corn calendar for most of FSU' — PLANT em MAI, TASSEL JUN-JUL, HARVEST de OUT a meados de NOV (gráfico lido no eixo JAN..DEC)",
+			"note": "Calendário regional da ex-URSS (a Ucrânia é 54% da produção de milho do gráfico)."
+		},
+		{
+			"nation": "JPN",
+			"crop": "rice",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Japan: Rice' (p. 209), gráfico 'Rice crop calendar for most of Japan'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 209,
+			"basis": "arroz de safra única (o Japão planta uma safra por ano)",
+			"seasons": [
+				{"label": "main", "planting": [5, 6], "harvest": [9, 10]}
+			],
+			"quote": "'Rice crop calendar for most of Japan' — PLANT de MAI a meados de JUN, HARVEST de meados de SET a fins de OUT (gráfico lido no eixo JAN..DEC)",
+			"note": null
+		},
+		{
+			"nation": "MEX",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Mexico: Corn' (p. 52), gráficos 'Corn crop calendar for most of Mexico' e 'Corn crop calendar for northwestern Mexico'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 52,
+			"basis": "milho de verão = ~80-85% da produção total (nota do próprio gráfico) e é o do primeiro calendário; Jalisco 15%, México 11%, Sinaloa 9%, Chiapas 8% (pizza da p. 52) e os 15 estados listados somam 89% da produção de 1991/92-1992/93. A safra do noroeste (Sinaloa/Sonora) é a de inverno",
+			"seasons": [
+				{"label": "summer", "planting": [5, 6], "harvest": [9, 12]},
+				{"label": "northwest", "planting": [9, 10], "harvest": [1, 2]}
+			],
+			"quote": "'Corn crop calendar for most of Mexico' — PLANT de fins de MAI a JUN, SILK JUL-AGO, HARVEST de SET a DEZ; 'Corn crop calendar for northwestern Mexico' — PLANT SET-OUT, HARVEST JAN-FEV (gráficos lidos no eixo JAN..DEC). Nota do gráfico: 'Summer planted corn accounts for about 80-85 percent of total production. Add 1-2 months to the above crop calendar for corn grown in the Yucatan Peninsula.'",
+			"note": "Leitura de gráfico; a safra do noroeste é plantada em set-out e colhida em jan-fev do ano seguinte (virada de ano)."
+		},
+		{
+			"nation": "ARG",
+			"crop": "wheat",
+			"source": "USDA_GAIN",
+			"source_year": 2025,
+			"report": "GAIN AR2025-0007, Argentina Grain and Feed Annual (abr/2025)",
+			"url": "https://apps.fas.usda.gov/newgainapi/api/Report/DownloadReportByFileName?fileName=Grain%20and%20Feed%20Annual_Buenos%20Aires_Argentina_AR2025-0007.pdf",
+			"page": null,
+			"basis": "nacional (norte para o sul da província de Buenos Aires)",
+			"seasons": [
+				{"label": "main", "planting": [5, 8], "harvest": [11, 12]}
+			],
+			"quote": "Planting will begin in May in the northern regions and continue south, ending in July/August in the south of Buenos Aires province. [...] wheat farmer returns at harvest in November/December 2025.",
+			"note": null
+		},
+		{
+			"nation": "ARG",
+			"crop": "maize",
+			"source": "USDA_AH664",
+			"source_year": 1994,
+			"report": "AH-664, 'Argentina: Corn' (p. 64), gráfico 'Corn crop calendar for most of Argentina'",
+			"url": "https://ageconsearch.umn.edu/record/321881/files/ah664rev.pdf",
+			"page": 64,
+			"basis": "Buenos Aires 54%, Córdoba 16% e Santa Fe 13% = 83% da produção nacional (pizza 'Percent of total production by province', média 1988/89-1992/93, da própria p. 64)",
+			"seasons": [
+				{"label": "main", "planting": [9, 12], "harvest": [3, 5]}
+			],
+			"quote": "'Corn crop calendar for most of Argentina' — PLANT de SET a NOV, FILL JAN-FEV, HARVEST de MAR a MAI (gráfico lido no eixo JAN..DEC)",
+			"note": "Leitura de gráfico; a barra de plantio termina no fim de novembro e há um segundo retângulo, separado, na célula de DEZ — o plantio continua em dezembro, por isso a janela fecha em [9,12]."
+		},
+		{
+			"nation": "ARG",
+			"crop": "soy",
+			"source": "USDA_GAIN",
+			"source_year": 2026,
+			"report": "GAIN AR2026-0009, Argentina Oilseeds and Products Update (jul/2026)",
+			"url": "https://apps.fas.usda.gov/newgainapi/api/Report/DownloadReportByFileName?fileName=Oilseeds%20and%20Products%20Update_Buenos%20Aires_Argentina_AR2026-0009.pdf",
+			"page": null,
+			"basis": "nacional; soja de 1ª (~70% da área) e de 2ª (~30%, após trigo)",
+			"seasons": [
+				{"label": "first_soy", "planting": [10, 12], "harvest": [4, 5]},
+				{"label": "second_soy", "planting": [12, 1], "harvest": [5, 7]}
+			],
+			"quote": "First soy is typically planted from late October through mid to late December and harvested from early April through the end of May. Second soy is planted later, from late December into early January, immediately following the harvest of winter wheat, and is typically harvested from May through early July.",
+			"note": null
+		},
+		{
+			"nation": "PRY",
+			"crop": "soy",
+			"source": "USDA_GAIN",
+			"source_year": 2026,
+			"report": "GAIN PA2026-0002, Paraguay Oilseeds and Products Annual (abr/2026)",
+			"url": "https://apps.fas.usda.gov/newgainapi/api/Report/DownloadReportByFileName?fileName=Oilseeds%20and%20Products%20Annual_Buenos%20Aires_Paraguay_PA2026-0002.pdf",
+			"page": null,
+			"basis": "nacional; zafra (1ª) e zafriña (2ª)",
+			"seasons": [
+				{"label": "zafra", "planting": [8, 11], "harvest": [12, 3]},
+				{"label": "zafrina", "planting": [1, 2], "harvest": [5, 7]}
+			],
+			"quote": "The primary “zafra” crop, planted between late August and mid-November and harvested from late December through mid-March, and the second “zafriña” crop, typically planted in late January to mid-February and harvested from mid-May through July.",
+			"note": null
+		},
+		{
+			"nation": "TUR",
+			"crop": "wheat",
+			"source": "USDA_GAIN",
+			"source_year": 2026,
+			"report": "GAIN TU2026-0013, Türkiye Grain and Feed Annual (abr/2026)",
+			"url": "https://apps.fas.usda.gov/newgainapi/api/Report/DownloadReportByFileName?fileName=Grain%20and%20Feed%20Annual_Ankara_Turkiye_TU2026-0013.pdf",
+			"page": null,
+			"basis": "janela nacional citada no relatório (trigo de inverno)",
+			"seasons": [
+				{"label": "winter", "planting": [10, 11], "harvest": [5, 6]}
+			],
+			"quote": "Winter wheat is generally planted in October-November and harvested in May-June.",
+			"note": null
+		}
+	]
+}

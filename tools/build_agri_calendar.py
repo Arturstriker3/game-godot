@@ -2,22 +2,28 @@
 """Construtor de `data/definitions/agriculture/crop_calendar.json` (Parte G).
 
 Calendário de plantio e colheita por país × cultura para as cinco culturas do
-jogo (`wheat`, `rice`, `maize`, `potato`, `soy`), a partir de duas fontes
-observadas e de uma regra declarada para o que não é observado.
+jogo (`wheat`, `rice`, `maize`, `potato`, `soy`), a partir de uma camada
+primária curada, de duas fontes observadas e de uma regra declarada para o que
+não é observado.
 
 Fontes (cache local em `tools/_tmp_agri_raw/`; só `--fetch` baixa o que faltar):
 
+0. `PRIMARY` — `tools/agri_calendar_primary.json`: calendário curado a partir de
+   documento primário (USDA NASS/GIAN/WAP, FAO GIEWS, institutos nacionais),
+   com trecho literal e URL por par. Tem prioridade sobre todas as outras e
+   cobre os MAIORES produtores de cada cultura (top-15 do próprio FAOSTAT).
 1. `FAO_CROP_CALENDAR` — FAO Crop Calendar por país/cultura/atividade, com
    linhas por zona agroecológica (AEZ). CC BY 4.0.
 2. `JRC_ASAP` — ASAP national crop calendars (dekads 1..36). EU reuse notice.
-3. `RULE_NEIGHBOR` — regra do projeto: país sem calendário observado herda as
-   janelas de um país observado, nesta ordem: (a) mesmo hemisfério + mesma faixa
-   de latitude (`agri_common.climate_band`) + mesma `region` do jogo
-   (`nations.json`) = `same_region`; (b) mesmo hemisfério + mesma faixa, o mais
-   próximo por distância geodésica = `same_band_nearest`; (c) mesmo hemisfério +
-   faixa adjacente (tropical<->subtropical<->temperate<->cold), preferindo a
-   mesma `region` e, senão, o mais próximo = `adjacent_band`. O doador e o nível
-   vão em `rule` = {tier, donor, distance_km}.
+3. `RULE_NEIGHBOR` — regra do projeto, só para quem não tem calendário
+   observado: o país herda as janelas de um país observado DO MESMO HEMISFÉRIO
+   E DA MESMA FAIXA de latitude (`agri_common.climate_band`). Nesta ordem:
+   (a) mesma `region` do jogo (`nations.json`, ~continente), o mais próximo =
+   `same_region`; (b) outra `region` = `same_band_other_region`, permitido
+   apenas quando não há doador no próprio continente, e a entrada carrega
+   `cross_continent: true` + `justification`. Faixa vizinha (clima diferente) e
+   hemisfério oposto NÃO são mais aceitos. O doador e a distância vão em
+   `rule` = {tier, donor, distance_km, ...}.
 
 REGRA DE AGREGAÇÃO (todas as linhas de um par país×cultura):
 
@@ -43,6 +49,10 @@ soy), JSON com tab + LF via `agri_common.write_json`.
 Uso:
     python tools/build_agri_calendar.py            # cache obrigatório
     python tools/build_agri_calendar.py --fetch    # baixa o que faltar
+
+A camada primária `tools/agri_calendar_primary.json` é obrigatória e versionada:
+sem ela o build para (ela é a garantia de que o top-15 de cada cultura sai de
+documento, não de vizinho).
 """
 
 from __future__ import annotations
@@ -64,6 +74,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from agri_common import (  # noqa: E402
     DEF,
+    OUT_DIR,
     climate_band,
     centroids,
     hemisphere,
@@ -74,6 +85,7 @@ from agri_common import (  # noqa: E402
 )
 
 RAW_DIR = ROOT / "tools" / "_tmp_agri_raw"
+PRIMARY_PATH = ROOT / "tools" / "agri_calendar_primary.json"
 OUT_PATH = ROOT / "data" / "definitions" / "agriculture" / "crop_calendar.json"
 
 RETRIEVED = "2026-11-18"
@@ -81,11 +93,18 @@ CROPS = ("wheat", "rice", "maize", "potato", "soy")
 
 # Culturas usadas na amostra de conferência (critério de aceite 3).
 SAMPLES = (
+    ("USA", "maize"),
+    ("USA", "soy"),
+    ("USA", "wheat"),
     ("BRA", "soy"),
     ("IND", "rice"),
     ("IND", "wheat"),
+    ("CHN", "wheat"),
     ("CHN", "rice"),
-    ("USA", "maize"),
+    ("RUS", "wheat"),
+    ("AUS", "wheat"),
+    ("ARG", "soy"),
+    ("FRA", "wheat"),
     ("UKR", "wheat"),
     ("EGY", "wheat"),
 )
@@ -94,9 +113,11 @@ SOURCES = {
     "fao_crop_calendar.csv": {
         "url": (
             "https://api.data.apps.fao.org/api/v2/bigquery"
-            "?sql_url=https://api.data.apps.fao.org/api/v2/bigquery"
-            "/crop-calendar-parameterized-query.sql"
-            "&crop=all&crop_process=all&download=true"
+            "?sql_url=https://data.apps.fao.org/catalog/dataset/"
+            "86b7daf0-4fae-450b-b88f-76690e2fdc17/resource/"
+            "0026de2e-c12c-457c-b4f5-8c4cd2ef7960/download/"
+            "crop-calendar-parameterized-query.sql"
+            "&crop_process=all&crop=all&download=true"
         ),
         "title": "FAO Crop Calendar (national summary)",
     },
@@ -182,9 +203,11 @@ MONTH_LABELS_PT = (
 MIN_GAP_MONTHS = 3  # blocos separados por >= 3 meses sem cobertura = 2 safras
 MAX_SEASONS = 2
 EARTH_RADIUS_KM = 6371.0088
-# Ordem das faixas de latitude de `agri_common.climate_band`; vizinhas = adjacentes.
-BAND_ORDER = ("tropical", "subtropical", "temperate", "cold")
-RULE_TIERS = ("same_region", "same_band_nearest", "adjacent_band")
+# Tiers da regra: mesma faixa de latitude e mesmo hemisfério SEMPRE; o tier 2
+# só existe quando não há doador no próprio continente (declarado na entrada).
+RULE_TIERS = ("same_region", "same_band_other_region")
+# Maiores produtores por cultura que NÃO podem ficar na regra de vizinho.
+TOP_N = 15
 
 
 # --------------------------------------------------------------------------
@@ -593,30 +616,23 @@ def _distance_km(origin: tuple[float, float], target: tuple[float, float]) -> fl
     return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(hav))
 
 
-def adjacent_bands(band: str) -> list[str]:
-    """Faixas vizinhas na ordem tropical<->subtropical<->temperate<->cold."""
-    index = BAND_ORDER.index(band)
-    out: list[str] = []
-    for offset in (-1, 1):
-        position = index + offset
-        if 0 <= position < len(BAND_ORDER):
-            out.append(BAND_ORDER[position])
-    return out
-
-
 def pick_donor(
     iso: str,
     observed: list[str],
     geo: dict[str, tuple[float, float]],
     regions: dict[str, str],
 ) -> dict | None:
-    """Escolhe o doador observado em três níveis, nesta ordem.
+    """Escolhe o doador observado em dois níveis, nesta ordem.
 
-    a) mesmo hemisfério + mesma faixa + mesma `region` do jogo  -> same_region
-    b) mesmo hemisfério + mesma faixa, o mais próximo            -> same_band_nearest
-    c) mesmo hemisfério + faixa adjacente, preferindo a mesma
-       `region` e, senão, o mais próximo                         -> adjacent_band
-    Empate de distância desempata pelo id da nação (determinístico).
+    Regra (D-094, revisão): o doador é SEMPRE do mesmo hemisfério e da mesma
+    faixa de latitude do país sem calendário.
+
+    a) mesma faixa + mesmo hemisfério + mesma `region` do jogo (o mais próximo)
+       -> `same_region`
+    b) mesma faixa + mesmo hemisfério, outra `region` -> `same_band_other_region`
+       com `cross_continent: true` e `justification` (só quando não há doador no
+       próprio continente)
+    Sem candidato: None (o par vira `no_data`; não se herda clima diferente).
     """
     latitude = geo[iso][0]
     side = hemisphere(latitude)
@@ -628,6 +644,8 @@ def pick_donor(
         donor_lat = geo[donor][0]
         if hemisphere(donor_lat) != side:
             continue
+        if climate_band(donor_lat) != band:
+            continue
         pool.append(
             (
                 donor,
@@ -637,9 +655,7 @@ def pick_donor(
             )
         )
 
-    same_band = [item for item in pool if item[1] == band]
-    same_region = [item for item in same_band if region and item[3] == region]
-    adjacent = [item for item in pool if item[1] in adjacent_bands(band)]
+    same_region = [item for item in pool if region and item[3] == region]
 
     def winner(candidates: list[tuple[str, str, float, str | None]], tier: str) -> dict:
         donor, _, distance, _ = min(candidates, key=lambda item: (item[2], item[0]))
@@ -647,11 +663,14 @@ def pick_donor(
 
     if same_region:
         return winner(same_region, "same_region")
-    if same_band:
-        return winner(same_band, "same_band_nearest")
-    if adjacent:
-        adjacent_region = [item for item in adjacent if region and item[3] == region]
-        return winner(adjacent_region or adjacent, "adjacent_band")
+    if pool:
+        chosen = winner(pool, "same_band_other_region")
+        chosen["cross_continent"] = True
+        chosen["justification"] = (
+            f"nenhum país observado de {band} no hemisfério {side} e na região "
+            f"`{region}`; doador da mesma faixa e hemisfério em outra região"
+        )
+        return chosen
     return None
 
 
@@ -693,6 +712,7 @@ def build() -> dict:
         row["id"]: row.get("region") or ""
         for row in load_json(DEF / "scenario" / "nations.json")
     }
+    primary = load_primary()
 
     fao_pairs, fao_stats = read_fao(index)
     jrc_pairs, jrc_stats = read_jrc(index)
@@ -719,8 +739,9 @@ def build() -> dict:
         latitude = geo[iso][0]
         crops_block: dict[str, dict] = {}
         for crop in CROPS:
-            entry = None
-            if (iso, crop) in fao_pairs:
+            if (iso, crop) in primary["entries"]:
+                entry = primary_entry(primary["entries"][(iso, crop)], latitude)
+            elif (iso, crop) in fao_pairs:
                 entry = build_entry(iso, crop, fao_pairs[(iso, crop)], "FAO_CROP_CALENDAR", latitude)
             elif (iso, crop) in jrc_pairs:
                 entry = build_entry(iso, crop, jrc_pairs[(iso, crop)], "JRC_ASAP", latitude)
@@ -735,14 +756,39 @@ def build() -> dict:
         }
 
     donors = apply_neighbour_rule(blocks, geo, regions)
+    guard_top_producers(blocks, primary["doc"])
 
     payload = {
-        "_meta": meta(blocks, fao_stats, jrc_stats, donors),
-        "sources": sources(),
+        "_meta": meta(blocks, fao_stats, jrc_stats, donors, primary["doc"]),
+        "sources": sources(primary["doc"]),
         "nations": blocks,
     }
-    validate(payload)
+    validate(payload, geo)
     return payload
+
+
+def guard_top_producers(blocks: dict[str, dict], primary_doc: dict) -> None:
+    """Os maiores produtores de cada cultura não podem ficar na regra de vizinho.
+
+    A lista de exceções (se houver) é declarada em
+    `tools/agri_calendar_primary.json -> _meta.top15_exceptions`.
+    """
+    exceptions = set((primary_doc.get("_meta") or {}).get("top15_exceptions") or [])
+    broken: list[str] = []
+    for crop, iso_list in top_producers().items():
+        for iso in iso_list:
+            if f"{iso}/{crop}" in exceptions:
+                continue
+            entry = blocks[iso]["crops"][crop]
+            if entry.get("data_status") != "observed":
+                broken.append(f"{iso}/{crop} ({entry.get('data_status')})")
+    if broken:
+        raise SystemExit(
+            "[erro] top-%d por cultura sem calendário observado: %s\n"
+            "       acrescente a fonte primária em tools/agri_calendar_primary.json "
+            "ou declare a exceção em _meta.top15_exceptions"
+            % (TOP_N, ", ".join(broken))
+        )
 
 
 def apply_neighbour_rule(
@@ -783,7 +829,8 @@ def apply_neighbour_rule(
                 entry["rule"] = None
                 entry["reason"] = (
                     f"sem calendário observado de {crop} e nenhum país observado no "
-                    f"hemisfério {side} (nem em faixa de latitude vizinha)"
+                    f"hemisfério {side} na faixa `{band}` (clima igual é exigência da regra; "
+                    "faixa vizinha não é usada)"
                 )
     return usage
 
@@ -806,17 +853,142 @@ def clone_seasons(seasons: list[dict]) -> list[dict]:
 
 
 # --------------------------------------------------------------------------
+# camada primária (tools/agri_calendar_primary.json)
+# --------------------------------------------------------------------------
+
+
+def load_primary() -> dict:
+    """Lê a camada curada; devolve {'entries': {(iso, crop): entry}, 'doc': ...}."""
+    if not PRIMARY_PATH.exists():
+        raise SystemExit(f"[erro] camada primária ausente: {PRIMARY_PATH}")
+    doc = load_json(PRIMARY_PATH)
+    entries: dict[tuple[str, str], dict] = {}
+    for raw in doc["entries"]:
+        if raw.get("status") == "no_source":
+            continue
+        iso, crop = raw["nation"], raw["crop"]
+        if iso not in nations():
+            raise SystemExit(f"[erro] camada primária: nação desconhecida {iso!r}")
+        if crop not in CROPS:
+            raise SystemExit(f"[erro] camada primária: cultura fora do jogo {crop!r}")
+        if (iso, crop) in entries:
+            raise SystemExit(f"[erro] camada primária: par repetido {iso}/{crop}")
+        if not raw.get("quote") or not raw.get("url"):
+            raise SystemExit(f"[erro] camada primária: {iso}/{crop} sem quote/url")
+        if raw.get("source") not in doc["sources"]:
+            raise SystemExit(
+                f"[erro] camada primária: {iso}/{crop} cita fonte "
+                f"{raw.get('source')!r} fora de `sources`"
+            )
+        seasons = raw.get("seasons") or []
+        if not 1 <= len(seasons) <= MAX_SEASONS:
+            raise SystemExit(f"[erro] camada primária: {iso}/{crop} com {len(seasons)} safras")
+        entries[(iso, crop)] = raw
+    return {"entries": entries, "doc": doc}
+
+
+def primary_entry(raw: dict, latitude: float) -> dict:
+    """Entrada `observed` a partir de um item da camada primária."""
+    seasons: list[dict] = []
+    for number, season in enumerate(raw["seasons"], start=1):
+        planting, harvest = season["planting"], season["harvest"]
+        for window in (planting, harvest):
+            if window is None:
+                continue
+            for value in window:
+                if not isinstance(value, int) or not 1 <= value <= 12:
+                    raise SystemExit(
+                        f"[erro] camada primária: {raw['nation']}/{raw['crop']} "
+                        f"mês inválido {value!r}"
+                    )
+        if planting and harvest and (planting[0], planting[1]) == (harvest[0], harvest[1]):
+            raise SystemExit(
+                f"[erro] camada primária: {raw['nation']}/{raw['crop']} "
+                "plantio == colheita"
+            )
+        seasons.append(
+            {
+                "season": number,
+                "planting": {"start_month": planting[0], "end_month": planting[1]}
+                if planting
+                else None,
+                "harvest": {"start_month": harvest[0], "end_month": harvest[1]}
+                if harvest
+                else None,
+                "window_labels": [season.get("label") or f"season_{number}"],
+                "note": season.get("note") or raw.get("note"),
+                "source": raw["source"],
+                "source_year": raw["source_year"],
+            }
+        )
+    return {
+        "hemisphere": hemisphere(latitude),
+        "seasons": seasons,
+        "data_status": "observed",
+        "rule": None,
+        "evidence": {
+            "report": raw.get("report"),
+            "quote": raw.get("quote"),
+            "url": raw.get("url"),
+            "basis": raw.get("basis"),
+            "retrieved": raw.get("retrieved") or RETRIEVED,
+        },
+    }
+
+
+def top_producers(count: int = TOP_N) -> dict[str, list[str]]:
+    """{cultura: [os `count` maiores produtores segundo crop_yields.json]}."""
+    yields = load_json(OUT_DIR / "crop_yields.json")
+    out: dict[str, list[str]] = {}
+    for crop in CROPS:
+        rows = [
+            (entry["production_t"], iso)
+            for iso, nation in yields["nations"].items()
+            if (entry := nation["crops"][crop]).get("production_t")
+        ]
+        rows.sort(key=lambda item: (-item[0], item[1]))
+        out[crop] = [iso for _, iso in rows[:count]]
+    return out
+
+
+# --------------------------------------------------------------------------
 # metadados, fontes e validação
 # --------------------------------------------------------------------------
 
 
-def meta(blocks: dict[str, dict], fao: dict, jrc: dict, usage: dict) -> dict:
+def meta(
+    blocks: dict[str, dict], fao: dict, jrc: dict, usage: dict, primary_doc: dict
+) -> dict:
     observed = sum(
         1
         for block in blocks.values()
         for entry in block["crops"].values()
         if entry.get("data_status") == "observed"
     )
+    primary_entries = sum(
+        1
+        for block in blocks.values()
+        for entry in block["crops"].values()
+        if entry.get("evidence")
+    )
+    primary_sources: dict[str, int] = {}
+    for block in blocks.values():
+        for entry in block["crops"].values():
+            evidence = entry.get("evidence")
+            if not evidence:
+                continue
+            source = entry["seasons"][0]["source"] if entry["seasons"] else ""
+            primary_sources[source] = primary_sources.get(source, 0) + 1
+    top = top_producers()
+    exceptions = list((primary_doc.get("_meta") or {}).get("top15_exceptions") or [])
+    top_observed = {
+        crop: sum(
+            1
+            for iso in iso_list
+            if blocks[iso]["crops"][crop].get("data_status") == "observed"
+        )
+        for crop, iso_list in top.items()
+    }
     tiers: dict[str, dict] = {
         tier: {"entries": 0, "donors": {}} for tier in RULE_TIERS
     }
@@ -833,33 +1005,49 @@ def meta(blocks: dict[str, dict], fao: dict, jrc: dict, usage: dict) -> dict:
         tier["donors"] = dict(sorted(tier["donors"].items()))
     return {
         "dataset": "crop_calendar",
-        "version": "g1",
+        "version": "g2",
         "generated_by": "tools/build_agri_calendar.py",
         "retrieved": RETRIEVED,
         "nations": len(blocks),
         "crops": list(CROPS),
         "month_source": "janelas mensais (1..12); conversão de dekad = mês do 1º dia da dekad",
         "rule": (
-            "país sem calendário observado herda as janelas de um país observado, nesta ordem: "
-            "(a) mesmo hemisfério + mesma faixa de latitude (agri_common.climate_band) + mesma "
-            "`region` do jogo (data/definitions/scenario/nations.json) = tier 'same_region'; "
-            "(b) mesmo hemisfério + mesma faixa, o mais próximo por distância geodésica entre "
-            "centroides = 'same_band_nearest'; (c) mesmo hemisfério + faixa ADJACENTE "
-            "(tropical<->subtropical<->temperate<->cold), preferindo a mesma `region` e, senão, "
-            "o mais próximo = 'adjacent_band'. data_status='rule_neighbor' e o doador fica em "
-            "'rule' = {tier, donor, distance_km}; sem candidato em nenhum nível: "
-            "data_status='no_data' com 'reason' em pt-BR (nunca se inventa mês)"
+            "país sem calendário observado herda as janelas de um país observado DO MESMO "
+            "HEMISFÉRIO E DA MESMA FAIXA de latitude (agri_common.climate_band), nesta ordem: "
+            "(a) mesma `region` do jogo (data/definitions/scenario/nations.json, ~continente), o "
+            "mais próximo por distância geodésica entre centroides = tier 'same_region'; (b) sem "
+            "doador no próprio continente, outra `region` da mesma faixa = "
+            "'same_band_other_region', com 'cross_continent': true e 'justification'. Faixa de "
+            "latitude vizinha (clima diferente) e hemisfério oposto NÃO são aceitos. "
+            "data_status='rule_neighbor' e o doador fica em 'rule' = {tier, donor, distance_km, "
+            "[cross_continent], [justification]}; sem candidato: data_status='no_data' com "
+            "'reason' em pt-BR (nunca se inventa mês)"
+        ),
+        "rule_scope": (
+            "a regra é só para os produtores pequenos; o top-%d de cada cultura (por produção do "
+            "próprio crop_yields.json, FAOSTAT) tem de ser observado — o build falha se não for"
+            % TOP_N
         ),
         "rule_tiers": tiers,
+        "primary_layer": {
+            "file": "tools/agri_calendar_primary.json",
+            "entries": primary_entries,
+            "by_source": dict(sorted(primary_sources.items())),
+            "top15_observed": top_observed,
+            "top15_n": TOP_N,
+            "top15_exceptions": exceptions,
+            "evidence": "cada entrada primária traz `evidence` = {report, quote, url, basis}",
+        },
         "aggregation": (
             "todas as janelas do par país×cultura viram cobertura de meses; blocos separados "
             "por >= 3 meses sem cobertura viram safras distintas (máximo 2); plantio começa no "
             "primeiro mês coberto e termina no último, colheita idem; se plantio e colheita não "
             "tiverem o mesmo número de blocos (1 ou 2), usa-se 1 safra agregada "
             "(mín. de início / máx. de fim) com 'multi_block_fallback' em 'note' e o rótulo "
-            "bruto em 'window_labels'"
+            "bruto em 'window_labels'. A camada primária NÃO passa por essa agregação: as safras "
+            "dela entram como o documento as descreve"
         ),
-        "source_priority": "FAO_CROP_CALENDAR > JRC_ASAP > RULE_NEIGHBOR",
+        "source_priority": "PRIMARY > FAO_CROP_CALENDAR > JRC_ASAP > RULE_NEIGHBOR",
         "all_year": (
             "allYear=yes na FAO em um par país×cultura sem nenhum mês publicado vira "
             "'all_year': true com 'seasons': [] (a fonte não publica meses; nada é inferido). "
@@ -919,8 +1107,8 @@ def meta(blocks: dict[str, dict], fao: dict, jrc: dict, usage: dict) -> dict:
     }
 
 
-def sources() -> dict:
-    return {
+def sources(primary_doc: dict) -> dict:
+    out = {
         "FAO_CROP_CALENDAR": {
             "title": "FAO Crop Calendar (national summary)",
             "publisher": "FAO",
@@ -940,14 +1128,19 @@ def sources() -> dict:
             "accessed": RETRIEVED,
         },
         "RULE_NEIGHBOR": {
-            "title": "Regra declarada: vizinho observado no mesmo hemisfério/faixa",
+            "title": "Regra declarada: vizinho observado no mesmo hemisfério e faixa",
             "publisher": "OpenGS project",
             "year": 2026,
         },
     }
+    for key, value in (primary_doc.get("sources") or {}).items():
+        if key in out:
+            raise SystemExit(f"[erro] camada primária reusa a chave de fonte {key!r}")
+        out[key] = value
+    return out
 
 
-def validate(payload: dict) -> None:
+def validate(payload: dict, geo: dict[str, tuple[float, float]]) -> None:
     problems: list[str] = []
     for iso, block in payload["nations"].items():
         if block["hemisphere"] not in ("north", "south"):
@@ -966,6 +1159,17 @@ def validate(payload: dict) -> None:
                     problems.append(f"{iso}/{crop}: tier inválido {rule.get('tier')!r}")
                 if not isinstance(rule.get("distance_km"), (int, float)):
                     problems.append(f"{iso}/{crop}: distance_km inválida")
+                donor = rule.get("donor")
+                if donor in geo:
+                    # a regra é mesma faixa + mesmo hemisfério, sem exceção
+                    if hemisphere(geo[donor][0]) != block["hemisphere"]:
+                        problems.append(f"{iso}/{crop}: doador {donor} em hemisfério oposto")
+                    if climate_band(geo[donor][0]) != climate_band(geo[iso][0]):
+                        problems.append(f"{iso}/{crop}: doador {donor} em faixa climática diferente")
+                    if rule.get("tier") == "same_band_other_region" and not rule.get(
+                        "justification"
+                    ):
+                        problems.append(f"{iso}/{crop}: cross-continent sem justificativa")
             if entry["data_status"] == "observed" and entry.get("rule") is not None:
                 problems.append(f"{iso}/{crop}: observed com rule preenchida")
             if entry.get("all_year") and entry["seasons"]:
@@ -1053,6 +1257,17 @@ def autocheck(payload: dict) -> None:
             for source in sources_used:
                 observed_by_source[source] = observed_by_source.get(source, 0) + 1
     print(f"[check] entradas observadas por fonte: {observed_by_source}")
+    primary = payload["_meta"].get("primary_layer") or {}
+    print(
+        f"[check] camada primária: {primary.get('entries', 0)} entradas "
+        f"de {len(primary.get('by_source') or {})} fontes"
+    )
+    top = primary.get("top15_observed") or {}
+    if top:
+        line = ", ".join(f"{crop}={n}/{primary.get('top15_n')}" for crop, n in top.items())
+        print(f"[check] top-{primary.get('top15_n')} observado por cultura: {line}")
+    if primary.get("top15_exceptions"):
+        print(f"[check] exceções declaradas: {primary['top15_exceptions']}")
     print(f"[check] entradas all_year: {len(all_year)}")
     if all_year:
         print(f"  {', '.join(all_year[:20])}{' …' if len(all_year) > 20 else ''}")

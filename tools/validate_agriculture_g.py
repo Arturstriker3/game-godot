@@ -2,8 +2,13 @@
 """Validador da Parte G (agricultura sazonal).
 
 Somente leitura: abre os arquivos de `data/definitions/agriculture/`, confere as
-11 regras do briefing e reprova (exit 1) quando algo não bate. Não gera, não
-corrige e não reescreve dado.
+11 regras do briefing mais as duas travas novas do calendário — (4b) doador da
+regra de vizinho no MESMO hemisfério e na MESMA faixa de latitude, com
+justificativa quando atravessa continente, e lastro documental (`evidence` com
+report/quote/url/basis) de toda entrada primária; (4c) top-15 de cada cultura
+(produção do próprio `crop_yields.json`) com `data_status='observed'` — e
+reprova (exit 1) quando algo não bate. Não gera, não corrige e não reescreve
+dado.
 
 Uso:
     python tools/validate_agriculture_g.py
@@ -27,6 +32,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+
+from agri_common import climate_band, hemisphere  # noqa: E402
+
 DEF = ROOT / "data" / "definitions"
 AGRI = DEF / "agriculture"
 NATIONS_PATH = DEF / "scenario" / "nations.json"
@@ -71,7 +80,8 @@ LOSS_SOURCE = {
     "regional_default": "RULE_REGIONAL_MEDIAN",
 }
 FERT_STATUS = {"observed", "regional_default", "no_data"}
-RULE_TIERS = {"same_region", "same_band_nearest", "adjacent_band"}
+RULE_TIERS = {"same_region", "same_band_other_region"}
+TOP_N = 15
 HEMISPHERES = {"north", "south"}
 
 # Arquivos com uma entrada por nação (6) e o arquivo por produto (1).
@@ -359,6 +369,70 @@ def check_calendar(doc: dict, report: Report) -> None:
                     )
 
 
+def check_calendar_rules(doc: dict, report: Report) -> None:
+    """Regra de vizinho estrita + lastro documental da camada primária."""
+    nations = doc["nations"]
+    for nation_id, nation in nations.items():
+        for crop_id, crop in nation["crops"].items():
+            base = f"crop_calendar.nations.{nation_id}.crops.{crop_id}"
+            status = crop.get("data_status")
+            if status == "rule_neighbor":
+                rule = crop.get("rule") or {}
+                donor = rule.get("donor")
+                donor_nation = nations.get(donor) if isinstance(donor, str) else None
+                if donor_nation is None:
+                    continue  # check_calendar já reprova o doador desconhecido
+                lat, donor_lat = nation.get("latitude"), donor_nation.get("latitude")
+                if not (is_num(lat) and is_num(donor_lat)):
+                    report.err(f"{base}.rule", "latitude ausente para conferir a regra")
+                    continue
+                if hemisphere(lat) != hemisphere(donor_lat):
+                    report.err(f"{base}.rule.donor", f"{donor} está em outro hemisfério")
+                if climate_band(lat) != climate_band(donor_lat):
+                    report.err(
+                        f"{base}.rule.donor",
+                        f"{donor} está em faixa climática diferente "
+                        f"({climate_band(donor_lat)} vs {climate_band(lat)})",
+                    )
+                if rule.get("tier") == "same_band_other_region" and not rule.get(
+                    "justification"
+                ):
+                    report.err(
+                        f"{base}.rule", "cross_continent sem `justification` declarada"
+                    )
+            evidence = crop.get("evidence")
+            if evidence is None:
+                continue
+            for field in ("report", "quote", "url", "basis"):
+                value = evidence.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    report.err(f"{base}.evidence.{field}", "faltando na camada primária")
+
+
+def check_top_producers(calendar: dict, yields: dict, report: Report) -> None:
+    """O top-N de cada cultura (produção FAOSTAT do próprio arquivo) é observado."""
+    exceptions = set(
+        (calendar.get("_meta", {}).get("primary_layer") or {}).get("top15_exceptions") or []
+    )
+    for crop_id in CROPS:
+        rows = [
+            (entry["production_t"], nation_id)
+            for nation_id, nation in yields["nations"].items()
+            if (entry := nation["crops"][crop_id]).get("production_t")
+        ]
+        rows.sort(key=lambda item: (-item[0], item[1]))
+        for _, nation_id in rows[:TOP_N]:
+            if f"{nation_id}/{crop_id}" in exceptions:
+                continue
+            entry = calendar["nations"][nation_id]["crops"][crop_id]
+            if entry.get("data_status") != "observed":
+                report.err(
+                    f"crop_calendar.nations.{nation_id}.crops.{crop_id}",
+                    f"top-{TOP_N} produtor de {crop_id} sem calendário observado "
+                    f"(data_status={entry.get('data_status')!r})",
+                )
+
+
 def check_yields(doc: dict, report: Report) -> None:
     for nation_id, nation in doc["nations"].items():
         for crop_id, crop in nation["crops"].items():
@@ -643,6 +717,16 @@ def main() -> int:
         ("2) nações (179 ids exatos)", check_nations, (docs, expected_nations, report)),
         ("3) culturas e produtos", check_crops, (docs, goods, report)),
         ("4) calendário", check_calendar, (docs["crop_calendar"], report)),
+        (
+            "4b) regra de vizinho (mesmo hemisfério + mesma faixa) e lastro primário",
+            check_calendar_rules,
+            (docs["crop_calendar"], report),
+        ),
+        (
+            "4c) top-15 por cultura com calendário observado",
+            check_top_producers,
+            (docs["crop_calendar"], docs["crop_yields"], report),
+        ),
         ("5) rendimento/área", check_yields, (docs["crop_yields"], report)),
         ("6) estoque", check_stocks, (docs["crop_stocks"], report)),
         ("7) perdas pós-colheita", check_losses, (docs["postharvest_losses"], report)),

@@ -143,3 +143,23 @@ Nenhuma divergência numérica. Divergências de contrato/metadata:
 ---
 
 **Nota do gerente-dados (2026-11-18, depois do parecer):** a ressalva 1 foi fechada — a mandioca da NGA passou a existir em `crop_yields.json → non_game_reference.NGA.crops.cassava` com `in_game: false` (FAOSTAT item 125, 2024: 10.722.539 ha / 62.624.946,19 t / 5,840 t/ha), declarada no doc §1. A ressalva 3 foi atendida no doc §6 e o cache foi apagado (os construtores têm `--fetch`). A ressalva 2 (`product_shelf_life` sem `year`) segue aberta e documentada no §6.6: prateleira é valor de referência, não série anual.
+
+---
+
+## Adendo — revisão do calendário (2026-11-18, ainda D-094)
+
+O calendário deixou de depender da regra de vizinho para o top-15 de produção: entrou
+`tools/agri_calendar_primary.json` (37 pares com `quote` literal, `url` e página) e a regra passou a
+exigir doador do **mesmo hemisfério E da mesma faixa de latitude**. Os dois casos citados neste
+parecer como defeito não existem mais: `USA maize <- PRK (10.726 km)` e `UKR wheat <- AZE`.
+Cobertura: observado 237->274, herdado 658->592 (66,1%), `no_data` 29 (nórdicos/bálticos, NZL e
+RUS em culturas sem doador da mesma faixa — ausência declarada, com `reason`). Top-15: trigo,
+arroz e milho 15/15; batata 5/15 e soja 10/15 (os 15 pares restantes estão em
+`_meta.top15_exceptions`, porque o USDA IPAD respondeu HTTP 503 durante toda a coleta).
+
+Nova conferência independente (2026-11-18, mesmo método de medição das barras deste parecer):
+10 casos relidos contra a fonte — USA milho/soja/trigo (AH-628), BRA soja, IND arroz kharif/rabi,
+CHN trigo, RUS trigo, AUS trigo e FRA trigo (AH-664), ARG soja (USDA GAIN). A **primeira rodada
+reprovou 4 casos** por divergência de um a dois meses medida nas barras (CHN, RUS, AUS, IND);
+corrigidos e regerados, a segunda rodada deu **APROVADO**, com build reprodutível (mesmo sha256) e
+`tools/validate_agriculture_g.py` exit 0.
