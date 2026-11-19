@@ -37,6 +37,11 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// produção: a safra do dia já está no estoque quando a cidade compra.
 	core.phase_agriculture();
 
+	// 2b-G2. Armazenagem: a colheita com silo regional é desviada para o
+	// pulmão e liberada aos poucos ao mercado da cidade-polo; perdas,
+	// manutenção e custo de acesso. Antes da produção/comércio do dia.
+	core.phase_storage();
+
 	// 2a. B1: demografia (fluxo mensal por cidade, cadência A6). Roda antes do
 	// trabalho: a fase de labor já lê as coortes atualizadas do mês.
 	{

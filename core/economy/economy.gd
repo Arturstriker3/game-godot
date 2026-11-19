@@ -60,6 +60,9 @@ const RegionDataScript := preload("res://core/economy/region_data.gd")
 const LandPropertyScript := preload("res://core/economy/land_property.gd")
 ## G (D-096): agricultura sazonal — declarada depois da geografia.
 const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
+## G2 (D-101): armazenagem — capacidade real do país, mapa produto→tipo e a
+## reserva pública do dia 1, declarados depois da agricultura e antes da IA.
+const StorageServiceScript := preload("res://core/economy/storage_service.gd")
 
 ## 1º de janeiro de 2027, 00:00 UTC (D-084). 1798761600 = 2027-01-01T00:00:00Z.
 ## A base de dados (WPP/WorldPop 2026, extração 2025) NÃO é reprojetada: o
@@ -229,6 +232,33 @@ func _ready() -> void:
 			int(agri_report.get("cities", 0)),
 			float(agri_report.get("initial_stock_t", 0.0)),
 			str(agri_report.get("area_basis", {}))])
+	# G2 (D-101): ARMAZENAGEM — o mapa produto→tipo do bem, a capacidade
+	# inicial (COBERTURA real do dado × produção do jogo; regra declarada de
+	# meses quando o dado não tem cobertura) e a reserva pública do dia 1
+	# (dias de importação/consumo × fluxo do jogo). DEPOIS da agricultura (a
+	# produção que rateia a capacidade é a mesma do plano de safra) e antes da
+	# IA. `only_missing`: save v25 manda — nada de reescrever a
+	# capacidade/estoque que veio no save (nem o da IA).
+	if sim.has_method("set_storage_capacity"):
+		var storage := StorageServiceScript.new()
+		var storage_report := storage.apply_to_sim(sim, cities, farms,
+			{"only_missing": true})
+		var capacity_total := 0.0
+		var capacity_data := 0.0
+		var capacity_rule := 0.0
+		for type in storage_report.get("capacity_t", {}):
+			capacity_total += float(storage_report["capacity_t"][type])
+			var basis: Dictionary = storage_report["capacity_source"].get(type, {})
+			capacity_data += float(basis.get("data", 0.0))
+			capacity_rule += float(basis.get("rule", 0.0))
+		print("[armazenagem] tipos=%d/%d sites=%d capacidade=%.0f t (dado %.0f + regra %.0f) reserva=%.0f t ouro=%.0f t" % [
+			int(storage_report.get("product_types_applied", 0)),
+			int(storage_report.get("product_types_total", 0)),
+			int(storage_report.get("sites_written", 0)),
+			capacity_total, capacity_data, capacity_rule,
+			float(storage_report.get("initial_stock_t", {}).get("oil", 0.0))
+				+ float(storage_report.get("initial_stock_t", {}).get("grain", 0.0)),
+			float(storage_report.get("gold_reserve_t", 0.0))])
 	# A IA econômica (privado, governo, grupos) roda no núcleo, na virada do dia
 	# (A5). Ligada aqui: o primeiro `tick_day` já decide.
 	sim.set_ai_enabled(true)
@@ -270,6 +300,26 @@ func refresh_agriculture() -> Dictionary:
 		"only_missing": true,
 		"initial_stock": false,
 		"farms": AgricultureServiceScript.farms_of(farms),
+	})
+
+
+## G2: reaplica no núcleo o que FALTAR depois de carregar um save. Save v25
+## traz o bloco `storage` (capacidade e estoque, inclusive o que a IA
+## construiu) e `only_missing` não toca em site existente; save v24 e anterior
+## não tem o bloco e recebe a capacidade inicial (dado ou regra) aqui. Sem
+## semente de estoque: a reserva do dia 1 só existe em mundo novo.
+func refresh_storage() -> Dictionary:
+	if sim == null or not sim.has_method("set_storage_capacity"):
+		return {}
+	var geo := GeographyService.new()
+	geo.load_data()
+	var cities := _load_cities()
+	var buildings := geo.resolve_initial_mines(
+		geo.resolve_initial_farms(_load_buildings(), cities), cities)
+	var storage := StorageServiceScript.new()
+	return storage.apply_to_sim(sim, cities, buildings, {
+		"only_missing": true,
+		"initial_stock": false,
 	})
 
 

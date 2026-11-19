@@ -89,6 +89,8 @@ struct AiCityRow {
 	double region_pop = 0.0;
 	double region_food_deficit = 0.0;
 	double migration_rural_in_total = 0.0;
+	// G2: Gini de renda (perfil conservador × especulador da IA de armazém).
+	double income_gini = 0.0;
 };
 
 // Linha do ranking de grupos (ordem de `get_group_ranking`).
@@ -173,7 +175,29 @@ struct AiView {
 	// Cópia POSICIONAL de `ws.recipes`: `AiTemplate::recipes` guarda índices
 	// nesta cópia (e, por construção, em `ws.recipes`).
 	std::vector<Recipe> recipes;
+
+	// G2 — armazenagem: capacidade e estoque por cidade × tipo × dono
+	// (índice = (city * kStorageTypeCount + type) * 2 + scope) e a produção
+	// anual por cidade × tipo (t/ano) dos planos de safra mapeados. O calendário
+	// entra por `next_harvest_days`/`harvest_active` (o próximo evento de
+	// colheita da cidade, em dias, e se hoje está em alguma janela).
+	std::vector<double> s_capacity;
+	std::vector<double> s_stock;
+	std::vector<double> s_annual;
+	std::vector<double> next_harvest_days;
+	std::vector<char> harvest_active;
+	// Tipo de armazém de cada produto (índice = produto; -1 = sem tipo) e o
+	// fator calórico da cesta (0 = não é alimento).
+	std::vector<int> product_storage_type;
+	std::vector<double> product_food_calories;
 };
+
+// G2 — leitura dos arrays de armazenagem da view.
+double ai_storage_capacity(const AiView& view, int city, int type, int scope);
+double ai_storage_stock(const AiView& view, int city, int type, int scope);
+double ai_storage_annual(const AiView& view, int city, int type);
+// Fator calórico do produto (0 = não é alimento da cesta).
+double ai_food_calories(const AiView& view, int product);
 
 // Fotografa o dia em `view` (limpa e preenche). `core` só empresta
 // `SimCore::owner_kind` (o parser de dono que o núcleo já tem) para montar a

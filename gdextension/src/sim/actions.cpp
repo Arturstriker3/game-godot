@@ -5,6 +5,7 @@
 
 #include "sim_constants.h"
 #include "sim_core.h"
+#include "storage.h"
 #include "urban_land.h"
 
 #include <algorithm>
@@ -933,6 +934,224 @@ ConcedeResult action_concede(WorldState& ws, SimCore& core,
 	result.price = price;
 	result.royalty = rate;
 	result.owner = building->owner;
+	return result;
+}
+
+// ---------------------------------------------------------------------------
+// G2 — armazenagem
+// ---------------------------------------------------------------------------
+
+StorageBuildResult action_storage_build(WorldState& ws, SimCore& core,
+		const std::string& city_id, int type, int scope, double tons,
+		bool instant_construction) {
+	StorageBuildResult result;
+	result.type = type;
+	result.scope = scope;
+	City* city = core.find_city(city_id);
+	if (city == nullptr) {
+		result.error = "cidade desconhecida";
+		return result;
+	}
+	if (type < 0 || type >= kStorageTypeCount) {
+		result.error = "tipo de armazém inválido";
+		return result;
+	}
+	if (scope < 0 || scope >= kStorageScopeCount) {
+		result.error = "dono inválido";
+		return result;
+	}
+	if (!(tons > 0.0)) {
+		result.error = "capacidade inválida";
+		return result;
+	}
+	const bool government = scope == STORAGE_GOVERNMENT;
+	const char* owner = government ? "state" : "private";
+	const double cost = tons * kStorageCostPerTon[type];
+	const double cash = government ? std::max(0.0, city->government_budget)
+		: std::max(0.0, city->firm_cash);
+	const double committed = committed_construction(ws, city->id, owner);
+	if (cost > cash - committed + 1e-9) {
+		result.error = "capital insuficiente";
+		return result;
+	}
+	if (instant_construction) {
+		if (government) {
+			city->government_budget -= cost;
+		} else {
+			city->firm_cash -= cost;
+		}
+		// Construção doméstica: o dinheiro vira receita do setor de construção
+		// (contabilizada no próximo tick), como nas demais obras instantâneas.
+		city->service_cash += cost;
+		city->construction_revenue_pending += cost;
+		const int city_index = static_cast<int>(city - ws.cities.data());
+		add_storage_capacity(ws, city_index, type, scope, tons);
+		result.started = true;
+		result.cost = cost;
+		result.capacity_added = tons;
+		result.duration_days = 0;
+		result.project_id = "STORAGE-" + std::string(
+			storage_type_name(type) ? storage_type_name(type) : "x")
+			+ "-" + std::to_string(ws.day);
+		return result;
+	}
+	ConstructionProject project;
+	project.id = "STORAGE-" + std::string(
+		storage_type_name(type) ? storage_type_name(type) : "x")
+		+ "-" + sane_token(city->id) + "-" + std::to_string(ws.day)
+		+ "-" + std::to_string(ws.construction_projects.size());
+	project.building_id = project.id;
+	project.city = city->id;
+	project.owner = owner;
+	project.kind = CONSTRUCTION_STORAGE;
+	project.storage_type = type;
+	project.storage_capacity_t = tons;
+	project.total_cost = cost;
+	project.reserved = cost;
+	project.created_day = ws.day;
+	if (government) {
+		city->government_budget -= cost;
+	} else {
+		city->firm_cash -= cost;
+	}
+	core.add_construction_project(project);
+	result.started = true;
+	result.cost = cost;
+	result.capacity_added = tons;
+	result.duration_days = project.duration_days;
+	result.project_id = project.id;
+	return result;
+}
+
+StorageTradeResult action_storage_trade(WorldState& ws, SimCore& core,
+		const std::string& city_id, int type, int scope, int product,
+		double tons, bool buy, bool relief) {
+	StorageTradeResult result;
+	City* city = core.find_city(city_id);
+	if (city == nullptr) {
+		result.error = "cidade desconhecida";
+		return result;
+	}
+	if (type < 0 || type >= kStorageTypeCount || scope < 0
+			|| scope >= kStorageScopeCount) {
+		result.error = "armazém inválido";
+		return result;
+	}
+	if (storage_type_is_structure_only(type)) {
+		result.error = "tipo só de estrutura nesta parte";
+		return result;
+	}
+	if (product < 0 || product >= ws.products) {
+		result.error = "produto inválido";
+		return result;
+	}
+	if (static_cast<std::size_t>(product) >= ws.storage_product_type.size()) {
+		rebuild_storage_indexes(ws);
+	}
+	const int product_type =
+		static_cast<std::size_t>(product) < ws.storage_product_type.size()
+		? ws.storage_product_type[static_cast<std::size_t>(product)] : -1;
+	if (!storage_type_accepts(type, product_type)) {
+		result.error = "produto não é guardado neste tipo";
+		return result;
+	}
+	const int city_index = static_cast<int>(city - ws.cities.data());
+	const int site_index = find_storage_site(ws, city_index, type, scope);
+	if (site_index < 0) {
+		result.error = "armazém não existe";
+		return result;
+	}
+	StorageSite& site = ws.storage_sites[static_cast<std::size_t>(site_index)];
+	if (site.stock.size() != static_cast<std::size_t>(ws.products)) {
+		site.stock.resize(static_cast<std::size_t>(ws.products), 0.0);
+		site.inflow_stock.resize(static_cast<std::size_t>(ws.products), 0.0);
+	}
+	Market& market = city->markets[product];
+	const double price = market.price > 0.0 ? market.price
+		: core.base_price(product);
+	if (!(price > 0.0)) {
+		result.error = "preço inválido";
+		return result;
+	}
+	if (!(tons > 0.0)) {
+		result.error = "quantidade inválida";
+		return result;
+	}
+	const bool government = scope == STORAGE_GOVERNMENT;
+	if (buy) {
+		const double free_capacity = storage_free_capacity(ws, site);
+		double qty = std::min(tons, std::min(std::max(0.0, market.stock),
+			free_capacity));
+		const double cash = government ? std::max(0.0, city->government_budget)
+			: std::max(0.0, city->firm_cash);
+		qty = std::min(qty, cash / price);
+		if (qty <= 1e-9) {
+			result.error = "sem estoque/capacidade/caixa para comprar";
+			return result;
+		}
+		const double value = qty * price;
+		if (government) {
+			city->government_budget -= value;
+		} else {
+			city->firm_cash -= value;
+		}
+		// O vendedor é a firma local: o dinheiro só muda de caixa.
+		city->firm_cash += value;
+		city->revenue_by_product[product] += value;
+		market.stock -= qty;
+		market.demand += qty;
+		market.sold += qty;
+		market.effective += qty;
+		site.stock[static_cast<std::size_t>(product)] += qty;
+		site.bought_today_t += qty;
+		result.ok = true;
+		result.tons = qty;
+		result.value = value;
+		return result;
+	}
+	// Liberação: só o estoque RETIDO sai (o pulmão da colheita já escoa pela
+	// fase). Sem `relief`, o comprador local paga; em `relief` a tonelada vai
+	// ao mercado sem pagamento (socorro) — bens não são dinheiro.
+	const double inflow = static_cast<std::size_t>(product)
+		< site.inflow_stock.size()
+		? std::max(0.0, site.inflow_stock[
+			static_cast<std::size_t>(product)]) : 0.0;
+	const double held = std::max(0.0,
+		site.stock[static_cast<std::size_t>(product)] - inflow);
+	double qty = std::min(tons, held);
+	if (qty <= 1e-9) {
+		result.error = "sem estoque retido para liberar";
+		return result;
+	}
+	double paid_qty = 0.0;
+	if (!relief) {
+		const double payer_cash = std::max(0.0, city->firm_cash);
+		paid_qty = std::min(qty, payer_cash / price);
+		qty = paid_qty;
+	}
+	if (qty <= 1e-9) {
+		result.error = "comprador sem caixa";
+		return result;
+	}
+	const double value = paid_qty * price;
+	if (paid_qty > 0.0) {
+		city->firm_cash -= value;
+		if (government) {
+			city->government_budget += value;
+		} else {
+			// Privado: o comprador e o dono são a mesma firma agregada — o
+			// dinheiro não muda de caixa; o lucro aparece no preço do mercado.
+			city->firm_cash += value;
+		}
+	}
+	site.stock[static_cast<std::size_t>(product)] -= qty;
+	market.stock += qty;
+	market.supply += qty;
+	site.released_today_t += qty;
+	result.ok = true;
+	result.tons = qty;
+	result.value = value;
+	result.free_tons = relief ? qty - paid_qty : 0.0;
 	return result;
 }
 

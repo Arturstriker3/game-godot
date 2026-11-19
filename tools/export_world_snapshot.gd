@@ -39,6 +39,8 @@ const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 ## G (D-096/D-098): agricultura sazonal — o plano (janelas herdadas da nação
 ## original da cidade) viaja em `definitions` e o CLI o aplica no load.
 const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
+## G2 (D-101): armazenagem, no mesmo ponto do autoload (depois da agricultura).
+const StorageServiceScript := preload("res://core/economy/storage_service.gd")
 ## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
 const RegionDataScript := preload("res://core/economy/region_data.gd")
 
@@ -144,6 +146,14 @@ func _load_dict_optional(path: String) -> Dictionary:
 	return data if typeof(data) == TYPE_DICTIONARY else {}
 
 
+## Soma os valores numéricos de um dicionário (relatório do StorageService).
+func _sum_values(row: Dictionary) -> float:
+	var total := 0.0
+	for key in row.keys():
+		total += float(row[key])
+	return total
+
+
 ## Cidades no formato que o GeographyService.apply_to_sim espera.
 func _cities_with_center(cities: Array) -> Array:
 	var result: Array = []
@@ -245,6 +255,17 @@ func _run() -> void:
 		print("[snapshot] agricultura: planos=%d estoque=%.0f t" % [
 			int(agri_report.get("plans", 0)),
 			float(agri_report.get("initial_stock_t", 0.0))])
+
+	# G2 (D-101): armazenagem — mapa produto→tipo, capacidade inicial (dado ou
+	# regra declarada) e reserva pública do dia 1, como o autoload declara.
+	if sim.has_method("set_storage_capacity"):
+		var storage := StorageServiceScript.new()
+		var storage_report := storage.apply_to_sim(sim, cities, buildings,
+			{"only_missing": true})
+		print("[snapshot] armazenagem: tipos=%d sites=%d capacidade=%.0f t" % [
+			int(storage_report.get("product_types_applied", 0)),
+			int(storage_report.get("sites_written", 0)),
+			_sum_values(storage_report.get("capacity_t", {}))])
 
 	# O bootstrap industrial (§12.3) roda no PRIMEIRO tick do jogo, não na
 	# criação do mundo: sem ele a foto do dia 0 não é o estado de partida.

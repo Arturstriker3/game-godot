@@ -115,7 +115,13 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // dado (redeclarado pelo AgricultureService no jogo). A cadeia é ADITIVA:
 // v22 → v23 (B6) → v24 (G), cada degrau olhando só as chaves que faltam, então
 // um save v22 atravessa os dois degraus no mesmo load.
-constexpr int kSaveVersion = 24;
+// v25 (G2, D-100): armazenagem — bloco raiz `storage` com os armazéns
+// agregados por (cidade, tipo, dono): capacidade e estoque guardado do governo
+// e do privado. Save v24 e anteriores carregam SEM armazém (nenhuma capacidade
+// ou tonelada inventada para trás); o StorageService reaplica a capacidade
+// inicial do dado/regra declarada depois do load. Obras de armazém em curso
+// viajam em `construction_projects` com `kind = CONSTRUCTION_STORAGE`.
+constexpr int kSaveVersion = 25;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -1180,6 +1186,88 @@ constexpr double kPropertyRingRentPressure = 0.75;
 // arrecadação é do macro político — nada é arrecadado enquanto for 0.
 constexpr double kPropertyTaxDefaultRate = 0.0;
 
-
+// ---------------------------------------------------------------------------
+// G2 — ARMAZENAGEM, RESERVA NACIONAL E CAMADA NACIONAL (save v25).
+// O DADO (capacidade real de silos/reserva estratégica por país e o mapeamento
+// produto→tipo) chega em paralelo (`data/g2-storage`). Até ele entrar, a REGRA
+// DECLARADA é "meses de produção": a capacidade inicial de cada tipo nasce dos
+// meses de produção/consumo já conhecidos pelo núcleo. Nenhum número por país
+// é inventado; os valores abaixo são MODELO calibrável no laboratório.
+// ---------------------------------------------------------------------------
+// Capacidade inicial (regra declarada) como MESES de produção da região/cidade.
+// D-101: o `StorageService` aplica `capacidade = cobertura_real (meses) ×
+// produção anual do jogo / 12` — o dado real entra como COBERTURA, não como
+// tonelagem absoluta; esta constante é a cobertura usada quando o dado não tem
+// meses publicados para o tipo.
+constexpr double kStorageInitialMonths = 2.0;
+// Fatia da capacidade inicial declarada como RESERVA DO GOVERNO. O resto é
+// estoque privado (produtor/cooperativa/comerciante). Modelo declarado: a
+// reserva nacional é uma parte da estrutura, não a estrutura inteira.
+constexpr double kStorageGovernmentShare = 0.25;
+// Custo de obra por tonelada de capacidade (XGS/t) por tipo. Ordem de grandeza
+// de um silo metálico/câmara fria/tanque; MODELO declarado, calibrável.
+constexpr double kStorageCostPerTon[8] = {
+	35.0,   // silo graneleiro
+	120.0,  // câmara fria / frigorífico
+	80.0,   // tanque de petróleo/combustíveis
+	90.0,   // armazenagem de gás
+	25.0,   // pátio de granéis
+	60.0,   // armazém geral
+	150.0,  // cofre (só estrutura nesta parte)
+	140.0,  // paiol militar (só estrutura nesta parte)
+};
+// Manutenção diária por tonelada instalada (XGS/t/dia), paga pelo dono ao setor
+// de serviços (dinheiro conservado). ~1,1 XGS/t/ano no silo.
+constexpr double kStorageMaintenancePerTonDay[8] = {
+	0.003, 0.010, 0.007, 0.008, 0.002, 0.005, 0.012, 0.012,
+};
+// Prazo base da obra de armazém (dias): independe do tamanho (o cronograma §15
+// escala pelo custo/capacidade como as demais obras primárias).
+constexpr int kStorageBuildDays = 90;
+// Pulmão região→cidade: fração do estoque liberada por dia (1/k dias). O silo
+// da região esvazia ao longo de ~2 meses, não no dia da colheita.
+constexpr double kStorageLungReleaseDays = 60.0;
+// Câmara fria sem energia (infra B5 = 0): a perda por perecibilidade é
+// multiplicada por este fator (campo para a Parte E; sem energia não há frio).
+constexpr double kStorageColdNoPowerLossFactor = 3.0;
+// IA privada: spread esperado safra→entressafra por tipo quando ainda não há
+// histórico de preço observado (declarado; o histórico vence quando existir).
+constexpr double kStorageExpectedSpread[8] = {
+	0.18, 0.22, 0.15, 0.15, 0.12, 0.15, 0.05, 0.05,
+};
+// Payback mínimo exigido da obra (spread × volume ÷ (obra + manutenção + perda)
+// em anos). Abaixo disso a IA privada não constrói.
+constexpr double kStoragePrivatePaybackYears = 6.0;
+// Perfil especulador: Gini de renda acima deste valor guarda mais e vende mais
+// perto da colheita; abaixo, perfil conservador. Dado (Gini) define o perfil.
+constexpr double kStorageSpeculatorGini = 0.45;
+// IA privada: fração máxima do caixa da firma comprometida numa compra/obra.
+constexpr double kStoragePrivateCashShare = 0.10;
+constexpr double kStoragePrivateBuildCashShare = 0.25;
+// IA privada: não compra comida quando a satisfação alimentar local está abaixo
+// deste piso, e libera o estoque de comida (anti-fome em tempo de paz).
+constexpr double kStoragePrivateBuySatisfactionFloor = 0.90;
+constexpr double kStoragePrivateReleaseSatisfaction = 0.85;
+// IA do governo: compra na colheita até esta fração do EXCEDENTE do mercado
+// (`Market::surplus`, o estoque acima de 3 dias de demanda) e libera na
+// entressafra, na falta e na crise até esta fração do estoque guardado.
+constexpr double kStorageGovernmentBuyShare = 0.10;
+constexpr double kStorageGovernmentReleaseShare = 0.20;
+// D-101 — PISO DE SEGURANÇA ALIMENTAR da armazenagem (consumido/necessidade,
+// o mesmo número que a IA já lê como satisfação). Vale para toda decisão que
+// RETIRA comida do mercado: a IA do governo só forma reserva acima dele, o
+// pulmão do silo não desvia colheita abaixo dele e a reserva guardada é
+// liberada abaixo dele. Comida no silo não pode deixar a cidade com mais fome.
+constexpr double kStorageFoodSecureSatisfaction = 0.95;
+// IA do governo: preço "baixo" / "alto" vs. referência (histórico/base).
+constexpr double kStorageGovernmentLowPrice = 0.95;
+constexpr double kStorageGovernmentHighPrice = 1.05;
+// Dias antes da próxima colheita em que o privado começa a vender (conservador
+// × especulador). O calendário da região é o dado; isto é o comportamento.
+constexpr double kStorageConservativeSellDays = 60.0;
+constexpr double kStorageSpeculatorSellDays = 20.0;
+// Fome: satisfação abaixo deste valor faz o governo liberar reserva mesmo sem
+// pagamento (socorro; bens não são dinheiro, nenhuma moeda é criada).
+constexpr double kStorageReliefSatisfaction = 0.80;
 
 } // namespace ogs

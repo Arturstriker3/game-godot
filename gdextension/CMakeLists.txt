@@ -39,6 +39,7 @@ add_library(opengs_sim STATIC
     src/sim/trade.cpp
     src/sim/production.cpp
     src/sim/agriculture.cpp
+    src/sim/storage.cpp
     src/sim/prices.cpp
     src/sim/consumption.cpp
     src/sim/labor.cpp
@@ -64,6 +65,7 @@ add_library(opengs_sim STATIC
     src/sim/ai/ai_private.cpp
     src/sim/ai/ai_group.cpp
     src/sim/ai/ai_government.cpp
+    src/sim/ai/ai_storage.cpp
     src/sim/ai/ai_phase.cpp
     src/sim/save_value.cpp
     src/sim/save_state.cpp
