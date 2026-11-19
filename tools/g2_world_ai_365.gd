@@ -217,6 +217,7 @@ func _run() -> Dictionary:
 	var loss_seen: Dictionary = {}   # valor do mês anterior (perda é mensal)
 	_seed_accumulators(sim, acc)
 	var storage_start := _storage_sample(sim)
+	var wall_start := Time.get_ticks_msec()
 
 	for day in _days:
 		var summary: Dictionary = sim.tick_day()
@@ -277,6 +278,10 @@ func _run() -> Dictionary:
 				"crops": monthly_sum.duplicate(),
 				"storage": _storage_sample(sim),
 			}
+		# Progresso barato: só mede o relógio de parede, não toca no mundo.
+		if int(day_now) % 30 == 0 or day == _days - 1:
+			print("[g2] progresso dia %d/%d t=%.1fs" % [int(day_now), _days,
+				(Time.get_ticks_msec() - wall_start) / 1000.0])
 
 	var status_final: Dictionary = sim.get_status()
 	var money_end := float(status_final.get("money_total", 0.0))

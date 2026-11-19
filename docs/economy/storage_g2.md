@@ -140,7 +140,7 @@ existe mercado nacional — só a leitura agregada.
   (`satisfaction_prev`), porque o `phase_reset` do dia zera o campo corrente.
   Era o que fazia a ilha perder a safra por 60 dias dentro do silo privado.
 
-**Resultado em 365 d**: 5.923 t de capacidade de silo construídas (sites
+**Resultado em 365 d**: 5.252 t de capacidade de silo construídas (sites
 existentes; 0 site novo). Com a cobertura real de grãos em 13,6 meses, a
 capacidade inicial já supera o alvo da IA (2 meses), então ela quase não tem o
 que construir — comportamento esperado, não bug.
@@ -277,17 +277,24 @@ instrumento para medir o mecanismo.
   virou um mundo em paz de verdade (PORTUS menor) e a checagem de "não causar
   fome" passou a valer contra a mesma cidade **sem** IA.
 - **A0 60 d (IA + urbano), 2 rodadas**: idênticas (0 diferenças). Golden
-  regenerado: `save 925c3096. → 8b8be710.`, `status 40203cc9. → db07f756.`
-  (o mundo muda por desenho: 3.973 sites de armazém; `service_businesses`
-  39.841 → 39.959).
-- **S0 (`economy_refactor_equiv`)**: `real_60_ai`, `real_60_noai` e
-  `demo_365_noai` — **`status_sha256` idêntico** ao golden anterior em todos;
-  só o `save_sha256` muda, pelo bloco `storage` vazio do v25. Goldens
-  regravados.
+  regenerado depois das duas regras de comida: `save 8b8be710. → be93f279.`,
+  `status db07f756. → 1b3c5a58.` (o A0 liga a armazenagem, então as regras do
+  pulmão e da reserva mudam o mundo por desenho; a build anterior a elas dava
+  `8b8be710.`/`db07f756.` e ficou registrada no histórico do arquivo).
+- **S0 (`economy_refactor_equiv`)**, 2 rodadas cada: `real_60_ai`
+  (`aff6013a.`/`9c9785a0.`), `real_60_noai` (`e4777ede.`/`3a0dd9af.`) e
+  `demo_365_noai` (`ef14f7ee.`/`a7a8e16a.`) — **`status_sha256` e
+  `save_sha256` iguais ao golden em disco** em todas as rodadas (o harness S0
+  não declara armazenagem nem agricultura; só o A0 sente a D-101).
 - **CLI × Godot, 10 d (IA, `--threads=1`, sem urbano)**: **byte-idênticos**,
-  78.223.424 bytes, SHA-256
-  `23E7D0F3446E39F98A3F6802AF24151DB5BFCCF30A64CECC9596D05F1EFD3786`,
-  0 diferenças no comparador, 0 violações, `money_total` 6.523.551.982,90.
+  81.447.236 bytes — o snapshot agora carrega o bloco `storage` do v25, por
+  isso o arquivo cresceu ante os 78.223.424 B da medição anterior — SHA-256
+  `3A8EEE97878328A690A38D945C5F312322D04DEEAA7143FB71469B67F2B94B5B`,
+  `money_total` 6.523.551.982,90, 0 violações.
+- **Bateria completa** (`tools/run_tests.ps1 -All`, 19/11/2026): **80/80
+  verdes** (0 falha, 0 crash, 0 timeout, 0 pulado), incluindo
+  `economy_integration_test`, `economy_ai_test`, `population_demo_test` e
+  `turbo_equivalence_test`.
 - **Bateria completa**: ver `GAME_STATE.md` (D-101) — o número de verdes/
   vermelhos e as falhas herdadas ficam registrados lá.
 
