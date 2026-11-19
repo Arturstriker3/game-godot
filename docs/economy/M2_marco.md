@@ -256,6 +256,59 @@ Fases (mediana, ms): `ai` **13,78** (`ai_view` 10,48), `arrival` **5,92**, `prol
 B1–B5 custa **~0,45 ms/dia** (`migration` + `region` + `demography`) — o custo continua
 na IA e no retrato do prólogo.
 
+### 7.1 Re-bench com host ocioso — base `c3195ca4` (2026-11-18)
+
+Fecha o item 8 do §8 ("re-medir em janela ociosa"). Checkout `G:/projetos/opengs-game`,
+branch `balance/global-resources`, HEAD `c3195ca4` (merge `chore/legacy-tests`): já com
+B1–B5, B5-real (infra vinda do dado), B7/D-093, D-087 e o preço livre D-091/D-092 —
+**save v22**.
+
+**Host:** ocioso. CPU 0% e **9.383 MB livres de 24.499** (38,6%) no início, sem nenhum
+Godot headless (`Get-CimInstance Win32_Process`); só os dois `godot-editor-mcp` (sem
+janela, 5,1 MB, 0 s de CPU — o script os avisa porque o nome começa com "Godot") e os
+apps do dono abertos e parados (Chrome/Firefox, Discord, `claude`, `vmmem`). Nenhum
+editor com janela.
+
+**DLL release:** a que estava em `gdextension/bin/` era de 19:00, **anterior ao commit da
+B5** (`6f0bd09c` — sem `set_region_infra`), então foi reconstruída do HEAD
+(`3.076.096 B`, SHA-256 `93df833e…`, `OGS_PROFILE_RELEASE=ON`); o bench a copiou sobre o
+slot debug e devolveu a debug com hash conferido (`faa6ac8c…`).
+
+`tools/bench_canonical.ps1 -Out docs/economy/perf/bench_base_c3195ca4.json`
+(3 × 60 d, tick = worker, threads do núcleo, editor fechado):
+
+| métrica | rodadas (ms) | mediana | variação |
+|---|---:|---:|---:|
+| dia/tick — média | 33,96 / 32,99 / 33,32 | **33,32** | **2,90%** |
+| dia/tick — p50 | 28,71 / 28,05 / 28,53 | 28,53 | 2,32% |
+| dia/tick — p95 | 44,30 / 44,35 / 44,06 | 44,30 | 0,65% |
+| pior dia | 44,93 / 44,87 / 46,29 | 44,93 | 3,16% |
+| memória estática | 170,6 MB nas 3 | — | — |
+
+**Critério A0 de 3% entre rodadas: FECHOU (2,90%)** — não houve 4ª rodada. O número que
+vale (mesma regra de A5–B2) é a mediana: **33,32 ms** de dia/tick, p50 **28,53 ms** e p95
+**44,30 ms**.
+
+**Comparação na mesma régua (média do dia/tick, N=3, 60 d):** A0 **39,42 ms** (host com
+tarefa Python de dados) → B1 **28,15 ms** (ocioso) → M2 **39,61 ms** (host ocupado) →
+**c3195ca4 33,32 ms** (ocioso). Sobre a B1 ociosa o custo subiu **+18,4%** (+5,17 ms) —
+o preço de B2–B7, da B5-real, da semeadura D-087 e do preço livre; sobre o M2 ocupado é
+**−15,9%**, mas o host difere, então a leitura honesta é que o dia no ocioso fica **entre**
+a B1 e o M2. A memória estática subiu a **170,6 MB** (B1 130,3 / M2 142,4): +28,2 MB
+sobre o M2, coerente com os blocos novos de save (informalidade/mortalidade/insatisfação
+por quintil da B7 e infra da B5 real) — não medido bloco a bloco.
+
+**Fases (p50, mediana das 3 rodadas; as 5 mais caras):** `ai` **8,87** (`ai_view` 7,28),
+`arrival` **5,06**, `prologue_snapshot` **4,57**, `trade` **2,76** (`trade_food` 1,68),
+`services` **1,67**; na sequência `production` 1,58, `raw` 0,99, `income` 0,78, `fiscal`
+0,73, `reset` 0,67, `accounting` 0,62, `housing` 0,44, `invariants` 0,25, `prices` 0,24,
+`region` 0,24, `migration` 0,22, `labor` 0,17, `fx` 0,16, `land_month` 0,04,
+**`demography` 0,019**, `status` **0,000** (saiu do tick). Em média a `ai` caiu de
+13,78 ms (M2) para 9,40 ms (−31,8%) e `ai_view` de 10,48 para 6,96 (−33,6%). As fases de
+perfil da Parte B somam **0,48 ms/dia** (`migration` + `region` + `demography`; era 0,45
+no M2); a B7 não tem fase própria — o custo dela entra em `income`/`accounting`/`labor`.
+O custo segue em `ai` + `arrival` + retrato do prólogo: **18,5 ms** dos 28,5 ms de p50.
+
 ## 8. Dívidas de calibração consolidadas
 
 | # | dívida | número medido (M2) | mecanismo / por que não é knob | próximo passo |
@@ -267,7 +320,7 @@ na IA e no retrato do prólogo.
 | 5 | **Migração baixa** | **18.983,7** interior→polo em 365 d (interior +56,0 M no ano); urbanização **−0,05 p.p.**; cidade→cidade 37.479,5 in/out | `kMigrationGapThreshold`/`kMigrationMonthlyMax` (0,5%/mês) + vaga de moradia: o fluxo realizado é ~0,0003% do estoque do interior. | Recalibrar o gatilho/vaga **depois** de resolver a comida do interior (#1/#3) — senão o êxodo só muda a fome de lugar |
 | 6 | **AUS — bauxita semeada** | AUS-BRO bauxita 0,144 e AUS-WEI 0,156 de utilização; falidas por **folha** (o resto das 15 foi corrigido na D-086b) | As duas maiores minas de bauxita operam a ~15% da capacidade por venda e pagam equipe cheia; o teto de 3× impede o preço de subir. | Depende de #4 (preço) ou de régua de folha por utilização sustentada |
 | 7 | **Aluguel Q1** | AUS Q1 **0,545** (teto 0,40); Q1/Q2 sem caixa em BRA/JPN/USA e NGA Q2 pago 0,196 (quase zero) | Demanda do Q1 sem renda compatível com o preço do solo (B2 §10); a B6 (patrimônio da região) muda o colateral. | Desenho B6/C1 (aluguel do anel periurbano) |
-| 8 | **Bench pós-D-086b** | **39,61 ms** de dia/tick (3,93× o A0), 142,4 MB | Primeiro bench canônico depois da D-087; o critério de 3% não fecha em host compartilhado. Não há A/B por `use_seed` depois da D-087. | Re-medir em janela ociosa; A/B `use_seed` só se o custo da semente for questionado |
+| 8 | **Bench pós-D-086b** | **39,61 ms** de dia/tick (3,93× o A0), 142,4 MB | Primeiro bench canônico depois da D-087; o critério de 3% não fecha em host compartilhado. Não há A/B por `use_seed` depois da D-087. | Re-medir em janela ociosa — **feito: §7.1, 33,32 ms** (base `c3195ca4`); A/B `use_seed` só se o custo da semente for questionado |
 | 9 | **7 testes defasados** | §2.1 | A4 (resumo leve), B2 (consumo por quintil), A5 (IA C++) e locale (i18n) | Migrar os testes para `ui_snapshot`/`get_city_status`, quintis e IA C++ na próxima passada de manutenção |
 | 10 | **Comida — preço livre (D-091/D-092)** | 31 nações pioram > 2,5 p.p. no portão (D-092; 13 no M2, 15 na D-091): 15 robustas (ARE −0,369, BFA −0,126, SOM −0,106 …) e 16 mercados finos (necessidade < 300 t/d, razão hipersensível) | Termos de troca energia/mineral × comida: mineral em platô de 2,6–5,0× o base e comida em 1,10–1,14× no mundo, mas 1,24–3,20× no preço **local** de quem importa; importadores de energia pagam insumo a 1,9–3,2× sem receita de exportação, e exportadores de mineral (COD/ARE/ZMB) perderam a renda que o 19× da D-091 lhes dava (a receita não chega à cesta — liga com #2). Nenhum invariante violou e o dinheiro ficou conservado (drift +0,0024). | **Corrigir na Parte E (energia) e na calibração da oferta de minerais** — aceite do plano: devolver ao portão de comida as nações importadoras de energia reprovadas na D-091/D-092 |
 
