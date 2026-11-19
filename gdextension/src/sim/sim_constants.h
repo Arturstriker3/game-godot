@@ -1253,11 +1253,12 @@ constexpr double kStoragePrivateReleaseSatisfaction = 0.85;
 // entressafra, na falta e na crise até esta fração do estoque guardado.
 constexpr double kStorageGovernmentBuyShare = 0.10;
 constexpr double kStorageGovernmentReleaseShare = 0.20;
-// IA do governo: a reserva de COMIDA só se forma onde a cidade já come com
-// folga — consumido/necessidade >= este piso. Abaixo dele a tonelada vai para
-// a mesa (liberação), nunca para o silo: ilha/micro-mercado não perde comida
-// para a reserva nacional. Declarado em D-101 (fecha a piora do portão).
-constexpr double kStorageGovernmentBuySatisfactionFloor = 0.95;
+// D-101 — PISO DE SEGURANÇA ALIMENTAR da armazenagem (consumido/necessidade,
+// o mesmo número que a IA já lê como satisfação). Vale para toda decisão que
+// RETIRA comida do mercado: a IA do governo só forma reserva acima dele, o
+// pulmão do silo não desvia colheita abaixo dele e a reserva guardada é
+// liberada abaixo dele. Comida no silo não pode deixar a cidade com mais fome.
+constexpr double kStorageFoodSecureSatisfaction = 0.95;
 // IA do governo: preço "baixo" / "alto" vs. referência (histórico/base).
 constexpr double kStorageGovernmentLowPrice = 0.95;
 constexpr double kStorageGovernmentHighPrice = 1.05;

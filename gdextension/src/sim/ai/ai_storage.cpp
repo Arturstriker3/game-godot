@@ -306,7 +306,7 @@ bool AiStorageInvestor::government_decisions(AiContext& ctx,
 			STORAGE_GOVERNMENT);
 		const bool food = ai_food_calories(ctx.view, product) > 0.0;
 		const bool food_secure =
-			satisfaction >= kStorageGovernmentBuySatisfactionFloor;
+			satisfaction >= kStorageFoodSecureSatisfaction;
 		// Compra só do EXCEDENTE declarado pelo mercado (`surplus` = estoque
 		// acima de 3 dias de demanda) e, em comida, só onde a cidade já come
 		// com folga: ilha/micro-mercado não perde comida para a reserva.

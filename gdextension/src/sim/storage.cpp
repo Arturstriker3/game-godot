@@ -462,9 +462,22 @@ void SimCore::phase_storage() {
 	for (std::size_t city_index = 0; city_index < ws_.cities.size();
 			++city_index) {
 		City& city = ws_.cities[city_index];
+		// D-101: cidade abaixo do PISO DE SEGURANÇA ALIMENTAR não entrega a
+		// colheita ao pulmão — a safra do dia vai direto ao mercado. A
+		// satisfação de ONTEM (`satisfaction_prev`, consumido/necessidade do
+		// fechamento anterior) é a única leitura disponível aqui: o
+		// `phase_reset` do próprio dia já zerou o campo corrente. Desviar
+		// comida de quem já come menos do que precisa era o que fazia a ilha
+		// perder a safra no estoque privado.
+		const bool food_short =
+			city.pop.satisfaction_prev < kStorageFoodSecureSatisfaction;
 		for (std::size_t product = 0; product < products; ++product) {
 			const double grown = harvest[city_index * products + product];
 			if (grown <= 0.0) {
+				continue;
+			}
+			if (food_short
+					&& food_calories(static_cast<int>(product)) > 0.0) {
 				continue;
 			}
 			const int product_type =
