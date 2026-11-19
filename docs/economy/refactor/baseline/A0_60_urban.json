@@ -2,12 +2,12 @@
   "ai": true,
   "bankruptcies": 0,
   "days": 60,
-  "money_total": 6523551982.900002,
+  "money_total": 6523551982.899999,
   "products": 113,
-  "save_sha256": "85fe99c78991d42f44a00717fbedb88c13ab274d1e2de785ea82234012147086",
+  "save_sha256": "7716392c2ff103fee52c793d1988b713bad8efa8c6d160fbd4b5b8a4179b37d4",
   "seed": 0,
-  "service_businesses": 41616,
-  "status_sha256": "3cf931e62de59a866ff936adfeb69ee493186e9e5a3da6dc445face5701c5183",
+  "service_businesses": 41695,
+  "status_sha256": "f59e7968fc286085f260d17543296fba71dc9a890aa90e4fcc4f88df0b0514e3",
   "threads": 0,
   "urban": true
 }

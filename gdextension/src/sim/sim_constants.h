@@ -101,16 +101,20 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // (urbano) e `region.informal`/`region.mortality`/`region.dissatisfaction`
 // (interior). Save v21 e anteriores migram semeando a informalidade do dado da
 // nação (ou âncora de renda), a referência de saúde e os contadores zerados.
-// v23 (B6, feat/b6-region-property): reservada para a B6 (patrimônio da
-// região). NÃO é gravada por este binário — quando o merge dos dois ramos
-// acontecer, o degrau 22 → 23 → 24 já existe e só a constante muda.
+// v23 (B6, D-095): patrimônio da região (`region.property`) — hectares, Gini
+// fundiário, valores de terra/moradia/anel, população do anel, alíquotas e a
+// distribuição por quintil. Save v22 e anteriores carregam sem o bloco: a
+// região fica inerte até o dado ser reaplicado (GDScript, `set_region_property`
+// só age quando `property_ready` é falso) e a alíquota nasce 0.
 // v24 (G, D-096): agricultura sazonal — bloco raiz `agriculture` com o estado
 // por (cidade, produto, safra): ano do plantio, fator de rendimento por
 // fertilizante, ano da colheita em curso e o que já foi entregue. Save v23 e
 // anteriores migram com o estado zerado: a safra do ano corrente recomeça no
 // dia do load (a produção já entregue antes do save não é reinventada). O
 // bloco `definitions` ganha `crop_plans`/`crop_losses`/`shelf_life`, que são
-// dado (redeclarado pelo AgricultureService no jogo).
+// dado (redeclarado pelo AgricultureService no jogo). A cadeia é ADITIVA:
+// v22 → v23 (B6) → v24 (G), cada degrau olhando só as chaves que faltam, então
+// um save v22 atravessa os dois degraus no mesmo load.
 constexpr int kSaveVersion = 24;
 
 // ---------------------------------------------------------------------------
@@ -1123,6 +1127,59 @@ constexpr double kAgriStorageQualityWeight[3] = {0.35, 0.45, 0.20};
 // nação/cultura (`crop_stocks._meta.rule_days_default` = 60). O
 // AgricultureService aplica a regra; a constante fica aqui como registro.
 constexpr int kAgriStockRuleDays = 60;
+
+// ---------------------------------------------------------------------------
+// B6 — PATRIMÔNIO IMOBILIÁRIO DA REGIÃO (terra, moradia do interior e anel
+// periurbano da cidade-polo). Cadência MENSAL (A6).
+//
+// O DADO é a área agrícola em hectares por nação e o Gini fundiário
+// (data/definitions/economy/land_property.json, FAOSTAT 2023 + FAO LINEQ; a
+// regra de rateio nacional→estado está declarada no próprio arquivo e é
+// aplicada por core/economy/land_property.gd). Os PREÇOS não têm dado: são
+// MODELO DECLARADO — capitalização da renda fundiária medida no núcleo, com a
+// infra B5 e o preço das commodities. Nenhum valor de ativo entra em
+// `money_total`: só o aluguel do anel é fluxo (débito e crédito na região).
+// Documento: docs/economy/B6_region_property.md (D-095).
+// ---------------------------------------------------------------------------
+// Cap rate ANUAL do ativo: o MESMO 5%/ano do mercado de moradia (§19.6,
+// `price = aluguel × 12 ÷ 0,05`). Vale para a terra (renda capitalizada) e
+// para a moradia rural/anel — um único fator de capitalização no projeto.
+constexpr double kPropertyCapRate = 0.05;
+// Valorização da TERRA: alvo = renda fundiária ANUAL por hectare ÷ cap rate.
+// A renda fundiária é a folha primária do interior (`region.wage_income`, base
+// diária) × 30 — "a renda das fazendas/minas da região". Amortecimento mensal
+// declarado: fração da distância ao alvo e passo máximo por mês.
+constexpr double kPropertyValueDamping = 0.25;
+constexpr double kPropertyValueStepMax = 0.10;
+// A infra B5 valoriza a terra: alvo × (1 + ganho × cobertura), com a cobertura
+// combinada dos MESMOS pesos da produtividade primária (kInfraProductivityWeight).
+constexpr double kPropertyInfraValueGain = 0.50;
+// Índice de commodities: média (peso = capacidade de extração) do preço
+// corrente ÷ preço-base D0 dos produtos PRIMÁRIOS da cidade-polo (fazendas e
+// minas). Faixa declarada — boom eleva, quebra derruba.
+constexpr double kPropertyCommodityIndexMin = 0.25;
+constexpr double kPropertyCommodityIndexMax = 4.00;
+// Moradia do INTERIOR (autoconstruída): fração do preço da unidade POPULAR do
+// polo. O interior não tem mercado de solo (§B3) — casa própria construída,
+// sem aluguel de mercado; o valor é patrimônio do dono.
+constexpr double kPropertyRuralHomeShare = 0.40;
+// ANEL PERIURBANO: preço = preço popular do polo × desconto de distância
+// (kPropertyRingDistanceDiscount por 100 km do raio efetivo da região, derivado
+// da área real dos estados) × (1 − penalidade da estrada B5).
+constexpr double kPropertyRingDistanceDiscount = 0.35;
+constexpr double kPropertyRingRoadPenalty = 0.30;
+// Absorção do anel: fração da população urbana que a periferia informal
+// consegue assentar POR MÊS quando o polo está cheio (o "construtor" do anel;
+// sem ela o excedente continuaria barrado pela vaga da B4).
+constexpr double kPropertyRingMonthlyAbsorb = 0.005;
+// Pressão de aluguel no anel: o aluguel sobe com a fatia da população que vive
+// nela (periferia cheia = aluguel maior).
+constexpr double kPropertyRingRentPressure = 0.75;
+// Imposto sobre a propriedade (anual, sobre o valor de mercado). 0,0 por padrão:
+// a alíquota é CAMPO persistido e publicado (receita potencial), mas a
+// arrecadação é do macro político — nada é arrecadado enquanto for 0.
+constexpr double kPropertyTaxDefaultRate = 0.0;
+
 
 
 } // namespace ogs

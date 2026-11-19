@@ -17,69 +17,6 @@ namespace {
 
 constexpr double kRegionEps = 1e-12;
 
-// Credita dinheiro no caixa da região, repartindo entre os quintis pela renda
-// (o salário do primário vai para os quintis na proporção da renda).
-void region_credit(Region& region, double amount) {
-	const double value = std::max(0.0, amount);
-	region.cash += value;
-	if (!region.strata_ready || value <= kRegionEps) {
-		return;
-	}
-	double share_total = 0.0;
-	for (int s = 0; s < kIncomeStrata; ++s) {
-		share_total += std::max(0.0, region.strata_income_share[s]);
-	}
-	if (share_total <= kRegionEps) {
-		region.stratum_savings[0] += value;
-		return;
-	}
-	double credited = 0.0;
-	for (int s = 0; s < kIncomeStrata; ++s) {
-		const double share = value
-			* std::max(0.0, region.strata_income_share[s]) / share_total;
-		region.stratum_savings[s] += share;
-		credited += share;
-	}
-	region.stratum_savings[kIncomeStrata - 1] += value - credited;
-}
-
-// Debita dinheiro do caixa da região, repartindo pela poupança de cada quintil
-// (quem tem mais, paga mais — espelho de charge_households).
-void region_charge(Region& region, double amount) {
-	const double value = std::max(0.0, amount);
-	if (!region.strata_ready || value <= kRegionEps) {
-		region.cash = std::max(0.0, region.cash - value);
-		return;
-	}
-	double total = 0.0;
-	for (int s = 0; s < kIncomeStrata; ++s) {
-		total += std::max(0.0, region.stratum_savings[s]);
-	}
-	const double paid = std::min(value, total);
-	region.cash = std::max(0.0, region.cash - paid);
-	if (total <= kRegionEps) {
-		return;
-	}
-	double charged = 0.0;
-	for (int s = 0; s < kIncomeStrata; ++s) {
-		const double share = paid
-			* std::max(0.0, region.stratum_savings[s]) / total;
-		region.stratum_savings[s] = std::max(0.0,
-			region.stratum_savings[s] - share);
-		charged += share;
-	}
-	if (charged < paid) {
-		int top = 0;
-		for (int s = 1; s < kIncomeStrata; ++s) {
-			if (region.stratum_savings[s] > region.stratum_savings[top]) {
-				top = s;
-			}
-		}
-		region.stratum_savings[top] = std::max(0.0,
-			region.stratum_savings[top] - (paid - charged));
-	}
-}
-
 // Demografia do interior (MENSAL, cadência A6): nascimentos, mortes e
 // envelhecimento, reaproveitando B1 (age_structures da nação, kAgeDeathWeight e
 // as mesmas taxas de envelhecimento 1/15,1/10,1/20,1/20). B7: as mortes são
@@ -143,6 +80,70 @@ void region_demography_month(WorldState& ws, SimCore& core, City& city) {
 }
 
 } // namespace
+
+// ---------------------------------------------------------------------------
+// Caixa da região (B3): crédito reparte pela RENDA dos quintis, débito pela
+// POUPANÇA. Públicos desde a B6 (o aluguel do anel usa a mesma repartição, com
+// o par débito/crédito somando zero — dinheiro conservado).
+// ---------------------------------------------------------------------------
+void SimCore::region_credit(Region& region, double amount) {
+	const double value = std::max(0.0, amount);
+	region.cash += value;
+	if (!region.strata_ready || value <= kRegionEps) {
+		return;
+	}
+	double share_total = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		share_total += std::max(0.0, region.strata_income_share[s]);
+	}
+	if (share_total <= kRegionEps) {
+		region.stratum_savings[0] += value;
+		return;
+	}
+	double credited = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		const double share = value
+			* std::max(0.0, region.strata_income_share[s]) / share_total;
+		region.stratum_savings[s] += share;
+		credited += share;
+	}
+	region.stratum_savings[kIncomeStrata - 1] += value - credited;
+}
+
+void SimCore::region_charge(Region& region, double amount) {
+	const double value = std::max(0.0, amount);
+	if (!region.strata_ready || value <= kRegionEps) {
+		region.cash = std::max(0.0, region.cash - value);
+		return;
+	}
+	double total = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		total += std::max(0.0, region.stratum_savings[s]);
+	}
+	const double paid = std::min(value, total);
+	region.cash = std::max(0.0, region.cash - paid);
+	if (total <= kRegionEps) {
+		return;
+	}
+	double charged = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		const double share = paid
+			* std::max(0.0, region.stratum_savings[s]) / total;
+		region.stratum_savings[s] = std::max(0.0,
+			region.stratum_savings[s] - share);
+		charged += share;
+	}
+	if (charged < paid) {
+		int top = 0;
+		for (int s = 1; s < kIncomeStrata; ++s) {
+			if (region.stratum_savings[s] > region.stratum_savings[top]) {
+				top = s;
+			}
+		}
+		region.stratum_savings[top] = std::max(0.0,
+			region.stratum_savings[top] - (paid - charged));
+	}
+}
 
 // ---------------------------------------------------------------------------
 // B5 — infraestrutura da região (estrada, energia, água): multiplicadores

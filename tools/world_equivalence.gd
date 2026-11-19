@@ -26,6 +26,7 @@ extends SceneTree
 ## - Saída: 0 ok, 1 falha. Toda falha vira linha `[equiv] FALHA: ...`.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const LandPropertyScript := preload("res://core/economy/land_property.gd")
 const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 ## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
 const RegionDataScript := preload("res://core/economy/region_data.gd")
@@ -192,6 +193,9 @@ func _run() -> void:
 	# B5 (D-089): infra inicial do estado (dado real World Bank), igual ao
 	# autoload. Sem isso o replay A0/S0 rodaria com infra 0.
 	GeographyServiceScript.apply_initial_infra(sim)
+	# B6 (D-095): patrimônio da região (hectares + Gini fundiário), igual ao
+	# autoload. Sem isso o replay A0/S0 rodaria sem a B6.
+	LandPropertyScript.apply(sim)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
 	if _urban:

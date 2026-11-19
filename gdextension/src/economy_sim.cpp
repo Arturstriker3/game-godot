@@ -292,6 +292,10 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_health_access);
 	ClassDB::bind_method(D_METHOD("set_region_infra", "data"),
 	                     &EconomySim::set_region_infra);
+	ClassDB::bind_method(D_METHOD("set_region_property", "data"),
+	                     &EconomySim::set_region_property);
+	ClassDB::bind_method(D_METHOD("set_property_tax_rate", "nation", "rate"),
+	                     &EconomySim::set_property_tax_rate);
 	ClassDB::bind_method(D_METHOD("set_urban", "urban_land", "housing_city",
 	                     "housing", "municipal_finance"),
 	                     &EconomySim::set_urban);
@@ -1635,7 +1639,7 @@ Dictionary EconomySim::get_profile() const {
 		"trade_food_prep", "trade_food_calc", "trade_food_settle",
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
-		"region", "migration", "social", "agriculture",
+		"region", "migration", "social", "property", "agriculture",
 	};
 	Dictionary profile;
 	if (!profile_) {
@@ -1985,7 +1989,8 @@ EconomySim::StatusKeys::StatusKeys() :
 		c_offset("c_offset"),
 		c_output_product("c_output_product"),
 		c_capacity("c_capacity"),
-		c_expand("c_expand")
+		c_expand("c_expand"),
+		wealth_gini("wealth_gini")
 {}
 
 EconomySim::CityScalars EconomySim::city_scalars(std::size_t city_index,
@@ -2616,7 +2621,7 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	// nível de consumo, aluguel pago e a fatia da renda gasta em comida — os
 	// números que a validação de padrão real lê. Republicado quando muda.
 	{
-		double flat[kIncomeStrata * 14 + 6];
+		double flat[kIncomeStrata * 14 + 7];
 		int fi = 0;
 		const auto put = [&flat, &fi](double value) {
 			flat[fi++] = value;
@@ -2646,6 +2651,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			put(city.pop.stratum_tenure[s][2]);
 		}
 		put(sim_core_.strata_gini(city.pop));
+		// B6: Gini de RIQUEZA dos quintis (poupança + imóvel + terra +
+		// participações; no urbano a terra é 0 — ela é da região).
+		put(ogs::SimCore::quintile_gini(city.pop.stratum_wealth, kIncomeStrata));
 		for (int band = 0; band < 5; ++band) {
 			put(city.pop.lifecycle_saving[band]);
 		}
@@ -2667,10 +2675,11 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				out[String(names[field])] = row;
 			}
 			out["gini"] = flat[kIncomeStrata * 14];
+			out["wealth_gini"] = flat[kIncomeStrata * 14 + 1];
 			Array lifecycle;
 			lifecycle.resize(5);
 			for (int band = 0; band < 5; ++band) {
-				lifecycle[band] = flat[kIncomeStrata * 14 + 1 + band];
+				lifecycle[band] = flat[kIncomeStrata * 14 + 2 + band];
 			}
 			out["lifecycle_saving"] = lifecycle;
 			slot.income_strata = out;
@@ -3443,6 +3452,9 @@ void EconomySim::build_nations(StatusCache& cache,
 		double income_population = 0.0;
 		// F7 calibração: TFP nacional ponderada pela população de simulação.
 		double productivity_weighted = 0.0;
+		// B6: patrimônio por quintil somado nas cidades + regiões da nação
+		// (poupança + imóvel + terra + participações) — base do Gini de riqueza.
+		double wealth[kIncomeStrata] = {};
 	};
 	// S17: cadência do agregado `labor` (semanal), POR SLOT como sempre foi.
 	// A4: um slot parado (o jogo/agendador não constrói status todo dia) é
@@ -3473,6 +3485,11 @@ void EconomySim::build_nations(StatusCache& cache,
 		totals.stockpile += city.markets[0].stock;
 		totals.need += city.pop.need;
 		totals.deficit += std::max(0.0, city.pop.need - city.pop.consumed);
+		// B6: riqueza nacional = urbana + região (patrimônio por quintil).
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			totals.wealth[s] += std::max(0.0, city.pop.stratum_wealth[s])
+				+ std::max(0.0, city.region.stratum_wealth[s]);
+		}
 		if (labor_due) {
 			totals.working_age += city.pop.working_age;
 			totals.labor_force += city.pop.labor_force;
@@ -3546,6 +3563,9 @@ void EconomySim::build_nations(StatusCache& cache,
 		nation[k.need] = totals.need;
 		nation[k.deficit] = totals.deficit;
 		nation[k.in_transit] = totals.in_transit;
+		// B6: Gini de riqueza da nação (poupança + imóvel + terra + ações).
+		nation[k.wealth_gini] = ogs::SimCore::quintile_gini(
+			totals.wealth, kIncomeStrata);
 		// F4: frota/combustível da nação (a UI e a IA leem daqui; a fila do dia
 		// é o sinal de compra de veículos/combustível). O sub-dicionário e o
 		// Array de saúde são reaproveitados entre ticks (byte-idêntico: mesmos
@@ -4322,6 +4342,7 @@ Dictionary EconomySim::get_nation_columns() {
 	city_count.resize(count);
 	static const char* kFields[] = {
 		"population", "production", "stockpile", "need", "deficit", "in_transit",
+		"wealth_gini",
 	};
 	constexpr int kFieldCount = static_cast<int>(sizeof(kFields)
 		/ sizeof(kFields[0]));
@@ -5296,6 +5317,132 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 		}
 		out["concessions"] = concessions;
 	}
+	// B6: patrimônio da região — terra, moradia do interior e anel periurbano.
+	// Os VALORES são de mercado (não são dinheiro); `book` é a base contábil
+	// (1ª avaliação) e o fluxo mensal é o aluguel efetivamente pago no fecho.
+	// Os ativos vêm em `assets` com a semântica de BALANÇO da C1 (tipo, dono,
+	// quantidade, valor de mercado, valor contábil e fluxo mensal).
+	{
+		const std::size_t cidx = static_cast<std::size_t>(
+			city - ws_.cities.data());
+		const double size = [&]() {
+			if (cidx >= ws_.housing.size()) {
+				return 0.0;
+			}
+			const CityHousing& house = ws_.housing[cidx];
+			return house.households > 0.0 && house.pop_anchor > 0.0
+				? house.pop_anchor / house.households : 0.0;
+		}();
+		const double land_value = region.land_ha * region.land_value_per_ha;
+		// O anel tem estoque próprio: a casa do interior é de quem NÃO vive nele.
+		const double housing_units = size > 0.0
+			? std::max(0.0, region.region_pop - region.ring_population) / size
+			: 0.0;
+		const double ring_units = size > 0.0
+			? std::max(0.0, region.ring_population) / size : 0.0;
+		Dictionary property;
+		property["ready"] = region.property_ready;
+		property["land_ha"] = region.land_ha;
+		property["land_gini"] = region.land_gini;
+		property["land_gini_observed"] = region.land_gini_observed;
+		property["land_value_per_ha"] = region.land_value_per_ha;
+		property["land_value"] = land_value;
+		property["land_income_month"] = region.land_income_month;
+		property["commodity_index"] = region.commodity_index;
+		property["infra_value_multiplier"] =
+			ogs::SimCore::property_infra_multiplier(region);
+		property["housing_units"] = housing_units;
+		property["housing_price"] = region.housing_price;
+		property["housing_rent"] = region.housing_rent;
+		property["housing_value"] = housing_units * region.housing_price;
+		property["ring_population"] = region.ring_population;
+		property["ring_units"] = ring_units;
+		property["ring_price"] = region.ring_price;
+		property["ring_rent"] = region.ring_rent;
+		property["ring_rent_paid_month"] = region.ring_rent_paid_month;
+		property["ring_value"] = ring_units * region.ring_price;
+		property["ring_in_total"] = region.migration_ring_in_total;
+		property["ring_month_in"] = region.migration_month_ring_in;
+		property["total_value"] = sim_core_.region_property_value(region);
+		property["tax_rate"] = region.property_tax_rate;
+		property["tax_potential"] = region.property_tax_potential;
+		Array land_row;
+		Array home_row;
+		Array ring_row;
+		Array wealth_row;
+		land_row.resize(kIncomeStrata);
+		home_row.resize(kIncomeStrata);
+		ring_row.resize(kIncomeStrata);
+		wealth_row.resize(kIncomeStrata);
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			land_row[s] = region.stratum_land_value[s];
+			home_row[s] = region.stratum_home_value[s];
+			ring_row[s] = region.stratum_ring_value[s];
+			wealth_row[s] = region.stratum_wealth[s];
+		}
+		property["land_value_by_quintile"] = land_row;
+		property["home_value_by_quintile"] = home_row;
+		property["ring_value_by_quintile"] = ring_row;
+		property["wealth_by_quintile"] = wealth_row;
+		property["wealth_gini"] = ogs::SimCore::quintile_gini(
+			region.stratum_wealth, kIncomeStrata);
+		// BALANÇO (pronto para a C1): um ativo por tipo × dono (quintil).
+		// `market_value` = valor de mercado; `book_value` = valor contábil (1ª
+		// avaliação, congelada — não há compra/venda nesta fase);
+		// `income_month` = fluxo de renda mensal (aluguel do anel repartido
+		// entre os donos; terra e moradia próprias não geram aluguel).
+		Array assets;
+		double ring_value_total = 0.0;
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			ring_value_total += region.stratum_ring_value[s];
+		}
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			const String owner = "quintile:" + String::num_int64(s);
+			const double land_quantity = region.land_value_per_ha > 0.0
+				? region.stratum_land_value[s] / region.land_value_per_ha : 0.0;
+			Dictionary land_asset;
+			land_asset["type"] = "land";
+			land_asset["owner"] = owner;
+			land_asset["owner_kind"] = "quintile";
+			land_asset["unit"] = "ha";
+			land_asset["quantity"] = land_quantity;
+			land_asset["market_value"] = region.stratum_land_value[s];
+			land_asset["book_value"] =
+				land_quantity * region.land_book_value_per_ha;
+			land_asset["income_month"] = region.land_ha > 0.0
+				? region.land_income_month * land_quantity / region.land_ha : 0.0;
+			assets.append(land_asset);
+			const double home_quantity = region.housing_price > 0.0
+				? region.stratum_home_value[s] / region.housing_price : 0.0;
+			Dictionary home_asset;
+			home_asset["type"] = "housing";
+			home_asset["owner"] = owner;
+			home_asset["owner_kind"] = "quintile";
+			home_asset["unit"] = "unit";
+			home_asset["quantity"] = home_quantity;
+			home_asset["market_value"] = region.stratum_home_value[s];
+			home_asset["book_value"] =
+				home_quantity * region.housing_book_price;
+			home_asset["income_month"] = 0.0;
+			assets.append(home_asset);
+			const double ring_quantity = region.ring_price > 0.0
+				? region.stratum_ring_value[s] / region.ring_price : 0.0;
+			Dictionary ring_asset;
+			ring_asset["type"] = "ring";
+			ring_asset["owner"] = owner;
+			ring_asset["owner_kind"] = "quintile";
+			ring_asset["unit"] = "unit";
+			ring_asset["quantity"] = ring_quantity;
+			ring_asset["market_value"] = region.stratum_ring_value[s];
+			ring_asset["book_value"] = ring_quantity * region.ring_book_price;
+			ring_asset["income_month"] = ring_value_total > 0.0
+				? region.ring_rent_paid_month * region.stratum_ring_value[s]
+					/ ring_value_total : 0.0;
+			assets.append(ring_asset);
+		}
+		property["assets"] = assets;
+		out["property"] = property;
+	}
 	return out;
 }
 
@@ -5756,6 +5903,62 @@ void EconomySim::set_region_infra(const Variant& data) {
 		region.infra_road = road;
 		region.infra_power = power;
 		region.infra_water = water;
+		++applied;
+	}
+	if (applied > 0) {
+		++status_static_version_;
+	}
+}
+
+void EconomySim::set_region_property(const Variant& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	if (data.get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	const Dictionary by_city = data;
+	if (by_city.is_empty()) {
+		return;
+	}
+	int applied = 0;
+	for (City& city : ws_.cities) {
+		Region& region = city.region;
+		if (!region.ready || region.property_ready) {
+			continue;  // save v23 manda; sem região não há B6
+		}
+		const Variant raw = by_city.get(String(city.id.c_str()), Variant());
+		if (raw.get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = raw;
+		const double land_ha = safe_nonneg(
+			static_cast<double>(entry.get("land_ha", 0.0)));
+		const double land_gini = std::clamp(
+			static_cast<double>(entry.get("land_gini", 0.0)), 0.0, 1.0);
+		const bool observed = bool(entry.get("gini_observed", false));
+		if (!(land_ha > 0.0)) {
+			continue;
+		}
+		sim_core_.seed_region_property(city, land_ha, land_gini, observed);
+		if (region.property_ready) {
+			++applied;
+		}
+	}
+	if (applied > 0) {
+		++status_static_version_;
+	}
+}
+
+void EconomySim::set_property_tax_rate(const String& nation,
+		double rate) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string tag(nation.utf8().get_data());
+	const double value = std::clamp(std::isfinite(rate) ? rate : 0.0, 0.0, 1.0);
+	int applied = 0;
+	for (City& city : ws_.cities) {
+		if (!city.region.ready || city.nation != tag) {
+			continue;
+		}
+		city.region.property_tax_rate = value;
 		++applied;
 	}
 	if (applied > 0) {

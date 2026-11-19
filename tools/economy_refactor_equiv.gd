@@ -16,6 +16,7 @@ extends SceneTree
 ## - Determinismo: rodar duas vezes sem baseline tem de dar o MESMO sha.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const LandPropertyScript := preload("res://core/economy/land_property.gd")
 const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 ## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
 const RegionDataScript := preload("res://core/economy/region_data.gd")
@@ -191,6 +192,9 @@ func _run() -> void:
 	# B5 (D-089): infra inicial do estado (dado real World Bank), como o autoload.
 	# No cenário sintético AGRIA/PORTUS não há bloco `region` — nada muda.
 	GeographyServiceScript.apply_initial_infra(sim)
+	# B6 (D-095): patrimônio da região (hectares + Gini fundiário). No cenário
+	# sintético não há região, então nada muda.
+	LandPropertyScript.apply(sim)
 
 	# Dia 0 já publicado; aquece os dois slots do status (o custo de alocação
 	# não entra no primeiro tick) — indiferente para o hash, mas deixa o perfil

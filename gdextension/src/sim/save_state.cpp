@@ -711,6 +711,50 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			region_infra["power"] = region.infra_power;
 			region_infra["water"] = region.infra_water;
 			region_entry["infra"] = region_infra;
+			// B6 (save v23): patrimônio da região — terra, moradia, anel. Os
+			// valores de ativo NÃO são dinheiro; a alíquota (0 por padrão) e a
+			// receita potencial são campo publicado, não arrecadação.
+			{
+				Dictionary region_property = make_object();
+				region_property["ready"] = region.property_ready;
+				region_property["land_ha"] = region.land_ha;
+				region_property["land_gini"] = region.land_gini;
+				region_property["land_gini_observed"] =
+					region.land_gini_observed;
+				region_property["land_value_per_ha"] = region.land_value_per_ha;
+				region_property["land_book_value_per_ha"] =
+					region.land_book_value_per_ha;
+				region_property["land_income_month"] = region.land_income_month;
+				region_property["commodity_index"] = region.commodity_index;
+				region_property["housing_price"] = region.housing_price;
+				region_property["housing_book_price"] = region.housing_book_price;
+				region_property["housing_rent"] = region.housing_rent;
+				region_property["ring_population"] = region.ring_population;
+				region_property["ring_price"] = region.ring_price;
+				region_property["ring_book_price"] = region.ring_book_price;
+				region_property["ring_rent"] = region.ring_rent;
+				region_property["ring_rent_paid_month"] =
+					region.ring_rent_paid_month;
+				region_property["migration_ring_in_total"] =
+					region.migration_ring_in_total;
+				region_property["migration_month_ring_in"] =
+					region.migration_month_ring_in;
+				region_property["tax_rate"] = region.property_tax_rate;
+				region_property["tax_potential"] = region.property_tax_potential;
+				const auto put_values = [&region_property](
+						const char* key, const double* values) {
+					Array row = make_array();
+					for (int s = 0; s < kIncomeStrata; ++s) {
+						row.append(values[s]);
+					}
+					region_property[key] = row;
+				};
+				put_values("land_value", region.stratum_land_value);
+				put_values("home_value", region.stratum_home_value);
+				put_values("ring_value", region.stratum_ring_value);
+				put_values("wealth", region.stratum_wealth);
+				region_entry["property"] = region_property;
+			}
 			// B7 (save v22): informalidade, mortalidade e insatisfação (interior).
 			region_entry["informal"] = save_informal_block(region.informal_share,
 				region.informal_labor_share, region.informal_income,
@@ -1811,6 +1855,11 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				kEducationLevels);
 			read_levels("vacancies_by_level", labor_pop.vacancies_by_level,
 				kEducationLevels);
+			// B6: o save JÁ grava `unfilled_by_level` mas o load não o lia — o
+			// round-trip sem tick deixava de ser bit-exato (campo derivado que
+			// volta do save; o próximo `labor_day` o recalcula).
+			read_levels("unfilled_by_level", labor_pop.unfilled_by_level,
+				kEducationLevels);
 			read_levels("wage_by_level", labor_pop.wage_by_level,
 				kEducationLevels);
 			read_levels("wage_income_by_level",
@@ -2133,6 +2182,73 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					0, kInfraMaxLevel);
 				region.infra_water = std::clamp(int(region_infra.get("water", 0)),
 					0, kInfraMaxLevel);
+				// B6 (save v23): patrimônio da região. v22 e anteriores NÃO têm
+				// o bloco: a região fica inerte (`property_ready` falso) até o
+				// dado ser reaplicado pelo GDScript (`set_region_property`), e a
+				// alíquota nasce 0 — nada é inventado para trás.
+				if (version >= 23) {
+					const Dictionary region_property =
+						saved_region.get("property", Dictionary());
+					region.land_ha = safe_nonneg(
+						double(region_property.get("land_ha", 0.0)));
+					// Sem hectares não há patrimônio: a região fica inerte mesmo
+					// que o bloco exista (ausência explícita).
+					region.property_ready =
+						bool(region_property.get("ready", true))
+						&& region.land_ha > 0.0;
+					region.land_gini = std::clamp(
+						double(region_property.get("land_gini", 0.0)), 0.0, 1.0);
+					region.land_gini_observed =
+						bool(region_property.get("land_gini_observed", false));
+					region.land_value_per_ha = safe_nonneg(
+						double(region_property.get("land_value_per_ha", 0.0)));
+					region.land_book_value_per_ha = safe_nonneg(
+						double(region_property.get("land_book_value_per_ha", 0.0)));
+					region.land_income_month = safe_nonneg(
+						double(region_property.get("land_income_month", 0.0)));
+					region.commodity_index = safe_nonneg(
+						double(region_property.get("commodity_index", 1.0)));
+					region.housing_price = safe_nonneg(
+						double(region_property.get("housing_price", 0.0)));
+					region.housing_book_price = safe_nonneg(
+						double(region_property.get("housing_book_price", 0.0)));
+					region.housing_rent = safe_nonneg(
+						double(region_property.get("housing_rent", 0.0)));
+					region.ring_population = safe_nonneg(
+						double(region_property.get("ring_population", 0.0)));
+					region.ring_price = safe_nonneg(
+						double(region_property.get("ring_price", 0.0)));
+					region.ring_book_price = safe_nonneg(
+						double(region_property.get("ring_book_price", 0.0)));
+					region.ring_rent = safe_nonneg(
+						double(region_property.get("ring_rent", 0.0)));
+					region.ring_rent_paid_month = safe_nonneg(
+						double(region_property.get("ring_rent_paid_month", 0.0)));
+					region.migration_ring_in_total = safe_nonneg(
+						double(region_property.get("migration_ring_in_total", 0.0)));
+					region.migration_month_ring_in = safe_nonneg(
+						double(region_property.get("migration_month_ring_in", 0.0)));
+					region.property_tax_rate = std::clamp(
+						double(region_property.get("tax_rate", 0.0)), 0.0, 1.0);
+					region.property_tax_potential = safe_nonneg(
+						double(region_property.get("tax_potential", 0.0)));
+					const auto read_property_values = [&region_property](
+							const char* key, double* out) {
+						const Array values =
+							region_property.get(key, Array());
+						for (int s = 0; s < kIncomeStrata; ++s) {
+							out[s] = s < values.size()
+								? safe_nonneg(double(values[s])) : 0.0;
+						}
+					};
+					read_property_values("land_value", region.stratum_land_value);
+					read_property_values("home_value", region.stratum_home_value);
+					read_property_values("ring_value", region.stratum_ring_value);
+					read_property_values("wealth", region.stratum_wealth);
+					// O anel é um subconjunto do interior (invariante de pessoas).
+					region.ring_population = std::min(region.ring_population,
+						std::max(0.0, region.region_pop));
+				}
 				// B7 (save v22): informalidade, mortalidade e insatisfação do
 				// interior. v21 e anteriores migram na segunda passada.
 				if (version >= 22) {

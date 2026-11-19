@@ -294,7 +294,7 @@ func _check_save_load(sim) -> void:
 	# Mudança esperada: a versão do schema sobe — o conteúdo das regras antigas
 	# não muda.
 	if int(snapshot.get("version", 0)) != 24:
-		_fail("save: versão do schema deveria ser 22 (é %s)" % str(snapshot.get("version")))
+		_fail("save: versão do schema deveria ser 24 (é %s)" % str(snapshot.get("version")))
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):
 		_fail("save: bloco 'service_businesses' da F8 ausente")

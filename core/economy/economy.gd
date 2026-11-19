@@ -55,6 +55,9 @@ const TurboConfigScript := preload("res://core/economy/turbo_config.gd")
 ## B3: dado de região (estados inteiros) — anexa o bloco `region` a cada dict
 ## de cidade antes de initialize_world (state_regions.json + urban_share).
 const RegionDataScript := preload("res://core/economy/region_data.gd")
+## B6: hectares de terra agrícola e Gini fundiário por região (dado + regra de
+## rateio declarada em land_property.json).
+const LandPropertyScript := preload("res://core/economy/land_property.gd")
 ## G (D-096): agricultura sazonal — declarada depois da geografia.
 const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
 
@@ -198,6 +201,12 @@ func _ready() -> void:
 			_load_json_dict(HOUSING_CITY_PATH),
 			_load_json_dict(HOUSING_PATH),
 			_load_json_dict(MUNICIPAL_FINANCE_PATH))
+	# B6 (D-095): PATRIMÔNIO DA REGIÃO — hectares agrícolas e Gini fundiário do
+	# dado real (`land_property.json`) com a regra de rateio nacional→estado
+	# declarada no próprio arquivo. DEPOIS do mundo e do `set_urban` (o preço da
+	# moradia do interior usa o preço popular do polo). O núcleo só semeia a
+	# região que ainda não tem patrimônio (save v23 manda; v22 recebe o dado).
+	LandPropertyScript.apply(sim)
 	_load_nations()
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
