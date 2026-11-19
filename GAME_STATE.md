@@ -446,6 +446,17 @@ calendar_nations` + `only_missing` (caminho `Economy.refresh_agriculture()`)
 mantêm a janela herdada. Teste `tools/agri_calendar_owner_test.gd`: BRA soja
 [3,4,5] → conquista no save → [3,4,5]; sem a guarda viraria [9,10,11] (USA).
 
+**Bloco 2b (2026-11-19, harness reconstruído):** `tools/g2_world_ai_365.gd`
+reproduz todo número publicado do 2a — dia 365, 0 violações, **322** falências,
+drift **+0,002581**, portão **105/179**, mediana 0,9556, mínima SLB 0,1912
+(hash novo `6c45e927…`, entrada de hash menor; 2 rodadas iguais). Estoque por
+amostra mensal (Mt, dia 30→365): trigo 229→400, arroz 172→235, milho 273→392,
+soja 123→346, batata 71→19. Preço por hemisfério: nenhuma cultura sai de ±8%
+da base no ano — **a sazonalidade de preço não aparece no mundo publicado**
+(o 1,86 do trigo do sul no 2a era mercado fino). Causa das 15 piores medida com
+os escores (estoque do dia 1, importação, perda ÷ demanda, demanda sem plano).
+Falências 322 × teto 28 seguem abertas (decisão de núcleo, não da G).
+
 ---
 
 ## 7. Recursos naturais

@@ -426,4 +426,66 @@ cidades):
 `agriculture_seasonal_test` continua verde (3.384 planos, estoque inicial
 937,9 M t, 157/157 zerados provados, save v24/v22).
 
+## 10. Bloco 2b — harness de 365 d reconstruído e o que ele reconfirma
+
+O script do 2a era untracked e se perdeu numa limpeza de temporários; ele foi
+reescrito como `tools/g2_world_ai_365.gd` (evidência da nova rodada em
+`docs/economy/perf/g2_world_ai_365_rerun.json`). Mesmo caminho do autoload
+(geografia, infra B5, urbano, B7, `AgricultureService` com o calendário herdado,
+IA, `threads=1`), 365 d:
+
+| medida | 2a (publicado) | 2b (reconstruído) |
+|---|---|---|
+| dia final | 365 | **365** |
+| violações / dias travados | 0 / 0 | **0 / 0** |
+| falências | 322 | **322** |
+| drift de dinheiro | +0,002581 | **+0,002581** |
+| portão de comida (< 0,975) | 105/179 | **105/179** |
+| mediana / mínima | 0,9556 / SLB 0,1912 | **0,9556 / SLB 0,1912** |
+| hash da trajetória | `4c80cd36…` | `6c45e927…` (entrada do hash diferente) |
+
+Todo número publicado se repete; o hash muda porque a reconstrução calcula
+sha256 de uma série menor (dia, dinheiro, falências) — a série original também
+incluía comida por nação, preço e estoque. Duas rodadas seguidas dão o mesmo
+`6c45e927…` (determinístico).
+
+**Causa dominante das 15 piores** (regra do §8.2, agora com os escores medidos —
+estoque do dia 1, importação do ano, perda ÷ demanda e a fatia de demanda sem
+plano): SLB/DJI/SAH/SOL `sem_rendimento`; HTI/PSX/SOM/COD/COG/NED/GMB/JPN
+`estoque_inicial_curto`; MLI/ITA/AUT `acesso/renda`. Só SLB troca de rótulo em
+relação ao 2a (os dois escores empatam em ~0,78).
+
+**Estoque no dia da amostra** (Mt; dia 30 = jan, dia 60 = mar — fevereiro não
+cai no passo de 30 d):
+
+| dia | trigo | arroz | milho | soja | batata |
+|---|---|---|---|---|---|
+| 30 | 229,0 | 172,0 | 273,3 | 122,9 | 71,4 |
+| 90 | 231,8 | 158,0 | 266,0 | 168,2 | 85,6 |
+| 150 | 307,5 | 169,3 | 285,4 | 289,2 | 49,7 |
+| 210 | 437,5 | 200,1 | 275,1 | 300,9 | 32,9 |
+| 270 | 504,3 | 216,5 | 343,1 | 313,4 | 24,9 |
+| 330 | 437,7 | 237,8 | 423,6 | 346,1 | 21,4 |
+| 360 | 407,2 | 236,5 | 399,0 | 345,9 | 19,3 |
+| 365 | 400,2 | 235,5 | 392,2 | 345,2 | 19,3 |
+
+A soja sobe de 123 para 346 Mt entre jan e nov (colheita brasileira/argentina
+mar–jul + a americana set–nov): o volume se concentra e o estoque guarda o ano.
+A batata cai de 71 para 19 Mt (meia-vida 61 d). O estoque final bate com o §8.3.
+
+**Preço por hemisfério** (razão à base, ponderada pela venda; amostra
+USA/CHN/IND/FRA e BRA/ARG/AUS/ZAF, série mensal): nenhuma cultura sai de
+**±8%** da base no ano. Norte: trigo 1,02–1,04, arroz 1,04–1,06, milho 1,00,
+soja 1,02–1,04, batata 1,00. Sul: trigo 1,04–1,08, arroz 1,00–1,05, milho 1,00,
+soja 1,00–1,03, batata 1,00. **A sazonalidade de preço não aparece no mundo
+publicado** — a leitura do §8.4 se confirma. O 1,86 do trigo do sul em setembro
+do 2a era um mercado fino (cidade-sonda específica), não um ciclo: a mesma
+cultura dá 1,04–1,08 aqui. A prova do mecanismo continua sendo a sonda sem
+estoque inicial (`g2_price_probe_no_initial_stock.json`).
+
+**Falências (322 × teto 28)** seguem abertas: o harness confirma o número e a
+causa já medida no 2a (preço ~1,0× base com o estoque herdado × gate de retorno
+de 60 d da IA). Não é regra da G; precisa de decisão de núcleo.
+
+
 
