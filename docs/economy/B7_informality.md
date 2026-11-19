@@ -83,8 +83,17 @@ quintil. Provas:
 - `b7_informality_test` (3b): interior com demanda muito acima da poupança — receita
   ≤ poupança, receita > 0, `invariant_violations` vazio e `money_total` conservado.
 - `b7_world_ai_365.gd` (365 d, IA, urbano): **dia final 365, 0 dias travados, 0 violações**,
-  falências **4** (teto 28), `money_total` 6.523.551.982,90 → 6.523.551.982,89771
-  (**drift −0,0023**, ruído de ponto flutuante).
+  falências **4** (teto 28), `money_total` 6.523.551.982,90 → 6.523.551.982,90088
+  (**drift +0,000883**, ruído de ponto flutuante).
+
+> **Correção do contador (2026-11-19).** A evidência original desta linha foi gerada com
+> `++violation_count`/`++stalled_days` no harness. Em GDScript 4.7.2 `++x` é uma expressão
+> sem efeito (não incrementa), então os dois zeros eram por construção. O harness passou a
+> usar `+= 1` (e a sair com código 1 em violação, como o B5/B6) e foi reexecutado no HEAD
+> `1069b879`: **365 d, 0 travados, 0 violações**, agora medidos de fato. O JSON
+> `docs/economy/perf/b7_world_ai_365.json` foi regerado nessa execução; os números de fome,
+> informalidade e insatisfação variam na terceira/quarta casa por mudanças de balance
+> posteriores à evidência original, não por causa do contador.
 
 **Mundo 365 d com IA** (`docs/economy/perf/b7_world_ai_365.json`):
 
