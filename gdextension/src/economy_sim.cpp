@@ -3,6 +3,7 @@
 #include "edge/value_bridge.h"
 #include "sim/actions.h"
 #include "sim/agriculture.h"
+#include "sim/storage.h"
 #include "sim/profiling.h"
 #include "sim/save_definitions.h"
 #include "sim/save_state.h"
@@ -250,6 +251,16 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_storage_quality);
 	ClassDB::bind_method(D_METHOD("get_agriculture_status"),
 	                     &EconomySim::get_agriculture_status);
+	ClassDB::bind_method(D_METHOD("set_storage_capacity", "city_id", "type",
+		"owner", "tons"), &EconomySim::set_storage_capacity);
+	ClassDB::bind_method(D_METHOD("set_storage_product_type", "product",
+		"type"), &EconomySim::set_storage_product_type);
+	ClassDB::bind_method(D_METHOD("storage_build", "city_id", "type", "owner",
+		"tons"), &EconomySim::storage_build);
+	ClassDB::bind_method(D_METHOD("storage_trade", "city_id", "type", "owner",
+		"product", "tons", "buy", "relief"), &EconomySim::storage_trade);
+	ClassDB::bind_method(D_METHOD("get_storage_status"),
+		&EconomySim::get_storage_status);
 	ClassDB::bind_method(D_METHOD("set_deposit", "city_id", "product", "reserve_kt",
 	                     "quality", "depth_m"),
 	                     &EconomySim::set_deposit);
@@ -1647,7 +1658,7 @@ Dictionary EconomySim::get_profile() const {
 		"trade_food_prep", "trade_food_calc", "trade_food_settle",
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
-		"region", "migration", "social", "property", "agriculture",
+		"region", "migration", "social", "property", "agriculture", "storage",
 	};
 	Dictionary profile;
 	if (!profile_) {
@@ -6376,6 +6387,42 @@ Dictionary EconomySim::apply_infra_build(const String& city_id, int infra_type) 
 	return result;
 }
 
+Dictionary EconomySim::apply_storage_build(const String& city_id, int type,
+		int scope, double tons) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::StorageBuildResult outcome = ogs::action_storage_build(ws_,
+		sim_core_, std::string(city_id.utf8().get_data()), type, scope, tons,
+		instant_construction_);
+	Dictionary result;
+	result["started"] = outcome.started;
+	result["cost"] = outcome.cost;
+	result["capacity_added"] = outcome.capacity_added;
+	result["type"] = String(ogs::storage_type_name(outcome.type)
+		? ogs::storage_type_name(outcome.type) : "");
+	result["owner"] = String(ogs::storage_scope_name(outcome.scope));
+	result["duration_days"] = outcome.duration_days;
+	result["error"] = String(outcome.error.c_str());
+	if (!outcome.project_id.empty()) {
+		result["project_id"] = String(outcome.project_id.c_str());
+	}
+	return result;
+}
+
+Dictionary EconomySim::apply_storage_trade(const String& city_id, int type,
+		int scope, int product, double tons, bool buy, bool relief) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::StorageTradeResult outcome = ogs::action_storage_trade(ws_,
+		sim_core_, std::string(city_id.utf8().get_data()), type, scope,
+		product, tons, buy, relief);
+	Dictionary result;
+	result["ok"] = outcome.ok;
+	result["tons"] = outcome.tons;
+	result["value"] = outcome.value;
+	result["free_tons"] = outcome.free_tons;
+	result["error"] = String(outcome.error.c_str());
+	return result;
+}
+
 Dictionary EconomySim::apply_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
@@ -7888,6 +7935,13 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 				String(cmd.s[1].c_str()));
 		case ogs::CommandType::InfraBuild:
 			return apply_infra_build(String(cmd.s[0].c_str()), cmd.i[0]);
+		case ogs::CommandType::StorageBuild:
+			return apply_storage_build(String(cmd.s[0].c_str()), cmd.i[0],
+				cmd.i[1], cmd.v[0]);
+		case ogs::CommandType::StorageTrade:
+			return apply_storage_trade(String(cmd.s[0].c_str()), cmd.i[0],
+				cmd.i[1], static_cast<int>(cmd.v[1]), cmd.v[0], cmd.b,
+				cmd.s[1] == "relief");
 		case ogs::CommandType::None:
 			break;
 	}
@@ -8063,6 +8117,89 @@ void EconomySim::set_storage_quality(const String& city_id, double quality) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	sim_core_.set_storage_quality(std::string(city_id.utf8().get_data()),
 		quality);
+}
+
+// ---------------------------------------------------------------------------
+// G2 — ARMAZENAGEM (D-100)
+// ---------------------------------------------------------------------------
+
+void EconomySim::set_storage_capacity(const String& city_id,
+		const String& type, const String& owner, double tons) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	int type_index = -1;
+	int scope = -1;
+	if (!ogs::storage_type_from_name(std::string(type.utf8().get_data()),
+			type_index)
+			|| !ogs::storage_scope_from_name(std::string(owner.utf8().get_data()),
+				scope)) {
+		return;
+	}
+	sim_core_.set_storage_capacity(std::string(city_id.utf8().get_data()),
+		type_index, scope, tons);
+}
+
+void EconomySim::set_storage_product_type(const String& product,
+		const String& type) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int resolved_product = product_index(product);
+	int type_index = -1;
+	if (resolved_product < 0
+			|| !ogs::storage_type_from_name(std::string(type.utf8().get_data()),
+				type_index)) {
+		return;
+	}
+	sim_core_.set_storage_product_type(resolved_product, type_index);
+}
+
+Dictionary EconomySim::storage_build(const String& city_id,
+		const String& type, const String& owner, double tons) {
+	int type_index = -1;
+	int scope = -1;
+	if (!ogs::storage_type_from_name(std::string(type.utf8().get_data()),
+			type_index)
+			|| !ogs::storage_scope_from_name(std::string(owner.utf8().get_data()),
+				scope)) {
+		Dictionary result;
+		result["started"] = false;
+		result["error"] = "tipo/dono inválido";
+		return result;
+	}
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::StorageBuild;
+	cmd.s[0] = to_std(city_id);
+	cmd.i[0] = type_index;
+	cmd.i[1] = scope;
+	cmd.v[0] = tons;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::storage_trade(const String& city_id,
+		const String& type, const String& owner, const String& product,
+		double tons, bool buy, bool relief) {
+	int type_index = -1;
+	int scope = -1;
+	const int resolved_product = product_index(product);
+	if (resolved_product < 0
+			|| !ogs::storage_type_from_name(std::string(type.utf8().get_data()),
+				type_index)
+			|| !ogs::storage_scope_from_name(std::string(owner.utf8().get_data()),
+				scope)) {
+		Dictionary result;
+		result["ok"] = false;
+		result["error"] = "tipo/dono/produto inválido";
+		return result;
+	}
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::StorageTrade;
+	cmd.s[0] = to_std(city_id);
+	cmd.i[0] = type_index;
+	cmd.i[1] = scope;
+	cmd.v[0] = tons;
+	cmd.v[1] = static_cast<double>(resolved_product);
+	cmd.b = buy;
+	// `relief` não cabe no `b` (que já é o lado); usa o slot s[1].
+	cmd.s[1] = relief ? "relief" : "paid";
+	return dispatch_command(cmd);
 }
 
 Dictionary EconomySim::get_agriculture_status() const {
@@ -8287,6 +8424,264 @@ bool EconomySim::set_deposit(const String& city_id, const String& product,
 		return true;
 	}
 	return static_cast<bool>(result.get("ok", false));
+}
+
+Dictionary EconomySim::get_storage_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["day"] = ws_.day;
+	const std::size_t products =
+		static_cast<std::size_t>(std::max(0, ws_.products));
+	const std::vector<std::string>& names = ws_.product_names;
+
+	// Totais por tipo (estrutura e estoque) para a ficha da UI/teste.
+	double type_capacity[ogs::kStorageTypeCount] = {};
+	double type_gov[ogs::kStorageTypeCount] = {};
+	double type_priv[ogs::kStorageTypeCount] = {};
+	Dictionary city_rows;
+	for (const ogs::StorageSite& site : ws_.storage_sites) {
+		if (site.type < 0 || site.type >= ogs::kStorageTypeCount) {
+			continue;
+		}
+		double gov_stock = 0.0;
+		double priv_stock = 0.0;
+		double inflow = 0.0;
+		Dictionary by_product;
+		for (std::size_t product = 0; product < products; ++product) {
+			const double quantity = product < site.stock.size()
+				? std::max(0.0, site.stock[product]) : 0.0;
+			if (quantity <= 1e-9) {
+				continue;
+			}
+			if (site.scope == ogs::STORAGE_PRIVATE) {
+				priv_stock += quantity;
+			} else {
+				gov_stock += quantity;
+			}
+			if (product < site.inflow_stock.size()) {
+				inflow += std::max(0.0, site.inflow_stock[product]);
+			}
+			if (product < names.size()) {
+				by_product[String(names[product].c_str())] = quantity;
+			}
+		}
+		type_capacity[site.type] += std::max(0.0, site.capacity_t);
+		type_gov[site.type] += gov_stock;
+		type_priv[site.type] += priv_stock;
+		Dictionary row;
+		row["city"] = String(site.city.c_str());
+		row["type"] = String(ogs::storage_type_name(site.type)
+			? ogs::storage_type_name(site.type) : "");
+		row["region"] = ogs::storage_type_is_region(site.type);
+		row["structure_only"] =
+			ogs::storage_type_is_structure_only(site.type);
+		row["owner"] = String(ogs::storage_scope_name(site.scope));
+		row["capacity_t"] = site.capacity_t;
+		row["stock_t"] = gov_stock + priv_stock;
+		row["inflow_t"] = inflow;
+		row["by_product"] = by_product;
+		row["loss_today_t"] = site.loss_today_t;
+		row["maintenance_paid_today"] = site.maintenance_paid_today;
+		row["access_paid_today"] = site.access_paid_today;
+		row["received_today_t"] = site.received_today_t;
+		row["bought_today_t"] = site.bought_today_t;
+		row["released_today_t"] = site.released_today_t;
+		const std::string key = site.city + "|" + std::to_string(site.type)
+			+ "|" + std::to_string(site.scope);
+		city_rows[String(key.c_str())] = row;
+	}
+	out["sites"] = city_rows;
+
+	Array types;
+	Dictionary totals;
+	double total_capacity = 0.0;
+	double total_gov = 0.0;
+	double total_priv = 0.0;
+	for (int type = 0; type < ogs::kStorageTypeCount; ++type) {
+		Dictionary row;
+		row["type"] = String(ogs::storage_type_name(type)
+			? ogs::storage_type_name(type) : "");
+		row["region"] = ogs::storage_type_is_region(type);
+		row["structure_only"] = ogs::storage_type_is_structure_only(type);
+		row["capacity_t"] = type_capacity[type];
+		row["government_stock_t"] = type_gov[type];
+		row["private_stock_t"] = type_priv[type];
+		types.append(row);
+		total_capacity += type_capacity[type];
+		total_gov += type_gov[type];
+		total_priv += type_priv[type];
+	}
+	out["types"] = types;
+	totals["capacity_t"] = total_capacity;
+	totals["government_stock_t"] = total_gov;
+	totals["private_stock_t"] = total_priv;
+	totals["sites"] = static_cast<int>(ws_.storage_sites.size());
+	out["totals"] = totals;
+
+	// ------------------------------------------------------------------
+	// Camada NACIONAL (leitura): reserva/estoque por produto, capacidade,
+	// dias de consumo cobertos, IPC e preço médio ponderados pela cesta dos
+	// quintis. NÃO existe mercado nacional — só a leitura agregada.
+	// ------------------------------------------------------------------
+	struct NationAcc {
+		double capacity = 0.0;
+		double gov_stock = 0.0;
+		double priv_stock = 0.0;
+		double population = 0.0;
+		double weight = 0.0;
+		double food_need_t_day = 0.0;
+		double gov_by_product[kMaxProducts] = {};
+		double priv_by_product[kMaxProducts] = {};
+		double demand_t_day[kMaxProducts] = {};
+		double price_weight[kMaxProducts] = {};
+		double price_weighted[kMaxProducts] = {};
+		double ipc_weight = 0.0;
+		double ipc_weighted = 0.0;
+	};
+	std::map<std::string, NationAcc> nations;
+
+	// Pesos da cesta: fatores calóricos do dado (needs.json). Sem cesta
+	// carregada, todos os alimentos pesam igual (declarado).
+	std::vector<double> food_weight(products, 0.0);
+	double food_weight_sum = 0.0;
+	for (std::size_t slot = 0; slot < ws_.food_products.size(); ++slot) {
+		const int product = ws_.food_products[slot];
+		if (product < 0 || product >= ws_.products) {
+			continue;
+		}
+		const double factor = slot < ws_.food_factors.size()
+			? std::max(0.0, ws_.food_factors[slot]) : 1.0;
+		food_weight[static_cast<std::size_t>(product)] = factor;
+		food_weight_sum += factor;
+	}
+	if (food_weight_sum <= 1e-12) {
+		for (std::size_t slot = 0; slot < ws_.food_products.size(); ++slot) {
+			const int product = ws_.food_products[slot];
+			if (product >= 0 && product < ws_.products) {
+				food_weight[static_cast<std::size_t>(product)] = 1.0;
+				food_weight_sum += 1.0;
+			}
+		}
+	}
+
+	for (const ogs::StorageSite& site : ws_.storage_sites) {
+		if (site.city_index < 0
+				|| static_cast<std::size_t>(site.city_index) >= ws_.cities.size()) {
+			continue;
+		}
+		const ogs::City& city =
+			ws_.cities[static_cast<std::size_t>(site.city_index)];
+		NationAcc& nation = nations[city.nation];
+		nation.capacity += std::max(0.0, site.capacity_t);
+		for (std::size_t product = 0; product < products; ++product) {
+			const double quantity = product < site.stock.size()
+				? std::max(0.0, site.stock[product]) : 0.0;
+			if (site.scope == ogs::STORAGE_PRIVATE) {
+				nation.priv_stock += quantity;
+				nation.priv_by_product[product] += quantity;
+			} else {
+				nation.gov_stock += quantity;
+				nation.gov_by_product[product] += quantity;
+			}
+		}
+	}
+
+	for (const ogs::City& city : ws_.cities) {
+		NationAcc& nation = nations[city.nation];
+		// Peso da cidade no IPC: a cesta dos QUINTIS (necessidade de cada
+		// estrato); sem estratos, a necessidade da POP; sem ambas, a
+		// população de simulação pela necessidade per capita.
+		double city_weight = 0.0;
+		for (int stratum = 0; stratum < ogs::kIncomeStrata; ++stratum) {
+			city_weight += std::max(0.0,
+				city.pop.stratum_need[stratum]);
+		}
+		if (city_weight <= 1e-12) {
+			city_weight = std::max(0.0, city.pop.need);
+		}
+		if (city_weight <= 1e-12) {
+			city_weight = std::max(0.0, city.simulation_population)
+				* ogs::kNeedPerCapita;
+		}
+		nation.population += city.population;
+		nation.weight += city_weight;
+		nation.food_need_t_day += city_weight;
+		double city_index = 0.0;
+		double city_index_weight = 0.0;
+		if (food_weight_sum > 0.0) {
+			for (std::size_t product = 0; product < products; ++product) {
+				const double weight = food_weight[product];
+				if (weight <= 0.0) {
+					continue;
+				}
+				const double price = std::max(0.0, city.markets[product].price);
+				const double base = std::max(1e-9,
+					sim_core_.base_price(static_cast<int>(product)));
+				if (price > 0.0) {
+					city_index += weight * (price / base);
+					city_index_weight += weight;
+					nation.demand_t_day[product] +=
+						std::max(0.0, city.markets[product].demand);
+					nation.price_weight[product] += city_weight;
+					nation.price_weighted[product] += city_weight * price;
+				}
+			}
+		}
+		if (city_index_weight > 0.0) {
+			nation.ipc_weight += city_weight;
+			nation.ipc_weighted += city_weight
+				* (city_index / city_index_weight);
+		}
+	}
+
+	Dictionary nation_rows;
+	for (const auto& entry : nations) {
+		const std::string& tag = entry.first;
+		const NationAcc& nation = entry.second;
+		Dictionary row;
+		row["nation"] = String(tag.c_str());
+		row["population"] = nation.population;
+		row["capacity_t"] = nation.capacity;
+		row["government_stock_t"] = nation.gov_stock;
+		row["private_stock_t"] = nation.priv_stock;
+		row["food_need_t_day"] = nation.food_need_t_day;
+		Dictionary gov_by_product;
+		Dictionary priv_by_product;
+		Dictionary days_cover;
+		for (std::size_t product = 0; product < products; ++product) {
+			if (product < names.size()) {
+				const String key(names[product].c_str());
+				if (nation.gov_by_product[product] > 1e-9) {
+					gov_by_product[key] = nation.gov_by_product[product];
+				}
+				if (nation.priv_by_product[product] > 1e-9) {
+					priv_by_product[key] = nation.priv_by_product[product];
+				}
+				const double demand = nation.demand_t_day[product];
+				if (demand > 1e-9) {
+					days_cover[key] = nation.gov_by_product[product] / demand;
+				}
+			}
+		}
+		row["government_by_product"] = gov_by_product;
+		row["private_by_product"] = priv_by_product;
+		row["government_days_cover"] = days_cover;
+		row["ipc"] = nation.ipc_weight > 1e-12
+			? nation.ipc_weighted / nation.ipc_weight : 0.0;
+		Dictionary avg_price;
+		for (std::size_t product = 0; product < products; ++product) {
+			if (product < names.size()
+					&& nation.price_weight[product] > 1e-12) {
+				avg_price[String(names[product].c_str())] =
+					nation.price_weighted[product]
+					/ nation.price_weight[product];
+			}
+		}
+		row["avg_price"] = avg_price;
+		nation_rows[String(tag.c_str())] = row;
+	}
+	out["nations"] = nation_rows;
+	return out;
 }
 
 void EconomySim::set_external_demand(const String& city_id,

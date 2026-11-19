@@ -153,6 +153,22 @@ struct WorldState {
 	// ESTADO (save): dentro de `CropPlan::state` (ano/entregue/fertilizante).
 	// ------------------------------------------------------------------
 	std::vector<CropPlan> crop_plans;
+	// ------------------------------------------------------------------
+	// G2 — ARMAZENAGEM (save v25). Ver gdextension/src/sim/storage.{h,cpp}.
+	//
+	// `storage_sites` é o armazém AGREGADO por (cidade, tipo, dono): capacidade
+	// e estoque guardado (governo × privado). O estoque de mercado continua em
+	// `City::markets`; o silo/tanque/gás/pátio ficam na região e a câmara
+	// fria/armazém geral na cidade. `storage_product_type` resolve o tipo de
+	// cada bem pelo catálogo (nomes de goods.json) e aceita override do dado
+	// via `set_storage_product_type` (JSON da G2 quando entrar na base).
+	// ------------------------------------------------------------------
+	std::vector<StorageSite> storage_sites;
+	std::vector<int> storage_product_type;
+	bool storage_index_ready = false;
+	int storage_products = 0;
+	// Chave do mês da perda de armazenagem (derivada; 0 = nunca aplicado).
+	int storage_month_key = 0;
 	// Índice derivado por chave `cidade|produto` -> posição em `crop_plans`
 	// (só leitura depois da carga; não serializado).
 	std::map<std::string, int> crop_plan_lookup;

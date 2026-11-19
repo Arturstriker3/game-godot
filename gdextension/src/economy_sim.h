@@ -333,6 +333,32 @@ public:
 	Dictionary get_agriculture_status() const;
 
 	/**
+	 * G2 — declara a capacidade (t) de um armazém agregado (cidade, tipo,
+	 * dono). Idempotente: ASSIGNA, como os setters de geografia/agricultura.
+	 * @param type "silo", "cold", "fuel_tank", "gas", "bulk_yard", "general",
+	 *   "vault" ou "magazine".
+	 * @param owner "government"/"state" ou "private".
+	 */
+	void set_storage_capacity(const String& city_id, const String& type,
+		const String& owner, double tons);
+	/** G2 — override do tipo de armazém de um produto (JSON da G2). */
+	void set_storage_product_type(const String& product, const String& type);
+	/** G2 — obra de armazém pela fila §15 (paga pelo dono). */
+	Dictionary storage_build(const String& city_id, const String& type,
+		const String& owner, double tons);
+	/** G2 — compra (`buy`) ou liberação (`relief` = socorro sem pagamento). */
+	Dictionary storage_trade(const String& city_id, const String& type,
+		const String& owner, const String& product, double tons, bool buy,
+		bool relief);
+	/**
+	 * G2 — camada NACIONAL de leitura (sem mercado nacional): por nação, a
+	 * reserva do governo e o estoque privado por produto, a capacidade, os
+	 * dias de consumo cobertos e o IPC/preço médio ponderados pela cesta dos
+	 * quintis. Montado sob demanda (testes/UI).
+	 */
+	Dictionary get_storage_status() const;
+
+	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
 	 * (D-086: referência de profundidade, não um limite físico — o recurso nunca
 	 * acaba). As minas da cidade debitam `remaining_kt` como contabilidade, mas
@@ -958,6 +984,10 @@ private:
 		const String& building_id);
 	// B5: obra de infraestrutura da região (estrada/energia/água).
 	Dictionary apply_infra_build(const String& city_id, int infra_type);
+	Dictionary apply_storage_build(const String& city_id, int type, int scope,
+		double tons);
+	Dictionary apply_storage_trade(const String& city_id, int type, int scope,
+		int product, double tons, bool buy, bool relief);
 	Dictionary apply_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,

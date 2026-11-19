@@ -70,6 +70,10 @@ enum class CommandType : int {
 	InfraBuild,
 	// B5: conceder mina/fazenda a grupo (nacional/estrangeiro) com royalty.
 	Concede,
+	// G2: obra de armazém agregado (silo/câmara fria/... por cidade+tipo+dono).
+	StorageBuild,
+	// G2: compra/liberação de estoque guardado (governo/privado).
+	StorageTrade,
 };
 
 // Nome estavel do tipo (log/replay em JSON). `nullptr` para tipo invalido.

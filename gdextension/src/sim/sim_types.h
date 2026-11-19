@@ -384,6 +384,56 @@ namespace ogs {
 	};
 
 	// ------------------------------------------------------------------
+	// G2 — ARMAZENAGEM (save v25). 6 tipos operacionais + cofre/paiol só
+	// estrutura. O armazém é AGREGADO por (cidade, tipo, dono) — o núcleo não
+	// modela prédio a prédio; a obra continua sendo um projeto físico §15.
+	//   * silo / tanque / gás / pátio ficam na REGIÃO (pulmão da cidade-polo);
+	//   * câmara fria / armazém geral ficam na CIDADE;
+	//   * cofre e paiol são só estrutura nesta parte (sem fluxo de estoque).
+	// O estoque de MERCADO continua em `City::markets`; `StorageSite::stock` é
+	// o estoque GUARDADO do dono (reserva do governo ou estoque privado).
+	// ------------------------------------------------------------------
+	enum StorageType : int {
+		STORAGE_SILO = 0,
+		STORAGE_COLD = 1,
+		STORAGE_FUEL = 2,
+		STORAGE_GAS = 3,
+		STORAGE_BULK = 4,
+		STORAGE_GENERAL = 5,
+		STORAGE_VAULT = 6,
+		STORAGE_MAGAZINE = 7,
+		kStorageTypeCount = 8,
+	};
+	enum StorageScope : int {
+		STORAGE_GOVERNMENT = 0,
+		STORAGE_PRIVATE = 1,
+		kStorageScopeCount = 2,
+	};
+
+	struct StorageSite {
+		std::string city;
+		// Índice derivado (não serializado) da cidade em `WorldState::cities`.
+		int city_index = -1;
+		int type = STORAGE_SILO;
+		int scope = STORAGE_GOVERNMENT;
+		// Capacidade instalada (t) e estoque guardado por produto (t).
+		double capacity_t = 0.0;
+		std::vector<double> stock;
+		// Parcela de PULMÃO do estoque: toneladas que entraram pela colheita e
+		// ainda não escoaram para o mercado da cidade-polo. Subconjunto de
+		// `stock`; a liberação gradual consome só ele (compra/liberação da IA
+		// mexe no estoque retido, não no pulmão).
+		std::vector<double> inflow_stock;
+		// Fluxos do dia (derivados, zerados no `phase_reset`).
+		double bought_today_t = 0.0;   // compra do mercado para o armazém
+		double released_today_t = 0.0; // devolução do armazém ao mercado
+		double received_today_t = 0.0; // colheita desviada para o silo da região
+		double loss_today_t = 0.0;     // perecibilidade + perda de armazenagem
+		double maintenance_paid_today = 0.0;
+		double access_paid_today = 0.0; // custo de acesso região→cidade
+	};
+
+	// ------------------------------------------------------------------
 	// §15 (construction as physical project, 2026-11-16). Toda construção ou
 	// expansão vira um PROJETO que avança por dia: materiais entregues pelo
 	// mercado, mão de obra/capacidade do setor de construção, prazo e dono
@@ -402,6 +452,9 @@ namespace ogs {
 		// B5: obra de infraestrutura da REGIÃO/estado (estrada/energia/água).
 		// Não cria prédio: ao concluir sobe o nível no Region da cidade.
 		CONSTRUCTION_REGION_INFRA = 3,
+		// G2: obra de ARMAZÉM agregado (silo/tanque/câmara fria/...). Não cria
+		// prédio: ao concluir soma capacidade ao `StorageSite` do dono.
+		CONSTRUCTION_STORAGE = 4,
 	};
 
 	struct ConstructionProject {
@@ -477,6 +530,10 @@ namespace ogs {
 		// B5: tipo de infra da região (0 estrada, 1 energia, 2 água) quando
 		// kind == CONSTRUCTION_REGION_INFRA. -1 = não se aplica.
 		int infra_type = -1;
+		// G2: armazém agregado quando kind == CONSTRUCTION_STORAGE. O dono vem
+		// de `owner` ("state" = governo, "private" = firma/cooperativa).
+		int storage_type = -1;
+		double storage_capacity_t = 0.0;
 	};
 
 	struct Pop {
@@ -1316,6 +1373,11 @@ struct Region {
 		// perdas de armazenagem e perecibilidade). Roda depois do reset e antes
 		// da produção — a safra entra no estoque do dia.
 		kPhaseAgriculture,
+		// G2: armazenagem (colheita desviada para o silo da região, liberação
+		// gradual ao mercado da cidade-polo pagando acesso, estoque guardado do
+		// governo/privado, perdas e manutenção). Roda logo depois da agricultura
+		// e antes da produção/comércio.
+		kPhaseStorage,
 		kPhaseCount
 	};
 
@@ -1354,6 +1416,9 @@ struct Region {
 		// (obra concluída) e o próprio caixa; desfazer o tick desfaz isso.
 		std::vector<CityLand> land;
 		std::vector<CityGov> city_gov;
+		// G2: armazéns agregados (reserva do governo + estoque privado). A
+		// reversão de um tick corrompido também desfaz compra/liberação/colheita.
+		std::vector<StorageSite> storage_sites;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
 		double construction_cash = 0.0;

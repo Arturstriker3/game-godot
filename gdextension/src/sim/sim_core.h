@@ -180,6 +180,25 @@ public:
 		double daily_cost) const;
 	// Qualidade do armazém efetiva da cidade (explícita ou derivada da infra).
 	static double city_storage_quality(const City& city);
+
+	// ------------------------------------------------------------------
+	// G2 — ARMAZENAGEM (sim/storage.cpp, D-100). API de DECLARAÇÃO (antes do
+	// dia 1, como os set_* da geografia/agricultura): capacidade por cidade,
+	// tipo e dono e o mapeamento produto→tipo do JSON da G2. O estado (estoque
+	// guardado e capacidade instalada) é do save v25.
+	// ------------------------------------------------------------------
+	// ASSIGNA a capacidade (t) do armazém (cidade, tipo, dono). `scope`: 0 =
+	// governo, 1 = privado. Tipo inválido/cidade ausente é ignorado; tipo de
+	// estrutura (cofre/paiol) fica com capacidade 0 nesta parte.
+	void set_storage_capacity(const std::string& city_id, int type, int scope,
+		double tons);
+	// Override do tipo de um produto (carregador do JSON de mapeamento). Sem
+	// chamada vale a tabela declarada por nome em storage.cpp.
+	void set_storage_product_type(int product, int type);
+	void rebuild_storage_indexes();
+	// Fase diária: pulmão região→cidade, perdas, manutenção e liberação com
+	// custo de acesso. Roda logo depois de `phase_agriculture`.
+	void phase_storage();
 	// A2: `full=false` é o caminho de todo tick (só o índice por cidade;
 	// cidades/nações/tarifas só mudam no carregamento).
 	void rebuild_indexes(bool full = true);

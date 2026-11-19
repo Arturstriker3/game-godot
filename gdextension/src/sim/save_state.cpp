@@ -9,6 +9,7 @@
 
 #include "sim_constants.h"
 #include "sim_core.h"
+#include "storage.h"
 
 #include <algorithm>
 #include <cmath>
@@ -305,6 +306,47 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		}
 		agriculture["plans"] = plans;
 		data["agriculture"] = agriculture;
+	}
+
+	// G2 (v25) — ARMAZENAGEM: armazéns agregados por (cidade, tipo, dono) com
+	// capacidade e estoque guardado. O mapeamento produto→tipo é DEFINIÇÃO e
+	// não vai ao save (o StorageService reaplica do JSON/tabela no load).
+	{
+		Dictionary storage = make_object();
+		Array sites = make_array();
+		for (const StorageSite& site : ws.storage_sites) {
+			Dictionary entry = make_object();
+			entry["city"] = Value(site.city);
+			entry["type"] = Value(storage_type_name(site.type)
+				? storage_type_name(site.type) : "");
+			entry["owner"] = Value(storage_scope_name(site.scope));
+			entry["capacity_t"] = site.capacity_t;
+			Array stock = make_array();
+			for (std::size_t product = 0; product < site.stock.size();
+					++product) {
+				const double quantity = site.stock[product];
+				const double inflow = product < site.inflow_stock.size()
+					? site.inflow_stock[product] : 0.0;
+				if (quantity <= 1e-9 && inflow <= 1e-9) {
+					continue;
+				}
+				if (product >= static_cast<std::size_t>(ws.products)
+						|| product >= ws.product_names.size()) {
+					continue;
+				}
+				Dictionary item = make_object();
+				item["product"] = Value(ws.product_names[product]);
+				item["tons"] = std::max(0.0, quantity);
+				item["inflow_t"] = std::max(0.0,
+					std::min(inflow, std::max(0.0, quantity)));
+				stock.append(item);
+			}
+			entry["stock"] = stock;
+			sites.append(entry);
+		}
+		storage["sites"] = sites;
+		storage["month_key"] = ws.storage_month_key;
+		data["storage"] = storage;
 	}
 
 	// Lista canônica de produtos (id na posição do índice). O contrato é por
@@ -905,6 +947,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		// B5 (save v21): tipo de infra da região (0 estrada, 1 energia, 2 água)
 		// quando kind == CONSTRUCTION_REGION_INFRA; -1 = não se aplica.
 		entry["infra_type"] = project.infra_type;
+		// G2 (save v25): obra de armazém (tipo e capacidade a entregar).
+		entry["storage_type"] = project.storage_type;
+		entry["storage_capacity_t"] = project.storage_capacity_t;
 		Array materials = make_array();
 		Array material_qty = make_array();
 		Array material_delivered = make_array();
@@ -2575,6 +2620,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		// B5: tipo de infra da região. Save v20 e anteriores sem a chave: -1.
 		project.infra_type = std::max(-1,
 			std::min(int(entry.get("infra_type", -1)), kInfraTypeCount - 1));
+	// G2 (v25): obra de armazém. Save v24 e anteriores não têm as chaves:
+	// -1 = não é armazém (nada inventado para trás).
+	project.storage_type = std::max(-1,
+		std::min(int(entry.get("storage_type", -1)), kStorageTypeCount - 1));
+	project.storage_capacity_t = safe_nonneg(
+		double(entry.get("storage_capacity_t", 0.0)));
 		const Array materials = entry.get("materials", Array());
 		const Array material_qty = entry.get("material_qty", Array());
 		const Array material_delivered = entry.get("material_delivered", Array());
@@ -3173,9 +3224,73 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			}
 		}
 	}
+	// G2 (v25) — ARMAZENAGEM. Save v24 e anteriores não têm o bloco: nenhuma
+	// capacidade ou tonelada é inventada para trás; o StorageService reaplica a
+	// capacidade inicial (dado ou regra declarada) depois do load.
+	if (version >= 25 && data.has("storage")) {
+		const Dictionary storage = data.get("storage", Dictionary());
+		ws.storage_month_key = int(storage.get("month_key", 0));
+		const Array sites = storage.get("sites", Array());
+		ws.storage_sites.clear();
+		ws.storage_sites.reserve(static_cast<std::size_t>(sites.size()));
+		for (int index = 0; index < sites.size(); ++index) {
+			const Dictionary entry = sites[index];
+			const std::string city = std::string(
+				String(entry.get("city", String())).utf8().get_data());
+			const std::string type_name = std::string(
+				String(entry.get("type", String())).utf8().get_data());
+			const std::string owner = std::string(
+				String(entry.get("owner", String())).utf8().get_data());
+			int type = -1;
+			int scope = -1;
+			if (city.empty()
+					|| !storage_type_from_name(type_name, type)
+					|| !storage_scope_from_name(owner, scope)) {
+				continue;
+			}
+			const auto city_found = ws.city_lookup.find(city);
+			if (city_found == ws.city_lookup.end()) {
+				continue;
+			}
+			StorageSite site;
+			site.city = city;
+			site.city_index = city_found->second;
+			site.type = type;
+			site.scope = scope;
+			site.capacity_t = safe_nonneg(
+				double(entry.get("capacity_t", 0.0)));
+			site.stock.assign(static_cast<std::size_t>(ws.products), 0.0);
+			site.inflow_stock.assign(
+				static_cast<std::size_t>(ws.products), 0.0);
+			const Array stock = entry.get("stock", Array());
+			for (int slot = 0; slot < stock.size(); ++slot) {
+				const Dictionary item = stock[slot];
+				const std::string product = std::string(
+					String(item.get("product", String())).utf8().get_data());
+				const auto product_found = ws.product_lookup.find(product);
+				if (product_found == ws.product_lookup.end()) {
+					continue;
+				}
+				const std::size_t product_index =
+					static_cast<std::size_t>(product_found->second);
+				if (product_index >= site.stock.size()) {
+					continue;
+				}
+				const double tons = safe_nonneg(
+					double(item.get("tons", 0.0)));
+				const double inflow = std::min(tons,
+					safe_nonneg(double(item.get("inflow_t", 0.0))));
+				site.stock[product_index] += tons;
+				site.inflow_stock[product_index] += inflow;
+			}
+			ws.storage_sites.push_back(std::move(site));
+		}
+	}
 	// Índices derivados dos planos (cidade × produto) e a resolução do bem
 	// `fertilizer`: só agora as cidades existem.
 	core.rebuild_crop_indexes();
+	// G2: mapeamento produto→tipo e índice de cidade dos armazéns carregados.
+	rebuild_storage_indexes(ws);
 }
 
 } // namespace ogs::save

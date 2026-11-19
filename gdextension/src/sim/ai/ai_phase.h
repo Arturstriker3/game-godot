@@ -32,6 +32,7 @@
 #include "ai_government.h"
 #include "ai_group.h"
 #include "ai_private.h"
+#include "ai_storage.h"
 #include "ai_templates.h"
 #include "ai_view.h"
 
@@ -75,6 +76,11 @@ struct AiState {
 	double food_supply = 0.0;
 	std::vector<double> region_need;
 	std::vector<double> region_supply;
+	// G2 — janelas de preço observadas pela IA de armazém (chave
+	// cidade × produto), até 365 dias, e o dia da última obra por
+	// cidade|tipo|dono (anti-loop).
+	std::unordered_map<std::uint64_t, std::vector<double>> storage_prices;
+	std::unordered_map<std::string, int> storage_last_build_day;
 };
 
 // O que uma regra recebe: tudo por referência, nada copiado.
@@ -119,6 +125,14 @@ AiActionResult ai_emit_infra(AiContext& ctx, const std::string& city,
 // s0 cidade, s1 prédio, s2 grupo, v0 royalty (<= 0 usa o padrão).
 AiActionResult ai_emit_concede(AiContext& ctx, const std::string& city,
 		const std::string& building, const std::string& group, double royalty);
+// G2 — obra/troca de armazém (comandos `storage_build`/`storage_trade`).
+// StorageBuild: s0 cidade, i0 tipo, i1 dono, v0 toneladas de capacidade.
+// StorageTrade: s0 cidade, s1 "relief"/"paid", i0 tipo, i1 dono, v0 toneladas,
+//               v1 produto, b = compra (true)/liberação (false).
+AiActionResult ai_emit_storage_build(AiContext& ctx, const std::string& city,
+		int type, int scope, double tons);
+AiActionResult ai_emit_storage_trade(AiContext& ctx, const std::string& city,
+		int type, int scope, int product, double tons, bool buy, bool relief);
 AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 		const std::string& building, const std::string& resource, int input,
 		int output, double capacity, double jobs, double wage, double opex,
@@ -156,6 +170,7 @@ private:
 	AiPrivateInvestor private_investor_;
 	AiGroupInvestor group_investor_;
 	AiGovernment government_;
+	AiStorageInvestor storage_investor_;
 };
 
 } // namespace ogs

@@ -126,4 +126,38 @@ ConcedeResult action_concede(WorldState& ws, SimCore& core,
 		const std::string& city_id, const std::string& building_id,
 		const std::string& group_id, double royalty_rate);
 
+// G2 — OBRA de armazém agregado (fila §15: obra, prazo, manutenção). `type` é
+// o StorageType (0..7); `scope` 0 = governo, 1 = privado. O custo é
+// kStorageCostPerTon[type] × tons, pago pelo dono (governo ou firma). Obra
+// instantânea (laboratório) entrega a capacidade no ato; senão vira projeto
+// físico e a capacidade entra na conclusão.
+struct StorageBuildResult {
+	bool started = false;
+	double cost = 0.0;
+	double capacity_added = 0.0;
+	int type = -1;
+	int scope = 0;
+	int duration_days = 0;
+	std::string project_id;
+	std::string error;
+};
+StorageBuildResult action_storage_build(WorldState& ws, SimCore& core,
+		const std::string& city_id, int type, int scope, double tons,
+		bool instant_construction);
+
+// G2 — compra (`buy`) ou liberação (`release`) de estoque guardado. Compra tira
+// do mercado local e paga ao vendedor; liberação devolve ao mercado local e o
+// comprador paga o dono (governo) — ou recebe de graça em `relief` (socorro).
+// Toneladas e dinheiro são conservados; nenhum caixa novo é criado.
+struct StorageTradeResult {
+	bool ok = false;
+	double tons = 0.0;
+	double value = 0.0;
+	double free_tons = 0.0;
+	std::string error;
+};
+StorageTradeResult action_storage_trade(WorldState& ws, SimCore& core,
+		const std::string& city_id, int type, int scope, int product,
+		double tons, bool buy, bool relief);
+
 } // namespace ogs

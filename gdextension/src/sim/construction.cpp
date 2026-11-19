@@ -8,6 +8,7 @@
 
 #include "construction.h"
 #include "housing.h"
+#include "storage.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "urban_land.h"
@@ -177,6 +178,10 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 		// Moradia (§19 W3): prazo declarado, sem escala por tamanho (é a
 		// mesma obra de unidades do W3, agora na fila única).
 		project.duration_days = std::max(1, kHousingBuildDays);
+	} else if (project.kind == CONSTRUCTION_STORAGE) {
+		// G2: armazém tem prazo declarado (kStorageBuildDays), independente do
+		// tamanho do lote de capacidade.
+		project.duration_days = std::max(1, kStorageBuildDays);
 	} else {
 		// Duração por tipo + escala pelo tamanho (§15). Comida (fazenda da cesta) é
 		// rápida para não travar a oferta alimentar; mina (primária com jazida) é
@@ -287,6 +292,12 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 	if (p.kind == CONSTRUCTION_URBAN_INFRA
 			|| p.urban_action != urban_land::URBAN_NONE) {
 		urban_land::apply_completed_project(ws, p);
+		return;
+	}
+	// G2: obra de ARMAZÉM — soma capacidade ao site agregado do dono (governo
+	// ou privado). Não materializa prédio.
+	if (p.kind == CONSTRUCTION_STORAGE) {
+		apply_completed_storage_project(ws, p);
 		return;
 	}
 	// B5: obra de infra da região — sobe UM nível do tipo (estrada/energia/

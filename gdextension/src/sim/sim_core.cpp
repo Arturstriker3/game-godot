@@ -2,6 +2,7 @@
 
 #include "city_gov.h"
 #include "profiling.h"
+#include "storage.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
 
@@ -155,6 +156,9 @@ void SimCore::rebuild_indexes(bool full) {
 		// A2: o índice de tarifas usa as tabelas de nação/produto; refaz aqui
 		// (o load chama rebuild_tariff_lookup antes das cidades existirem).
 		rebuild_tariff_lookup();
+		// G2: mapeamento produto→tipo e o índice de cidade dos armazéns
+		// (depende do city_lookup, criado acima).
+		ogs::rebuild_storage_indexes(ws_);
 		// Caminho quente abaixo: o índice por cidade e o de construções.
 	}
 	// Uma lista de construções por cidade: as fases do tick e o resumo passam a
@@ -222,6 +226,7 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.group_flows = ws_.group_flows;
 	out.currencies = ws_.currencies;
 	city_gov::snapshot(ws_, out);
+	out.storage_sites = ws_.storage_sites;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
 	out.construction_cash = ws_.construction_cash;
@@ -800,6 +805,7 @@ void SimCore::restore_state(const Snapshot& in) {
 	// corrompido também desfaz a taxa do dia.
 	ws_.currencies = in.currencies;
 	city_gov::restore(ws_, in);
+	ws_.storage_sites = in.storage_sites;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;
 	ws_.foreign_cash = in.foreign_cash;

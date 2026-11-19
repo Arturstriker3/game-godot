@@ -49,6 +49,8 @@ constexpr TypeName kTypeNames[] = {
 	{CommandType::DeepenMine, "deepen_mine"},
 	{CommandType::InfraBuild, "infra_build"},
 	{CommandType::Concede, "concede"},
+	{CommandType::StorageBuild, "storage_build"},
+	{CommandType::StorageTrade, "storage_trade"},
 };
 
 } // namespace

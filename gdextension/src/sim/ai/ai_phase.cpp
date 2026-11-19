@@ -143,6 +143,65 @@ AiActionResult ai_emit_concede(AiContext& ctx, const std::string& city,
 	return out;
 }
 
+AiActionResult ai_emit_storage_build(AiContext& ctx, const std::string& city,
+		int type, int scope, double tons) {
+	Command cmd;
+	cmd.type = CommandType::StorageBuild;
+	cmd.day = ctx.day;
+	cmd.s[0] = city;
+	cmd.i[0] = type;
+	cmd.i[1] = scope;
+	cmd.v[0] = tons;
+	const uint64_t seq = ctx.queue.push(cmd);
+
+	AiActionResult out;
+	Command taken;
+	if (!take_own(ctx.queue, seq, taken)) {
+		out.error = "comando perdido na fila";
+		return out;
+	}
+	const StorageBuildResult result = action_storage_build(ctx.ws, ctx.core,
+		city, type, scope, tons, ctx.instant);
+	taken.apply_day = ctx.day;
+	ctx.queue.log(taken);
+
+	out.created = result.started;
+	out.cost = result.cost;
+	out.error = result.error;
+	return out;
+}
+
+AiActionResult ai_emit_storage_trade(AiContext& ctx, const std::string& city,
+		int type, int scope, int product, double tons, bool buy, bool relief) {
+	Command cmd;
+	cmd.type = CommandType::StorageTrade;
+	cmd.day = ctx.day;
+	cmd.s[0] = city;
+	cmd.s[1] = relief ? "relief" : "paid";
+	cmd.i[0] = type;
+	cmd.i[1] = scope;
+	cmd.v[0] = tons;
+	cmd.v[1] = static_cast<double>(product);
+	cmd.b = buy;
+	const uint64_t seq = ctx.queue.push(cmd);
+
+	AiActionResult out;
+	Command taken;
+	if (!take_own(ctx.queue, seq, taken)) {
+		out.error = "comando perdido na fila";
+		return out;
+	}
+	const StorageTradeResult result = action_storage_trade(ctx.ws, ctx.core,
+		city, type, scope, product, tons, buy, relief);
+	taken.apply_day = ctx.day;
+	ctx.queue.log(taken);
+
+	out.created = result.ok;
+	out.cost = result.value;
+	out.error = result.error;
+	return out;
+}
+
 AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 		const std::string& building, const std::string& resource, int input,
 		int output, double capacity, double jobs, double wage, double opex,
@@ -284,9 +343,12 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 		return;
 	}
 	for (int index = phase; index < view_.cities; index += interval) {
-		// Ordem do dia por cidade: privado e depois governo (economic_ai.gd).
+		// Ordem do dia por cidade: privado, governo e, por último, armazém
+		// (compra/liberação e obra). O armazém vem depois para não competir
+		// com as decisões de produção pelo caixa congelado da view.
 		private_investor_.run_city(ctx, index);
 		government_.run_city(ctx, index);
+		storage_investor_.run_city(ctx, index);
 	}
 }
 

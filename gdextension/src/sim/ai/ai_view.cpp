@@ -7,8 +7,10 @@
 
 #include "ai_view.h"
 
+#include "../agriculture.h"
 #include "../sim_core.h"
 #include "../sim_constants.h"
+#include "../storage.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -63,6 +65,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 			city.region.food_need - city.region.food_consumed);
 		row.migration_rural_in_total =
 			std::max(0.0, city.region.migration_rural_in_total);
+		row.income_gini = std::clamp(city.income_gini, 0.0, 1.0);
 		row.suitability.assign(products, 0.0);
 		row.external_demand.assign(products, 0.0);
 		for (std::size_t product = 0; product < products; ++product) {
@@ -87,6 +90,83 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 		pop.satisfaction = city.pop.satisfaction;
 		pop.labor_force = city.pop.labor_force;
 		pop.unemployed = city.pop.unemployed;
+	}
+
+	// 1b. G2 — armazenagem e calendário de safra (dado que a IA privada/governo
+	// usa para decidir guardar/vender e construir). Nenhuma leitura viva depois
+	// daqui: os arrays são cópia do dia.
+	const std::size_t storage_slots = cities
+		* static_cast<std::size_t>(kStorageTypeCount) * 2;
+	view.s_capacity.assign(storage_slots, 0.0);
+	view.s_stock.assign(storage_slots, 0.0);
+	view.s_annual.assign(
+		cities * static_cast<std::size_t>(kStorageTypeCount), 0.0);
+	view.next_harvest_days.assign(cities, -1.0);
+	view.harvest_active.assign(cities, 0);
+	view.product_storage_type.assign(products, -1);
+	view.product_food_calories.assign(products, 0.0);
+	for (std::size_t product = 0; product < products; ++product) {
+		if (product < ws.storage_product_type.size()) {
+			view.product_storage_type[product] =
+				ws.storage_product_type[product];
+		}
+		view.product_food_calories[product] =
+			core.food_calories(static_cast<int>(product));
+	}
+	for (const StorageSite& site : ws.storage_sites) {
+		if (site.city_index < 0
+				|| static_cast<std::size_t>(site.city_index) >= cities
+				|| site.type < 0 || site.type >= kStorageTypeCount
+				|| site.scope < 0 || site.scope >= kStorageScopeCount) {
+			continue;
+		}
+		const std::size_t slot =
+			(static_cast<std::size_t>(site.city_index) * kStorageTypeCount
+				+ static_cast<std::size_t>(site.type)) * 2
+			+ static_cast<std::size_t>(site.scope);
+		view.s_capacity[slot] += std::max(0.0, site.capacity_t);
+		view.s_stock[slot] += storage_total_stock(site);
+	}
+	const GameDate today = game_date_from_day(ws.day);
+	for (const CropPlan& plan : ws.crop_plans) {
+		if (plan.city_index < 0
+				|| static_cast<std::size_t>(plan.city_index) >= cities
+				|| plan.product < 0 || plan.product >= ws.products) {
+			continue;
+		}
+		const std::size_t product = static_cast<std::size_t>(plan.product);
+		const int type = product < ws.storage_product_type.size()
+			? ws.storage_product_type[product] : -1;
+		if (type >= 0 && type < kStorageTypeCount) {
+			view.s_annual[static_cast<std::size_t>(plan.city_index)
+				* kStorageTypeCount + static_cast<std::size_t>(type)] +=
+				std::max(0.0, plan.area_ha * plan.yield_t_ha);
+		}
+		double best = view.next_harvest_days[
+			static_cast<std::size_t>(plan.city_index)];
+		bool active = view.harvest_active[
+			static_cast<std::size_t>(plan.city_index)] != 0;
+		for (int season = 0; season < plan.season_count; ++season) {
+			const CropSeasonPlan& window = plan.seasons[season];
+			if (window.harvest_start_doy <= 0 || window.harvest_end_doy <= 0) {
+				continue;
+			}
+			if (doy_in_window(today.doy, window.harvest_start_doy,
+					window.harvest_end_doy)) {
+				active = true;
+			}
+			const int length = game_year_days(today.year);
+			int ahead = window.harvest_start_doy - today.doy;
+			if (ahead < 0) {
+				ahead += length;
+			}
+			if (best < 0.0 || static_cast<double>(ahead) < best) {
+				best = static_cast<double>(ahead);
+			}
+		}
+		view.next_harvest_days[static_cast<std::size_t>(plan.city_index)] = best;
+		view.harvest_active[static_cast<std::size_t>(plan.city_index)] =
+			active ? 1 : 0;
 	}
 
 	// 2. Construções (CSR): ordem cidade → construção de `buildings_by_city`,
@@ -668,6 +748,49 @@ double ai_variable_cost_mined(const AiView& view, const AiTemplates& templates,
 	const double opex_factor =
 		ai_deposit_opex_factor(view, city, tmpl.product);
 	return tmpl.jobs_per_ton * tmpl.wage + tmpl.opex_per_ton * opex_factor;
+}
+
+// G2 — leitura dos arrays de armazenagem da view.
+namespace {
+std::size_t storage_slot(const AiView& view, int city, int type, int scope) {
+	if (city < 0 || city >= view.cities || type < 0
+			|| type >= kStorageTypeCount || scope < 0
+			|| scope >= kStorageScopeCount) {
+		return view.s_capacity.size();
+	}
+	return (static_cast<std::size_t>(city) * kStorageTypeCount
+		+ static_cast<std::size_t>(type)) * 2
+		+ static_cast<std::size_t>(scope);
+}
+} // namespace
+
+double ai_storage_capacity(const AiView& view, int city, int type, int scope) {
+	const std::size_t slot = storage_slot(view, city, type, scope);
+	return slot < view.s_capacity.size() ? view.s_capacity[slot] : 0.0;
+}
+
+double ai_storage_stock(const AiView& view, int city, int type, int scope) {
+	const std::size_t slot = storage_slot(view, city, type, scope);
+	return slot < view.s_stock.size() ? view.s_stock[slot] : 0.0;
+}
+
+double ai_food_calories(const AiView& view, int product) {
+	if (product < 0
+			|| static_cast<std::size_t>(product)
+				>= view.product_food_calories.size()) {
+		return 0.0;
+	}
+	return view.product_food_calories[static_cast<std::size_t>(product)];
+}
+
+double ai_storage_annual(const AiView& view, int city, int type) {
+	if (city < 0 || city >= view.cities || type < 0
+			|| type >= kStorageTypeCount) {
+		return 0.0;
+	}
+	const std::size_t slot = static_cast<std::size_t>(city)
+		* kStorageTypeCount + static_cast<std::size_t>(type);
+	return slot < view.s_annual.size() ? view.s_annual[slot] : 0.0;
 }
 
 } // namespace ogs
