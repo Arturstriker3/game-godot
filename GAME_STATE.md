@@ -1335,8 +1335,12 @@ elasticidade da D-092 é sobre **bens** por classe — sem dupla contagem; a con
 regerados em 2 rodadas 0 diffs — A0 `8004f7e7…/6243eb1c…`, `real_60_ai 288ab187…/18b33422…`,
 `real_60_noai 1912d9cd…`, `demo_365_noai fe278e79…/9742d3e8…`; CLI x Godot 10 d com IA byte-idênticos
 (`28A33A69…`, 849 cidades, 0 violações); 365 d com IA: dia final 365, travados 0, violações 0, falências
-**4** (teto 28), drift **0,001343**, comida mín. AFG 0,000, informalidade 0,530→0,498. **Portão de comida
-(avg30 vs `b4_world_sweep.json`): 34 nações (33 sem a isenção canônica) contra 31/30 da D-092** — entram
+**4** (teto 28), drift **0,001343**, comida mín. AFG 0,000, informalidade 0,530→0,498.
+*(Contadores de travamento/violação do `b7_world_ai_365` corrigidos em 2026-11-19: `++x` não
+incrementa em GDScript 4.7.2; reexecução no HEAD `1069b879` confirmou 365 d, 0 travados,
+0 violações, drift **+0,000883**.)*
+
+**Portão de comida (avg30 vs `b4_world_sweep.json`): 34 nações (33 sem a isenção canônica) contra 31/30 da D-092** — entram
 LSO, ARM, KGZ, MMR, KEN, AFG, HND, EST e ECU; voltam MWI, NER, CAF, ERI e BIH; os valores da tabela da
 D-092 se repetem (MLT 0,904, LUX 0,928, DEU 0,881, POL 0,842, SOM 0,657). A dívida #10 do M2 (Parte E)
 segue aberta. Trajetórias de preço 365 d: ferro 4,21x, carvão/petróleo/gás 3,20x, cobre 2,59x,
