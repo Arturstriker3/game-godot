@@ -314,6 +314,28 @@ func _test_save_and_migration() -> void:
 	_check(JSON.stringify(sim.to_dict(), "", true, true)
 		== JSON.stringify(copy.to_dict(), "", true, true),
 		"save: continuação após load divergiu")
+	# Regime COMANDADO (D-108c) precisa sobreviver ao save/load: o load
+	# restaura `exchange_regime` a partir de `fx_regimes`, então o comando
+	# tem de escrever os dois lados.
+	var commanded = _make_sim()
+	_check(commanded.set_exchange_regime("BBB", "band", 0.0, 0.02),
+		"save: comando de regime recusado na moeda BBB")
+	commanded.tick_day()
+	var commanded_save: Dictionary = commanded.to_dict()
+	var commanded_copy = _bare_sim()
+	commanded_copy.from_dict(commanded_save)
+	_check(String(_fx(commanded_copy, "BBB").get("regime_saved", "")) == "band",
+		"save: regime comandado band não sobreviveu ao load (%s)" % _fx(
+			commanded_copy, "BBB").get("regime_saved", ""))
+	_check(JSON.stringify(commanded_copy.to_dict(), "", true, true)
+		== JSON.stringify(commanded_save, "", true, true),
+		"save: round-trip de regime comandado não é bit-exato")
+	for day in 3:
+		commanded.tick_day()
+		commanded_copy.tick_day()
+	_check(JSON.stringify(commanded.to_dict(), "", true, true)
+		== JSON.stringify(commanded_copy.to_dict(), "", true, true),
+		"save: continuação com regime comandado divergiu")
 	# Migração v30 -> v31: o save antigo (sem `fx_regimes`, com o "peg
 	# administrativo" em toda moeda) recebe os regimes do arquivo.
 	var legacy := _make_sim(true, true)
