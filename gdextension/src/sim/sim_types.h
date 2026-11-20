@@ -1233,11 +1233,6 @@ struct Region {
 		// folha do setor de serviços e folha rural (paga pelo caixa da firma da
 		// cidade-polo). O atraso por planta fica em `Building::wage_arrears`.
 		double service_wage_arrears = 0.0;		double rural_wage_arrears = 0.0;
-		// C2b1 (D-104) — juro do crédito da safra (D-099) no dia: devido e
-		// pago (o não pago não vira dívida; rolagem é C3). Runtime, fora do
-		// save: a medição é do dia, como os fluxos.
-		double credit_interest_due = 0.0;
-		double credit_interest_paid = 0.0;
 		double government_budget = 0.0;
 		// Multiplicador da renda externa (PIB PPP per capita da nação,
 		// normalizado pela média mundial ponderada = 1,0). Ver

@@ -24,6 +24,7 @@
 #include "agriculture.h"
 
 #include "balance.h"
+#include "monetary.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "sim_core.h"
@@ -444,7 +445,15 @@ double SimCore::crop_liquidity_factor(const City& city,
 	}
 	const double asset = balance::marketable_assets(ws_, city_index, building,
 		price, crop_standing_value(city.id, building.output_product, price));
-	const double cap = asset / double(kLossDaysBeforeClose);
+	// C2b1 (D-104): o crédito da safra custa a TAXA BÁSICA da moeda do país. O
+	// juro desconta o ENVELOPE da linha (a capacidade que o ativo da lavoura
+	// financia em `kLossDaysBeforeClose` dias), não o caixa: não há banco para
+	// recebê-lo (é a C4), então nenhum dinheiro sai da firma. Taxa 0 (nação sem
+	// moeda no estado) devolve o comportamento original da D-099.
+	const double policy_rate = monetary::rate_for_nation(ws_, city.nation);
+	const double credit_span_years = double(kLossDaysBeforeClose) / 365.0;
+	const double cap = asset / (double(kLossDaysBeforeClose)
+		* (1.0 + policy_rate * credit_span_years));
 	if (daily_cost <= cap) {
 		return 1.0;
 	}

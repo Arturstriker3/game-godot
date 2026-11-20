@@ -4,7 +4,6 @@
 #include "sim_core.h"
 
 #include "profiling.h"
-#include "monetary.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
 
@@ -485,17 +484,6 @@ double SimCore::labor_day(City& city) {
 			const double crop_liquidity = crop_liquidity_factor(city, building,
 				building.jobs * plant_payroll * operating
 				+ building.opex * operating);
-			// C2b1 (D-104): a linha de crédito da safra (a parte do custo do
-			// dia coberta pelo ativo da lavoura) paga juro da taxa básica da
-			// moeda do país, por dia. O juro sai do caixa da firma e entra no
-			// orçamento do governo: dinheiro conservado, custo real.
-			if (crop_liquidity < 1.0) {
-				const double credit_used = (building.jobs * plant_payroll
-					* operating + building.opex * operating) * crop_liquidity;
-				city.credit_interest_due += credit_used
-					* monetary::rate_for_nation(ws_, city.nation)
-					/ 360.0;
-			}
 			buildings_payroll += building.jobs * plant_payroll * operating
 				* crop_liquidity;
 		}
@@ -512,9 +500,6 @@ double SimCore::labor_day(City& city) {
 	}
 	// F8: vagas de serviço efetivamente preenchidas (peso da mistura de
 	// escolaridade × preenchimento). É o emprego real do setor, não a meta.
-	// C2b1 (D-104): a medição do juro do crédito da safra é do dia.
-	city.credit_interest_due = 0.0;
-	city.credit_interest_paid = 0.0;
 	city.service_jobs_filled = city.service_jobs * service_fraction;
 	city.service_workers = city.service_jobs_filled;
 	pop.employed = 0.0;
@@ -648,20 +633,9 @@ double SimCore::labor_day(City& city) {
 		+ pop.wage_income_by_level[1] + pop.wage_income_by_level[2];
 	city.firm_cash -= buildings_payroll * pay_scale;
 	city.service_cash -= paid_service_bill;
-	// C2b1 (D-104): juro do crédito da safra do dia (D-099) — sai do caixa da
-	// firma e vai ao orçamento do governo da cidade (dinheiro conservado). O
-	// que o caixa não cobre NÃO vira dívida (rolagem é C3) e fica medido.
-	{
-		const double due = std::max(0.0, city.credit_interest_due);
-		if (due > 0.0) {
-			const double paid = std::min(due, std::max(0.0, city.firm_cash));
-			if (paid > 0.0) {
-				city.firm_cash -= paid;
-				city.government_budget += paid;
-				city.credit_interest_paid = paid;
-			}
-		}
-	}
+	// C2b1 (D-104): o juro do crédito da safra (D-099) é pago no FECHAMENTO do
+	// dia, em `phase_accounting`, com a receita do dia — não compete com a
+	// folha que a D-099 acabou de dimensionar.
 	return pop.wage_income;
 }
 void SimCore::refresh_income_classes(City& city) const {
