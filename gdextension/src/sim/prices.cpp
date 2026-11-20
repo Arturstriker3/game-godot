@@ -78,25 +78,34 @@ void SimCore::phase_prices() {
 					// limite diário dos produtores. Sem importação registrada, o preço
 					// permanece (não se inventa cotação).
 					//
-					// A paridade age como TETO de concorrência: sem produtor local, o
-					// consumidor pode importar, então o preço não fica ACIMA do CIF —
-					// mas a importação não puxa o preço para cima. Motivo (calibração
-					// F5, `economy_world_test` 365 d): puxar até o CIF levava EGY/MRT/
-					// SDN ao teto de 3× o preço-base e derrubava a comida (EGY 1,000 →
-					// 0,594 sem moedas); o frete de comida já é um serviço do comprador
-					// e o piso calibrado da cesta (F4) não absorve 3× base.
-					//
-					// D-091: o CIF entra CRU (sem a banda fixa [0,5×, 3×] do base) — o
-					// teto é o próprio preço de importação, que é dado real. Só a
+					// HISTÓRICO (F5, antes da D-109): o CIF era apenas TETO — a
+					// importação puxava o preço só para baixo. Motivo da calibração
+					// (F5, `economy_world_test` 365 d): puxar até o CIF levava EGY/
+					// MRT/SDN ao teto de 3× o preço-base e derrubava a comida (EGY
+					// 1,000 → 0,594 sem moedas); o frete de comida já é um serviço do
+					// comprador e o piso calibrado da cesta (F4) não absorve 3× base.
+					// A D-109 troca o teto pelo ALVO nos dois sentidos e mantém a
+					// suavização e o passo diário da D-092 como amortecimento; D-091:
+					// o CIF entra CRU (sem a banda fixa [0,5×, 3×] do base) — só a
 					// guarda numérica se aplica.
-					if (city.import_price[product] <= 0.0) {
+					// C2c-P1 (D-109): o CIF é o ALVO de concorrência nos DOIS
+					// sentidos. O câmbio que encarece a origem SOBE o preço e o
+					// que barateia DESCE, com a mesma suavização e o mesmo limite
+					// diário dos produtores (D-092) — o teto antigo fazia o
+					// repasse só para baixo e compunha deflação de importação em
+					// cadeia (C2c §4.2). Sem teto artificial: o preço converge
+					// para o custo CIF, como manda a formação por custo (D-091).
+					//
+					// A cotação só vale se o comércio do DIA a renovou
+					// (`imported` > 0). Sem cotação de hoje não se inventa preço:
+					// o último CIF conhecido não é cotação vigente.
+					const double cif = city.import_price[product];
+					if (cif <= 0.0 || !(city.imported[product] > 0.0)) {
 						continue;
 					}
-					const double target = price_guard(
-						city.import_price[product], market.price);
-					const double capped = std::min(market.price, target);
+					const double target = price_guard(cif, market.price);
 					double next_import = market.price
-						+ (capped - market.price) * kPriceSmoothing;
+						+ (target - market.price) * kPriceSmoothing;
 					next_import = price_guard(next_import, market.price);
 					next_import = std::clamp(next_import,
 						open - max_step, open + max_step);
@@ -182,7 +191,20 @@ void SimCore::phase_prices() {
 					+ kPriceMarkupOccupancyGain * occupancy
 						* std::min(1.0, excess);
 				markup = std::clamp(markup, 0.0, kPriceMarkupMax);
-				const double target = cost_floor * (1.0 + markup);
+				double target = cost_floor * (1.0 + markup);
+				// C2c-P1 (D-109): a concorrência importada é o TETO do alvo na
+				// cidade com produtor também — regra de economia aberta. Se o CIF
+				// do dia é mais barato que custo+markup, o preço converge para o
+				// CIF; o piso passa a ser o CUSTO VARIÁVEL (`unit_cost`), não o
+				// base do catálogo: a âncora leve do dia 0 não pode impedir que
+				// importação mais barata apareça no preço interno. Importação mais
+				// cara NÃO empurra o preço para cima: nesse caso quem forma o preço
+				// é o produtor local (o repasse de alta chega pelo custo do insumo
+				// importado). Sem cotação do dia, a regra de custo+markup vale.
+				const double cif = city.import_price[product];
+				if (cif > 0.0 && city.imported[product] > 0.0 && cif < target) {
+					target = std::max(cif, unit_cost);
+				}
 
 				// A variação diária permanece como amortecimento (5% do base
 				// ou 6% do preço de abertura), e a guarda numérica cobre
