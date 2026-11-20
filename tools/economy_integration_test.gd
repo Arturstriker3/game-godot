@@ -296,8 +296,10 @@ func _check_save_load(sim) -> void:
 	# atrasado (passivo da firma + ativo das famílias).
 	# Mudança esperada: a versão do schema sobe — o conteúdo das regras antigas
 	# não muda.
-	if int(snapshot.get("version", 0)) != 26:
-		_fail("save: versão do schema deveria ser 26 (é %s)" % str(snapshot.get("version")))
+	# v27 (C2/D-103) o banco central por moeda: `monetary_policy`, `central_bank`
+	# e, em cada moeda, `exchange_regime` e `bank_independence`.
+	if int(snapshot.get("version", 0)) != 27:
+		_fail("save: versão do schema deveria ser 27 (é %s)" % str(snapshot.get("version")))
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):
 		_fail("save: bloco 'service_businesses' da F8 ausente")

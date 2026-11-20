@@ -106,6 +106,16 @@ struct AgeStructure {
 	bool valid = false;
 };
 
+// C2a (D-103) — série MENSAL do CPI por nação. Só MEDIÇÃO: guarda o índice
+// medido a cada 30 dias (o modelo tem 12 meses de 30 dias = anel de 13
+// amostras, o que dá 12 meses de intervalo) para a inflação anual. O CPI é a
+// cesta do G2 (ver `central_bank::cpi_by_nation`).
+struct CpiHistory {
+	double samples[13] = {};
+	int sample_day[13] = {};
+	int count = 0;
+};
+
 struct WorldState {
 	int day = 0;
 	CadenceState cadence;
@@ -344,6 +354,22 @@ struct WorldState {
 	std::unordered_map<std::string, double> confidence;
 	std::unordered_map<std::string, int> confidence_penalty_day;
 	std::unordered_map<std::string, GroupFlow> group_flows;
+	// C2a (D-103) — BANCO CENTRAL POR MOEDA (estado + medição).
+	// Política do MUNDO: padrão monetário (central_bank::Standard; 0 =
+	// fiduciário, o início declarado pelo plano) e a moeda de reserva global
+	// (default USD, também declarado pelo plano — não é dado observado).
+	int monetary_standard = 0;
+	std::string reserve_currency = "USD";
+	// Reserva de ouro do BC por CÓDIGO de moeda (t de ouro fino). Vem do dado
+	// real da G2/D-101 (`strategic_reserves.json`) por `set_central_bank_gold`;
+	// é ativo REAL (não entra na identidade financeira). `declared` falso =
+	// nenhuma reserva declarada ainda (save v26, mundo sem a G2 aplicada).
+	std::map<std::string, double> reserve_gold_tonnes;
+	bool reserve_gold_declared = false;
+	double reserve_gold_unallocated = 0.0;  // nação sem moeda na tabela
+	// Série mensal do CPI por nação (medição) e o dia da última amostra.
+	std::map<std::string, CpiHistory> cpi_history;
+	int cpi_last_observe_day = -1;
 	// Setor de cada produto (goods.json → sector). Vazio = "primary".
 	std::vector<std::string> product_sectors;
 	// Preços-base dos bens (data-driven: set_goods/initialize_world).

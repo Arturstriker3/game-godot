@@ -952,6 +952,14 @@ namespace ogs {
 		std::string source = "default";
 		double balance_ema = 0.0;
 		double gross_ema = 0.0;
+		// C2a (D-103) — POLÍTICA da moeda (salva no v27, sem mecânica nesta
+		// fase; C2b liga emissão/juros/intervenção). Os enums estão em
+		// central_bank.h: 0 floating / 1 peg / 2 band;
+		// 0 no_data / 1 independent / 2 controlled. `exchange_regime` nasce do
+		// `floating` atual (peg é o default do dado, que não traz fonte de
+		// regime) e `bank_independence` nasce `no_data` — ausência declarada.
+		int exchange_regime = 1;
+		int bank_independence = 0;
 	};
 
 	// F5: tarifa declarada (buyer, seller, product, ad valorem). O lookup usa

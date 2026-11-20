@@ -376,6 +376,33 @@ public:
 	 * resumo do mundo.
 	 */
 	Dictionary get_balance_status() const;
+	/**
+	 * C2a (D-103) — BANCO CENTRAL POR MOEDA (leitura, sob demanda / A4).
+	 * Devolve:
+	 *   * `monetary_policy` — padrão monetário do mundo e moeda de reserva;
+	 *   * `invariant` — a moeda do dia atribuída às moedas (M0) + os buckets
+	 *     sem nação = `money_total`; `ok` é a checagem cruzada;
+	 *   * `currencies` — por moeda: regime, independência, M0/M1/M2, ouro do
+	 *     cofre (t e valor), reservas em moeda de reserva (0), títulos (0) e o
+	 *     patrimônio financeiro do BC;
+	 *   * `cpi` — por nação: índice da cesta (o mesmo IPC do G2) e a inflação
+	 *     de 12 meses lida da série mensal (ausência declarada com `has_12m`
+	 *     falso quando ainda não há 12 meses);
+	 *   * `unallocated` — caixas sem nação atribuível, declarados.
+	 * Nada aqui emite, fixa juros ou intervém (C2b); o ouro é ativo REAL e não
+	 * entra na identidade financeira.
+	 */
+	Dictionary get_central_bank_status() const;
+	/**
+	 * C2a (D-103) — declara a RESERVA DE OURO do banco central por nação (t de
+	 * ouro fino), agregada por moeda. A fonte é o dado real da G2/D-101
+	 * (`strategic_reserves.json`, World Gold Council); o núcleo não lê arquivo.
+	 * Idempotente: reaplica o mesmo dicionário (load). Nação sem moeda na
+	 * tabela cai em `gold_unallocated_tonnes` (ausência declarada).
+	 * @param tonnes_por_nacao `{ISO3: toneladas}`.
+	 * @returns toneladas declaradas (0 = nada aplicado).
+	 */
+	double set_central_bank_gold(const Dictionary& tonnes_by_nation);
 	/** G2 — mapeamento produto→tipo de armazém em vigor (tabela declarada +
 	 *  overrides do JSON). `{produto: tipo}`; usado pelo StorageService. */
 	Dictionary get_storage_product_types() const;

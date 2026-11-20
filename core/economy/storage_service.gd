@@ -215,6 +215,17 @@ func apply_to_sim(sim: Object, cities: Array, buildings: Array,
 			report["gold_nations"][tag] = gold
 	report["nations"] = by_nation.size()
 	report["cities"] = cities.size()
+	# 6. C2a (D-103): o ouro do cofre vira a reserva do banco central DA MOEDA.
+	#    É medição sobre dado real (D-101) — não cria ouro nem muda caixa.
+	#    `gold_nations` está por nação; o núcleo agrega pela moeda. O contrato da
+	#    D-101 fica intacto: `gold_applied` continua false (o ouro NÃO entra como
+	#    bem físico negociado); o que entra é o ativo do BC, medido.
+	if sim.has_method("set_central_bank_gold"):
+		var gold_declared := 0.0
+		if not (report["gold_nations"] as Dictionary).is_empty():
+			gold_declared = float(sim.set_central_bank_gold(
+				report["gold_nations"]))
+		report["gold_central_bank_t"] = gold_declared
 	# Diagnóstico de ESCALA: produção anual do jogo por tipo, cobertura real
 	# usada (meses, ponderada pelo fluxo do jogo) e quantos meses de produção a
 	# capacidade inicial cobre. Depois da D-101 os dois últimos coincidem por
@@ -737,6 +748,7 @@ func _empty_report(options: Dictionary) -> Dictionary:
 		"gold_nations": {},
 		"gold_applied": false,
 		"gold_reason": "vault e estrutura nesta parte (D-100); ouro do BC nao tem fluxo de estoque",
+		"gold_central_bank_t": 0.0,
 		"conversions": {
 			"grain_mt_to_t": GRAIN_MT_TO_T,
 			"oil_kt_to_t": OIL_KT_TO_T,

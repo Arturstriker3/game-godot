@@ -11,8 +11,8 @@ extends SceneTree
 ##   3. PATRIMÔNIO coerente: o patrimônio das famílias é exatamente a soma da
 ##      terra/moradia/anel da B6 gravada no save, e o estoque do governo (G2)
 ##      é o dos armazéns públicos — por nação e no mundo.
-##   4. SAVE v26: round-trip bit-exato, continuação idêntica e migração
-##      v25 → v26 (o salário atrasado nasce 0; nada é inventado para trás).
+##   4. SAVE v27: round-trip bit-exato, continuação idêntica e migração
+##      v25 → v27 (o salário atrasado nasce 0; nada é inventado para trás).
 ##
 ## Roda pelo runner: powershell -File tools/run_tests.ps1 -List c1_balance_test
 
@@ -39,7 +39,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 26
+const SAVE_VERSION := 27
 const EPS := 1e-3
 
 var _failures: Array[String] = []
@@ -49,7 +49,7 @@ func _init() -> void:
 	_test_fixture()
 	_test_world()
 	if _failures.is_empty():
-		print("[c1] OK: identidade financeira diária, conservação, B6/G2, save v26.")
+		print("[c1] OK: identidade financeira diária, conservação, B6/G2, save v27.")
 		quit(0)
 	else:
 		print("[c1] FALHAS (%d):" % _failures.size())
@@ -157,7 +157,7 @@ func _test_fixture() -> void:
 		float(invariant.get("payables", 0.0)), EPS),
 		"(fixture) atrasado a receber != a pagar")
 
-	# --- Save v26: round-trip bit-exato e continuação idêntica -----------
+	# --- Save v27: round-trip bit-exato e continuação idêntica -----------
 	var save: Dictionary = sim.to_dict()
 	_check(int(save.get("version", 0)) == SAVE_VERSION,
 		"(fixture) save version %s != %d" % [str(save.get("version", 0)),
@@ -168,7 +168,7 @@ func _test_fixture() -> void:
 	var copy_save: Dictionary = copy.to_dict()
 	_check(JSON.stringify(copy_save, "", true, true)
 		== JSON.stringify(save, "", true, true),
-		"(fixture) round-trip do save v26 não é bit-exato")
+		"(fixture) round-trip do save v27 não é bit-exato")
 	for day in 3:
 		sim.tick_day()
 		copy.tick_day()
@@ -177,7 +177,7 @@ func _test_fixture() -> void:
 		"(fixture) continuação após load divergiu do caminho direto")
 	_check_day_identity(sim, "fixture pós round-trip")
 
-	# --- Migração v25 → v26 ---------------------------------------------
+	# --- Migração v25 → v27 ---------------------------------------------
 	var old: Dictionary = save.duplicate(true)
 	old["version"] = 25
 	for city: Dictionary in old.get("cities", []):
@@ -194,7 +194,7 @@ func _test_fixture() -> void:
 	migrated.from_dict(old)
 	var migrated_save: Dictionary = migrated.to_dict()
 	_check(int(migrated_save.get("version", 0)) == SAVE_VERSION,
-		"(migração) v25 deveria sair como v26 (saiu %s)"
+		"(migração) v25 deveria sair como v27 (saiu %s)"
 			% str(migrated_save.get("version", 0)))
 	var arrears_total := 0.0
 	for city: Dictionary in migrated_save.get("cities", []):
@@ -209,7 +209,7 @@ func _test_fixture() -> void:
 	_check(absf(arrears_total) <= EPS,
 		"(migração) v25 não pode inventar atrasado (%.6f)" % arrears_total)
 	migrated.tick_day()
-	_check_day_identity(migrated, "migração v25 -> v26")
+	_check_day_identity(migrated, "migração v25 -> v27")
 
 
 func _make_world() -> Object:

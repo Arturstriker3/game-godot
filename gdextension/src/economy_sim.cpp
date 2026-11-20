@@ -4,6 +4,7 @@
 #include "sim/actions.h"
 #include "sim/agriculture.h"
 #include "sim/balance.h"
+#include "sim/central_bank.h"
 #include "sim/storage.h"
 #include "sim/profiling.h"
 #include "sim/save_definitions.h"
@@ -264,6 +265,10 @@ void EconomySim::_bind_methods() {
 		&EconomySim::get_storage_status);
 	ClassDB::bind_method(D_METHOD("get_balance_status"),
 		&EconomySim::get_balance_status);
+	ClassDB::bind_method(D_METHOD("get_central_bank_status"),
+		&EconomySim::get_central_bank_status);
+	ClassDB::bind_method(D_METHOD("set_central_bank_gold", "tonnes_by_nation"),
+		&EconomySim::set_central_bank_gold);
 	ClassDB::bind_method(D_METHOD("set_storage_stock", "city_id", "type",
 		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
@@ -710,6 +715,17 @@ void EconomySim::set_currencies(const Variant& currencies) {
 		currency.source = std::string(String(entry.get("source", "default")).utf8().get_data());
 		const String regime = String(entry.get("regime", String(default_regime.c_str())));
 		currency.floating = regime == "float";
+		// C2a (D-103): o regime da política nasce do regime já aceito pelo
+		// F5 — nenhuma mecânica nova. "band" (banda administrada) usa o mesmo
+		// drift dentro da banda do fx.cpp; a intervenção é C2b.
+		currency.exchange_regime = central_bank::kRegimePeg;
+		if (regime == "float") {
+			currency.exchange_regime = central_bank::kRegimeFloating;
+		} else if (regime == "band") {
+			currency.exchange_regime = central_bank::kRegimeBand;
+			currency.floating = true;
+		}
+		currency.bank_independence = central_bank::kIndependenceNoData;
 		bool valid = false;
 		if (entry.has("rate_per_anchor")) {
 			const Variant raw = entry.get("rate_per_anchor", Variant());
@@ -8584,16 +8600,264 @@ Dictionary EconomySim::get_balance_status() const {
 	out["notes"] = [&]() {
 		Dictionary notes;
 		notes["monetary_base"] =
-			"passivo do emissor placeholder até a C2 (banco central)";
+			"passivo do emissor: base monetária M0 medida por moeda (C2a/D-103); "
+			"a emissão é a C2b";
 		notes["arrears"] =
 			"salário atrasado = passivo da firma + ativo das famílias";
 		notes["equity"] =
 			"participação em grupos (stratum_equity) não entra: avaliação já "
 			"contida nos ativos dos grupos";
-		notes["banks"] = "sem banco na C1: caixa total conservado";
+		notes["banks"] = "sem banco (C4): o caixa é conservado e M1 = M2 = M0";
 		return notes;
 	}();
 	return out;
+}
+
+Dictionary EconomySim::get_central_bank_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["day"] = ws_.day;
+
+	std::vector<double> base_list(
+		static_cast<std::size_t>(std::max(0, ws_.products)), 0.0);
+	for (int product = 0; product < ws_.products; ++product) {
+		base_list[static_cast<std::size_t>(product)] =
+			sim_core_.base_price(product);
+	}
+
+	{
+		Dictionary policy;
+		policy["standard"] =
+			ogs::central_bank::standard_name(ws_.monetary_standard);
+		policy["reserve_currency"] = String(ws_.reserve_currency.c_str());
+		policy["active"] = false;
+		policy["note"] =
+			"política DECLARADA (default do plano: fiduciário + dólar); nenhuma "
+			"mecânica na C2a — emissão, juros e intervenção são a C2b";
+		out["monetary_policy"] = policy;
+	}
+
+	const double total = money_total();
+	const ogs::central_bank::MoneyAllocation money =
+		ogs::central_bank::allocate_money(ws_, total);
+	{
+		Dictionary invariant;
+		invariant["money_total"] = money.total;
+		invariant["allocated"] = money.allocated;
+		invariant["unallocated"] = money.unallocated();
+		invariant["residual"] = money.residual();
+		invariant["ok"] = std::abs(money.residual())
+			<= std::max(1e-3, std::abs(total) * 1e-12);
+		out["invariant"] = invariant;
+	}
+
+	std::string gold_basis;
+	const double gold_price =
+		ogs::central_bank::gold_price(ws_, base_list, &gold_basis);
+	{
+		Dictionary gold;
+		gold["price"] = gold_price;
+		gold["price_basis"] = String(gold_basis.c_str());
+		gold["unallocated_tonnes"] = ws_.reserve_gold_unallocated;
+		gold["declared"] = ws_.reserve_gold_declared;
+		out["gold"] = gold;
+	}
+
+	const std::vector<ogs::central_bank::CurrencyBank> banks =
+		ogs::central_bank::banks(ws_, money, base_list);
+	Dictionary currencies;
+	double m0_sum = 0.0;
+	double m1_sum = 0.0;
+	double m2_sum = 0.0;
+	double gold_tonnes_sum = 0.0;
+	double gold_value_sum = 0.0;
+	for (const ogs::central_bank::CurrencyBank& bank : banks) {
+		Dictionary row;
+		row["code"] = String(bank.code.c_str());
+		row["regime"] = ogs::central_bank::regime_name(bank.regime);
+		row["bank_independence"] =
+			ogs::central_bank::independence_name(bank.independence);
+		Array nations;
+		for (const std::string& nation : bank.nations) {
+			nations.append(String(nation.c_str()));
+		}
+		row["nations"] = nations;
+		row["nations_count"] = static_cast<int>(bank.nations.size());
+		// Passivo (base monetária) e agregados medidos.
+		row["currency_in_circulation"] = bank.currency_in_circulation;
+		row["bank_reserves"] = bank.bank_reserves;
+		row["m0"] = bank.m0;
+		row["m1"] = bank.m1;
+		row["m2"] = bank.m2;
+		{
+			Dictionary assets;
+			assets["gold_tonnes"] = bank.gold_tonnes;
+			assets["gold_value"] = bank.gold_value;
+			assets["reserve_currency_holdings"] =
+				bank.reserve_currency_holdings;
+			assets["securities"] = bank.securities;
+			assets["financial_assets"] = bank.financial_assets();
+			assets["total"] = bank.total_assets();
+			row["assets"] = assets;
+		}
+		{
+			Dictionary liabilities;
+			liabilities["m0"] = bank.liabilities();
+			row["liabilities"] = liabilities;
+		}
+		row["net_financial_worth"] = bank.net_financial_worth();
+		currencies[String(bank.code.c_str())] = row;
+		m0_sum += bank.m0;
+		m1_sum += bank.m1;
+		m2_sum += bank.m2;
+		gold_tonnes_sum += bank.gold_tonnes;
+		gold_value_sum += bank.gold_value;
+	}
+	out["currencies"] = currencies;
+	{
+		Dictionary totals;
+		totals["currencies"] = static_cast<int>(banks.size());
+		totals["m0"] = m0_sum;
+		totals["m1"] = m1_sum;
+		totals["m2"] = m2_sum;
+		totals["gold_tonnes"] = gold_tonnes_sum;
+		totals["gold_value"] = gold_value_sum;
+		totals["bank_reserves"] = 0.0;
+		totals["securities"] = 0.0;
+		out["totals"] = totals;
+	}
+
+	// CPI por país: o índice é o MESMO do IPC do G2 (uma dona só). A inflação
+	// de 12 meses vem da série mensal; sem 12 meses, `has_12m` é falso —
+	// ausência declarada, nunca um número inventado.
+	const std::map<std::string, ogs::central_bank::CpiRow> cpi =
+		ogs::central_bank::cpi_by_nation(ws_, base_list);
+	Dictionary cpi_rows;
+	int cpi_nations = 0;
+	int with_12m = 0;
+	double cpi_sum = 0.0;
+	for (const auto& entry : cpi) {
+		Dictionary row;
+		row["index"] = entry.second.index;
+		row["weight"] = entry.second.weight;
+		const auto found = ws_.cpi_history.find(entry.first);
+		const ogs::central_bank::Inflation inflation =
+			found != ws_.cpi_history.end()
+				? ogs::central_bank::inflation_of(found->second)
+				: ogs::central_bank::Inflation{};
+		row["observations"] = inflation.observations;
+		row["span_days"] = inflation.span_days;
+		row["has_12m"] = inflation.has_12m;
+		if (inflation.has_12m) {
+			row["inflation_12m"] = inflation.rate_12m;
+			++with_12m;
+		}
+		row["has_annualized"] = inflation.has_annualized;
+		if (inflation.has_annualized) {
+			row["inflation_annualized"] = inflation.annualized;
+		}
+		row["last_sample_day"] = found != ws_.cpi_history.end()
+			&& found->second.count > 0
+			? found->second.sample_day[found->second.count - 1] : -1;
+		cpi_rows[String(entry.first.c_str())] = row;
+		++cpi_nations;
+		cpi_sum += entry.second.index;
+	}
+	out["cpi"] = cpi_rows;
+	{
+		Dictionary cpi_totals;
+		cpi_totals["nations"] = cpi_nations;
+		cpi_totals["with_12m"] = with_12m;
+		cpi_totals["mean_index"] = cpi_nations > 0
+			? cpi_sum / static_cast<double>(cpi_nations) : 0.0;
+		cpi_totals["sample_days"] =
+			static_cast<int>(ogs::central_bank::kCpiSampleDays);
+		cpi_totals["last_sample_day"] = ws_.cpi_last_observe_day;
+		cpi_totals["basis"] =
+			"cesta de alimentos do G2 (fator calórico x preço/base x necessidade "
+			"dos quintis); 12 meses = 360 dias do modelo";
+		out["cpi_totals"] = cpi_totals;
+	}
+
+	{
+		Dictionary row;
+		row["sector_cash"] = money.sector_cash;
+		row["group_cash_without_origin"] = money.group_cash;
+		row["project_cash_without_city"] = money.project_cash;
+		row["external_foreign_cash"] = money.external;
+		row["nation_without_currency"] = money.no_currency;
+		row["total"] = money.unallocated();
+		row["note"] =
+			"caixas sem nação atribuível (o exterior do núcleo é global); nada "
+			"é rateado por palpite";
+		out["unallocated"] = row;
+	}
+
+	{
+		Dictionary notes;
+		notes["banks"] =
+			"sem banco (C4): reservas bancárias 0, então M1 = M2 = M0";
+		notes["securities"] =
+			"títulos 0: não há dívida pública no estado da C1 (C3/C4)";
+		notes["reserve_currency_holdings"] =
+			"0: o exterior do núcleo é um único foreign_cash global, não "
+			"decomposto por moeda (C2b)";
+		notes["gold"] =
+			"ouro = dado real da G2/D-101 por moeda do banco central; é ativo "
+			"REAL e não entra na identidade financeira";
+		notes["names"] =
+			"nome institucional do BC vem do dado D-090 no GDScript; o núcleo "
+			"não inventa nome";
+		out["notes"] = notes;
+	}
+	return out;
+}
+
+double EconomySim::set_central_bank_gold(const Dictionary& tonnes_by_nation) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	ws_.reserve_gold_tonnes.clear();
+	ws_.reserve_gold_unallocated = 0.0;
+	double total = 0.0;
+	const auto add = [&](const std::string& currency, double tonnes) {
+		if (!std::isfinite(tonnes) || tonnes <= 0.0) {
+			return;
+		}
+		if (!currency.empty()) {
+			const auto found = ws_.currency_by_code.find(currency);
+			if (found != ws_.currency_by_code.end()) {
+				ws_.reserve_gold_tonnes[currency] += tonnes;
+				total += tonnes;
+				return;
+			}
+		}
+		ws_.reserve_gold_unallocated += tonnes;
+		total += tonnes;
+	};
+	const Array keys = tonnes_by_nation.keys();
+	for (int index = 0; index < keys.size(); ++index) {
+		const String nation = String(keys[index]);
+		if (nation.is_empty()) {
+			continue;
+		}
+		const double tonnes = double(tonnes_by_nation.get(nation, 0.0));
+		if (!std::isfinite(tonnes) || tonnes <= 0.0) {
+			continue;
+		}
+		// Nação → moeda (o banco central é POR MOEDA; a zona do euro e o CFA
+		// somam as reservas dos membros, como no dado).
+		std::string currency;
+		const std::string tag(nation.utf8().get_data());
+		const auto found = ws_.nation_currency.find(tag);
+		if (found != ws_.nation_currency.end() && found->second >= 0
+				&& found->second < static_cast<int>(ws_.currencies.size())) {
+			currency = ws_.currencies[static_cast<std::size_t>(
+				found->second)].code;
+		}
+		add(currency, tonnes);
+	}
+	ws_.reserve_gold_declared = total > 0.0;
+	++data_version_;
+	return total;
 }
 
 Dictionary EconomySim::get_storage_status() const {
@@ -8705,8 +8969,6 @@ Dictionary EconomySim::get_storage_status() const {
 		double demand_t_day[kMaxProducts] = {};
 		double price_weight[kMaxProducts] = {};
 		double price_weighted[kMaxProducts] = {};
-		double ipc_weight = 0.0;
-		double ipc_weighted = 0.0;
 	};
 	std::map<std::string, NationAcc> nations;
 
@@ -8776,8 +9038,8 @@ Dictionary EconomySim::get_storage_status() const {
 		nation.population += city.population;
 		nation.weight += city_weight;
 		nation.food_need_t_day += city_weight;
-		double city_index = 0.0;
-		double city_index_weight = 0.0;
+		// O IPC em si tem UMA dona (`central_bank::cpi_by_nation`, C2a/D-103);
+		// aqui só acumula a demanda e o preço médio por produto.
 		if (food_weight_sum > 0.0) {
 			for (std::size_t product = 0; product < products; ++product) {
 				const double weight = food_weight[product];
@@ -8785,11 +9047,7 @@ Dictionary EconomySim::get_storage_status() const {
 					continue;
 				}
 				const double price = std::max(0.0, city.markets[product].price);
-				const double base = std::max(1e-9,
-					sim_core_.base_price(static_cast<int>(product)));
 				if (price > 0.0) {
-					city_index += weight * (price / base);
-					city_index_weight += weight;
 					nation.demand_t_day[product] +=
 						std::max(0.0, city.markets[product].demand);
 					nation.price_weight[product] += city_weight;
@@ -8797,12 +9055,15 @@ Dictionary EconomySim::get_storage_status() const {
 				}
 			}
 		}
-		if (city_index_weight > 0.0) {
-			nation.ipc_weight += city_weight;
-			nation.ipc_weighted += city_weight
-				* (city_index / city_index_weight);
-		}
 	}
+
+	// IPC por nação: a MESMA função que o banco central publica (C2a/D-103).
+	std::vector<double> base_list(products, 0.0);
+	for (std::size_t product = 0; product < products; ++product) {
+		base_list[product] = sim_core_.base_price(static_cast<int>(product));
+	}
+	const std::map<std::string, ogs::central_bank::CpiRow> cpi_rows =
+		ogs::central_bank::cpi_by_nation(ws_, base_list);
 
 	Dictionary nation_rows;
 	for (const auto& entry : nations) {
@@ -8836,8 +9097,11 @@ Dictionary EconomySim::get_storage_status() const {
 		row["government_by_product"] = gov_by_product;
 		row["private_by_product"] = priv_by_product;
 		row["government_days_cover"] = days_cover;
-		row["ipc"] = nation.ipc_weight > 1e-12
-			? nation.ipc_weighted / nation.ipc_weight : 0.0;
+		{
+			const auto found = cpi_rows.find(tag);
+			row["ipc"] = found != cpi_rows.end() && found->second.ok
+				? found->second.index : 0.0;
+		}
 		Dictionary avg_price;
 		for (std::size_t product = 0; product < products; ++product) {
 			if (product < names.size()

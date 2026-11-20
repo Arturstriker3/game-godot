@@ -129,7 +129,15 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // anteriores carregam com atrasado ZERO (nada é inventado para trás: o
 // fenômeno anterior não deixa registro retroativo). O resto do balanço é
 // LEITURA derivada do estado existente e não ocupa o save.
-constexpr int kSaveVersion = 26;
+// v27 (C2a, D-103): banco central por moeda (estado + medição). Campos novos,
+// todos ADITIVOS: em cada moeda, `exchange_regime` (nasce do `floating` que já
+// existia; peg é o default do dado) e `bank_independence` (nasce `no_data`);
+// blocos de raiz `monetary_policy` (padrão monetário = fiduciário e moeda de
+// reserva = USD, os defaults declarados pelo plano) e `central_bank` (reserva
+// de ouro do BC por moeda, dado real da G2/D-101, e a série mensal do CPI por
+// nação). Nenhuma mecânica nova: nada emite, cobra juros ou intervém — é a
+// C2b. Save v26 carrega sem ouro e com a série vazia (nada inventado).
+constexpr int kSaveVersion = 27;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
