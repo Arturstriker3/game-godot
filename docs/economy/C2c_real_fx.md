@@ -369,8 +369,9 @@ suavização e o passo diário já calibrados. Não há teto de preço, não há
 calibração de moeda e nenhuma fonte nova é inventada. O que se espera do mundo:
 as nações < −3 % da §4.2 perdem o componente artificial (repasse só para baixo)
 e as nações com fornecedores desvalorizados ganham o componente de alta que hoje
-é bloqueado. O critério de aceite continua o da §4 (falências ≤ 3, portão ≤ 90,
-0 violações), com a meta de realismo de **nenhuma nação < −5 % sem causa
+é bloqueado. O critério de aceite continua o da §4 (falências ≤ 3, 0 violações),
+com o portão **revisado de ≤ 90 para ≤ 94** por decisão do dono depois da
+medição da §5.1, com a meta de realismo de **nenhuma nação < −5 % sem causa
 explicada**.
 
 ## 5.1 Medição — A/B/C de 365 d com a P1 (20/11/2026)
@@ -401,7 +402,8 @@ Leitura:
    `pri_pon_copper_mine` e `pri_pon_iron_mine` (PRI-PON/USA, dia 126) e a soja
    `AI-SOY-26` (PRT-POR, 40 dias de prejuízo no último snapshot). A variante A
    fica com **2** (a soja sobrevive).
-3. **O portão de comida piorou: 90 → 94** (teto de aceite = 90) e a mediana do
+3. **O portão de comida piorou: 90 → 94** (teto de aceite: 90 → 94, ver
+   decisão abaixo) e a mediana do
    portão caiu 0,46 p.p. (0,97468 → 0,97005, com corte fixo em 0,975). O
    mecanismo é o próprio repasse: o preço de varejo das cidades importadoras
    deixa de ficar **abaixo** do CIF de importação — antes a comida importada era
@@ -422,18 +424,24 @@ Leitura:
    porque a inflação de 12 m deixa de ser negativa — outro sinal de que o
    artefato deflacionário sumiu.
 
-**Critério de aceite da C2c depois da P1:** falências 3 (≤ 3) **passa**; nenhuma
-nação < −5 % sem causa **passa** (mínima −4,10 %, causa de importação);
-portão 94/179 (≤ 90) **não passa**. Nada foi calibrado para maquiar o número:
+**Critério de aceite da C2c depois da P1 (revisado por decisão do dono,
+20/11/2026):** falências 3 (≤ 3) **passa**; nenhuma nação < −5 % sem causa
+**passa** (mínima −4,10 %, causa de importação); portão **94/179** com teto
+**94** (era 90) **passa por decisão**. Nada foi calibrado para maquiar o número:
 96 % da correção é a regra de preço e o portão mede o custo real de não
-subsidiar a comida importada no preço. **Decisão do dono**, em ordem de custo:
+subsidiar a comida importada no preço — a P1 removeu um subsídio implícito
+(importado vendido **abaixo** do CIF). **Decisão do dono: aceitar (a)** — a C2c
+fecha com a regra simétrica; inflação 12 m p10/p50/p90 −0,24/+1,58/+4,73 %,
+4 nações < −3 % e nenhuma < −5 % entram no aceite como patamar novo.
 
-- **(a)** aceitar o portão em 94 com esta explicação e fechar a C2c com a regra
-  simétrica (o aceite da fase muda de 90 para 94 por decisão, não por número);
-- **(b)** atacar o acesso alimentar pelo lado da renda (salário/transferência) —
-  fase própria, mexe em política social e não na formação de preço;
-- **(c)** manter a regra unilateral da C2c — recusado pelo dono (é a causa da
-  deflação).
+**Dívida explícita da Parte E (renda/energia).** O portão de comida acima da
+base (86 → 94) **não** é aceito como estado final: a falta de comida será
+atacada pelo lado da **renda/energia** na Parte E
+(`docs/plans/perf_pop_financas_plano.md`), com **meta ≤ 86** até o fim da
+Parte E e 0 violações mantido. Alternativas descartadas: (b) fase própria de
+renda trataria o sintoma antes da causa (a causa — o repasse unilateral — já
+foi corrigida aqui); (c) manter a regra unilateral da C2c foi recusada pelo
+dono (é a causa da deflação).
 
 **P2 e P3 (não corrigidos nesta fase).** P2 continua latente (sem reserva o
 `floating_step` de moeda fixa não é exercitado; dispara quando houver reserva com

@@ -2806,7 +2806,7 @@
       "stalled_days": 0,
       "trajectory_sha256": "9f0da66240bd342ee6c46b04d8ca36fbd85da7d2d55ea55b1c5df8d78977f218",
       "variant": "A_regimes_only",
-      "wall_s": 216.968
+      "wall_s": 217.922
     },
     {
       "bankruptcies": 3,
@@ -5562,7 +5562,7 @@
       "stalled_days": 0,
       "trajectory_sha256": "c8be192d31de9f0fedfdd6d5b46a29b4bb8b95cc5c45fb26b151831421019ed5",
       "variant": "B_bulgaria_only",
-      "wall_s": 206.72
+      "wall_s": 220.748
     },
     {
       "bankruptcies": 3,
@@ -8378,7 +8378,7 @@
       "stalled_days": 0,
       "trajectory_sha256": "08770914aebe14d01ee8e00a58c159497ebbd150fcfef263e6f525c174d5e4d9",
       "variant": "C_default",
-      "wall_s": 216.515
+      "wall_s": 212.836
     }
   ]
 }
