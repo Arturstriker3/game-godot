@@ -8696,10 +8696,21 @@ Dictionary EconomySim::get_central_bank_status() const {
 			active["independence_effective"] =
 				ogs::central_bank::independence_name(effective);
 			active["rate"] = ogs::monetary::effective_rate(ws_, bank.code);
+			active["target_rate"] = state != ws_.monetary.end()
+				? state->second.target_rate : ogs::monetary::kNeutralRate;
 			active["target_inflation"] = ogs::monetary::kTargetInflation;
 			active["neutral_rate"] = ogs::monetary::kNeutralRate;
 			active["max_step_per_day"] = ogs::monetary::kMaxRateStepPerDay;
 			active["smoothing"] = ogs::monetary::kRateSmoothing;
+			active["inflation_weight"] =
+				ogs::monetary::kTaylorInflationWeight;
+			active["gap_weight"] = ogs::monetary::kTaylorGapWeight;
+			active["rate_floor"] = ogs::monetary::kRateFloor;
+			active["rate_cap"] = ogs::monetary::kRateCap;
+			active["deficit_today"] = state != ws_.monetary.end()
+				? state->second.deficit_measured : 0.0;
+			active["unfunded_today"] = state != ws_.monetary.end()
+				? state->second.unfunded : 0.0;
 			active["gap"] = state != ws_.monetary.end()
 				? state->second.gap : 0.0;
 			active["has_inflation"] = state != ws_.monetary.end()

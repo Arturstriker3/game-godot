@@ -633,9 +633,6 @@ double SimCore::labor_day(City& city) {
 		+ pop.wage_income_by_level[1] + pop.wage_income_by_level[2];
 	city.firm_cash -= buildings_payroll * pay_scale;
 	city.service_cash -= paid_service_bill;
-	// C2b1 (D-104): o juro do crédito da safra (D-099) é pago no FECHAMENTO do
-	// dia, em `phase_accounting`, com a receita do dia — não compete com a
-	// folha que a D-099 acabou de dimensionar.
 	return pop.wage_income;
 }
 void SimCore::refresh_income_classes(City& city) const {

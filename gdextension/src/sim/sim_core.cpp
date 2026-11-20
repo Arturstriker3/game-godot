@@ -233,6 +233,7 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	// C2b1: política monetária, dívida pública e emissão do dia.
 	out.monetary = ws_.monetary;
 	out.gov_bonds = ws_.gov_bonds;
+	out.gov_cash_open = ws_.gov_cash_open;
 	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
@@ -255,19 +256,22 @@ void SimCore::prologue() {
 	// Buffer PERSISTENTE: os vetores são reutilizados entre dias (com 114 bens
 	// uma cidade custa ~27 KB; realocar 834 cópias por tick custava ~5 ms).
 	Snapshot& before = ws_.snapshot_buffer;
+	// C2b1 (D-104): o reset do dia vem ANTES do retrato — reverter um tick que
+	// violou o invariante devolve o dia sem emissão (o dia não aconteceu) e sem
+	// a medição de déficit dele.
+	ws_.emission_today = 0.0;
+	for (auto& row : ws_.monetary) {
+		row.second.emission_today = 0.0;
+		row.second.deficit_measured = 0.0;
+		row.second.unfunded = 0.0;
+	}
 	{
 		OGS_SIM_ZONE(kPhasePrologueSnapshot);
 		snapshot_state(before);
 	}
 	money_before_ = money_total();
-	// C2b1 (D-104): a emissão do dia é medida contra este ponto. O caixa do
-	// governo por nação é a base do déficit medido: a janela é a ABERTURA do
-	// mundo (dia 1) e depois o fecho de cada dia (`monetary::tick` refresca),
-	// de modo que um gasto público entre dois dias também conta.
-	ws_.emission_today = 0.0;
-	for (auto& row : ws_.monetary) {
-		row.second.emission_today = 0.0;
-	}
+	// Janela do déficit: abertura do mundo (dia 1) e, depois, o fecho de cada
+	// dia (`monetary::tick` refresca) — um gasto público entre dois dias conta.
 	if (ws_.gov_cash_open.empty()) {
 		const std::size_t gov_count = std::min(ws_.cities.size(),
 			ws_.city_gov.size());
@@ -861,6 +865,7 @@ void SimCore::restore_state(const Snapshot& in) {
 	// C2b1: desfazer o tick desfaz a taxa, o M0 emitido e a dívida pública.
 	ws_.monetary = in.monetary;
 	ws_.gov_bonds = in.gov_bonds;
+	ws_.gov_cash_open = in.gov_cash_open;
 	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;

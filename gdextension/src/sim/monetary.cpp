@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace ogs {
 namespace monetary {
@@ -184,6 +185,7 @@ void tick(WorldState& ws, double money_total,
 			const double target = std::max(kRateFloor,
 				kNeutralRate - kControlledSpread);
 			state.rate = next_rate(current, target);
+			state.target_rate = target;
 			state.has_inflation = false;
 			state.inflation_used = 0.0;
 			state.gap = 0.0;
@@ -191,6 +193,7 @@ void tick(WorldState& ws, double money_total,
 			const Reading in = reading(ws, currency.code, cpi);
 			const double target = taylor_target(in);
 			state.rate = next_rate(current, target);
+			state.target_rate = target;
 			state.has_inflation = in.has_inflation;
 			state.inflation_used = in.has_inflation ? in.inflation : 0.0;
 			state.gap = in.gap;
@@ -205,45 +208,50 @@ void tick(WorldState& ws, double money_total,
 		}
 		const double m0 = index < money.by_currency.size()
 			? std::max(0.0, money.by_currency[index]) : 0.0;
-		double remaining = kControlledEmissionShareOfM0 * m0;
-		if (remaining <= 1e-9) {
-			continue;
-		}
+		// Déficit MEDIDO do dia, por nação desta moeda: a queda do caixa do
+		// governo desde o último fecho (janela contínua).
+		std::vector<std::pair<std::string, double>> deficits;
+		double deficit_total = 0.0;
 		for (const std::string& nation : currency.nations) {
-			if (remaining <= 1e-9) {
-				break;
-			}
 			const auto open = ws.gov_cash_open.find(nation);
 			if (open == ws.gov_cash_open.end()) {
 				continue;
 			}
-			// Déficit medido: o caixa do governo desta nação diminuiu no dia.
 			const double now = government_cash(ws, nation);
 			const double deficit = std::max(0.0, open->second - now);
-			const double amount = std::min(deficit, remaining);
+			if (deficit <= 1e-9) {
+				continue;
+			}
+			deficits.emplace_back(nation, deficit);
+			deficit_total += deficit;
+		}
+		state.deficit_measured = deficit_total;
+		double remaining = kControlledEmissionShareOfM0 * m0;
+		double funded = 0.0;
+		for (const auto& row : deficits) {
+			if (remaining <= 1e-9) {
+				break;
+			}
+			const std::string& nation = row.first;
+			const double amount = std::min(row.second, remaining);
 			if (amount <= 1e-9) {
 				continue;
 			}
 			// Crédito ao orçamento público (dinheiro criado entra no mundo) e
 			// dívida pública do mesmo valor (título na carteira do BC).
 			double total_population = 0.0;
-			for (const City& city : ws.cities) {
-				if (city.nation == nation) {
-					total_population += std::max(0.0,
-						city.simulation_population);
-				}
-			}
-			double credited = 0.0;
 			int last_city = -1;
 			for (int city_index = 0;
 					city_index < static_cast<int>(ws.cities.size());
 					++city_index) {
-				City& city = ws.cities[static_cast<std::size_t>(city_index)];
+				const City& city = ws.cities[static_cast<std::size_t>(city_index)];
 				if (city.nation != nation) {
 					continue;
 				}
 				last_city = city_index;
+				total_population += std::max(0.0, city.simulation_population);
 			}
+			double credited = 0.0;
 			int seen = 0;
 			for (int city_index = 0;
 					city_index < static_cast<int>(ws.cities.size());
@@ -261,8 +269,7 @@ void tick(WorldState& ws, double money_total,
 						city.simulation_population);
 					share = total_population > 0.0
 						? amount * population / total_population
-						: amount / static_cast<double>(
-							std::max(1, seen));
+						: amount / static_cast<double>(std::max(1, seen));
 				}
 				share = std::max(0.0, share);
 				city.government_budget += share;
@@ -277,19 +284,28 @@ void tick(WorldState& ws, double money_total,
 			ws.gov_bonds[nation] += credited;
 			ws.emission_today += credited;
 			remaining -= credited;
+			funded += credited;
 		}
+		state.unfunded = std::max(0.0, deficit_total - funded);
 	}
 	// C2b1: o caixa do governo no fecho (depois do crédito da emissão) é a base
-	// do déficit do dia seguinte. A janela é contínua: gasto público entre dois
-	// dias também é déficit medido.
-	for (auto& row : ws.gov_cash_open) {
-		row.second = government_cash(ws, row.first);
-	}
-	for (const City& city : ws.cities) {
-		if (ws.gov_cash_open.find(city.nation) == ws.gov_cash_open.end()) {
-			ws.gov_cash_open[city.nation] = government_cash(ws, city.nation);
+	// do déficit do dia seguinte. Uma passada pelas cidades (não uma por nação).
+	std::map<std::string, double> gov_cash_now;
+	const std::size_t gov_count = std::min(ws.cities.size(),
+		ws.city_gov.size());
+	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
+		const City& city = ws.cities[index];
+		double cash = city.government_budget;
+		if (index < gov_count) {
+			const CityGov& gov = ws.city_gov[index];
+			cash += std::max(0.0, gov.cash);
+			for (int slot = 0; slot < gov.project_count; ++slot) {
+				cash += std::max(0.0, gov.projects[slot].reserved);
+			}
 		}
+		gov_cash_now[city.nation] += cash;
 	}
+	ws.gov_cash_open = std::move(gov_cash_now);
 }
 
 } // namespace monetary

@@ -1327,6 +1327,14 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			bonds[sim_str(row.first.c_str())] = row.second;
 		}
 		block["gov_bonds"] = bonds;
+		// Janela do déficit (medição que alimenta a decisão do dia seguinte):
+		// sem ela, um load recomeçaria a janela no caixa do load e a
+		// monetização divergiria do caminho direto.
+		Dictionary cash_open = make_object();
+		for (const auto& row : ws.gov_cash_open) {
+			cash_open[sim_str(row.first.c_str())] = row.second;
+		}
+		block["gov_cash_open"] = cash_open;
 		data["monetary"] = block;
 	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
@@ -1677,6 +1685,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	// emissão/carteira/dívida 0 e a emissão do dia 0 (só o dia conta).
 	ws.monetary.clear();
 	ws.gov_bonds.clear();
+	ws.gov_cash_open.clear();
 	ws.emission_today = 0.0;
 	if (data.has("monetary")) {
 		const Dictionary block = data.get("monetary", Dictionary());
@@ -1716,9 +1725,23 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				}
 			}
 		}
+		const Variant open_variant = block.get("gov_cash_open", Dictionary());
+		if (open_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& cash = open_variant;
+			for (const auto& row : cash.entries()) {
+				if (row.first.empty()) {
+					continue;
+				}
+				const double value = double(row.second);
+				if (std::isfinite(value)) {
+					ws.gov_cash_open[row.first] = value;
+				}
+			}
+		}
 	}
 	if (data.has("tariffs")) {
-		const Array saved_tariffs = data.get("tariffs", Array());		ws.tariffs.clear();
+		const Array saved_tariffs = data.get("tariffs", Array());
+		ws.tariffs.clear();
 		ws.tariffs.reserve(static_cast<std::size_t>(saved_tariffs.size()));
 		for (int index = 0; index < saved_tariffs.size(); ++index) {
 			const Dictionary entry = saved_tariffs[index];

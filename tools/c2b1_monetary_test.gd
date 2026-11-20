@@ -180,6 +180,30 @@ func _test_independent() -> void:
 		sim.tick_day()
 		var policy := _policy(sim)
 		var rate := float(policy.get("rate", -1.0))
+		# Regra recomputada de ponta a ponta: prova que os pesos de Taylor, o
+		# hiato e a inflação publicados são os que produzem `target_rate`.
+		var floor_v := float(policy.get("rate_floor", 0.0))
+		var cap_v := float(policy.get("rate_cap", 0.30))
+		var target := float(policy.get("neutral_rate", 0.0))
+		if bool(policy.get("has_inflation", false)):
+			target += float(policy.get("inflation_weight", 0.0)) * (
+				float(policy.get("inflation_used", 0.0))
+				- float(policy.get("target_inflation", 0.0)))
+		target += float(policy.get("gap_weight", 0.0)) * (
+			float(policy.get("gap", 0.0)) / 100.0)
+		target = clampf(target, floor_v, cap_v)
+		_check(_close(float(policy.get("target_rate", -1.0)), target, 1e-12),
+			"taylor: target publicado != regra recomputada no dia %d (%.9f vs "
+				% [day + 1, float(policy.get("target_rate", -1.0))]
+				+ "%.9f)" % target)
+		var smooth := float(policy.get("smoothing", 0.0))
+		var step_v := float(policy.get("max_step_per_day", 0.0))
+		var expected := rate_prev + clampf((target - rate_prev) * (1.0 - smooth),
+			-step_v, step_v)
+		expected = clampf(expected, floor_v, cap_v)
+		_check(_close(rate, expected, 1e-12),
+			"taylor: taxa != passo/suavização recomputados no dia %d (%0.9f vs "
+				% [day + 1, rate] + "%0.9f)" % expected)
 		_check(rate >= -1e-12 and rate <= 0.30 + 1e-12,
 			"taylor: taxa %.6f fora de [0, 0.30] no dia %d" % [rate, day + 1])
 		_check(absf(rate - rate_prev) <= step + 1e-12,
@@ -244,6 +268,18 @@ func _test_controlled() -> void:
 		_check(emission_today <= 0.01 * m0_prev + 1e-6,
 			"controlado: emissão do dia %.6f > 1%% do M0 (%.6f)" % [
 				emission_today, 0.01 * m0_prev])
+		# Emissão = déficit MEDIDO, limitada ao teto. A regra é exata: o BC
+		# financia o menor dos dois, e o que sobra fica `unfunded`.
+		var policy_day := _policy(sim)
+		var deficit_today := float(policy_day.get("deficit_today", -1.0))
+		var unfunded := float(policy_day.get("unfunded_today", -1.0))
+		_check(_close(emission_today, minf(deficit_today, 0.01 * m0_prev), EPS),
+			"controlado: emissão %.6f != min(déficit %.6f, teto %.6f) no dia %d"
+				% [emission_today, deficit_today, 0.01 * m0_prev, day + 1])
+		_check(_close(emission_today + unfunded, deficit_today,
+			maxf(EPS, 1e-9 * maxf(1.0, deficit_today))),
+			"controlado: financiado + não financiado != déficit no dia %d"
+				% (day + 1))
 		if emission_today > 1e-9:
 			emitted_days += 1
 			max_emission = maxf(max_emission, emission_today)
@@ -294,8 +330,9 @@ func _test_save_and_migration() -> void:
 	var sim := _make_sim()
 	sim.set_central_bank_policy("DEM", "controlled")
 	for day in 20:
-		# Déficit medido: o governo gasta em serviço doméstico antes do tick.
-		if day < 6:
+		# Déficit medido: o governo gasta em serviço doméstico antes do tick,
+		# inclusive nos dias que cercam o save (emissão no dia do save).
+		if day < 6 or day >= 17:
 			sim.spend_government("AGRIA", 5000.0)
 		sim.tick_day()
 	var save: Dictionary = sim.to_dict()
@@ -325,6 +362,8 @@ func _test_save_and_migration() -> void:
 		== JSON.stringify(save, "", true, true),
 		"save: round-trip v28 não é bit-exato")
 	for day in 5:
+		sim.spend_government("AGRIA", 3000.0)
+		copy.spend_government("AGRIA", 3000.0)
 		sim.tick_day()
 		copy.tick_day()
 	_check(JSON.stringify(sim.to_dict(), "", true, true)

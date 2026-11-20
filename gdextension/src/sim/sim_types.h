@@ -1232,7 +1232,8 @@ struct Region {
 		// C1 (save v26) — PASSIVOS das firmas da cidade, por origem do atraso:
 		// folha do setor de serviços e folha rural (paga pelo caixa da firma da
 		// cidade-polo). O atraso por planta fica em `Building::wage_arrears`.
-		double service_wage_arrears = 0.0;		double rural_wage_arrears = 0.0;
+		double service_wage_arrears = 0.0;
+		double rural_wage_arrears = 0.0;
 		double government_budget = 0.0;
 		// Multiplicador da renda externa (PIB PPP per capita da nação,
 		// normalizado pela média mundial ponderada = 1,0). Ver
@@ -1439,10 +1440,16 @@ struct Region {
 		bool has_inflation = false;
 		double gap = 0.0;  // hiato de desemprego em pontos percentuais
 		int last_day = -1;
+		// C2b1 — medição do dia (não vai ao save): taxa que a regra queria e o
+		// déficit que o BC viu/ deixou de financiar pelo teto de senhoriagem.
+		double target_rate = 0.0;
+		double deficit_measured = 0.0;
+		double unfunded = 0.0;
 	};
 
 	// Retrato do estado demo para reverter um tick que viole um invariante.
-	struct Snapshot {		std::vector<City> cities;
+	struct Snapshot {
+		std::vector<City> cities;
 		std::vector<Building> buildings;
 		std::vector<ConstructionProject> construction_projects;
 		std::vector<ServiceBusiness> service_businesses;
@@ -1465,9 +1472,12 @@ struct Region {
 		// reversão de um tick corrompido também desfaz compra/liberação/colheita.
 		std::vector<StorageSite> storage_sites;
 		// C2b1 (D-104): política monetária e emissão. Reverter um tick tem de
-		// desfazer o M0 criado e a dívida pública que nasceu dele.
+		// desfazer o M0 criado e a dívida pública que nasceu dele, e devolver a
+		// janela do déficit (`gov_cash_open` é medição de runtime, mas tem de
+		// voltar com o mundo reverted).
 		std::map<std::string, MonetaryState> monetary;
 		std::map<std::string, double> gov_bonds;
+		std::map<std::string, double> gov_cash_open;
 		double emission_today = 0.0;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;

@@ -72,16 +72,25 @@ a taxa fica em neutro + hiato — nada é completado com número inventado.
 
 ## 4. Status e save
 
-- `get_central_bank_status()`: por moeda, `policy_rate`, `policy_target`,
-  `target_inflation`, `inflation_used`/`has_inflation`, `gap`, `emission_today`,
-  `emission_total`, `securities`, `independence_saved` × `independence_effective`;
-  no topo, `monetary` (emissão do dia/total, títulos, dívida por nação).
+- `get_central_bank_status()`: por moeda, dentro de `currencies[code].policy`:
+  `rate`, `target_rate` (o que a regra queria), `target_inflation`,
+  `neutral_rate`, `max_step_per_day`, `smoothing`, `inflation_weight`,
+  `gap_weight`, `rate_floor`/`rate_cap`, `has_inflation`/`inflation_used`,
+  `gap`, `deficit_today`, `unfunded_today`, `emission_today`, `emission_total`,
+  `securities` e `independence_saved` × `independence_effective`; no topo,
+  `totals` (emissão do dia/total, títulos, dívida do governo, M0/M1/M2) e
+  `government_bonds` (dívida por nação).
 - `get_status()`: `balance.monetary_claims` e `balance.government_debt`
   (resumo diário); nada de novo por cidade.
 - **Save v28** (aditivo): `monetary = {policies: {moeda: {rate, emission,
-  securities, last_day}}, gov_bonds: {ISO3: valor}, emission_total}`. Migração
-  v27 → v28 carrega com taxa neutra, emissão 0 e dívida 0 (nada inventado para
-  trás); round-trip bit-exato.
+  securities, last_day}}, gov_bonds: {ISO3: valor}, gov_cash_open: {ISO3:
+  valor}}`. Migração v27 → v28 carrega com taxa neutra (sem decisão), emissão 0,
+  dívida 0 e janela do déficit vazia (o primeiro dia a captura do caixa do
+  governo) — nada inventado para trás; round-trip bit-exato. `emission_today`,
+  `deficit_today` e `unfunded_today` são medição do dia e não vão ao save.
+- `gov_cash_open` **vai** ao save: é a base da janela do déficit usada na
+  decisão seguinte; sem ela, um `load` recomeçaria a janela no caixa do load e a
+  monetização divergiria do caminho direto (o teste de round-trip cobre isso).
 
 ## 5. Prova
 
@@ -113,12 +122,20 @@ a taxa fica em neutro + hiato — nada é completado com número inventado.
   consumo (~0,2 pp na mediana), não ruído: cada canal sozinho move o portão,
   porque a distribuição tem dezenas de países logo abaixo de 0,975. Não houve
   calibração para mascarar o efeito.
-- **CLI × Godot**: 10 d byte-idênticos pelo snapshot (`75.293.594 B`, SHA-256
-  `9AECAC33…`, 0 diferenças) — com `--ai=0` nos dois lados.
+- **CLI × Godot**: 10 d byte-idênticos pelo snapshot (`75.299.780 B`, SHA-256
+  `3934D855…`, 0 diferenças) — com `--ai=0` nos dois lados.
 - **Goldens A0/S0** regerados no save v28, duas rodadas idênticas cada:
-  `A0_60_urban` `7334b22a…`/`c6f69c88…`, `real_60_ai` `7ebcbfb5…`/`60adbc2d…`,
-  `real_60_noai` `0f2721be…`/`7508ff1e…`, `demo_365_noai`
-  `cdfe1597…`/`a7b50ce3…`.
+  `A0_60_urban` save `766ec733…`/status `c6f69c88…`, `real_60_ai`
+  `cbeffb0d…`/`60adbc2d…`, `real_60_noai` `3f01e374…`/`7508ff1e…`,
+  `demo_365_noai` `f06bddf1…`/`a7b50ce3…` (o status não muda; o save ganhou a
+  janela do déficit).
+- **Custo:** 365 d passam de 166,7 s (C1) para 174,3 s (+4,6 %) com o refresh do
+  caixa do governo por dia e a leitura do CPI/taxa por moeda no fecho.
+- **Reversão de tick:** o `Snapshot` carrega `monetary`, `gov_bonds`,
+  `gov_cash_open` e `emission_today`, e o retrato é tirado **depois** do reset
+  do dia — um tick revertido não deixa emissão nem janela de déficit para trás.
+  Depois de um `load`, a janela começa no caixa do próprio load (mesmo valor do
+  fecho anterior no caminho direto).
 
 ## 6. Lacunas declaradas
 
