@@ -257,3 +257,17 @@ reserva em 335 dias (`0` desvalorizações, hash igual ao default). Com a taxa
 presa na paridade, o sombreado é a própria `base_rate` e o gap diário é zero;
 a banda nunca é cruzada. Só paridade fora do mercado gasta reserva.
 
+### 9.4 Goldens e equivalência (mesma DLL debug)
+
+| prova | resultado |
+|---|---|
+| **S0** (`tools/economy_refactor_equiv.gd`, 60 d, `--mode=world --ai=1`) | 2 rodadas **idênticas**: save `b6dbebc1…`, status `60adbc2d…` |
+| **A0** (`tools/world_equivalence.ps1`, 60 d, IA + urbano, 2 rodadas) | **0 diferenças** entre rodadas (129 s); save `e6c4564b…`, status `8047b236…`, dinheiro 6 523 551 982,900082, 0 falências |
+| **CLI × Godot** (snapshot 849 cidades, 60 d, `--ai=1 --threads=1`) | **0 diferenças** com tolerância 0; CLI exit 0, 0 violações; dinheiro 6 523 551 982,90 |
+
+Os dois goldens foram **regerados** porque o save v29 ganha o bloco aditivo
+`fx` (o payload muda) — o **`status_sha256` é o mesmo de antes** nos dois
+(S0 `60adbc2d…`, A0 `8047b236…`), ou seja, o mundo não se moveu: mudou só o
+formato do save. `money_total` e falências também idênticos.
+
+
