@@ -1,0 +1,2249 @@
+{
+  "bankruptcies": 2,
+  "days": 365,
+  "digest": [
+    {
+      "bankruptcies": 0,
+      "day": 30,
+      "food_sum": 166.110756146312,
+      "gov_stock_t": 7549734.61359847,
+      "m0": 6925152414.69954,
+      "money": 6523551982.9,
+      "private_stock_t": 7901330.39798588
+    },
+    {
+      "bankruptcies": 0,
+      "day": 60,
+      "food_sum": 166.613436215073,
+      "gov_stock_t": 7195091.83028939,
+      "m0": 7397581548.4995,
+      "money": 6523551982.90008,
+      "private_stock_t": 19192869.2590299
+    },
+    {
+      "bankruptcies": 0,
+      "day": 90,
+      "food_sum": 167.436678347703,
+      "gov_stock_t": 6878923.9814527,
+      "m0": 7913456213.10438,
+      "money": 6523551982.90015,
+      "private_stock_t": 38980570.9099523
+    },
+    {
+      "bankruptcies": 0,
+      "day": 120,
+      "food_sum": 167.458845597075,
+      "gov_stock_t": 6581294.12339319,
+      "m0": 8533813310.6317,
+      "money": 6523551982.90015,
+      "private_stock_t": 49191407.5184412
+    },
+    {
+      "bankruptcies": 2,
+      "day": 150,
+      "food_sum": 166.934568569148,
+      "gov_stock_t": 6320074.38270001,
+      "m0": 9176702614.88926,
+      "money": 6523551982.90013,
+      "private_stock_t": 54146804.8853647
+    },
+    {
+      "bankruptcies": 2,
+      "day": 180,
+      "food_sum": 164.786953927007,
+      "gov_stock_t": 6062889.47813876,
+      "m0": 9828150608.34849,
+      "money": 6523551982.90034,
+      "private_stock_t": 58654054.6865651
+    },
+    {
+      "bankruptcies": 2,
+      "day": 210,
+      "food_sum": 166.255019558996,
+      "gov_stock_t": 6052632.21041194,
+      "m0": 10525671491.5944,
+      "money": 6523551982.90064,
+      "private_stock_t": 75354070.6054716
+    },
+    {
+      "bankruptcies": 2,
+      "day": 240,
+      "food_sum": 166.575513147155,
+      "gov_stock_t": 6300039.69682064,
+      "m0": 11268053185.7084,
+      "money": 6523551982.90082,
+      "private_stock_t": 72972583.6934821
+    },
+    {
+      "bankruptcies": 2,
+      "day": 270,
+      "food_sum": 166.216509719389,
+      "gov_stock_t": 6131799.93302319,
+      "m0": 12024175134.441,
+      "money": 6523551982.9011,
+      "private_stock_t": 63480947.9137901
+    },
+    {
+      "bankruptcies": 2,
+      "day": 300,
+      "food_sum": 165.385864395932,
+      "gov_stock_t": 5880243.51940565,
+      "m0": 12788051373.5297,
+      "money": 6523551982.90146,
+      "private_stock_t": 76051595.4744016
+    },
+    {
+      "bankruptcies": 2,
+      "day": 330,
+      "food_sum": 163.760708073622,
+      "gov_stock_t": 5526145.32987097,
+      "m0": 13560732841.8579,
+      "money": 6523551982.90192,
+      "private_stock_t": 81771288.2496425
+    },
+    {
+      "bankruptcies": 2,
+      "day": 360,
+      "food_sum": 162.826224770435,
+      "gov_stock_t": 5214577.94322188,
+      "m0": 14340355130.1581,
+      "money": 6523551982.90137,
+      "private_stock_t": 62946171.5693267
+    },
+    {
+      "bankruptcies": 2,
+      "day": 365,
+      "food_sum": 162.595727253559,
+      "gov_stock_t": 5166243.21733274,
+      "m0": 14471050710.5993,
+      "money": 6523551982.90132,
+      "private_stock_t": 59708745.266223
+    }
+  ],
+  "drift": 0.000000000000201449028298171,
+  "final_day": 365,
+  "food_gate": {
+    "below": [
+      "SLB",
+      "PSX",
+      "HTI",
+      "SOM",
+      "COD",
+      "JPN",
+      "COG",
+      "MLI",
+      "BFA",
+      "GMB",
+      "DJI",
+      "ITA",
+      "AUT",
+      "CAN",
+      "NED",
+      "USA",
+      "CHN",
+      "SEN",
+      "HRV",
+      "CHE",
+      "BEL",
+      "GRC",
+      "BRN",
+      "SVN",
+      "SRB",
+      "ESP",
+      "CYP",
+      "HUN",
+      "URY",
+      "QAT",
+      "YEM",
+      "SAU",
+      "KOR",
+      "BIH",
+      "FRA",
+      "DNK",
+      "MKD",
+      "ARG",
+      "ROU",
+      "SGP",
+      "ISR",
+      "POL",
+      "GEO",
+      "THA",
+      "SVK",
+      "COL",
+      "IRL",
+      "ARM",
+      "DOM",
+      "TUR",
+      "FIN",
+      "PRT",
+      "TKM",
+      "CMR",
+      "EGY",
+      "ALB",
+      "CRI",
+      "BLR",
+      "LCA",
+      "BHR",
+      "AZE",
+      "PAN",
+      "DEU",
+      "GRD",
+      "VEN",
+      "NGA",
+      "EST",
+      "GAB",
+      "MYS",
+      "DMA",
+      "OMN",
+      "UKR",
+      "PRY",
+      "BTN",
+      "BRA",
+      "PER",
+      "PRK",
+      "ARE",
+      "GBR",
+      "KAZ",
+      "MEX",
+      "NOR",
+      "KWT",
+      "LBR",
+      "BGR",
+      "IRN",
+      "RUS",
+      "CZE"
+    ],
+    "below_gate": 88,
+    "mean": 0.909104291762025,
+    "median": 0.977895149608203,
+    "nations": 179,
+    "table": {
+      "AFG": 1.0,
+      "AGO": 0.999796655765054,
+      "ALB": 0.892805425579635,
+      "ARE": 0.956510708746701,
+      "ARG": 0.844491294781746,
+      "ARM": 0.860440770156035,
+      "ATG": 0.995644288744922,
+      "AUS": 0.97622618373896,
+      "AUT": 0.740386097869254,
+      "AZE": 0.902746383428346,
+      "BDI": 1.0,
+      "BEL": 0.764502818536731,
+      "BEN": 0.998337349517617,
+      "BFA": 0.651791042259725,
+      "BGD": 1.0,
+      "BGR": 0.969303113452193,
+      "BHR": 0.901387369277078,
+      "BHS": 1.0,
+      "BIH": 0.834434758937831,
+      "BLR": 0.89662632731934,
+      "BLZ": 0.997051189349179,
+      "BOL": 1.0,
+      "BRA": 0.946056830537757,
+      "BRB": 0.985313927931147,
+      "BRN": 0.782519988931064,
+      "BTN": 0.944643256897633,
+      "BWA": 0.995156669677321,
+      "CAF": 0.999966159754056,
+      "CAN": 0.745088479807285,
+      "CHE": 0.764174561204909,
+      "CHL": 0.986919847930929,
+      "CHN": 0.758258225711332,
+      "CIV": 0.996415795890446,
+      "CMR": 0.881300999093607,
+      "COD": 0.456924674640162,
+      "COG": 0.547282349909135,
+      "COL": 0.858165613238681,
+      "CRI": 0.894178794486492,
+      "CUB": 1.0,
+      "CYP": 0.807993854378122,
+      "CZE": 0.974921374730694,
+      "DEU": 0.916249049867308,
+      "DJI": 0.722018629181074,
+      "DMA": 0.927843706330213,
+      "DNK": 0.839107476966136,
+      "DOM": 0.862100553334227,
+      "DZA": 0.99735501944435,
+      "ECU": 0.983938050217367,
+      "EGY": 0.883332664985805,
+      "ERI": 1.0,
+      "ESP": 0.806149969482327,
+      "EST": 0.922932823105312,
+      "ETH": 1.0,
+      "FIN": 0.862563283493199,
+      "FJI": 1.0,
+      "FRA": 0.83452694481576,
+      "GAB": 0.924570020449639,
+      "GBR": 0.959757939757847,
+      "GEO": 0.848948366047869,
+      "GHA": 0.997682481367222,
+      "GIN": 1.0,
+      "GMB": 0.702468959831277,
+      "GNB": 1.0,
+      "GNQ": 0.997120752783685,
+      "GRC": 0.776217154725438,
+      "GRD": 0.920014599100315,
+      "GTM": 0.998772154651064,
+      "GUY": 0.997761869973867,
+      "HND": 0.999586409634086,
+      "HRV": 0.764119869336093,
+      "HTI": 0.27411230554396,
+      "HUN": 0.812040538670206,
+      "IDN": 0.989528478272341,
+      "IND": 1.0,
+      "IRL": 0.859056364758925,
+      "IRN": 0.971488457126762,
+      "IRQ": 1.0,
+      "ISL": 1.0,
+      "ISR": 0.847976452133928,
+      "ITA": 0.733808436583199,
+      "JAM": 1.0,
+      "JOR": 0.990519372113149,
+      "JPN": 0.544352469116713,
+      "KAZ": 0.961107906612874,
+      "KEN": 1.0,
+      "KGZ": 1.0,
+      "KHM": 1.0,
+      "KNA": 0.989360321763571,
+      "KOR": 0.82764113189015,
+      "KWT": 0.961434942412702,
+      "LAO": 1.0,
+      "LBN": 1.0,
+      "LBR": 0.965814448536779,
+      "LBY": 0.979876465452618,
+      "LCA": 0.898640973883612,
+      "LKA": 1.0,
+      "LSO": 1.0,
+      "LTU": 1.0,
+      "LUX": 0.994102508286072,
+      "LVA": 0.982658626782404,
+      "MAR": 0.996779294477602,
+      "MDA": 0.988287851802731,
+      "MDG": 1.0,
+      "MEX": 0.961114494555973,
+      "MKD": 0.83981115365182,
+      "MLI": 0.573648688860808,
+      "MLT": 0.999472377710013,
+      "MMR": 1.0,
+      "MNE": 0.988878941040641,
+      "MNG": 0.996981521206436,
+      "MOZ": 1.0,
+      "MRT": 0.999902044368779,
+      "MWI": 1.0,
+      "MYS": 0.925068440184418,
+      "NAM": 1.0,
+      "NED": 0.748652241094334,
+      "NER": 0.997149040269634,
+      "NGA": 0.921607404748913,
+      "NIC": 0.997328461783709,
+      "NOR": 0.961371450641696,
+      "NPL": 0.997062773323809,
+      "NZL": 1.0,
+      "OMN": 0.928182413810095,
+      "PAK": 0.99087896884329,
+      "PAN": 0.907191384748833,
+      "PER": 0.948614927958143,
+      "PHL": 1.0,
+      "PNG": 0.98518317544016,
+      "POL": 0.84838953085483,
+      "PRK": 0.952346235030465,
+      "PRT": 0.875081248767152,
+      "PRY": 0.937757360723221,
+      "PSX": 0.206452603827371,
+      "QAT": 0.818244074060126,
+      "ROU": 0.845573931591189,
+      "RUS": 0.974801120860356,
+      "RWA": 1.0,
+      "SAH": 1.0,
+      "SAU": 0.826655406970295,
+      "SDN": 1.0,
+      "SEN": 0.762976631003378,
+      "SGP": 0.847905734289058,
+      "SLB": 0.159057343318991,
+      "SLE": 1.0,
+      "SLV": 0.999755700662923,
+      "SOL": 1.0,
+      "SOM": 0.28075201988737,
+      "SRB": 0.788495267467961,
+      "SSD": 1.0,
+      "SUR": 0.989671586985412,
+      "SVK": 0.858135774228123,
+      "SVN": 0.785036615416424,
+      "SWE": 1.0,
+      "SWZ": 1.0,
+      "SYR": 1.0,
+      "TCD": 1.0,
+      "TGO": 1.0,
+      "THA": 0.850201689820837,
+      "TJK": 0.977895149608203,
+      "TKM": 0.878085758662575,
+      "TLS": 1.0,
+      "TTO": 0.989384181434092,
+      "TUN": 1.0,
+      "TUR": 0.862509813162234,
+      "TWN": 1.0,
+      "TZA": 0.999654650593448,
+      "UGA": 1.0,
+      "UKR": 0.934231108484899,
+      "URY": 0.813366620159813,
+      "USA": 0.754898276868016,
+      "UZB": 1.0,
+      "VCT": 0.993447436752534,
+      "VEN": 0.920284058780349,
+      "VNM": 0.992779554163205,
+      "XKX": 1.0,
+      "YEM": 0.818307243229117,
+      "ZAF": 0.997945316183994,
+      "ZMB": 1.0,
+      "ZWE": 1.0
+    }
+  },
+  "invariant_violations": 0,
+  "legacy_sha256": "f7631ba0ba095ce64aff0d5a44193db83b0180901c0ac0c101b1fd45e6509c31",
+  "m0_end": 14471050710.5993,
+  "m0_start": 6523551982.9,
+  "monetary": {
+    "available": true,
+    "currencies": 136,
+    "emission_total": 0.0,
+    "inflation_annualized_pct": {
+      "median": 0.908051020119638,
+      "n": 179,
+      "p10": 0.713807718045945,
+      "p90": 4.36556239907522
+    },
+    "inflation_per_nation": {
+      "AFG": 0.713807718045945,
+      "AGO": 11.5684292188344,
+      "ALB": 1.45946246603956,
+      "ARE": 3.34191357624902,
+      "ARG": 0.713983238439253,
+      "ARM": 2.8913659875174,
+      "ATG": 4.40715587823033,
+      "AUS": 0.750967038904693,
+      "AUT": 0.713807718045945,
+      "AZE": 3.62445873636457,
+      "BDI": 2.16758182065011,
+      "BEL": 0.778845120870142,
+      "BEN": 2.75450198259628,
+      "BFA": 1.03417642890276,
+      "BGD": 0.713807718045967,
+      "BGR": 0.713807718045945,
+      "BHR": 1.45222350950012,
+      "BHS": 3.51439442978545,
+      "BIH": 0.713807718045945,
+      "BLR": 0.713807718045945,
+      "BLZ": 0.839832512218908,
+      "BOL": 0.802095008380843,
+      "BRA": 0.835799400878279,
+      "BRB": 4.36556239907522,
+      "BRN": 1.29360291960279,
+      "BTN": 0.726648642007044,
+      "BWA": 1.01220099199628,
+      "CAF": 0.932856112747937,
+      "CAN": 0.80872484370822,
+      "CHE": 0.832526578213866,
+      "CHL": 1.77926272108198,
+      "CHN": 3.20080207079156,
+      "CIV": 1.40351726883894,
+      "CMR": 1.94178168009675,
+      "COD": 23.9974592439894,
+      "COG": 6.65721200323921,
+      "COL": 1.70756576416571,
+      "CRI": 4.8774468913209,
+      "CUB": 4.30919356376565,
+      "CYP": 0.713807718045945,
+      "CZE": 0.713807718045967,
+      "DEU": 0.713807718045945,
+      "DJI": 0.274711110416259,
+      "DMA": 0.870879742451747,
+      "DNK": 0.747572702536781,
+      "DOM": 0.927453515851417,
+      "DZA": 1.07651409462457,
+      "ECU": 4.82003082833831,
+      "EGY": 2.00853114764723,
+      "ERI": 1.0033574947796,
+      "ESP": 1.23133549862393,
+      "EST": 0.713807718045945,
+      "ETH": 0.909846754419719,
+      "FIN": 0.713807718045945,
+      "FJI": 0.800204318183795,
+      "FRA": 0.713912873240563,
+      "GAB": 1.00571333067816,
+      "GBR": 0.813724630955925,
+      "GEO": 2.60548833768959,
+      "GHA": 3.63864528172571,
+      "GIN": 0.713807718045945,
+      "GMB": 3.24683946139592,
+      "GNB": 0.952913286650436,
+      "GNQ": 1.75002731496419,
+      "GRC": 0.713807718045967,
+      "GRD": 2.05977597312177,
+      "GTM": 0.791415983720123,
+      "GUY": 0.713807718045945,
+      "HND": 3.32659647715214,
+      "HRV": 0.713807718045945,
+      "HTI": 9.12493801870815,
+      "HUN": 0.713807718045945,
+      "IDN": 2.30309616266551,
+      "IND": 0.749187077348124,
+      "IRL": 2.05104764583111,
+      "IRN": 0.713807718045945,
+      "IRQ": 3.35471040087127,
+      "ISL": 0.178691087781968,
+      "ISR": 2.12831230946027,
+      "ITA": 0.713817903268144,
+      "JAM": 0.713807718048987,
+      "JOR": 1.64875268228319,
+      "JPN": 27.9270528286103,
+      "KAZ": 0.713807724657989,
+      "KEN": 0.742286171175666,
+      "KGZ": 0.713807718045922,
+      "KHM": 0.713807718045945,
+      "KNA": 13.6834168969427,
+      "KOR": 15.7555524285069,
+      "KWT": 3.54948275909488,
+      "LAO": 0.713807718045945,
+      "LBN": 2.6249799114898,
+      "LBR": 0.713811827019861,
+      "LBY": 2.3036906969488,
+      "LCA": 2.01472348058593,
+      "LKA": 0.720800545801903,
+      "LSO": 0.714709978583183,
+      "LTU": 0.713807718045945,
+      "LUX": 0.713807718045945,
+      "LVA": 0.713807718045945,
+      "MAR": 2.57868448629381,
+      "MDA": 0.713807718045945,
+      "MDG": 0.908051020119638,
+      "MEX": 9.43110751596254,
+      "MKD": 0.713807718045945,
+      "MLI": 0.94454231343637,
+      "MLT": 0.713807718045945,
+      "MMR": 0.739328753966895,
+      "MNE": 0.912313924895858,
+      "MNG": 0.713807718045945,
+      "MOZ": 1.52583451743513,
+      "MRT": 0.713808061265864,
+      "MWI": 1.44818076803299,
+      "MYS": 1.21119576401407,
+      "NAM": 0.758186120404258,
+      "NED": 3.17075616446381,
+      "NER": 0.845202041690474,
+      "NGA": 2.10779488638202,
+      "NIC": 2.09403926678386,
+      "NOR": 0.713807718045922,
+      "NPL": 0.713807718045945,
+      "NZL": 0.685353121543586,
+      "OMN": 2.97289063277439,
+      "PAK": 1.15432340872792,
+      "PAN": 2.8645280023248,
+      "PER": 0.783628576143114,
+      "PHL": 12.1596744821866,
+      "PNG": 6.52574028220965,
+      "POL": 0.713807718045945,
+      "PRK": 0.858532686187452,
+      "PRT": 1.24622867538298,
+      "PRY": 0.903376053969018,
+      "PSX": 22.5063250874663,
+      "QAT": 4.17885504029714,
+      "ROU": 0.713807718045945,
+      "RUS": 0.713842286179989,
+      "RWA": 3.79856612785336,
+      "SAH": 0.46626118975206,
+      "SAU": 4.14120481184272,
+      "SDN": 0.939227910678309,
+      "SEN": 1.2922891898951,
+      "SGP": 0.789518642444387,
+      "SLB": 11.4154273990135,
+      "SLE": 0.713809601739857,
+      "SLV": 0.943969574565862,
+      "SOL": 0.545428212406329,
+      "SOM": 20.2239584429349,
+      "SRB": 0.713807718045945,
+      "SSD": 0.927453515851462,
+      "SUR": 0.713807718045945,
+      "SVK": 0.713807718045945,
+      "SVN": 0.871686288222939,
+      "SWE": 0.713807718045945,
+      "SWZ": 4.32137200428044,
+      "SYR": 1.33639621310375,
+      "TCD": 0.928271618238119,
+      "TGO": 2.22579803818246,
+      "THA": 0.966891508102008,
+      "TJK": 0.713807718045945,
+      "TKM": 0.713807718045945,
+      "TLS": 0.713807718045945,
+      "TTO": 0.71791911837169,
+      "TUN": 0.713807718045922,
+      "TUR": 0.713807718045967,
+      "TWN": 0.713807718045945,
+      "TZA": 2.45448779136208,
+      "UGA": 4.9726815721324,
+      "UKR": 0.713807718045945,
+      "URY": 0.927453515851417,
+      "USA": 0.849843544914108,
+      "UZB": 1.40576850527805,
+      "VCT": 0.728675354198249,
+      "VEN": 3.49123097812818,
+      "VNM": 0.713807718045967,
+      "XKX": 0.221975582685885,
+      "YEM": 4.044285787249,
+      "ZAF": 0.713807718056803,
+      "ZMB": 0.899927922317079,
+      "ZWE": 0.719473660684655
+    },
+    "m0": 14471050710.5993,
+    "nations_annualized": 179,
+    "per_currency": {
+      "AED": {
+        "has_inflation": true,
+        "rate": 0.0446894275351155
+      },
+      "AFN": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "ALL": {
+        "has_inflation": true,
+        "rate": 0.0141731542939092
+      },
+      "AMD": {
+        "has_inflation": true,
+        "rate": 0.0326095112369441
+      },
+      "AOA": {
+        "has_inflation": true,
+        "rate": 0.10168557036531
+      },
+      "ARS": {
+        "has_inflation": true,
+        "rate": 0.00451762085774764
+      },
+      "AUD": {
+        "has_inflation": true,
+        "rate": 0.00448594985786402
+      },
+      "AZN": {
+        "has_inflation": true,
+        "rate": 0.0371316194217135
+      },
+      "BAM": {
+        "has_inflation": true,
+        "rate": 0.00299372514605712
+      },
+      "BBD": {
+        "has_inflation": true,
+        "rate": 0.0611277256341806
+      },
+      "BDT": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "BGN": {
+        "has_inflation": true,
+        "rate": 0.0028885069274114
+      },
+      "BHD": {
+        "has_inflation": true,
+        "rate": 0.0195034994703729
+      },
+      "BIF": {
+        "has_inflation": true,
+        "rate": 0.0105562426115124
+      },
+      "BND": {
+        "has_inflation": true,
+        "rate": 0.0142625085969661
+      },
+      "BOB": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "BRL": {
+        "has_inflation": true,
+        "rate": 0.00705649330501764
+      },
+      "BSD": {
+        "has_inflation": true,
+        "rate": 0.0334502407351959
+      },
+      "BTN": {
+        "has_inflation": true,
+        "rate": 0.00579010081646727
+      },
+      "BWP": {
+        "has_inflation": true,
+        "rate": 0.00694454324917406
+      },
+      "BYN": {
+        "has_inflation": true,
+        "rate": 0.00329141718638404
+      },
+      "BZD": {
+        "has_inflation": true,
+        "rate": 0.00456593639697886
+      },
+      "CAD": {
+        "has_inflation": true,
+        "rate": 0.00524738955049851
+      },
+      "CDF": {
+        "has_inflation": true,
+        "rate": 0.295803448030211
+      },
+      "CHF": {
+        "has_inflation": true,
+        "rate": 0.00611587110672059
+      },
+      "CLP": {
+        "has_inflation": true,
+        "rate": 0.0217831637341076
+      },
+      "CNY": {
+        "has_inflation": true,
+        "rate": 0.040467861172309
+      },
+      "COP": {
+        "has_inflation": true,
+        "rate": 0.0200138749587006
+      },
+      "CRC": {
+        "has_inflation": true,
+        "rate": 0.0412485912792645
+      },
+      "CUP": {
+        "has_inflation": true,
+        "rate": 0.0705165896379439
+      },
+      "CZK": {
+        "has_inflation": true,
+        "rate": 0.00341453967797611
+      },
+      "DJF": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "DKK": {
+        "has_inflation": true,
+        "rate": 0.0037226137202743
+      },
+      "DOP": {
+        "has_inflation": true,
+        "rate": 0.00780869847788003
+      },
+      "DZD": {
+        "has_inflation": true,
+        "rate": 0.0106688591154456
+      },
+      "EGP": {
+        "has_inflation": true,
+        "rate": 0.0252366103044522
+      },
+      "ERN": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "ETB": {
+        "has_inflation": true,
+        "rate": 0.00000000000000000000050802318874
+      },
+      "EUR": {
+        "has_inflation": true,
+        "rate": 0.00747090754435761
+      },
+      "FJD": {
+        "has_inflation": true,
+        "rate": 0.0063757063667899
+      },
+      "GBP": {
+        "has_inflation": true,
+        "rate": 0.00501646161105821
+      },
+      "GEL": {
+        "has_inflation": true,
+        "rate": 0.0281964521176805
+      },
+      "GHS": {
+        "has_inflation": true,
+        "rate": 0.0156699096488931
+      },
+      "GMD": {
+        "has_inflation": true,
+        "rate": 0.0974962991459395
+      },
+      "GNF": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "GTQ": {
+        "has_inflation": true,
+        "rate": 0.000165549877296165
+      },
+      "GYD": {
+        "has_inflation": true,
+        "rate": 0.00556323654903274
+      },
+      "HNL": {
+        "has_inflation": true,
+        "rate": 0.00854428737705386
+      },
+      "HTG": {
+        "has_inflation": true,
+        "rate": 0.0758526868535642
+      },
+      "HUF": {
+        "has_inflation": true,
+        "rate": 0.00378276545397716
+      },
+      "IDR": {
+        "has_inflation": true,
+        "rate": 0.29
+      },
+      "ILS": {
+        "has_inflation": true,
+        "rate": 0.130623389385
+      },
+      "INR": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "IQD": {
+        "has_inflation": true,
+        "rate": 0.0331758011280353
+      },
+      "IRR": {
+        "has_inflation": true,
+        "rate": 0.00431507819123337
+      },
+      "ISK": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "JMD": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "JOD": {
+        "has_inflation": true,
+        "rate": 0.0145922307063608
+      },
+      "JPY": {
+        "has_inflation": true,
+        "rate": 0.0849977213128983
+      },
+      "KES": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "KGS": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "KHR": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "KPW": {
+        "has_inflation": true,
+        "rate": 0.00518414679130584
+      },
+      "KRW": {
+        "has_inflation": true,
+        "rate": 0.187860007288049
+      },
+      "KWD": {
+        "has_inflation": true,
+        "rate": 0.0477246763836804
+      },
+      "KZT": {
+        "has_inflation": true,
+        "rate": 0.00283537749749419
+      },
+      "LAK": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "LBP": {
+        "has_inflation": true,
+        "rate": 0.0826813618727756
+      },
+      "LKR": {
+        "has_inflation": true,
+        "rate": 0.00561792015491853
+      },
+      "LRD": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "LSL": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "LYD": {
+        "has_inflation": true,
+        "rate": 0.0276262666040569
+      },
+      "MAD": {
+        "has_inflation": true,
+        "rate": 0.0109499028673642
+      },
+      "MDL": {
+        "has_inflation": true,
+        "rate": 0.0030239175569865
+      },
+      "MGA": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "MKD": {
+        "has_inflation": true,
+        "rate": 0.0029605313254679
+      },
+      "MMK": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "MNT": {
+        "has_inflation": true,
+        "rate": 0.00519798840204186
+      },
+      "MRU": {
+        "has_inflation": true,
+        "rate": 0.00000000000000000000000000006643
+      },
+      "MWK": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "MXN": {
+        "has_inflation": true,
+        "rate": 0.0537155820739132
+      },
+      "MYR": {
+        "has_inflation": true,
+        "rate": 0.022354073283451
+      },
+      "MZN": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "NAD": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "NGN": {
+        "has_inflation": true,
+        "rate": 0.0000000000157584004731252
+      },
+      "NIO": {
+        "has_inflation": true,
+        "rate": 0.000151372634413259
+      },
+      "NOK": {
+        "has_inflation": true,
+        "rate": 0.00278225858871169
+      },
+      "NPR": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "NZD": {
+        "has_inflation": true,
+        "rate": 0.00498068954405665
+      },
+      "OMR": {
+        "has_inflation": true,
+        "rate": 0.0387220929414896
+      },
+      "PAB": {
+        "has_inflation": true,
+        "rate": 0.0643855544050375
+      },
+      "PEN": {
+        "has_inflation": true,
+        "rate": 0.00662769319656904
+      },
+      "PGK": {
+        "has_inflation": true,
+        "rate": 0.0484025252948933
+      },
+      "PHP": {
+        "has_inflation": true,
+        "rate": 0.0182179080411253
+      },
+      "PKR": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "PLN": {
+        "has_inflation": true,
+        "rate": 0.00332520065467699
+      },
+      "PYG": {
+        "has_inflation": true,
+        "rate": 0.00808410400310763
+      },
+      "QAR": {
+        "has_inflation": true,
+        "rate": 0.0418112963276131
+      },
+      "RON": {
+        "has_inflation": true,
+        "rate": 0.00305446519586771
+      },
+      "RSD": {
+        "has_inflation": true,
+        "rate": 0.0030392078284752
+      },
+      "RUB": {
+        "has_inflation": true,
+        "rate": 0.00338379541583891
+      },
+      "RWF": {
+        "has_inflation": true,
+        "rate": 0.000518586565833971
+      },
+      "SAR": {
+        "has_inflation": true,
+        "rate": 0.0562941317933814
+      },
+      "SBD": {
+        "has_inflation": true,
+        "rate": 0.085
+      },
+      "SDG": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "SEK": {
+        "has_inflation": true,
+        "rate": 0.00315585116392236
+      },
+      "SGD": {
+        "has_inflation": true,
+        "rate": 0.00907262328670214
+      },
+      "SLE": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "SLS": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "SOS": {
+        "has_inflation": true,
+        "rate": 0.170433754988959
+      },
+      "SRD": {
+        "has_inflation": true,
+        "rate": 0.00561885530534304
+      },
+      "SSP": {
+        "has_inflation": true,
+        "rate": 0.00000000000000703071326346345
+      },
+      "SYP": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "SZL": {
+        "has_inflation": true,
+        "rate": 0.0525794438422401
+      },
+      "THB": {
+        "has_inflation": true,
+        "rate": 0.00952777334872619
+      },
+      "TJS": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "TMT": {
+        "has_inflation": true,
+        "rate": 0.00550486834110228
+      },
+      "TND": {
+        "has_inflation": true,
+        "rate": 0.000206505900660671
+      },
+      "TRY": {
+        "has_inflation": true,
+        "rate": 0.00295071830237171
+      },
+      "TTD": {
+        "has_inflation": true,
+        "rate": 0.0181095083612231
+      },
+      "TWD": {
+        "has_inflation": true,
+        "rate": 0.00391211642338215
+      },
+      "TZS": {
+        "has_inflation": true,
+        "rate": 0.000000000000290146401048749
+      },
+      "UAH": {
+        "has_inflation": true,
+        "rate": 0.00347723684634464
+      },
+      "UGX": {
+        "has_inflation": true,
+        "rate": 0.01
+      },
+      "USD": {
+        "has_inflation": true,
+        "rate": 0.00870278217782672
+      },
+      "UYU": {
+        "has_inflation": true,
+        "rate": 0.00873220267039291
+      },
+      "UZS": {
+        "has_inflation": true,
+        "rate": 0.0042174858337057
+      },
+      "VES": {
+        "has_inflation": true,
+        "rate": 0.0468571631898013
+      },
+      "VND": {
+        "has_inflation": true,
+        "rate": 0.00562287308001472
+      },
+      "XAF": {
+        "has_inflation": true,
+        "rate": 0.00000000000000000000000000000013
+      },
+      "XCD": {
+        "has_inflation": true,
+        "rate": 0.0463066752242009
+      },
+      "XOF": {
+        "has_inflation": true,
+        "rate": 0.0000000000000000133649897797446
+      },
+      "YER": {
+        "has_inflation": true,
+        "rate": 0.0455317799889766
+      },
+      "ZAR": {
+        "has_inflation": true,
+        "rate": 0.000889515922439489
+      },
+      "ZMW": {
+        "has_inflation": true,
+        "rate": 0.0
+      },
+      "ZWG": {
+        "has_inflation": true,
+        "rate": 0.0
+      }
+    },
+    "per_nation": {
+      "AFG": {
+        "credit_capacity_factor": 1.0,
+        "currency": "AFN",
+        "rate": 0.0
+      },
+      "AGO": {
+        "credit_capacity_factor": 0.983559375977897,
+        "currency": "AOA",
+        "rate": 0.10168557036531
+      },
+      "ALB": {
+        "credit_capacity_factor": 0.997675581924731,
+        "currency": "ALL",
+        "rate": 0.0141731542939092
+      },
+      "ARE": {
+        "credit_capacity_factor": 0.992707365935308,
+        "currency": "AED",
+        "rate": 0.0446894275351155
+      },
+      "ARG": {
+        "credit_capacity_factor": 0.999257928472339,
+        "currency": "ARS",
+        "rate": 0.00451762085774764
+      },
+      "ARM": {
+        "credit_capacity_factor": 0.994668113802618,
+        "currency": "AMD",
+        "rate": 0.0326095112369441
+      },
+      "ATG": {
+        "credit_capacity_factor": 0.992445449462032,
+        "currency": "XCD",
+        "rate": 0.0463066752242009
+      },
+      "AUS": {
+        "credit_capacity_factor": 0.999263126967279,
+        "currency": "AUD",
+        "rate": 0.00448594985786402
+      },
+      "AUT": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "AZE": {
+        "credit_capacity_factor": 0.99393320283535,
+        "currency": "AZN",
+        "rate": 0.0371316194217135
+      },
+      "BDI": {
+        "credit_capacity_factor": 0.998267733197336,
+        "currency": "BIF",
+        "rate": 0.0105562426115124
+      },
+      "BEL": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "BEN": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XOF",
+        "rate": 0.0000000000000000133649897797446
+      },
+      "BFA": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XOF",
+        "rate": 0.0000000000000000133649897797446
+      },
+      "BGD": {
+        "credit_capacity_factor": 1.0,
+        "currency": "BDT",
+        "rate": 0.0
+      },
+      "BGR": {
+        "credit_capacity_factor": 0.999525402293373,
+        "currency": "BGN",
+        "rate": 0.0028885069274114
+      },
+      "BHR": {
+        "credit_capacity_factor": 0.996804191230292,
+        "currency": "BHD",
+        "rate": 0.0195034994703729
+      },
+      "BHS": {
+        "credit_capacity_factor": 0.994531400313556,
+        "currency": "BSD",
+        "rate": 0.0334502407351959
+      },
+      "BIH": {
+        "credit_capacity_factor": 0.999508122860094,
+        "currency": "BAM",
+        "rate": 0.00299372514605712
+      },
+      "BLR": {
+        "credit_capacity_factor": 0.999459237702127,
+        "currency": "BYN",
+        "rate": 0.00329141718638404
+      },
+      "BLZ": {
+        "credit_capacity_factor": 0.999249998037963,
+        "currency": "BZD",
+        "rate": 0.00456593639697886
+      },
+      "BOL": {
+        "credit_capacity_factor": 1.0,
+        "currency": "BOB",
+        "rate": 0.0
+      },
+      "BRA": {
+        "credit_capacity_factor": 0.998841372472719,
+        "currency": "BRL",
+        "rate": 0.00705649330501764
+      },
+      "BRB": {
+        "credit_capacity_factor": 0.990051572457284,
+        "currency": "BBD",
+        "rate": 0.0611277256341806
+      },
+      "BRN": {
+        "credit_capacity_factor": 0.997660961964896,
+        "currency": "BND",
+        "rate": 0.0142625085969661
+      },
+      "BTN": {
+        "credit_capacity_factor": 0.999049107662362,
+        "currency": "BTN",
+        "rate": 0.00579010081646727
+      },
+      "BWA": {
+        "credit_capacity_factor": 0.998859732939957,
+        "currency": "BWP",
+        "rate": 0.00694454324917406
+      },
+      "CAF": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XAF",
+        "rate": 0.00000000000000000000000000000013
+      },
+      "CAN": {
+        "credit_capacity_factor": 0.999138158827266,
+        "currency": "CAD",
+        "rate": 0.00524738955049851
+      },
+      "CHE": {
+        "credit_capacity_factor": 0.99899566103577,
+        "currency": "CHF",
+        "rate": 0.00611587110672059
+      },
+      "CHL": {
+        "credit_capacity_factor": 0.996431982298033,
+        "currency": "CLP",
+        "rate": 0.0217831637341076
+      },
+      "CHN": {
+        "credit_capacity_factor": 0.993391708860729,
+        "currency": "CNY",
+        "rate": 0.040467861172309
+      },
+      "CIV": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XOF",
+        "rate": 0.0000000000000000133649897797446
+      },
+      "CMR": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XAF",
+        "rate": 0.00000000000000000000000000000013
+      },
+      "COD": {
+        "credit_capacity_factor": 0.953629549237071,
+        "currency": "CDF",
+        "rate": 0.295803448030211
+      },
+      "COG": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XAF",
+        "rate": 0.00000000000000000000000000000013
+      },
+      "COL": {
+        "credit_capacity_factor": 0.996720836243511,
+        "currency": "COP",
+        "rate": 0.0200138749587006
+      },
+      "CRI": {
+        "credit_capacity_factor": 0.993265076410603,
+        "currency": "CRC",
+        "rate": 0.0412485912792645
+      },
+      "CUB": {
+        "credit_capacity_factor": 0.988541061202237,
+        "currency": "CUP",
+        "rate": 0.0705165896379439
+      },
+      "CYP": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "CZE": {
+        "credit_capacity_factor": 0.999439020680795,
+        "currency": "CZK",
+        "rate": 0.00341453967797611
+      },
+      "DEU": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "DJI": {
+        "credit_capacity_factor": 1.0,
+        "currency": "DJF",
+        "rate": 0.0
+      },
+      "DMA": {
+        "credit_capacity_factor": 0.992445449462032,
+        "currency": "XCD",
+        "rate": 0.0463066752242009
+      },
+      "DNK": {
+        "credit_capacity_factor": 0.99938843773531,
+        "currency": "DKK",
+        "rate": 0.0037226137202743
+      },
+      "DOM": {
+        "credit_capacity_factor": 0.998718023904697,
+        "currency": "DOP",
+        "rate": 0.00780869847788003
+      },
+      "DZA": {
+        "credit_capacity_factor": 0.998249285317182,
+        "currency": "DZD",
+        "rate": 0.0106688591154456
+      },
+      "ECU": {
+        "credit_capacity_factor": 0.998571449345865,
+        "currency": "USD",
+        "rate": 0.00870278217782672
+      },
+      "EGY": {
+        "credit_capacity_factor": 0.995868654932774,
+        "currency": "EGP",
+        "rate": 0.0252366103044522
+      },
+      "ERI": {
+        "credit_capacity_factor": 1.0,
+        "currency": "ERN",
+        "rate": 0.0
+      },
+      "ESP": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "EST": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "ETH": {
+        "credit_capacity_factor": 1.0,
+        "currency": "ETB",
+        "rate": 0.00000000000000000000050802318874
+      },
+      "FIN": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "FJI": {
+        "credit_capacity_factor": 0.998953035961944,
+        "currency": "FJD",
+        "rate": 0.0063757063667899
+      },
+      "FRA": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "GAB": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XAF",
+        "rate": 0.00000000000000000000000000000013
+      },
+      "GBR": {
+        "credit_capacity_factor": 0.999176055617694,
+        "currency": "GBP",
+        "rate": 0.00501646161105821
+      },
+      "GEO": {
+        "credit_capacity_factor": 0.995386351190695,
+        "currency": "GEL",
+        "rate": 0.0281964521176805
+      },
+      "GHA": {
+        "credit_capacity_factor": 0.997430742528802,
+        "currency": "GHS",
+        "rate": 0.0156699096488931
+      },
+      "GIN": {
+        "credit_capacity_factor": 1.0,
+        "currency": "GNF",
+        "rate": 0.0
+      },
+      "GMB": {
+        "credit_capacity_factor": 0.984226017388732,
+        "currency": "GMD",
+        "rate": 0.0974962991459395
+      },
+      "GNB": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XOF",
+        "rate": 0.0000000000000000133649897797446
+      },
+      "GNQ": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XAF",
+        "rate": 0.00000000000000000000000000000013
+      },
+      "GRC": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "GRD": {
+        "credit_capacity_factor": 0.992445449462032,
+        "currency": "XCD",
+        "rate": 0.0463066752242009
+      },
+      "GTM": {
+        "credit_capacity_factor": 0.999972787062105,
+        "currency": "GTQ",
+        "rate": 0.000165549877296165
+      },
+      "GUY": {
+        "credit_capacity_factor": 0.999086330916418,
+        "currency": "GYD",
+        "rate": 0.00556323654903274
+      },
+      "HND": {
+        "credit_capacity_factor": 0.998597429576063,
+        "currency": "HNL",
+        "rate": 0.00854428737705386
+      },
+      "HRV": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "HTI": {
+        "credit_capacity_factor": 0.987684624785653,
+        "currency": "HTG",
+        "rate": 0.0758526868535642
+      },
+      "HUN": {
+        "credit_capacity_factor": 0.99937856196718,
+        "currency": "HUF",
+        "rate": 0.00378276545397716
+      },
+      "IDN": {
+        "credit_capacity_factor": 0.954497907949791,
+        "currency": "IDR",
+        "rate": 0.29
+      },
+      "IND": {
+        "credit_capacity_factor": 1.0,
+        "currency": "INR",
+        "rate": 0.0
+      },
+      "IRL": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "IRN": {
+        "credit_capacity_factor": 0.999291174867611,
+        "currency": "IRR",
+        "rate": 0.00431507819123337
+      },
+      "IRQ": {
+        "credit_capacity_factor": 0.994576023611063,
+        "currency": "IQD",
+        "rate": 0.0331758011280353
+      },
+      "ISL": {
+        "credit_capacity_factor": 1.0,
+        "currency": "ISK",
+        "rate": 0.0
+      },
+      "ISR": {
+        "credit_capacity_factor": 0.978979031362185,
+        "currency": "ILS",
+        "rate": 0.130623389385
+      },
+      "ITA": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "JAM": {
+        "credit_capacity_factor": 1.0,
+        "currency": "JMD",
+        "rate": 0.0
+      },
+      "JOR": {
+        "credit_capacity_factor": 0.997607017246584,
+        "currency": "JOD",
+        "rate": 0.0145922307063608
+      },
+      "JPN": {
+        "credit_capacity_factor": 0.986220304883138,
+        "currency": "JPY",
+        "rate": 0.0849977213128983
+      },
+      "KAZ": {
+        "credit_capacity_factor": 0.999534127686528,
+        "currency": "KZT",
+        "rate": 0.00283537749749419
+      },
+      "KEN": {
+        "credit_capacity_factor": 1.0,
+        "currency": "KES",
+        "rate": 0.0
+      },
+      "KGZ": {
+        "credit_capacity_factor": 1.0,
+        "currency": "KGS",
+        "rate": 0.0
+      },
+      "KHM": {
+        "credit_capacity_factor": 1.0,
+        "currency": "KHR",
+        "rate": 0.0
+      },
+      "KNA": {
+        "credit_capacity_factor": 0.992445449462032,
+        "currency": "XCD",
+        "rate": 0.0463066752242009
+      },
+      "KOR": {
+        "credit_capacity_factor": 0.970043977743248,
+        "currency": "KRW",
+        "rate": 0.187860007288049
+      },
+      "KWT": {
+        "credit_capacity_factor": 0.992215915049565,
+        "currency": "KWD",
+        "rate": 0.0477246763836804
+      },
+      "LAO": {
+        "credit_capacity_factor": 1.0,
+        "currency": "LAK",
+        "rate": 0.0
+      },
+      "LBN": {
+        "credit_capacity_factor": 0.98659079389852,
+        "currency": "LBP",
+        "rate": 0.0826813618727756
+      },
+      "LBR": {
+        "credit_capacity_factor": 1.0,
+        "currency": "LRD",
+        "rate": 0.0
+      },
+      "LBY": {
+        "credit_capacity_factor": 0.995479226109703,
+        "currency": "LYD",
+        "rate": 0.0276262666040569
+      },
+      "LCA": {
+        "credit_capacity_factor": 0.992445449462032,
+        "currency": "XCD",
+        "rate": 0.0463066752242009
+      },
+      "LKA": {
+        "credit_capacity_factor": 0.999077358329696,
+        "currency": "LKR",
+        "rate": 0.00561792015491853
+      },
+      "LSO": {
+        "credit_capacity_factor": 1.0,
+        "currency": "LSL",
+        "rate": 0.0
+      },
+      "LTU": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "LUX": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "LVA": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "MAR": {
+        "credit_capacity_factor": 0.998203250088161,
+        "currency": "MAD",
+        "rate": 0.0109499028673642
+      },
+      "MDA": {
+        "credit_capacity_factor": 0.999503164629953,
+        "currency": "MDL",
+        "rate": 0.0030239175569865
+      },
+      "MDG": {
+        "credit_capacity_factor": 1.0,
+        "currency": "MGA",
+        "rate": 0.0
+      },
+      "MEX": {
+        "credit_capacity_factor": 0.991247327043612,
+        "currency": "MXN",
+        "rate": 0.0537155820739132
+      },
+      "MKD": {
+        "credit_capacity_factor": 0.999513574041724,
+        "currency": "MKD",
+        "rate": 0.0029605313254679
+      },
+      "MLI": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XOF",
+        "rate": 0.0000000000000000133649897797446
+      },
+      "MLT": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "MMR": {
+        "credit_capacity_factor": 1.0,
+        "currency": "MMK",
+        "rate": 0.0
+      },
+      "MNE": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "MNG": {
+        "credit_capacity_factor": 0.999146265638236,
+        "currency": "MNT",
+        "rate": 0.00519798840204186
+      },
+      "MOZ": {
+        "credit_capacity_factor": 1.0,
+        "currency": "MZN",
+        "rate": 0.0
+      },
+      "MRT": {
+        "credit_capacity_factor": 1.0,
+        "currency": "MRU",
+        "rate": 0.00000000000000000000000000006643
+      },
+      "MWI": {
+        "credit_capacity_factor": 1.0,
+        "currency": "MWK",
+        "rate": 0.0
+      },
+      "MYS": {
+        "credit_capacity_factor": 0.996338811374584,
+        "currency": "MYR",
+        "rate": 0.022354073283451
+      },
+      "NAM": {
+        "credit_capacity_factor": 1.0,
+        "currency": "NAD",
+        "rate": 0.0
+      },
+      "NED": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "NER": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XOF",
+        "rate": 0.0000000000000000133649897797446
+      },
+      "NGA": {
+        "credit_capacity_factor": 0.99999999999741,
+        "currency": "NGN",
+        "rate": 0.0000000000157584004731252
+      },
+      "NIC": {
+        "credit_capacity_factor": 0.999975117446377,
+        "currency": "NIO",
+        "rate": 0.000151372634413259
+      },
+      "NOR": {
+        "credit_capacity_factor": 0.999542851504101,
+        "currency": "NOK",
+        "rate": 0.00278225858871169
+      },
+      "NPL": {
+        "credit_capacity_factor": 1.0,
+        "currency": "NPR",
+        "rate": 0.0
+      },
+      "NZL": {
+        "credit_capacity_factor": 0.999181926305815,
+        "currency": "NZD",
+        "rate": 0.00498068954405665
+      },
+      "OMN": {
+        "credit_capacity_factor": 0.993674984911881,
+        "currency": "OMR",
+        "rate": 0.0387220929414896
+      },
+      "PAK": {
+        "credit_capacity_factor": 1.0,
+        "currency": "PKR",
+        "rate": 0.0
+      },
+      "PAN": {
+        "credit_capacity_factor": 0.989526919564677,
+        "currency": "PAB",
+        "rate": 0.0643855544050375
+      },
+      "PER": {
+        "credit_capacity_factor": 0.998911701870062,
+        "currency": "PEN",
+        "rate": 0.00662769319656904
+      },
+      "PHL": {
+        "credit_capacity_factor": 0.997014216988363,
+        "currency": "PHP",
+        "rate": 0.0182179080411253
+      },
+      "PNG": {
+        "credit_capacity_factor": 0.992106227924547,
+        "currency": "PGK",
+        "rate": 0.0484025252948933
+      },
+      "POL": {
+        "credit_capacity_factor": 0.99945369029064,
+        "currency": "PLN",
+        "rate": 0.00332520065467699
+      },
+      "PRK": {
+        "credit_capacity_factor": 0.99914853709327,
+        "currency": "KPW",
+        "rate": 0.00518414679130584
+      },
+      "PRT": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "PRY": {
+        "credit_capacity_factor": 0.998672869806368,
+        "currency": "PYG",
+        "rate": 0.00808410400310763
+      },
+      "PSX": {
+        "credit_capacity_factor": 0.978979031362185,
+        "currency": "ILS",
+        "rate": 0.130623389385
+      },
+      "QAT": {
+        "credit_capacity_factor": 0.993173827092157,
+        "currency": "QAR",
+        "rate": 0.0418112963276131
+      },
+      "ROU": {
+        "credit_capacity_factor": 0.999498148113959,
+        "currency": "RON",
+        "rate": 0.00305446519586771
+      },
+      "RUS": {
+        "credit_capacity_factor": 0.999444068888982,
+        "currency": "RUB",
+        "rate": 0.00338379541583891
+      },
+      "RWA": {
+        "credit_capacity_factor": 0.999914760159737,
+        "currency": "RWF",
+        "rate": 0.000518586565833971
+      },
+      "SAH": {
+        "credit_capacity_factor": 0.998203250088161,
+        "currency": "MAD",
+        "rate": 0.0109499028673642
+      },
+      "SAU": {
+        "credit_capacity_factor": 0.990831018312897,
+        "currency": "SAR",
+        "rate": 0.0562941317933814
+      },
+      "SDN": {
+        "credit_capacity_factor": 1.0,
+        "currency": "SDG",
+        "rate": 0.0
+      },
+      "SEN": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XOF",
+        "rate": 0.0000000000000000133649897797446
+      },
+      "SGP": {
+        "credit_capacity_factor": 0.99851083080292,
+        "currency": "SGD",
+        "rate": 0.00907262328670214
+      },
+      "SLB": {
+        "credit_capacity_factor": 0.986219940556606,
+        "currency": "SBD",
+        "rate": 0.085
+      },
+      "SLE": {
+        "credit_capacity_factor": 1.0,
+        "currency": "SLE",
+        "rate": 0.0
+      },
+      "SLV": {
+        "credit_capacity_factor": 0.998571449345865,
+        "currency": "USD",
+        "rate": 0.00870278217782672
+      },
+      "SOL": {
+        "credit_capacity_factor": 1.0,
+        "currency": "SLS",
+        "rate": 0.0
+      },
+      "SOM": {
+        "credit_capacity_factor": 0.972747025499685,
+        "currency": "SOS",
+        "rate": 0.170433754988959
+      },
+      "SRB": {
+        "credit_capacity_factor": 0.999500653663915,
+        "currency": "RSD",
+        "rate": 0.0030392078284752
+      },
+      "SSD": {
+        "credit_capacity_factor": 0.999999999999999,
+        "currency": "SSP",
+        "rate": 0.00000000000000703071326346345
+      },
+      "SUR": {
+        "credit_capacity_factor": 0.999077204889894,
+        "currency": "SRD",
+        "rate": 0.00561885530534304
+      },
+      "SVK": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "SVN": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "SWE": {
+        "credit_capacity_factor": 0.999481498928486,
+        "currency": "SEK",
+        "rate": 0.00315585116392236
+      },
+      "SWZ": {
+        "credit_capacity_factor": 0.991430868437728,
+        "currency": "SZL",
+        "rate": 0.0525794438422401
+      },
+      "SYR": {
+        "credit_capacity_factor": 1.0,
+        "currency": "SYP",
+        "rate": 0.0
+      },
+      "TCD": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XAF",
+        "rate": 0.00000000000000000000000000000013
+      },
+      "TGO": {
+        "credit_capacity_factor": 1.0,
+        "currency": "XOF",
+        "rate": 0.0000000000000000133649897797446
+      },
+      "THA": {
+        "credit_capacity_factor": 0.998436239858106,
+        "currency": "THB",
+        "rate": 0.00952777334872619
+      },
+      "TJK": {
+        "credit_capacity_factor": 1.0,
+        "currency": "TJS",
+        "rate": 0.0
+      },
+      "TKM": {
+        "credit_capacity_factor": 0.999095908257245,
+        "currency": "TMT",
+        "rate": 0.00550486834110228
+      },
+      "TLS": {
+        "credit_capacity_factor": 0.998571449345865,
+        "currency": "USD",
+        "rate": 0.00870278217782672
+      },
+      "TTO": {
+        "credit_capacity_factor": 0.99703193017929,
+        "currency": "TTD",
+        "rate": 0.0181095083612231
+      },
+      "TUN": {
+        "credit_capacity_factor": 0.999966054976853,
+        "currency": "TND",
+        "rate": 0.000206505900660671
+      },
+      "TUR": {
+        "credit_capacity_factor": 0.999515185575084,
+        "currency": "TRY",
+        "rate": 0.00295071830237171
+      },
+      "TWN": {
+        "credit_capacity_factor": 0.999357325664675,
+        "currency": "TWD",
+        "rate": 0.00391211642338215
+      },
+      "TZA": {
+        "credit_capacity_factor": 0.999999999999952,
+        "currency": "TZS",
+        "rate": 0.000000000000290146401048749
+      },
+      "UGA": {
+        "credit_capacity_factor": 0.99835886214442,
+        "currency": "UGX",
+        "rate": 0.01
+      },
+      "UKR": {
+        "credit_capacity_factor": 0.999428725963088,
+        "currency": "UAH",
+        "rate": 0.00347723684634464
+      },
+      "URY": {
+        "credit_capacity_factor": 0.998566626931574,
+        "currency": "UYU",
+        "rate": 0.00873220267039291
+      },
+      "USA": {
+        "credit_capacity_factor": 0.998571449345865,
+        "currency": "USD",
+        "rate": 0.00870278217782672
+      },
+      "UZB": {
+        "credit_capacity_factor": 0.999307194969046,
+        "currency": "UZS",
+        "rate": 0.0042174858337057
+      },
+      "VCT": {
+        "credit_capacity_factor": 0.992445449462032,
+        "currency": "XCD",
+        "rate": 0.0463066752242009
+      },
+      "VEN": {
+        "credit_capacity_factor": 0.992356328369179,
+        "currency": "VES",
+        "rate": 0.0468571631898013
+      },
+      "VNM": {
+        "credit_capacity_factor": 0.999076545652588,
+        "currency": "VND",
+        "rate": 0.00562287308001472
+      },
+      "XKX": {
+        "credit_capacity_factor": 0.99877341197502,
+        "currency": "EUR",
+        "rate": 0.00747090754435761
+      },
+      "YEM": {
+        "credit_capacity_factor": 0.992570928035273,
+        "currency": "YER",
+        "rate": 0.0455317799889766
+      },
+      "ZAF": {
+        "credit_capacity_factor": 0.999853799582218,
+        "currency": "ZAR",
+        "rate": 0.000889515922439489
+      },
+      "ZMB": {
+        "credit_capacity_factor": 1.0,
+        "currency": "ZMW",
+        "rate": 0.0
+      },
+      "ZWE": {
+        "credit_capacity_factor": 1.0,
+        "currency": "ZWG",
+        "rate": 0.0
+      }
+    },
+    "rate_pct": {
+      "median": 0.522268897627018,
+      "n": 136,
+      "p10": 0.0,
+      "p90": 6.11277256341806
+    },
+    "securities": 0.0
+  },
+  "money_end": 6523551982.90132,
+  "money_start": 6523551982.9,
+  "production_year_t": {
+    "AFG": 143223.514923077,
+    "AGO": 0.0,
+    "ALB": 14677.332045283,
+    "ARE": 1583.02612968011,
+    "ARG": 0.0,
+    "ARM": 0.0,
+    "ATG": 139.800428805148,
+    "AUS": 325917.185907895,
+    "AUT": 36645.0633962264,
+    "AZE": 0.0,
+    "BDI": 444.536024143977,
+    "BEL": 425913.349381579,
+    "BEN": 21.4266566037736,
+    "BFA": 1766.79830943396,
+    "BGD": 41226.1066077778,
+    "BGR": 6019.4241509434,
+    "BHR": 10.311377245509,
+    "BHS": 43.1780032894737,
+    "BIH": 20463.744,
+    "BLR": 0.0,
+    "BLZ": 28099.0505080645,
+    "BOL": 245111.093960526,
+    "BRA": 741816.366789474,
+    "BRB": 307.123915942295,
+    "BRN": 3.46403342465753,
+    "BTN": 146.908167777778,
+    "BWA": 0.0,
+    "CAF": 0.0,
+    "CAN": 0.0,
+    "CHE": 19582.1777358491,
+    "CHL": 240660.598448403,
+    "CHN": 368696.84775,
+    "CIV": 507095.694247533,
+    "CMR": 0.0,
+    "COD": 189973.323351798,
+    "COG": 1030.10685018858,
+    "COL": 339629.427488282,
+    "CRI": 0.112925806451613,
+    "CUB": 5.64456290322581,
+    "CYP": 10537.1319610778,
+    "CZE": 34631.1660377358,
+    "DEU": 671114.196226415,
+    "DJI": 59958.4539473684,
+    "DMA": 0.0,
+    "DNK": 0.0,
+    "DOM": 12074.20771139,
+    "DZA": 492157.372239474,
+    "ECU": 5017.19889339623,
+    "EGY": 1011723.66542308,
+    "ERI": 0.0,
+    "ESP": 211058.002139803,
+    "EST": 0.0,
+    "ETH": 1755767.29032183,
+    "FIN": 0.0,
+    "FJI": 230.103045383728,
+    "FRA": 989077.628368421,
+    "GAB": 0.0,
+    "GBR": 590559.411187007,
+    "GEO": 0.0,
+    "GHA": 342667.879896774,
+    "GIN": 829315.578502994,
+    "GMB": 6452.85507678408,
+    "GNB": 0.0,
+    "GNQ": 0.0,
+    "GRC": 17587.481509434,
+    "GRD": 0.0,
+    "GTM": 602638.255446236,
+    "GUY": 1971.37031391878,
+    "HND": 194659.641615213,
+    "HRV": 7071.93358490566,
+    "HTI": 963.891931207845,
+    "HUN": 12380.76,
+    "IDN": 4442.82786440678,
+    "IND": 54707.8978772603,
+    "IRL": 39438.5864802632,
+    "IRN": 395863.587145645,
+    "IRQ": 60926.0904579656,
+    "ISL": 2356.53457195383,
+    "ISR": 64516.3195134191,
+    "ITA": 74633.8425660377,
+    "JAM": 0.0,
+    "JOR": 21132.2249188936,
+    "JPN": 0.0,
+    "KAZ": 0.0,
+    "KEN": 566532.925033445,
+    "KGZ": 0.0,
+    "KHM": 1053320.52734305,
+    "KNA": 33.3305266576622,
+    "KOR": 0.0,
+    "KWT": 4203.2365969272,
+    "LAO": 884951.978224415,
+    "LBN": 79070.2728187756,
+    "LBR": 0.0,
+    "LBY": 22988.1213518725,
+    "LCA": 0.0,
+    "LKA": 1337.04347833628,
+    "LSO": 28274.2052894737,
+    "LTU": 14017.7662641509,
+    "LUX": 936.684,
+    "LVA": 0.0,
+    "MAR": 140245.455888462,
+    "MDA": 0.0,
+    "MDG": 1000187.19530107,
+    "MEX": 76439.8237718425,
+    "MKD": 10617.7105207547,
+    "MLI": 0.0,
+    "MLT": 365.056075471698,
+    "MMR": 83338.1594410256,
+    "MNE": 1752.85663396226,
+    "MNG": 0.0,
+    "MOZ": 156793.249757473,
+    "MRT": 6.9811875,
+    "MWI": 0.0,
+    "MYS": 155970.499740397,
+    "NAM": 0.0,
+    "NED": 681708.035116776,
+    "NER": 17452.9283325624,
+    "NGA": 5911313.14694196,
+    "NIC": 56.4516129032258,
+    "NOR": 0.0,
+    "NPL": 0.0,
+    "NZL": 1915.43644023236,
+    "OMN": 2221.27135,
+    "PAK": 1330030.88775,
+    "PAN": 0.543177419354839,
+    "PER": 1045425.27648095,
+    "PHL": 18301.1101747945,
+    "PNG": 3.74710593220339,
+    "POL": 312765.246037736,
+    "PRK": 0.0,
+    "PRT": 38283.095743421,
+    "PRY": 513730.856198347,
+    "PSX": 10632.6591399651,
+    "QAT": 238.927396271273,
+    "ROU": 55645.3932075472,
+    "RUS": 2.5,
+    "RWA": 230731.541574597,
+    "SAH": 0.0,
+    "SAU": 85381.6061132643,
+    "SDN": 90698.6317977419,
+    "SEN": 9066.75243559578,
+    "SGP": 12168.2441324503,
+    "SLB": 0.0,
+    "SLE": 355803.43925136,
+    "SLV": 1160.96554607726,
+    "SOL": 562495.232763158,
+    "SOM": 301.42193881579,
+    "SRB": 32168.6764,
+    "SSD": 36.4302668493151,
+    "SUR": 241.719233483638,
+    "SVK": 9014.46316981132,
+    "SVN": 3943.2600754717,
+    "SWE": 0.0,
+    "SWZ": 1835.27336101974,
+    "SYR": 109437.973322234,
+    "TCD": 6232.43148387097,
+    "TGO": 44595.6253289474,
+    "THA": 2690742.79444872,
+    "TJK": 0.0,
+    "TKM": 0.0,
+    "TLS": 6.16329533898305,
+    "TTO": 0.0,
+    "TUN": 24623.7401886792,
+    "TUR": 0.0,
+    "TWN": 0.0,
+    "TZA": 63500.8725226888,
+    "UGA": 133714.783591805,
+    "UKR": 0.0,
+    "URY": 0.0,
+    "USA": 0.0,
+    "UZB": 0.0,
+    "VCT": 0.0,
+    "VEN": 638739.822364077,
+    "VNM": 70022.3583230769,
+    "XKX": 0.0,
+    "YEM": 49319.6670153846,
+    "ZAF": 558791.366662007,
+    "ZMB": 180176.723446154,
+    "ZWE": 0.0
+  },
+  "stalled_days": 0,
+  "storage_end": {
+    "available": true,
+    "capacity": 548232465.596126,
+    "gov": 5166243.21733274,
+    "private": 59708745.266223
+  },
+  "storage_start": {
+    "available": true,
+    "capacity": 548227254.119228,
+    "gov": 7886996.71923044,
+    "private": 0.0
+  },
+  "strict_sha256": "15136804d9ad0cf2d7e7a9d5a1db0895b4c47298b54d7c4ed3807f9e37ef8a00",
+  "threads": 1,
+  "wall_s": 172.932
+}
