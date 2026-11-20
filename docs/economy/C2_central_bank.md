@@ -135,8 +135,8 @@ bit-exato e a continuação após load é idêntica (`tools/c2_central_bank_test
   ser **idêntico** ao da C1, e é: `f7631ba0ba095ce64aff0d5a44193db83b0180901c0ac0c101b1fd45e6509c31`
   (mesmo JSON de `docs/economy/perf/c1_world_ai_365.json`, só `wall_s` muda),
   com **2 falências**, portão de comida **85/179**, **0 violações** do
-  invariante, 0 dias travados e drift máximo diário **3,4e-13** (`money_total`
-  6,52 bi).
+  invariante, 0 dias travados e drift máximo diário **4,3e-13** (`max_daily_drift`;
+  fim-vs-início 3,4e-13), `money_total` 6,52 bi.
 - `tools/world_equivalence.ps1` - equivalência CLI × Godot, 60 d com IA e
   camada urbana: 0 diferenças run1 × run2 e contra o meta-golden. Os goldens
   `A0_60_urban.json` e os S0 (`real_60_ai`, `real_60_noai`, `demo_365_noai`) de
