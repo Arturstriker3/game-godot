@@ -9040,6 +9040,10 @@ Dictionary EconomySim::get_central_bank_status() const {
 		policy["gold_reserve_ratio"] = params.gold_reserve_ratio;
 		policy["gold_conversion_basis"] =
 			"catalogo goods.json, congelado no comando de padrao";
+		// C2c (D-108): de onde veio o regime inicial de cada moeda.
+		policy["regime_source"] = String(ws_.fx_regime_source.c_str());
+		policy["regime_currencies"] =
+			static_cast<int>(ws_.fx_regime.size());
 		policy["note"] =
 			"C2b1 (D-104): taxa básica por moeda (Taylor no BC independente; "
 			"objetivo do governo no controlado) e emissão só por compra de "

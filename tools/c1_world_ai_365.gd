@@ -239,6 +239,42 @@ func _monetary_report(sim: Object) -> Dictionary:
 	}
 
 
+## C2c (D-108): regimes reais — mistura inicial/efetiva, âncoras, trava de
+## união e as desvalorizações forçadas do mundo default (quais moedas).
+func _fx_summary(sim: Object) -> Dictionary:
+	var bank: Dictionary = sim.get_central_bank_status()
+	var currencies: Dictionary = bank.get("currencies", {})
+	var by_regime: Dictionary = {}
+	var by_anchor: Dictionary = {}
+	var devalued: Array = []
+	var devaluations := 0
+	var locked := 0
+	for code: Variant in currencies:
+		var row: Dictionary = currencies[code]
+		var fx: Dictionary = row.get("fx", {})
+		var regime := String(fx.get("regime_saved", ""))
+		by_regime[regime] = int(by_regime.get(regime, 0)) + 1
+		var anchor := String(fx.get("anchor", ""))
+		if not anchor.is_empty():
+			by_anchor[anchor] = int(by_anchor.get(anchor, 0)) + 1
+		if bool(fx.get("locked", false)):
+			locked += 1
+		var count := int(fx.get("devaluations", 0))
+		devaluations += count
+		if count > 0:
+			devalued.append({"currency": String(code), "count": count,
+				"last_day": int(fx.get("last_event_day", -1))})
+	return {
+		"source": String(bank.get("monetary_policy", {}).get(
+			"regime_source", "")),
+		"by_regime": by_regime,
+		"by_anchor": by_anchor,
+		"locked_currencies": locked,
+		"devaluations": devaluations,
+		"devalued_currencies": devalued,
+	}
+
+
 ## D-105: estado da flag de juro no envelope de crédito da safra. `-1` = build
 ## sem a flag (base C2a), onde o termo não existe.
 func _harvest_credit_rate(sim: Object) -> Variant:
@@ -453,6 +489,7 @@ func _run() -> void:
 		"trajectory_end": TrajectoryDigest.totals(sim),
 		"harvest_credit_rate": _harvest_credit_rate(sim),
 		"monetary": _monetary_report(sim),
+		"fx": _fx_summary(sim),
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	if _fx_seed_days > 0:
