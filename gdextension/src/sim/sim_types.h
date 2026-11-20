@@ -993,6 +993,40 @@ namespace ogs {
 		double capex_total = 0.0;
 		bool state_owned = false;
 		std::map<std::string, double> profit_by_host;
+		// C3 (D-107) - CRÉDITO DE EMPRESA: o grupo passa a ter balanço com
+		// dívida. `debt` é o principal em aberto com o banco agregado da nação
+		// de origem; `credit_arrears` é o juro vencido e NÃO pago (não é
+		// capitalizado em silêncio: fica como conta a pagar do grupo e a
+		// receber do banco, como o salário atrasado da C1).
+		double debt = 0.0;
+		double credit_arrears = 0.0;
+		double credit_total = 0.0;   // principal emprestado acumulado
+		double credit_repaid = 0.0;  // principal pago acumulado
+		int credit_default_days = 0;
+		int credit_defaults = 0;
+	};
+
+	// C3 (D-107) - BANCO AGREGADO POR NAÇÃO: o "1 banco agregado por nação"
+	// da C2, que nasce aqui como o credor mínimo da empresa. Não tem depósito
+	// (M1 = M2 = M0 até a C4) e nasce sem capital (ausência declarada: capital
+	// bancário por país é dado de C4). O banco central o financia: o
+	// empréstimo ao grupo cria M0 (`bc_borrowing`), o pagamento do principal
+	// destrói, o juro é caixa que o banco repassa ao BC e o calote vira perda
+	// no patrimônio do banco — nunca dinheiro que some.
+	struct Bank {
+		std::string nation;
+		std::string currency;
+		double loans = 0.0;         // principal a receber (ativo)
+		double arrears = 0.0;       // juros vencidos a receber (ativo)
+		double bc_borrowing = 0.0;  // dívida com o BC (passivo; M0 criado)
+		double cash = 0.0;          // caixa do banco (dinheiro do mundo)
+		double capital = 0.0;       // capital pago pelo Tesouro (passivo; dono estado)
+		double interest_income = 0.0;
+		double interest_expense = 0.0;
+		double writeoffs = 0.0;     // perda acumulada por calote
+		int defaults = 0;
+		int loans_count = 0;
+		int last_default_day = -1;
 	};
 
 	// F9: abertura ao capital estrangeiro por (nação, setor).
@@ -1511,6 +1545,9 @@ struct Region {
 		// desfazer a intervenção e a desvalorização do dia junto com o caixa.
 		std::map<std::string, FxState> fx;
 		std::vector<FxEvent> fx_events;
+		// C3 (D-107): desfazer um tick tem de desfazer o empréstimo, o juro, o
+		// pagamento e o calote junto com o caixa que eles moveram.
+		std::map<std::string, Bank> banks;
 		double emission_today = 0.0;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;

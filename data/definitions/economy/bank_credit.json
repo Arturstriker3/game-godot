@@ -1,0 +1,14 @@
+{
+  "_comment": "C3 (docs/economy/C3_group_balance.md) - parametros de regra do credito de empresa. TODOS sao default de jogo declarado: o repositorio nao tem fonte publica de spread bancario, limite de alavancagem ou prazo de inadimplencia por nacao. O credito nasce DESLIGADO (enabled=false) porque o banco agregado nasce sem capital e sem depositos (ausencia declarada; capital e C4, resolucao de crise e C6). Nenhum numero aqui e dado observado.",
+  "source": "default de jogo",
+  "source_note": "C3/D-107: o banco agregado por nacao nasce sem capital (dado de capital bancario por pais e C4) e sem deposito (M1=M2=M0, C2a). Ligar credito no default seria calibrar contra o portao de 365 d sem credor capitalizado.",
+  "enabled": false,
+  "spread": 0.02,
+  "leverage_cap": 1.0,
+  "default_days": 30,
+  "repay_share": 0.5,
+  "interest_arrears_days": 90,
+  "note_leverage": "debt <= leverage_cap * equity do grupo (caixa + capital fixo + estoque atribuido - atrasados).",
+  "note_repay": "fracao do caixa livre acima do capital de giro minimo aplicada ao principal por dia.",
+  "note_spread": "loan_rate = taxa basica EFETIVA da moeda (C2b1) + spread."
+}

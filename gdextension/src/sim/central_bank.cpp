@@ -148,6 +148,12 @@ MoneyAllocation allocate_money(const WorldState& ws, double money_total) {
 			ws.cities[static_cast<std::size_t>(found->second)].nation),
 			project.reserved);
 	}
+	// C3 (D-107): o caixa do banco agregado é M0 em poder do banco — a
+	// "reserva bancária" que a C2a já previa na conta do M0. Entra na moeda
+	// do banco (a mesma do BC que o financia).
+	for (const auto& row : ws.banks) {
+		add(currency_index_of(ws, row.second.nation), row.second.cash);
+	}
 	// Caixas de setor sem nação atribuível e a posição do exterior.
 	out.sector_cash = ws.transport_cash + ws.construction_cash;
 	out.external = ws.foreign_cash;
@@ -336,9 +342,16 @@ std::vector<CurrencyBank> banks(const WorldState& ws,
 		bank.nations = currency.nations;
 		bank.currency_in_circulation = index < money.by_currency.size()
 			? money.by_currency[index] : 0.0;
-		// Sem banco (C4): não há reserva bancária nem depósito, então
-		// M1 = M2 = M0. A ausência é declarada no status/doc, não maquiada.
+		// C3 (D-107): com o banco agregado, o caixa dele é a reserva bancária
+		// (M0 em poder do banco). Sem banco, M1 = M2 = M0 e a ausência de
+		// depósito continua declarada — a C4 é quem traz o depósito.
 		bank.bank_reserves = 0.0;
+		for (const auto& row : ws.banks) {
+			if (currency_index_of(ws, row.second.nation)
+					== static_cast<int>(index)) {
+				bank.bank_reserves += nonneg(row.second.cash);
+			}
+		}
 		bank.m0 = bank.currency_in_circulation + bank.bank_reserves;
 		bank.m1 = bank.m0;
 		bank.m2 = bank.m1;

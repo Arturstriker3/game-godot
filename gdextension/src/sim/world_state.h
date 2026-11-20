@@ -393,6 +393,18 @@ struct WorldState {
 	double fx_defence_share = 0.0;     // 0 = default (kDefenceShareDefault)
 	double fx_gold_reserve_ratio = 0.0;// 0 = default (kGoldReserveRatioDefault)
 	double emission_today = 0.0;
+	// C3 (D-107) - CRÉDITO DE EMPRESA: banco agregado por nação e as regras do
+	// crédito. `bank_credit_enabled` é ESTADO (vai ao save: pode ser ligado por
+	// comando A3); os parâmetros abaixo são REGRA (vêm de
+	// data/definitions/economy/bank_credit.json, como os do câmbio/emissão) e
+	// 0 significa "usar o default declarado em sim/bank.h".
+	std::map<std::string, Bank> banks;
+	bool bank_credit_enabled = false;
+	double bank_spread = 0.0;         // 0 = kSpreadDefault (2 p.p.)
+	double bank_leverage_cap = 0.0;   // 0 = kLeverageCapDefault (1,0)
+	double bank_interest_cover = 0.0; // 0 = kInterestCoverDefault (2,0)
+	int bank_default_days = 0;        // 0 = kDefaultDaysDefault (30)
+	double bank_repay_share = 0.0;    // 0 = kRepayShareDefault (0,5)
 	// Caixa do governo por nação na ABERTURA do dia: a medição do déficit
 	// (runtime; não vai ao save).
 	std::map<std::string, double> gov_cash_open;

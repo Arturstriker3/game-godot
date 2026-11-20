@@ -7,6 +7,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
+#include <unordered_map>
+#include <utility>
 
 namespace ogs {
 namespace balance {
@@ -45,6 +48,23 @@ double building_book_value(const Building& building) {
 		* std::max(0.0, building.capacity);
 }
 
+// C3 (D-107): dono de grupo de uma construção — a MESMA convenção textual de
+// `SimCore::owner_kind` ("national:<g>" / "foreign:<g>@<n>"), sem o SimCore
+// (o balanço é leitura pura). Vazio = não é de grupo.
+std::string owner_group_id(const Building& building) {
+	const std::string national = "national:";
+	if (building.owner.rfind(national, 0) == 0) {
+		return building.owner.substr(national.size());
+	}
+	const std::string foreign = "foreign:";
+	if (building.owner.rfind(foreign, 0) == 0) {
+		const std::string rest = building.owner.substr(foreign.size());
+		const std::size_t at = rest.find('@');
+		return at == std::string::npos ? rest : rest.substr(0, at);
+	}
+	return std::string();
+}
+
 } // namespace
 
 Ledger ledger(const WorldState& ws, double money_total) {
@@ -54,12 +74,27 @@ Ledger ledger(const WorldState& ws, double money_total) {
 	// BC carrega. Comprar títulos do governo cria M0 (caixa público +) e dívida
 	// pública (−), então a soma financeira do mundo continua 0; sem operação
 	// (C1/C2a) `claims` é 0 e o passivo volta a ser o `money_total`.
+	// C3 (D-107): o empréstimo do BC ao banco é ativo do emissor igual ao
+	// título — entra na mesma conta (`bank_borrowing`).
 	for (const auto& row : ws.monetary) {
 		out.monetary_claims += row.second.securities;
 	}
 	for (const auto& row : ws.gov_bonds) {
 		out.government_debt += row.second;
 	}
+	// C3: setor bancário. O capital pago pelo Tesouro é passivo do banco e
+	// claim do governo (o Estado é o dono declarado até a C4).
+	for (const auto& row : ws.banks) {
+		const Bank& bank = row.second;
+		out.bank_cash += bank.cash;
+		out.bank_loans += bank.loans;
+		out.bank_arrears += bank.arrears;
+		out.bank_borrowing += bank.bc_borrowing;
+		out.bank_capital += bank.capital;
+	}
+	out.banking = out.bank_cash + out.bank_loans + out.bank_arrears
+		- out.bank_borrowing - out.bank_capital;
+	out.monetary_claims += out.bank_borrowing;
 	out.monetary_base = money_total - out.monetary_claims;
 
 	for (const City& city : ws.cities) {
@@ -93,6 +128,10 @@ Ledger ledger(const WorldState& ws, double money_total) {
 	// Caixas de setor e de grupo (dinheiro do mundo, como em money_total).
 	for (const Group& group : ws.groups) {
 		out.firms_cash += group.cash;
+		// C3 (D-107): a dívida do grupo é passivo das firmas; o juro vencido
+		// também (a receber do banco, do outro lado).
+		out.group_debt += group.debt;
+		out.group_arrears += group.credit_arrears;
 	}
 	for (const ConstructionProject& project : ws.construction_projects) {
 		out.firms_cash += project.reserved;
@@ -100,10 +139,14 @@ Ledger ledger(const WorldState& ws, double money_total) {
 	out.firms_cash += ws.transport_cash + ws.construction_cash;
 	// O caixa do setor financeiro ainda não existe (C2); o caixa do setor de
 	// construção é privado.
-	out.firms = out.firms_cash - out.payables;
+	out.firms = out.firms_cash - out.payables - out.group_debt
+		- out.group_arrears;
 
 	// Governo: orçamento nacional por cidade + prefeituras (caixa e obras).
 	out.government += city_gov::money_total(ws);
+	// C3: o capital do banco é claim do Tesouro (o Estado é o dono declarado).
+	// NÃO entra em `government` (que é caixa) nem em `cash_total`.
+	out.government_claims += out.bank_capital;
 
 	// Setor externo: `foreign_cash` pode ser negativo por desenho (o exterior
 	// financia importação). É a posição do exterior, não dinheiro doméstico.
@@ -192,6 +235,8 @@ Sheet firms(const WorldState& ws, const std::string& nation) {
 			continue;
 		}
 		sheet.cash += group.cash;
+		// C3 (D-107): dívida de crédito do grupo (passivo) e juros vencidos.
+		sheet.debt += group.debt + group.credit_arrears;
 	}
 	return sheet;
 }
@@ -242,12 +287,156 @@ Sheet government(const WorldState& ws, const std::string& nation) {
 			sheet.debt += found->second;
 		}
 	}
+	// C3 (D-107): o capital pago ao banco agregado é claim do Tesouro (o
+	// Estado é o dono declarado até a C4 trazer os donos privados).
+	if (nation.empty()) {
+		for (const auto& row : ws.banks) {
+			sheet.equity_claims += std::max(0.0, row.second.capital);
+		}
+	} else {
+		const auto found = ws.banks.find(nation);
+		if (found != ws.banks.end()) {
+			sheet.equity_claims += std::max(0.0, found->second.capital);
+		}
+	}
 	return sheet;
 }
 
 Sheet external(const WorldState& ws) {
 	Sheet sheet;
 	sheet.cash = ws.foreign_cash;
+	return sheet;
+}
+
+// C3 (D-107) — balanço do grupo. Ver o contrato em balance.h e o desenho em
+// docs/economy/C3_group_balance.md §5. Nada aqui move dinheiro.
+std::vector<GroupSheet> group_sheets(const WorldState& ws) {
+	std::vector<GroupSheet> out(ws.groups.size());
+	std::unordered_map<std::string, int> lookup;
+	lookup.reserve(ws.groups.size());
+	for (std::size_t index = 0; index < ws.groups.size(); ++index) {
+		const Group& group = ws.groups[index];
+		GroupSheet& sheet = out[index];
+		sheet.id = group.id;
+		sheet.name = group.name;
+		sheet.origin_nation = group.origin_nation;
+		sheet.sector = group.sector;
+		sheet.cash = group.cash;
+		sheet.debt = group.debt;
+		sheet.payables = group.credit_arrears;
+		lookup[group.id] = static_cast<int>(index);
+	}
+	// Capacidade das construções de grupo por cidade×produto (a MESMA regra de
+	// rateio da receita: capacidade efetiva ÷ capacidade do produto).
+	struct Cell {
+		double total = 0.0;
+		std::vector<std::pair<int, double>> parts;
+	};
+	std::map<long long, Cell> cells;
+	for (const Building& building : ws.buildings) {
+		const std::string gid = owner_group_id(building);
+		if (gid.empty()) {
+			continue;
+		}
+		const auto found = lookup.find(gid);
+		if (found == lookup.end()) {
+			continue;
+		}
+		const int index = found->second;
+		const double partner_share = std::clamp(building.local_share, 0.0, 1.0);
+		const double own_share = 1.0 - partner_share;
+		const double book = building_book_value(building);
+		const double cost = std::max(0.0, building.paid_wages)
+			+ std::max(0.0, building.paid_opex);
+		out[static_cast<std::size_t>(index)].fixed_capital += book * own_share;
+		out[static_cast<std::size_t>(index)].daily_cost += cost * own_share;
+		out[static_cast<std::size_t>(index)].daily_profit +=
+			building.profit * own_share;
+		out[static_cast<std::size_t>(index)].building_count += 1;
+		if (partner_share > 0.0 && !building.partner_group.empty()) {
+			const auto partner = lookup.find(building.partner_group);
+			if (partner != lookup.end()) {
+				GroupSheet& row = out[static_cast<std::size_t>(partner->second)];
+				row.fixed_capital += book * partner_share;
+				row.daily_cost += cost * partner_share;
+				row.daily_profit += building.profit * partner_share;
+			}
+		}
+		if (building.city_index < 0 || building.output_product < 0
+				|| building.output_product >= kMaxProducts) {
+			continue;
+		}
+		const double capacity = std::max(0.0, building.capacity)
+			* std::max(0.0, building.output_scale);
+		if (capacity <= 0.0) {
+			continue;
+		}
+		Cell& cell = cells[static_cast<long long>(building.city_index)
+			* kMaxProducts + building.output_product];
+		cell.total += capacity;
+		cell.parts.emplace_back(index, capacity);
+	}
+	for (const auto& row : cells) {
+		const int city_index = static_cast<int>(row.first / kMaxProducts);
+		const int product = static_cast<int>(row.first % kMaxProducts);
+		if (city_index < 0
+				|| city_index >= static_cast<int>(ws.cities.size())
+				|| row.second.total <= 1e-12) {
+			continue;
+		}
+		const City& city = ws.cities[static_cast<std::size_t>(city_index)];
+		const double value = std::max(0.0, city.markets[product].stock)
+			* price_of(ws, city, product);
+		if (value <= 0.0) {
+			continue;
+		}
+		for (const auto& part : row.second.parts) {
+			GroupSheet& sheet = out[static_cast<std::size_t>(part.first)];
+			sheet.inventory += value * part.second / row.second.total;
+		}
+	}
+	return out;
+}
+
+GroupSheet group_sheet(const WorldState& ws, const Group& group) {
+	const std::vector<GroupSheet> rows = group_sheets(ws);
+	for (const GroupSheet& row : rows) {
+		if (row.id == group.id) {
+			return row;
+		}
+	}
+	GroupSheet empty;
+	empty.id = group.id;
+	empty.name = group.name;
+	empty.origin_nation = group.origin_nation;
+	empty.sector = group.sector;
+	empty.cash = group.cash;
+	empty.debt = group.debt;
+	empty.payables = group.credit_arrears;
+	return empty;
+}
+
+Sheet banking(const WorldState& ws) {
+	Sheet sheet;
+	for (const auto& row : ws.banks) {
+		const Bank& bank = row.second;
+		sheet.cash += bank.cash;
+		sheet.loans += bank.loans + bank.arrears;
+		sheet.debt += bank.bc_borrowing + bank.capital;
+	}
+	return sheet;
+}
+
+Sheet banking_nation(const WorldState& ws, const std::string& nation) {
+	Sheet sheet;
+	const auto found = ws.banks.find(nation);
+	if (found == ws.banks.end()) {
+		return sheet;
+	}
+	const Bank& bank = found->second;
+	sheet.cash = bank.cash;
+	sheet.loans = bank.loans + bank.arrears;
+	sheet.debt = bank.bc_borrowing + bank.capital;
 	return sheet;
 }
 

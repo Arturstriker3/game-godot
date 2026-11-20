@@ -71,6 +71,10 @@ struct AiState {
 	std::vector<double> private_group_cash;
 	// Caixa dos grupos na visão do investidor de grupo.
 	std::vector<double> group_cash;
+	// C3 (D-107): crédito disponível por grupo no início do dia (0 quando a
+	// mecânica está desligada). O investidor usa `cash + crédito` como
+	// capacidade de capex e pede o empréstimo do que faltar.
+	std::vector<double> group_credit;
 	// Medidas do dia que os investidores compartilham (comida no mundo/região).
 	double food_need = 0.0;
 	double food_supply = 0.0;
@@ -138,6 +142,10 @@ AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 		int output, double capacity, double jobs, double wage, double opex,
 		double input_per_ratio, const std::string& owner, double cost,
 		const std::string& recipe_id);
+// C3 (D-107): pedido de crédito do grupo (comando `group_borrow`).
+// s0 grupo, v0 valor pedido. `cost` = concedido.
+AiActionResult ai_emit_group_borrow(AiContext& ctx, const std::string& group,
+		double amount);
 AiActionResult ai_emit_group_invest(AiContext& ctx, const std::string& group,
 		const std::string& city, const std::string& building,
 		const std::string& resource, int output, double capacity,

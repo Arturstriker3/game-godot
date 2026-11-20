@@ -4,6 +4,7 @@
 #include "sim/actions.h"
 #include "sim/agriculture.h"
 #include "sim/balance.h"
+#include "sim/bank.h"
 #include "sim/central_bank.h"
 #include "sim/exchange.h"
 #include "sim/monetary.h"
@@ -289,6 +290,17 @@ void EconomySim::_bind_methods() {
 		"tonnes", "buy"), &EconomySim::central_bank_gold_trade);
 	ClassDB::bind_method(D_METHOD("central_bank_gold_convert", "currency",
 		"tonnes"), &EconomySim::central_bank_gold_convert);
+	// C3 (D-107): crédito de empresa (banco agregado como credor).
+	ClassDB::bind_method(D_METHOD("set_bank_credit", "enabled"),
+		&EconomySim::set_bank_credit);
+	ClassDB::bind_method(D_METHOD("set_bank_policy", "spread", "leverage_cap",
+		"interest_cover", "default_days", "repay_share"),
+		&EconomySim::set_bank_policy);
+	ClassDB::bind_method(D_METHOD("set_bank_capital", "nation", "amount"),
+		&EconomySim::set_bank_capital);
+	ClassDB::bind_method(D_METHOD("group_borrow", "group_id", "amount"),
+		&EconomySim::group_borrow);
+	ClassDB::bind_method(D_METHOD("get_bank_status"), &EconomySim::get_bank_status);
 	ClassDB::bind_method(D_METHOD("set_storage_stock", "city_id", "type",
 		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
@@ -3841,6 +3853,11 @@ Dictionary EconomySim::get_status() {
 		balance["monetary_base"] = book.monetary_base;
 		balance["monetary_claims"] = book.monetary_claims;
 		balance["government_debt"] = book.government_debt;
+		// C3 (D-107): o crédito de empresa é zero no default do jogo; os dois
+		// números ficam no resumo diário para o painel/diagnóstico não precisar
+		// montar o status inteiro.
+		balance["group_debt"] = book.group_debt;
+		balance["bank_loan_assets"] = book.bank_loans;
 		balance["financial_sum"] = book.financial_sum();
 		balance["ok"] = std::abs(book.financial_sum()) <= 1e-3
 			&& std::abs(book.cash_residual()) <= 1e-3;
@@ -5081,6 +5098,24 @@ void EconomySim::set_balance(const Dictionary& values) {
 	if (values.has("harvest_credit_rate")) {
 		ws_.harvest_credit_rate = number("harvest_credit_rate", 0.0) > 0.5;
 	}
+	// C3 (D-107): regras do crédito de empresa (default de jogo em
+	// data/definitions/economy/bank_credit.json). 0 = default do sim/bank.h.
+	// O teste/laboratório liga o crédito por aqui; o jogo nasce desligado.
+	if (values.has("bank_credit_enabled")) {
+		ws_.bank_credit_enabled =
+			number("bank_credit_enabled", 0.0) > 0.5;
+	}
+	ws_.bank_spread = std::clamp(
+		number("bank_spread", ws_.bank_spread), 0.0, 1.0);
+	ws_.bank_leverage_cap = std::clamp(
+		number("bank_leverage_cap", ws_.bank_leverage_cap), 0.0, 10.0);
+	ws_.bank_interest_cover = std::clamp(
+		number("bank_interest_cover", ws_.bank_interest_cover), 0.0, 50.0);
+	ws_.bank_default_days = std::clamp(
+		static_cast<int>(number("bank_default_days",
+			static_cast<double>(ws_.bank_default_days))), 0, 3650);
+	ws_.bank_repay_share = std::clamp(
+		number("bank_repay_share", ws_.bank_repay_share), 0.0, 1.0);
 }
 
 void EconomySim::apply_set_suitability(const String& city_id, const String& product,
@@ -8083,6 +8118,28 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 				ogs::central_bank::standard_name(standard);
 			return out;
 		}
+		case ogs::CommandType::SetBankCredit: {
+			Dictionary out;
+			ws_.bank_credit_enabled = cmd.i[0] != 0;
+			out["ok"] = true;
+			out["enabled"] = ws_.bank_credit_enabled;
+			return out;
+		}
+		case ogs::CommandType::GroupBorrow: {
+			double granted = 0.0;
+			std::string error;
+			const bool ok = ogs::bank::lend(ws_,
+				std::string(cmd.s[0].c_str()), cmd.v[0], &granted,
+				&error);
+			Dictionary out;
+			out["ok"] = ok;
+			out["granted"] = granted;
+			out["group"] = String(cmd.s[0].c_str());
+			if (!ok) {
+				out["error"] = String(error.c_str());
+			}
+			return out;
+		}
 		case ogs::CommandType::None:
 			break;
 	}
@@ -8628,6 +8685,20 @@ Dictionary EconomySim::get_balance_status() const {
 	world["firms"] = sheet_to_dict(ogs::balance::firms(ws_));
 	world["government"] = sheet_to_dict(ogs::balance::government(ws_));
 	world["external"] = sheet_to_dict(ogs::balance::external(ws_));
+	// C3 (D-107): o setor bancário (banco agregado por nação) e o balanço de
+	// cada grupo. Sem crédito o setor é zero e os grupos publicam dívida 0.
+	{
+		Dictionary row = sheet_to_dict(ogs::balance::banking(ws_));
+		const ogs::bank::Totals totals = ogs::bank::totals(ws_);
+		row["loans_to_groups"] = totals.loans;
+		row["interest_arrears"] = totals.arrears;
+		row["bc_borrowing"] = totals.bc_borrowing;
+		row["capital"] = totals.capital;
+		row["equity"] = totals.equity;
+		row["writeoffs"] = totals.writeoffs;
+		row["defaults"] = totals.defaults;
+		world["banks"] = row;
+	}
 	{
 		const ogs::balance::FirmSolvency solvency =
 			ogs::balance::firm_solvency(ws_);
@@ -8637,6 +8708,32 @@ Dictionary EconomySim::get_balance_status() const {
 		row["illiquid"] = solvency.illiquid;
 		row["insolvent"] = solvency.insolvent;
 		world["firms_solvency"] = row;
+	}
+	// C3 (D-107): balanço de cada grupo (ordem = `ws.groups`, estável).
+	{
+		const std::vector<ogs::balance::GroupSheet> sheets =
+			ogs::balance::group_sheets(ws_);
+		Array groups;
+		for (const ogs::balance::GroupSheet& sheet : sheets) {
+			Dictionary row = sheet_to_dict(sheet);
+			row["id"] = String(sheet.id.c_str());
+			row["name"] = String(sheet.name.c_str());
+			row["origin_nation"] = String(sheet.origin_nation.c_str());
+			row["sector"] = String(sheet.sector.c_str());
+			row["arrears"] = sheet.payables;
+			row["daily_cost"] = sheet.daily_cost;
+			row["daily_profit"] = sheet.daily_profit;
+			row["building_count"] = sheet.building_count;
+			// Alavancagem = dívida ÷ (patrimônio líquido + dívida); sem
+			// patrimônio e sem dívida é 0 (ausência declarada, não 100%).
+			const double base = sheet.net_worth() + sheet.debt;
+			row["leverage"] = std::abs(base) > 1e-9
+				? sheet.debt / base : 0.0;
+			row["inventory_basis"] = sheet.building_count > 0
+				? "share of city market stock by capacity" : "no_buildings";
+			groups.append(row);
+		}
+		world["groups"] = groups;
 	}
 	out["world"] = world;
 
@@ -8703,7 +8800,9 @@ Dictionary EconomySim::get_balance_status() const {
 		notes["equity"] =
 			"participação em grupos (stratum_equity) não entra: avaliação já "
 			"contida nos ativos dos grupos";
-		notes["banks"] = "sem banco (C4): o caixa é conservado e M1 = M2 = M0";
+		notes["banks"] =
+			"banco agregado por nacao (C3/D-107): credor minimo, sem deposito "
+			"(M1 = M2 = M0) e sem capital semeado (ausencia declarada; C4)";
 		return notes;
 	}();
 	return out;
@@ -9207,6 +9306,166 @@ void EconomySim::set_exchange_policy(double band_width, double defence_share,
 	ogs::exchange::set_parameters(ws_, band_width, defence_share,
 		gold_reserve_ratio);
 	status_invalidate();
+}
+
+// ---------------------------------------------------------------------------
+// C3 (D-107) — crédito de empresa (banco agregado como credor).
+// ---------------------------------------------------------------------------
+
+Dictionary EconomySim::set_bank_credit(bool enabled) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetBankCredit;
+	cmd.i[0] = enabled ? 1 : 0;
+	return dispatch_command(cmd);
+}
+
+void EconomySim::set_bank_policy(double spread, double leverage_cap,
+		double interest_cover, int default_days, double repay_share) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	ws_.bank_spread = std::max(0.0, spread);
+	ws_.bank_leverage_cap = std::max(0.0, leverage_cap);
+	ws_.bank_interest_cover = std::max(0.0, interest_cover);
+	ws_.bank_default_days = std::max(0, default_days);
+	ws_.bank_repay_share = std::clamp(repay_share, 0.0, 1.0);
+	status_invalidate();
+}
+
+Dictionary EconomySim::set_bank_capital(const String& nation, double amount) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	double paid = 0.0;
+	std::string error;
+	ogs::bank::inject_capital(ws_, std::string(nation.utf8().get_data()),
+		amount, &paid, &error);
+	status_invalidate();
+	Dictionary out;
+	out["ok"] = paid > 0.0;
+	out["paid"] = paid;
+	out["nation"] = nation;
+	if (paid <= 0.0) {
+		out["error"] = String(error.c_str());
+	}
+	return out;
+}
+
+Dictionary EconomySim::group_borrow(const String& group_id, double amount) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::GroupBorrow;
+	cmd.s[0] = to_std(group_id);
+	cmd.v[0] = amount;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::get_bank_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["day"] = ws_.day;
+	const ogs::bank::Policy pol = ogs::bank::policy(ws_);
+	{
+		Dictionary policy;
+		policy["enabled"] = pol.enabled;
+		policy["spread"] = pol.spread;
+		policy["leverage_cap"] = pol.leverage_cap;
+		policy["interest_cover"] = pol.interest_cover;
+		policy["default_days"] = pol.default_days;
+		policy["repay_share"] = pol.repay_share;
+		policy["source"] =
+			"default de jogo (data/definitions/economy/bank_credit.json)";
+		// Ausências declaradas desta fase (C4/C6), não números inventados.
+		policy["deposits"] = "absent";
+		policy["deposits_owner"] = "C4";
+		policy["resolution"] = "C6";
+		policy["capital_source"] = "treasury (state owner until C4)";
+		out["policy"] = policy;
+	}
+	const ogs::bank::Totals totals = ogs::bank::totals(ws_);
+	const double group_debt = ogs::bank::total_group_debt(ws_);
+	const double group_arrears = ogs::bank::total_group_arrears(ws_);
+	{
+		Dictionary row;
+		row["loans"] = totals.loans;
+		row["arrears"] = totals.arrears;
+		row["bc_borrowing"] = totals.bc_borrowing;
+		row["cash"] = totals.cash;
+		row["capital"] = totals.capital;
+		row["equity"] = totals.equity;
+		row["writeoffs"] = totals.writeoffs;
+		row["interest_income"] = totals.interest_income;
+		row["interest_expense"] = totals.interest_expense;
+		row["defaults"] = totals.defaults;
+		row["loans_count"] = totals.loans_count;
+		row["group_debt"] = group_debt;
+		row["group_arrears"] = group_arrears;
+		out["totals"] = row;
+	}
+	// Uma linha por banco (o mapa é ordenado por nação: ordem determinística).
+	Array nations;
+	for (const auto& row : ws_.banks) {
+		const ogs::Bank& bank = row.second;
+		Dictionary entry;
+		entry["nation"] = String(bank.nation.c_str());
+		entry["currency"] = String(bank.currency.c_str());
+		entry["policy_rate"] = ogs::monetary::rate_for_nation(ws_,
+			bank.nation);
+		entry["loan_rate"] = ogs::bank::loan_rate(ws_, bank.nation);
+		entry["loans"] = bank.loans;
+		entry["arrears"] = bank.arrears;
+		entry["bc_borrowing"] = bank.bc_borrowing;
+		entry["cash"] = bank.cash;
+		entry["capital"] = bank.capital;
+		entry["equity"] = ogs::bank::equity(bank);
+		// Razão de capital: patrimônio ÷ empréstimo em aberto (negativa =
+		// insolvente; a resolução é C6).
+		entry["equity_ratio"] = (bank.loans + bank.arrears) > 1e-9
+			? ogs::bank::equity(bank) / (bank.loans + bank.arrears) : 0.0;
+		entry["writeoffs"] = bank.writeoffs;
+		entry["defaults"] = bank.defaults;
+		entry["loans_count"] = bank.loans_count;
+		entry["last_default_day"] = bank.last_default_day;
+		nations.append(entry);
+	}
+	out["nations"] = nations;
+	// Só os grupos com posição de crédito (a lista inteira é o
+	// `get_balance_status().world.groups`).
+	Array groups;
+	for (const ogs::Group& group : ws_.groups) {
+		if (group.debt <= 0.0 && group.credit_arrears <= 0.0
+				&& group.credit_defaults == 0) {
+			continue;
+		}
+		Dictionary row;
+		row["id"] = String(group.id.c_str());
+		row["name"] = String(group.name.c_str());
+		row["origin_nation"] = String(group.origin_nation.c_str());
+		row["sector"] = String(group.sector.c_str());
+		row["cash"] = group.cash;
+		row["debt"] = group.debt;
+		row["arrears"] = group.credit_arrears;
+		row["credit_total"] = group.credit_total;
+		row["credit_repaid"] = group.credit_repaid;
+		row["default_days"] = group.credit_default_days;
+		row["defaults"] = group.credit_defaults;
+		groups.append(row);
+	}
+	out["groups"] = groups;
+	{
+		const ogs::balance::Ledger book = ogs::balance::ledger(ws_,
+			money_total());
+		Dictionary invariant;
+		const double loans_gap = book.bank_loans - book.group_debt;
+		const double arrears_gap = book.bank_arrears - book.group_arrears;
+		invariant["loans_vs_debt_residual"] = loans_gap;
+		invariant["arrears_vs_debt_residual"] = arrears_gap;
+		invariant["financial_sum"] = book.financial_sum();
+		invariant["cash_residual"] = book.cash_residual();
+		const double tolerance = std::max(1e-3,
+			std::abs(book.money_total) * 1e-12);
+		invariant["ok"] = std::abs(loans_gap) <= tolerance
+			&& std::abs(arrears_gap) <= tolerance
+			&& std::abs(book.financial_sum()) <= tolerance
+			&& std::abs(book.cash_residual()) <= tolerance;
+		out["invariant"] = invariant;
+	}
+	return out;
 }
 
 Dictionary EconomySim::central_bank_gold_trade(const String& currency,

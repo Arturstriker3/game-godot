@@ -52,6 +52,9 @@ var _days := 365
 var _property := false
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 var _fx_seed_days := 0
+# C3 (D-107): medição com o crédito de empresa LIGADO (default do jogo = false).
+# Só laboratório: não existe botão/atalho/HUD para isso no jogo.
+var _credit := false
 
 
 func _init() -> void:
@@ -66,6 +69,8 @@ func _init() -> void:
 			_property = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--out="):
 			_out = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--credit="):
+			_credit = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--fx-seed-days="):
 			# C2b2 (D-106): cenário de estresse — funda as reservas de cada
 			# moeda com N dias de importação MEDIDA do mundo e o peg passa a ser
@@ -138,6 +143,9 @@ func _make_world() -> Object:
 		storage.apply_to_sim(sim, cities, buildings,
 			{"only_missing": true, "initial_stock": true})
 	sim.set_ai_enabled(true)
+	if _credit:
+		sim.set_bank_credit(true)
+		print("[c1] C3: credito de empresa LIGADO por flag (--credit=1)")
 	return sim
 
 
@@ -445,6 +453,8 @@ func _run() -> void:
 	}
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
+	if _credit:
+		out["credit"] = _credit_report(sim)
 	var file := FileAccess.open(_out, FileAccess.WRITE)
 	if file == null:
 		print("[c1] FALHA: não escreveu " + _out)
@@ -464,4 +474,31 @@ func _run() -> void:
 		+ "atrasado=%.0f saída=" % float((balance["invariant"] as Dictionary)
 			.get("receivables", 0.0)) + _out)
 	print("[c1] OK: 365 d medidos")
+	if _credit:
+		var credit := _credit_report(sim)
+		print("[c1] crédito (C3): ligado=%s empréstimos=%d dívida=%.3f "
+			% [str(credit["enabled"]), int(credit["loans_count"]),
+				float(credit["group_debt"])]
+			+ "calotes=%d baixas=%.3f patrimônio_banco=%.3f"
+			% [int(credit["defaults"]), float(credit["writeoffs"]),
+				float(credit["equity"])])
 	quit(0)
+
+
+func _credit_report(sim) -> Dictionary:
+	# C3 (D-107): o crédito de empresa medido no fim do mundo. Default do jogo
+	# continua DESLIGADO; este bloco só existe na rodada de laboratório.
+	var bank: Dictionary = sim.get_bank_status()
+	var totals: Dictionary = bank.get("totals", {})
+	return {
+		"enabled": bool((bank.get("policy", {}) as Dictionary).get(
+			"enabled", false)),
+		"group_debt": float(totals.get("group_debt", 0.0)),
+		"loans": float(totals.get("loans", 0.0)),
+		"bc_borrowing": float(totals.get("bc_borrowing", 0.0)),
+		"capital": float(totals.get("capital", 0.0)),
+		"equity": float(totals.get("equity", 0.0)),
+		"loans_count": int(totals.get("loans_count", 0)),
+		"defaults": int(totals.get("defaults", 0)),
+		"writeoffs": float(totals.get("writeoffs", 0.0)),
+	}

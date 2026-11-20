@@ -12,6 +12,8 @@
 #include "ai_phase.h"
 
 #include "../actions.h"
+#include "../balance.h"
+#include "../bank.h"
 #include "../profiling.h"
 
 #include <algorithm>
@@ -244,6 +246,34 @@ AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 	return out;
 }
 
+// C3 (D-107): pedido de crédito do grupo (comando `group_borrow`).
+// s0 grupo, v0 valor pedido. `cost` = concedido.
+AiActionResult ai_emit_group_borrow(AiContext& ctx, const std::string& group,
+		double amount) {
+	Command cmd;
+	cmd.type = CommandType::GroupBorrow;
+	cmd.day = ctx.day;
+	cmd.s[0] = group;
+	cmd.v[0] = amount;
+	const uint64_t seq = ctx.queue.push(cmd);
+
+	AiActionResult out;
+	Command taken;
+	if (!take_own(ctx.queue, seq, taken)) {
+		out.error = "comando perdido na fila";
+		return out;
+	}
+	double granted = 0.0;
+	std::string error;
+	out.created = bank::lend(ctx.ws, group, amount, &granted, &error);
+	taken.apply_day = ctx.day;
+	ctx.queue.log(taken);
+	out.cost = granted;
+	out.cash = granted;
+	out.error = error;
+	return out;
+}
+
 AiActionResult ai_emit_group_invest(AiContext& ctx, const std::string& group,
 		const std::string& city, const std::string& building,
 		const std::string& resource, int output, double capacity,
@@ -314,9 +344,21 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 	// cópia ao longo do dia; o mundo só muda na aplicação do comando).
 	state_.private_group_cash.resize(view_.groups.size());
 	state_.group_cash.resize(view_.groups.size());
+	state_.group_credit.assign(view_.groups.size(), 0.0);
 	for (std::size_t index = 0; index < view_.groups.size(); ++index) {
 		state_.private_group_cash[index] = view_.groups[index].cash;
 		state_.group_cash[index] = view_.groups[index].cash;
+	}
+	// C3 (D-107): limite de crédito do dia por grupo (uma passagem pelo
+	// estado). Desligado, `credit_limit` devolve 0 e nada muda no mundo.
+	if (ws.bank_credit_enabled) {
+		const std::vector<ogs::balance::GroupSheet> sheets =
+			ogs::balance::group_sheets(ws);
+		for (std::size_t index = 0; index < view_.groups.size()
+				&& index < sheets.size(); ++index) {
+			state_.group_credit[index] = ogs::bank::credit_limit(ws,
+				sheets[index]);
+		}
 	}
 
 	// 4. Contexto do dia: tudo por referência, nada copiado.
