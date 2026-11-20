@@ -111,7 +111,7 @@ static func totals(sim: Object) -> Dictionary:
 			var factor := 1.0 / (1.0 + rate * CREDIT_SPAN_DAYS / 365.0)
 			for nation: Variant in Array(row.get("nations", [])):
 				capacity += factor
-				++counted
+				counted += 1
 		if counted > 0:
 			out["credit_capacity"] = capacity
 	if sim != null and sim.has_method("get_storage_status"):

@@ -335,13 +335,13 @@ func _run() -> void:
 	for day in _days:
 		var summary: Dictionary = sim.tick_day()
 		for violation in Array(summary.get("invariant_violations", [])):
-			++violation_count
+			violation_count += 1
 			if violation_samples.size() < 10:
 				violation_samples.append("dia %d: %s"
 					% [day + 1, String(violation)])
 		var day_now := int(summary.get("day", 0))
 		if day_now <= day_before:
-			++stalled
+			stalled += 1
 		day_before = day_now
 		var status: Dictionary = sim.get_status()
 		var money := float(status.get("money_total", 0.0))
