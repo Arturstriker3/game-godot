@@ -48,6 +48,7 @@ const SAMPLE_NATIONS: Array[String] = ["USA", "CHN", "IND", "BRA", "DEU", "NGA",
 	"RUS", "IDN", "MEX", "ZAF"]
 
 var _days := 365
+var _property := false
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 
 
@@ -55,6 +56,8 @@ func _init() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
+		elif arg.begins_with("--property="):
+			_property = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--out="):
 			_out = arg.split("=", true, 1)[1]
 	_run()
@@ -108,6 +111,10 @@ func _make_world() -> Object:
 				float(city.get("y", 0.0))),
 		})
 	geo.apply_to_sim(sim, centers)
+	# B6 (patrimônio da região): o autoload aplica em produção; aqui é opcional
+	# para o A/B do 365 d continuar comparável ao mundo da D-101.
+	if _property:
+		LandPropertyScript.apply(sim)
 	if sim.has_method("set_crop_plan"):
 		var agri := AgriScript.new()
 		agri.apply_to_sim(sim, cities, geo, {
@@ -186,6 +193,10 @@ func _food_gate(history: Array) -> Dictionary:
 
 
 func _balance_report(sim: Object, status: Dictionary) -> Dictionary:
+	if not sim.has_method("get_balance_status"):
+		# Build sem a C1 (A/B): o resto do harness continua comparável.
+		return {"invariant": {"ok": true}, "arrears": {}, "world": {},
+			"sample_nations": {}, "nations": 0}
 	var balance: Dictionary = sim.get_balance_status()
 	var world: Dictionary = balance.get("world", {})
 	var by_nation: Dictionary = balance.get("by_nation", {})
@@ -284,9 +295,8 @@ func _run() -> void:
 		if history.size() > WINDOW:
 			history.pop_front()
 		var balance_block: Dictionary = status.get("balance", {})
-		hash_lines.append("%d:%.2f:%d:%.6f" % [day_now, money,
-			int(status.get("bankruptcies", -1)),
-			float(balance_block.get("financial_sum", 0.0))])
+		hash_lines.append("%d:%.2f:%d" % [day_now, money,
+			int(status.get("bankruptcies", -1))])
 		if int(day_now) % 30 == 0 or day == _days - 1:
 			print("[c1] progresso dia %d/%d t=%.1fs"
 				% [int(day_now), _days,
@@ -303,6 +313,7 @@ func _run() -> void:
 	var out := {
 		"days": _days,
 		"threads": 1,
+		"property": _property,
 		"final_day": int(status_final.get("day", 0)),
 		"stalled_days": stalled,
 		"invariant_violations": violation_count,
