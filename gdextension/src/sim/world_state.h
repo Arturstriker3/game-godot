@@ -392,6 +392,12 @@ struct WorldState {
 	double fx_band_width = 0.0;        // 0 = default (kBandWidthDefault)
 	double fx_defence_share = 0.0;     // 0 = default (kDefenceShareDefault)
 	double fx_gold_reserve_ratio = 0.0;// 0 = default (kGoldReserveRatioDefault)
+	// C2c (D-108) — REGIME REAL por moeda (IMF AREAER 30/04/2026), ancora
+	// (moeda ou cesta), emissor e trava de uniao monetaria. Save v31; mundo
+	// sem o dado continua com o regime que veio no save (nada e inventado).
+	std::map<std::string, FxRegimeInfo> fx_regime;
+	std::string fx_regime_source;              // ex.: "IMF AREAER 2026 (30/04/2026)"
+	std::vector<std::string> fx_no_policy_nations;  // dolarizados/sem moeda propria
 	double emission_today = 0.0;
 	// C3 (D-107) - CRÉDITO DE EMPRESA: banco agregado por nação e as regras do
 	// crédito. `bank_credit_enabled` é ESTADO (vai ao save: pode ser ligado por

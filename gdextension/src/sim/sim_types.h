@@ -1481,6 +1481,25 @@ struct Region {
 		int last_event_day = -1;
 		// Medicao do dia (nao serializada).
 		double intervention_today = 0.0;
+		// C2c (D-108) - CESTA resolvida (moeda -> peso, soma 1). Vazia = cesta
+		// declarada sem composicao (alvo nao calculado) ou ancora em moeda unica.
+		// `basket_source` diz de onde os pesos vieram (nunca fica implicito).
+		std::map<std::string, double> basket;
+		std::string basket_source;
+	};
+
+	// C2c (D-108) - REGIME REAL por moeda (IMF AREAER 2026) e a regra de quem
+	// pode muda-lo. Vem de data/definitions/economy/fx_regimes_2026.json pelo
+	// carregador GDScript (`set_fx_regimes`); o status publica a fonte.
+	struct FxRegimeInfo {
+		int regime = 1;                  // central_bank::ExchangeRegime
+		std::string anchor;              // moeda-ancora ("" = sem ancora)
+		std::string anchor_type = "none";// none | currency | composite
+		std::map<std::string, double> basket;  // pesos PUBLICADOS (raro)
+		std::string anchor_source;       // onde a ancora esta declarada
+		std::string issuer;              // nacao emissora ("" = sem emissor unico)
+		bool locked = false;             // moeda de uniao (regra de bloco futura)
+		std::string source;              // fonte do regime (AREAER / declaracao)
 	};
 
 	// C2b2 (D-106) - evento cambial do status (anel de 64; o contador total de

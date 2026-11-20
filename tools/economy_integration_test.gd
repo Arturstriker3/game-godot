@@ -302,7 +302,7 @@ func _check_save_load(sim) -> void:
 	# reservas, conversão do ouro e eventos) e o ouro físico no cofre;
 	# v30 (C3/D-107) o bloco `banks` (crédito e banco por nação) e a dívida
 	# dos grupos.
-	if int(snapshot.get("version", 0)) != 30:
+	if int(snapshot.get("version", 0)) != 31:
 		_fail("save: versão do schema deveria ser 30 (é %s)" % str(snapshot.get("version")))
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):

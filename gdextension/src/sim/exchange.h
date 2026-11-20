@@ -54,8 +54,36 @@ bool standard_forces_peg(const WorldState& ws);
 int effective_regime(const WorldState& ws, const Currency& currency);
 
 // Paridade (unidades locais por 1 unidade da moeda de reserva). 0 salvo = o
-// `base_rate` do dado do F5 (não é número novo).
+// `base_rate` do dado do F5 (não é número novo). Para moeda COM âncora (C2c)
+// a paridade é contra a ÂNCORA (moeda ou cesta), não contra o XGS.
 double parity_of(const WorldState& ws, const Currency& currency);
+
+// C2c (D-108) — ÂNCORA e CESTA.
+// A moeda tem âncora declarada (moeda única ou cesta com composição)?
+bool has_anchor(const WorldState& ws, const Currency& currency);
+// Valor em XGS de 1 unidade da âncora: a taxa da moeda-âncora, ou a média
+// GEOMÉTRICA PONDERADA das taxas cruzadas da cesta. 0 = âncora sem taxa ou
+// cesta sem composição — ausência declarada, nunca um número inventado.
+double anchor_value(const WorldState& ws, const Currency& currency);
+// Resolve a composição de cesta que o FMI não publica: pesos = participação
+// medida no comércio do próprio mundo (default de jogo, marcado como tal).
+// Só age uma vez por moeda, quando há comércio medido; sem comércio, vazio.
+void resolve_baskets(WorldState& ws);
+// Paridade inicial cruzada: fixa `fx[moeda].parity` para a taxa de câmbio com
+// que o mundo nasceu (a taxa do F5 é o ponto de partida, não um dado novo).
+void initialize_anchors(WorldState& ws);
+// Alvo (taxa em XGS por 1 unidade local) que o regime manda: `ancora ÷
+// paridade`. Sem âncora, devolve `parity_of` (o caminho da C2b2, idêntico).
+double target_rate(const WorldState& ws, const Currency& currency);
+
+// D-108(e) — SUCESSÃO de moeda extinta (ex.: BGN -> EUR a 1 EUR = 1,95583 BGN,
+// Decisão (UE) 2025/1407). Funde nação, paridade, reservas, ouro do BC, emissão
+// e bancos na moeda que a substituiu. O dinheiro do núcleo é em XGS (âncora):
+// a conservação fecha por construção; só a paridade LOCAL (unidades por 1
+// âncora) é dividida por `units_per_target`. Idempotente.
+// @returns a paridade local convertida (0 se a moeda não existia).
+double migrate_currency(WorldState& ws, const std::string& from,
+	const std::string& to, double units_per_target);
 // Largura da banda (±fração). -1 salvo = default de jogo.
 double band_of(const WorldState& ws, const Currency& currency);
 // Preço fixo de conversão do ouro (unidades-âncora por tonelada). 0 = preço de

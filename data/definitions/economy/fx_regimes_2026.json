@@ -3,7 +3,7 @@
   "version": 1,
   "title": "Regime Cambial de Facto por Moeda (FMI/AREAER 2026)",
   "as_of": "2026-04-30",
-  "currency_count": 136,
+  "currency_count": 135,
   "source": {
     "name": "IMF Annual Report on Exchange Arrangements and Exchange Restrictions (AREAER)",
     "publisher": "International Monetary Fund",
@@ -210,21 +210,6 @@
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
       "note": "Reclassificada em 01/2025; âncora USD (nota 5)."
-    },
-    "BGN": {
-      "classification": "currency_board",
-      "areaer_label": "Currency board",
-      "game_regime": "peg",
-      "anchor": "EUR",
-      "anchor_type": "currency",
-      "band_width": null,
-      "shared_currency": false,
-      "nations": [
-        "BGR"
-      ],
-      "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "AREAER 2026 (preliminar, 30/04/2026) mantém currency board com âncora EUR, mas a Bulgária está no euro desde 2026-01-01. Valor de conversão 1 EUR = 1,95583 BGN; ver pending.",
-      "pending": "BGR adotou o euro em 2026-01-01 (Decisão (UE) 2025/1407; BCE 2025-07-08 e 2026-01-01) e o Apêndice II.9, com data de 30/04/2026, ainda lista \"Currency board\" com âncora euro. O cenário do jogo não muda aqui, mas o jogo deveria tratar BGR como membro do euro; BGN fica como moeda legada (1 EUR = 1,95583 BGN)."
     },
     "BHD": {
       "classification": "conventional_peg",
@@ -603,6 +588,7 @@
       "nations": [
         "AUT",
         "BEL",
+        "BGR",
         "CYP",
         "DEU",
         "ESP",
@@ -2021,6 +2007,36 @@
       "note": null
     }
   },
+  "game_fallback": {
+    "note": "C2c/D-108d: moeda sem classificacao AREAER nao fica sem regime. O regime abaixo e DEFAULT DE JOGO, nao dado observado; quando o banco central emissor publicar a declaracao oficial, o jogo troca a entrada para a fonte citada.",
+    "currencies": {
+      "TWD": {
+        "regime": "band",
+        "source": "default de jogo: flutuacao administrada (CBC, Taiwan) - sem classificacao AREAER (nao membro do FMI)"
+      },
+      "CUP": {
+        "regime": "band",
+        "source": "default de jogo, sem fonte"
+      },
+      "KPW": {
+        "regime": "band",
+        "source": "default de jogo, sem fonte"
+      },
+      "SLS": {
+        "regime": "band",
+        "source": "default de jogo, sem fonte"
+      }
+    }
+  },
+    "retired": {
+      "BGN": {
+        "retired_on": "2026-01-01",
+        "replaced_by": "EUR",
+        "units_per_target": 1.95583,
+        "source": "Decisao (UE) 2025/1407; BCE 2025-07-08 e 2026-01-01 (1 EUR = 1,95583 BGN)",
+        "note": "AREAER 2026 (30/04/2026, preliminar) ainda listava currency board com ancora EUR. A C2c/D-108e removeu a moeda do cenario e fundiu BGR no EUR; o estado da moeda extinta e convertido pela paridade local a 1,95583."
+      }
+    },
   "central_bank_independence": {
     "status": "adiado",
     "reason": "Os índices candidatos têm licença que impede redistribuir os valores no repositório sem consentimento; não foi embutido número sem fonte/licença checada.",
@@ -2041,6 +2057,6 @@
     "game_state": "monetary_policy.json declara bank_independence = 'independent' como default de jogo (não observado); a C2a marcou bank_independence = no_data."
   },
   "pending": [
-    "BGR adotou o euro em 2026-01-01 (Decisão (UE) 2025/1407; BCE 2025-07-08 e 2026-01-01) e o Apêndice II.9, com data de 30/04/2026, ainda lista \"Currency board\" com âncora euro. O cenário do jogo não muda aqui, mas o jogo deveria tratar BGR como membro do euro; BGN fica como moeda legada (1 EUR = 1,95583 BGN)."
+    "BGN foi RETIRADA do cenario na C2c/D-108e (Bulgaria no euro em 2026-01-01, Decisao (UE) 2025/1407, 1 EUR = 1,95583 BGN): a moeda esta em `retired`, BGR passou a EUR e nao ha mais entrada em `currencies`."
   ]
 }

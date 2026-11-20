@@ -137,7 +137,11 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // de ouro do BC por moeda, dado real da G2/D-101, e a série mensal do CPI por
 // nação). Nenhuma mecânica nova: nada emite, cobra juros ou intervém — é a
 // C2b. Save v26 carrega sem ouro e com a série vazia (nada inventado).
-constexpr int kSaveVersion = 30;
+// v31 (C2c, D-108): regime REAL por moeda (IMF AREAER 30/04/2026), âncora
+// (moeda ou cesta), fonte, emissor e trava de união monetária; a cesta
+// resolvida vai no `fx.currencies[moeda]`. ADITIVO: v30 carrega com os regimes
+// do arquivo (`set_fx_regimes`) e as moedas extintas fundidas no substituto.
+constexpr int kSaveVersion = 31;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

@@ -34,6 +34,7 @@ const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
+const FX_REGIMES_PATH := "res://data/definitions/economy/fx_regimes_2026.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 const INFORMALITY_PATH := "res://data/definitions/economy/informality.json"
@@ -102,6 +103,9 @@ func _make_world() -> Object:
 	sim.set_recipes(_load(RECIPES_PATH))
 	sim.set_needs(_load(NEEDS_PATH))
 	sim.set_services(_load(SERVICES_PATH))
+	# C2c (D-108): regime real por moeda ANTES do carregamento das moedas.
+	if sim.has_method("set_fx_regimes"):
+		sim.set_fx_regimes(_load(FX_REGIMES_PATH))
 	sim.set_currencies(_load(CURRENCIES_PATH))
 	sim.set_sector_employment(_load(SECTOR_EMPLOYMENT_PATH))
 	sim.set_age_structure(_load(AGE_STRUCTURE_PATH))

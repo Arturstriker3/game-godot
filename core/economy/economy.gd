@@ -85,6 +85,9 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 ## Moedas e taxas de câmbio por nação (F5; âncora XGS, regime peg/float).
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
+## C2c (D-108): regime REAL por moeda (IMF AREAER 30/04/2026), âncora (moeda
+## ou cesta), emissor e trava de união monetária. Ausente = o dado do F5 manda.
+const FX_REGIMES_PATH := "res://data/definitions/economy/fx_regimes_2026.json"
 ## F9: estrutura de emprego por setor (âncoras ILO + coeficientes agrícolas).
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 ## B1: estrutura etária por nação (definição estática; coortes ainda não).
@@ -163,6 +166,10 @@ func _ready() -> void:
 	# F8: serviços (catálogo). Antes do mundo: os negócios iniciais e o preço-âncora
 	# dos 20 setores dependem dele.
 	sim.set_services(_load_json_dict(SERVICES_PATH))
+	# C2c (D-108): regimes reais ANTES das moedas — o mundo nasce com o regime
+	# do IMF AREAER (e não com o "peg administrativo" único da C2a).
+	if sim.has_method("set_fx_regimes"):
+		sim.set_fx_regimes(_load_json_dict_optional(FX_REGIMES_PATH))
 	# F5: moedas ANTES do mundo, para o preço local de cada cidade nascer na
 	# moeda da nação (goods.json está em âncora XGS).
 	sim.set_currencies(_load_json_dict(CURRENCIES_PATH))

@@ -276,7 +276,13 @@ void EconomySim::_bind_methods() {
 		"independence"), &EconomySim::set_central_bank_policy);
 	// C2b2 (D-106) — regimes de câmbio, padrão monetário e ouro físico.
 	ClassDB::bind_method(D_METHOD("set_exchange_regime", "currency", "regime",
-		"parity", "band_width"), &EconomySim::set_exchange_regime);
+		"parity", "band_width", "nation"),
+		&EconomySim::set_exchange_regime, DEFVAL(String()));
+	// C2c (D-108) — regimes reais (IMF AREAER 2026) e sucessão de moeda.
+	ClassDB::bind_method(D_METHOD("set_fx_regimes", "data"),
+		&EconomySim::set_fx_regimes);
+	ClassDB::bind_method(D_METHOD("migrate_currency", "from", "to",
+		"units_per_target"), &EconomySim::migrate_currency);
 	ClassDB::bind_method(D_METHOD("set_monetary_standard", "standard"),
 		&EconomySim::set_monetary_standard);
 	ClassDB::bind_method(D_METHOD("set_central_bank_reserves",
@@ -687,6 +693,155 @@ void EconomySim::apply_set_currency_rate(const String& code, double rate,
 	}
 }
 
+int EconomySim::set_fx_regimes(const Dictionary& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	ws_.fx_regime.clear();
+	ws_.fx_no_policy_nations.clear();
+	ws_.fx_regime_source.clear();
+	// Fonte do arquivo inteiro (o status publica o que está valendo).
+	const String as_of = String(data.get("as_of", ""));
+	const String title = String(data.get("title", "IMF AREAER"));
+	std::string source = std::string(title.utf8().get_data());
+	if (!as_of.is_empty()) {
+		source += " (" + std::string(as_of.utf8().get_data()) + ")";
+	}
+	ws_.fx_regime_source = source;
+	const Variant rows_variant = data.get("currencies", Variant());
+	if (rows_variant.get_type() != Variant::DICTIONARY) {
+		return 0;
+	}
+	const Dictionary rows = rows_variant;
+	int count = 0;
+	const Array codes = rows.keys();
+	for (int index = 0; index < codes.size(); ++index) {
+		const std::string code(String(codes[index]).utf8().get_data());
+		const Variant entry_variant = rows.get(codes[index], Variant());
+		if (code.empty() || entry_variant.get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = entry_variant;
+		ogs::FxRegimeInfo info;
+		// Regime: o vocabulário do arquivo é o do jogo (floating/band/peg).
+		// "unknown" (sem fonte no FMI) é preenchido pela declaração do emissor
+		// no DADO; se chegar vazio, o carregador declara band de jogo (§D-108d)
+		// em vez de deixar a moeda sem regime.
+		const String regime = String(entry.get("game_regime", ""));
+		info.regime = ogs::central_bank::regime_from_name(
+			std::string(regime.utf8().get_data()), ogs::central_bank::kRegimeBand);
+		info.anchor = std::string(String(entry.get("anchor", ""))
+			.utf8().get_data());
+		info.anchor_type = std::string(String(entry.get("anchor_type", "none"))
+			.utf8().get_data());
+		if (info.anchor.empty() && info.anchor_type == "currency") {
+			info.anchor_type = "none";
+		}
+		info.anchor_source = std::string(String(entry.get("anchor_source", ""))
+			.utf8().get_data());
+		info.source = std::string(String(entry.get("source", ""))
+			.utf8().get_data());
+		if (info.source.empty()) {
+			info.source = source + " — default de jogo";
+		}
+		// Composição PUBLICADA (quando o dado traz): {moeda: peso}.
+		const Variant basket_variant = entry.get("basket", Variant());
+		if (basket_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary basket = basket_variant;
+			const Array units = basket.keys();
+			for (int unit_index = 0; unit_index < units.size(); ++unit_index) {
+				const std::string unit(
+					String(units[unit_index]).utf8().get_data());
+				const double value = double(basket.get(units[unit_index], 0.0));
+				if (!unit.empty() && std::isfinite(value) && value > 0.0) {
+					info.basket[unit] = value;
+				}
+			}
+		}
+		// Emissor: a nação da moeda quando ela é de um país só. Moeda
+		// compartilhada por várias nações (união monetária/dolarização) fica
+		// TRAVADA: ninguém muda o regime (regra de bloco é fase futura).
+		const Variant nations_variant = entry.get("nations", Array());
+		if (nations_variant.get_type() == Variant::ARRAY) {
+			const Array nations = nations_variant;
+			const bool shared = bool(entry.get("shared_currency", false));
+			info.locked = shared || nations.size() > 1;
+			if (nations.size() == 1) {
+				info.issuer = std::string(String(nations[0]).utf8().get_data());
+			}
+		}
+		// Dolarizados / sem moeda própria: sem política cambial.
+		const Variant exceptions_variant = entry.get("exceptions", Variant());
+		if (exceptions_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary exceptions = exceptions_variant;
+			const Array tags = exceptions.keys();
+			for (int tag_index = 0; tag_index < tags.size(); ++tag_index) {
+				const std::string tag(String(tags[tag_index]).utf8().get_data());
+				if (!tag.empty()) {
+					ws_.fx_no_policy_nations.push_back(tag);
+				}
+			}
+		}
+		ws_.fx_regime[code] = std::move(info);
+		++count;
+	}
+	// D-108(d): moeda sem classificação AREAER não fica sem regime. O bloco
+	// `game_fallback` do MESMO arquivo declara o default de jogo (e a fonte,
+	// quando há uma declaração do emissor). Não é dado observado.
+	const Variant fallback_variant = data.get("game_fallback", Variant());
+	if (fallback_variant.get_type() == Variant::DICTIONARY) {
+		const Dictionary fallback = fallback_variant;
+		const Variant rows_fallback = fallback.get("currencies", Variant());
+		if (rows_fallback.get_type() == Variant::DICTIONARY) {
+			const Dictionary rows = rows_fallback;
+			const Array fallback_codes = rows.keys();
+			for (int index = 0; index < fallback_codes.size(); ++index) {
+				const std::string code(
+					String(fallback_codes[index]).utf8().get_data());
+				const Variant entry_variant =
+					rows.get(fallback_codes[index], Variant());
+				if (code.empty()
+						|| entry_variant.get_type() != Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary entry = entry_variant;
+				const auto found = ws_.fx_regime.find(code);
+				if (found == ws_.fx_regime.end()) {
+					continue;
+				}
+				FxRegimeInfo& info = found->second;
+				const String regime = String(entry.get("regime", "band"));
+				info.regime = ogs::central_bank::regime_from_name(
+					std::string(regime.utf8().get_data()),
+					ogs::central_bank::kRegimeBand);
+				const String note = String(entry.get("source", ""));
+				if (!note.is_empty()) {
+					info.source = std::string(note.utf8().get_data());
+				}
+				info.anchor.clear();
+				info.anchor_type = "none";
+			}
+		}
+	}
+	// O mesmo carregador roda sobre um mundo já criado (teste/API): aplica o
+	// regime às moedas que estão no estado. Em mundo vazio, `set_currencies`
+	// aplica depois (o mundo nasce com o regime real).
+	for (Currency& currency : ws_.currencies) {
+		const auto found = ws_.fx_regime.find(currency.code);
+		if (found == ws_.fx_regime.end()) {
+			continue;
+		}
+		currency.exchange_regime = found->second.regime;
+		// `band` deriva dentro da faixa (C2b2 §8); `peg` não deriva.
+		currency.floating = found->second.regime
+			!= ogs::central_bank::kRegimePeg;
+	}
+	if (!ws_.currencies.empty()) {
+		ogs::exchange::resolve_baskets(ws_);
+		ogs::exchange::initialize_anchors(ws_);
+	}
+	status_invalidate();
+	return count;
+}
+
 void EconomySim::set_currencies(const Variant& currencies) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Array list;
@@ -801,8 +956,23 @@ void EconomySim::set_currencies(const Variant& currencies) {
 	if (next.empty()) {
 		return;
 	}
+	// C2c (D-108): o regime inicial vem do IMF AREAER (fx_regimes_2026.json),
+	// não mais do "peg administrativo" único. Moeda sem entrada no arquivo
+	// mantém o que o dado declarou (nada é inventado).
+	for (Currency& currency : next) {
+		const auto found = ws_.fx_regime.find(currency.code);
+		if (found == ws_.fx_regime.end()) {
+			continue;
+		}
+		currency.exchange_regime = found->second.regime;
+		currency.floating = found->second.regime
+			!= ogs::central_bank::kRegimePeg;
+	}
 	ws_.currencies = std::move(next);
 	rebuild_currency_indexes();
+	// Paridade CRUZADA inicial: a taxa com que o mundo nasce vira o ponto de
+	// partida do peg (nenhuma paridade nominal é publicada pelo FMI).
+	ogs::exchange::initialize_anchors(ws_);
 
 	// O preço interno está na âncora: carregar moedas NÃO reescala preços. A
 	// taxa só entra na exibição local e na competitividade float.
@@ -8072,6 +8242,35 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			}
 			Currency& currency = ws_.currencies[
 				static_cast<std::size_t>(found->second)];
+			// D-108(c): só o EMISSOR muda regime/padrão da própria moeda;
+			// moeda de união fica travada e nação dolarizada não tem política.
+			const auto info = ws_.fx_regime.find(currency.code);
+			if (info != ws_.fx_regime.end()) {
+				if (info->second.locked) {
+					out["ok"] = false;
+					out["error"] = "moeda de uniao — regras de bloco futuras";
+					return out;
+				}
+				if (!cmd.s[2].empty()) {
+					const bool no_policy = std::find(
+						ws_.fx_no_policy_nations.begin(),
+						ws_.fx_no_policy_nations.end(), cmd.s[2])
+						!= ws_.fx_no_policy_nations.end();
+					if (no_policy) {
+						out["ok"] = false;
+						out["error"] = "nacao sem moeda propria: sem politica "
+							"cambial (dolarizada)";
+						return out;
+					}
+					if (!info->second.issuer.empty()
+							&& cmd.s[2] != info->second.issuer) {
+						out["ok"] = false;
+						out["error"] = "somente o emissor da moeda pode mudar "
+							"o regime";
+						return out;
+					}
+				}
+			}
 			const int regime = ogs::central_bank::regime_from_name(cmd.s[1],
 				currency.exchange_regime);
 			currency.exchange_regime = regime;
@@ -8986,6 +9185,52 @@ Dictionary EconomySim::get_central_bank_status() const {
 			fx["last_event_day"] = bank.last_event_day;
 			fx["coverage"] = bank.coverage_ratio;
 			fx["conversion_price"] = bank.conversion_price;
+			// C2c (D-108): de onde veio o regime, contra o que ele prende a
+			// taxa, quem é o emissor e se a moeda está travada (união).
+			const auto info = ws_.fx_regime.find(bank.code);
+			const auto state = ws_.fx.find(bank.code);
+			fx["regime_source"] = info != ws_.fx_regime.end()
+				? String(info->second.source.c_str())
+				: String(ws_.fx_regime_source.empty()
+					? "sem regime real carregado" : ws_.fx_regime_source.c_str());
+			fx["anchor"] = info != ws_.fx_regime.end()
+				? String(info->second.anchor.c_str()) : String();
+			fx["anchor_type"] = info != ws_.fx_regime.end()
+				? String(info->second.anchor_type.c_str()) : String("none");
+			fx["anchor_source"] = info != ws_.fx_regime.end()
+				? String(info->second.anchor_source.c_str()) : String();
+			fx["issuer"] = info != ws_.fx_regime.end()
+				? String(info->second.issuer.c_str()) : String();
+			fx["locked"] = info != ws_.fx_regime.end()
+				&& info->second.locked;
+			{
+				Dictionary basket;
+				std::map<std::string, double> weights;
+				if (info != ws_.fx_regime.end()) {
+					weights = info->second.basket;
+				}
+				if (weights.empty() && state != ws_.fx.end()) {
+					weights = state->second.basket;
+				}
+				for (const auto& unit : weights) {
+					basket[String(unit.first.c_str())] = unit.second;
+				}
+				fx["anchor_basket"] = basket;
+				fx["basket_source"] = state != ws_.fx.end()
+					? String(state->second.basket_source.c_str()) : String();
+			}
+			{
+				const auto found_currency = ws_.currency_by_code.find(bank.code);
+				fx["target_rate"] = found_currency == ws_.currency_by_code.end()
+					? 0.0 : ogs::exchange::target_rate(ws_,
+						ws_.currencies[static_cast<std::size_t>(
+							found_currency->second)]);
+				fx["anchor_value"] =
+					found_currency == ws_.currency_by_code.end() ? 0.0
+					: ogs::exchange::anchor_value(ws_,
+						ws_.currencies[static_cast<std::size_t>(
+							found_currency->second)]);
+			}
 			row["fx"] = fx;
 		}
 		currencies[String(bank.code.c_str())] = row;
@@ -9234,7 +9479,8 @@ bool EconomySim::set_central_bank_policy(const String& currency,
 // C2b2 (D-106) — regimes de câmbio, padrão monetário e ouro físico.
 // ---------------------------------------------------------------------------
 bool EconomySim::set_exchange_regime(const String& currency,
-		const String& regime, double parity, double band_width) {
+		const String& regime, double parity, double band_width,
+		const String& nation) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string code(currency.utf8().get_data());
 	if (ws_.currency_by_code.find(code) == ws_.currency_by_code.end()) {
@@ -9244,14 +9490,49 @@ bool EconomySim::set_exchange_regime(const String& currency,
 	if (name != "floating" && name != "peg" && name != "band") {
 		return false;
 	}
+	// D-108(c): moeda de união/dolarizada não aceita comando de regime. A
+	// recusa vale já no pedido (o motivo também volta na aplicação do A3).
+	const std::string acting(nation.utf8().get_data());
+	const auto info = ws_.fx_regime.find(code);
+	if (info != ws_.fx_regime.end()) {
+		if (info->second.locked) {
+			return false;
+		}
+		if (!acting.empty()) {
+			const bool no_policy = std::find(ws_.fx_no_policy_nations.begin(),
+				ws_.fx_no_policy_nations.end(), acting)
+				!= ws_.fx_no_policy_nations.end();
+			if (no_policy) {
+				return false;
+			}
+			if (!info->second.issuer.empty()
+					&& acting != info->second.issuer) {
+				return false;
+			}
+		}
+	}
 	ogs::Command cmd;
 	cmd.type = ogs::CommandType::SetExchangeRegime;
 	cmd.s[0] = code;
 	cmd.s[1] = name;
+	cmd.s[2] = std::string(nation.utf8().get_data());
 	cmd.v[0] = std::isfinite(parity) ? std::max(0.0, parity) : 0.0;
 	cmd.v[1] = std::isfinite(band_width) ? band_width : -1.0;
 	dispatch_command(cmd);
 	return true;
+}
+
+double EconomySim::migrate_currency(const String& from, const String& to,
+		double units_per_target) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const double converted = ogs::exchange::migrate_currency(ws_,
+		std::string(from.utf8().get_data()), std::string(to.utf8().get_data()),
+		units_per_target);
+	if (converted > 0.0) {
+		++status_static_version_;
+		status_invalidate();
+	}
+	return converted;
 }
 
 bool EconomySim::set_monetary_standard(const String& standard) {

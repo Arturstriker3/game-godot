@@ -29,7 +29,7 @@ const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employmen
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 const EXCHANGE_PATH := "res://data/definitions/economy/exchange_policy.json"
 
-const SAVE_VERSION := 30
+const SAVE_VERSION := 31
 const EPS := 1e-3
 
 var _failures: Array[String] = []

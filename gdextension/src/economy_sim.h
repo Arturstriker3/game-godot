@@ -422,7 +422,24 @@ public:
 	 * @returns true se a moeda existe e o nome é válido (o comando entrou na fila).
 	 */
 	bool set_exchange_regime(const String& currency, const String& regime,
-		double parity, double band_width);
+		double parity, double band_width, const String& nation = String());
+	/**
+	 * C2c (D-108) — carrega os REGIMES REAIS do IMF AREAER 2026
+	 * (`data/definitions/economy/fx_regimes_2026.json`): regime por moeda,
+	 * âncora (moeda ou cesta), fonte da âncora, emissor e a trava de moeda de
+	 * união. Chamado ANTES de `set_currencies`, como as demais definições.
+	 * @returns número de moedas com regime declarado.
+	 */
+	int set_fx_regimes(const Dictionary& data);
+	/**
+	 * D-108(e) — sucessão de moeda extinta (BGN -> EUR a 1,95583; ver a tabela
+	 * `kSuccessions` em economy_sim.cpp). Converte a paridade local, funde o
+	 * estado da moeda no destino e preserva a conservação (dinheiro é âncora:
+	 * não muda). Idempotente: sem a moeda no estado, devolve 0.
+	 * @returns quantidade convertida (unidades locais) ou 0.
+	 */
+	double migrate_currency(const String& from, const String& to,
+		double units_per_target);
 	/**
 	 * C2b2 (D-106) — escolhe o PADRÃO MONETÁRIO do mundo, pela fila A3:
 	 * `fiat` (default), `bretton_woods` ou `gold`. Nunca é automático.

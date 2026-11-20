@@ -287,7 +287,7 @@ func _test_save() -> void:
 	sim.group_borrow(_first_group(sim), 1.0e9)
 	sim.tick_day()
 	var saved: Dictionary = sim.to_dict()
-	_check("A6 save na versão 30", int(saved.get("version", 0)) == 30,
+	_check("A6 save na versão 30", int(saved.get("version", 0)) == 31,
 		"version=" + str(saved.get("version")))
 	_check("A6 save publica o banco e o crédito",
 		saved.has("banks")
@@ -326,7 +326,7 @@ func _test_save() -> void:
 		absf(float(old_bank.get("totals", {}).get("group_debt", -1.0))) <= EPS,
 		"debt=" + str(old_bank.get("totals", {}).get("group_debt")))
 	_check("A6 v29 migra para 30",
-		int(old.to_dict().get("version", 0)) == 30,
+		int(old.to_dict().get("version", 0)) == 31,
 		"version=" + str(old.to_dict().get("version")))
 
 
