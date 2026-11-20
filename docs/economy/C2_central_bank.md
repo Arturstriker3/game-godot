@@ -144,6 +144,24 @@ bit-exato e a continuação após load é idêntica (`tools/c2_central_bank_test
   com **2 falências**, portão de comida **85/179**, **0 violações** do
   invariante, 0 dias travados e drift máximo diário **4,3e-13** (`max_daily_drift`;
   fim-vs-início 3,4e-13), `money_total` 6,52 bi.
+- **D-105 (C2b1-fix) - medição auditável.** O hash de trajetória dos dois
+  harnesses de 365 d é o digest de `core/economy/trajectory_digest.gd`, com 7
+  campos por dia: dia, dinheiro (6 casas), falências, soma por nação das razões
+  de comida (9 casas), M0 medido, estoque privado e o termo de crédito da safra
+  `Σ 1/(1 + r·60/365)` por nação (ausência = -1). Quatro mundos materialmente
+  diferentes (C2a, E1, E2, C2b1) tinham o **mesmo** hash `f7631ba0…` no formato
+  antigo. **Atenção de medição:** GDScript 4.7 não incrementa com `++x`/`--x`;
+  o `++counted` do digest deixava `credit_capacity = -1` em todos os dias e os
+  `++violation_count`/`++stalled` de `c1_world_ai_365`/`g2_world_ai_365`
+  deixavam violações e dias travados **sempre 0** (contadores cegos). Todos
+  trocados por `+= 1`; b5/b6/c2 já usavam `+= 1`. Rodada de aceite (365 d, IA,
+  threads=1): portão de comida **86/179**, **2 falências**, **0 violações** e
+  **0 dias travados** (agora medidos), drift máximo diário 4,2e-13, hash
+  `f759f4c085b78902f1909716c9fef6b2363fd72cfd845f2ccba8d7b121abeafb`; fim de
+  ano M0 14,47 bi, estoque privado 59,59 mi t e crédito da safra 178,424 em 179
+  nações. O envelope da safra **não cobra juro até a C4** (não há credor com
+  contraparte no balanço); a taxa segue medida e publicada e o termo segue no
+  hash porque a C4 vai usá-lo. JSON: `docs/economy/perf/c2b1fix_world_ai_365.json`.
 - `tools/world_equivalence.ps1` - equivalência CLI × Godot, 60 d com IA e
   camada urbana: 0 diferenças run1 × run2 e contra o meta-golden. Os goldens
   `A0_60_urban.json` e os S0 (`real_60_ai`, `real_60_noai`, `demo_365_noai`) de
