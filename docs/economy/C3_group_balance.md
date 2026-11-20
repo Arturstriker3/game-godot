@@ -144,22 +144,34 @@ bit-exato e continuação idêntica após load.
 
 ```
 policy:   { enabled, spread, leverage_cap, default_days, repay_share, source }
-totals:   { loans, arrears, bc_borrowing, cash, capital, equity, writeoffs, defaults }
+totals:   { loans, arrears, bc_borrowing, cash, capital, equity, writeoffs,
+            defaults, interest_income, interest_expense, loans_count,
+            group_debt, group_arrears }
 nations[]:{ nation, currency, policy_rate, loan_rate, loans, arrears,
             bc_borrowing, cash, capital, equity, equity_ratio, loans_count,
             last_default_day, defaults, writeoffs }
-groups[]: { id, name, origin_nation, sector, debt, arrears, equity, leverage,
-            default_days, defaults }
-invariant:{ loans_vs_debt_residual, arrears_vs_debt_residual, financial_sum }
+groups[]: { id, name, origin_nation, sector, cash, debt, arrears,
+            credit_total, credit_repaid, default_days, defaults }
+invariant:{ loans_vs_debt_residual, arrears_vs_debt_residual, financial_sum,
+            cash_residual, ok }
 ```
 
-`get_balance_status().world.groups[]` (leitura, sempre): `id`, `name`,
-`origin_nation`, `sector`, `cash`, `inventory`, `fixed_capital`, `debt`,
-`arrears`, `equity`, `leverage`, `inventory_basis`.
+`groups[]` lista **somente** os grupos com posição de crédito (`debt > 0`,
+`arrears > 0` ou `defaults > 0`); o status de banco não publica patrimônio
+nem alavancagem por grupo — essas contas ficam no balanço.
+
+`get_balance_status().world.groups[]` (leitura, sempre, um item por grupo na
+ordem estável de `ws.groups`): `id`, `name`, `origin_nation`, `sector`,
+`cash`, `receivables`, `payables` (o atraso), `debt`, `financial_assets`,
+`financial_liabilities`, `inventory`, `fixed_capital`, `property`,
+`net_worth` (patrimônio líquido; **não** `equity`), `leverage`
+(dívida ÷ (net_worth + dívida); 0 quando não há nenhum dos dois),
+`daily_cost`, `daily_profit`, `building_count`, `inventory_basis`.
 
 Estoque do grupo = fatia de capacidade do par cidade×produto nas cidades onde
 ele produz (a mesma regra de rateio da receita); o que não é de grupo
-publicado sai em `unallocated.groups_inventory`, declarado.
+publicado sai em `unallocated` (`group_cash_without_origin`, `construction_funds`, `note`),
+declarado — não existe `unallocated.groups_inventory`.
 
 ### 5.3 Comandos A3
 
