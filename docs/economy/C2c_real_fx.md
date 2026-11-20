@@ -279,6 +279,8 @@ alterado no núcleo nesta rodada**. O que fica proposto, em ordem de custo:
    < 1). É a correção mais direta da unilateralidade: hoje o câmbio só pode
    deflacionar. **Não é defeito**: é a mesma regra calibrada da D-091/F5; muda o
    mundo inteiro (portão, falências) e exige fase própria + 365 d + A/B.
+   **Resolvido como D-109 na §5 e medido na §5.1** (o pass-through completo, não
+   o piso do CIF).
 2. **P2 — `floating_step` de moeda não-flutuante (defeito latente, não
    exercitado).** `exchange.cpp:38-41` devolve `base_rate` para moeda fixa; com
    a âncora móvel da C2c, um peg **com reserva** compararia a taxa do dia 0 a um
@@ -299,6 +301,12 @@ estão no teto exato (3/3, 90/90), 47 nações deflacionam mais de 3 % ao ano po
 uma regra de preço unilateral, e a sensibilidade medida (9,3 p.p. num país ao
 trocar uma moeda) mostra que o teto não tem folga real. Se a fase fechar assim,
 declarar no §7 que o mundo da C2c é um mundo de **deflação de importação**.
+
+> **Atualização (C2c-P1, D-109).** A P1 foi implementada na §5 e medida na
+> §5.1: a deflação de importação deixou de existir (p10 −8,55 % → −0,24 %,
+> 47 → 4 nações < −3 %), nenhuma nação fica abaixo de −5 % e não apareceu
+> falência nova — mas o **portão de comida sobe a 94/179** (teto 90). As
+> opções estão na §5.1.
 
 ## 4.5 Como reproduzir
 
@@ -365,6 +373,72 @@ e as nações com fornecedores desvalorizados ganham o componente de alta que ho
 0 violações), com a meta de realismo de **nenhuma nação < −5 % sem causa
 explicada**.
 
+## 5.1 Medição — A/B/C de 365 d com a P1 (20/11/2026)
+
+Mesmo comando e mesmo mundo da §4.5 (3 variantes num único processo, ~217 s
+cada, 650 s de parede, IA threads=1, DLL debug). O arquivo
+`docs/economy/perf/c2c_ab_365.json` passou a registrar **esta** medição; a
+tabela da C2c sem a P1 (§4.1) fica no commit `858dc9c0`.
+
+| variante | falências | portão | mediana | infl p10 | p50 | p90 | < −3 % | juros p50 | hash |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---|
+| base C3 (D-107) | 2 | 86/179 | 0,9778281 | 0,71 | 0,91 | 4,28 | 0 | 0,464 | `f759f4c0…` |
+| C2c sem P1 (§4.1) | 3 | 90/179 | 0,9746829 | −8,553 | −0,106 | +1,997 | 47 | 0,000 | `685d7b83…` |
+| **P1 A** regimes | **2** | **95/179** | 0,9693172 | −0,272 | +1,463 | +4,637 | **4** | 0,725 | `9f0da662…` |
+| **P1 B** só Bulgária | **3** | **91/179** | 0,9749206 | +0,714 | +1,201 | +3,262 | **0** | 0,504 | `c8be192d…` |
+| **P1 C** default | **3** | **94/179** | 0,9700499 | **−0,242** | **+1,577** | **+4,728** | **4** | 0,666 | `08770914…` |
+
+Leitura:
+
+1. **A deflação de importação foi eliminada.** p10 −8,553 % → **−0,242 %**,
+   nações abaixo de −3 % **47 → 4** e **nenhuma abaixo de −5 %**. As 4 são todas
+   de importação mais barata, com causa: CMR −4,10 %, GNQ −3,80 % e GAB −3,37 %
+   (peg XAF ao EUR, taxa 0,9726 = importação ~2,7 % mais barata) e EGY −3,20 %
+   (flutuante no piso 0,90). A moeda mais apreciada da C2c (SGP, taxa 1,0127)
+   sai de −16,45 % para −2,71 %.
+2. **Nenhuma falência nova.** As 3 de C são exatamente as da C2c: as minas
+   `pri_pon_copper_mine` e `pri_pon_iron_mine` (PRI-PON/USA, dia 126) e a soja
+   `AI-SOY-26` (PRT-POR, 40 dias de prejuízo no último snapshot). A variante A
+   fica com **2** (a soja sobrevive).
+3. **O portão de comida piorou: 90 → 94** (teto de aceite = 90) e a mediana do
+   portão caiu 0,46 p.p. (0,97468 → 0,97005, com corte fixo em 0,975). O
+   mecanismo é o próprio repasse: o preço de varejo das cidades importadoras
+   deixa de ficar **abaixo** do CIF de importação — antes a comida importada era
+   vendida por menos do que custava importar, e esse desconto artificial
+   sustentava o portão. O nível que passa a ser transmitido é o preço do
+   vendedor externo (base + markup ≈ +8 %), não o câmbio.
+4. **O custo do portão é de NÍVEL, não de câmbio.** A variante B não tem canal
+   cambial nenhum (todas as moedas em peg ⇒ competitividade 1) e mesmo assim sai
+   de 86 para **91**. Ou seja: ~5 dos 8 pontos de portão vêm de transmitir o
+   nível do CIF, e o câmbio (A − B) contribui com o restante — a assimetria que
+   causava a deflação acabou sem cobrar do portão.
+5. **Conservação e dinheiro intactos:** 6 523 551 982,90 no fim das três
+   variantes, drift máximo diário ≤ 4,2e-13, 0 violações de invariante, 0 dias
+   travados, 0 desvalorizações.
+6. **Juros deixam de ficar presos em zero:** p50 0,000 → **0,666** (A 0,725)
+   porque a inflação de 12 m deixa de ser negativa — outro sinal de que o
+   artefato deflacionário sumiu.
+
+**Critério de aceite da C2c depois da P1:** falências 3 (≤ 3) **passa**; nenhuma
+nação < −5 % sem causa **passa** (mínima −4,10 %, causa de importação);
+portão 94/179 (≤ 90) **não passa**. Nada foi calibrado para maquiar o número:
+96 % da correção é a regra de preço e o portão mede o custo real de não
+subsidiar a comida importada no preço. **Decisão do dono**, em ordem de custo:
+
+- **(a)** aceitar o portão em 94 com esta explicação e fechar a C2c com a regra
+  simétrica (o aceite da fase muda de 90 para 94 por decisão, não por número);
+- **(b)** atacar o acesso alimentar pelo lado da renda (salário/transferência) —
+  fase própria, mexe em política social e não na formação de preço;
+- **(c)** manter a regra unilateral da C2c — recusado pelo dono (é a causa da
+  deflação).
+
+**P2 e P3 (não corrigidos nesta fase).** P2 continua latente (sem reserva o
+`floating_step` de moeda fixa não é exercitado; dispara quando houver reserva com
+âncora móvel). P3 **não é pequeno**: corrigir a paridade do EUR no save v30 → v31
+exige distinguir no save/load uma paridade **declarada** (comando/arquivo) de uma
+paridade **derivada** da taxa — é mudança de contrato de status, com o teste
+`tools/c2c_real_fx_test.gd:274` fixando o comportamento atual de propósito.
+
 ## 6. Testes
 
 - `tools/c2c_real_fx_test.gd` (novo): peg cruzado (âncora dobra → taxa dobra),
@@ -377,11 +451,20 @@ explicada**.
   `currency_trade_test`, `economy_integration_test`, `services_test` (constante
   da versão atual do save atualizada para 31 neles).
 - `tools/validate_fx_regimes.py`: **OK** (135 moedas; BGN em `retired`).
+- `tools/c2c_p1_fx_passthrough_test.gd` (novo, 20/11/2026): o repasse simétrico
+  no cenário mínimo (vendedor numa nação, comprador sem produtor na outra):
+  câmbio que encarece a origem 10 % **sobe** o preço (40 → 43,95 com CIF 44),
+  o que barateia **desce** (40 → 36,05 com CIF 36), os dois caminhos são
+  **simétricos** (mesmo Δ, diferença 0), nenhum dia salta mais que
+  max(5 % do base, 6 % da abertura) (20 → 22 no limite), cotação velha não move
+  preço (comércio parado por 5 dias: preço constante) e, na cidade COM produtor,
+  importação 10 % mais barata derruba o preço abaixo do base do catálogo
+  (40 → 36,00, sem passar do CIF).
 - `tools/c2c_ab_365_test.gd` (novo, 20/11/2026): A/B/C de 365 d, três mundos em
   sequência no mesmo processo, com tabela por nação, probe de paridade do dia 0,
-  registro das construções que desaparecem e falências por dia (§4.1-4.5).
-  Verde: `c2c_ab_365_test` pelo runner, 649,7 s, 0 violações e 0 travados nos
-  três mundos.
+  registro das construções que desaparecem e falências por dia (§4.1-4.5 e
+  §5.1). Verde: `c2c_ab_365_test` pelo runner, 649,7 s (C2c) e 650,0 s (P1),
+  0 violações e 0 travados nos três mundos.
 
 ## 7. O que não mudou / limites
 
@@ -390,9 +473,14 @@ explicada**.
 - Reservas iniciais continuam 0 (não há fonte por país): o peg sem reserva é
   administrativo e **não** gasta reserva — a lacuna "o fluxo do dia não
   pressiona o peg" (C2b2 §8) continua.
-- O mundo da C2c é um mundo de **deflação de importação**: 47 nações abaixo de
-  −3 % em 12 m (§4.2), com o sinal puxado só para baixo pela regra de preço.
-  Fechar o aceite assim exige decidir a P1 (§4.4) numa fase própria.
+- Com a P1 (§5), o mundo da C2c **não é mais** um mundo de deflação de
+  importação: p10 −0,24 % e 4 nações abaixo de −3 % (§5.1). O preço de varejo
+  das cidades importadoras passou a incluir o CIF de importação (antes ele
+  ficava abaixo dele, o que sustentava o portão em 90/179); por isso o portão
+  mede **94/179** e fechar a C2c exige a decisão do dono listada na §5.1.
+- O repasse cambial simétrico é o da **regra de preço**, não do dinheiro: a taxa
+  continua não criando nem destruindo M0, e o CIF é cotação do dia (sem importação
+  no dia, o preço não se move).
 - A taxa local exibida da Bulgária passa a ser a do euro (o dado de taxa é
   estimativa PPP `derived:gdp_ppp`, não a paridade oficial): a conversão a
   1,95583 é aplicada à paridade local e a tudo o que é denominado em moeda
