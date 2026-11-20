@@ -1,6 +1,7 @@
 #include "sim_core.h"
 
 #include "balance.h"
+#include "central_bank.h"
 #include "city_gov.h"
 #include "profiling.h"
 #include "storage.h"
@@ -797,6 +798,16 @@ void SimCore::phase_invariants() {
 	ws_.invariant_violations = check_invariants(money_before());
 	if (!ws_.invariant_violations.empty()) {
 		restore_state(ws_.snapshot_buffer);
+	} else {
+		// C2a (D-103): com o dia válido, a série mensal do CPI recebe a amostra
+		// (a cada 30 dias por nação). Só medição — nenhum preço/caixa muda, e
+		// um tick revertido não amostra (o dia não aconteceu).
+		std::vector<double> base_list(
+			static_cast<std::size_t>(ws_.products), 0.0);
+		for (int product = 0; product < ws_.products; ++product) {
+			base_list[static_cast<std::size_t>(product)] = base_price(product);
+		}
+		central_bank::observe_cpi(ws_, base_list);
 	}
 	OGS_SIM_PHASE_LAP(kPhaseInvariants);
 }
@@ -893,6 +904,36 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 				+ std::to_string(ws_.day) + " a receber="
 				+ std::to_string(book.receivables) + " a pagar="
 				+ std::to_string(book.payables));
+		}
+	}
+
+	// 2b. C2a (D-103) — BANCO CENTRAL POR MOEDA: a moeda em circulação do dia
+	// tem de ser integralmente atribuível às moedas do mundo (ou declarada como
+	// não atribuível), e a base monetária medida (M0) tem de fechar com o
+	// passivo do emissor da C1. Nenhuma emissão nova: a soma dos M0 por moeda +
+	// os buckets sem nação = `money_total` do dia. Sem banco (C4) as reservas
+	// bancárias são 0, então M0 por moeda é exatamente a moeda atribuída.
+	{
+		const central_bank::MoneyAllocation money =
+			central_bank::allocate_money(ws_, money_after);
+		const double bc_tolerance = std::max(1e-3,
+			std::abs(money_after) * 1e-12);
+		const double residual = money.residual();
+		if (!std::isfinite(residual) || std::abs(residual) > bc_tolerance) {
+			violations.push_back("moeda não atribuível às moedas do mundo: dia="
+				+ std::to_string(ws_.day) + " atribuído="
+				+ std::to_string(money.allocated_total()) + " money_total="
+				+ std::to_string(money.total) + " residual="
+				+ std::to_string(residual));
+		}
+		for (std::size_t index = 0; index < money.by_currency.size();
+				++index) {
+			const double m0 = money.by_currency[index];
+			if (!std::isfinite(m0) || m0 < -1e-6) {
+				violations.push_back("M0 inválido em "
+					+ ws_.currencies[index].code + ": "
+					+ std::to_string(m0));
+			}
 		}
 	}
 

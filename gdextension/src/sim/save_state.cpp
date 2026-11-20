@@ -7,6 +7,7 @@
 // depende disso.
 #include "save_state.h"
 
+#include "central_bank.h"
 #include "sim_constants.h"
 #include "sim_core.h"
 #include "storage.h"
@@ -1240,6 +1241,11 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["source"] = sim_str(currency.source.c_str());
 		entry["balance_ema"] = currency.balance_ema;
 		entry["gross_ema"] = currency.gross_ema;
+		// C2a (v27/D-103): política da moeda. Salva, sem mecânica nesta fase.
+		entry["exchange_regime"] = sim_str(
+			central_bank::regime_name(currency.exchange_regime));
+		entry["bank_independence"] = sim_str(
+			central_bank::independence_name(currency.bank_independence));
 		Array nations = make_array();
 		for (const std::string& nation : currency.nations) {
 			nations.append(sim_str(nation.c_str()));
@@ -1258,6 +1264,48 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		tariffs.append(entry);
 	}
 	data["tariffs"] = tariffs;
+	// C2a (v27/D-103) — BANCO CENTRAL POR MOEDA: política do mundo, reserva de
+	// ouro do BC por moeda (dado real da G2) e a série mensal do CPI. Tudo é
+	// ADITIVO: save v26 carrega com fiduciário/USD (defaults declarados pelo
+	// plano), ouro 0 sem declaração e série vazia — nada inventado para trás.
+	{
+		Dictionary policy = make_object();
+		policy["standard"] = sim_str(
+			central_bank::standard_name(ws.monetary_standard));
+		policy["reserve_currency"] = sim_str(ws.reserve_currency.c_str());
+		data["monetary_policy"] = policy;
+	}
+	{
+		Dictionary bank = make_object();
+		bank["gold_declared"] = ws.reserve_gold_declared;
+		Dictionary gold = make_object();
+		for (const auto& row : ws.reserve_gold_tonnes) {
+			gold[sim_str(row.first.c_str())] = row.second;
+		}
+		bank["gold_tonnes_by_currency"] = gold;
+		bank["gold_unallocated_tonnes"] = ws.reserve_gold_unallocated;
+		bank["cpi_last_day"] = ws.cpi_last_observe_day;
+		Dictionary cpi = make_object();
+		for (const auto& row : ws.cpi_history) {
+			if (row.second.count <= 0) {
+				continue;
+			}
+			Dictionary entry = make_object();
+			Array values = make_array();
+			Array days = make_array();
+			const int count = std::clamp(row.second.count, 0,
+				central_bank::kCpiSampleSlots);
+			for (int index = 0; index < count; ++index) {
+				values.append(row.second.samples[index]);
+				days.append(row.second.sample_day[index]);
+			}
+			entry["index"] = values;
+			entry["days"] = days;
+			cpi[sim_str(row.first.c_str())] = entry;
+		}
+		bank["cpi"] = cpi;
+		data["central_bank"] = bank;
+	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
 	Array groups = make_array();
 	for (const Group& group : ws.groups) {
@@ -1492,6 +1540,19 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				String(entry.get("source", "default")).utf8().get_data());
 			currency.balance_ema = double(entry.get("balance_ema", 0.0));
 			currency.gross_ema = double(entry.get("gross_ema", 0.0));
+			// C2a (v27): política da moeda. Save v26 e anteriores NÃO têm as
+			// chaves — o regime nasce do `floating` que já existia (peg é o
+			// default do dado) e a independência nasce `no_data` (ausência
+			// declarada; nada é inventado para trás).
+			currency.exchange_regime = central_bank::regime_from_name(
+				std::string(String(entry.get("exchange_regime", ""))
+					.utf8().get_data()),
+				currency.floating ? central_bank::kRegimeFloating
+					: central_bank::kRegimePeg);
+			currency.bank_independence = central_bank::independence_from_name(
+				std::string(String(entry.get("bank_independence", ""))
+					.utf8().get_data()),
+				central_bank::kIndependenceNoData);
 			const Variant nations_variant = entry.get("nations", Array());
 			if (nations_variant.get_type() == Variant::ARRAY) {
 				const Array nations = nations_variant;
@@ -1506,6 +1567,87 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			ws.currencies.push_back(std::move(currency));
 		}
 		core.rebuild_currency_indexes();
+	}
+	// C2a (v27/D-103) — banco central por moeda: política do mundo, reserva de
+	// ouro e série do CPI. Save v26 e anteriores chegam SEM os blocos: o
+	// estado volta aos defaults DECLARADOS (fiduciário, moeda de reserva
+	// americana — padrões do plano) com ouro 0/sem declaração e série vazia.
+	ws.monetary_standard = central_bank::kStandardFiat;
+	ws.reserve_currency = "USD";
+	ws.reserve_gold_tonnes.clear();
+	ws.reserve_gold_declared = false;
+	ws.reserve_gold_unallocated = 0.0;
+	ws.cpi_history.clear();
+	ws.cpi_last_observe_day = -1;
+	if (data.has("monetary_policy")) {
+		const Dictionary policy = data.get("monetary_policy", Dictionary());
+		ws.monetary_standard = central_bank::standard_from_name(
+			std::string(String(policy.get("standard", "fiat"))
+				.utf8().get_data()),
+			central_bank::kStandardFiat);
+		const String reserve = String(policy.get("reserve_currency", "USD"));
+		if (!reserve.is_empty()) {
+			ws.reserve_currency = std::string(reserve.utf8().get_data());
+		}
+	}
+	if (data.has("central_bank")) {
+		const Dictionary bank = data.get("central_bank", Dictionary());
+		ws.reserve_gold_declared = bool(bank.get("gold_declared", false));
+		const Variant gold_variant = bank.get("gold_tonnes_by_currency",
+			Dictionary());
+		if (gold_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& gold = gold_variant;
+			for (const auto& row : gold.entries()) {
+				if (row.first.empty()) {
+					continue;
+				}
+				const double tonnes = double(row.second);
+				if (!std::isfinite(tonnes) || tonnes <= 0.0) {
+					continue;
+				}
+				ws.reserve_gold_tonnes[row.first] = tonnes;
+			}
+		}
+		ws.reserve_gold_unallocated = std::max(0.0,
+			double(bank.get("gold_unallocated_tonnes", 0.0)));
+		ws.cpi_last_observe_day = int(bank.get("cpi_last_day", -1));
+		const Variant cpi_variant = bank.get("cpi", Dictionary());
+		if (cpi_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& cpi = cpi_variant;
+			for (const auto& row_entry : cpi.entries()) {
+				if (row_entry.first.empty()
+						|| row_entry.second.get_type()
+							!= Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary& row = row_entry.second;
+				const Variant values_variant = row.get("index", Array());
+				const Variant days_variant = row.get("days", Array());
+				if (values_variant.get_type() != Variant::ARRAY) {
+					continue;
+				}
+				const Array& values = values_variant;
+				const Array days = days_variant.get_type() == Variant::ARRAY
+					? Array(days_variant) : Value::make_array();
+				CpiHistory history;
+				for (int index = 0;
+						index < values.size()
+						&& index < central_bank::kCpiSampleSlots; ++index) {
+					const double value = double(values[index]);
+					if (!std::isfinite(value) || value <= 0.0) {
+						continue;
+					}
+					const int slot = history.count;
+					history.samples[slot] = value;
+					history.sample_day[slot] = index < days.size()
+						? int(days[index]) : 0;
+					history.count = slot + 1;
+				}
+				if (history.count > 0) {
+					ws.cpi_history[row_entry.first] = history;
+				}
+			}
+		}
 	}
 	if (data.has("tariffs")) {
 		const Array saved_tariffs = data.get("tariffs", Array());
