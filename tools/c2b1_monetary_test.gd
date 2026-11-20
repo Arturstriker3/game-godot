@@ -38,6 +38,7 @@ var _failures: Array[String] = []
 
 func _init() -> void:
 	_test_defaults_and_data()
+	_test_harvest_credit_flag()
 	_test_independent()
 	_test_controlled()
 	_test_save_and_migration()
@@ -167,6 +168,45 @@ func _test_defaults_and_data() -> void:
 	_check(_close(float(totals.get("government_debt", -1.0)), 0.0, 1e-12),
 		"defaults: dívida pública inicial deveria ser 0")
 	_check_day(sim, "defaults")
+
+
+# --- 1b. D-105: juro do envelope da safra desligado por padrão ------------
+## O dado declara `harvest_credit.apply_policy_rate`; o núcleo expõe a flag no
+## status e o gancho de A/B (`set_balance`) liga/desliga sem mover dinheiro nem
+## quebrar a identidade financeira. A prova do EFECTO no portão de comida é a
+## rodada de 365 d (`tools/c1_world_ai_365.gd`, ver D-105).
+func _test_harvest_credit_flag() -> void:
+	var data: Dictionary = _json(MONETARY_PATH)
+	var harvest: Dictionary = data.get("harvest_credit", {})
+	_check(not harvest.is_empty(),
+		"dados: monetary_policy.json sem bloco `harvest_credit` (D-105)")
+	_check(harvest.has("apply_policy_rate"),
+		"dados: harvest_credit sem `apply_policy_rate`")
+	_check(bool(harvest.get("apply_policy_rate", true)) == false,
+		"dados: harvest_credit.apply_policy_rate deveria ser false até a C4")
+	var sim := _make_sim()
+	var world: Dictionary = sim.get_central_bank_status().get(
+		"monetary_policy", {})
+	_check(world.has("harvest_credit_rate"),
+		"status: monetary_policy sem `harvest_credit_rate`")
+	_check(bool(world.get("harvest_credit_rate", true))
+			== bool(harvest.get("apply_policy_rate", true)),
+		"status: flag do núcleo != dado declarado (D-105)")
+	sim.set_balance({"harvest_credit_rate": 1})
+	_check(bool(sim.get_central_bank_status().get("monetary_policy", {})
+			.get("harvest_credit_rate", false)),
+		"A/B: set_balance não ligou o juro do envelope da safra")
+	var money0 := float(sim.get_status().get("money_total", 0.0))
+	for day in 3:
+		sim.tick_day()
+		_check_day(sim, "D-105 juro ligado dia %d" % (day + 1))
+	var drift := absf(float(sim.get_status().get("money_total", 0.0)) - money0)
+	_check(drift <= maxf(EPS, 1e-9 * absf(money0)),
+		"D-105: juro no envelope moveu dinheiro (drift %.9f)" % drift)
+	sim.set_balance({"harvest_credit_rate": 0})
+	_check(not bool(sim.get_central_bank_status().get("monetary_policy", {})
+			.get("harvest_credit_rate", true)),
+		"A/B: set_balance não desligou o juro do envelope da safra")
 
 
 # --- 2. Taylor (independente) com passo limitado --------------------------

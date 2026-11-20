@@ -791,7 +791,9 @@ public:
 	 * Chaves aceitas: natural_unemployment, service_wage_adjust,
 	 * service_wage_max, inventory_cover_days, inventory_recovery,
 	 * trade_neighbors, trade_external, income_basket_margin,
-	 * infra_access_penalty (B5, penalidade máxima de acesso com estrada 0).
+	 * infra_access_penalty (B5, penalidade máxima de acesso com estrada 0),
+	 * harvest_credit_rate (D-105: 1 liga o juro da taxa básica no envelope de
+	 * crédito da safra; padrão 0 = desligado até a C4).
 	 */
 	void set_balance(const Dictionary& values);
 

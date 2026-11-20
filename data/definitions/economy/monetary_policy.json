@@ -19,6 +19,10 @@
     "controlled_spread": 0.02,
     "controlled_emission_share_of_m0": 0.01
   },
+  "harvest_credit": {
+    "apply_policy_rate": false,
+    "note": "D-105 (C2b1-fix): o juro da taxa básica no ENVELOPE de crédito da safra (D-099, agriculture.cpp) fica DESLIGADO enquanto não existir credor com contraparte no balanço — o banco é a C4. Ligado, o envelope vira asset / (60 * (1 + r * 60/365)) e o juro é custo sem recebedor. O núcleo lê a flag de WorldState::harvest_credit_rate (default false; o A/B liga por set_balance). Custo de capital do estoque privado (G2, ai_storage.cpp) NÃO é afetado: é custo de oportunidade do capital e não tem credor a receber."
+  },
   "notes": {
     "neutral_rate": "taxa real neutra de 1% + meta de 3% (decomposição do default, não medição).",
     "gap": "hiato = (desemprego natural do modelo - desemprego medido) em pontos percentuais de força de trabalho.",

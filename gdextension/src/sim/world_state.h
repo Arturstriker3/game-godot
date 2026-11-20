@@ -226,6 +226,15 @@ struct WorldState {
 	// kInfraAccessPenaltyMax; só o A/B da infra a zera para isolar o frete.
 	// Não é persistido (knob de calibração, como income_basket_margin).
 	double infra_access_penalty = kInfraAccessPenaltyMax;
+	// D-105 (C2b1-fix): juro da taxa básica no ENVELOPE de crédito da safra
+	// (D-099, `SimCore::crop_liquidity_factor`). DESLIGADO por padrão: até a C4
+	// não há credor com contraparte no balanço, então o juro seria custo sem
+	// recebedor. Ligado, o envelope vira `asset / (60 · (1 + r · 60/365))`;
+	// declarado em `data/definitions/economy/monetary_policy.json`
+	// (`harvest_credit.apply_policy_rate`) e conferido por
+	// `tools/c2b1_monetary_test.gd`. Não é persistido (parâmetro de regra, como
+	// infra_access_penalty).
+	bool harvest_credit_rate = false;
 	double inventory_cover_days = 3.0;
 	double inventory_recovery = 0.5;
 	// Índice espacial do comércio de alimento: por comprador, só os K
