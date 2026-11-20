@@ -51,6 +51,7 @@ const SAMPLE_NATIONS: Array[String] = ["USA", "CHN", "IND", "BRA", "DEU", "NGA",
 var _days := 365
 var _property := false
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
+var _fx_seed_days := 0
 
 
 func _init() -> void:
@@ -65,6 +66,11 @@ func _init() -> void:
 			_property = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--out="):
 			_out = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--fx-seed-days="):
+			# C2b2 (D-106): cenário de estresse — funda as reservas de cada
+			# moeda com N dias de importação MEDIDA do mundo e o peg passa a ser
+			# defendido (reserva esgotada = desvalorização forçada).
+			_fx_seed_days = maxi(0, int(arg.split("=", true, 1)[1]))
 	_run()
 
 
@@ -233,6 +239,45 @@ func _harvest_credit_rate(sim: Object) -> Variant:
 	return bool(policy.get("harvest_credit_rate", false))
 
 
+## C2b2 (D-106): relatório do cenário de câmbio — quantas moedas desvalorizaram,
+## quantas ficaram sem reserva, cobertura e eventos. Só medição.
+func _fx_report(sim: Object, seed_days: int) -> Dictionary:
+	var bank: Dictionary = sim.get_central_bank_status()
+	var totals: Dictionary = bank.get("totals", {})
+	var currencies: Dictionary = bank.get("currencies", {})
+	var devalued: Array = []
+	var funded := 0
+	var coverage_sum := 0.0
+	var coverage_n := 0
+	for code: Variant in currencies:
+		var fx: Dictionary = (currencies[code] as Dictionary).get("fx", {})
+		if bool(fx.get("funded", false)):
+			funded += 1
+		if int(fx.get("devaluations", 0)) > 0:
+			devalued.append({
+				"currency": String(code),
+				"devaluations": int(fx.get("devaluations", 0)),
+				"deviation": float(fx.get("deviation", 0.0)),
+			})
+		var cover := float(fx.get("coverage", 0.0))
+		if cover > 0.0:
+			coverage_sum += cover
+			coverage_n += 1
+	devalued.sort_custom(func(a, b):
+		return int(a["devaluations"]) > int(b["devaluations"]))
+	return {
+		"seed_days": seed_days,
+		"funded_currencies": funded,
+		"devaluations": int(totals.get("devaluations", 0)),
+		"currencies_devalued": devalued.size(),
+		"devalued_top": devalued.slice(0, mini(10, devalued.size())),
+		"reserves": float(totals.get("reserves", 0.0)),
+		"vault_gold_tonnes": float(totals.get("vault_gold_tonnes", 0.0)),
+		"coverage_mean": coverage_sum / float(maxi(1, coverage_n)),
+		"events": (bank.get("fx_events", []) as Array).slice(0, 10),
+	}
+
+
 func _spread(values: Array) -> Dictionary:
 	if values.is_empty():
 		return {"n": 0, "median": 0.0, "p10": 0.0, "p90": 0.0}
@@ -322,6 +367,11 @@ func _run() -> void:
 	if sim == null:
 		quit(1)
 		return
+	if _fx_seed_days > 0 and sim.has_method("seed_central_bank_reserves"):
+		# C2b2 (D-106): o cenário funda as reservas DEPOIS de 30 dias de comércio
+		# (no dia 0 não há importação medida); o laço abaixo faz a chamada.
+		print("[c1] cenário C2b2: reservas = %d dias de importação no dia 30"
+			% _fx_seed_days)
 	var money_start := float(sim.get_status().get("money_total", 0.0))
 	var history: Array = []
 	var violation_count := 0
@@ -333,6 +383,11 @@ func _run() -> void:
 	var wall_start := Time.get_ticks_msec()
 
 	for day in _days:
+		if _fx_seed_days > 0 and day == 30:
+			# Câmbio: as reservas do cenário são 30 dias da importação MEDIDA do
+			# mundo (dia 30; no dia 0 não há comércio).
+			var seeded: float = sim.seed_central_bank_reserves(_fx_seed_days)
+			print("[c1] cenário C2b2: reservas = %.3f âncora no dia 30" % seeded)
 		var summary: Dictionary = sim.tick_day()
 		for violation in Array(summary.get("invariant_violations", [])):
 			violation_count += 1
@@ -388,6 +443,8 @@ func _run() -> void:
 		"monetary": _monetary_report(sim),
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
+	if _fx_seed_days > 0:
+		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
 	var file := FileAccess.open(_out, FileAccess.WRITE)
 	if file == null:
 		print("[c1] FALHA: não escreveu " + _out)

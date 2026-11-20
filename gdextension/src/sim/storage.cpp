@@ -584,8 +584,12 @@ void SimCore::phase_storage() {
 			}
 		}
 		// Manutenção: dono paga ao setor de serviços (dinheiro conservado).
+		// C2b2 (D-106): o COFRE é estrutura (como no dado da G2) — o ouro do BC
+		// não paga manutenção de armazém; cobrar por ele moveria caixa do
+		// governo por um estoque que não é operação de mercado.
 		if (site.capacity_t > 0.0 && site.type >= 0
-				&& site.type < kStorageTypeCount) {
+				&& site.type < kStorageTypeCount
+				&& !storage_type_is_structure_only(site.type)) {
 			const double due = site.capacity_t
 				* kStorageMaintenancePerTonDay[site.type];
 			double paid = 0.0;
