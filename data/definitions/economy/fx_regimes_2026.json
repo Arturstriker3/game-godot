@@ -8,7 +8,7 @@
     "name": "IMF Annual Report on Exchange Arrangements and Exchange Restrictions (AREAER)",
     "publisher": "International Monetary Fund",
     "document": "IMF Annual Report 2026 - Appendices, Appendix II.9: De Facto Classification of Exchange Rate Arrangements, as of April 30, 2026, and Monetary Policy Frameworks",
-    "url": "https://imf.org/annual-report/2026/pdfs/imf-annual-report-2026-appendices.pdf",
+    "url": "https://www.imf.org/annual-report/2026/pdfs/imf-annual-report-2026-appendices.pdf",
     "as_of": "2026-04-30",
     "edition_note": "A tabela do Annual Report 2026 é preliminar; as classificações finais saem no AREAER 2026 (nota 1 da tabela).",
     "extraction": "Lida por coluna (âncora USD, EUR, composta e outra) e pelas notas 3-12 do quadro; a coluna de arcabouço monetário não altera o regime.",
@@ -19,7 +19,11 @@
         "used_for": "BGN: já é o euro desde 2026-01-01 (paridade 1,95583), o jogo ainda tem a moeda BGN."
       }
     ],
-    "not_used": "Não foi usada nenhuma classificação de memória nem estimativa: moeda sem classificação AREAER ficou 'unknown'."
+    "not_used": "Não foi usada nenhuma classificação de memória nem estimativa: moeda sem classificação AREAER ficou 'unknown'.",
+    "published": "2026-09-15",
+    "retrieved": "2026-11-20",
+    "table_pages": "Apêndice II.9 nas pp. 19-23 do PDF de apêndices (39 pp.)",
+    "verified": "Tabela relida do PDF em 2026-11-20: cada moeda do jogo foi comparada com o quadro, a amostra de 20 moedas e as 8 entradas que estavam sem âncora foram conferidas linha a linha."
   },
   "classification_values": {
     "free_floating": "câmbio livremente flutuante (taxa determinada pelo mercado)",
@@ -55,7 +59,7 @@
   "currencies": {
     "AED": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -69,7 +73,7 @@
     },
     "AFN": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -83,7 +87,7 @@
     },
     "ALL": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -97,7 +101,7 @@
     },
     "AMD": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -111,7 +115,7 @@
     },
     "AOA": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -125,7 +129,7 @@
     },
     "ARS": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
       "anchor": null,
       "anchor_type": "none",
@@ -139,7 +143,7 @@
     },
     "AUD": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -153,7 +157,7 @@
     },
     "AZN": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -167,7 +171,7 @@
     },
     "BAM": {
       "classification": "currency_board",
-      "arear_label": "Currency board",
+      "areaer_label": "Currency board",
       "game_regime": "peg",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -181,7 +185,7 @@
     },
     "BBD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -195,7 +199,7 @@
     },
     "BDT": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -209,7 +213,7 @@
     },
     "BGN": {
       "classification": "currency_board",
-      "arear_label": "Currency board",
+      "areaer_label": "Currency board",
       "game_regime": "peg",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -219,11 +223,12 @@
         "BGR"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "AREAER 2026 mantém currency board; a Bulgária adotou o euro em 2026-01-01 (Decisão (UE) 2025/1407; BCE 2025-07-08) e o jogo ainda tem BGN — a âncora EUR segue válida (1 EUR = 1,95583 BGN)."
+      "note": "AREAER 2026 (preliminar, 30/04/2026) mantém currency board com âncora EUR, mas a Bulgária está no euro desde 2026-01-01. Valor de conversão 1 EUR = 1,95583 BGN; ver pending.",
+      "pending": "BGR adotou o euro em 2026-01-01 (Decisão (UE) 2025/1407; BCE 2025-07-08 e 2026-01-01) e o Apêndice II.9, com data de 30/04/2026, ainda lista \"Currency board\" com âncora euro. O cenário do jogo não muda aqui, mas o jogo deveria tratar BGR como membro do euro; BGN fica como moeda legada (1 EUR = 1,95583 BGN)."
     },
     "BHD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -237,7 +242,7 @@
     },
     "BIF": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -251,21 +256,22 @@
     },
     "BND": {
       "classification": "currency_board",
-      "arear_label": "Currency board",
+      "areaer_label": "Currency board",
       "game_regime": "peg",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "SGD",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "BRN"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Currency board; a âncora não é declarada no Apêndice II.9 (ler o capítulo do país no AREAER)."
+      "note": "Currency board sob o Currency Interchangeability Agreement (CIA, 1967): o dólar de Brunei é emitido 1:1 contra o dólar de Singapura. O Apêndice II.9 declara apenas a coluna \"Other\" (moeda-âncora não nomeada no quadro).",
+      "anchor_source": "BDCB, Monetary Policy Framework: \"the local currency is pegged to the Singapore dollar at par\" (https://www.bdcb.gov.bn/monetary-policy/monetary-policy-framework); MAS, Brunei-Singapore Currency Interchangeability Agreement (https://www.mas.gov.sg/currency/brunei-singapore-currency-interchangeability-agreement)."
     },
     "BOB": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -279,7 +285,7 @@
     },
     "BRL": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -293,7 +299,7 @@
     },
     "BSD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -307,35 +313,36 @@
     },
     "BTN": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "INR",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "BTN"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9 (coluna 'outra')."
+      "note": "Peg convencional a par com a rupia indiana desde 1974; o Apêndice II.9 declara apenas a coluna \"Other\".",
+      "anchor_source": "RMA, FAQ: \"Bhutan's national currency is pegged to the Indian rupee at parity\" (https://www.rma.org.bt/faq); IMF Country Report 26/019, Butão 2025 Art. IV: \"the ngultrum has been pegged to the Indian rupee at par\" (https://www.elibrary.imf.org/view/journals/002/2026/019/article-A002-en.xml)."
     },
     "BWP": {
       "classification": "crawl",
-      "arear_label": "Crawling peg",
+      "areaer_label": "Crawling peg",
       "game_regime": "band",
       "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor_type": "composite",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "BWA"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Único crawling peg do quadro; âncora não declarada no Apêndice II.9."
+      "note": "Único crawling peg do quadro; o Apêndice II.9 o coloca na coluna \"Composite (8)\" (âncora em cesta), sem publicar a composição."
     },
     "BYN": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -349,7 +356,7 @@
     },
     "BZD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -363,7 +370,7 @@
     },
     "CAD": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -377,7 +384,7 @@
     },
     "CDF": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
       "anchor": null,
       "anchor_type": "none",
@@ -391,7 +398,7 @@
     },
     "CHF": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -405,7 +412,7 @@
     },
     "CLP": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -419,7 +426,7 @@
     },
     "CNY": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -433,7 +440,7 @@
     },
     "COP": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -447,7 +454,7 @@
     },
     "CRC": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -461,7 +468,7 @@
     },
     "CUP": {
       "classification": "unknown",
-      "arear_label": null,
+      "areaer_label": null,
       "game_regime": null,
       "anchor": null,
       "anchor_type": "none",
@@ -475,7 +482,7 @@
     },
     "CZK": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -489,7 +496,7 @@
     },
     "DJF": {
       "classification": "currency_board",
-      "arear_label": "Currency board",
+      "areaer_label": "Currency board",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -503,7 +510,7 @@
     },
     "DKK": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -517,7 +524,7 @@
     },
     "DOP": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -531,7 +538,7 @@
     },
     "DZD": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -545,7 +552,7 @@
     },
     "EGP": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -559,7 +566,7 @@
     },
     "ERN": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -573,7 +580,7 @@
     },
     "ETB": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
       "anchor": null,
       "anchor_type": "none",
@@ -587,7 +594,7 @@
     },
     "EUR": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -626,21 +633,21 @@
     },
     "FJD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor_type": "composite",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "FJI"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9 (coluna 'outra')."
+      "note": "Peg convencional com âncora em cesta: o Apêndice II.9 o coloca na coluna \"Composite (8)\" da seção Exchange rate anchor; a composição da cesta não é publicada no quadro."
     },
     "GBP": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -654,7 +661,7 @@
     },
     "GEL": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -668,7 +675,7 @@
     },
     "GHS": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -682,7 +689,7 @@
     },
     "GMD": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -696,7 +703,7 @@
     },
     "GNF": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -710,7 +717,7 @@
     },
     "GTQ": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -724,21 +731,21 @@
     },
     "GYD": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "USD",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "GUY"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9."
+      "note": "Stabilized arrangement na coluna \"US Dollar\" do Apêndice II.9 (âncora USD)."
     },
     "HNL": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -752,7 +759,7 @@
     },
     "HTG": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -766,7 +773,7 @@
     },
     "HUF": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -780,7 +787,7 @@
     },
     "IDR": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -794,7 +801,7 @@
     },
     "ILS": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -809,7 +816,7 @@
     },
     "INR": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -823,7 +830,7 @@
     },
     "IQD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -837,21 +844,21 @@
     },
     "IRR": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
-      "anchor": null,
-      "anchor_type": "none",
+      "anchor": "USD",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "IRN"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": null
+      "note": "Other managed arrangement na coluna \"US Dollar\" do Apêndice II.9 (âncora de facto USD)."
     },
     "ISK": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -865,7 +872,7 @@
     },
     "JMD": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -879,7 +886,7 @@
     },
     "JOD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -893,7 +900,7 @@
     },
     "JPY": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -907,7 +914,7 @@
     },
     "KES": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -921,7 +928,7 @@
     },
     "KGS": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -935,21 +942,21 @@
     },
     "KHR": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "USD",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "KHM"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Passou de crawl-like para stabilized em 03/2025; âncora não declarada."
+      "note": "Passou de crawl-like para stabilized em 03/2025; coluna \"US Dollar\" do Apêndice II.9 (âncora USD)."
     },
     "KPW": {
       "classification": "unknown",
-      "arear_label": null,
+      "areaer_label": null,
       "game_regime": null,
       "anchor": null,
       "anchor_type": "none",
@@ -963,7 +970,7 @@
     },
     "KRW": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -977,21 +984,21 @@
     },
     "KWD": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
       "anchor": null,
-      "anchor_type": "none",
+      "anchor_type": "composite",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "KWT"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": null
+      "note": "Other managed arrangement na coluna \"Composite (8)\" do Apêndice II.9 (âncora em cesta), sem composição publicada."
     },
     "KZT": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1005,7 +1012,7 @@
     },
     "LAK": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1019,21 +1026,21 @@
     },
     "LBP": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "USD",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "LBN"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9."
+      "note": "Stabilized arrangement na coluna \"US Dollar\" do Apêndice II.9 (âncora USD)."
     },
     "LKR": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1047,7 +1054,7 @@
     },
     "LRD": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1061,35 +1068,36 @@
     },
     "LSL": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "ZAR",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "LSO"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9 (coluna 'outra')."
+      "note": "Common Monetary Area: o loti é emitido a par com o rand, que também é curso legal no Lesoto; o Apêndice II.9 declara apenas a coluna \"Other\".",
+      "anchor_source": "CBL, Monetary Policy: \"pegging the Loti to the South African Rand\" (https://centralbank.org.ls/monetary-policy); IMF Country Report 25/267, Lesoto 2025 Art. IV: \"conventional peg at par to the South African Rand\" (https://www.imf.org/-/media/files/publications/cr/2025/english/1lsoea2025001-source-pdf.pdf)."
     },
     "LYD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor_type": "composite",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "LBY"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9 (coluna 'outra')."
+      "note": "Peg convencional com âncora em cesta: o Apêndice II.9 o coloca na coluna \"Composite (8)\" da seção Exchange rate anchor; a composição da cesta não é publicada no quadro."
     },
     "MAD": {
       "classification": "band",
-      "arear_label": "Pegged exchange rate within horizontal bands",
+      "areaer_label": "Pegged exchange rate within horizontal bands",
       "game_regime": "band",
       "anchor": null,
       "anchor_type": "composite",
@@ -1104,7 +1112,7 @@
     },
     "MDL": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1118,7 +1126,7 @@
     },
     "MGA": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1132,21 +1140,21 @@
     },
     "MKD": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "EUR",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "MKD"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9."
+      "note": "Stabilized arrangement na coluna \"Euro\" do Apêndice II.9 (âncora EUR)."
     },
     "MMK": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1160,7 +1168,7 @@
     },
     "MNT": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1174,7 +1182,7 @@
     },
     "MRU": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1188,7 +1196,7 @@
     },
     "MWK": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1202,7 +1210,7 @@
     },
     "MXN": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1216,7 +1224,7 @@
     },
     "MYR": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1230,7 +1238,7 @@
     },
     "MZN": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1244,21 +1252,22 @@
     },
     "NAD": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "ZAR",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "NAM"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9 (coluna 'outra')."
+      "note": "Common Monetary Area: o dólar namibiano é emitido a par com o rand, que também é curso legal na Namíbia; o Apêndice II.9 declara apenas a coluna \"Other\".",
+      "anchor_source": "Bank of Namibia, FAQ: \"The currencies of Namibia, Lesotho and Swaziland are pegged to the South African Rand on a one-to-one basis\" (https://www.bon.com.na/Informations/FAQ/Roles-of-the-Bank.aspx)."
     },
     "NGN": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1272,21 +1281,21 @@
     },
     "NIO": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "USD",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "NIC"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Reclassificada em 01/2024; âncora não declarada no Apêndice II.9."
+      "note": "Reclassificada em 01/2024; stabilized arrangement na coluna \"US Dollar\" do Apêndice II.9 (âncora USD)."
     },
     "NOK": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1300,21 +1309,22 @@
     },
     "NPR": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "INR",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "NPL"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9 (coluna 'outra')."
+      "note": "Peg convencional a 1,6 NPR por INR desde 12/02/1993; o Apêndice II.9 declara apenas a coluna \"Other\".",
+      "anchor_source": "NRB, Macroeconomic Report (fev/2026): \"current level of peg stands at 1.6 NPR per INR since February 12, 1993\" (https://www.nrb.org.np/contents/uploads/2026/03/Macroeconomic-Report-February-2026.pdf); IMF Country Report 26/127, Nepal 2026 Art. IV: \"conventional peg to a single currency unit... NPR 1.6 per Indian rupee\" (https://www.elibrary.imf.org/view/journals/002/2026/127/article-A003-en.xml)."
     },
     "NZD": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1328,7 +1338,7 @@
     },
     "OMR": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1342,7 +1352,7 @@
     },
     "PAB": {
       "classification": "no_separate_legal_tender",
-      "arear_label": "No separate legal tender",
+      "areaer_label": "No separate legal tender",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1356,7 +1366,7 @@
     },
     "PEN": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1370,7 +1380,7 @@
     },
     "PGK": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1384,7 +1394,7 @@
     },
     "PHP": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1398,7 +1408,7 @@
     },
     "PKR": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1412,7 +1422,7 @@
     },
     "PLN": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1426,7 +1436,7 @@
     },
     "PYG": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1440,7 +1450,7 @@
     },
     "QAR": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1454,7 +1464,7 @@
     },
     "RON": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -1468,7 +1478,7 @@
     },
     "RSD": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -1482,7 +1492,7 @@
     },
     "RUB": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1496,7 +1506,7 @@
     },
     "RWF": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1510,7 +1520,7 @@
     },
     "SAR": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1524,7 +1534,7 @@
     },
     "SBD": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1538,7 +1548,7 @@
     },
     "SDG": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1552,7 +1562,7 @@
     },
     "SEK": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1566,21 +1576,21 @@
     },
     "SGD": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor_type": "composite",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "SGP"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora (cesta) não declarada no Apêndice II.9."
+      "note": "Crawl-like com âncora em cesta: coluna \"Composite (8)\" do Apêndice II.9; a composição não é publicada no quadro."
     },
     "SLE": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1594,7 +1604,7 @@
     },
     "SLS": {
       "classification": "unknown",
-      "arear_label": null,
+      "areaer_label": null,
       "game_regime": null,
       "anchor": null,
       "anchor_type": "none",
@@ -1608,7 +1618,7 @@
     },
     "SOS": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1622,7 +1632,7 @@
     },
     "SRD": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1636,7 +1646,7 @@
     },
     "SSP": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
       "anchor": null,
       "anchor_type": "none",
@@ -1650,35 +1660,36 @@
     },
     "SYP": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
       "anchor": null,
-      "anchor_type": "none",
+      "anchor_type": "composite",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "SYR"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Classificação de 30/04/2017 (nota 10)."
+      "note": "Classificação de 30/04/2017 (nota 10); other managed arrangement na coluna \"Composite (8)\" do Apêndice II.9 (âncora em cesta)."
     },
     "SZL": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "ZAR",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "SWZ"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9 (coluna 'outra')."
+      "note": "Common Monetary Area: o lilangeni é emitido a par (1:1) com o rand, que é curso legal em Essuatíni; o Apêndice II.9 declara apenas a coluna \"Other\".",
+      "anchor_source": "Central Bank of Eswatini, Currency: \"introduced in 1974 at par with the South African Rand through the CMA (Common Monetary Area) to which it remains tied at a one-to-one exchange rate\" (https://www.centralbank.org.sz/currency1)."
     },
     "THB": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1692,7 +1703,7 @@
     },
     "TJS": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1706,7 +1717,7 @@
     },
     "TMT": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1720,7 +1731,7 @@
     },
     "TND": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -1734,7 +1745,7 @@
     },
     "TRY": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1748,21 +1759,21 @@
     },
     "TTD": {
       "classification": "stabilized",
-      "arear_label": "Stabilized arrangement",
+      "areaer_label": "Stabilized arrangement",
       "game_regime": "band",
-      "anchor": null,
-      "anchor_type": "not_stated",
+      "anchor": "USD",
+      "anchor_type": "currency",
       "band_width": null,
       "shared_currency": false,
       "nations": [
         "TTO"
       ],
       "source": "IMF AREAER, 30/04/2026 (Annual Report 2026, Apêndice II.9)",
-      "note": "Âncora não declarada no Apêndice II.9."
+      "note": "Stabilized arrangement na coluna \"US Dollar\" do Apêndice II.9 (âncora USD)."
     },
     "TWD": {
       "classification": "unknown",
-      "arear_label": null,
+      "areaer_label": null,
       "game_regime": null,
       "anchor": null,
       "anchor_type": "none",
@@ -1776,7 +1787,7 @@
     },
     "TZS": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1790,7 +1801,7 @@
     },
     "UAH": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1804,7 +1815,7 @@
     },
     "UGX": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1818,7 +1829,7 @@
     },
     "USD": {
       "classification": "free_floating",
-      "arear_label": "Free floating",
+      "areaer_label": "Free floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1840,7 +1851,7 @@
     },
     "UYU": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1854,7 +1865,7 @@
     },
     "UZS": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1868,7 +1879,7 @@
     },
     "VES": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
       "anchor": null,
       "anchor_type": "none",
@@ -1882,7 +1893,7 @@
     },
     "VND": {
       "classification": "crawl",
-      "arear_label": "Crawl-like arrangement",
+      "areaer_label": "Crawl-like arrangement",
       "game_regime": "band",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1896,7 +1907,7 @@
     },
     "XAF": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -1915,7 +1926,7 @@
     },
     "XCD": {
       "classification": "currency_board",
-      "arear_label": "Currency board",
+      "areaer_label": "Currency board",
       "game_regime": "peg",
       "anchor": "USD",
       "anchor_type": "currency",
@@ -1934,7 +1945,7 @@
     },
     "XOF": {
       "classification": "conventional_peg",
-      "arear_label": "Conventional peg",
+      "areaer_label": "Conventional peg",
       "game_regime": "peg",
       "anchor": "EUR",
       "anchor_type": "currency",
@@ -1955,7 +1966,7 @@
     },
     "YER": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1969,7 +1980,7 @@
     },
     "ZAR": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1983,7 +1994,7 @@
     },
     "ZMW": {
       "classification": "floating",
-      "arear_label": "Floating",
+      "areaer_label": "Floating",
       "game_regime": "floating",
       "anchor": null,
       "anchor_type": "none",
@@ -1997,7 +2008,7 @@
     },
     "ZWG": {
       "classification": "other_managed",
-      "arear_label": "Other managed arrangement",
+      "areaer_label": "Other managed arrangement",
       "game_regime": "band",
       "anchor": null,
       "anchor_type": "none",
@@ -2028,5 +2039,8 @@
       }
     ],
     "game_state": "monetary_policy.json declara bank_independence = 'independent' como default de jogo (não observado); a C2a marcou bank_independence = no_data."
-  }
+  },
+  "pending": [
+    "BGR adotou o euro em 2026-01-01 (Decisão (UE) 2025/1407; BCE 2025-07-08 e 2026-01-01) e o Apêndice II.9, com data de 30/04/2026, ainda lista \"Currency board\" com âncora euro. O cenário do jogo não muda aqui, mas o jogo deveria tratar BGR como membro do euro; BGN fica como moeda legada (1 EUR = 1,95583 BGN)."
+  ]
 }

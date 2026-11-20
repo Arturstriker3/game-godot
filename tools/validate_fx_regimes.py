@@ -10,7 +10,10 @@ Confere, contra data/definitions/economy/currencies.json:
 - source presente e nao vazio em toda entrada, exceto "unknown" (que declara a ausencia);
 - band_width so aparece com band_width_source (o Apendice II.9 do AREAER nao declara larguras);
 - "unknown" nao tem regime nem ancora;
-- nations bate com currencies[].nations, e as excecoes declaradas pertencem a moeda.
+- nations bate com currencies[].nations, e as excecoes declaradas pertencem a moeda;
+- areaer_label presente em toda entrada classificada (null so em "unknown");
+- anchor_source, quando existe, e texto nao vazio e acompanha ancora em moeda;
+- a lista top-level "pending" cita codigo de moeda do jogo.
 
 Sai com codigo != 0 em qualquer erro. Nao altera arquivos.
 """
@@ -98,6 +101,20 @@ def main() -> int:
         if entry.get("band_width") is not None and not entry.get("band_width_source"):
             errors.append(f"{where}: band_width sem band_width_source")
 
+        anchor_source = entry.get("anchor_source")
+        if anchor_source is not None:
+            if not isinstance(anchor_source, str) or not anchor_source.strip():
+                errors.append(f"{where}: anchor_source vazio")
+            if anchor is None or atype != "currency":
+                errors.append(f"{where}: anchor_source sem ancora em moeda")
+
+        label = entry.get("areaer_label")
+        if cls == "unknown":
+            if label is not None:
+                errors.append(f"{where}: unknown nao deveria ter areaer_label")
+        elif not isinstance(label, str) or not label.strip():
+            errors.append(f"{where}: areaer_label ausente")
+
         if cls == "unknown":
             if entry.get("game_regime") is not None:
                 errors.append(f"{where}: unknown nao pode ter game_regime")
@@ -123,10 +140,24 @@ def main() -> int:
         for c, e in sorted(entries.items())
         if e.get("game_regime") == "peg" and e.get("anchor")
     ]
+    composite_pegs = sorted(
+        c for c, e in entries.items()
+        if e.get("game_regime") == "peg" and e.get("anchor_type") == "composite"
+    )
     no_anchor_pegs = sorted(
         c for c, e in entries.items()
         if e.get("game_regime") == "peg" and e.get("anchor") is None
+        and e.get("anchor_type") != "composite"
     )
+    pending = data.get("pending") or []
+    if not isinstance(pending, list):
+        errors.append("pending deveria ser lista")
+        pending = []
+    for i, item in enumerate(pending):
+        if not isinstance(item, str) or not item.strip():
+            errors.append(f"pending[{i}]: vazio")
+        elif not any(code in item for code in game):
+            errors.append(f"pending[{i}]: nao cita moeda do jogo")
 
     print(f"moedas: {len(entries)} (jogo: {len(game)})")
     print("por classificacao: " + ", ".join(f"{k}={v}" for k, v in sorted(by_cls.items())))
@@ -136,8 +167,14 @@ def main() -> int:
     )
     print(f"unknown ({len(unknown)}): {', '.join(unknown)}")
     print(f"pegs com ancora ({len(pegs)}): " + ", ".join(f"{c}->{a}" for c, a in pegs))
+    if composite_pegs:
+        print(f"pegs com ancora em cesta ({len(composite_pegs)}): {', '.join(composite_pegs)}")
     if no_anchor_pegs:
         print(f"pegs sem ancora no dado ({len(no_anchor_pegs)}): {', '.join(no_anchor_pegs)}")
+    if pending:
+        print(f"pendencias declaradas ({len(pending)}):")
+        for item in pending:
+            print(f"  - {item}")
 
     if warnings:
         print()
