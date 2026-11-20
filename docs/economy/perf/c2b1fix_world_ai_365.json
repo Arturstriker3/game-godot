@@ -1,0 +1,349 @@
+{
+  "balance": {
+    "arrears": {
+      "plants": 614993.874021963,
+      "rural": 10495471921.8112,
+      "service": 28007645.6711939
+    },
+    "invariant": {
+      "arrears_plants": 614993.874021963,
+      "arrears_rural": 10495471921.8112,
+      "arrears_service": 28007645.6711939,
+      "cash_residual": -0.00000286102294921875,
+      "cash_total": 6523551982.90166,
+      "financial_sum": 0.0000162124633789063,
+      "monetary_base": 6523551982.90166,
+      "money_total": 6523551982.90166,
+      "ok": true,
+      "payables": 10524094561.3564,
+      "receivables": 10524094561.3564
+    },
+    "nations": 179,
+    "sample_nations": {
+      "BRA": {
+        "families_cash": 608698961.94318,
+        "families_net_worth": 777609321.869459,
+        "families_property": 0.0,
+        "families_receivables": 168910359.926279,
+        "firms_inventory": 10059340605.6852,
+        "firms_net_worth": 9964551834.87138,
+        "firms_payables": 168910359.926279,
+        "government_net_worth": 184647436.388432,
+        "net_worth_per_capita": 9.39684530965232
+      },
+      "CHN": {
+        "families_cash": 1985228230.64147,
+        "families_net_worth": 3640531473.11361,
+        "families_property": 0.0,
+        "families_receivables": 1655303242.47214,
+        "firms_inventory": 17569432795.4604,
+        "firms_net_worth": 16675089122.0782,
+        "firms_payables": 1655303242.47214,
+        "government_net_worth": 867959169.119361,
+        "net_worth_per_capita": 10.20220794168
+      },
+      "DEU": {
+        "families_cash": 141118706.465326,
+        "families_net_worth": 252069326.455213,
+        "families_property": 0.0,
+        "families_receivables": 110950619.989887,
+        "firms_inventory": 623379998.418952,
+        "firms_net_worth": 538780876.910577,
+        "firms_payables": 110950619.989887,
+        "government_net_worth": 38476771.4536427,
+        "net_worth_per_capita": 11.5523903158
+      },
+      "IDN": {
+        "families_cash": 336419461.455479,
+        "families_net_worth": 710704304.78155,
+        "families_property": 0.0,
+        "families_receivables": 374284843.326072,
+        "firms_inventory": 883497211.814206,
+        "firms_net_worth": 578414217.453695,
+        "firms_payables": 374284843.326072,
+        "government_net_worth": 6741376.8325551,
+        "net_worth_per_capita": 11.6205026901123
+      },
+      "IND": {
+        "families_cash": 574817379.332225,
+        "families_net_worth": 3124841163.24594,
+        "families_property": 0.0,
+        "families_receivables": 2550023783.91371,
+        "firms_inventory": 6845865415.96258,
+        "firms_net_worth": 4574150008.16163,
+        "firms_payables": 2550023783.91371,
+        "government_net_worth": 731788021.374041,
+        "net_worth_per_capita": 17.4019191184388
+      },
+      "MEX": {
+        "families_cash": 287694439.258903,
+        "families_net_worth": 429914429.141133,
+        "families_property": 0.0,
+        "families_receivables": 142219989.88223,
+        "firms_inventory": 364894810.880768,
+        "firms_net_worth": 282846243.044938,
+        "firms_payables": 142219989.88223,
+        "government_net_worth": 24677333.0420032,
+        "net_worth_per_capita": 8.27832758085168
+      },
+      "NGA": {
+        "families_cash": 103536451.656802,
+        "families_net_worth": 376090971.907847,
+        "families_property": 0.0,
+        "families_receivables": 272554520.251046,
+        "firms_inventory": 268879828.685796,
+        "firms_net_worth": 57222074.3851836,
+        "firms_payables": 272554520.251046,
+        "government_net_worth": 10016858.2381119,
+        "net_worth_per_capita": 7.74661976349782
+      },
+      "RUS": {
+        "families_cash": 341844405.202347,
+        "families_net_worth": 470513600.878984,
+        "families_property": 0.0,
+        "families_receivables": 128669195.676637,
+        "firms_inventory": 2520690422.85345,
+        "firms_net_worth": 2546419364.76532,
+        "firms_payables": 128669195.676637,
+        "government_net_worth": 42057301.5703137,
+        "net_worth_per_capita": 9.28130810104659
+      },
+      "USA": {
+        "families_cash": 802279291.043784,
+        "families_net_worth": 1093837107.31711,
+        "families_property": 0.0,
+        "families_receivables": 291557816.273322,
+        "firms_inventory": 8660012057.95454,
+        "firms_net_worth": 8457991400.4446,
+        "firms_payables": 291557816.273322,
+        "government_net_worth": 206951307.673234,
+        "net_worth_per_capita": 8.31003680841424
+      },
+      "ZAF": {
+        "families_cash": 93649743.7840114,
+        "families_net_worth": 154760056.895752,
+        "families_property": 0.0,
+        "families_receivables": 61110313.1117403,
+        "firms_inventory": 353280158.90426,
+        "firms_net_worth": 324090207.826928,
+        "firms_payables": 61110313.1117403,
+        "government_net_worth": 65081729.5068385,
+        "net_worth_per_capita": 5.57801215234875
+      }
+    },
+    "world": {
+      "external_cash": -9619509223.59921,
+      "families_cash": 10644183456.7945,
+      "families_inventory": 0.0,
+      "families_net_worth": 21168278018.1509,
+      "families_property": 0.0,
+      "families_receivables": 10524094561.3564,
+      "firms_fixed_capital": 2915705996.66593,
+      "firms_inventory": 72757029135.3842,
+      "firms_net_worth": 65724286161.6613,
+      "firms_payables": 10524094561.3564,
+      "firms_solvency": {
+        "count": 3985,
+        "illiquid": 2,
+        "insolvent": 0,
+        "liquid": 3983
+      },
+      "government_inventory": 257155365.17306,
+      "government_net_worth": 3438318466.77686
+    }
+  },
+  "bankruptcies": 2,
+  "days": 365,
+  "drift": 0.000000000000254515789743916,
+  "final_day": 365,
+  "food_gate": {
+    "below": [
+      "SLB",
+      "PSX",
+      "HTI",
+      "SOM",
+      "COD",
+      "JPN",
+      "COG",
+      "MLI",
+      "BFA",
+      "GMB",
+      "DJI",
+      "ITA",
+      "AUT",
+      "CAN",
+      "NED",
+      "USA",
+      "CHN",
+      "HRV",
+      "CHE",
+      "BEL",
+      "SEN",
+      "GRC",
+      "SVN",
+      "SRB",
+      "BRN",
+      "ESP",
+      "YEM",
+      "HUN",
+      "URY",
+      "QAT",
+      "CYP",
+      "FRA",
+      "BIH",
+      "SAU",
+      "DNK",
+      "MKD",
+      "KOR",
+      "ARG",
+      "ISR",
+      "ROU",
+      "THA",
+      "POL",
+      "GEO",
+      "SGP",
+      "ARM",
+      "COL",
+      "SVK",
+      "IRL",
+      "FIN",
+      "TUR",
+      "CRI",
+      "DOM",
+      "TKM",
+      "PRT",
+      "EGY",
+      "ALB",
+      "CMR",
+      "BLR",
+      "LCA",
+      "AZE",
+      "DEU",
+      "OMN",
+      "EST",
+      "PAN",
+      "NGA",
+      "DMA",
+      "GRD",
+      "MYS",
+      "UKR",
+      "PRY",
+      "VEN",
+      "GAB",
+      "LBR",
+      "ARE",
+      "BTN",
+      "BRA",
+      "PER",
+      "MEX",
+      "NOR",
+      "KWT",
+      "GBR",
+      "KAZ",
+      "PRK",
+      "BGR",
+      "IRN",
+      "CZE"
+    ],
+    "below_gate": 86,
+    "mean": 0.909381498753106,
+    "median": 0.977828092739464,
+    "nations": 179,
+    "worst": [
+      {
+        "food_avg30": 0.159446174090654,
+        "nation": "SLB"
+      },
+      {
+        "food_avg30": 0.206763515101729,
+        "nation": "PSX"
+      },
+      {
+        "food_avg30": 0.253395255512362,
+        "nation": "HTI"
+      },
+      {
+        "food_avg30": 0.28303946557724,
+        "nation": "SOM"
+      },
+      {
+        "food_avg30": 0.430930875042596,
+        "nation": "COD"
+      },
+      {
+        "food_avg30": 0.535506291054743,
+        "nation": "JPN"
+      },
+      {
+        "food_avg30": 0.536494821218923,
+        "nation": "COG"
+      },
+      {
+        "food_avg30": 0.559244912810244,
+        "nation": "MLI"
+      },
+      {
+        "food_avg30": 0.670625003840386,
+        "nation": "BFA"
+      },
+      {
+        "food_avg30": 0.694537675879021,
+        "nation": "GMB"
+      }
+    ]
+  },
+  "harvest_credit_rate": false,
+  "invariant_violation_samples": [],
+  "invariant_violations": 0,
+  "max_daily_drift": 0.000000000000417516999143379,
+  "monetary": {
+    "controlled": 0,
+    "currencies": 136,
+    "currencies_with_inflation": 136,
+    "emission_today": 0.0,
+    "emission_total": 0.0,
+    "government_debt": 0.0,
+    "inflation_12m_pct": {
+      "median": 0.90805102011966,
+      "n": 179,
+      "p10": 0.713807718045945,
+      "p90": 4.27755855062997
+    },
+    "inflation_annualized_pct": {
+      "median": 0.90805102011966,
+      "n": 179,
+      "p10": 0.713807718045945,
+      "p90": 4.27755855062997
+    },
+    "nations_annualized": 179,
+    "nations_has_12m": 179,
+    "rate_pct": {
+      "median": 0.463755136199966,
+      "n": 136,
+      "p10": 0.0,
+      "p90": 6.24523401364464
+    },
+    "securities": 0.0
+  },
+  "money_end": 6523551982.90166,
+  "money_start": 6523551982.9,
+  "property": false,
+  "stalled_days": 0,
+  "threads": 1,
+  "trajectory_end": {
+    "credit_capacity": 178.424075156721,
+    "m0": 14471324521.5263,
+    "private_stock_t": 59590418.0905245
+  },
+  "trajectory_fields": [
+    "day",
+    "money_total(6)",
+    "bankruptcies",
+    "food_ratio_sum(9)",
+    "m0_total(6)",
+    "private_stock_t(6)",
+    "credit_capacity(9)"
+  ],
+  "trajectory_sha256": "f759f4c085b78902f1909716c9fef6b2363fd72cfd845f2ccba8d7b121abeafb",
+  "wall_s": 189.798
+}

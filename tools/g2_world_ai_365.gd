@@ -27,6 +27,7 @@ const GeoScript := preload("res://core/economy/geography_service.gd")
 const AgriScript := preload("res://core/economy/agriculture_service.gd")
 const StorageScript := preload("res://core/economy/storage_service.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
+const TrajectoryDigest := preload("res://core/economy/trajectory_digest.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -222,12 +223,12 @@ func _run() -> Dictionary:
 	for day in _days:
 		var summary: Dictionary = sim.tick_day()
 		for violation in Array(summary.get("invariant_violations", [])):
-			++violation_count
+			violation_count += 1
 			if violation_samples.size() < 10:
 				violation_samples.append("dia %d: %s" % [day + 1, String(violation)])
 		var day_now := int(summary.get("day", 0))
 		if day_now <= day_before:
-			++stalled
+			stalled += 1
 		day_before = day_now
 		var status: Dictionary = sim.get_status()
 		var ratio := _food_ratio(status)
@@ -235,9 +236,9 @@ func _run() -> Dictionary:
 		if history.size() > WINDOW:
 			history.pop_front()
 		var month := _month_of(int(status.get("calendar_day", day + 1)))
-		hash_lines.append("%d:%.2f:%d" % [day_now,
-			float(status.get("money_total", 0.0)),
-			int(status.get("bankruptcies", -1))])
+		# C2b1-fix (D-105): mesma linha canônica do c1 (dinheiro 6 casas,
+		# falências, comida, M0, estoque privado, crédito).
+		hash_lines.append(TrajectoryDigest.line(day_now, status, sim))
 		var agri_status: Dictionary = sim.get_agriculture_status() \
 			if sim.has_method("get_agriculture_status") else {}
 		if not agri_status.is_empty():
@@ -361,7 +362,9 @@ func _run() -> Dictionary:
 			"built_after_start": _storage_delta(storage_start,
 				_storage_sample(sim)),
 		},
-		"trajectory_hash": _sha("\n".join(hash_lines)),
+		"trajectory_hash": TrajectoryDigest.sha256(hash_lines),
+		"trajectory_fields": TrajectoryDigest.FIELDS,
+		"trajectory_end": TrajectoryDigest.totals(sim),
 	}
 	out["profile"] = _profile_block(sim) if _profile else {}
 	return out
@@ -394,28 +397,8 @@ func _profile_block(sim: Object) -> Dictionary:
 ## Média por nação (30 d) de consumido/necessidade, a partir das colunas leves
 ## do status (p_need/p_consumed por cidade).
 func _food_ratio(status: Dictionary) -> Dictionary:
-	var light: Dictionary = status.get("light", {})
-	var need: PackedFloat64Array = light.get("p_need", PackedFloat64Array())
-	var consumed: PackedFloat64Array = light.get("p_consumed", PackedFloat64Array())
-	var cities: Array = status.get("cities", [])
-	if cities.is_empty() or need.size() < cities.size() \
-			or consumed.size() < cities.size():
-		return {}
-	var by_nation: Dictionary = {}
-	for slot in cities.size():
-		var tag := String((cities[slot] as Dictionary).get("nation", ""))
-		if tag == "":
-			continue
-		if not by_nation.has(tag):
-			by_nation[tag] = {"need": 0.0, "consumed": 0.0}
-		by_nation[tag]["need"] = float(by_nation[tag]["need"]) + float(need[slot])
-		by_nation[tag]["consumed"] = float(by_nation[tag]["consumed"]) \
-			+ float(consumed[slot])
-	var out: Dictionary = {}
-	for tag in by_nation:
-		var total := float(by_nation[tag]["need"])
-		out[tag] = float(by_nation[tag]["consumed"]) / total if total > 0.0 else 1.0
-	return out
+	# Dono único da conta (portão e hash): core/economy/trajectory_digest.gd.
+	return TrajectoryDigest.food_ratios(status)
 
 
 func _food_gate(history: Array) -> Dictionary:

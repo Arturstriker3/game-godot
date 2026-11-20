@@ -24,6 +24,7 @@ const LandPropertyScript := preload("res://core/economy/land_property.gd")
 const AgriScript := preload("res://core/economy/agriculture_service.gd")
 const StorageScript := preload("res://core/economy/storage_service.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
+const TrajectoryDigest := preload("res://core/economy/trajectory_digest.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -53,6 +54,10 @@ var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 
 
 func _init() -> void:
+	# Permite rodar pelo runner canônico (tools/run_tests.ps1), que não passa
+	# argumentos de usuário: `OGS_C1_OUT` escolhe o arquivo de saída.
+	if OS.get_environment("OGS_C1_OUT") != "":
+		_out = OS.get_environment("OGS_C1_OUT")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
@@ -131,28 +136,8 @@ func _make_world() -> Object:
 
 
 func _food_ratio(status: Dictionary) -> Dictionary:
-	var light: Dictionary = status.get("light", {})
-	var need: PackedFloat64Array = light.get("p_need", PackedFloat64Array())
-	var consumed: PackedFloat64Array = light.get("p_consumed", PackedFloat64Array())
-	var cities: Array = status.get("cities", [])
-	if cities.is_empty() or need.size() < cities.size() \
-			or consumed.size() < cities.size():
-		return {}
-	var by_nation: Dictionary = {}
-	for slot in cities.size():
-		var tag := String((cities[slot] as Dictionary).get("nation", ""))
-		if tag == "":
-			continue
-		if not by_nation.has(tag):
-			by_nation[tag] = {"need": 0.0, "consumed": 0.0}
-		by_nation[tag]["need"] = float(by_nation[tag]["need"]) + float(need[slot])
-		by_nation[tag]["consumed"] = float(by_nation[tag]["consumed"]) \
-			+ float(consumed[slot])
-	var out: Dictionary = {}
-	for tag in by_nation:
-		var total := float(by_nation[tag]["need"])
-		out[tag] = float(by_nation[tag]["consumed"]) / total if total > 0.0 else 1.0
-	return out
+	# Dono único da conta (portão e hash): core/economy/trajectory_digest.gd.
+	return TrajectoryDigest.food_ratios(status)
 
 
 func _food_gate(history: Array) -> Dictionary:
@@ -234,6 +219,18 @@ func _monetary_report(sim: Object) -> Dictionary:
 		"securities": float(totals.get("securities", 0.0)),
 		"government_debt": float(totals.get("government_debt", 0.0)),
 	}
+
+
+## D-105: estado da flag de juro no envelope de crédito da safra. `-1` = build
+## sem a flag (base C2a), onde o termo não existe.
+func _harvest_credit_rate(sim: Object) -> Variant:
+	if not sim.has_method("get_central_bank_status"):
+		return -1
+	var bank: Dictionary = sim.get_central_bank_status()
+	var policy: Dictionary = bank.get("monetary_policy", {})
+	if not policy.has("harvest_credit_rate"):
+		return -1
+	return bool(policy.get("harvest_credit_rate", false))
 
 
 func _spread(values: Array) -> Dictionary:
@@ -338,13 +335,13 @@ func _run() -> void:
 	for day in _days:
 		var summary: Dictionary = sim.tick_day()
 		for violation in Array(summary.get("invariant_violations", [])):
-			++violation_count
+			violation_count += 1
 			if violation_samples.size() < 10:
 				violation_samples.append("dia %d: %s"
 					% [day + 1, String(violation)])
 		var day_now := int(summary.get("day", 0))
 		if day_now <= day_before:
-			++stalled
+			stalled += 1
 		day_before = day_now
 		var status: Dictionary = sim.get_status()
 		var money := float(status.get("money_total", 0.0))
@@ -355,8 +352,10 @@ func _run() -> void:
 		if history.size() > WINDOW:
 			history.pop_front()
 		var balance_block: Dictionary = status.get("balance", {})
-		hash_lines.append("%d:%.2f:%d" % [day_now, money,
-			int(status.get("bankruptcies", -1))])
+		# C2b1-fix (D-105): linha canônica única (dinheiro 6 casas, falências,
+		# comida, M0, estoque privado, crédito). Ver
+		# core/economy/trajectory_digest.gd e docs/economy/inv_c2b1_gate/README.md.
+		hash_lines.append(TrajectoryDigest.line(day_now, status, sim))
 		if int(day_now) % 30 == 0 or day == _days - 1:
 			print("[c1] progresso dia %d/%d t=%.1fs"
 				% [int(day_now), _days,
@@ -366,10 +365,7 @@ func _run() -> void:
 	var money_end := float(status_final.get("money_total", 0.0))
 	var food := _food_gate(history)
 	var balance := _balance_report(sim, status_final)
-	var trajectory := "|".join(hash_lines)
-	var ctx := HashingContext.new()
-	ctx.start(HashingContext.HASH_SHA256)
-	ctx.update(trajectory.to_utf8_buffer())
+	var trajectory := TrajectoryDigest.sha256(hash_lines)
 	var out := {
 		"days": _days,
 		"threads": 1,
@@ -385,7 +381,10 @@ func _run() -> void:
 		"max_daily_drift": max_drift,
 		"food_gate": food,
 		"balance": balance,
-		"trajectory_sha256": ctx.finish().hex_encode(),
+		"trajectory_sha256": trajectory,
+		"trajectory_fields": TrajectoryDigest.FIELDS,
+		"trajectory_end": TrajectoryDigest.totals(sim),
+		"harvest_credit_rate": _harvest_credit_rate(sim),
 		"monetary": _monetary_report(sim),
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
