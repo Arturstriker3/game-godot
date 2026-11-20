@@ -662,6 +662,17 @@ void EconomySim::apply_set_currency_rate(const String& code, double rate,
 	currency.base_rate = (std::isfinite(base_rate) && base_rate > 0.0)
 		? base_rate : rate;
 	currency.floating = floating;
+	// C2b2 (D-106): o regime salvo é a fonte do ramo do dia (float/peg/band).
+	// O toggle do F5 (`set_currency_rate(..., floating)`) tem de mover os dois
+	// juntos; senão a moeda fica `floating` para o câmbio sombreado e `peg`
+	// para o ramo do dia, e a taxa congela (moeda de fixture parada em 1,0).
+	// `band` não é rebaixada: ela já flutua dentro da banda.
+	if (floating && currency.exchange_regime == central_bank::kRegimePeg) {
+		currency.exchange_regime = central_bank::kRegimeFloating;
+	} else if (!floating
+			&& currency.exchange_regime == central_bank::kRegimeFloating) {
+		currency.exchange_regime = central_bank::kRegimePeg;
+	}
 }
 
 void EconomySim::set_currencies(const Variant& currencies) {
