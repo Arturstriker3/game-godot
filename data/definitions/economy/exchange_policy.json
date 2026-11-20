@@ -1,0 +1,11 @@
+{
+  "_source": "default de jogo - parametros de politica cambial e padrao monetario; nao sao dado observado por pais",
+  "_doc": "docs/economy/C2b2_fx_gold.md (D-106)",
+  "band_width": 0.05,
+  "defence_share": 0.5,
+  "gold_standard": {
+    "reserve_ratio": 1.0,
+    "conversion_price_basis": "catalogo: preco-base do bem gold em goods.json (3000 por tonelada, calibrated:legacy); o par historico de Bretton Woods (USD 35/oz) nao e usado porque o nivel de preco do jogo nao e o dolar de 1944",
+    "convertible_reserve_currency": true
+  }
+}
