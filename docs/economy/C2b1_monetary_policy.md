@@ -9,11 +9,11 @@ Teste: `tools/c2b1_monetary_test.gd`.
 
 ## 1. O que esta fase faz
 
-1. **Emissão de M0 contabilizada.** O BC só cria ou destrói base monetária por
-   uma operação registrada no balanço da C1: nesta fase, **compra de títulos do
-   governo** (financiamento do Tesouro) do BC **controlado**. Redesconto a bancos
-   e venda de títulos ficam declarados como ausência: não há banco (C4) nem
-   estoque de dívida pública anterior (C3).
+1. **Emissão de M0 contabilizada.** O BC só cria base monetária por uma
+   operação registrada no balanço da C1: nesta fase, **compra de títulos do
+   governo** (financiamento do Tesouro) pelo BC **controlado**. Redesconto a
+   bancos e venda de títulos ficam declarados como ausência: não há banco (C4)
+   nem estoque de dívida pública anterior (C3).
 2. **Taxa básica por moeda** (um BC por moeda, como na C2a):
    - **independente** — regra tipo Taylor sobre a inflação de 12 meses do CPI da
      C2a (ou a anualizada quando os 12 meses ainda não fecham) e o **hiato**
@@ -23,12 +23,13 @@ Teste: `tools/c2b1_monetary_test.gd`.
      neutro e **emissão para cobrir o déficit medido**; sem déficit, neutro.
 3. **Canal de transmissão mínimo e explícito** (nada além disto):
    - **custo do crédito existente (D-099):** a linha de crédito da safra
-     (folha/opex da fazenda com plano cobertos pelo ativo da lavoura) paga juro
-     diário da taxa básica da moeda do país; o juro é **transferido** do caixa da
-     firma para o orçamento do governo (dinheiro conservado) e limitado ao caixa.
-     Juro não suportado pelo caixa não vira dívida (rolagem é C3) e é declarado.
-   - **decisão de estoque privado (G2):** o payback do silo privado passa a exigir
-     cobrir o **custo de capital** (`custo × taxa` por ano) além da manutenção.
+     (folha/opex da fazenda com plano cobertos pelo ativo da lavoura) tem o
+     **envelope** descontado pela taxa básica da moeda do país. Não há banco
+     para receber o juro nesta fase (C4), então **nenhum dinheiro sai da
+     firma**: o juro é o custo do crédito embutido na capacidade da linha.
+   - **decisão de estoque privado (G2):** o payback do silo privado passa a
+     exigir cobrir o **custo de capital** (`custo × taxa` por ano) além da
+     manutenção e da perda; a taxa chega congelada na `AiView` do dia.
 4. **Status A4 e save v28** com migração v27 → v28.
 
 ## 2. Conservação: "dinheiro total = anterior + emissão líquida registrada"
@@ -84,9 +85,50 @@ a taxa fica em neutro + hiato — nada é completado com número inventado.
 
 ## 5. Prova
 
-- `tools/c2b1_monetary_test.gd`: default efetivo × salvo, paridade do JSON com
-  as constantes, regra de Taylor (inflação e hiato), limite de passo, BC
-  controlado emitindo só o déficit medido, `ΔM0 = emissão registrada`,
-  invariantes com 0 violações, round-trip v28 e migração v27 → v28.
-- 365 d com IA comparado à base C2a (`f7631ba0…`): falências, portão de comida,
-  inflação anual por país, taxa básica (mediana/p10/p90), violações.
+- `tools/c2b1_monetary_test.gd` (**verde**): default efetivo × salvo, paridade do
+  JSON com as constantes do núcleo, regra de Taylor com passo máximo de 25 pb e
+  ausência declarada da inflação no início (sem 12 meses), BC controlado
+  emitindo **só** o déficit medido (gasto público gera o déficit no teste),
+  teto de 1 % do M0 por dia, `ΔM0 + Δ(não atribuído) = emissão`, dívida pública
+  = títulos do BC = emissão, round-trip v28 e migração v27 → v28.
+- `tools/c2_central_bank_test.gd` ajustado: a política deixou de ser inerte; a
+  prova da mecânica passou para o teste acima.
+- **365 d com IA** (`tools/c1_world_ai_365.gd`, mundo real, `threads=1`,
+  2 rodadas idênticas, `docs/economy/perf/c2b1_world_ai_365.json`):
+
+| medida | base C2a (`f7631ba0…`) | C2b1 |
+|---|---|---|
+| falências | 2 | **2** |
+| violações / dias travados | 0 / 0 | **0 / 0** |
+| hash de trajetória | `f7631ba0…` | `f7631ba0…` (igual) |
+| drift máximo diário | 4,3e-13 | 3,0e-13 |
+| portão de comida | 85/179 (mediana 0,9798) | **88/179 (0,9779)** |
+| inflação 12 m (mediana / p10 / p90) | — | 0,91 % / 0,71 % / 4,37 % (179 países) |
+| taxa básica (mediana / p10 / p90) | — | 0,52 % / 0,00 % / 6,11 % (136 moedas) |
+| emissão total | 0 | 0 (todas independentes por default) |
+
+  **O portão de comida NÃO foi mantido** (88 vs 85). Atribuição medida em A/B de
+  365 d: **+2** do juro no crédito da safra (D-099, envelope ~0,1 % menor) e
+  **+1** do custo de capital do silo (G2). É uma queda real de renda rural e de
+  consumo (~0,2 pp na mediana), não ruído: cada canal sozinho move o portão,
+  porque a distribuição tem dezenas de países logo abaixo de 0,975. Não houve
+  calibração para mascarar o efeito.
+- **CLI × Godot**: 10 d byte-idênticos pelo snapshot (`75.293.594 B`, SHA-256
+  `9AECAC33…`, 0 diferenças) — com `--ai=0` nos dois lados.
+- **Goldens A0/S0** regerados no save v28, duas rodadas idênticas cada:
+  `A0_60_urban` `7334b22a…`/`c6f69c88…`, `real_60_ai` `7ebcbfb5…`/`60adbc2d…`,
+  `real_60_noai` `0f2721be…`/`7508ff1e…`, `demo_365_noai`
+  `cdfe1597…`/`a7b50ce3…`.
+
+## 6. Lacunas declaradas
+
+- Sem banco: reservas bancárias, redesconto, M1/M2 emergindo do crédito e o
+  **credor** do juro da safra são C4. O juro hoje só reduz a capacidade da linha
+  (não é pago a ninguém).
+- Sem dívida pública anterior nem venda de títulos pelo BC: o único título é o
+  criado pela monetização do déficit (C3).
+- Sem intervenção cambial/banda administrada, padrão ouro/Bretton Woods agindo e
+  ouro físico negociado (C2b2/C2c).
+- O BC controlado é decisão por API (`set_central_bank_policy`), sem UI/painel.
+- `bank_independence` segue `no_data` no save: o default `independent` é do
+  jogo, não dado de país.
