@@ -74,6 +74,10 @@ enum class CommandType : int {
 	StorageBuild,
 	// G2: compra/liberação de estoque guardado (governo/privado).
 	StorageTrade,
+	// C2b2 (D-106): regime cambial por moeda e padrão monetário do mundo.
+	// Sempre pela fila A3 — troca de regime/padrão nunca é automática.
+	SetExchangeRegime,
+	SetMonetaryStandard,
 };
 
 // Nome estavel do tipo (log/replay em JSON). `nullptr` para tipo invalido.

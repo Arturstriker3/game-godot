@@ -1431,6 +1431,35 @@ struct Region {
 	// criado pelo BC por operação contabilizada, carteira de títulos e a
 	// leitura (inflação/hiato) que a regra usou. `emission_today` alimenta o
 	// invariante de conservação do dia.
+	// C2b2 (D-106) - ESTADO CAMBIAL por moeda (save v29). A paridade e a
+	// largura da banda salvas mandam; 0/-1 significam "o dado do F5 / o default
+	// de jogo" (nunca um numero inventado). `reserves` e a moeda de reserva em
+	// unidades de ancora; `funded` falso = fixo/banda ADMINISTRATIVO sem reserva
+	// declarada (o F5 ja segurava a taxa sem custo) - a defesa medida so existe
+	// com reserva.
+	struct FxState {
+		double parity = 0.0;
+		double band_width = -1.0;
+		double reserves = 0.0;
+		double conversion_price = 0.0;
+		bool funded = false;
+		int devaluations = 0;
+		int last_event_day = -1;
+		// Medicao do dia (nao serializada).
+		double intervention_today = 0.0;
+	};
+
+	// C2b2 (D-106) - evento cambial do status (anel de 64; o contador total de
+	// desvalorizacoes e a fonte de "quantas").
+	struct FxEvent {
+		int day = -1;
+		std::string currency;
+		std::string type;  // devaluation | reserve_purchase | gold_conversion
+		double old_parity = 0.0;
+		double new_parity = 0.0;
+		double reserves_used = 0.0;
+	};
+
 	struct MonetaryState {
 		double rate = -1.0;
 		double emission = 0.0;
@@ -1478,6 +1507,10 @@ struct Region {
 		std::map<std::string, MonetaryState> monetary;
 		std::map<std::string, double> gov_bonds;
 		std::map<std::string, double> gov_cash_open;
+		// C2b2 (D-106): reservas/paridade/eventos. Reverter um tick tem de
+		// desfazer a intervenção e a desvalorização do dia junto com o caixa.
+		std::map<std::string, FxState> fx;
+		std::vector<FxEvent> fx_events;
 		double emission_today = 0.0;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;

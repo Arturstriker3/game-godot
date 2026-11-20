@@ -7,6 +7,8 @@
 #include "sim_constants.h"
 #include "sim_labor.h"
 
+#include "exchange.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -66,49 +68,14 @@ void SimCore::rebuild_currency_indexes() {
 	}
 }
 void SimCore::tick_fx() {
-	if (ws_.currencies.empty() || ws_.cities.empty()) {
-		return;
+	// C2b2 (D-106): o corpo do F5 saiu para `exchange::tick` (drift do flutuante
+	// idêntico + a defesa dos regimes fixo/banda com as reservas da C2a). Sem
+	// reserva declarada o peg continua administrativo, como antes.
+	std::vector<double> base_list(static_cast<std::size_t>(ws_.products), 0.0);
+	for (int product = 0; product < ws_.products; ++product) {
+		base_list[static_cast<std::size_t>(product)] = base_price(product);
 	}
-	std::vector<double> exports(ws_.currencies.size(), 0.0);
-	std::vector<double> imports(ws_.currencies.size(), 0.0);
-	for (const City& city : ws_.cities) {
-		const auto found = ws_.nation_currency.find(city.nation);
-		if (found == ws_.nation_currency.end()) {
-			continue;
-		}
-		const std::size_t index = static_cast<std::size_t>(found->second);
-		for (int product = 0; product < ws_.products; ++product) {
-			exports[index] += city.export_value[product];
-			imports[index] += city.import_value[product];
-		}
-	}
-	const double alpha = 1.0 / kFxBalanceEmaDays;
-	for (std::size_t index = 0; index < ws_.currencies.size(); ++index) {
-		Currency& currency = ws_.currencies[index];
-		const double flow = exports[index] - imports[index];
-		const double gross = exports[index] + imports[index];
-		currency.balance_ema += (flow - currency.balance_ema) * alpha;
-		currency.gross_ema += (gross - currency.gross_ema) * alpha;
-		if (!currency.floating) {
-			currency.rate = currency.base_rate;
-			continue;
-		}
-		// Pressão normalizada pelo volume: um déficit que representa 10% do
-		// comércio (kFxBalanceScale) satura em tanh(1) ~ 0,76. O passo
-		// diário é pequeno (0,05%), então o câmbio reage à persistência da
-		// balança, não a um dia isolado.
-		const double scale = std::max(1.0,
-			currency.gross_ema * kFxBalanceScale);
-		const double pressure = std::tanh(currency.balance_ema / scale);
-		const double next = currency.rate * (1.0 + kFxDailyStep * pressure);
-		currency.rate = std::clamp(next,
-			currency.base_rate * kFxBandLow,
-			currency.base_rate * kFxBandHigh);
-	}
-
-	// O preço interno está na âncora: o passo cambial NÃO reescala preços. Só
-	// a exibição (`price_local = preço ÷ taxa`) e a competitividade das
-	// ofertas float (taxa ÷ taxa-base) leem a taxa corrente.
+	ogs::exchange::tick(ws_, base_list);
 }
 double SimCore::competitiveness(const std::string& nation) const {
 	// Fator de competitividade aplicado à âncora (F5, opção c). Com a taxa

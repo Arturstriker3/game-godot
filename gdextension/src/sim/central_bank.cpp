@@ -4,6 +4,7 @@
 #include "central_bank.h"
 
 #include "city_gov.h"
+#include "exchange.h"
 #include "sim_constants.h"
 
 #include <algorithm>
@@ -345,6 +346,28 @@ std::vector<CurrencyBank> banks(const WorldState& ws,
 		bank.gold_tonnes = gold != ws.reserve_gold_tonnes.end()
 			? nonneg(gold->second) : 0.0;
 		bank.gold_value = bank.gold_tonnes * gold_price_t;
+		// C2b2 (D-106): regime efetivo, paridade, reservas e cobertura. Sem
+		// reserva declarada (`funded` falso) o fixo continua administrativo,
+		// como o F5 deixa o mundo; o padrão fiduciário não muda nada.
+		const auto fx = ws.fx.find(currency.code);
+		bank.regime_saved = currency.exchange_regime;
+		bank.regime_effective = exchange::effective_regime(ws, currency);
+		bank.parity = exchange::parity_of(ws, currency);
+		bank.band_width = currency.exchange_regime
+			== central_bank::kRegimeBand
+			? exchange::band_of(ws, currency) : 0.0;
+		bank.conversion_price = exchange::conversion_price(ws, currency,
+			base_prices);
+		if (fx != ws.fx.end()) {
+			bank.reserve_currency_holdings = nonneg(fx->second.reserves);
+			bank.funded = fx->second.funded;
+			bank.intervention_today = fx->second.intervention_today;
+			bank.devaluations = fx->second.devaluations;
+			bank.last_event_day = fx->second.last_event_day;
+		}
+		const exchange::Coverage cover = exchange::coverage(ws, currency,
+			bank.m0, base_prices);
+		bank.coverage_ratio = cover.ratio;
 		// C2b1 (D-104): títulos na carteira do BC (ativo financeiro criado
 		// pela emissão contra dívida do governo). Sem emissão = 0.
 		const auto monetary = ws.monetary.find(currency.code);

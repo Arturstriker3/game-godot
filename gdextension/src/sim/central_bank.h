@@ -174,9 +174,21 @@ struct CurrencyBank {
 
 	// Ativo: reservas internacionais e títulos.
 	double gold_tonnes = 0.0;               // ouro fino (dado real da G2)
-	double gold_value = 0.0;                // ouro × preço de mercado
-	double reserve_currency_holdings = 0.0; // 0: exterior global (C2b)
+	double gold_value = 0.0;                // ouro × preço de conversão/mercado
+	double reserve_currency_holdings = 0.0; // reservas em âncora (C2b2)
 	double securities = 0.0;                // 0: sem dívida pública (C3/C4)
+
+	// C2b2 (D-106) — regime efetivo e defesa (leitura do status).
+	int regime_saved = kRegimePeg;
+	int regime_effective = kRegimePeg;
+	double parity = 1.0;
+	double band_width = 0.0;
+	bool funded = false;
+	double intervention_today = 0.0;
+	int devaluations = 0;
+	int last_event_day = -1;
+	double coverage_ratio = 0.0;  // ouro (preço fixo) ÷ M0 em âncora
+	double conversion_price = 0.0;
 
 	double financial_assets() const {
 		return reserve_currency_holdings + securities;

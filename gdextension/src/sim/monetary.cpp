@@ -4,6 +4,7 @@
 
 #include "central_bank.h"
 #include "city_gov.h"
+#include "exchange.h"
 #include "sim_core.h"
 
 #include <algorithm>
@@ -166,7 +167,11 @@ double next_rate(double current, double target) {
 
 void tick(WorldState& ws, double money_total,
 	const std::vector<double>& base_prices) {
-	ws.emission_today = 0.0;
+	// C2b2 (D-106): `emission_today` NÃO é zerado aqui. O prologue do dia já o
+	// zera e a fase de câmbio registra a emissão LÍQUIDA da intervenção antes
+	// desta fase (venda de reserva contrai, compra emite). Zerar apagaria a
+	// intervenção do dia e quebraria a conservação "dinheiro = anterior +
+	// emissão registrada".
 	const std::map<std::string, central_bank::CpiRow> cpi =
 		central_bank::cpi_by_nation(ws, base_prices);
 	const central_bank::MoneyAllocation money =
@@ -208,6 +213,16 @@ void tick(WorldState& ws, double money_total,
 		}
 		const double m0 = index < money.by_currency.size()
 			? std::max(0.0, money.by_currency[index]) : 0.0;
+		// C2b2 (D-106): sob o PADRÃO OURO a emissão respeita a cobertura de
+		// ouro do cofre (M0 ≤ cobertura × valor do ouro). Nos demais padrões o
+		// teto é infinito e nada muda (default fiduciário).
+		double emission_cap = kControlledEmissionShareOfM0 * m0;
+		const double headroom = exchange::emission_headroom(ws, currency, m0,
+			base_prices);
+		if (std::isfinite(headroom)) {
+			emission_cap = std::min(emission_cap,
+				std::max(0.0, headroom));
+		}
 		// Déficit MEDIDO do dia, por nação desta moeda: a queda do caixa do
 		// governo desde o último fecho (janela contínua).
 		std::vector<std::pair<std::string, double>> deficits;
@@ -226,7 +241,7 @@ void tick(WorldState& ws, double money_total,
 			deficit_total += deficit;
 		}
 		state.deficit_measured = deficit_total;
-		double remaining = kControlledEmissionShareOfM0 * m0;
+		double remaining = emission_cap;
 		double funded = 0.0;
 		for (const auto& row : deficits) {
 			if (remaining <= 1e-9) {

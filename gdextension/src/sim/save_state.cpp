@@ -1337,6 +1337,44 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		block["gov_cash_open"] = cash_open;
 		data["monetary"] = block;
 	}
+	// C2b2 (v29/D-106) — CÂMBIO: paridade, largura da banda, reservas em
+	// moeda de reserva, preço fixo de conversão do ouro, cobertura e o anel de
+	// eventos. ADITIVO: v28 carrega com paridade 0 (o `base_rate` do F5),
+	// banda no default, reservas 0 (fixo administrativo) e nenhum evento.
+	{
+		Dictionary block = make_object();
+		Dictionary currencies = make_object();
+		for (const auto& row : ws.fx) {
+			Dictionary entry = make_object();
+			entry["parity"] = row.second.parity;
+			entry["band_width"] = row.second.band_width;
+			entry["reserves"] = row.second.reserves;
+			entry["conversion_price"] = row.second.conversion_price;
+			entry["funded"] = row.second.funded;
+			entry["devaluations"] = row.second.devaluations;
+			entry["last_event_day"] = row.second.last_event_day;
+			currencies[sim_str(row.first.c_str())] = entry;
+		}
+		block["currencies"] = currencies;
+		Array events = make_array();
+		for (const FxEvent& row : ws.fx_events) {
+			Dictionary entry = make_object();
+			entry["day"] = row.day;
+			entry["currency"] = sim_str(row.currency.c_str());
+			entry["type"] = sim_str(row.type.c_str());
+			entry["old_parity"] = row.old_parity;
+			entry["new_parity"] = row.new_parity;
+			entry["reserves_used"] = row.reserves_used;
+			events.append(entry);
+		}
+		block["events"] = events;
+		Dictionary params = make_object();
+		params["band_width"] = ws.fx_band_width;
+		params["defence_share"] = ws.fx_defence_share;
+		params["gold_reserve_ratio"] = ws.fx_gold_reserve_ratio;
+		block["parameters"] = params;
+		data["fx"] = block;
+	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
 	Array groups = make_array();
 	for (const Group& group : ws.groups) {
@@ -1737,6 +1775,80 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					ws.gov_cash_open[row.first] = value;
 				}
 			}
+		}
+	}
+	// C2b2 (v29/D-106) — CÂMBIO. Save v28 e anteriores chegam SEM o bloco:
+	// paridade 0 (o `base_rate` do F5), banda no default de jogo, reservas 0
+	// (fixo administrativo, como o F5), sem eventos e sem desvalorização.
+	ws.fx.clear();
+	ws.fx_events.clear();
+	ws.fx_band_width = 0.0;
+	ws.fx_defence_share = 0.0;
+	ws.fx_gold_reserve_ratio = 0.0;
+	if (data.has("fx")) {
+		const Dictionary block = data.get("fx", Dictionary());
+		const Variant currencies_variant = block.get("currencies", Dictionary());
+		if (currencies_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& currencies = currencies_variant;
+			for (const auto& row_entry : currencies.entries()) {
+				if (row_entry.first.empty()
+						|| row_entry.second.get_type()
+							!= Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary& row = row_entry.second;
+				FxState state;
+				state.parity = std::max(0.0,
+					double(row.get("parity", 0.0)));
+				state.band_width = std::clamp(
+					double(row.get("band_width", -1.0)), -1.0, 1.0);
+				state.reserves = std::max(0.0,
+					double(row.get("reserves", 0.0)));
+				state.conversion_price = std::max(0.0,
+					double(row.get("conversion_price", 0.0)));
+				state.funded = bool(row.get("funded", false));
+				state.devaluations = std::max(0,
+					int(row.get("devaluations", 0)));
+				state.last_event_day = int(row.get("last_event_day", -1));
+				ws.fx[row_entry.first] = state;
+			}
+		}
+		const Variant events_variant = block.get("events", Array());
+		if (events_variant.get_type() == Variant::ARRAY) {
+			const Array& events = events_variant;
+			for (int index = 0; index < events.size(); ++index) {
+				if (events[index].get_type() != Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary entry = events[index];
+				FxEvent row;
+				row.day = int(entry.get("day", -1));
+				row.currency = std::string(
+					String(entry.get("currency", "")).utf8().get_data());
+				row.type = std::string(
+					String(entry.get("type", "")).utf8().get_data());
+				row.old_parity = double(entry.get("old_parity", 0.0));
+				row.new_parity = double(entry.get("new_parity", 0.0));
+				row.reserves_used = double(entry.get("reserves_used", 0.0));
+				if (row.currency.empty()) {
+					continue;
+				}
+				ws.fx_events.push_back(std::move(row));
+			}
+			if (static_cast<int>(ws.fx_events.size()) > 64) {
+				ws.fx_events.erase(ws.fx_events.begin(),
+					ws.fx_events.end() - 64);
+			}
+		}
+		const Variant params_variant = block.get("parameters", Dictionary());
+		if (params_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& params = params_variant;
+			ws.fx_band_width = std::max(0.0,
+				double(params.get("band_width", 0.0)));
+			ws.fx_defence_share = std::max(0.0,
+				double(params.get("defence_share", 0.0)));
+			ws.fx_gold_reserve_ratio = std::max(0.0,
+				double(params.get("gold_reserve_ratio", 0.0)));
 		}
 	}
 	if (data.has("tariffs")) {

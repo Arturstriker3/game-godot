@@ -234,6 +234,9 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.monetary = ws_.monetary;
 	out.gov_bonds = ws_.gov_bonds;
 	out.gov_cash_open = ws_.gov_cash_open;
+	// C2b2 (D-106): a intervenção cambial e a desvalorização são estado do dia.
+	out.fx = ws_.fx;
+	out.fx_events = ws_.fx_events;
 	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
@@ -866,6 +869,8 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.monetary = in.monetary;
 	ws_.gov_bonds = in.gov_bonds;
 	ws_.gov_cash_open = in.gov_cash_open;
+	ws_.fx = in.fx;
+	ws_.fx_events = in.fx_events;
 	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;

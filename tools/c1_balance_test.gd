@@ -39,7 +39,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 28
+const SAVE_VERSION := 29
 const EPS := 1e-3
 
 var _failures: Array[String] = []

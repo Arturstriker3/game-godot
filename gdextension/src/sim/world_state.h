@@ -383,6 +383,15 @@ struct WorldState {
 	// por moeda da C2a), a dívida pública por nação e o M0 criado no dia.
 	std::map<std::string, MonetaryState> monetary;
 	std::map<std::string, double> gov_bonds;
+	// C2b2 (D-106) — CÂMBIO: estado por moeda (paridade, banda, reservas,
+	// conversão do ouro), o anel de eventos do status e os parâmetros de regra
+	// (largura da banda, fatia de defesa, cobertura do padrão ouro; default de
+	// jogo em data/definitions/economy/exchange_policy.json). Save v29.
+	std::map<std::string, FxState> fx;
+	std::vector<FxEvent> fx_events;
+	double fx_band_width = 0.0;        // 0 = default (kBandWidthDefault)
+	double fx_defence_share = 0.0;     // 0 = default (kDefenceShareDefault)
+	double fx_gold_reserve_ratio = 0.0;// 0 = default (kGoldReserveRatioDefault)
 	double emission_today = 0.0;
 	// Caixa do governo por nação na ABERTURA do dia: a medição do déficit
 	// (runtime; não vai ao save).
