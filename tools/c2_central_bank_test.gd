@@ -47,7 +47,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 27
+const SAVE_VERSION := 28
 const EPS := 1e-3
 const CPI_SAMPLE_DAYS := 30
 const MODEL_YEAR_DAYS := 360
@@ -238,8 +238,10 @@ func _test_fixture() -> void:
 			% String(policy.get("standard", "")))
 	_check(String(policy.get("reserve_currency", "")) == "USD",
 		"(fixture) moeda de reserva default deveria ser USD")
-	_check(bool(policy.get("active", true)) == false,
-		"(fixture) política não pode agir na C2a")
+	# C2b1 (D-104): a política agora AGE (juro + emissão); esta suíte mantém a
+	# medição da C2a e delega a mecânica a `tools/c2b1_monetary_test.gd`.
+	_check(bool(policy.get("active", false)),
+		"(fixture) C2b1: a política deveria estar ativa")
 	# Nenhuma emissão nova: M0 = moeda em circulação; sem banco, M1 = M2 = M0.
 	var totals: Dictionary = bank.get("totals", {})
 	_check(_rel_close(float(totals.get("m0", -1.0)),
@@ -686,12 +688,11 @@ func _check_policy_is_only_state(save: Dictionary) -> void:
 		.get("standard", "")) == "gold",
 		"(política) round-trip perdeu o padrão monetário")
 
-	# 3. NÃO AGE: sem os blocos de política, os dois mundos são o mesmo estado.
-	var strip_a: Dictionary = _strip_policy(base_sim.to_dict())
-	var strip_b: Dictionary = _strip_policy(edited_sim.to_dict())
-	_check(JSON.stringify(strip_a, "", true, true)
-		== JSON.stringify(strip_b, "", true, true),
-		"(política) a política alterou o estado do mundo na C2a")
+	# 3. C2b1 (D-104): a política deixou de ser inerte — a independência
+	# `controlled` muda juro/emissão por desenho. A identidade "dois mundos com
+	# políticas diferentes têm o mesmo estado" da C2a é substituída pela prova
+	# de que o estado de política viaja (acima) e pela mecânica em
+	# `tools/c2b1_monetary_test.gd` (Taylor, passo, ΔM0 = emissão).
 
 
 func _strip_policy(save: Dictionary) -> Dictionary:
@@ -702,6 +703,7 @@ func _strip_policy(save: Dictionary) -> Dictionary:
 		entry.erase("exchange_regime")
 		entry.erase("bank_independence")
 	return out
+
 
 
 ## Normaliza os campos DERIVADOS no load (B1 recalcula coortes → dependentes e

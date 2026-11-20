@@ -187,7 +187,13 @@ bool AiStorageInvestor::private_decisions(AiContext& ctx, int city_index) {
 			* kStorageMaintenancePerTonDay[type] * 365.0;
 		const double annual_loss = build_tons * ref * 0.05;
 		const double years = std::max(1.0, kStoragePrivatePaybackYears);
-		if (gross * years < build_cost
+		// C2b1 (D-104): o capital do silo custa a taxa básica da moeda do país
+		// (custo de capital declarado), além da manutenção e da perda. A taxa
+		// vem congelada na `AiView` do dia.
+		const double capital_charge = build_cost * years
+			* std::clamp(ctx.view.city_rows[
+				static_cast<std::size_t>(city_index)].policy_rate, 0.0, 1.0);
+		if (gross * years < build_cost + capital_charge
 				+ (annual_maintenance + annual_loss) * years) {
 			continue;
 		}

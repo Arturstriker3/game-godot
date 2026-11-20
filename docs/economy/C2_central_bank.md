@@ -77,6 +77,13 @@ depois dos invariantes do dia: um tick revertido não amostra.
 
 ## 5. Política (estado salvo, sem mecânica)
 
+> **Atualização C2b1 (D-104):** `bank_independence` passou a agir. O valor salvo
+> continua `no_data` (ausência declarada) e o default do jogo é `independent`
+> (Taylor com passo limitado); `controlled` fixa o juro abaixo do neutro e
+> monetiza o déficit medido. A mecânica, o canal de transmissão e as medidas
+> estão em `docs/economy/C2b1_monetary_policy.md`. `exchange_regime` e
+> `monetary_policy.standard` seguem sem mecânica (C2b2/C2c).
+
 | campo | valores | default da C2a | dono da mecânica |
 |---|---|---|---|
 | `exchange_regime` (por moeda) | `floating`, `peg`, `band` | `peg` ou `floating`, conforme o `floating` do F5 | C2b |

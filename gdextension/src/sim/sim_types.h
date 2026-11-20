@@ -1426,6 +1426,27 @@ struct Region {
 		double fuel = 0.0;
 	};
 
+	// C2b1 (D-104) — estado da POLÍTICA MONETÁRIA de uma moeda: taxa básica
+	// (anual; < 0 = nenhuma decisão ainda, resolve no neutro do jogo), M0
+	// criado pelo BC por operação contabilizada, carteira de títulos e a
+	// leitura (inflação/hiato) que a regra usou. `emission_today` alimenta o
+	// invariante de conservação do dia.
+	struct MonetaryState {
+		double rate = -1.0;
+		double emission = 0.0;
+		double securities = 0.0;
+		double emission_today = 0.0;
+		double inflation_used = 0.0;
+		bool has_inflation = false;
+		double gap = 0.0;  // hiato de desemprego em pontos percentuais
+		int last_day = -1;
+		// C2b1 — medição do dia (não vai ao save): taxa que a regra queria e o
+		// déficit que o BC viu/ deixou de financiar pelo teto de senhoriagem.
+		double target_rate = 0.0;
+		double deficit_measured = 0.0;
+		double unfunded = 0.0;
+	};
+
 	// Retrato do estado demo para reverter um tick que viole um invariante.
 	struct Snapshot {
 		std::vector<City> cities;
@@ -1450,6 +1471,14 @@ struct Region {
 		// G2: armazéns agregados (reserva do governo + estoque privado). A
 		// reversão de um tick corrompido também desfaz compra/liberação/colheita.
 		std::vector<StorageSite> storage_sites;
+		// C2b1 (D-104): política monetária e emissão. Reverter um tick tem de
+		// desfazer o M0 criado e a dívida pública que nasceu dele, e devolver a
+		// janela do déficit (`gov_cash_open` é medição de runtime, mas tem de
+		// voltar com o mundo reverted).
+		std::map<std::string, MonetaryState> monetary;
+		std::map<std::string, double> gov_bonds;
+		std::map<std::string, double> gov_cash_open;
+		double emission_today = 0.0;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
 		double construction_cash = 0.0;

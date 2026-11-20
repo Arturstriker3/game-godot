@@ -345,6 +345,11 @@ std::vector<CurrencyBank> banks(const WorldState& ws,
 		bank.gold_tonnes = gold != ws.reserve_gold_tonnes.end()
 			? nonneg(gold->second) : 0.0;
 		bank.gold_value = bank.gold_tonnes * gold_price_t;
+		// C2b1 (D-104): títulos na carteira do BC (ativo financeiro criado
+		// pela emissão contra dívida do governo). Sem emissão = 0.
+		const auto monetary = ws.monetary.find(currency.code);
+		bank.securities = monetary != ws.monetary.end()
+			? monetary->second.securities : 0.0;
 		out.push_back(std::move(bank));
 	}
 	return out;

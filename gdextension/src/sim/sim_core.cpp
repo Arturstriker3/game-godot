@@ -2,6 +2,7 @@
 
 #include "balance.h"
 #include "central_bank.h"
+#include "monetary.h"
 #include "city_gov.h"
 #include "profiling.h"
 #include "storage.h"
@@ -229,6 +230,11 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.currencies = ws_.currencies;
 	city_gov::snapshot(ws_, out);
 	out.storage_sites = ws_.storage_sites;
+	// C2b1: política monetária, dívida pública e emissão do dia.
+	out.monetary = ws_.monetary;
+	out.gov_bonds = ws_.gov_bonds;
+	out.gov_cash_open = ws_.gov_cash_open;
+	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
 	out.construction_cash = ws_.construction_cash;
@@ -250,11 +256,38 @@ void SimCore::prologue() {
 	// Buffer PERSISTENTE: os vetores são reutilizados entre dias (com 114 bens
 	// uma cidade custa ~27 KB; realocar 834 cópias por tick custava ~5 ms).
 	Snapshot& before = ws_.snapshot_buffer;
+	// C2b1 (D-104): o reset do dia vem ANTES do retrato — reverter um tick que
+	// violou o invariante devolve o dia sem emissão (o dia não aconteceu) e sem
+	// a medição de déficit dele.
+	ws_.emission_today = 0.0;
+	for (auto& row : ws_.monetary) {
+		row.second.emission_today = 0.0;
+		row.second.deficit_measured = 0.0;
+		row.second.unfunded = 0.0;
+	}
 	{
 		OGS_SIM_ZONE(kPhasePrologueSnapshot);
 		snapshot_state(before);
 	}
 	money_before_ = money_total();
+	// Janela do déficit: abertura do mundo (dia 1) e, depois, o fecho de cada
+	// dia (`monetary::tick` refresca) — um gasto público entre dois dias conta.
+	if (ws_.gov_cash_open.empty()) {
+		const std::size_t gov_count = std::min(ws_.cities.size(),
+			ws_.city_gov.size());
+		for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+			const City& city = ws_.cities[index];
+			double cash = city.government_budget;
+			if (index < gov_count) {
+				const CityGov& gov = ws_.city_gov[index];
+				cash += std::max(0.0, gov.cash);
+				for (int slot = 0; slot < gov.project_count; ++slot) {
+					cash += std::max(0.0, gov.projects[slot].reserved);
+				}
+			}
+			ws_.gov_cash_open[city.nation] += cash;
+		}
+	}
 
 	// O "resto do prólogo" cobre esta faixa inteira; o bloco de índices abaixo é
 	// uma zona ANINHADA (o tempo dele também aparece em `prologue_other`, porque
@@ -829,6 +862,11 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.currencies = in.currencies;
 	city_gov::restore(ws_, in);
 	ws_.storage_sites = in.storage_sites;
+	// C2b1: desfazer o tick desfaz a taxa, o M0 emitido e a dívida pública.
+	ws_.monetary = in.monetary;
+	ws_.gov_bonds = in.gov_bonds;
+	ws_.gov_cash_open = in.gov_cash_open;
+	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;
 	ws_.foreign_cash = in.foreign_cash;
@@ -855,14 +893,23 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 	// 1. Conservação de dinheiro: toda transação move dinheiro entre caixas
 	// (firma, serviço, governo, poupança, transporte, exterior, construção).
 	// O resto do mundo (foreign_cash) pode ficar negativo por design.
+	//
+	// C2b1 (D-104): a conservação passa a ser "dinheiro total = anterior +
+	// emissão líquida REGISTRADA". Só o banco central cria M0, e só por uma
+	// operação contabilizada no balanço da C1 (compra de títulos do governo);
+	// `ws_.emission_today` é exatamente o que ele registrou no dia. Qualquer
+	// outra diferença (inclusive emissão sem registro) continua violação.
 	const double money_after = money_total();
-	const double drift = std::abs(money_after - money_before);
+	const double expected_after = money_before + ws_.emission_today;
+	const double drift = std::abs(money_after - expected_after);
 	const double tolerance = std::max(1e-3, std::abs(money_before) * 1e-12);
 	if (!std::isfinite(money_after) || drift > tolerance) {
 		violations.push_back("dinheiro não conservado: dia="
 			+ std::to_string(ws_.day) + " antes="
 			+ std::to_string(money_before) + " depois="
-			+ std::to_string(money_after) + " drift=" + std::to_string(drift));
+			+ std::to_string(money_after) + " emissão="
+			+ std::to_string(ws_.emission_today) + " drift="
+			+ std::to_string(drift));
 	}
 
 	// 2. C1 — IDENTIDADE FINANCEIRA DO MUNDO (novo invariante diário): todo

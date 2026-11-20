@@ -370,6 +370,14 @@ struct WorldState {
 	// Série mensal do CPI por nação (medição) e o dia da última amostra.
 	std::map<std::string, CpiHistory> cpi_history;
 	int cpi_last_observe_day = -1;
+	// C2b1 (D-104) — POLÍTICA MONETÁRIA: um estado por MOEDA (a mesma entidade
+	// por moeda da C2a), a dívida pública por nação e o M0 criado no dia.
+	std::map<std::string, MonetaryState> monetary;
+	std::map<std::string, double> gov_bonds;
+	double emission_today = 0.0;
+	// Caixa do governo por nação na ABERTURA do dia: a medição do déficit
+	// (runtime; não vai ao save).
+	std::map<std::string, double> gov_cash_open;
 	// Setor de cada produto (goods.json → sector). Vazio = "primary".
 	std::vector<std::string> product_sectors;
 	// Preços-base dos bens (data-driven: set_goods/initialize_world).

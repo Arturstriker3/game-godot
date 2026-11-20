@@ -1,0 +1,28 @@
+{
+  "schema": "ogs.economy.monetary_policy.v1",
+  "source": "default de jogo",
+  "note": "Parâmetros DECLARADOS do jogo para a taxa básica e a emissão (C2b1/D-104). Não são dado observado de nenhum país: o repositório não tem fonte de meta de inflação, de taxa neutra nem de independência de banco central para as 179 nações (C2a marcou bank_independence = no_data). O núcleo usa exatamente estes números (sim_constants/monetary.h) e o teste tools/c2b1_monetary_test.gd confere a paridade com o status.",
+  "world": {
+    "standard": "fiat",
+    "reserve_currency": "USD"
+  },
+  "defaults": {
+    "bank_independence": "independent",
+    "target_inflation": 0.03,
+    "neutral_rate": 0.04,
+    "taylor_inflation_weight": 1.5,
+    "taylor_gap_weight": 0.5,
+    "max_step_per_day": 0.0025,
+    "rate_smoothing": 0.5,
+    "rate_floor": 0.0,
+    "rate_cap": 0.3,
+    "controlled_spread": 0.02,
+    "controlled_emission_share_of_m0": 0.01
+  },
+  "notes": {
+    "neutral_rate": "taxa real neutra de 1% + meta de 3% (decomposição do default, não medição).",
+    "gap": "hiato = (desemprego natural do modelo - desemprego medido) em pontos percentuais de força de trabalho.",
+    "max_step_per_day": "25 pontos-base por dia.",
+    "controlled_emission_share_of_m0": "senhoriagem máxima: 1% do M0 da moeda por dia; o excedente do déficit fica não financiado (declarado)."
+  }
+}

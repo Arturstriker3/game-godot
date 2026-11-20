@@ -5,6 +5,7 @@
 #include "sim/agriculture.h"
 #include "sim/balance.h"
 #include "sim/central_bank.h"
+#include "sim/monetary.h"
 #include "sim/storage.h"
 #include "sim/profiling.h"
 #include "sim/save_definitions.h"
@@ -269,6 +270,8 @@ void EconomySim::_bind_methods() {
 		&EconomySim::get_central_bank_status);
 	ClassDB::bind_method(D_METHOD("set_central_bank_gold", "tonnes_by_nation"),
 		&EconomySim::set_central_bank_gold);
+	ClassDB::bind_method(D_METHOD("set_central_bank_policy", "currency",
+		"independence"), &EconomySim::set_central_bank_policy);
 	ClassDB::bind_method(D_METHOD("set_storage_stock", "city_id", "type",
 		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
@@ -3808,6 +3811,8 @@ Dictionary EconomySim::get_status() {
 		balance["arrears_service"] = book.arrears_service;
 		balance["arrears_rural"] = book.arrears_rural;
 		balance["monetary_base"] = book.monetary_base;
+		balance["monetary_claims"] = book.monetary_claims;
+		balance["government_debt"] = book.government_debt;
 		balance["financial_sum"] = book.financial_sum();
 		balance["ok"] = std::abs(book.financial_sum()) <= 1e-3
 			&& std::abs(book.cash_residual()) <= 1e-3;
@@ -8630,10 +8635,11 @@ Dictionary EconomySim::get_central_bank_status() const {
 		policy["standard"] =
 			ogs::central_bank::standard_name(ws_.monetary_standard);
 		policy["reserve_currency"] = String(ws_.reserve_currency.c_str());
-		policy["active"] = false;
+		policy["active"] = true;
 		policy["note"] =
-			"política DECLARADA (default do plano: fiduciário + dólar); nenhuma "
-			"mecânica na C2a — emissão, juros e intervenção são a C2b";
+			"C2b1 (D-104): taxa básica por moeda (Taylor no BC independente; "
+			"objetivo do governo no controlado) e emissão só por compra de "
+			"títulos do governo pelo BC controlado. Bancos/redesconto são C4.";
 		out["monetary_policy"] = policy;
 	}
 
@@ -8677,6 +8683,50 @@ Dictionary EconomySim::get_central_bank_status() const {
 		row["regime"] = ogs::central_bank::regime_name(bank.regime);
 		row["bank_independence"] =
 			ogs::central_bank::independence_name(bank.independence);
+		// C2b1 (D-104): política ATIVA da moeda. `bank_independence` acima é o
+		// valor SALVO (pode ser `no_data`); o efetivo resolve no default
+		// declarado do jogo. A taxa, a leitura e a emissão saem do estado.
+		{
+			const auto state = ws_.monetary.find(bank.code);
+			Dictionary active;
+			const int effective = ogs::monetary::effective_independence(ws_,
+				bank.code);
+			active["independence_saved"] =
+				ogs::central_bank::independence_name(bank.independence);
+			active["independence_effective"] =
+				ogs::central_bank::independence_name(effective);
+			active["rate"] = ogs::monetary::effective_rate(ws_, bank.code);
+			active["target_rate"] = state != ws_.monetary.end()
+				? state->second.target_rate : ogs::monetary::kNeutralRate;
+			active["target_inflation"] = ogs::monetary::kTargetInflation;
+			active["neutral_rate"] = ogs::monetary::kNeutralRate;
+			active["max_step_per_day"] = ogs::monetary::kMaxRateStepPerDay;
+			active["smoothing"] = ogs::monetary::kRateSmoothing;
+			active["inflation_weight"] =
+				ogs::monetary::kTaylorInflationWeight;
+			active["gap_weight"] = ogs::monetary::kTaylorGapWeight;
+			active["rate_floor"] = ogs::monetary::kRateFloor;
+			active["rate_cap"] = ogs::monetary::kRateCap;
+			active["deficit_today"] = state != ws_.monetary.end()
+				? state->second.deficit_measured : 0.0;
+			active["unfunded_today"] = state != ws_.monetary.end()
+				? state->second.unfunded : 0.0;
+			active["gap"] = state != ws_.monetary.end()
+				? state->second.gap : 0.0;
+			active["has_inflation"] = state != ws_.monetary.end()
+				&& state->second.has_inflation;
+			active["inflation_used"] = state != ws_.monetary.end()
+				? state->second.inflation_used : 0.0;
+			active["emission_today"] = state != ws_.monetary.end()
+				? state->second.emission_today : 0.0;
+			active["emission_total"] = state != ws_.monetary.end()
+				? state->second.emission : 0.0;
+			active["securities"] = state != ws_.monetary.end()
+				? state->second.securities : 0.0;
+			active["last_day"] = state != ws_.monetary.end()
+				? state->second.last_day : -1;
+			row["policy"] = active;
+		}
 		Array nations;
 		for (const std::string& nation : bank.nations) {
 			nations.append(String(nation.c_str()));
@@ -8724,7 +8774,29 @@ Dictionary EconomySim::get_central_bank_status() const {
 		totals["gold_value"] = gold_value_sum;
 		totals["bank_reserves"] = 0.0;
 		totals["securities"] = 0.0;
+		totals["emission_today"] = ws_.emission_today;
+		double emission_total = 0.0;
+		double securities_total = 0.0;
+		for (const auto& row : ws_.monetary) {
+			emission_total += row.second.emission;
+			securities_total += row.second.securities;
+		}
+		totals["securities"] = securities_total;
+		totals["emission_total"] = emission_total;
+		double bonds_total = 0.0;
+		for (const auto& row : ws_.gov_bonds) {
+			bonds_total += row.second;
+		}
+		totals["government_debt"] = bonds_total;
 		out["totals"] = totals;
+	}
+	{
+		// C2b1: dívida pública por nação (só quem tem título do BC).
+		Dictionary bonds;
+		for (const auto& row : ws_.gov_bonds) {
+			bonds[String(row.first.c_str())] = row.second;
+		}
+		out["government_bonds"] = bonds;
 	}
 
 	// CPI por país: o índice é o MESMO do IPC do G2 (uma dona só). A inflação
@@ -8858,6 +8930,27 @@ double EconomySim::set_central_bank_gold(const Dictionary& tonnes_by_nation) {
 	ws_.reserve_gold_declared = total > 0.0;
 	++data_version_;
 	return total;
+}
+
+bool EconomySim::set_central_bank_policy(const String& currency,
+		const String& independence) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string code(currency.utf8().get_data());
+	const auto found = ws_.currency_by_code.find(code);
+	if (found == ws_.currency_by_code.end()) {
+		return false;
+	}
+	const std::string name(independence.utf8().get_data());
+	const int value = ogs::central_bank::independence_from_name(name,
+		ogs::central_bank::kIndependenceNoData);
+	// Nome inválido não vira `no_data` por acidente: exige um dos três nomes.
+	if (name != "no_data" && name != "independent" && name != "controlled") {
+		return false;
+	}
+	ws_.currencies[static_cast<std::size_t>(found->second)]
+		.bank_independence = value;
+	status_invalidate();
+	return true;
 }
 
 Dictionary EconomySim::get_storage_status() const {

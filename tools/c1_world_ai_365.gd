@@ -192,6 +192,66 @@ func _food_gate(history: Array) -> Dictionary:
 	}
 
 
+## C2b1 (D-104): política monetária medida no fecho do mundo — taxa básica por
+## moeda e inflação por país. A inflação de 12 meses só existe com 13 amostras
+## do CPI (dia 390); antes disso a ANUALIZADA é publicada no lugar e a ausência
+## do número de 12 meses é declarada (`nations_has_12m`).
+func _monetary_report(sim: Object) -> Dictionary:
+	var bank: Dictionary = sim.get_central_bank_status()
+	var rates: Array = []
+	var controlled := 0
+	var with_inflation := 0
+	var currencies: Dictionary = bank.get("currencies", {})
+	for code: Variant in currencies:
+		var row: Dictionary = currencies[code]
+		var policy: Dictionary = row.get("policy", {})
+		rates.append(float(policy.get("rate", 0.0)) * 100.0)
+		if String(policy.get("independence_effective", "")) == "controlled":
+			controlled += 1
+		if bool(policy.get("has_inflation", false)):
+			with_inflation += 1
+	var infl_12m: Array = []
+	var infl_ann: Array = []
+	var cpi: Dictionary = bank.get("cpi", {})
+	for nation: Variant in cpi:
+		var row: Dictionary = cpi[nation]
+		if bool(row.get("has_12m", false)):
+			infl_12m.append(float(row.get("inflation_12m", 0.0)) * 100.0)
+		if bool(row.get("has_annualized", false)):
+			infl_ann.append(float(row.get("inflation_annualized", 0.0)) * 100.0)
+	var totals: Dictionary = bank.get("totals", {})
+	return {
+		"currencies": currencies.size(),
+		"controlled": controlled,
+		"currencies_with_inflation": with_inflation,
+		"rate_pct": _spread(rates),
+		"inflation_12m_pct": _spread(infl_12m),
+		"nations_has_12m": infl_12m.size(),
+		"inflation_annualized_pct": _spread(infl_ann),
+		"nations_annualized": infl_ann.size(),
+		"emission_total": float(totals.get("emission_total", 0.0)),
+		"emission_today": float(totals.get("emission_today", 0.0)),
+		"securities": float(totals.get("securities", 0.0)),
+		"government_debt": float(totals.get("government_debt", 0.0)),
+	}
+
+
+func _spread(values: Array) -> Dictionary:
+	if values.is_empty():
+		return {"n": 0, "median": 0.0, "p10": 0.0, "p90": 0.0}
+	var sorted := values.duplicate()
+	sorted.sort()
+	var n := sorted.size()
+	var median := float(sorted[n / 2]) if n % 2 == 1 \
+		else (float(sorted[n / 2 - 1]) + float(sorted[n / 2])) * 0.5
+	return {
+		"n": n,
+		"median": median,
+		"p10": float(sorted[clampi(int(floor(0.10 * (n - 1))), 0, n - 1)]),
+		"p90": float(sorted[clampi(int(ceil(0.90 * (n - 1))), 0, n - 1)]),
+	}
+
+
 func _balance_report(sim: Object, status: Dictionary) -> Dictionary:
 	if not sim.has_method("get_balance_status"):
 		# Build sem a C1 (A/B): o resto do harness continua comparável.
@@ -326,6 +386,7 @@ func _run() -> void:
 		"food_gate": food,
 		"balance": balance,
 		"trajectory_sha256": ctx.finish().hex_encode(),
+		"monetary": _monetary_report(sim),
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	var file := FileAccess.open(_out, FileAccess.WRITE)
