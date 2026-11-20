@@ -199,7 +199,7 @@ puxado **para baixo** pelo CIF da importação.
    (`sim/sim_constants.h:687-689`).
 2. `exchange::tick` (`exchange.cpp:604-694`): flutuante → `rate = shadow`; peg
    → `rate = alvo`; banda → `clamp(shadow, alvo ±5 %)`. Com `funded = false`
-   (reservas iniciais 0, §6) o caminho é administrativo (`exchange.cpp:626-631`):
+   (reservas iniciais 0, §7) o caminho é administrativo (`exchange.cpp:626-631`):
    **nenhuma reserva é gasta, nenhuma M0 é destruída**.
 3. `SimCore::competitiveness` (`sim/fx.cpp:80-98`): `taxa ÷ taxa do dia 0`,
    preso a ±10 %, aplicado **só** a moeda com `floating` (float e banda).
@@ -298,7 +298,7 @@ alterado no núcleo nesta rodada**. O que fica proposto, em ordem de custo:
 estão no teto exato (3/3, 90/90), 47 nações deflacionam mais de 3 % ao ano por
 uma regra de preço unilateral, e a sensibilidade medida (9,3 p.p. num país ao
 trocar uma moeda) mostra que o teto não tem folga real. Se a fase fechar assim,
-declarar no §6 que o mundo da C2c é um mundo de **deflação de importação**.
+declarar no §7 que o mundo da C2c é um mundo de **deflação de importação**.
 
 ## 4.5 Como reproduzir
 
@@ -311,7 +311,61 @@ Três mundos de 365 d em um único processo (1 Godot por vez); saída
 `docs/economy/perf/c2c_ab_365.json`. `OGS_C2C_AB_DAYS`/`--days=` encurtam a
 fumaça e `OGS_C2C_AB_OUT`/`--out=` trocam o arquivo; o default não muda.
 
-## 5. Testes
+## 5. Desenho da C2c-P1 — repasse simétrico do câmbio (D-109)
+
+A §4.2 mostrou que a deflação da C2c é o canal da competitividade do vendedor
+(`fx.cpp:80-98`) com **uma perna só**: o CIF da importação entrava apenas como
+**teto** (`prices.cpp:92-104`) e o piso de catálogo da cidade produtora
+(`prices.cpp:171`) nunca deixava o preço cair abaixo do base do dia 0. Nesta
+fase a regra de preço passa a transmitir o câmbio nos **dois** sentidos.
+
+**Regra — cidade sem produtor do bem.** O CIF do dia (origem efetiva ×
+competitividade do vendedor + tarifa, `trade.cpp:1509`, na âncora) é o **alvo**
+do preço, não mais um teto:
+
+```
+price += (CIF - price) × kPriceSmoothing            # 20 %/dia (D-092)
+price  = clamp(price, open - max_step, open + max_step)
+                                  # max_step = max(5 % do base, 6 % do open)
+```
+
+Não há banda econômica nem teto de preço (D-091): o preço converge para o custo
+de importação, como manda a formação por custo. A suavização e o limite diário
+são os mesmos dos produtores, então **não há salto de um dia para o outro** e o
+movimento é simétrico (mesma distância ao CIF, mesmo caminho para cima e para
+baixo).
+
+**Cotação do dia.** O repasse usa a cotação **renovada pelo comércio do próprio
+dia** (`imported[product] > 0`); sem importação registrada hoje o preço
+permanece — não se inventa cotação (mesma regra da §4.2). Isso fecha a
+assimetria de estado: antes o último CIF conhecido valia para sempre como teto
+e, com o alvo simétrico, uma cotação velha travaria o preço.
+
+**Cidade com produtor.** O preço continua formado por custo + markup + demanda
+(D-092); a concorrência importada passa a ser o **teto** do alvo:
+
+```
+target = min(custo_unitário × (1 + markup), CIF)   se o CIF do dia é menor
+piso   = custo unitário (variável), NÃO o base do catálogo
+```
+
+O base do dia 0 é âncora leve, não piso rígido: importação mais barata aparece
+no preço interno (até o custo variável); importação mais cara **não** empurra o
+preço para cima, porque nesse caso quem forma o preço é o produtor local — o
+mesmo motivo pelo qual o câmbio não reescreve o preço interno de quem produz
+(F5, §4.2 item 3). O repasse de alta chega a essas cidades pelo **custo do
+insumo importado**, que sobe junto com o CIF do insumo.
+
+**Coerência e limites.** Não há parâmetro novo: usa-se o CIF medido, a
+suavização e o passo diário já calibrados. Não há teto de preço, não há
+calibração de moeda e nenhuma fonte nova é inventada. O que se espera do mundo:
+as nações < −3 % da §4.2 perdem o componente artificial (repasse só para baixo)
+e as nações com fornecedores desvalorizados ganham o componente de alta que hoje
+é bloqueado. O critério de aceite continua o da §4 (falências ≤ 3, portão ≤ 90,
+0 violações), com a meta de realismo de **nenhuma nação < −5 % sem causa
+explicada**.
+
+## 6. Testes
 
 - `tools/c2c_real_fx_test.gd` (novo): peg cruzado (âncora dobra → taxa dobra),
   cesta (média geométrica e pesos no status), recusa de não-emissor, união
@@ -329,7 +383,7 @@ fumaça e `OGS_C2C_AB_OUT`/`--out=` trocam o arquivo; o default não muda.
   Verde: `c2c_ab_365_test` pelo runner, 649,7 s, 0 violações e 0 travados nos
   três mundos.
 
-## 6. O que não mudou / limites
+## 7. O que não mudou / limites
 
 - O padrão monetário (fiduciário) e o ouro físico da C2b2 continuam iguais; a
   troca de padrão segue só por comando A3.
