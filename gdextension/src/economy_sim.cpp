@@ -3,6 +3,7 @@
 #include "edge/value_bridge.h"
 #include "sim/actions.h"
 #include "sim/agriculture.h"
+#include "sim/balance.h"
 #include "sim/storage.h"
 #include "sim/profiling.h"
 #include "sim/save_definitions.h"
@@ -261,6 +262,8 @@ void EconomySim::_bind_methods() {
 		"product", "tons", "buy", "relief"), &EconomySim::storage_trade);
 	ClassDB::bind_method(D_METHOD("get_storage_status"),
 		&EconomySim::get_storage_status);
+	ClassDB::bind_method(D_METHOD("get_balance_status"),
+		&EconomySim::get_balance_status);
 	ClassDB::bind_method(D_METHOD("set_storage_stock", "city_id", "type",
 		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
@@ -3772,6 +3775,28 @@ Dictionary EconomySim::get_status() {
 	root[k.transport_cash] = ws_.transport_cash;
 	root[k.foreign_cash] = ws_.foreign_cash;
 	root[k.construction_cash] = ws_.construction_cash;
+	// C1 (D-102): identidade financeira do dia. `financial_sum` é o novo
+	// invariante (tem de ser 0); `cash_residual` é a checagem cruzada entre a
+	// enumeração do balanço e o `money_total` acima. O detalhe por agente sai
+	// sob demanda em `get_balance_status()` (A4).
+	{
+		const ogs::balance::Ledger book = ogs::balance::ledger(ws_,
+			money_total());
+		Dictionary balance;
+		balance["money_total"] = book.money_total;
+		balance["cash_total"] = book.cash_total();
+		balance["cash_residual"] = book.cash_residual();
+		balance["receivables"] = book.receivables;
+		balance["payables"] = book.payables;
+		balance["arrears_plants"] = book.arrears_plants;
+		balance["arrears_service"] = book.arrears_service;
+		balance["arrears_rural"] = book.arrears_rural;
+		balance["monetary_base"] = book.monetary_base;
+		balance["financial_sum"] = book.financial_sum();
+		balance["ok"] = std::abs(book.financial_sum()) <= 1e-3
+			&& std::abs(book.cash_residual()) <= 1e-3;
+		root["balance"] = balance;
+	}
 	root[k.bankruptcies] = ws_.bankruptcies;
 	root[k.depleted_mines] = ws_.depleted_mines;
 	// B4: totais de migração do mundo (acumulados) + urbanização CORRENTE.
@@ -8445,6 +8470,130 @@ bool EconomySim::set_deposit(const String& city_id, const String& product,
 		return true;
 	}
 	return static_cast<bool>(result.get("ok", false));
+}
+
+Dictionary EconomySim::get_balance_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["day"] = ws_.day;
+
+	const auto sheet_to_dict = [](const ogs::balance::Sheet& sheet) {
+		Dictionary row;
+		row["cash"] = sheet.cash;
+		row["receivables"] = sheet.receivables;
+		row["payables"] = sheet.payables;
+		row["debt"] = sheet.debt;
+		row["financial_assets"] = sheet.financial_assets();
+		row["financial_liabilities"] = sheet.financial_liabilities();
+		row["inventory"] = sheet.inventory;
+		row["fixed_capital"] = sheet.fixed_capital;
+		row["property"] = sheet.property;
+		row["net_worth"] = sheet.net_worth();
+		return row;
+	};
+
+	const double total = money_total();
+	const ogs::balance::Ledger book = ogs::balance::ledger(ws_, total);
+	{
+		Dictionary invariant;
+		invariant["money_total"] = book.money_total;
+		invariant["cash_total"] = book.cash_total();
+		invariant["cash_residual"] = book.cash_residual();
+		invariant["receivables"] = book.receivables;
+		invariant["payables"] = book.payables;
+		invariant["arrears_plants"] = book.arrears_plants;
+		invariant["arrears_service"] = book.arrears_service;
+		invariant["arrears_rural"] = book.arrears_rural;
+		invariant["monetary_base"] = book.monetary_base;
+		invariant["financial_sum"] = book.financial_sum();
+		invariant["ok"] = std::abs(book.financial_sum()) <= 1e-3
+			&& std::abs(book.cash_residual()) <= 1e-3;
+		out["invariant"] = invariant;
+	}
+
+	Dictionary world;
+	world["families"] = sheet_to_dict(ogs::balance::families(ws_));
+	world["firms"] = sheet_to_dict(ogs::balance::firms(ws_));
+	world["government"] = sheet_to_dict(ogs::balance::government(ws_));
+	world["external"] = sheet_to_dict(ogs::balance::external(ws_));
+	{
+		const ogs::balance::FirmSolvency solvency =
+			ogs::balance::firm_solvency(ws_);
+		Dictionary row;
+		row["count"] = solvency.count;
+		row["liquid"] = solvency.liquid;
+		row["illiquid"] = solvency.illiquid;
+		row["insolvent"] = solvency.insolvent;
+		world["firms_solvency"] = row;
+	}
+	out["world"] = world;
+
+	// Por nação: as mesmas contas, restritas às cidades do país. Caixas que
+	// não têm nação (fundos de obra em voo, grupos sem origem declarada) ficam
+	// FORA da soma por país e aparecem em `unallocated` (nada é rateado por
+	// palpite).
+	std::vector<std::string> nations;
+	for (const ogs::City& city : ws_.cities) {
+		if (std::find(nations.begin(), nations.end(), city.nation)
+				== nations.end()) {
+			nations.push_back(city.nation);
+		}
+	}
+	std::sort(nations.begin(), nations.end());
+	Dictionary by_nation;
+	for (const std::string& nation : nations) {
+		Dictionary row;
+		row["families"] = sheet_to_dict(ogs::balance::families(ws_, nation));
+		row["firms"] = sheet_to_dict(ogs::balance::firms(ws_, nation));
+		row["government"] = sheet_to_dict(
+			ogs::balance::government(ws_, nation));
+		// O `foreign_cash` do núcleo é GLOBAL: a posição do exterior não é
+		// decomposta por país (ausência declarada, não rateio inventado).
+		Dictionary external;
+		external["decomposed"] = false;
+		external["reason"] = "foreign_cash global no núcleo";
+		row["external"] = external;
+		by_nation[String(nation.c_str())] = row;
+	}
+	out["by_nation"] = by_nation;
+	out["by_nation_order"] = [&nations]() {
+		Array order;
+		for (const std::string& nation : nations) {
+			order.append(String(nation.c_str()));
+		}
+		return order;
+	}();
+	out["unallocated"] = [&]() {
+		Dictionary row;
+		double group_cash = 0.0;
+		for (const ogs::Group& group : ws_.groups) {
+			if (group.origin_nation.empty()) {
+				group_cash += group.cash;
+			}
+		}
+		double construction_funds = 0.0;
+		for (const ogs::ConstructionProject& project
+				: ws_.construction_projects) {
+			construction_funds += project.reserved;
+		}
+		row["group_cash_without_origin"] = group_cash;
+		row["construction_funds"] = construction_funds;
+		row["note"] = "caixas sem nação atribuível (leitura)";
+		return row;
+	}();
+	out["notes"] = [&]() {
+		Dictionary notes;
+		notes["monetary_base"] =
+			"passivo do emissor placeholder até a C2 (banco central)";
+		notes["arrears"] =
+			"salário atrasado = passivo da firma + ativo das famílias";
+		notes["equity"] =
+			"participação em grupos (stratum_equity) não entra: avaliação já "
+			"contida nos ativos dos grupos";
+		notes["banks"] = "sem banco na C1: caixa total conservado";
+		return notes;
+	}();
+	return out;
 }
 
 Dictionary EconomySim::get_storage_status() const {

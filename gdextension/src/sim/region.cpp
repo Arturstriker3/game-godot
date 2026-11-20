@@ -246,6 +246,12 @@ void SimCore::phase_region() {
 				* kRegionRuralWageDiscount * double(week_period)
 				* infra_productivity_multiplier(region);
 			const double paid = std::min(gross, std::max(0.0, city.firm_cash));
+			// C1: o que o caixa da firma não cobriu do salário rural é SALÁRIO
+			// ATRASADO — passivo das firmas da cidade-polo e ativo das famílias
+			// do interior. Vale a regra do período corrente (o não pago da
+			// semana substitui o anterior). O pagamento não muda.
+			region.arrears_receivable = std::max(0.0, gross - paid);
+			city.rural_wage_arrears = region.arrears_receivable;
 			const double tax = paid * kTaxRate;
 			const double net = std::max(0.0, paid - tax);
 			city.firm_cash = std::max(0.0, city.firm_cash - paid);

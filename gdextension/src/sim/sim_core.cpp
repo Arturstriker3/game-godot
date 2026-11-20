@@ -1,5 +1,6 @@
 #include "sim_core.h"
 
+#include "balance.h"
 #include "city_gov.h"
 #include "profiling.h"
 #include "storage.h"
@@ -278,6 +279,17 @@ void SimCore::prologue() {
 	for (auto it = ws_.buildings.begin(); it != ws_.buildings.end();) {
 		if (it->bankrupt) {
 			++ws_.bankruptcies;
+			// C1: o salário atrasado da planta é baixado dos DOIS lados quando
+			// ela fecha — a obligation morre com a firma (o ativo das famílias
+			// deixa de existir; é perda do credor, não dinheiro que some).
+			if (it->city_index >= 0
+					&& it->city_index < static_cast<int>(ws_.cities.size())
+					&& it->wage_arrears > 0.0) {
+				City& city_ref = ws_.cities[static_cast<std::size_t>(
+					it->city_index)];
+				city_ref.pop.arrears_receivable = std::max(0.0,
+					city_ref.pop.arrears_receivable - it->wage_arrears);
+			}
 			// D-099: composição para o aceite do 365 d (runtime, não vai ao
 			// save). A primária COM plano de safra é o caso que a regra de
 			// liquidez poupa; o contador mostra quem ainda fecha.
@@ -840,6 +852,48 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 			+ std::to_string(ws_.day) + " antes="
 			+ std::to_string(money_before) + " depois="
 			+ std::to_string(money_after) + " drift=" + std::to_string(drift));
+	}
+
+	// 2. C1 — IDENTIDADE FINANCEIRA DO MUNDO (novo invariante diário): todo
+	// ativo financeiro é passivo de alguém. A soma das posições financeiras
+	// (famílias + firmas + governo + exterior) menos o passivo da autoridade
+	// monetária (a moeda em circulação, placeholder até a C2) tem de ser 0.
+	// `cash_residual` é a checagem CRUZADA: o balanço enumera os caixas por
+	// conta própria e tem de reproduzir o `money_total` canônico — se um caixa
+	// ficar de fora de um dos dois lados, este teste acusa.
+	{
+		const balance::Ledger book = balance::ledger(ws_, money_after);
+		const double book_tolerance = std::max(1e-3,
+			std::abs(money_after) * 1e-12);
+		const double financial_sum = book.financial_sum();
+		if (!std::isfinite(financial_sum)
+				|| std::abs(financial_sum) > book_tolerance) {
+			violations.push_back("posições financeiras não fecham: dia="
+				+ std::to_string(ws_.day) + " soma="
+				+ std::to_string(financial_sum)
+				+ " (famílias=" + std::to_string(book.families)
+				+ " firmas=" + std::to_string(book.firms)
+				+ " governo=" + std::to_string(book.government)
+				+ " exterior=" + std::to_string(book.external)
+				+ " base monetária=" + std::to_string(book.monetary_base)
+				+ ")");
+		}
+		const double cash_residual = book.cash_residual();
+		if (!std::isfinite(cash_residual)
+				|| std::abs(cash_residual) > book_tolerance) {
+			violations.push_back("enumeração de caixa diverge do money_total: dia="
+				+ std::to_string(ws_.day) + " balanço="
+				+ std::to_string(book.cash_total()) + " money_total="
+				+ std::to_string(book.money_total) + " residual="
+				+ std::to_string(cash_residual));
+		}
+		if (!std::isfinite(book.receivables) || book.receivables < -1e-6
+				|| !std::isfinite(book.payables) || book.payables < -1e-6) {
+			violations.push_back("salário atrasado negativo: dia="
+				+ std::to_string(ws_.day) + " a receber="
+				+ std::to_string(book.receivables) + " a pagar="
+				+ std::to_string(book.payables));
+		}
 	}
 
 	for (const City& city : ws_.cities) {
