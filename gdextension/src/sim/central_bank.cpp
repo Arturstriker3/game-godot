@@ -347,7 +347,8 @@ std::vector<CurrencyBank> banks(const WorldState& ws,
 		// depósito continua declarada — a C4 é quem traz o depósito.
 		bank.bank_reserves = 0.0;
 		for (const auto& row : ws.banks) {
-			if (currency_of_nation_is(ws, row.second.nation, currency.code)) {
+			if (currency_index_of(ws, row.second.nation)
+					== static_cast<int>(index)) {
 				bank.bank_reserves += nonneg(row.second.cash);
 			}
 		}
