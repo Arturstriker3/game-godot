@@ -109,6 +109,29 @@ exibido como `preço ÷ taxa`); maior taxa = moeda mais fraca.
   orçamento do governo e as firmas pagam. Ouro não é criado nem destruído; o
   dinheiro só muda de caixa.
 
+### 4.1 Decisão: cofre do BC isento de manutenção de armazém
+
+`phase_storage` cobra manutenção por tonelada-dia em todo armazém com
+capacidade — inclusive o `vault` que passou a receber as toneladas de ouro do
+banco central (32 840 t no mundo da G2). O cofre é **estrutura**, não operação
+de mercado: o ouro fica parado, não gira estoque, e a manutenção movia caixa do
+governo (para o setor de serviços local) por um estoque que ninguém movimenta.
+A conta é a mesma que já isenta `vault` e `magazine` de receber produto e de a
+IA construir (`storage_type_is_structure_only`); a isenção usa esse predicado,
+sem caso especial novo.
+
+**Efeito medido (365 d, IA, DLL debug, mesmo mundo):**
+
+| cenário | falências | portão de comida | mediana | hash |
+|---|---:|---|---:|---|
+| **com a isenção** (este commit) | **2** | **86/179** | 0,9778281 | `f759f4c0…` (= base D-105) |
+| sem a isenção (variante rejeitada) | 3 | 85/179 | 0,9779577 | `e5389c77…` |
+
+Ou seja: cobrar manutenção do cofre criava a **3ª falência** (do governo que
+paga) e derrubava uma nação no portão. JSON da variante rejeitada:
+`docs/economy/perf/c2b2_vault_maintenance_365.json`.
+
+
 ## 5. Status / A4
 
 `get_central_bank_status()` ganha:
@@ -145,8 +168,10 @@ para trás. Round-trip bit-exato e continuação idêntica (teste).
   conservado (mercado + cofre) e igual ao razão do BC; migração 28 → 29 e
   round-trip v29; comando A3 aplica regime/padrão no dia seguinte.
 - `tools/c1_world_ai_365.gd` (default, IA, threads=1): aceite do portão.
-- Cenário de estresse: `--peg-top=10` põe as 10 maiores moedas em `peg` ao
-  dólar e publica quantas desvalorizaram e o efeito no portão.
+- `tools/c2b2_fx_stress_test.gd` (roda pelo runner, `-List c2b2_fx_stress_test`):
+  estresse do câmbio — moedas em `peg` sobrevalorizado, banda de 0,5 %, defesa
+  0,9 e reservas de 3 dias de importação; publica quantas moedas
+  desvalorizaram, em que dia, e o efeito no portão e nas falências (§9).
 
 ## 8. Lacunas declaradas
 
@@ -157,3 +182,78 @@ para trás. Round-trip bit-exato e continuação idêntica (teste).
 - A banda administrada não tem UI/painel (decisão por API, como a C2b1).
 - O ouro do cofre não é consumido por joalheria/indústria como demanda final
   (só compra/venda contra o mercado); fica para a C2c.
+- **O `peg` não defende fluxo, defende desalinhamento**: fora do `floating` o
+  câmbio sombreado é a própria `base_rate` (`floating_step` devolve `base_rate`
+  quando `!currency.floating`), então o "gap" do dia é `base_rate ÷ paridade − 1`
+  e não o passo de 0,05 % do F5. Consequência medida (§9): com a paridade igual
+  à base a defesa **nunca** dispara e a reserva fica intacta; a reserva só sai
+  quando a paridade está fora do mercado. Fica registrado como lacuna de
+  mecânica (o fluxo comercial do dia não pressiona o peg) para a C6.
+
+## 9. Medição (2026-11-20, DLL debug, mundo real, IA, threads=1)
+
+### 9.1 Default (2 rodadas idênticas)
+
+`tools/c1_world_ai_365.gd`, 365 d, sem comando de câmbio:
+
+| rodada | falências | violações | travados | portão | mediana | hash | parede |
+|---|---:|---:|---:|---|---:|---|---:|
+| 1 | 2 | 0 | 0 | 86/179 | 0,9778281 | `f759f4c0…abeafb` | 192,2 s |
+| 2 | 2 | 0 | 0 | 86/179 | 0,9778281 | `f759f4c0…abeafb` | 192,6 s |
+
+Dinheiro final 6 523 551 982,90166, com diferença relativa máxima diária de
+4,18e-13 (conservação). O hash é **idêntico à base da D-105**: a C2b2 não muda
+o mundo default (todas as moedas seguem `floating`, fiduciário, sem reserva).
+JSONs: `docs/economy/perf/c2b2_world_ai_365_run{1,2}.json`.
+
+### 9.2 Estresse fraco: só fundar reservas (`--fx-seed-days=30`)
+
+Reservas = 30 dias de importação medida, fundadas no dia 30: **47 moedas
+fundadas**, 5 399 876 805,30 unidades-âncora, **0 desvalorizações**, reserva
+intacta ao fim, portão 86/179 e hash `f759f4c0…` **iguais ao default**. Prova
+que reserva sem regime que a defenda é inerte (o default é `floating`).
+JSON: `docs/economy/perf/c2b2_fx_scenario_365.json`.
+
+### 9.3 Estresse forte: esgotamento de verdade
+
+`tools/c2b2_fx_stress_test.gd` (runner), 365 d: no dia 30 **todas as 136
+moedas** vão para `peg` com paridade 0,8 × paridade corrente (moeda 25 % mais
+forte que o mercado), banda 0,5 %, defesa 0,9; reservas = **3 dias** de
+importação medida (674 984 600,66 âncora).
+
+| métrica | default | estresse forte |
+|---|---:|---:|
+| falências | 2 | **2** |
+| violações de invariante | 0 | **0** |
+| dias travados | 0 | 0 |
+| portão de comida | 86/179 | **90/179** |
+| mediana do portão | 0,9778281 | 0,9749213 |
+| moedas desvalorizadas | 0 | **47 de 136** |
+| desvalorizações (eventos) | 0 | **47** (1 por moeda) |
+| reservas totais no fim | — | **0** (136 moedas sem reserva) |
+| dinheiro total no fim | 6 523 551 982,90 | 6 499 950 986,04 (−0,362 %) |
+| cobertura de ouro média | — | 0,00697 |
+| hash de trajetória | `f759f4c0…` | `af8f6939…` |
+| parede | 192 s | 196 s |
+
+**Quando:** todas as 47 desvalorizações caem entre os dias **31 e 61** —
+6 no dia 31, 3 no 32, 2 no 33, 1 no 34, 3 no 37, 1 no 38, 2 no 39, 1 no 40,
+2 no 41, 2 no 42, 3 no 43, 1 no 44, 2 no 45, **7 no 46**, 1 no 47, 4 no 49,
+1 no 50, 2 no 51, 1 no 53, 1 no 56, 1 no 61. Cada moeda desvaloriza **uma vez**:
+a paridade nova é o câmbio sombreado (= `base_rate`), então a defesa seguinte
+não tem gap a cobrir. Exemplos: `PGK`, `QAR`, `SBD` no dia 31; `BTN`
+0,1740 → 0,2175 (+25 %) no dia 61; `MMK` 0,0534 → 0,0668 no dia 56.
+
+**Efeito:** nenhuma falência nova e nenhuma violação do invariante financeiro
+(a intervenção destrói moeda local pelo mesmo valor que o exterior devolve, e a
+identidade da C1 fecha). O custo aparece no lado real: 4 nações a mais abaixo
+do portão (86 → 90 de 179, mediana 0,9778 → 0,9749) e 23,6 bi de moeda local
+recolhida (−0,362 % do dinheiro total) ao vender reserva. JSON:
+`docs/economy/perf/c2b2_fx_stress_365.json`.
+
+**Achado de mecânica (lacuna §8):** a primeira tentativa do estresse — `peg` com
+paridade = `base_rate`, banda 0,5 % e 3 dias de reserva — gastou **zero** de
+reserva em 335 dias (`0` desvalorizações, hash igual ao default). Com a taxa
+presa na paridade, o sombreado é a própria `base_rate` e o gap diário é zero;
+a banda nunca é cruzada. Só paridade fora do mercado gasta reserva.
+
