@@ -50,9 +50,17 @@ double building_book_value(const Building& building) {
 Ledger ledger(const WorldState& ws, double money_total) {
 	Ledger out;
 	out.money_total = money_total;
-	// Enquanto não há banco (C2), a moeda em circulação é o passivo da
-	// autoridade monetária — placeholder declarado, não dinheiro novo.
-	out.monetary_base = money_total;
+	// C2b1 (D-104): o passivo LÍQUIDO do emissor é M0 menos os títulos que o
+	// BC carrega. Comprar títulos do governo cria M0 (caixa público +) e dívida
+	// pública (−), então a soma financeira do mundo continua 0; sem operação
+	// (C1/C2a) `claims` é 0 e o passivo volta a ser o `money_total`.
+	for (const auto& row : ws.monetary) {
+		out.monetary_claims += row.second.securities;
+	}
+	for (const auto& row : ws.gov_bonds) {
+		out.government_debt += row.second;
+	}
+	out.monetary_base = money_total - out.monetary_claims;
 
 	for (const City& city : ws.cities) {
 		// Famílias: poupança dos quintis (o escalar da cidade é a soma), as
@@ -220,6 +228,18 @@ Sheet government(const WorldState& ws, const std::string& nation) {
 					sheet.inventory += tons * price_of(ws, city, product);
 				}
 			}
+		}
+	}
+	// C2b1 (D-104): dívida pública emitida (títulos comprados pelo BC). É
+	// passivo financeiro do governo — a contrapartida da emissão de M0.
+	if (nation.empty()) {
+		for (const auto& row : ws.gov_bonds) {
+			sheet.debt += row.second;
+		}
+	} else {
+		const auto found = ws.gov_bonds.find(nation);
+		if (found != ws.gov_bonds.end()) {
+			sheet.debt += found->second;
 		}
 	}
 	return sheet;

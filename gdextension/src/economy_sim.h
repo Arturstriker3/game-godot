@@ -403,6 +403,16 @@ public:
 	 * @returns toneladas declaradas (0 = nada aplicado).
 	 */
 	double set_central_bank_gold(const Dictionary& tonnes_by_nation);
+	/**
+	 * C2b1 (D-104) — escolhe a POLÍTICA de uma moeda. `independence` é
+	 * `no_data` (ausência declarada; resolve no default do jogo),
+	 * `independent` (regra de Taylor própria) ou `controlled` (o governo fixa o
+	 * juro e a emissão monetiza o déficit medido do dia). Idempotente; aplica no
+	 * dia seguinte, no fecho da política monetária.
+	 * @returns true se a moeda existe e o nome é válido.
+	 */
+	bool set_central_bank_policy(const String& currency,
+		const String& independence);
 	/** G2 — mapeamento produto→tipo de armazém em vigor (tabela declarada +
 	 *  overrides do JSON). `{produto: tipo}`; usado pelo StorageService. */
 	Dictionary get_storage_product_types() const;

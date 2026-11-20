@@ -26,7 +26,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 27
+const SAVE_VERSION := 28
 # Parâmetros espelhados de sim_constants.h (âncoras do teste).
 const ACCESS_PENALTY_MAX := 0.30
 const EXODUS_BOOST_MAX := 0.50
@@ -304,7 +304,7 @@ func _run() -> void:
 	_load_chains(rt2)
 	rt2.from_dict(rt)
 	var rt3: Dictionary = rt2.to_dict()
-	_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip deve manter v27")
+	_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip deve manter v28")
 
 	# --- (4) Migração v20 → v21. ---
 	var v20: Dictionary = sim.to_dict()

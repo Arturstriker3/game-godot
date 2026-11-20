@@ -1306,6 +1306,29 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		bank["cpi"] = cpi;
 		data["central_bank"] = bank;
 	}
+	// C2b1 (v28/D-104) — POLÍTICA MONETÁRIA ATIVA: taxa básica por moeda, M0
+	// emitido por operação contabilizada, carteira de títulos do BC e dívida
+	// pública por nação. ADITIVO: v27 carrega com taxa sem decisão (resolve no
+	// neutro do jogo), emissão 0 e dívida 0 — nada inventado para trás.
+	{
+		Dictionary block = make_object();
+		Dictionary policies = make_object();
+		for (const auto& row : ws.monetary) {
+			Dictionary entry = make_object();
+			entry["rate"] = row.second.rate;
+			entry["emission"] = row.second.emission;
+			entry["securities"] = row.second.securities;
+			entry["last_day"] = row.second.last_day;
+			policies[sim_str(row.first.c_str())] = entry;
+		}
+		block["policies"] = policies;
+		Dictionary bonds = make_object();
+		for (const auto& row : ws.gov_bonds) {
+			bonds[sim_str(row.first.c_str())] = row.second;
+		}
+		block["gov_bonds"] = bonds;
+		data["monetary"] = block;
+	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
 	Array groups = make_array();
 	for (const Group& group : ws.groups) {
@@ -1649,9 +1672,53 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			}
 		}
 	}
+	// C2b1 (v28/D-104) — política monetária ativa. Save v27 e anteriores
+	// chegam SEM o bloco: taxa sem decisão (`rate < 0` → neutro do jogo),
+	// emissão/carteira/dívida 0 e a emissão do dia 0 (só o dia conta).
+	ws.monetary.clear();
+	ws.gov_bonds.clear();
+	ws.emission_today = 0.0;
+	if (data.has("monetary")) {
+		const Dictionary block = data.get("monetary", Dictionary());
+		const Variant policies_variant = block.get("policies", Dictionary());
+		if (policies_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& policies = policies_variant;
+			for (const auto& row_entry : policies.entries()) {
+				if (row_entry.first.empty()
+						|| row_entry.second.get_type()
+							!= Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary& row = row_entry.second;
+				MonetaryState state;
+				const double rate = double(row.get("rate", -1.0));
+				state.rate = std::isfinite(rate) ? rate : -1.0;
+				const double emission = double(row.get("emission", 0.0));
+				state.emission = std::isfinite(emission)
+					? std::max(0.0, emission) : 0.0;
+				const double securities = double(row.get("securities", 0.0));
+				state.securities = std::isfinite(securities)
+					? std::max(0.0, securities) : 0.0;
+				state.last_day = int(row.get("last_day", -1));
+				ws.monetary[row_entry.first] = state;
+			}
+		}
+		const Variant bonds_variant = block.get("gov_bonds", Dictionary());
+		if (bonds_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& bonds = bonds_variant;
+			for (const auto& row : bonds.entries()) {
+				if (row.first.empty()) {
+					continue;
+				}
+				const double value = double(row.second);
+				if (std::isfinite(value) && value > 0.0) {
+					ws.gov_bonds[row.first] = value;
+				}
+			}
+		}
+	}
 	if (data.has("tariffs")) {
-		const Array saved_tariffs = data.get("tariffs", Array());
-		ws.tariffs.clear();
+		const Array saved_tariffs = data.get("tariffs", Array());		ws.tariffs.clear();
 		ws.tariffs.reserve(static_cast<std::size_t>(saved_tariffs.size()));
 		for (int index = 0; index < saved_tariffs.size(); ++index) {
 			const Dictionary entry = saved_tariffs[index];

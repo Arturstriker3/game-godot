@@ -66,8 +66,13 @@ struct Ledger {
 	double arrears_plants = 0.0;    // folha das plantas (D-099)
 	double arrears_service = 0.0;   // folha do setor de serviços
 	double arrears_rural = 0.0;     // folha rural (paga pelo caixa da cidade)
-	double monetary_base = 0.0;  // passivo da autoridade monetária (money_total)
-	double money_total = 0.0;    // contagem canônica (SimCore::money_total)
+	// C2b1 (D-104): passivo LÍQUIDO do emissor = M0 − títulos na carteira do
+	// BC. A emissão de M0 contra títulos do governo aumenta os dois lados: o
+	// caixa público e a dívida pública (que fecha com os títulos do BC).
+	double monetary_base = 0.0;
+	double monetary_claims = 0.0;    // títulos do BC (ativo financeiro)
+	double government_debt = 0.0;    // dívida pública emitida (passivo)
+	double money_total = 0.0;        // contagem canônica (SimCore::money_total)
 
 	// Enumeração INDEPENDENTE do caixa: se divergir de `money_total`, algum
 	// caixa ficou de fora de um dos dois lados (é o que o invariante pega).
@@ -76,7 +81,8 @@ struct Ledger {
 	}
 	// Soma mundial das posições financeiras (deve ser 0).
 	double financial_sum() const {
-		return families + firms + government + external - monetary_base;
+		return families + firms + government + external - government_debt
+			- monetary_base;
 	}
 	double cash_residual() const { return cash_total() - money_total; }
 };

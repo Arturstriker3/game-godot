@@ -75,6 +75,9 @@ struct AiCityRow {
 	std::string nation;
 	std::string landmass;
 	double firm_cash = 0.0;
+	// C2b1 (D-104): taxa básica anual da moeda do país (leitura congelada do
+	// dia; 0 = sem moeda/sem política — o custo de capital não entra).
+	double policy_rate = 0.0;
 	double government_budget = 0.0;
 	// `City::suitability` por produto (aptidão territorial 0..1).
 	std::vector<double> suitability;

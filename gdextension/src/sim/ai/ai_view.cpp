@@ -8,6 +8,7 @@
 #include "ai_view.h"
 
 #include "../agriculture.h"
+#include "../monetary.h"
 #include "../sim_core.h"
 #include "../sim_constants.h"
 #include "../storage.h"
@@ -55,6 +56,9 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 		row.landmass = city.landmass;
 		row.firm_cash = city.firm_cash;
 		row.government_budget = city.government_budget;
+		// C2b1 (D-104): a taxa básica da moeda do país entra na visão do dia
+		// (custo de capital do silo privado). Política do fecho anterior.
+		row.policy_rate = monetary::rate_for_nation(ws, city.nation);
 		// B5: infra da região + população do interior + déficit alimentar da
 		// região + êxodo acumulado (o governo decide obra de infra com isso).
 		row.infra_road = city.region.infra_road;

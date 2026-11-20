@@ -126,6 +126,11 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// 9c. Câmbio dinâmico: a balança comercial do dia move as moedas float.
 	core.phase_fx();
 
+	// 9d. C2b1: juro básico por moeda e emissão (só o BC controlado monetiza
+	// o déficit medido do dia). Roda depois de todo o gasto/receita do dia, de
+	// modo que o déficit e o caixa do governo do fecho sejam os medidos.
+	core.phase_monetary();
+
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra
 	// e reverte. O log fica na fachada.

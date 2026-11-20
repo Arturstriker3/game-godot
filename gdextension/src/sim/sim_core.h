@@ -109,6 +109,9 @@ public:
 	void phase_fiscal();
 	// 9c. Câmbio dinâmico: a balança comercial do dia move as moedas float.
 	void phase_fx();
+	// 9d. C2b1: taxa básica por moeda e emissão (compra de títulos do governo
+	// pelo BC controlado), com o déficit do dia medido no caixa do governo.
+	void phase_monetary();
 	// 10. Invariantes: se o tick corrompeu o estado, reverte o retrato.
 	void phase_invariants();
 
