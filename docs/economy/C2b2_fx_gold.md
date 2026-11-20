@@ -198,6 +198,12 @@ para trás. Round-trip bit-exato e continuação idêntica (teste).
   à base a defesa **nunca** dispara e a reserva fica intacta; a reserva só sai
   quando a paridade está fora do mercado. Fica registrado como lacuna de
   mecânica (o fluxo comercial do dia não pressiona o peg) para a C6.
+- **Banda declarada por comando não deriva**: `set_exchange_regime(..., "band")`
+  grava `floating = false`, e `floating_step` devolve `base_rate` quando
+  `!floating` — a banda pedida por comando fica presa na paridade declarada;
+  só a banda vinda de dado (`regime: "band"` em `currencies.json`) deriva
+  dentro da faixa. Não afeta o default nem as medições do §9; registrado
+  para a C6.
 
 ## 9. Medição (2026-11-20, DLL debug, mundo real, IA, threads=1)
 
@@ -212,7 +218,9 @@ para trás. Round-trip bit-exato e continuação idêntica (teste).
 
 Dinheiro final 6 523 551 982,90166, com diferença relativa máxima diária de
 4,18e-13 (conservação). O hash é **idêntico à base da D-105**: a C2b2 não muda
-o mundo default (todas as moedas seguem `floating`, fiduciário, sem reserva).
+o mundo default — as 136 moedas carregam o regime default `peg` administrativo
+(sem `regime` no `currencies.json`), com paridade = `base_rate`, reserva 0 e
+padrão fiduciário; sem gap a defender, o câmbio anda como antes (§8).
 JSONs: `docs/economy/perf/c2b2_world_ai_365_run{1,2}.json`.
 
 ### 9.2 Estresse fraco: só fundar reservas (`--fx-seed-days=30`)
@@ -220,7 +228,8 @@ JSONs: `docs/economy/perf/c2b2_world_ai_365_run{1,2}.json`.
 Reservas = 30 dias de importação medida, fundadas no dia 30: **47 moedas
 fundadas**, 5 399 876 805,30 unidades-âncora, **0 desvalorizações**, reserva
 intacta ao fim, portão 86/179 e hash `f759f4c0…` **iguais ao default**. Prova
-que reserva sem regime que a defenda é inerte (o default é `floating`).
+que reserva sem regime que a defenda é inerte (o default é `peg` com paridade =
+`base_rate`, que não tem gap a cobrir).
 JSON: `docs/economy/perf/c2b2_fx_scenario_365.json`.
 
 ### 9.3 Estresse forte: esgotamento de verdade
