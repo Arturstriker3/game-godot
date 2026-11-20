@@ -394,8 +394,9 @@ Leitura:
    nações abaixo de −3 % **47 → 4** e **nenhuma abaixo de −5 %**. As 4 são todas
    de importação mais barata, com causa: CMR −4,10 %, GNQ −3,80 % e GAB −3,37 %
    (peg XAF ao EUR, taxa 0,9726 = importação ~2,7 % mais barata) e EGY −3,20 %
-   (flutuante no piso 0,90). A moeda mais apreciada da C2c (SGP, taxa 1,0127)
-   sai de −16,45 % para −2,71 %.
+   (flutuante no piso 0,90). SGP, o caso mais fundo da C2c (−16,45 %; taxa
+   1,0127), sai para −2,71 %: era deflação de importação composta, não da
+   própria taxa.
 2. **Nenhuma falência nova.** As 3 de C são exatamente as da C2c: as minas
    `pri_pon_copper_mine` e `pri_pon_iron_mine` (PRI-PON/USA, dia 126) e a soja
    `AI-SOY-26` (PRT-POR, 40 dias de prejuízo no último snapshot). A variante A
@@ -409,9 +410,11 @@ Leitura:
    vendedor externo (base + markup ≈ +8 %), não o câmbio.
 4. **O custo do portão é de NÍVEL, não de câmbio.** A variante B não tem canal
    cambial nenhum (todas as moedas em peg ⇒ competitividade 1) e mesmo assim sai
-   de 86 para **91**. Ou seja: ~5 dos 8 pontos de portão vêm de transmitir o
-   nível do CIF, e o câmbio (A − B) contribui com o restante — a assimetria que
-   causava a deflação acabou sem cobrar do portão.
+   de 86 para **91**: ~5 dos 8 pontos de portão vêm de transmitir o nível do CIF
+   (o markup do vendedor). O restante acompanha o canal dos regimes (A = 95, C =
+   94; A e B também diferem na moeda da Bulgária, então a diferença A − B não
+   isola só o câmbio). O que fica claro: a assimetria que causava a deflação não
+   é a origem do custo do portão.
 5. **Conservação e dinheiro intactos:** 6 523 551 982,90 no fim das três
    variantes, drift máximo diário ≤ 4,2e-13, 0 violações de invariante, 0 dias
    travados, 0 desvalorizações.
