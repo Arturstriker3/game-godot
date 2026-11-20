@@ -42,6 +42,12 @@ Para cada agente, `patrimônio líquido = ativos − passivos`. No mundo:
   **placeholder** igual ao `money_total()` do dia — a moeda em circulação é
   dívida de quem a emitiu. A C2 substitui o placeholder pelo passivo do BC e a
   identidade continua a mesma.
+  > **Atualização C2b1 (D-104):** o passivo deixa de ser o `money_total` puro e
+  > passa a ser o **passivo líquido do emissor** `M0 − títulos na carteira do
+  > BC`, com a **dívida pública** (`gov_bonds` por nação) no passivo do governo.
+  > Comprar um título do governo cria M0 (caixa público +) e dívida pública (−),
+  > então `financial_sum` continua 0; sem operação os dois termos são 0 e a
+  > conta volta a ser a da C1. Ver `docs/economy/C2b1_monetary_policy.md`.
 - **Salário atrasado:** passivo das firmas (`Building::wage_arrears`,
   `City::service_wage_arrears`, `City::rural_wage_arrears`) e ativo das famílias
   (`Pop::arrears_receivable`, `Region::arrears_receivable`). Aparece dos dois
@@ -160,6 +166,9 @@ bit-exato e a continuação após load é idêntica (`tools/c1_balance_test.gd`)
 ## 9. Lacunas declaradas
 
 - Sem banco: a moeda é conservada e o emissor é um placeholder.
+  *(Atualizado na C2b1/D-104: o emissor já tem balanço com títulos e dívida
+  pública; `M0` pode crescer pela monetização do déficit do BC controlado. O que
+  continua ausente é o banco — C4.)*
 - Exterior não decomposto por nação (`foreign_cash` global).
 - Atrasado sem rolagem/juros/liquidação (C3): o estoque é a folha não paga do
   ciclo. A folha de serviços entra quando o caixa do setor não cobre a folha
