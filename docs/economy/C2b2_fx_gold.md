@@ -127,9 +127,18 @@ sem caso especial novo.
 | **com a isenção** (este commit) | **2** | **86/179** | 0,9778281 | `f759f4c0…` (= base D-105) |
 | sem a isenção (variante rejeitada) | 3 | 85/179 | 0,9779577 | `e5389c77…` |
 
-Ou seja: cobrar manutenção do cofre criava a **3ª falência** (do governo que
-paga) e derrubava uma nação no portão. JSON da variante rejeitada:
+Ou seja: cobrar manutenção do cofre criava a **3ª falência** (a base tem 2). O
+portão da variante é 85/179 contra 86/179 com a isenção — número **melhor**, e
+não é o motivo da rejeição: o motivo é a falência a mais e o hash sair da base.
+JSON da variante rejeitada:
 `docs/economy/perf/c2b2_vault_maintenance_365.json`.
+
+A isenção vale para a categoria **estrutura** (`vault` + `magazine`), não só
+para o ouro: o cofre recebe toda a categoria de produtos do cofre
+(`kVaultProducts` — ouro, diamante, urânio, joias), e cobrar manutenção de
+estoque parado não discrimina bem. O efeito medido é o mesmo com o predicado de
+categoria (hash idêntico à base: nenhum paiol tinha capacidade no mundo).
+
 
 
 ## 5. Status / A4
@@ -218,8 +227,12 @@ JSON: `docs/economy/perf/c2b2_fx_scenario_365.json`.
 
 `tools/c2b2_fx_stress_test.gd` (runner), 365 d: no dia 30 **todas as 136
 moedas** vão para `peg` com paridade 0,8 × paridade corrente (moeda 25 % mais
-forte que o mercado), banda 0,5 %, defesa 0,9; reservas = **3 dias** de
-importação medida (674 984 600,66 âncora).
+forte que o mercado), banda 0,5 %, defesa 0,9. Só as **47 com importação
+medida** recebem reserva (= **3 dias**, 674 984 600,66 âncora); as 89 sem
+importação ficam `funded = false` (peg administrativo, sem defesa). A âncora
+semeada é 1,25 × o que o seed daria com a paridade de mercado (539 987 680,53),
+porque o `peg` sobrevalorizado já está aplicado e `seed_reserves_from_imports`
+divide a importação pela paridade.
 
 | métrica | default | estresse forte |
 |---|---:|---:|
@@ -230,7 +243,7 @@ importação medida (674 984 600,66 âncora).
 | mediana do portão | 0,9778281 | 0,9749213 |
 | moedas desvalorizadas | 0 | **47 de 136** |
 | desvalorizações (eventos) | 0 | **47** (1 por moeda) |
-| reservas totais no fim | — | **0** (136 moedas sem reserva) |
+| reservas totais no fim | — | **0** (as 47 fundadas esgotadas; 89 nunca fundadas) |
 | dinheiro total no fim | 6 523 551 982,90 | 6 499 950 986,04 (−0,362 %) |
 | cobertura de ouro média | — | 0,00697 |
 | hash de trajetória | `f759f4c0…` | `af8f6939…` |
@@ -247,8 +260,8 @@ não tem gap a cobrir. Exemplos: `PGK`, `QAR`, `SBD` no dia 31; `BTN`
 **Efeito:** nenhuma falência nova e nenhuma violação do invariante financeiro
 (a intervenção destrói moeda local pelo mesmo valor que o exterior devolve, e a
 identidade da C1 fecha). O custo aparece no lado real: 4 nações a mais abaixo
-do portão (86 → 90 de 179, mediana 0,9778 → 0,9749) e 23,6 bi de moeda local
-recolhida (−0,362 % do dinheiro total) ao vender reserva. JSON:
+do portão (86 → 90 de 179, mediana 0,9778 → 0,9749) e 23 600 996,86 (**23,6 mi**,
+−0,362 % do dinheiro total) de moeda local recolhida ao vender reserva. JSON:
 `docs/economy/perf/c2b2_fx_stress_365.json`.
 
 **Achado de mecânica (lacuna §8):** a primeira tentativa do estresse — `peg` com
@@ -263,7 +276,7 @@ a banda nunca é cruzada. Só paridade fora do mercado gasta reserva.
 |---|---|
 | **S0** (`tools/economy_refactor_equiv.gd`, 60 d, `--mode=world --ai=1`) | 2 rodadas **idênticas**: save `b6dbebc1…`, status `60adbc2d…` |
 | **A0** (`tools/world_equivalence.ps1`, 60 d, IA + urbano, 2 rodadas) | **0 diferenças** entre rodadas (129 s); save `e6c4564b…`, status `8047b236…`, dinheiro 6 523 551 982,900082, 0 falências |
-| **CLI × Godot** (snapshot 849 cidades, 60 d, `--ai=1 --threads=1`) | **0 diferenças** com tolerância 0; CLI exit 0, 0 violações; dinheiro 6 523 551 982,90 |
+| **CLI × Godot** (snapshot 849 cidades, 60 d, `--ai=1 --threads=1`) | **0 diferenças** com tolerância 0; arquivos **byte-idênticos** (`f3eea09012498d119db2d544142971f6c40f6aec90a1003c0dc4ca5f91ce2dfc`, 94 597 278 B); CLI exit 0, 0 violações; dinheiro 6 523 551 982,90 |
 
 Os dois goldens foram **regerados** porque o save v29 ganha o bloco aditivo
 `fx` (o payload muda) — o **`status_sha256` é o mesmo de antes** nos dois
