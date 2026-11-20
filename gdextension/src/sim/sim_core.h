@@ -112,6 +112,10 @@ public:
 	// 9d. C2b1: taxa básica por moeda e emissão (compra de títulos do governo
 	// pelo BC controlado), com o déficit do dia medido no caixa do governo.
 	void phase_monetary();
+	// 9e. C3 (D-107): crédito de empresa — juro, amortização, juros vencidos e
+	// calote do banco agregado (perda no credor). Roda depois da política
+	// monetária (a taxa do dia já existe) e antes dos invariantes.
+	void phase_credit();
 	// 10. Invariantes: se o tick corrompeu o estado, reverte o retrato.
 	void phase_invariants();
 

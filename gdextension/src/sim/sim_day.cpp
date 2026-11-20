@@ -131,6 +131,12 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// modo que o déficit e o caixa do governo do fecho sejam os medidos.
 	core.phase_monetary();
 
+	// 9e. C3 (D-107): crédito de empresa. Juro do dia, juros vencidos,
+	// amortização pelo excedente ao capital de giro e — se o grupo ficar
+	// insolvente além do prazo — o calote, com a perda no banco. Sem crédito
+	// (default) a fase não toca no estado.
+	core.phase_credit();
+
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra
 	// e reverte. O log fica na fachada.

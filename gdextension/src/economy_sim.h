@@ -460,6 +460,37 @@ public:
 	 * ouro do mercado ao PREÇO FIXO do padrão e paga com as reservas.
 	 */
 	Dictionary central_bank_gold_convert(const String& currency, double tonnes);
+	// ------------------------------------------------------------------
+	// C3 (D-107) — CRÉDITO DE EMPRESA (banco agregado como credor).
+	// Desenho e contrato: docs/economy/C3_group_balance.md.
+	// ------------------------------------------------------------------
+	/** Liga/desliga a mecânica de crédito (default do jogo = desligado). */
+	Dictionary set_bank_credit(bool enabled);
+	/**
+	 * Regras do crédito (0 = default de `sim/bank.h` / JSON declarado):
+	 * spread anual sobre a taxa básica, teto de alavancagem, cobertura de
+	 * juros, dias de insolvência até o calote e fração do excedente
+	 * amortizada por dia.
+	 */
+	void set_bank_policy(double spread, double leverage_cap,
+		double interest_cover, int default_days, double repay_share);
+	/**
+	 * Capital pago pelo Tesouro da nação ao banco (o Estado é o dono declarado
+	 * até a C4). Não cria dinheiro: sai do orçamento da maior cidade.
+	 * @returns `{ok, paid, nation, error}`.
+	 */
+	Dictionary set_bank_capital(const String& nation, double amount);
+	/**
+	 * Pede crédito para um grupo pela fila A3. Limitado pelo crédito
+	 * disponível (alavancagem e cobertura de juros).
+	 * @returns `{ok, granted, group, error}`.
+	 */
+	Dictionary group_borrow(const String& group_id, double amount);
+	/**
+	 * C3 (D-107) — status A4 do crédito: política, totais, uma linha por
+	 * banco/nação, os grupos endividados e o invariante dos dois lados.
+	 */
+	Dictionary get_bank_status() const;
 	/** G2 — mapeamento produto→tipo de armazém em vigor (tabela declarada +
 	 *  overrides do JSON). `{produto: tipo}`; usado pelo StorageService. */
 	Dictionary get_storage_product_types() const;

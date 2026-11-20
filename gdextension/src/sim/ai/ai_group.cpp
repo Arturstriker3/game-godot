@@ -211,8 +211,15 @@ bool GroupDay::has_capital(int group_index) const {
 			|| group_index >= static_cast<int>(ctx.state.group_cash.size())) {
 		return false;
 	}
-	return ctx.state.group_cash[static_cast<std::size_t>(group_index)]
-		>= kMinCapital;
+	// C3 (D-107): o crédito disponível também conta como capital de decisão
+	// (zero quando a mecânica está desligada).
+	double available =
+		ctx.state.group_cash[static_cast<std::size_t>(group_index)];
+	if (group_index < static_cast<int>(ctx.state.group_credit.size())) {
+		available +=
+			ctx.state.group_credit[static_cast<std::size_t>(group_index)];
+	}
+	return available >= kMinCapital;
 }
 
 void GroupDay::decide_group(int group_index, Opportunity& best) {
@@ -439,6 +446,12 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 	const AiGroupRow& group = view.groups[static_cast<std::size_t>(group_index)];
 	const double cash =
 		ctx.state.group_cash[static_cast<std::size_t>(group_index)];
+	// C3 (D-107): o crédito disponível do dia entra como capacidade de capex
+	// (zero quando a mecânica está desligada — o mundo default não muda).
+	const double credit =
+		group_index < static_cast<int>(ctx.state.group_credit.size())
+		? ctx.state.group_credit[static_cast<std::size_t>(group_index)] : 0.0;
+	const double available = cash + credit;
 	const double capital_per_capacity = entry.capital_per_capacity;
 	if (capital_per_capacity <= 0.0) {
 		return false;
@@ -466,11 +479,11 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 			return false;
 		}
 	}
-	double capacity = std::clamp(cash * kCashShare / capital_per_capacity, 0.5,
-		kMaxCapacity);
+	double capacity = std::clamp(available * kCashShare / capital_per_capacity,
+		0.5, kMaxCapacity);
 	double cost = capacity * capital_per_capacity;
-	if (cost > cash) {
-		capacity = cash / capital_per_capacity;
+	if (cost > available) {
+		capacity = available / capital_per_capacity;
 		cost = capacity * capital_per_capacity;
 	}
 	if (capacity < 0.5) {
@@ -536,6 +549,31 @@ void GroupDay::execute(int group_index, const Opportunity& opportunity) {
 	}
 	const std::string building_id =
 		"GRP-" + group_tag + "-" + std::to_string(ctx.day);
+	// C3 (D-107): se o capex passar do caixa local, o grupo toma crédito do
+	// banco agregado ANTES da obra (o pedido é um comando A3 registrado no
+	// log). O limite do dia já entrou em `group_credit` na visão do dia.
+	int cash_slot = -1;
+	for (int index = 0; index < static_cast<int>(view.groups.size());
+			++index) {
+		if (view.groups[static_cast<std::size_t>(index)].id == group.id) {
+			if (index < static_cast<int>(ctx.state.group_cash.size())) {
+				cash_slot = index;
+			}
+			break;
+		}
+	}
+	if (cash_slot >= 0) {
+		const double gap = opportunity.cost
+			- ctx.state.group_cash[static_cast<std::size_t>(cash_slot)];
+		if (gap > 1e-9) {
+			const AiActionResult borrow = ai_emit_group_borrow(ctx, group.id,
+				gap);
+			if (borrow.cost > 0.0) {
+				ctx.state.group_cash[static_cast<std::size_t>(cash_slot)] +=
+					borrow.cost;
+			}
+		}
+	}
 	const AiActionResult result = ai_emit_group_invest(ctx, group.id, city_id,
 		building_id, opportunity.resource, opportunity.product,
 		opportunity.capacity, opportunity.recipe, opportunity.partner);

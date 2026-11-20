@@ -78,6 +78,11 @@ enum class CommandType : int {
 	// Sempre pela fila A3 — troca de regime/padrão nunca é automática.
 	SetExchangeRegime,
 	SetMonetaryStandard,
+	// C3 (D-107): crédito de empresa. `SetBankCredit` liga/desliga a mecânica
+	// (o default do jogo é desligado) e `GroupBorrow` pede crédito para um
+	// grupo — sempre pela fila A3, como todo comando de política.
+	SetBankCredit,
+	GroupBorrow,
 };
 
 // Nome estavel do tipo (log/replay em JSON). `nullptr` para tipo invalido.

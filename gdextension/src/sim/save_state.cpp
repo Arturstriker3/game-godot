@@ -1375,6 +1375,33 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		block["parameters"] = params;
 		data["fx"] = block;
 	}
+	// C3 (v30/D-107) — CRÉDITO DE EMPRESA: banco agregado por nação e o
+	// estado do crédito. ADITIVO: v29 carrega desligado, sem banco e com
+	// dívida 0 (nada inventado para trás).
+	{
+		Dictionary block = make_object();
+		block["enabled"] = ws.bank_credit_enabled;
+		Dictionary nations = make_object();
+		for (const auto& row : ws.banks) {
+			const Bank& bank = row.second;
+			Dictionary entry = make_object();
+			entry["currency"] = sim_str(bank.currency.c_str());
+			entry["loans"] = bank.loans;
+			entry["arrears"] = bank.arrears;
+			entry["bc_borrowing"] = bank.bc_borrowing;
+			entry["cash"] = bank.cash;
+			entry["capital"] = bank.capital;
+			entry["interest_income"] = bank.interest_income;
+			entry["interest_expense"] = bank.interest_expense;
+			entry["writeoffs"] = bank.writeoffs;
+			entry["defaults"] = bank.defaults;
+			entry["loans_count"] = bank.loans_count;
+			entry["last_default_day"] = bank.last_default_day;
+			nations[sim_str(row.first.c_str())] = entry;
+		}
+		block["nations"] = nations;
+		data["banks"] = block;
+	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
 	Array groups = make_array();
 	for (const Group& group : ws.groups) {
@@ -1391,6 +1418,13 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["taxes_total"] = group.taxes_total;
 		entry["capex_total"] = group.capex_total;
 		entry["state_owned"] = group.state_owned;
+		// C3 (D-107): o balanço do grupo ganha dívida de crédito e juro vencido.
+		entry["debt"] = group.debt;
+		entry["credit_arrears"] = group.credit_arrears;
+		entry["credit_total"] = group.credit_total;
+		entry["credit_repaid"] = group.credit_repaid;
+		entry["credit_default_days"] = group.credit_default_days;
+		entry["credit_defaults"] = group.credit_defaults;
 		Array by_host = make_array();
 		for (const auto& row : group.profit_by_host) {
 			Dictionary host = make_object();
@@ -1851,6 +1885,48 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				double(params.get("gold_reserve_ratio", 0.0)));
 		}
 	}
+	// C3 (v30/D-107) — CRÉDITO. Save v29 e anteriores chegam SEM o bloco:
+	// desligado, sem banco e com dívida 0 (a migração não inventa credor).
+	ws.banks.clear();
+	ws.bank_credit_enabled = false;
+	if (data.has("banks")) {
+		const Dictionary block = data.get("banks", Dictionary());
+		ws.bank_credit_enabled = bool(block.get("enabled", false));
+		const Variant nations_variant = block.get("nations", Dictionary());
+		if (nations_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& nations = nations_variant;
+			for (const auto& row_entry : nations.entries()) {
+				if (row_entry.first.empty()
+						|| row_entry.second.get_type()
+							!= Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary& row = row_entry.second;
+				Bank bank;
+				bank.nation = row_entry.first;
+				bank.currency = std::string(
+					String(row.get("currency", "")).utf8().get_data());
+				bank.loans = std::max(0.0, double(row.get("loans", 0.0)));
+				bank.arrears = std::max(0.0, double(row.get("arrears", 0.0)));
+				bank.bc_borrowing = std::max(0.0,
+					double(row.get("bc_borrowing", 0.0)));
+				bank.cash = std::max(0.0, double(row.get("cash", 0.0)));
+				bank.capital = std::max(0.0, double(row.get("capital", 0.0)));
+				bank.interest_income = std::max(0.0,
+					double(row.get("interest_income", 0.0)));
+				bank.interest_expense = std::max(0.0,
+					double(row.get("interest_expense", 0.0)));
+				bank.writeoffs = std::max(0.0,
+					double(row.get("writeoffs", 0.0)));
+				bank.defaults = std::max(0, int(row.get("defaults", 0)));
+				bank.loans_count = std::max(0,
+					int(row.get("loans_count", 0)));
+				bank.last_default_day = int(
+					row.get("last_default_day", -1));
+				ws.banks[bank.nation] = bank;
+			}
+		}
+	}
 	if (data.has("tariffs")) {
 		const Array saved_tariffs = data.get("tariffs", Array());
 		ws.tariffs.clear();
@@ -1907,6 +1983,19 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		group.taxes_total = std::max(0.0, double(entry.get("taxes_total", 0.0)));
 		group.capex_total = std::max(0.0, double(entry.get("capex_total", 0.0)));
 		group.state_owned = bool(entry.get("state_owned", false));
+		// C3 (D-107): migração v29 → v30 carrega com dívida 0 (nada inventado
+		// para trás); o crédito ligado é estado salvo.
+		group.debt = std::max(0.0, double(entry.get("debt", 0.0)));
+		group.credit_arrears = std::max(0.0,
+			double(entry.get("credit_arrears", 0.0)));
+		group.credit_total = std::max(0.0,
+			double(entry.get("credit_total", 0.0)));
+		group.credit_repaid = std::max(0.0,
+			double(entry.get("credit_repaid", 0.0)));
+		group.credit_default_days = std::max(0,
+			int(entry.get("credit_default_days", 0)));
+		group.credit_defaults = std::max(0,
+			int(entry.get("credit_defaults", 0)));
 		const Array by_host = entry.get("profit_by_host", Array());
 		for (int host_index = 0; host_index < by_host.size(); ++host_index) {
 			const Dictionary host = by_host[host_index];

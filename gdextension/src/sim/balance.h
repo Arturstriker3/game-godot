@@ -26,6 +26,7 @@
 #include "world_state.h"
 
 #include <string>
+#include <vector>
 
 namespace ogs {
 namespace balance {
@@ -41,8 +42,14 @@ struct Sheet {
 	double inventory = 0.0;      // estoque a preço de mercado (t × preço)
 	double fixed_capital = 0.0;  // capital fixo a valor contábil (plantas)
 	double property = 0.0;       // terra/moradia/anel da B6 (valor de mercado)
+	// C3 (D-107): empréstimos a receber (setor bancário) e claim de patrimônio
+	// do Tesouro sobre o banco (capital pago). Financeiros.
+	double loans = 0.0;
+	double equity_claims = 0.0;
 
-	double financial_assets() const { return cash + receivables; }
+	double financial_assets() const {
+		return cash + receivables + loans + equity_claims;
+	}
 	double financial_liabilities() const { return payables + debt; }
 	// Ativos − passivos, com os ativos reais dentro (patrimônio líquido).
 	double net_worth() const {
@@ -70,19 +77,34 @@ struct Ledger {
 	// BC. A emissão de M0 contra títulos do governo aumenta os dois lados: o
 	// caixa público e a dívida pública (que fecha com os títulos do BC).
 	double monetary_base = 0.0;
-	double monetary_claims = 0.0;    // títulos do BC (ativo financeiro)
+	double monetary_claims = 0.0;    // ativos do BC: títulos + empréstimos a bancos
 	double government_debt = 0.0;    // dívida pública emitida (passivo)
 	double money_total = 0.0;        // contagem canônica (SimCore::money_total)
+	// C3 (D-107): setor bancário (banco agregado por nação) e a dívida dos
+	// grupos. `banking` é a posição líquida do setor: caixa + empréstimos +
+	// juros a receber − dívida com o BC − capital do Tesouro. O capital aparece
+	// como claim (`government`), porque o Tesouro é o dono declarado.
+	double banking = 0.0;
+	double bank_cash = 0.0;
+	double bank_loans = 0.0;
+	double bank_arrears = 0.0;
+	double bank_borrowing = 0.0;
+	double bank_capital = 0.0;
+	// Claim de patrimônio do governo sobre o banco (capital pago). É ativo
+	// financeiro, NÃO caixa: por isso fica fora de `cash_total`.
+	double government_claims = 0.0;
+	double group_debt = 0.0;
+	double group_arrears = 0.0;
 
 	// Enumeração INDEPENDENTE do caixa: se divergir de `money_total`, algum
 	// caixa ficou de fora de um dos dois lados (é o que o invariante pega).
 	double cash_total() const {
-		return families_cash + firms_cash + government + external;
+		return families_cash + firms_cash + government + external + bank_cash;
 	}
 	// Soma mundial das posições financeiras (deve ser 0).
 	double financial_sum() const {
-		return families + firms + government + external - government_debt
-			- monetary_base;
+		return families + firms + government + government_claims + external
+			+ banking - government_debt - monetary_base;
 	}
 	double cash_residual() const { return cash_total() - money_total; }
 };
@@ -98,6 +120,31 @@ Sheet government(const WorldState& ws, const std::string& nation = std::string()
 // `foreign_cash` global). Devolve o caixa do exterior inteiro; `nation` não
 // altera o resultado — a ausência é declarada no status.
 Sheet external(const WorldState& ws);
+
+// C3 (D-107) — BALANÇO DO GRUPO (leitura). `inventory` é o rateio da
+// capacidade do par cidade×produto — a mesma regra da receita — sobre o
+// estoque de mercado das cidades onde o grupo produz; `fixed_capital` é o
+// capital contábil das construções do grupo na fatia dele (1 − local_share em
+// joint venture). `debt`/`arrears` vêm do crédito (zero sem crédito).
+struct GroupSheet : Sheet {
+	std::string id;
+	std::string name;
+	std::string origin_nation;
+	std::string sector;
+	double daily_cost = 0.0;    // folha + opex pagos no último dia
+	double daily_profit = 0.0;  // lucro do último dia das construções do grupo
+	int building_count = 0;
+};
+GroupSheet group_sheet(const WorldState& ws, const Group& group);
+// Os mesmos balanços para todos os grupos, em UMA passagem pelo estado
+// (índice alinhado com `ws.groups`).
+std::vector<GroupSheet> group_sheets(const WorldState& ws);
+
+// C3 (D-107) — SETOR BANCÁRIO: caixa + empréstimos + juros a receber (ativos)
+// contra dívida com o BC + capital do Tesouro (passivos). `debt` é a soma dos
+// dois passivos; `equity_claims` NÃO entra aqui (é do governo).
+Sheet banking(const WorldState& ws);
+Sheet banking_nation(const WorldState& ws, const std::string& nation);
 
 // Diagnóstico de liquidez × solvência das plantas (leitura; não decide nada).
 // Insolvente = patrimônio da planta < 0; ilíquida = patrimônio >= 0 mas menor

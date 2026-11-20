@@ -137,7 +137,7 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // de ouro do BC por moeda, dado real da G2/D-101, e a série mensal do CPI por
 // nação). Nenhuma mecânica nova: nada emite, cobra juros ou intervém — é a
 // C2b. Save v26 carrega sem ouro e com a série vazia (nada inventado).
-constexpr int kSaveVersion = 29;
+constexpr int kSaveVersion = 30;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

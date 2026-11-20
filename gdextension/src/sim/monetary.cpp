@@ -3,6 +3,7 @@
 #include "monetary.h"
 
 #include "central_bank.h"
+#include "bank.h"
 #include "city_gov.h"
 #include "exchange.h"
 #include "sim_core.h"
@@ -334,6 +335,12 @@ void SimCore::phase_monetary() {
 		base_list[static_cast<std::size_t>(product)] = base_price(product);
 	}
 	monetary::tick(ws_, money_total(), base_list);
+}
+
+void SimCore::phase_credit() {
+	// C3 (D-107): sem crédito e sem dívida o dia não muda (o default do jogo
+	// é desligado) - a fase sai sem tocar no estado.
+	bank::phase(ws_);
 }
 
 } // namespace ogs

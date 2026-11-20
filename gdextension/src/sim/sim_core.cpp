@@ -203,6 +203,11 @@ double SimCore::money_total() const {
 	for (const Group& group : ws_.groups) {
 		total += group.cash;
 	}
+	// C3 (D-107): o caixa do banco agregado também é dinheiro do mundo (lucro
+	// retido do spread e o capital pago pelo Tesouro).
+	for (const auto& row : ws_.banks) {
+		total += row.second.cash;
+	}
 	// §15: o fundo reservado de cada obra (capital do investimento debitado no
 	// início) é dinheiro do mundo — soma para a conservação valer entre o débito
 	// (na decisão) e o pagamento incremental (no tick).
@@ -237,6 +242,8 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	// C2b2 (D-106): a intervenção cambial e a desvalorização são estado do dia.
 	out.fx = ws_.fx;
 	out.fx_events = ws_.fx_events;
+	// C3 (D-107): o banco agregado (crédito, juro, calote) e a emissão líquida.
+	out.banks = ws_.banks;
 	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
@@ -871,6 +878,7 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.gov_cash_open = in.gov_cash_open;
 	ws_.fx = in.fx;
 	ws_.fx_events = in.fx_events;
+	ws_.banks = in.banks;
 	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;
@@ -956,6 +964,33 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 				+ std::to_string(ws_.day) + " a receber="
 				+ std::to_string(book.receivables) + " a pagar="
 				+ std::to_string(book.payables));
+		}
+		// C3 (D-107) - CRÉDITO DE EMPRESA: a dívida do grupo é o empréstimo do
+		// banco agregado, e o juro vencido é o mesmo dos dois lados. Posição
+		// negativa de qualquer um dos dois é erro de conta, não perda (a perda
+		// é o patrimônio do banco, que pode ficar negativo).
+		const double loans_gap = book.bank_loans - book.group_debt;
+		const double arrears_gap = book.bank_arrears - book.group_arrears;
+		if (!std::isfinite(loans_gap)
+				|| std::abs(loans_gap) > book_tolerance
+				|| !std::isfinite(arrears_gap)
+				|| std::abs(arrears_gap) > book_tolerance) {
+			violations.push_back("credito nao fecha dos dois lados: dia="
+				+ std::to_string(ws_.day) + " banco="
+				+ std::to_string(book.bank_loans) + " grupos="
+				+ std::to_string(book.group_debt) + " gap="
+				+ std::to_string(loans_gap) + " juros gap="
+				+ std::to_string(arrears_gap));
+		}
+		if (book.bank_loans < -1e-6 || book.bank_arrears < -1e-6
+				|| book.bank_borrowing < -1e-6 || book.bank_cash < -1e-6
+				|| book.group_debt < -1e-6
+				|| book.group_arrears < -1e-6) {
+			violations.push_back("posicao de credito negativa: dia="
+				+ std::to_string(ws_.day) + " banco="
+				+ std::to_string(book.bank_loans) + " reservas="
+				+ std::to_string(book.bank_borrowing) + " divida="
+				+ std::to_string(book.group_debt));
 		}
 	}
 

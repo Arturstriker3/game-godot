@@ -53,6 +53,9 @@ constexpr TypeName kTypeNames[] = {
 	{CommandType::StorageTrade, "storage_trade"},
 	{CommandType::SetExchangeRegime, "set_exchange_regime"},
 	{CommandType::SetMonetaryStandard, "set_monetary_standard"},
+	// C3 (D-107): crédito de empresa (banco agregado como credor).
+	{CommandType::SetBankCredit, "set_bank_credit"},
+	{CommandType::GroupBorrow, "group_borrow"},
 };
 
 } // namespace
