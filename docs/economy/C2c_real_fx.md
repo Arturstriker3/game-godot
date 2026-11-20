@@ -446,10 +446,13 @@ paridade **derivada** da taxa — é mudança de contrato de status, com o teste
   travada, BGN → EUR conservando `money_total` e invariante, save v31
   bit-exato, continuação idêntica após load e migração v30 → v31 (inclui a
   sucessão de moeda).
-- Vizinhos verdes pelo runner: `c2b2_fx_gold_test`, `c2_central_bank_test`,
-  `c2b1_monetary_test`, `c3_bank_credit_test`, `c3_group_balance_test`,
-  `currency_trade_test`, `economy_integration_test`, `services_test` (constante
-  da versão atual do save atualizada para 31 neles).
+- Vizinhos verdes pelo runner (20/11/2026, após a P1): `c2b2_fx_gold_test`,
+  `c2_central_bank_test`, `c2b1_monetary_test`, `c3_bank_credit_test`,
+  `c3_group_balance_test`, `currency_trade_test`, `economy_integration_test`,
+  `services_test`, `storage_g2_test` e `agriculture_seasonal_test`. Os dois
+  últimos estavam **vermelhos por constantes de save defasadas** (esperavam v30
+  e v25; o mundo está em v31 desde a D-108) — corrigido só a constante
+  (`b5bc256f`), sem tocar em comportamento; verdes depois disso.
 - `tools/validate_fx_regimes.py`: **OK** (135 moedas; BGN em `retired`).
 - `tools/c2c_p1_fx_passthrough_test.gd` (novo, 20/11/2026): o repasse simétrico
   no cenário mínimo (vendedor numa nação, comprador sem produtor na outra):
