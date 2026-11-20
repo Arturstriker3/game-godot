@@ -130,12 +130,14 @@ a taxa fica em neutro + hiato — nada é completado com número inventado.
   `demo_365_noai` `f06bddf1…`/`a7b50ce3…` (o status não muda; o save ganhou a
   janela do déficit).
 - **Custo:** 365 d passam de 166,7 s (C1) para 174,3 s (+4,6 %) com o refresh do
-  caixa do governo por dia e a leitura do CPI/taxa por moeda no fecho.
+  caixa do governo por dia e a leitura do CPI/taxa por moeda no fecho (medição
+  da rodada com o status; a rodada final sem status fechou em 172,0 s).
 - **Reversão de tick:** o `Snapshot` carrega `monetary`, `gov_bonds`,
   `gov_cash_open` e `emission_today`, e o retrato é tirado **depois** do reset
   do dia — um tick revertido não deixa emissão nem janela de déficit para trás.
-  Depois de um `load`, a janela começa no caixa do próprio load (mesmo valor do
-  fecho anterior no caminho direto).
+  A janela também **vai ao save** (v28), então a continuação depois de um `load`
+  é idêntica ao caminho direto (o teste de round-trip gasta e cobra emissão dos
+  dois lados).
 
 ## 6. Lacunas declaradas
 
