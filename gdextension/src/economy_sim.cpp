@@ -5,6 +5,7 @@
 #include "sim/agriculture.h"
 #include "sim/balance.h"
 #include "sim/central_bank.h"
+#include "sim/exchange.h"
 #include "sim/monetary.h"
 #include "sim/storage.h"
 #include "sim/profiling.h"
@@ -272,6 +273,22 @@ void EconomySim::_bind_methods() {
 		&EconomySim::set_central_bank_gold);
 	ClassDB::bind_method(D_METHOD("set_central_bank_policy", "currency",
 		"independence"), &EconomySim::set_central_bank_policy);
+	// C2b2 (D-106) — regimes de câmbio, padrão monetário e ouro físico.
+	ClassDB::bind_method(D_METHOD("set_exchange_regime", "currency", "regime",
+		"parity", "band_width"), &EconomySim::set_exchange_regime);
+	ClassDB::bind_method(D_METHOD("set_monetary_standard", "standard"),
+		&EconomySim::set_monetary_standard);
+	ClassDB::bind_method(D_METHOD("set_central_bank_reserves",
+		"anchor_by_currency"), &EconomySim::set_central_bank_reserves);
+	ClassDB::bind_method(D_METHOD("seed_central_bank_reserves", "days"),
+		&EconomySim::seed_central_bank_reserves);
+	ClassDB::bind_method(D_METHOD("set_exchange_policy", "band_width",
+		"defence_share", "gold_reserve_ratio"),
+		&EconomySim::set_exchange_policy);
+	ClassDB::bind_method(D_METHOD("central_bank_gold_trade", "currency",
+		"tonnes", "buy"), &EconomySim::central_bank_gold_trade);
+	ClassDB::bind_method(D_METHOD("central_bank_gold_convert", "currency",
+		"tonnes"), &EconomySim::central_bank_gold_convert);
 	ClassDB::bind_method(D_METHOD("set_storage_stock", "city_id", "type",
 		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
@@ -7997,6 +8014,64 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			return apply_storage_trade(String(cmd.s[0].c_str()), cmd.i[0],
 				cmd.i[1], static_cast<int>(cmd.v[1]), cmd.v[0], cmd.b,
 				cmd.s[1] == "relief");
+		case ogs::CommandType::SetExchangeRegime: {
+			// C2b2 (D-106): regime salvo + paridade/banda declaradas. Sem
+			// paridade (v[0] = 0) vale o `base_rate` do dado do F5.
+			Dictionary out;
+			const auto found = ws_.currency_by_code.find(cmd.s[0]);
+			if (found == ws_.currency_by_code.end()) {
+				out["ok"] = false;
+				out["error"] = "moeda desconhecida";
+				return out;
+			}
+			Currency& currency = ws_.currencies[
+				static_cast<std::size_t>(found->second)];
+			const int regime = ogs::central_bank::regime_from_name(cmd.s[1],
+				currency.exchange_regime);
+			currency.exchange_regime = regime;
+			// O toggle do F5 acompanha: o regime é a fonte, agora que ele age.
+			currency.floating = regime
+				== ogs::central_bank::kRegimeFloating;
+			FxState& state = ws_.fx[currency.code];
+			if (cmd.v[0] > 0.0) {
+				state.parity = cmd.v[0];
+			}
+			if (cmd.v[1] >= 0.0) {
+				state.band_width = std::clamp(cmd.v[1], 0.0, 1.0);
+			}
+			out["ok"] = true;
+			out["currency"] = String(currency.code.c_str());
+			out["regime"] = ogs::central_bank::regime_name(regime);
+			return out;
+		}
+		case ogs::CommandType::SetMonetaryStandard: {
+			Dictionary out;
+			const int standard = ogs::central_bank::standard_from_name(
+				cmd.s[0], -1);
+			if (standard < 0) {
+				out["ok"] = false;
+				out["error"] = "padrao desconhecido";
+				return out;
+			}
+			ws_.monetary_standard = standard;
+			// O preço fixo de conversão do ouro é o de catálogo do jogo,
+			// congelado no comando (não é o par histórico de 1944).
+			if (standard != ogs::central_bank::kStandardFiat) {
+				const int gold = sim_core_.product_index(std::string("gold"));
+				const double price = gold >= 0 ? sim_core_.base_price(gold)
+					: 0.0;
+				for (Currency& currency : ws_.currencies) {
+					FxState& state = ws_.fx[currency.code];
+					if (state.conversion_price <= 0.0) {
+						state.conversion_price = price;
+					}
+				}
+			}
+			out["ok"] = true;
+			out["standard"] =
+				ogs::central_bank::standard_name(standard);
+			return out;
+		}
 		case ogs::CommandType::None:
 			break;
 	}
@@ -8645,6 +8720,17 @@ Dictionary EconomySim::get_central_bank_status() const {
 		// está ligado? Falso = desligado até existir credor (C4). Declarado em
 		// `data/definitions/economy/monetary_policy.json` e conferido pelo teste.
 		policy["harvest_credit_rate"] = ws_.harvest_credit_rate;
+		// C2b2 (D-106): o padrão AGE (Bretton Woods e padrão ouro forçam o peg
+		// e a conversão do ouro). A troca é só por comando na fila A3.
+		const ogs::exchange::Parameters params =
+			ogs::exchange::parameters(ws_);
+		policy["standard_forces_peg"] =
+			ogs::exchange::standard_forces_peg(ws_);
+		policy["band_width"] = params.band_width;
+		policy["defence_share"] = params.defence_share;
+		policy["gold_reserve_ratio"] = params.gold_reserve_ratio;
+		policy["gold_conversion_basis"] =
+			"catalogo goods.json, congelado no comando de padrao";
 		policy["note"] =
 			"C2b1 (D-104): taxa básica por moeda (Taylor no BC independente; "
 			"objetivo do governo no controlado) e emissão só por compra de "
@@ -8765,6 +8851,33 @@ Dictionary EconomySim::get_central_bank_status() const {
 			row["liabilities"] = liabilities;
 		}
 		row["net_financial_worth"] = bank.net_financial_worth();
+		// C2b2 (D-106): regime efetivo, paridade, banda, reservas, cobertura e
+		// eventos da moeda. `funded` falso = fixo/banda administrativo (o F5 já
+		// segurava a taxa sem reserva).
+		{
+			Dictionary fx;
+			fx["regime_saved"] =
+				ogs::central_bank::regime_name(bank.regime_saved);
+			fx["regime_effective"] =
+				ogs::central_bank::regime_name(bank.regime_effective);
+			fx["parity"] = bank.parity;
+			fx["band_width"] = bank.band_width;
+			const double rate = sim_core_.fx_rate(
+				bank.nations.empty() ? std::string() : bank.nations.front());
+			fx["rate"] = rate;
+			fx["deviation"] = bank.parity > 0.0
+				? rate / bank.parity - 1.0 : 0.0;
+			fx["reserves"] = bank.reserve_currency_holdings;
+			fx["reserves_local"] =
+				bank.reserve_currency_holdings * bank.parity;
+			fx["funded"] = bank.funded;
+			fx["intervention_today"] = bank.intervention_today;
+			fx["devaluations"] = bank.devaluations;
+			fx["last_event_day"] = bank.last_event_day;
+			fx["coverage"] = bank.coverage_ratio;
+			fx["conversion_price"] = bank.conversion_price;
+			row["fx"] = fx;
+		}
 		currencies[String(bank.code.c_str())] = row;
 		m0_sum += bank.m0;
 		m1_sum += bank.m1;
@@ -8797,7 +8910,52 @@ Dictionary EconomySim::get_central_bank_status() const {
 			bonds_total += row.second;
 		}
 		totals["government_debt"] = bonds_total;
+		// C2b2 (D-106): reservas, fatia do cofre e contador de desvalorizações.
+		double reserves_total = 0.0;
+		double vault_total = 0.0;
+		int devaluations_total = 0;
+		int funded_total = 0;
+		for (const ogs::central_bank::CurrencyBank& bank : banks) {
+			reserves_total += bank.reserve_currency_holdings;
+			devaluations_total += bank.devaluations;
+			if (bank.funded) {
+				funded_total += 1;
+			}
+		}
+		const int gold_index = sim_core_.product_index(std::string("gold"));
+		if (gold_index >= 0) {
+			for (const ogs::StorageSite& site : ws_.storage_sites) {
+				if (site.type != ogs::STORAGE_VAULT
+						|| site.scope != ogs::STORAGE_GOVERNMENT) {
+					continue;
+				}
+				if (static_cast<std::size_t>(gold_index) < site.stock.size()) {
+					vault_total += std::max(0.0,
+						site.stock[static_cast<std::size_t>(gold_index)]);
+				}
+			}
+		}
+		totals["reserves"] = reserves_total;
+		totals["funded_currencies"] = funded_total;
+		totals["vault_gold_tonnes"] = vault_total;
+		totals["devaluations"] = devaluations_total;
 		out["totals"] = totals;
+	}
+	{
+		// C2b2: anel de eventos do câmbio (mais recente primeiro).
+		Array events;
+		for (auto it = ws_.fx_events.rbegin(); it != ws_.fx_events.rend();
+				++it) {
+			Dictionary entry;
+			entry["day"] = it->day;
+			entry["currency"] = String(it->currency.c_str());
+			entry["type"] = String(it->type.c_str());
+			entry["old_parity"] = it->old_parity;
+			entry["new_parity"] = it->new_parity;
+			entry["reserves_used"] = it->reserves_used;
+			events.append(entry);
+		}
+		out["fx_events"] = events;
 	}
 	{
 		// C2b1: dívida pública por nação (só quem tem título do BC).
@@ -8960,6 +9118,120 @@ bool EconomySim::set_central_bank_policy(const String& currency,
 		.bank_independence = value;
 	status_invalidate();
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+// C2b2 (D-106) — regimes de câmbio, padrão monetário e ouro físico.
+// ---------------------------------------------------------------------------
+bool EconomySim::set_exchange_regime(const String& currency,
+		const String& regime, double parity, double band_width) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string code(currency.utf8().get_data());
+	if (ws_.currency_by_code.find(code) == ws_.currency_by_code.end()) {
+		return false;
+	}
+	const std::string name(regime.utf8().get_data());
+	if (name != "floating" && name != "peg" && name != "band") {
+		return false;
+	}
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetExchangeRegime;
+	cmd.s[0] = code;
+	cmd.s[1] = name;
+	cmd.v[0] = std::isfinite(parity) ? std::max(0.0, parity) : 0.0;
+	cmd.v[1] = std::isfinite(band_width) ? band_width : -1.0;
+	dispatch_command(cmd);
+	return true;
+}
+
+bool EconomySim::set_monetary_standard(const String& standard) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string name(standard.utf8().get_data());
+	if (name != "fiat" && name != "bretton_woods" && name != "gold") {
+		return false;
+	}
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetMonetaryStandard;
+	cmd.s[0] = name;
+	dispatch_command(cmd);
+	return true;
+}
+
+double EconomySim::set_central_bank_reserves(
+		const Dictionary& anchor_by_currency) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	double total = 0.0;
+	const Array codes = anchor_by_currency.keys();
+	for (int index = 0; index < codes.size(); ++index) {
+		const String key = codes[index];
+		if (key.is_empty()) {
+			continue;
+		}
+		const double value = double(anchor_by_currency.get(key, 0.0));
+		if (!std::isfinite(value)) {
+			continue;
+		}
+		const std::string code(key.utf8().get_data());
+		if (ws_.currency_by_code.find(code) == ws_.currency_by_code.end()) {
+			continue;
+		}
+		ogs::exchange::set_reserves(ws_, code, value);
+		total += std::max(0.0, value);
+	}
+	status_invalidate();
+	return total;
+}
+
+double EconomySim::seed_central_bank_reserves(int days) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const double total = ogs::exchange::seed_reserves_from_imports(ws_,
+		days);
+	status_invalidate();
+	return total;
+}
+
+void EconomySim::set_exchange_policy(double band_width, double defence_share,
+		double gold_reserve_ratio) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	ogs::exchange::set_parameters(ws_, band_width, defence_share,
+		gold_reserve_ratio);
+	status_invalidate();
+}
+
+Dictionary EconomySim::central_bank_gold_trade(const String& currency,
+		double tonnes, bool buy) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::exchange::GoldTrade trade = ogs::exchange::gold_trade(ws_,
+		std::string(currency.utf8().get_data()), tonnes, buy);
+	Dictionary out;
+	out["ok"] = trade.ok;
+	out["tons"] = trade.tons;
+	out["value"] = trade.value;
+	out["city"] = String(trade.city.c_str());
+	out["error"] = String(trade.error.c_str());
+	status_invalidate();
+	return out;
+}
+
+Dictionary EconomySim::central_bank_gold_convert(const String& currency,
+		double tonnes) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::vector<double> base_list(
+		static_cast<std::size_t>(std::max(0, ws_.products)), 0.0);
+	for (int product = 0; product < ws_.products; ++product) {
+		base_list[static_cast<std::size_t>(product)] =
+			sim_core_.base_price(product);
+	}
+	const ogs::exchange::GoldTrade trade = ogs::exchange::gold_convert(ws_,
+		std::string(currency.utf8().get_data()), tonnes, base_list);
+	Dictionary out;
+	out["ok"] = trade.ok;
+	out["tons"] = trade.tons;
+	out["value"] = trade.value;
+	out["city"] = String(trade.city.c_str());
+	out["error"] = String(trade.error.c_str());
+	status_invalidate();
+	return out;
 }
 
 Dictionary EconomySim::get_storage_status() const {

@@ -208,11 +208,33 @@ func apply_to_sim(sim: Object, cities: Array, buildings: Array,
 			_seed_oil(sim, tag, splits, existing, capacity, report)
 			_seed_grain(sim, tag, nation_cities, weights, splits, existing,
 				capacity, report)
-		# 5. Ouro do BC: lido e reportado, não semeado (cofre é estrutura).
+		# 5. Ouro do BC: lido e reportado; desde a C2b2 (D-106) também é
+		#    colocado como OURO FÍSICO no cofre (passo 5b).
 		var gold := _gold_tonnes(tag)
 		report["gold_reserve_t"] = float(report["gold_reserve_t"]) + gold
 		if gold > 0.0:
 			report["gold_nations"][tag] = gold
+		# 5b. C2b2 (D-106): ouro FÍSICO. As toneladas do dado real entram no
+		#     cofre do governo da maior cidade da nação (a capacidade do cofre
+		#     é a própria tonelagem). No load o cofre do save manda: um site já
+		#     existente não é reabastecido com o dado.
+		if gold > 0.0 and seed_stock:
+			var vault_city := _largest_city(nation_cities)
+			if vault_city != "" \
+					and not existing.has(vault_city + "|vault|0"):
+				sim.set_storage_capacity(vault_city, "vault", "government",
+					gold)
+				sim.set_storage_stock(vault_city, "vault", "government",
+					"gold", gold)
+				report["gold_placed_t"] = \
+					float(report["gold_placed_t"]) + gold
+				report["gold_city"][tag] = vault_city
+			else:
+				report["gold_unplaced_t"] = \
+					float(report["gold_unplaced_t"]) + gold
+		elif gold > 0.0:
+			report["gold_unplaced_t"] = \
+				float(report["gold_unplaced_t"]) + gold
 	report["nations"] = by_nation.size()
 	report["cities"] = cities.size()
 	# 6. C2a (D-103): o ouro do cofre vira a reserva do banco central DA MOEDA.
@@ -226,6 +248,11 @@ func apply_to_sim(sim: Object, cities: Array, buildings: Array,
 			gold_declared = float(sim.set_central_bank_gold(
 				report["gold_nations"]))
 		report["gold_central_bank_t"] = gold_declared
+	# 6b. C2b2 (D-106): o cofre deixa de ser "só estrutura" para o bem gold.
+	#     `gold_applied` diz se a tonelada do dado virou estoque físico.
+	if float(report["gold_placed_t"]) > 0.0:
+		report["gold_applied"] = true
+		report["gold_reason"] = ""
 	# Diagnóstico de ESCALA: produção anual do jogo por tipo, cobertura real
 	# usada (meses, ponderada pelo fluxo do jogo) e quantos meses de produção a
 	# capacidade inicial cobre. Depois da D-101 os dois últimos coincidem por
@@ -602,6 +629,26 @@ func _gold_tonnes(tag: String) -> float:
 	return maxf(_num(gold.get("tonnes")), 0.0)
 
 
+## C2b2 (D-106): maior cidade da nação (a que recebe o cofre de ouro). O
+## desempate é o id, para a escolha ser determinística.
+func _largest_city(nation_cities: Array) -> String:
+	var best := ""
+	var best_pop := -1.0
+	for city in nation_cities:
+		if city is not Dictionary:
+			continue
+		var id := String((city as Dictionary).get("id", ""))
+		if id == "":
+			continue
+		var pop := float((city as Dictionary).get("simulation_population",
+			(city as Dictionary).get("population", 0.0)))
+		if pop > best_pop + 1e-9 or (absf(pop - best_pop) <= 1e-9
+				and (best == "" or id < best)):
+			best = id
+			best_pop = pop
+	return best
+
+
 ## Produção real anual (kt) de um bem mineral do país
 ## (`extraction_production_2024`, publicado em kt/ano). Zero quando o país não
 ## aparece — ausência explícita.
@@ -746,6 +793,9 @@ func _empty_report(options: Dictionary) -> Dictionary:
 		"grain_stock_basis": "",
 		"gold_reserve_t": 0.0,
 		"gold_nations": {},
+		"gold_placed_t": 0.0,
+		"gold_unplaced_t": 0.0,
+		"gold_city": {},
 		"gold_applied": false,
 		"gold_reason": "vault e estrutura nesta parte (D-100); ouro do BC nao tem fluxo de estoque",
 		"gold_central_bank_t": 0.0,

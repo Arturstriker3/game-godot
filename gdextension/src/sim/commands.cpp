@@ -51,6 +51,8 @@ constexpr TypeName kTypeNames[] = {
 	{CommandType::Concede, "concede"},
 	{CommandType::StorageBuild, "storage_build"},
 	{CommandType::StorageTrade, "storage_trade"},
+	{CommandType::SetExchangeRegime, "set_exchange_regime"},
+	{CommandType::SetMonetaryStandard, "set_monetary_standard"},
 };
 
 } // namespace

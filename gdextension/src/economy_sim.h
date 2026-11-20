@@ -413,6 +413,53 @@ public:
 	 */
 	bool set_central_bank_policy(const String& currency,
 		const String& independence);
+	/**
+	 * C2b2 (D-106) — escolhe o REGIME CAMBIAL de uma moeda, pela fila A3
+	 * (aplica no início do dia seguinte): `floating`, `peg` ou `band`.
+	 * `parity` = unidades locais por 1 unidade da moeda de reserva (0 = o
+	 * `base_rate` do dado do F5, nunca um número inventado); `band_width` =
+	 * ±fração da banda (negativo = default de jogo).
+	 * @returns true se a moeda existe e o nome é válido (o comando entrou na fila).
+	 */
+	bool set_exchange_regime(const String& currency, const String& regime,
+		double parity, double band_width);
+	/**
+	 * C2b2 (D-106) — escolhe o PADRÃO MONETÁRIO do mundo, pela fila A3:
+	 * `fiat` (default), `bretton_woods` ou `gold`. Nunca é automático.
+	 * @returns true se o nome é válido.
+	 */
+	bool set_monetary_standard(const String& standard);
+	/**
+	 * C2b2 (D-106) — declara as RESERVAS em moeda de reserva (unidades de
+	 * âncora) por moeda. É declaração explícita (lab/teste/cenário): o
+	 * repositório não tem fonte de reservas cambiais por país e o default é 0.
+	 * Marca a moeda como `funded` (a defesa medida passa a existir).
+	 * @returns total declarado (âncora).
+	 */
+	double set_central_bank_reserves(const Dictionary& anchor_by_currency);
+	/**
+	 * C2b2 (D-106) — reservas iniciais do CENÁRIO de estresse: N dias de
+	 * importação MEDIDA do próprio mundo (regra declarada, não dado de país).
+	 * O default do jogo não chama isto.
+	 * @returns total em âncora.
+	 */
+	double seed_central_bank_reserves(int days);
+	/** C2b2 (D-106) — parâmetros de regra (banda, fatia de defesa, cobertura). */
+	void set_exchange_policy(double band_width, double defence_share,
+		double gold_reserve_ratio);
+	/**
+	 * C2b2 (D-106) — compra/venda de OURO FÍSICO do cofre contra o mercado do
+	 * produto ouro (sem teto econômico de preço, D-091). `buy` = o cofre compra
+	 * do mercado; false = vende ao mercado. Ouro não é criado nem destruído.
+	 * @returns `{ok, tons, value, city, error}`.
+	 */
+	Dictionary central_bank_gold_trade(const String& currency, double tonnes,
+		bool buy);
+	/**
+	 * C2b2 (D-106) — conversão do padrão Bretton Woods/ouro: o cofre compra
+	 * ouro do mercado ao PREÇO FIXO do padrão e paga com as reservas.
+	 */
+	Dictionary central_bank_gold_convert(const String& currency, double tonnes);
 	/** G2 — mapeamento produto→tipo de armazém em vigor (tabela declarada +
 	 *  overrides do JSON). `{produto: tipo}`; usado pelo StorageService. */
 	Dictionary get_storage_product_types() const;

@@ -34,6 +34,7 @@ add_library(opengs_sim STATIC
     src/sim/profiling.cpp
     src/sim/sim_core.cpp
     src/sim/sim_day.cpp
+    src/sim/exchange.cpp
     src/sim/freight.cpp
     src/sim/logistics.cpp
     src/sim/trade.cpp

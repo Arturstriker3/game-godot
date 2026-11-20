@@ -191,9 +191,16 @@ bool storage_type_is_structure_only(int type) {
 }
 
 bool storage_type_accepts(int type, int product_type) {
-	return type >= 0 && type < kStorageTypeCount
-		&& !storage_type_is_structure_only(type)
-		&& type == product_type;
+	if (type < 0 || type >= kStorageTypeCount) {
+		return false;
+	}
+	// C2b2 (D-106): o COFRE guarda o ouro FÍSICO do banco central. Continua
+	// sem capacidade semeada por default e sem obra pela IA (estrutura); a
+	// capacidade e o estoque vêm do dado da G2 (StorageService) e do BC.
+	if (type == STORAGE_VAULT) {
+		return product_type == STORAGE_VAULT;
+	}
+	return !storage_type_is_structure_only(type) && type == product_type;
 }
 
 // ---------------------------------------------------------------------------
@@ -294,7 +301,10 @@ void add_storage_capacity(WorldState& ws, int city_index, int type, int scope,
 }
 
 double storage_free_capacity(const WorldState& ws, const StorageSite& site) {
-	if (storage_type_is_structure_only(site.type)) {
+	// C2b2 (D-106): o cofre guarda o ouro físico, então a capacidade dele
+	// conta; os demais tipos de estrutura continuam sem capacidade de estoque.
+	if (storage_type_is_structure_only(site.type)
+			&& site.type != STORAGE_VAULT) {
 		return 0.0;
 	}
 	double used = 0.0;
@@ -380,7 +390,8 @@ void SimCore::set_storage_stock(const std::string& city_id, int type,
 	if (city == nullptr || type < 0 || type >= kStorageTypeCount
 			|| scope < 0 || scope >= kStorageScopeCount
 			|| product < 0 || product >= ws_.products
-			|| storage_type_is_structure_only(type)) {
+			|| (storage_type_is_structure_only(type)
+				&& type != STORAGE_VAULT)) {
 		return;
 	}
 	if (!ws_.storage_index_ready

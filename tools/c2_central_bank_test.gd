@@ -47,7 +47,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 28
+const SAVE_VERSION := 29
 const EPS := 1e-3
 const CPI_SAMPLE_DAYS := 30
 const MODEL_YEAR_DAYS := 360
@@ -481,8 +481,8 @@ func _test_world() -> void:
 	_check(_close(float(report.get("gold_central_bank_t", -1.0)), gold_read,
 		1e-6),
 		"(mundo) relatório da G2 deveria declarar o ouro no BC")
-	_check(bool(report.get("gold_applied", true)) == false,
-		"(mundo) contrato da D-101: ouro NÃO é semeado como bem físico")
+	_check(bool(report.get("gold_applied", false)) == true,
+		"(mundo) C2b2/D-106: o ouro do cofre é físico (gold_applied)")
 
 	# --- CPI: mesma dona do G2, conta à mão e série mensal --------------
 	var cpi: Dictionary = bank.get("cpi", {})

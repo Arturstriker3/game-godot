@@ -25,7 +25,7 @@ const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 
 const AGRIA_CENTER := Vector2(2532.6, 571.4)
 const PORTUS_CENTER := Vector2(2560.4, 543.8)
-const SAVE_VERSION := 28
+const SAVE_VERSION := 29
 ## Tolerância da conservação (XGS ou t) — o mundo demo roda em double.
 const EPS := 1e-6
 
@@ -204,8 +204,8 @@ func _test_service() -> void:
 		"service: cobertura da reserva de petróleo = 125 dias")
 	_check(float(report.get("gold_reserve_t", 0.0)) > 8000.0,
 		"service: ouro do BC lido (%.1f t)" % float(report.get("gold_reserve_t", 0.0)))
-	_check(bool(report.get("gold_applied", true)) == false,
-		"service: ouro NÃO aplicado (cofre é estrutura nesta parte)")
+	_check(bool(report.get("gold_applied", false)) == true,
+		"service: C2b2/D-106 - o ouro do cofre é físico (gold_applied)")
 	var gold_nations: Dictionary = report.get("gold_nations", {})
 	_check(absf(float(gold_nations.get("USA", 0.0)) - 8133.5258) < 0.01,
 		"service: ouro dos EUA = 8.133,53 t do IMF IFS")
