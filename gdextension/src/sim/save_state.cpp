@@ -12,6 +12,7 @@
 #include "exchange.h"
 #include "sim_constants.h"
 #include "sim_core.h"
+#include "stock.h"
 #include "storage.h"
 
 #include <algorithm>
@@ -1477,6 +1478,77 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		block["banks"] = rows;
 		data["banks"] = block;
 	}
+	// C5 (v33/D-112) - BOLSA: uma praça por nação e um papel por grupo
+	// listado. ADITIVO: v32 e anteriores chegam sem o bloco e recebem a bolsa
+	// criada na migração (preço = patrimônio medido; nada inventado).
+	{
+		Dictionary block = make_object();
+		block["enabled"] = ws.stock_enabled;
+		Dictionary policy = make_object();
+		policy["investment_channel"] = ws.stock_investment_channel;
+		policy["risk_premium"] = ws.stock_risk_premium;
+		policy["payout_ratio"] = ws.stock_payout_ratio;
+		policy["step"] = ws.stock_step;
+		policy["expectation_k"] = ws.stock_expectation_k;
+		block["policy"] = policy;
+		Dictionary exchanges = make_object();
+		for (const auto& row : ws.stock_exchanges) {
+			const StockExchange& exchange = row.second;
+			Dictionary entry = make_object();
+			entry["nation"] = sim_str(exchange.nation.c_str());
+			entry["name"] = sim_str(exchange.name.c_str());
+			entry["name_status"] = sim_str(exchange.name_status.c_str());
+			entry["currency"] = sim_str(exchange.currency.c_str());
+			entry["confidence"] = exchange.confidence;
+			entry["index_base"] = exchange.index_base;
+			entry["last_price_day"] = exchange.last_price_day;
+			entry["production_ema"] = exchange.production_ema;
+			entry["production_seeded"] = exchange.production_seeded;
+			entry["dividends_paid"] = exchange.dividends_paid;
+			entry["remittance"] = exchange.remittance;
+			entry["remittance_origin"] = exchange.remittance_origin;
+			exchanges[sim_str(row.first.c_str())] = entry;
+		}
+		block["exchanges"] = exchanges;
+		Dictionary tickers = make_object();
+		for (const auto& row : ws.stock_tickers) {
+			const StockTicker& ticker = row.second;
+			Dictionary entry = make_object();
+			entry["group_id"] = sim_str(ticker.group_id.c_str());
+			entry["nation"] = sim_str(ticker.nation.c_str());
+			entry["exchange"] = sim_str(ticker.exchange.c_str());
+			entry["shares"] = ticker.shares;
+			entry["price"] = ticker.price;
+			entry["book_equity"] = ticker.book_equity;
+			entry["profit_ema"] = ticker.profit_ema;
+			entry["profit_at_last_dividend"] =
+				ticker.profit_at_last_dividend;
+			entry["dividend_last"] = ticker.dividend_last;
+			entry["dividend_limited"] = ticker.dividend_limited;
+			entry["dividend_day"] = ticker.dividend_day;
+			entry["listed_day"] = ticker.listed_day;
+			entry["delisted_day"] = ticker.delisted_day;
+			entry["listed"] = ticker.listed;
+			entry["reason"] = sim_str(ticker.reason.c_str());
+			Dictionary holdings = make_object();
+			holdings["households_high"] = ticker.holdings.households_high;
+			Dictionary banks = make_object();
+			for (const auto& bank_row : ticker.holdings.banks) {
+				banks[sim_str(bank_row.first.c_str())] = bank_row.second;
+			}
+			holdings["banks"] = banks;
+			Dictionary groups = make_object();
+			for (const auto& group_row : ticker.holdings.groups) {
+				groups[sim_str(group_row.first.c_str())] = group_row.second;
+			}
+			holdings["groups"] = groups;
+			holdings["foreign"] = ticker.holdings.foreign;
+			entry["holdings"] = holdings;
+			tickers[sim_str(row.first.c_str())] = entry;
+		}
+		block["tickers"] = tickers;
+		data["stock"] = block;
+	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
 	Array groups = make_array();
 	for (const Group& group : ws.groups) {
@@ -2241,6 +2313,146 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		}
 		ws.group_lookup[group.id] = static_cast<int>(ws.groups.size());
 		ws.groups.push_back(std::move(group));
+	}
+	// C5 (v33/D-112) - BOLSA. v32 e anteriores chegam SEM o bloco: a bolsa é
+	// criada no fim da carga (`stock::after_load`), com preço = patrimônio
+	// medido e a carteira do default declarado. v33 carrega o estado salvo.
+	ws.stock_exchanges.clear();
+	ws.stock_tickers.clear();
+	ws.stock_enabled = true;
+	ws.stock_investment_channel = true;
+	ws.stock_risk_premium = 0.0;
+	ws.stock_payout_ratio = 0.0;
+	ws.stock_step = 0.0;
+	ws.stock_expectation_k = 0.0;
+	if (data.has("stock")) {
+		const Dictionary block = data.get("stock", Dictionary());
+		ws.stock_enabled = bool(block.get("enabled", true));
+		const Value& policy_variant = block.get("policy", Value());
+		if (policy_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary params = policy_variant;
+			ws.stock_investment_channel = bool(
+				params.get("investment_channel", true));
+			ws.stock_risk_premium = std::max(0.0,
+				double(params.get("risk_premium", 0.0)));
+			ws.stock_payout_ratio = std::max(0.0,
+				double(params.get("payout_ratio", 0.0)));
+			ws.stock_step = std::max(0.0,
+				double(params.get("step", 0.0)));
+			ws.stock_expectation_k = std::max(0.0,
+				double(params.get("expectation_k", 0.0)));
+		}
+		const Value& exchanges_variant = block.get("exchanges", Value());
+		if (exchanges_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& exchanges = exchanges_variant;
+			for (const auto& row_entry : exchanges.entries()) {
+				if (row_entry.first.empty() || row_entry.second.get_type()
+						!= Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary& row = row_entry.second;
+				StockExchange exchange;
+				exchange.nation = std::string(
+					String(row.get("nation", "")).utf8().get_data());
+				if (exchange.nation.empty()) {
+					exchange.nation = row_entry.first;
+				}
+				exchange.name = std::string(
+					String(row.get("name", "")).utf8().get_data());
+				exchange.name_status = std::string(
+					String(row.get("name_status", "game_default"))
+						.utf8().get_data());
+				exchange.currency = std::string(
+					String(row.get("currency", "")).utf8().get_data());
+				exchange.confidence = std::clamp(
+					double(row.get("confidence", 1.0)), 0.65, 1.35);
+				exchange.index_base = std::max(0.0,
+					double(row.get("index_base", 0.0)));
+				exchange.last_price_day = int(
+					row.get("last_price_day", -1));
+				// Medição que afeta a trajetória (EMA da produção da nação):
+				// vai ao save para a continuação ser idêntica ao caminho direto.
+				exchange.production_ema = std::max(0.0,
+					double(row.get("production_ema", 0.0)));
+				exchange.production_seeded = bool(
+					row.get("production_seeded", false));
+				exchange.dividends_paid = std::max(0.0,
+					double(row.get("dividends_paid", 0.0)));
+				exchange.remittance = std::max(0.0,
+					double(row.get("remittance", 0.0)));
+				exchange.remittance_origin = std::max(0.0,
+					double(row.get("remittance_origin", 0.0)));
+				ws.stock_exchanges[exchange.nation] = exchange;
+			}
+		}
+		const Value& tickers_variant = block.get("tickers", Value());
+		if (tickers_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& tickers = tickers_variant;
+			for (const auto& row_entry : tickers.entries()) {
+				if (row_entry.first.empty() || row_entry.second.get_type()
+						!= Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary& row = row_entry.second;
+				StockTicker ticker;
+				ticker.group_id = std::string(
+					String(row.get("group_id", "")).utf8().get_data());
+				if (ticker.group_id.empty()) {
+					ticker.group_id = row_entry.first;
+				}
+				ticker.nation = std::string(
+					String(row.get("nation", "")).utf8().get_data());
+				ticker.exchange = std::string(
+					String(row.get("exchange", "")).utf8().get_data());
+				if (ticker.exchange.empty()) {
+					ticker.exchange = ticker.nation;
+				}
+				ticker.shares = std::max(0.0,
+					double(row.get("shares", 0.0)));
+				ticker.price = std::max(0.0, double(row.get("price", 0.0)));
+				ticker.book_equity = std::max(0.0,
+					double(row.get("book_equity", 0.0)));
+				ticker.profit_ema = double(row.get("profit_ema", 0.0));
+				ticker.profit_at_last_dividend = double(
+					row.get("profit_at_last_dividend", 0.0));
+				ticker.dividend_last = std::max(0.0,
+					double(row.get("dividend_last", 0.0)));
+				ticker.dividend_limited = std::max(0.0,
+					double(row.get("dividend_limited", 0.0)));
+				ticker.dividend_day = int(row.get("dividend_day", -1));
+				ticker.listed_day = int(row.get("listed_day", 0));
+				ticker.delisted_day = int(row.get("delisted_day", -1));
+				ticker.listed = bool(row.get("listed", false));
+				ticker.reason = std::string(
+					String(row.get("reason", "listed")).utf8().get_data());
+				const Value& holdings_variant = row.get("holdings", Value());
+				if (holdings_variant.get_type() == Variant::DICTIONARY) {
+					const Dictionary& holdings = holdings_variant;
+					ticker.holdings.households_high = std::max(0.0,
+						double(holdings.get("households_high", 0.0)));
+					const Value& banks_variant = holdings.get("banks", Value());
+					if (banks_variant.get_type() == Variant::DICTIONARY) {
+						const Dictionary& bank_map = banks_variant;
+						for (const auto& bank_row : bank_map.entries()) {
+							ticker.holdings.banks[bank_row.first] =
+								std::max(0.0, double(bank_row.second));
+						}
+					}
+					const Value& groups_variant = holdings.get("groups",
+						Value());
+					if (groups_variant.get_type() == Variant::DICTIONARY) {
+						const Dictionary& group_map = groups_variant;
+						for (const auto& group_row : group_map.entries()) {
+							ticker.holdings.groups[group_row.first] =
+								std::max(0.0, double(group_row.second));
+						}
+					}
+					ticker.holdings.foreign = std::max(0.0,
+						double(holdings.get("foreign", 0.0)));
+				}
+				ws.stock_tickers[ticker.group_id] = ticker;
+			}
+		}
 	}
 	ws.fdi_policies.clear();
 	ws.fdi_lookup.clear();
@@ -4070,6 +4282,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	core.rebuild_crop_indexes();
 	// G2: mapeamento produto→tipo e índice de cidade dos armazéns carregados.
 	rebuild_storage_indexes(ws);
+	// C5 (D-112): v32 e anteriores recebem a bolsa criada aqui (preço =
+	// patrimônio medido, carteira do default declarado); v33+ só completa
+	// linhas novas. Depende de grupos, construções e bancos já carregados.
+	stock::after_load(ws, version);
 }
 
 } // namespace ogs::save

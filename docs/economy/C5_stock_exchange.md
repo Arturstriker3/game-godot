@@ -87,8 +87,9 @@ valor de mercado = price × shares
 - **Livro do dia (`balance::Ledger`)** ganha `stock_assets` (carteiras) e
   `stock_claims` (emissores). Os dois são **iguais por construção** e entram com
   sinais opostos em `financial_sum()`, portanto a identidade da C1 **não muda**
-  por valorização. `Sheet` ganha `equity` (valor de mercado das ações
-  detidas), somado ao ativo financeiro do detentor.
+  por valorização. As carteiras são publicadas no status da bolsa por detentor;
+  elas **não** entram em `Sheet::net_worth` (seria contar duas vezes o mesmo
+  ativo do grupo, a mesma razão pela qual a C1 exclui `stratum_equity`).
 - **Conservação de dinheiro:** valorização **não** cria nem destrói dinheiro —
   é preço de ativo, não caixa. O invariante diário continua comparando
   `money_after` com `money_before + emissão + dinheiro bancário`; a bolsa não
@@ -198,23 +199,31 @@ Bloco aditivo `stock`:
 { "version": 33,
   "stock": {
     "enabled": true,
-    "policy": { "risk_premium": 0.04, "payout_ratio": 0.5, "step": 0.35,
-                "expectation_k": 0.05, "dividend_period_days": 30,
-                "shares": 1000000.0, "price_floor_rate": 0.01 },
+    "policy": { "investment_channel": true, "risk_premium": 0.0,
+                "payout_ratio": 0.0, "step": 0.0, "expectation_k": 0.0 },
     "exchanges": { "BRA": { "name": "BRA Exchange", "name_status": "game_default",
-                            "confidence": 1.0, "index_base": 0.0,
-                            "last_price_day": -1, "devaluation_seen": 0 } },
+                            "currency": "BRL", "confidence": 1.0,
+                            "index_base": 0.0, "last_price_day": -1,
+                            "production_ema": 0.0, "production_seeded": false,
+                            "dividends_paid": 0.0, "remittance": 0.0,
+                            "remittance_origin": 0.0 } },
     "tickers": { "<group id>": { "nation": "BRA", "shares": 1000000.0,
-                                 "price": 0.0, "listed": true, "reason": "listed",
+                                 "price": 0.0, "book_equity": 0.0,
+                                 "listed": true, "reason": "listed",
                                  "profit_ema": 0.0, "dividend_last": 0.0,
-                                 "dividend_day": -1, "listed_day": 0,
-                                 "delisted_day": -1,
+                                 "dividend_limited": 0.0, "dividend_day": -1,
+                                 "listed_day": 0, "delisted_day": -1,
                                  "holdings": { "households_high": 0.0,
                                                "banks": {"BRA/public": 0.0},
                                                "groups": {"<id>": 0.0},
                                                "foreign": 0.0 } } }
   } }
 ```
+
+`production_ema`/`production_seeded` são medição que **afeta a trajetória**
+(EMA da produção da nação na confiança) e por isso vão ao save, como a janela
+do déficit da C2b1: sem elas a continuação após load divergiria do caminho
+direto. `book_equity` é o patrimônio medido no último fechamento (base do q).
 
 **Migração v32 → v33:** o estado antigo não tem bolsa. A migração **cria** as
 bolsas das nações com grupos listados (§3), com preço inicial igual ao

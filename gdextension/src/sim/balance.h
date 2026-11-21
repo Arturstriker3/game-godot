@@ -102,6 +102,11 @@ struct Ledger {
 	double government_claims = 0.0;
 	double group_debt = 0.0;
 	double group_arrears = 0.0;
+	// C5 (D-112): ações a valor de mercado. `stock_assets` é a carteira dos
+	// detentores e `stock_claims` o MESMO valor do lado do emissor; iguais por
+	// construção, entram com sinais opostos — valorização não cria dinheiro.
+	double stock_assets = 0.0;
+	double stock_claims = 0.0;
 
 	// Enumeração INDEPENDENTE do caixa: se divergir de `money_total`, algum
 	// caixa ficou de fora de um dos dois lados (é o que o invariante pega).
@@ -110,9 +115,11 @@ struct Ledger {
 	}
 	// Soma mundial das posições financeiras (deve ser 0). C4 (D-110): entram os
 	// claims de capital das famílias e do exterior e o M0 líquido de depósitos.
+	// C5 (D-112): a ação aparece dos dois lados pelo mesmo valor.
 	double financial_sum() const {
 		return families + firms + government + government_claims
 			+ household_claims + external + external_claims + banking
+			+ stock_assets - stock_claims
 			- government_debt - monetary_base;
 	}
 	double cash_residual() const { return cash_total() - money_total; }

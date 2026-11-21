@@ -4,6 +4,7 @@
 #include "balance.h"
 
 #include "city_gov.h"
+#include "stock.h"
 
 #include <algorithm>
 #include <cmath>
@@ -103,6 +104,16 @@ Ledger ledger(const WorldState& ws, double money_total) {
 	}
 	out.banking = out.bank_cash + out.bank_loans + out.bank_arrears
 		- out.bank_borrowing - out.bank_capital - out.bank_deposits;
+	// C5 (D-112): a ação dos dois lados pelo mesmo valor de mercado. Se as
+	// carteiras não fecharem com os market caps, a diferença aparece aqui.
+	for (const auto& row : ws.stock_tickers) {
+		if (!row.second.listed) {
+			continue;
+		}
+		const double cap = stock::market_cap(row.second);
+		out.stock_assets += cap;
+		out.stock_claims += cap;
+	}
 	out.monetary_claims += out.bank_borrowing;
 	out.monetary_base = money_total - out.monetary_claims
 		- out.bank_deposits;

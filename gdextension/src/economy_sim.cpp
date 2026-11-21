@@ -15,6 +15,7 @@
 #include "sim/sim_constants.h"
 #include "sim/scenario_fixture.h"
 #include "sim/sim_day.h"
+#include "sim/stock.h"
 #include "sim/urban_land.h"
 #include "sim/housing.h"
 
@@ -310,6 +311,9 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("group_borrow", "group_id", "amount"),
 		&EconomySim::group_borrow);
 	ClassDB::bind_method(D_METHOD("get_bank_status"), &EconomySim::get_bank_status);
+	ClassDB::bind_method(D_METHOD("set_stock_exchange", "config"),
+		&EconomySim::set_stock_exchange);
+	ClassDB::bind_method(D_METHOD("get_stock_status"), &EconomySim::get_stock_status);
 	ClassDB::bind_method(D_METHOD("set_storage_stock", "city_id", "type",
 		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
@@ -1116,6 +1120,9 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	ws_.cities.clear();
 	ws_.buildings.clear();
 	ws_.construction_projects.clear();
+	// C5 (D-112): a bolsa é dos grupos deste mundo; o estado anterior não vale
+	// e a bolsa nasce no primeiro tick com o patrimônio medido do grupo.
+	ogs::stock::reset(ws_);
 	// §19: mundo novo zera os vetores urbanos; o set_urban os preenche
 	// depois (o casamento é pelo id da cidade criada aqui).
 	ws_.land.clear();
@@ -4031,10 +4038,52 @@ Dictionary EconomySim::get_status() {
 		// montar o status inteiro.
 		balance["group_debt"] = book.group_debt;
 		balance["bank_loan_assets"] = book.bank_loans;
+		// C5 (D-112): ação dos dois lados (carteiras = emissores) pelo mesmo
+		// valor de mercado. Valorização não cria dinheiro; o dividendo sim.
+		balance["stock_assets"] = book.stock_assets;
+		balance["stock_claims"] = book.stock_claims;
 		balance["financial_sum"] = book.financial_sum();
 		balance["ok"] = std::abs(book.financial_sum()) <= 1e-3
 			&& std::abs(book.cash_residual()) <= 1e-3;
 		root["balance"] = balance;
+	}
+	// C5 (D-112): resumo barato da bolsa (índice global e confiança mediana).
+	{
+		const ogs::stock::Policy pol = ogs::stock::policy(ws_);
+		Dictionary stock;
+		stock["enabled"] = pol.enabled;
+		double cap = 0.0;
+		double base_cap = 0.0;
+		double dividends_today = 0.0;
+		int listed = 0;
+		std::vector<double> confidences;
+		confidences.reserve(ws_.stock_exchanges.size());
+		for (const auto& row : ws_.stock_exchanges) {
+			base_cap += std::max(0.0, row.second.index_base);
+			confidences.push_back(row.second.confidence);
+		}
+		for (const auto& row : ws_.stock_tickers) {
+			if (!row.second.listed) {
+				continue;
+			}
+			listed += 1;
+			cap += ogs::stock::market_cap(row.second);
+			if (row.second.dividend_day == ws_.day) {
+				dividends_today += row.second.dividend_last;
+			}
+		}
+		double confidence_p50 = 1.0;
+		if (!confidences.empty()) {
+			std::sort(confidences.begin(), confidences.end());
+			confidence_p50 = confidences[confidences.size() / 2];
+		}
+		stock["index_global"] = base_cap > 0.0
+			? cap / base_cap * 100.0 : 100.0;
+		stock["market_cap"] = cap;
+		stock["listed"] = listed;
+		stock["confidence_p50"] = confidence_p50;
+		stock["dividends_today"] = dividends_today;
+		root["stock"] = stock;
 	}
 	root[k.bankruptcies] = ws_.bankruptcies;
 	root[k.depleted_mines] = ws_.depleted_mines;
@@ -9720,6 +9769,248 @@ Dictionary EconomySim::group_borrow(const String& group_id, double amount) {
 	cmd.s[0] = to_std(group_id);
 	cmd.v[0] = amount;
 	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::set_stock_exchange(const Dictionary& config) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// C5 (D-112): alavancas de configuração do laboratório (não são feature de
+	// jogador nesta fase). `enabled` é estado e vai ao save; os parâmetros são
+	// regra e 0 significa "usar o default declarado em sim/stock.h".
+	if (config.has("enabled")) {
+		ws_.stock_enabled = bool(config.get("enabled", true));
+	}
+	if (config.has("investment_channel")) {
+		ws_.stock_investment_channel = bool(
+			config.get("investment_channel", true));
+	}
+	if (config.has("risk_premium")) {
+		ws_.stock_risk_premium = std::max(0.0,
+			double(config.get("risk_premium", 0.0)));
+	}
+	if (config.has("payout_ratio")) {
+		ws_.stock_payout_ratio = std::max(0.0,
+			double(config.get("payout_ratio", 0.0)));
+	}
+	if (config.has("step")) {
+		ws_.stock_step = std::max(0.0, double(config.get("step", 0.0)));
+	}
+	if (config.has("expectation_k")) {
+		ws_.stock_expectation_k = std::max(0.0,
+			double(config.get("expectation_k", 0.0)));
+	}
+	status_invalidate();
+	Dictionary out;
+	out["enabled"] = ws_.stock_enabled;
+	out["investment_channel"] = ws_.stock_investment_channel;
+	return out;
+}
+
+Dictionary EconomySim::get_stock_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["day"] = ws_.day;
+	const ogs::stock::Policy pol = ogs::stock::policy(ws_);
+	{
+		Dictionary policy;
+		policy["enabled"] = pol.enabled;
+		policy["investment_channel"] = pol.investment_channel;
+		policy["risk_premium"] = pol.risk_premium;
+		policy["payout_ratio"] = pol.payout_ratio;
+		policy["step"] = pol.step;
+		policy["expectation_k"] = pol.expectation_k;
+		policy["price_period_days"] = ogs::stock::kPricePeriodDays;
+		policy["dividend_period_days"] = pol.dividend_period_days;
+		policy["shares"] = pol.shares;
+		policy["price_floor_rate"] = ogs::stock::kPriceFloorRate;
+		policy["name_source"] =
+			"game_default (fictício/genérico, sem marca real)";
+		policy["source"] = "default de jogo (sim/stock.h)";
+		// Ausências declaradas desta fase.
+		policy["trading"] = "absent (C5)";
+		policy["ipo"] = "later";
+		policy["regulation"] = "later";
+		policy["crash"] = "C6";
+		policy["holders"] = "households, banks, groups, foreign";
+		policy["wealth_channel"] = "measured (C5)";
+		policy["consumption_channel"] = "deferred (C5)";
+		out["policy"] = policy;
+	}
+	const ogs::stock::Totals totals = ogs::stock::totals(ws_);
+	{
+		Dictionary row;
+		row["market_cap"] = totals.market_cap;
+		row["book_equity"] = totals.book_equity;
+		row["holdings"] = totals.holdings;
+		row["index_global"] = totals.index_global;
+		row["dividends_paid"] = totals.dividends_paid;
+		row["remittance"] = totals.remittance;
+		row["remittance_origin"] = totals.remittance_origin;
+		row["listed"] = totals.listed;
+		row["unlisted"] = totals.unlisted;
+		row["exchanges"] = totals.exchanges;
+		// Identidade da bolsa: carteiras − market cap (tem de ser 0).
+		row["equity_identity"] = totals.market_cap - totals.holdings;
+		out["totals"] = row;
+	}
+	// Patrimônio medido do grupo no último fechamento (base do q de Tobin).
+	Array exchanges;
+	for (const auto& row : ws_.stock_exchanges) {
+		const ogs::StockExchange& exchange = row.second;
+		Dictionary entry;
+		entry["nation"] = String(exchange.nation.c_str());
+		if (exchange.name.empty()) {
+			entry["name"] = Variant();
+		} else {
+			entry["name"] = String(exchange.name.c_str());
+		}
+		entry["name_status"] = String(exchange.name_status.c_str());
+		entry["currency"] = String(exchange.currency.c_str());
+		entry["policy_rate"] = ogs::monetary::rate_for_nation(ws_,
+			exchange.nation);
+		entry["confidence"] = exchange.confidence;
+		const ogs::stock::Signals values = ogs::stock::signals(ws_, exchange);
+		Dictionary signals;
+		if (values.has_inflation) {
+			signals["inflation"] = values.inflation;
+		} else {
+			signals["inflation"] = Variant();
+		}
+		if (values.has_rate) {
+			signals["rate"] = values.rate;
+		} else {
+			signals["rate"] = Variant();
+		}
+		if (values.has_production) {
+			signals["production"] = values.production_growth;
+		} else {
+			signals["production"] = Variant();
+		}
+		if (values.has_bankruptcies) {
+			signals["bankruptcies"] = values.bankruptcy_share;
+		} else {
+			signals["bankruptcies"] = Variant();
+		}
+		if (values.has_devaluations) {
+			signals["devaluations"] = values.devaluations;
+		} else {
+			signals["devaluations"] = Variant();
+		}
+		if (values.has_unemployment) {
+			signals["unemployment"] = values.unemployment;
+		} else {
+			signals["unemployment"] = Variant();
+		}
+		Array missing;
+		for (const std::string& name : values.missing) {
+			missing.append(String(name.c_str()));
+		}
+		signals["missing"] = missing;
+		signals["raw"] = values.raw;
+		signals["adaptive"] = "expectation_k per day (C5)";
+		entry["signals"] = signals;
+		entry["index"] = ogs::stock::index_of(ws_, exchange);
+		entry["index_base"] = exchange.index_base;
+		entry["last_price_day"] = exchange.last_price_day;
+		entry["dividends_paid"] = exchange.dividends_paid;
+		entry["remittance"] = exchange.remittance;
+		entry["remittance_origin"] = exchange.remittance_origin;
+		// Top papéis da praça por market cap (5) — determinístico no empate.
+		std::vector<std::pair<double, std::string>> ranked;
+		double cap = 0.0;
+		int listed = 0;
+		for (const auto& ticker_row : ws_.stock_tickers) {
+			const ogs::StockTicker& ticker = ticker_row.second;
+			if (ticker.exchange != exchange.nation || !ticker.listed) {
+				continue;
+			}
+			const double value = ogs::stock::market_cap(ticker);
+			cap += value;
+			listed += 1;
+			ranked.emplace_back(value, ticker.group_id);
+		}
+		std::sort(ranked.begin(), ranked.end(),
+			[](const std::pair<double, std::string>& left,
+					const std::pair<double, std::string>& right) {
+				if (left.first != right.first) {
+					return left.first > right.first;
+				}
+				return left.second < right.second;
+			});
+		Array top;
+		const std::size_t keep = std::min<std::size_t>(5, ranked.size());
+		for (std::size_t index = 0; index < keep; ++index) {
+			const ogs::StockTicker* ticker =
+				ogs::stock::find_ticker(ws_, ranked[index].second);
+			Dictionary paper;
+			paper["group_id"] = String(ranked[index].second.c_str());
+			paper["market_cap"] = ranked[index].first;
+			paper["price"] = ticker == nullptr ? 0.0 : ticker->price;
+			top.append(paper);
+		}
+		entry["top"] = top;
+		entry["market_cap"] = cap;
+		entry["listed"] = listed;
+		exchanges.append(entry);
+	}
+	out["exchanges"] = exchanges;
+	Array tickers;
+	for (const auto& row : ws_.stock_tickers) {
+		const ogs::StockTicker& ticker = row.second;
+		Dictionary entry;
+		entry["group_id"] = String(ticker.group_id.c_str());
+		entry["nation"] = String(ticker.nation.c_str());
+		entry["exchange"] = String(ticker.exchange.c_str());
+		entry["listed"] = ticker.listed;
+		entry["reason"] = String(ticker.reason.c_str());
+		entry["shares"] = ticker.shares;
+		entry["price"] = ticker.price;
+		entry["fundamental"] = ticker.shares > 0.0
+			? pol.payout_ratio * std::max(0.0, ticker.profit_ema) * 365.0
+				/ std::max(ogs::stock::kPriceFloorRate,
+					ogs::monetary::rate_for_nation(ws_, ticker.nation)
+					+ pol.risk_premium) / ticker.shares
+			: 0.0;
+		entry["market_cap"] = ogs::stock::market_cap(ticker);
+		const double equity = ticker.book_equity;
+		entry["book_equity"] = equity;
+		entry["q"] = equity > 0.0
+			? ogs::stock::market_cap(ticker) / equity : 0.0;
+		entry["pe"] = ticker.profit_ema > 1e-9
+			? ogs::stock::market_cap(ticker) / (ticker.profit_ema * 365.0)
+			: 0.0;
+		entry["profit_ema"] = ticker.profit_ema;
+		entry["dividend_last"] = ticker.dividend_last;
+		entry["dividend_limited"] = ticker.dividend_limited;
+		entry["dividend_day"] = ticker.dividend_day;
+		entry["listed_day"] = ticker.listed_day;
+		entry["delisted_day"] = ticker.delisted_day;
+		Dictionary holdings;
+		holdings["households_high"] = ticker.holdings.households_high;
+		Dictionary banks;
+		for (const auto& holder : ticker.holdings.banks) {
+			banks[String(holder.first.c_str())] = holder.second;
+		}
+		holdings["banks"] = banks;
+		Dictionary groups;
+		for (const auto& holder : ticker.holdings.groups) {
+			groups[String(holder.first.c_str())] = holder.second;
+		}
+		holdings["groups"] = groups;
+		holdings["foreign"] = ticker.holdings.foreign;
+		entry["holdings"] = holdings;
+		tickers.append(entry);
+	}
+	out["tickers"] = tickers;
+	{
+		Dictionary effects;
+		effects["household_wealth"] = "measured: share holdings by nation";
+		effects["investment"] = "q of Tobin (clamped 0,8..1,2)";
+		effects["dividends"] = "monthly, paid from issuer cash (sum zero)";
+		effects["foreign_remittance"] = "via exchange parity (C2c)";
+		effects["money_creation"] = "none (asset price)";
+		out["effects"] = effects;
+	}
+	return out;
 }
 
 Dictionary EconomySim::get_bank_status() const {
