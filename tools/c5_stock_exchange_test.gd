@@ -15,9 +15,13 @@ extends SceneTree
 ##   C4  dividendo mensal fecha no balanço (dinheiro conservado na identidade).
 ##   C5  valorização NÃO cria dinheiro (`money_total` idêntico com o crédito
 ##       desligado; o market cap muda).
-##   C6  migração v32 -> v33: a bolsa nasce com preço = patrimônio medido e a
+##   C6  migração v32 -> v33: a bolsa nasce com preço = fundamental medido e a
 ##       carteira do default declarado.
 ##   C7  save v33: round-trip bit-exato e continuação de 5 dias idêntica.
+##   C8  aquecimento (D-112 fix): índice não publicado e preço sem reação antes
+##       de kIndexWarmupDays; formação no fundamental medido; papel de lucro
+##       estável não oscila > 20 % fora do aquecimento.
+##   C9  banda de P/L declarada (3..30) não trava a valoração no juro extremo.
 ##
 ## Roda pelo runner: powershell -File tools/run_tests.ps1 -List c5_stock_exchange_test
 
@@ -44,12 +48,15 @@ func _init() -> void:
 	_test_valuation_no_money()
 	_test_migration_v32()
 	_test_save_v33()
+	_test_warmup()
+	_test_pe_band()
 	if _failures.is_empty():
-		print("[c5-stock] OK: C1-C7 — listagem por critério medido, identidade "
+		print("[c5-stock] OK: C1-C9 — listagem por critério medido, identidade "
 			+ "carteiras = emissores, preço convergente ao fundamental, juro "
 			+ "alto derrubando preço/confiança (expectativa adaptativa), "
 			+ "dividendo conservado, valorização sem dinheiro novo, migração "
-			+ "v32->v33 e save v33 bit-exato.")
+			+ "v32->v33, save v33 bit-exato, aquecimento com lucro de "
+			+ "referência medido e banda de P/L declarada.")
 		quit(0)
 	else:
 		print("[c5-stock] FALHAS (%d):" % _failures.size())
@@ -112,10 +119,12 @@ func _test_listing_and_identity() -> void:
 
 # --- C2 -------------------------------------------------------------------
 func _test_price_converges() -> void:
-	# Passo 1: o fechamento semanal É o alvo (fundamental × confiança).
-	var sim = _world(1)
+	# Passo 1: o fechamento semanal É o alvo (fundamental × confiança). A
+	# convergência é medida DEPOIS do aquecimento (D-112 fix), quando o preço
+	# de referência já é a média medida do período de formação.
+	var sim = _world(63)
 	sim.set_stock_exchange({"step": 1.0})
-	for day in 6:
+	for day in 7:
 		sim.tick_day()
 	var status: Dictionary = sim.get_stock_status()
 	var compared := 0
@@ -134,9 +143,10 @@ func _test_price_converges() -> void:
 		compared > 0 and worst <= 1e-6,
 		"papeis=%d pior_erro=%s" % [compared, worst])
 	# Passo default: no fechamento o movimento é no máximo 35 % da distância.
-	var sim2 = _world(7)
+	var sim2 = _world(63)
 	var before: Dictionary = _ticker_map(sim2)
-	sim2.tick_day()
+	for day in 7:
+		sim2.tick_day()
 	var after_status: Dictionary = sim2.get_stock_status()
 	var after: Dictionary = _ticker_map(sim2)
 	var jumped := 0
@@ -161,7 +171,7 @@ func _test_price_converges() -> void:
 
 # --- C3 -------------------------------------------------------------------
 func _test_rate_shock() -> void:
-	var base = _world(20)
+	var base = _world(63)
 	# Juro baixo (controlado: neutro − 2 p.p.) × juro alto (choque de 20 % a.a.).
 	var low = _load_with_rate(base, 0.02)
 	var high = _load_with_rate(base, 0.20)
@@ -169,14 +179,20 @@ func _test_rate_shock() -> void:
 	high.set_stock_exchange({"step": 1.0})
 	var conf_base := _confidence_of(base.get_stock_status(), "DEMO")
 	# Expectativa adaptativa: um dia de choque não move a confiança ao alvo.
+	low.tick_day()
 	high.tick_day()
-	var day1: Dictionary = high.get_stock_status()
-	var conf_day1 := _confidence_of(day1, "DEMO")
-	var raw_day1 := float(_signals_of(day1, "DEMO").get("raw", 1.0))
+	var day1_low: Dictionary = low.get_stock_status()
+	var day1_high: Dictionary = high.get_stock_status()
+	var conf_low1 := _confidence_of(day1_low, "DEMO")
+	var conf_high1 := _confidence_of(day1_high, "DEMO")
+	var raw_low1 := float(_signals_of(day1_low, "DEMO").get("raw", 1.0))
+	var raw_high1 := float(_signals_of(day1_high, "DEMO").get("raw", 1.0))
 	_check("C3 confiança cai com o choque, mas devagar (expectativa)",
-		conf_day1 < conf_base and conf_base - conf_day1 < 0.05
-			and conf_day1 > raw_day1,
-		"base=%s dia1=%s raw=%s" % [conf_base, conf_day1, raw_day1])
+		raw_high1 < raw_low1 and conf_high1 < conf_low1
+			and conf_base - conf_high1 < 0.05
+			and absf(conf_high1 - conf_base) < absf(raw_high1 - conf_base),
+		"base=%s baixo=%s alto=%s raw_baixo=%s raw_alto=%s"
+			% [conf_base, conf_low1, conf_high1, raw_low1, raw_high1])
 	for day in 6:
 		low.tick_day()
 		high.tick_day()
@@ -233,7 +249,7 @@ func _test_dividends() -> void:
 
 # --- C5 -------------------------------------------------------------------
 func _test_valuation_no_money() -> void:
-	var sim = _world(8)
+	var sim = _world(63)
 	sim.set_bank_credit(false)
 	sim.set_stock_exchange({"step": 1.0})
 	sim.tick_day()
@@ -315,6 +331,149 @@ func _test_save_v33() -> void:
 				- float(loaded.get_status().get("money_total", 0.0))) <= EPS,
 		"money sim=%s loaded=%s" % [sim.get_status().get("money_total"),
 			loaded.get_status().get("money_total")])
+
+
+# --- C8 -------------------------------------------------------------------
+## D-112 fix: o lucro de referência não nasce de um dia. Durante o aquecimento
+## a referência é a MÉDIA MEDIDA (peso 1/n), o preço não reage e o índice não é
+## publicado; a praça abre depois dele, no fundamental medido.
+func _test_warmup() -> void:
+	var sim = _world(30)
+	var status: Dictionary = sim.get_stock_status()
+	var exchanges: Array = status.get("exchanges", [])
+	var forming := 0
+	for row: Dictionary in exchanges:
+		if bool(row.get("index_forming", false)) \
+				and absf(float(row.get("index", 0.0)) - 100.0) <= EPS:
+			forming += 1
+	_check("C8 índice não é publicado durante o aquecimento (base 100)",
+		not exchanges.is_empty() and forming == exchanges.size(),
+		"formando=%d praças=%d" % [forming, exchanges.size()])
+	var before: Dictionary = _ticker_map(sim)
+	for day in 14:
+		sim.tick_day()
+	var after: Dictionary = _ticker_map(sim)
+	var moved := 0
+	var frozen := 0
+	for group_id: Variant in after:
+		var old_row: Dictionary = before.get(group_id, {})
+		var new_row: Dictionary = after[group_id]
+		var old_price := float(old_row.get("price", 0.0))
+		var new_price := float(new_row.get("price", 0.0))
+		if not bool(old_row.get("listed", false)) \
+				or not bool(new_row.get("listed", false)):
+			continue
+		if old_price <= 1e-12 or new_price <= 1e-12:
+			continue
+		frozen += 1
+		if absf(new_price - old_price) > EPS:
+			moved += 1
+	_check("C8 preço de referência não reage durante o aquecimento",
+		frozen > 0 and moved == 0, "papeis=%d moveram=%d" % [frozen, moved])
+	for day in 19:
+		sim.tick_day()
+	var formed: Dictionary = sim.get_stock_status()
+	var still_forming := 0
+	for row: Dictionary in formed.get("exchanges", []):
+		if bool(row.get("index_forming", false)):
+			still_forming += 1
+	_check("C8 índice formado no fechamento depois do aquecimento",
+		still_forming == 0, "praças_formando=%d" % still_forming)
+	var compared := 0
+	var worst := 0.0
+	for row: Dictionary in formed.get("tickers", []):
+		if not bool(row.get("listed", false)):
+			continue
+		var target := float(row.get("fundamental", 0.0)) \
+			* _confidence_of(formed, String(row.get("exchange", "")))
+		if target <= 1e-12:
+			continue
+		compared += 1
+		worst = maxf(worst, absf(float(row.get("price", 0.0)) - target) / target)
+	_check("C8 abertura da praça = fundamental MEDIDO × confiança",
+		compared > 0 and worst <= 1e-6,
+		"papeis=%d pior_erro=%s" % [compared, worst])
+	# Fora do aquecimento o preço SEGUE o alvo (fundamental medido × confiança):
+	# em 63 dias (9 fechamentos semanais) ele não vagueia por conta da semente.
+	var snap: Dictionary = _ticker_map(sim)
+	for day in 63:
+		sim.tick_day()
+	var later_status: Dictionary = sim.get_stock_status()
+	var later: Dictionary = _ticker_map(sim)
+	var tracked := 0
+	var off_target := 0
+	var worst_error := 0.0
+	var detail := ""
+	for group_id: Variant in later:
+		var old_row: Dictionary = snap.get(group_id, {})
+		var new_row: Dictionary = later[group_id]
+		if not bool(new_row.get("listed", false)):
+			continue
+		var new_price := float(new_row.get("price", 0.0))
+		var target := float(new_row.get("fundamental", 0.0)) \
+			* _confidence_of(later_status, String(new_row.get("exchange", "")))
+		if new_price <= 1e-12 or target <= 1e-12:
+			continue
+		tracked += 1
+		var error := absf(new_price / target - 1.0)
+		if error > worst_error:
+			worst_error = error
+			detail = "%s preço %.6f alvo %.6f" % [group_id, new_price, target]
+		if error > 0.15:
+			off_target += 1
+		# Papel sem mudança de lucro nem de confiança não pode ter oscilado.
+		var old_price := float(old_row.get("price", 0.0))
+		var old_fund := float(old_row.get("fundamental", 0.0))
+		var old_conf := _confidence_of(formed, String(old_row.get("exchange", "")))
+		var new_conf := _confidence_of(later_status,
+			String(new_row.get("exchange", "")))
+		var new_fund := float(new_row.get("fundamental", 0.0))
+		var fund_stable := old_fund <= 1e-12 \
+			or absf(new_fund / old_fund - 1.0) <= 0.02
+		var conf_stable := absf(new_conf / old_conf - 1.0) <= 0.02
+		var price_moved := old_price > 1e-12 \
+			and absf(new_price / old_price - 1.0) > 0.20
+		if fund_stable and conf_stable and old_fund > 1e-12 and price_moved:
+			off_target += 1
+	_check("C8 preço acompanha o alvo medido e não vagueia (63 d)", tracked > 0
+		and off_target == 0, "papeis=%d fora=%d pior=%s %s"
+			% [tracked, off_target, worst_error, detail])
+
+
+# --- C9 -------------------------------------------------------------------
+## Banda de P/L declarada (3..30): o múltiplo implícito `payout/(taxa+prêmio)`
+## não trava a valoração nos extremos de juro (antes: 1,5..12,5 por aritmética).
+func _test_pe_band() -> void:
+	var base = _world(63)
+	var high = _load_with_rate(base, 2.0)
+	for day in 7:
+		high.tick_day()
+	var status: Dictionary = high.get_stock_status()
+	var low_pe := INF
+	var high_pe := 0.0
+	var rows := 0
+	for row: Dictionary in status.get("tickers", []):
+		if not bool(row.get("listed", false)):
+			continue
+		var shares := float(row.get("shares", 0.0))
+		var ema := float(row.get("profit_ema", 0.0))
+		if shares <= 0.0 or ema <= 1e-9:
+			continue
+		var pe := float(row.get("fundamental", 0.0)) * shares / (ema * 365.0)
+		rows += 1
+		low_pe = minf(low_pe, pe)
+		high_pe = maxf(high_pe, pe)
+	_check("C9 banda de P/L (3..30) vale nos extremos de juro",
+		rows > 0 and low_pe >= 2.999 and high_pe <= 30.001,
+		"papeis=%d p/l_min=%s p/l_max=%s" % [rows, low_pe, high_pe])
+	var policy: Dictionary = status.get("policy", {})
+	_check("C9 banda e aquecimento declarados na política",
+		absf(float(policy.get("pe_floor", 0.0)) - 3.0) <= EPS
+			and absf(float(policy.get("pe_ceiling", 0.0)) - 30.0) <= EPS
+			and int(policy.get("index_warmup_days", 0)) > 0,
+		"pe_floor=%s pe_ceiling=%s aquecimento=%s"
+			% [policy.get("pe_floor"), policy.get("pe_ceiling"),
+				policy.get("index_warmup_days")])
 
 
 # --- helpers --------------------------------------------------------------

@@ -37,6 +37,32 @@ constexpr double kSharesDefault = 1000000.0;   // granularidade do papel
 constexpr int kPricePeriodDays = 7;            // fechamento semanal
 constexpr int kDividendPeriodDays = 30;        // fechamento mensal
 constexpr double kExpectationDefault = 1.0;
+// C5-fix (D-112) - AQUECIMENTO E REFERENCIA DE LUCRO.
+// O lucro de referência do papel NÃO nasce de um dia: nos primeiros 63 dias a
+// referência é a MÉDIA MEDIDA desde a listagem (peso 1/n) e o preço não reage;
+// o índice da praça só é publicado (base 100) no primeiro fechamento semanal
+// depois do aquecimento. Depois disso a referência vira EMA de 50 dias.
+constexpr int kIndexWarmupDays = 63;           // 9 semanas de aquecimento
+// Durante o aquecimento a referência converge ao NÍVEL RECENTE do lucro
+// (EMA de ~20 dias, partindo da média medida) e o preço não reage: no fim
+// dela a referência não é mais um dia nem a média de um período de rampa.
+constexpr double kProfitWarmupK = 0.05;
+// Depois do aquecimento a referência é uma EMA de janela ANUAL (1/365 por dia
+// = TTM): expectativa de lucro não é o último mês. Uma mudança permanente de
+// nível é reconhecida com constante de tempo de ~1 ano (declarado).
+constexpr double kProfitEmaK = 1.0 / 365.0;
+// Banda de P/L declarada (default de jogo). Fora dela a valoração não é
+// travada pelo arredondamento da taxa: o múltiplo implícito é
+// `payout / (taxa básica + prêmio)` e fica limitado a esta faixa.
+constexpr double kPeFloor = 3.0;
+constexpr double kPeCeiling = 30.0;
+// C5-fix (D-112) - TAXA DESCONTADA. O preço desconta a taxa ESPERADA, não a
+// taxa do dia: a expectativa fica no neutro (`monetary::kNeutralRate`) e anda
+// um quarto do desvio da taxa básica corrente. Sem isso, a normalização da
+// taxa básica no 1º ano (10 % -> neutro) re-avaliava o mercado inteiro em 3x
+// sem nenhuma mudança de lucro (medição em docs/economy/C5_stock_exchange.md
+// §12). Default de jogo, declarado.
+constexpr double kRatePassThrough = 0.25;
 // Carteira inicial declarada (§4): 55 % famílias do estrato alto, 20 % bancos,
 // 15 % grupos da mesma nação, 10 % exterior (sem banco estrangeiro, a fatia do
 // exterior vai para as famílias e a soma continua 100 %).
@@ -90,6 +116,11 @@ const StockTicker* find_ticker(const WorldState& ws, const std::string& group_id
 
 // Patrimônio medido do grupo (mesma conta da C3: `GroupSheet::net_worth`).
 double book_equity(const balance::GroupSheet& sheet);
+
+// Preço fundamental do papel (uma única fórmula para o núcleo e o status):
+//   E[lucro anual] × clamp(payout / (taxa + prêmio), kPeFloor, kPeCeiling) / ações
+double fundamental_price(const WorldState& ws, const StockTicker& ticker,
+	const Policy& pol);
 
 // Market cap e índice (base 100 no dia de formação da bolsa).
 double market_cap(const StockTicker& ticker);

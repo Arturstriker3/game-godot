@@ -423,6 +423,21 @@ double book_equity(const balance::GroupSheet& sheet) {
 	return sheet.net_worth();
 }
 
+double fundamental_price(const WorldState& ws, const StockTicker& ticker,
+		const Policy& pol) {
+	const double shares = std::max(ticker.shares, 1e-9);
+	// E[lucro diário] MEDIDO (nunca um número de projeto) anualizado.
+	const double earnings = std::max(0.0, ticker.profit_ema) * 365.0;
+	const double spot = monetary::rate_for_nation(ws, ticker.nation);
+	const double expected = monetary::kNeutralRate
+		+ kRatePassThrough * (spot - monetary::kNeutralRate);
+	const double discount = std::max(kPriceFloorRate,
+		expected + pol.risk_premium);
+	const double multiple = std::clamp(
+		pol.payout_ratio / discount, kPeFloor, kPeCeiling);
+	return earnings * multiple / shares;
+}
+
 double market_cap(const StockTicker& ticker) {
 	return std::max(0.0, ticker.price) * std::max(0.0, ticker.shares);
 }
@@ -470,18 +485,21 @@ void seed(WorldState& ws) {
 		const double equity = index < sheets.size()
 			? book_equity(sheets[index]) : 0.0;
 		ticker.book_equity = std::max(0.0, equity);
-		ticker.profit_ema = index < sheets.size()
-			? std::max(0.0, sheets[index].daily_profit) : 0.0;
+		// C5-fix (D-112): o lucro de referência nasce da MÉDIA MEDIDA do grupo
+		// (lucro acumulado ÷ dias de mundo), não do último dia. No dia 0 a média
+		// ainda é um dia; por isso o preço não reage e o índice não é publicado
+		// antes do aquecimento (`kIndexWarmupDays`), onde a referência passa a
+		// ser a média acumulada exata (peso 1/n).
+		const double age = std::max(1.0, static_cast<double>(ws.day));
+		if (index < sheets.size() && group.profit_total > 0.0) {
+			ticker.profit_ema = group.profit_total / age;
+		} else if (index < sheets.size()) {
+			ticker.profit_ema = std::max(0.0, sheets[index].daily_profit);
+		}
 		// Preço de formação = a PRÓPRIA fórmula (fundamental × confiança, com a
-		// confiança inicial 1,0) sobre o lucro MEDIDO do dia. O patrimônio
-		// contábil fica como `book_equity` (referência do q), não como preço:
-		// o papel nasce avaliado pelo lucro, não por um múltiplo de balanço.
-		const double rate = monetary::rate_for_nation(ws, ticker.nation);
-		const double discount = std::max(kPriceFloorRate,
-			rate + pol.risk_premium);
-		const double dividend = pol.payout_ratio * ticker.profit_ema * 365.0;
-		ticker.price = ticker.shares > 0.0
-			? dividend / discount / ticker.shares : 0.0;
+		// confiança inicial 1,0) sobre o lucro MEDIDO. O patrimônio contábil
+		// fica como `book_equity` (referência do q), não como preço.
+		ticker.price = fundamental_price(ws, ticker, pol);
 		ticker.profit_at_last_dividend = group.profit_total;
 		ticker.listed = true;
 		ticker.reason = "listed";
@@ -490,9 +508,8 @@ void seed(WorldState& ws) {
 		ensure_exchange(ws, ticker.nation);
 		ws.stock_tickers[ticker.group_id] = ticker;
 	}
-	for (auto& row : ws.stock_exchanges) {
-		form_index(ws, row.second);
-	}
+	// O índice NÃO nasce aqui: a praça só publica base 100 no primeiro
+	// fechamento semanal depois do aquecimento (ver `phase`).
 }
 
 double update_confidence(WorldState& ws, StockExchange& exchange) {
@@ -617,14 +634,19 @@ void phase(WorldState& ws) {
 	for (std::size_t index = 0; index < ws.groups.size(); ++index) {
 		sheet_index[ws.groups[index].id] = index;
 	}
-	// 1. Lucro esperado (EMA do lucro medido) e confiança (diários).
+	// 1. Lucro esperado (referência MEDIDA) e confiança (diários).
 	for (auto& row : ws.stock_tickers) {
 		StockTicker& ticker = row.second;
 		const auto found = sheet_index.find(ticker.group_id);
-		if (found != sheet_index.end() && found->second < sheets.size()) {
-			const double profit = sheets[found->second].daily_profit;
-			ticker.profit_ema += (profit - ticker.profit_ema) * 0.05;
+		if (found == sheet_index.end() || found->second >= sheets.size()) {
+			continue;
 		}
+		const double profit = sheets[found->second].daily_profit;
+		// Aquecimento: a referência converge ao NÍVEL RECENTE (EMA ~20 d) sem
+		// carregar o peso da semente de um dia; depois vira janela anual.
+		const double weight = ws.day < kIndexWarmupDays
+			? kProfitWarmupK : kProfitEmaK;
+		ticker.profit_ema += (profit - ticker.profit_ema) * weight;
 	}
 	// Uma passada de medição para todas as praças do dia.
 	const std::map<std::string, NationMeasure> measures = measure_nations(ws);
@@ -656,11 +678,13 @@ void phase(WorldState& ws) {
 				}
 				continue;
 			}
+			bool fresh = false;
 			if (!ticker.listed) {
 				ticker.listed = true;
 				ticker.reason = "listed";
 				ticker.listed_day = ws.day;
 				ticker.delisted_day = -1;
+				fresh = true;
 			}
 			const StockExchange& exchange = ensure_exchange(ws, ticker.nation);
 			// Patrimônio medido do grupo no fechamento (base do q de Tobin).
@@ -670,16 +694,30 @@ void phase(WorldState& ws) {
 				ticker.book_equity = std::max(0.0,
 					book_equity(sheets[sheet_found->second]));
 			}
-			const double rate = monetary::rate_for_nation(ws, ticker.nation);
-			const double discount = std::max(kPriceFloorRate,
-				rate + pol.risk_premium);
-			const double dividend = pol.payout_ratio
-				* std::max(0.0, ticker.profit_ema) * 365.0;
-			const double shares = std::max(ticker.shares, 1e-9);
-			const double fundamental = dividend / discount / shares;
-			const double target = fundamental * exchange.confidence;
-			ticker.price = std::max(0.0,
-				ticker.price + (target - ticker.price) * pol.step);
+			// Aquecimento (D-112): o preço de referência NÃO reage antes da
+			// média medida estar formada; o índice também não é publicado.
+			if (ws.day < kIndexWarmupDays) {
+				continue;
+			}
+			const double target = fundamental_price(ws, ticker, pol)
+				* exchange.confidence;
+			if (fresh || !(exchange.index_base > 0.0)) {
+				// Formação (ou primeira listagem depois dela): o papel abre no
+				// fundamental medido, sem passo.
+				ticker.price = target;
+			} else {
+				ticker.price = std::max(0.0,
+					ticker.price + (target - ticker.price) * pol.step);
+			}
+		}
+		// Índice da praça: base 100 no primeiro fechamento DEPOIS do
+		// aquecimento, com o market cap já formado pelo fundamental medido.
+		if (ws.day >= kIndexWarmupDays) {
+			for (auto& row : ws.stock_exchanges) {
+				if (!(row.second.index_base > 0.0)) {
+					form_index(ws, row.second);
+				}
+			}
 		}
 		for (auto& row : ws.stock_exchanges) {
 			row.second.last_price_day = ws.day;

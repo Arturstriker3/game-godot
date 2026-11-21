@@ -101,22 +101,42 @@ valor de mercado = price × shares
 ## 5. Preço: fundamental × confiança, passo convergente
 
 ```
-E[lucro]      = EMA do lucro diário medido do grupo × 365        (k_exp = 0,05/dia)
-dividendo     = payout_ratio × max(0, E[lucro])                   (payout_ratio = 0,5)
-taxa_desconto = max(0,01, taxa_básica_da_nação + prêmio_de_risco) (prêmio = 0,04)
-fundamental   = dividendo / taxa_desconto / shares
+referência    = lucro diário de referência do grupo (ver aquecimento abaixo)
+E[lucro]      = max(0, referência) × 365
+múltiplo      = clamp(payout_ratio / (taxa_esperada + prêmio), 3, 30)  (payout = 0,5)
+taxa_esperada = neutra + 0,25 × (taxa_básica_da_nação − neutra)       (prêmio = 0,04)
+fundamental   = E[lucro] × múltiplo / shares
 alvo          = fundamental × confiança_da_nação
 price        += (alvo - price) × 0,35           (fechamento SEMANAL, dia % 7 == 0)
 ```
 
+- **Aquecimento (D-112 fix).** Nos primeiros **63 dias** (`kIndexWarmupDays`) o
+  preço de referência **não reage** e o índice da praça **não é publicado**: a
+  referência de lucro é uma EMA de ~20 dias (`kProfitWarmupK = 0,05`) partindo
+  do lucro médio já medido. No primeiro fechamento semanal depois do
+  aquecimento o papel abre no fundamental medido × confiança e a praça forma a
+  base 100 do índice. Depois disso a referência é uma EMA de **janela anual**
+  (`kProfitEmaK = 1/365` ≈ TTM): expectativa de lucro não é o último mês, e uma
+  mudança permanente de nível é reconhecida com constante de tempo de ~1 ano
+  (declarado). O motivo está na §12: sem aquecimento a média nascia de **um
+  dia** de lucro e a base do índice herdava esse ruído (−78 %/+305 % no ano).
+- **Banda de P/L declarada (3 … 30).** O múltiplo implícito é
+  `payout / (taxa_esperada + prêmio)`; a banda existe para a valoração não
+  ficar travada pela aritmética da taxa nos extremos (antes o intervalo
+  implícito era 1,5 … 12,5). Dentro da banda a fórmula manda.
+- **Taxa descontada = taxa esperada, não a do dia.** A expectativa fica no
+  neutro da C2b1 (`monetary::kNeutralRate`) e anda **um quarto** do desvio da
+  taxa básica (`kRatePassThrough = 0,25`). Sem isso a normalização da taxa no
+  1º ano (10 % → neutro) re-avaliava o mercado inteiro em ~3x **sem nenhuma
+  mudança de lucro** (§12).
 - O **passo é convergente**: um único movimento semanal cobre no máximo 35 % da
   distância até o alvo; nunca há salto de um dia para o outro (a atualização é
   semanal) e **não há teto de preço**. O piso do denominador (1 %) evita
   divisão por zero, não limita o preço.
 - A taxa básica é a da **C2b1** por moeda da nação (`monetary::rate_for_nation`);
-  juro mais alto aumenta o denominador e derruba o alvo — o canal de aceite
+  juro mais alto sobe a taxa esperada e derruba o alvo — o canal de aceite
   "choque de juro derruba o índice".
-- Lucro esperado é **medido** (EMA do lucro diário das construções do grupo,
+- Lucro esperado é **medido** (lucro diário das construções do grupo,
   `balance::group_sheet`); grupo sem lucro medido tem dividendo 0 e fundamental
   0, então o preço converge para 0 — ausência declarada, não valor inventado.
 
@@ -248,7 +268,9 @@ Invariantes diários acrescentados a `SimCore::check_invariants`:
 Aceite da fase:
 
 - preço converge ao fundamental × confiança em regime estável (≤ 5 % após 8
-  semanas);
+  semanas, contadas depois do aquecimento);
+- no aquecimento o preço de referência não reage e o índice não é publicado;
+  a praça abre no fundamental medido × confiança;
 - choque de juro derruba o índice (mesmo sinal, sem salto diário);
 - confiança cai com choque de inflação/desvalorização e volta com expectativa
   adaptativa;
@@ -262,18 +284,58 @@ Aceite da fase:
 
 ## 11. Testes
 
-- `tools/c5_stock_exchange_test.gd` — convergência, juro alto, choque de
-  confiança, dividendos, valorização sem dinheiro novo, identidade do balanço,
-  round-trip/migração.
+- `tools/c5_stock_exchange_test.gd` — C1-C9: convergência (pós-aquecimento),
+  juro alto, choque de confiança adaptativa, dividendos, valorização sem
+  dinheiro novo, identidade do balanço, round-trip/migração, **aquecimento**
+  (índice não publicado, preço congelado, abertura no fundamental medido, preço
+  acompanhando o alvo sem vaguear) e **banda de P/L** nos extremos de juro.
 - Vizinhos pelo runner: `c4_banks`, `c3_bank_credit`, `c3_group_balance`,
   `c2_central_bank`, `c2b1_monetary`, `c2b2_fx_gold`, `currency_trade`,
   `economy_integration`, `services`, `storage_g2`, `agriculture_seasonal`,
   `c1_balance` (versão de save atualizada onde era a versão corrente).
-- `tools/c1_world_ai_365.gd` — aceite de 365 d com IA (`threads=1`).
+- `tools/c1_world_ai_365.gd` — aceite de 365 d com IA (`threads=1`); publica
+  também a linha do tempo agregada da bolsa (`stock_timeline`) e os 5 papéis
+  mais extremos com a causa medida (`stock.paper_extremes`).
 
 ## 12. Medição (365 d com IA, `threads=1`, DLL debug, um Godot por vez)
 
-`docs/economy/perf/c5_gate_default.json`, 365 d, **240,8 s** (base D-111: 238-247 s):
+### 12.1 Correção de calibração (D-112, fechamento da C5)
+
+A medição anterior (`−78,2 % / +3,7 % / +304,7 %` por praça) tinha **duas
+causas medidas**, ambas de formação e não de economia:
+
+1. **A média de lucro nascia de UM dia.** `profit_ema` era semeada com o lucro
+   do dia de formação e o índice da praça era formado no dia 1 sobre esse
+   preço. Empresa com um dia atípico nascia 3x cara (→ cai no ano) ou barata
+   (→ sobe no ano). Correção: aquecimento de 63 dias com preço congelado e
+   índice não publicado, referência de lucro convergindo ao nível recente
+   (EMA ~20 d), abertura da praça no fundamental medido e referência de janela
+   anual (1/365) depois.
+2. **A taxa descontada era a taxa do dia.** A taxa básica mediana cai de
+   **10,0 %** (dia 63) para o neutro no 1º ano; com `payout / (taxa + prêmio)`
+   isso re-avaliava **todo** o mercado em ~3x **sem mudança de lucro**. Medido
+   na linha do tempo (`stock_timeline` do JSON): o lucro diário somado ficou
+   praticamente **plano** (35,2 M → 32,3 M, −8 %) enquanto o índice ia a 270
+   com a taxa do dia. Correção: o preço desconta a taxa esperada
+   (`neutro + 0,25 × desvio da básica`).
+
+A linha do tempo da medição final (mesmo JSON):
+
+| dia | market cap | índice global | lucro diário somado | taxa mediana | confiança mediana |
+|---|---|---|---|---|---|
+| 63 (formação) | 62,8 bi | 100,0 | 35,21 M | 10,01 % | 0,899 |
+| 120 | 67,7 bi | 107,8 | 34,30 M | 3,96 % | 0,952 |
+| 200 | 74,8 bi | 119,2 | 33,42 M | 2,55 % | 0,998 |
+| 300 | 79,8 bi | 127,1 | 32,82 M | 0,65 % | 1,030 |
+| 365 | 82,4 bi | 131,2 | 32,33 M | 0,30 % | 1,034 |
+
+O que sobra de alta é a **recuperação da confiança** (0,899 → 1,034, +15 %,
+sinais medidos melhorando) e o resto da normalização da taxa com pass-through
+de 0,25 — causas econômicas, não ruído de semente.
+
+### 12.2 Gate da fase (inalterado)
+
+`docs/economy/perf/c5_gate_default.json`, 365 d, **212,1 s**, `threads=1`:
 
 | indicador | C5 (default) | base D-111 |
 |---|---|---|
@@ -286,43 +348,61 @@ Aceite da fase:
 | drift máximo diário | 0,547 % (estoque de dinheiro bancário) | 0,377 % |
 | calotes (crédito) | 1 (baixa 7 649,01) | 0 |
 
-Aceite da fase (D-111): falências ≤ 3, portão ≤ 98/179 e violações 0 — **cumprido**
-(3 / 93 / 0). A C5 **melhora o portão** (98 → 93) e adiciona **uma falência**
-(2 → 3), no teto do critério; não há A/B por canal porque o limite não estourou.
+Aceite da fase (D-111): falências ≤ 3, portão ≤ 98/179 e violações 0 —
+**cumprido** (3 / 93 / 0), **idêntico** ao da medição anterior: a correção de
+calibração mudou só o preço/índice, não a trajetória do mundo (hash de
+trajetória igual, `bb9b5cca`). A C5 **melhora o portão** (98 → 93) e adiciona
+**uma falência** (2 → 3), no teto do critério.
 
-Bolsa no dia 365 (`stock` do JSON):
+### 12.3 Bolsa no dia 365 (`stock` do JSON)
 
-| indicador | valor |
-|---|---|
-| praças / papéis listados | 179 / **260** |
-| índice global (base 100 na formação) | **113,1** |
-| variação no ano por praça p10 / p50 / p90 | **−78,2 % / +3,7 % / +304,7 %** |
-| confiança por nação p10 / p50 / p90 | **0,952 / 1,034 / 1,096** |
-| market cap / patrimônio medido | 106,9 bi / 26,4 bi |
-| q de Tobin p50 | **15,39** |
-| dividendos pagos no ano | **15 154 506,91** |
-| remessa do exterior (âncora / origem) | 916 914,33 / 1 238 129,26 |
-| investimento medido (capex acumulado dos grupos) | **19 058 661,48** |
-| identidade carteiras − market cap | **0,0** |
+| indicador | antes (D-112 original) | **agora (fix)** |
+|---|---|---|
+| praças / papéis listados | 179 / 260 | 179 / **260** |
+| índice global (base 100 na formação) | 113,1 | **131,2** |
+| variação no ano por praça p10 / p50 / p90 | −78,2 % / +3,7 % / +304,7 % | **−15,4 % / +26,5 % / +106,9 %** |
+| variação por PAPEL (formação → dia 365) p10 / p50 / p90 | — | **−13,5 % / +41,6 % / +167,0 %** |
+| confiança por nação p10 / p50 / p90 | 0,952 / 1,034 / 1,096 | 0,952 / 1,034 / 1,096 |
+| market cap / patrimônio medido | 106,9 bi / 26,4 bi | **82,4 bi** / 26,4 bi |
+| q de Tobin p50 | 15,39 | **13,32** |
+| dividendos pagos no ano | 15 154 506,91 | 15 154 506,91 |
+| remessa do exterior (âncora / origem) | 916 914,33 / 1 238 129,26 | 916 914,33 / 1 238 129,26 |
+| investimento medido (capex acumulado) | 19 058 661,48 | 19 058 661,48 |
+| identidade carteiras − market cap | 0,0 | **0,0** |
+
+Metade dos índices (p50 +26,5 %) fica em **algumas dezenas de %** num ano sem
+crise; 151 praças (as com papel em ambos os fechamentos) entram na conta.
+
+### 12.4 Os 5 papéis mais extremos e a causa medida
+
+| papel | praça | variação | causa medida |
+|---|---|---|---|
+| `G-QAT-food-192` | QAT | +41 634 % | lucro de referência **+35 501x** partindo de base ~0 (micro-cap: q ≈ 400) |
+| `G-SWE-food-220` | SWE | +158,0 % | lucro **+116,9x**; confiança +8,1 % |
+| `G-VCT-food-250` | VCT | +66,4 % | lucro **+44,9x**; confiança +16,8 % |
+| `G-COL-energy-63` | COL | +41,3 % | lucro **+28,7x**; confiança +13,8 % |
+| `G-SDN-food-207` | SDN | +22,5 % | lucro **+14,6x**; confiança +20,5 % |
+
+Todos os extremos são **lucro medido**, não preço inventado: a referência do
+papel subiu 14x-35 000x no ano. O caso QAT é degenerado por escala (grupo com
+patrimônio registrado quase nulo e lucro que salta de ~0), não por erro de
+preço; a lista completa (`paper_extremes`) fica no JSON para a C6.
 
 **Artefatos declarados (não escondidos):**
 
-1. **Preço/lucro** é limitado pela própria fórmula: `P/E = payout / (taxa +
-   prêmio)` ∈ **1,5 … 12,5** (0,5/0,34 a 0,5/0,04) — plausível por construção.
-2. **q de Tobin alto (p50 15,4)**: o modelo mede uma rentabilidade sobre o
+1. **q de Tobin alto (p50 13,3)**: o modelo mede uma rentabilidade sobre o
    capital registrado muito alta (o livro do grupo é conservador), então o
    preço fundamental fica muito acima do patrimônio. O canal de investimento é
    **limitado** (0,8…1,2) justamente para o q não virar multiplicador; o valor
    bruto fica publicado para a calibração.
-3. **Dispersão da variação anual** (p10 −78 %, p90 +305 %): a EMA do lucro é
-   semeada no dia de formação com **um** dia de lucro medido; empresas com um
-   dia atípico nascem muito caras ou muito baratas e o preço persegue isso sem
-   teto. É dívida de calibração (semente com mais de um dia de histórico e/ou
-   prêmio de risco por volatilidade), não um número inventado. A C6 herda essa
-   dívida junto com crash/corrida.
-4. **Falência a mais**: a terceira falência entra pelo canal de investimento
-   (score × q saturado em 1,2 em quase todos os papéis), não pelo preço — o
-   preço não move dinheiro. Fica no teto (3 ≤ 3) e registrada para o QA.
+2. **Micro-caps dominam a cauda**: com 260 papéis em 179 praças, a praça
+   mediana tem **um** papel; uma empresa minúscula com lucro que explode move
+   "o índice do país" inteiro. Falta um critério de porte mínimo de listagem —
+   declarado como dívida para depois da C6 (não inventado agora).
+3. **Expectativa de lucro de janela anual**: uma mudança permanente de nível é
+   reconhecida com constante de tempo de ~1 ano. É o preço de não transformar
+   rampa de 1º ano em volatilidade; a C6 tem o canal rápido (confiança) para a
+   corrida/crash.
 
 **Defeito latente corrigido nesta fase:** o crédito de dividendo ao domicílio
 (`fiscal.cpp`) e o débito de capital da IA (`actions.cpp`) podiam arredondar
@@ -330,7 +410,7 @@ acima do caixa do grupo e deixar `cash = −1,16e-10`; o load normaliza em 0 e o
 round-trip deixava de ser bit-exato (`c2_central_bank_test`). Os dois débitos
 passam a ser limitados a 0 — nada de caixa negativo.
 
-**Testes:** `c5_stock_exchange_test` (C1-C7) e 14 vizinhos verdes pelo runner
+**Testes:** `c5_stock_exchange_test` (C1-C9) e 14 vizinhos verdes pelo runner
 (`c1_balance`, `c2_central_bank`, `c2b1_monetary`, `c2b2_fx_gold`,
 `c2c_real_fx`, `c3_bank_credit`, `c3_group_balance`, `c4_banks`,
 `currency_trade`, `economy_integration`, `services`, `storage_g2`,

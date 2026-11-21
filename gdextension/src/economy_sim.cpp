@@ -9822,6 +9822,15 @@ Dictionary EconomySim::get_stock_status() const {
 		policy["dividend_period_days"] = pol.dividend_period_days;
 		policy["shares"] = pol.shares;
 		policy["price_floor_rate"] = ogs::stock::kPriceFloorRate;
+		policy["index_warmup_days"] = ogs::stock::kIndexWarmupDays;
+		policy["profit_ema_k"] = ogs::stock::kProfitEmaK;
+		policy["pe_floor"] = ogs::stock::kPeFloor;
+		policy["pe_ceiling"] = ogs::stock::kPeCeiling;
+		policy["rate_pass_through"] = ogs::stock::kRatePassThrough;
+		policy["rate_expected"] =
+			"neutral + pass_through * (spot - neutral) (D-112 fix)";
+		policy["profit_reference"] =
+			"measured mean 1/n during warmup, then EMA (D-112 fix)";
 		policy["name_source"] =
 			"game_default (fictício/genérico, sem marca real)";
 		policy["source"] = "default de jogo (sim/stock.h)";
@@ -9910,6 +9919,7 @@ Dictionary EconomySim::get_stock_status() const {
 		entry["signals"] = signals;
 		entry["index"] = ogs::stock::index_of(ws_, exchange);
 		entry["index_base"] = exchange.index_base;
+		entry["index_forming"] = !(exchange.index_base > 0.0);
 		entry["last_price_day"] = exchange.last_price_day;
 		entry["dividends_paid"] = exchange.dividends_paid;
 		entry["remittance"] = exchange.remittance;
@@ -9964,12 +9974,7 @@ Dictionary EconomySim::get_stock_status() const {
 		entry["reason"] = String(ticker.reason.c_str());
 		entry["shares"] = ticker.shares;
 		entry["price"] = ticker.price;
-		entry["fundamental"] = ticker.shares > 0.0
-			? pol.payout_ratio * std::max(0.0, ticker.profit_ema) * 365.0
-				/ std::max(ogs::stock::kPriceFloorRate,
-					ogs::monetary::rate_for_nation(ws_, ticker.nation)
-					+ pol.risk_premium) / ticker.shares
-			: 0.0;
+		entry["fundamental"] = ogs::stock::fundamental_price(ws_, ticker, pol);
 		entry["market_cap"] = ogs::stock::market_cap(ticker);
 		const double equity = ticker.book_equity;
 		entry["book_equity"] = equity;
