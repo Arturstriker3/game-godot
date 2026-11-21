@@ -19,7 +19,12 @@ extends SceneTree
 ##   (f) conservação de dinheiro e identidade da C1 em TODOS os dias.
 ##   (g) banco insolvente em nação dolarizada com o Tesouro sem caixa: o
 ##       resgate vira título em poder do exterior (`external_bonds`), os
-##       custos fecham o rombo, a identidade passa e o mundo avança.
+##       custos fecham o rombo, a identidade passa e o mundo avança; o título
+##       externo sobrevive ao save e à carga (R4).
+##   R1. após a incorporação pelo banco público, `bank::totals` conta cada
+##       acumulador UMA vez (total = soma das linhas = custo do evento).
+##   R3. save no meio do dia, com perda pendente (`loss_today` ≠ 0): o valor
+##       volta na carga e a continuação é idêntica.
 ##
 ## Roda pelo runner: powershell -File tools/run_tests.ps1 -List c6_bank_crisis_test
 
@@ -48,12 +53,15 @@ func _init() -> void:
 	_test_contagion_scope()
 	_test_dollarized_without_lender()
 	_test_rescue_external_bond()
+	_test_totals_once_after_takeover()
+	_test_save_pending_loss()
 	_test_save_v34()
 	if _failures.is_empty():
 		print("[c6-crisis] OK: (a)-(g) corrida com redesconto, resolução com "
 			+ "custos fechando o rombo, contágio por nação, dolarizado sem "
-			+ "emprestador, resgate sem BC em título do exterior, save v34 e "
-			+ "conservação de dinheiro.")
+			+ "emprestador, resgate sem BC em título do exterior, totais da "
+			+ "incorporação contados uma vez, save v34 com perda pendente e "
+			+ "com título externo, e conservação de dinheiro.")
 		quit(0)
 	else:
 		print("[c6-crisis] FALHAS (%d):" % _failures.size())
@@ -403,10 +411,215 @@ func _test_rescue_external_bond() -> void:
 	_check("G mundo seguiu depois do resgate",
 		int(sim.get_status().get("day", 0)) >= day_before + 6,
 		"dia=%d" % int(sim.get_status().get("day", 0)))
+	# R4: o título em poder do exterior (`external_bonds`, no bloco
+	# `monetary` do save) tem de sobreviver ao round-trip — é a ponta do
+	# credor que mantém a identidade financeira fechada depois da carga.
+	var saved: Dictionary = sim.to_dict()
+	var monetary: Dictionary = saved.get("monetary", {})
+	var external: Dictionary = monetary.get("external_bonds", {})
+	var external_value := float(external.get("DEMO", 0.0))
+	_check("R4 save tem título externo (external_bonds ≠ 0)",
+		external_value > 0.0, "external_bonds=%s" % str(external))
+	var loaded = _load(saved, false)
+	loaded.set_bank_credit(true)
+	loaded.set_bank_policy(0.02, LEVERAGE_CAP, 2.0, 30, 0.01)
+	_check("R4 round-trip bit-exato com título externo",
+		JSON.stringify(loaded.to_dict()) == JSON.stringify(saved), "difere")
+	_check("R4 external_bonds preservado na carga",
+		absf(float(loaded.to_dict().get("monetary", {})
+			.get("external_bonds", {}).get("DEMO", 0.0))
+			- external_value) <= 1e-12, "difere")
+	_check_identity(loaded, "R4 após a carga")
+	print("[c6-crisis] R4: external_bonds=%.2f" % external_value)
+	for day in 5:
+		var original: Dictionary = sim.tick_day()
+		var after: Dictionary = loaded.tick_day()
+		_check("R4 dia %d após a carga sem violação (original)" % (day + 1),
+			(original.get("invariant_violations", []) as Array).is_empty(),
+			str(original.get("invariant_violations", [])))
+		_check("R4 dia %d após a carga sem violação (carregado)" % (day + 1),
+			(after.get("invariant_violations", []) as Array).is_empty(),
+			str(after.get("invariant_violations", [])))
+		_check_identity(loaded, "R4 dia %d carregado" % (day + 1))
+	_check("R4 continuação com o título externo idêntica",
+		JSON.stringify(sim.get_bank_status())
+			== JSON.stringify(loaded.get_bank_status()), "status difere")
+	_check("R4 dinheiro igual na continuação",
+		absf(float(sim.get_status().get("money_total", 0.0))
+			- float(loaded.get_status().get("money_total", 0.0))) <= EPS,
+		"sim=%s loaded=%s" % [sim.get_status().get("money_total"),
+			loaded.get_status().get("money_total")])
 	print("[c6-crisis] G: rombo=%.2f depositantes=%.2f fundo=%.2f tesouro=%.2f"
 		% [gap, float(event.get("cost_depositors", 0.0)),
 		float(event.get("cost_fund", 0.0)),
 		float(event.get("cost_treasury", 0.0))])
+
+
+# --- R1: totais após a incorporação contam cada acumulador 1× --------------
+# A casca absorvida sai do `bank::totals` com a carteira zerada, mas os
+# acumuladores de MEDIÇÃO que não foram copiados ao banco público (saques,
+# redesconto, seguro, bail-in, Tesouro e fuga) continuam nela e têm de entrar
+# UMA vez — e só uma: o total de cada um é comparado com o custo do evento.
+func _test_totals_once_after_takeover() -> void:
+	var sim = _stage(0.10, "private", true)
+	for day in 5:
+		sim.tick_day()
+	# Banco público capitalizado ANTES de zerar o Tesouro: o capital sai do
+	# orçamento das cidades e a incorporação precisa de um banco de pé.
+	var capitalized: Dictionary = sim.set_bank_capital("DEMO", 20000.0,
+		"public")
+	_check("R1 banco público capitalizado para absorver",
+		float(capitalized.get("paid", 0.0)) > 0.0, JSON.stringify(capitalized))
+	# Tesouro sem caixa e sem resgate por dívida: o que não couber no caixa que
+	# aparecer no dia vai para a incorporação pelo banco público.
+	sim = _drain_treasury(sim)
+	sim.set_bank_policy(0.02, LEVERAGE_CAP, 2.0, 30, 0.01)
+	var policy: Dictionary = sim.set_bank_crisis({
+		"treasury_debt_rescue": false,
+		"takeover_public": true,
+	})
+	_check("R1 resgate por dívida desligado (residual vai à incorporação)",
+		not bool(policy.get("treasury_debt_rescue", true)),
+		JSON.stringify(policy))
+	var treasury_before := _treasury_cash(sim)
+	_check("R1 Tesouro sem caixa antes do resgate",
+		treasury_before <= EPS, "tesouro=%.6f" % treasury_before)
+	var shock: Dictionary = sim.bank_shock(PRIVATE, 0.0, 0.60)
+	_check("R1 choque aplicado", float(shock.get("written", 0.0)) > 0.0,
+		JSON.stringify(shock))
+	var summary: Dictionary = sim.tick_day()
+	_check("R1 dia da incorporação sem violação de invariante",
+		(summary.get("invariant_violations", []) as Array).is_empty(),
+		str(summary.get("invariant_violations", [])))
+	_check_identity(sim, "R1 dia da incorporação")
+	var event: Dictionary = _last_resolution(sim, PRIVATE)
+	_check("R1 evento de resolução registrado", not event.is_empty(),
+		str(sim.get_bank_status().get("events", [])))
+	if event.is_empty():
+		return
+	var shell := _bank(sim, PRIVATE)
+	var status: Dictionary = sim.get_bank_status()
+	var totals: Dictionary = status.get("totals", {})
+	_check("R1 casca absorvida pelo banco público",
+		String(shell.get("absorbed_into", "")) == PUBLIC,
+		"absorbed_into=%s" % String(shell.get("absorbed_into", "")))
+	_check("R1 residual virou custo de incorporação",
+		float(event.get("cost_takeover", 0.0)) > 0.0,
+		"custo_incorporacao=%.6f" % float(event.get("cost_takeover", 0.0)))
+	_check("R1 casca sem carteira (saldos zerados na incorporação)",
+		absf(float(shell.get("loans", 0.0))) <= EPS
+			and absf(float(shell.get("deposits", 0.0))) <= EPS
+			and absf(float(shell.get("cash", 0.0))) <= EPS,
+		"loans=%.6f deposits=%.6f cash=%.6f"
+			% [float(shell.get("loans", 0.0)),
+				float(shell.get("deposits", 0.0)),
+				float(shell.get("cash", 0.0))])
+	var cost_total := float(event.get("cost_depositors", 0.0)) \
+		+ float(event.get("cost_fund", 0.0)) \
+		+ float(event.get("cost_treasury", 0.0)) \
+		+ float(event.get("cost_takeover", 0.0))
+	_check("R1 custos somam EXATAMENTE o rombo",
+		absf(cost_total - float(event.get("gap", 0.0)))
+			<= maxf(1e-3, absf(float(event.get("gap", 0.0))) * 1e-9),
+		"soma=%.9f rombo=%.9f" % [cost_total, float(event.get("gap", 0.0))])
+	# Cada acumulador entra UMA vez no total: total = soma das linhas (casca +
+	# banco público) e, para os que pagaram o rombo, = custo do evento.
+	var accumulators := ["run_withdrawn", "run_cash", "run_public",
+		"capital_flight", "lolr_borrowed", "lolr_interest",
+		"insured_payout", "bailin_cut", "treasury_rescue"]
+	for key: String in accumulators:
+		var row_sum := 0.0
+		for row: Dictionary in status.get("banks", []):
+			row_sum += float(row.get(key, 0.0))
+		_check("R1 totals.%s = soma das linhas (1×)" % key,
+			absf(float(totals.get(key, 0.0)) - row_sum) <= 1e-6,
+			"totals=%.9f linhas=%.9f"
+				% [float(totals.get(key, 0.0)), row_sum])
+	_check("R1 bail-in no total = custo do evento (1×)",
+		absf(float(totals.get("bailin_cut", 0.0))
+			- float(event.get("cost_depositors", 0.0))) <= 1e-6,
+		"total=%.9f evento=%.9f" % [float(totals.get("bailin_cut", 0.0)),
+			float(event.get("cost_depositors", 0.0))])
+	_check("R1 seguro no total = custo do evento (1×)",
+		absf(float(totals.get("insured_payout", 0.0))
+			- float(event.get("cost_fund", 0.0))) <= 1e-6,
+		"total=%.9f evento=%.9f"
+			% [float(totals.get("insured_payout", 0.0)),
+				float(event.get("cost_fund", 0.0))])
+	_check("R1 Tesouro no total = custo do evento (1×)",
+		absf(float(totals.get("treasury_rescue", 0.0))
+			- float(event.get("cost_treasury", 0.0))) <= 1e-6,
+		"total=%.9f evento=%.9f"
+			% [float(totals.get("treasury_rescue", 0.0)),
+				float(event.get("cost_treasury", 0.0))])
+	_check("R1 uma resolução contada (inclusive a casca)",
+		int(totals.get("resolutions", 0)) == 1,
+		"resolutions=%s" % str(totals.get("resolutions")))
+	_check("R1 um evento contado", int(totals.get("crisis_events", 0)) == 1,
+		"crisis_events=%s" % str(totals.get("crisis_events")))
+	# A casca absorvida não tem saldo, mas a resolução dela continua contada
+	# (`resolutions` varre todos os bancos; `banks` é o contrato da C4).
+	# Acumuladores COPIADOS ao banco público: zerados na casca (senão o total
+	# contaria duas vezes) e presentes no banco público.
+	var public_row := _bank(sim, PUBLIC)
+	_check("R1 acumuladores copiados zerados na casca",
+		absf(float(shell.get("writeoffs", 0.0))) <= EPS
+			and int(shell.get("defaults", 0)) == 0
+			and int(shell.get("loans_count", 0)) == 0,
+		"writeoffs=%.6f defaults=%s loans_count=%s"
+			% [float(shell.get("writeoffs", 0.0)),
+				str(shell.get("defaults")), str(shell.get("loans_count"))])
+	_check("R1 acumuladores copiados estão no banco público",
+		float(public_row.get("writeoffs", 0.0)) > 0.0,
+		"writeoffs=%.6f" % float(public_row.get("writeoffs", 0.0)))
+	print("[c6-crisis] R1: rombo=%.2f depositantes=%.2f fundo=%.2f takeover=%.2f"
+		% [float(event.get("gap", 0.0)),
+			float(event.get("cost_depositors", 0.0)),
+			float(event.get("cost_fund", 0.0)),
+			float(event.get("cost_takeover", 0.0))])
+
+
+# --- R3: save com perda pendente (`loss_today`) ---------------------------
+# O choque escreve `loss_today`; salvar ANTES do tick e recarregar tem de
+# preservar o valor e continuar idêntico (a EMA do dia seguinte parte dele).
+func _test_save_pending_loss() -> void:
+	var sim = _stage(0.32, "private", true)
+	var shock: Dictionary = sim.bank_shock(PRIVATE, 0.0, 0.30)
+	_check("R3 choque aplicado", float(shock.get("written", 0.0)) > 0.0,
+		JSON.stringify(shock))
+	var saved: Dictionary = sim.to_dict()
+	var saved_loss := _saved_loss(saved, PRIVATE)
+	_check("R3 save tem perda pendente (loss_today ≠ 0)",
+		saved_loss > 0.0, "loss_today=%.9f" % saved_loss)
+	var loaded = _load(saved, false)
+	loaded.set_bank_credit(true)
+	loaded.set_bank_policy(0.02, LEVERAGE_CAP, 2.0, 30, 0.01)
+	_check("R3 round-trip bit-exato com perda pendente",
+		JSON.stringify(loaded.to_dict()) == JSON.stringify(saved), "difere")
+	_check("R3 loss_today preservado na carga",
+		absf(_saved_loss(loaded.to_dict(), PRIVATE) - saved_loss) <= 1e-12,
+		"sim=%.12f loaded=%.12f"
+			% [saved_loss, _saved_loss(loaded.to_dict(), PRIVATE)])
+	print("[c6-crisis] R3: loss_today=%.6f" % saved_loss)
+	for day in 5:
+		var original: Dictionary = sim.tick_day()
+		var after: Dictionary = loaded.tick_day()
+		_check("R3 dia %d após a carga sem violação (original)" % (day + 1),
+			(original.get("invariant_violations", []) as Array).is_empty(),
+			str(original.get("invariant_violations", [])))
+		_check("R3 dia %d após a carga sem violação (carregado)" % (day + 1),
+			(after.get("invariant_violations", []) as Array).is_empty(),
+			str(after.get("invariant_violations", [])))
+		_check_identity(sim, "R3 dia %d original" % (day + 1))
+		_check_identity(loaded, "R3 dia %d carregado" % (day + 1))
+	_check("R3 continuação idêntica com a perda pendente",
+		JSON.stringify(sim.get_bank_status())
+			== JSON.stringify(loaded.get_bank_status()), "status difere")
+	_check("R3 dinheiro igual na continuação",
+		absf(float(sim.get_status().get("money_total", 0.0))
+			- float(loaded.get_status().get("money_total", 0.0))) <= EPS,
+		"sim=%s loaded=%s" % [sim.get_status().get("money_total"),
+			loaded.get_status().get("money_total")])
 
 
 # --- (e) save v34 --------------------------------------------------------
@@ -579,6 +792,14 @@ func _bank(sim, id: String) -> Dictionary:
 		if String(row.get("id", "")) == id:
 			return row
 	return {}
+
+
+## Perda reconhecida no dia (`loss_today`) da linha de banco no SAVE — o
+## status publicado não expõe o campo, e é ele que a carga tem de preservar.
+func _saved_loss(data: Dictionary, id: String) -> float:
+	var rows: Dictionary = data.get("banks", {}).get("banks", {})
+	var row: Dictionary = rows.get(id, {})
+	return float(row.get("loss_today", 0.0))
 
 
 func _last_resolution(sim, id: String) -> Dictionary:
