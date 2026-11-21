@@ -1,0 +1,2517 @@
+{
+  "balance": {
+    "arrears": {
+      "plants": 615578.409646073,
+      "rural": 10493067096.4228,
+      "service": 27106544.0615242
+    },
+    "invariant": {
+      "arrears_plants": 615578.409646073,
+      "arrears_rural": 10493067096.4228,
+      "arrears_service": 27106544.0615242,
+      "cash_residual": 0.0000276565551757813,
+      "cash_total": 6559012727.4408,
+      "financial_sum": -0.0000162124633789063,
+      "monetary_base": 6523551982.90245,
+      "money_total": 6559012727.44077,
+      "ok": true,
+      "payables": 10520789218.894,
+      "receivables": 10520789218.894
+    },
+    "nations": 179,
+    "sample_nations": {
+      "BRA": {
+        "families_cash": 611468200.671935,
+        "families_net_worth": 779726090.227333,
+        "families_property": 0.0,
+        "families_receivables": 168257889.555397,
+        "firms_inventory": 10058251139.4725,
+        "firms_net_worth": 9963854398.60474,
+        "firms_payables": 168257889.555397,
+        "government_net_worth": 185695507.793599,
+        "net_worth_per_capita": 9.42242517460653
+      },
+      "CHN": {
+        "families_cash": 1980818268.68213,
+        "families_net_worth": 3637181274.38287,
+        "families_property": 0.0,
+        "families_receivables": 1656363005.70074,
+        "firms_inventory": 17584687962.1928,
+        "firms_net_worth": 16685703067.1014,
+        "firms_payables": 1656363005.70074,
+        "government_net_worth": 885114532.935778,
+        "net_worth_per_capita": 10.1928191579242
+      },
+      "DEU": {
+        "families_cash": 133729225.895234,
+        "families_net_worth": 244677479.451248,
+        "families_property": 0.0,
+        "families_receivables": 110948253.556013,
+        "firms_inventory": 625192227.303388,
+        "firms_net_worth": 540416555.081307,
+        "firms_payables": 110948253.556013,
+        "government_net_worth": 54135001.1816758,
+        "net_worth_per_capita": 11.213622097364
+      },
+      "IDN": {
+        "families_cash": 351493934.169187,
+        "families_net_worth": 724285474.411394,
+        "families_property": 0.0,
+        "families_receivables": 372791540.242207,
+        "firms_inventory": 858539798.786307,
+        "firms_net_worth": 555014325.459513,
+        "firms_payables": 372791540.242207,
+        "government_net_worth": 8465160.45265107,
+        "net_worth_per_capita": 11.8408364010229
+      },
+      "IND": {
+        "families_cash": 575285078.048467,
+        "families_net_worth": 3129567765.19391,
+        "families_property": 0.0,
+        "families_receivables": 2554282687.14544,
+        "firms_inventory": 6846932494.61134,
+        "firms_net_worth": 4571163510.38284,
+        "firms_payables": 2554282687.14544,
+        "government_net_worth": 736752751.984528,
+        "net_worth_per_capita": 17.4282410786623
+      },
+      "MEX": {
+        "families_cash": 294002380.190898,
+        "families_net_worth": 435896732.391453,
+        "families_property": 0.0,
+        "families_receivables": 141894352.200555,
+        "firms_inventory": 360227387.937925,
+        "firms_net_worth": 278687664.173167,
+        "firms_payables": 141894352.200555,
+        "government_net_worth": 18613842.5851992,
+        "net_worth_per_capita": 8.39350326085662
+      },
+      "NGA": {
+        "families_cash": 106305763.009576,
+        "families_net_worth": 378717221.948874,
+        "families_property": 0.0,
+        "families_receivables": 272411458.939298,
+        "firms_inventory": 260313552.177265,
+        "firms_net_worth": 48166077.5843195,
+        "firms_payables": 272411458.939298,
+        "government_net_worth": 9281339.54470508,
+        "net_worth_per_capita": 7.80067617435211
+      },
+      "RUS": {
+        "families_cash": 339628596.107798,
+        "families_net_worth": 468987024.906437,
+        "families_property": 0.0,
+        "families_receivables": 129358428.798639,
+        "firms_inventory": 2529821235.96037,
+        "firms_net_worth": 2555965798.78681,
+        "firms_payables": 129358428.798639,
+        "government_net_worth": 49411406.7311114,
+        "net_worth_per_capita": 9.25117973782231
+      },
+      "USA": {
+        "families_cash": 817924453.218891,
+        "families_net_worth": 1109700549.76597,
+        "families_property": 0.0,
+        "families_receivables": 291776096.547074,
+        "firms_inventory": 8662079042.23827,
+        "firms_net_worth": 8457093256.93633,
+        "firms_payables": 291776096.547074,
+        "government_net_worth": 216088485.09416,
+        "net_worth_per_capita": 8.43057095703636
+      },
+      "ZAF": {
+        "families_cash": 98896889.3136862,
+        "families_net_worth": 159717151.346786,
+        "families_property": 0.0,
+        "families_receivables": 60820262.0330999,
+        "firms_inventory": 349100401.619106,
+        "firms_net_worth": 320111437.223333,
+        "firms_payables": 60820262.0330999,
+        "government_net_worth": 66851689.0290155,
+        "net_worth_per_capita": 5.75668056099916
+      }
+    },
+    "world": {
+      "external_cash": -9628802838.90697,
+      "families_cash": 10715320335.7873,
+      "families_inventory": 0.0,
+      "families_net_worth": 21236109554.6812,
+      "families_property": 0.0,
+      "families_receivables": 10520789218.894,
+      "firms_fixed_capital": 2920556025.54579,
+      "firms_inventory": 72834176835.9777,
+      "firms_net_worth": 65745889485.8377,
+      "firms_payables": 10520789218.894,
+      "firms_solvency": {
+        "count": 4172,
+        "illiquid": 2,
+        "insolvent": 0,
+        "liquid": 4170
+      },
+      "government_inventory": 367059479.859298,
+      "government_net_worth": 3546701910.81268
+    }
+  },
+  "bank_crisis": {
+    "bailin_cut": 0.0,
+    "capital_flight": 0.0,
+    "confidence_max": 0.968326319970026,
+    "confidence_min": 0.495399788251202,
+    "confidence_sum": 278.715852803876,
+    "crisis_events": 0,
+    "events": [],
+    "fund": 204853.292337185,
+    "insurance": [
+      {
+        "fund": 574.848097029499,
+        "last_payout_day": -1,
+        "nation": "AFG",
+        "payouts": 0.0,
+        "premiums": 574.848097029499
+      },
+      {
+        "fund": 788.268459681802,
+        "last_payout_day": -1,
+        "nation": "AGO",
+        "payouts": 0.0,
+        "premiums": 788.268459681802
+      },
+      {
+        "fund": 581.653659098707,
+        "last_payout_day": -1,
+        "nation": "ALB",
+        "payouts": 0.0,
+        "premiums": 581.653659098707
+      },
+      {
+        "fund": 373.05245227907,
+        "last_payout_day": -1,
+        "nation": "ARE",
+        "payouts": 0.0,
+        "premiums": 373.05245227907
+      },
+      {
+        "fund": 2029.2830138852,
+        "last_payout_day": -1,
+        "nation": "ARG",
+        "payouts": 0.0,
+        "premiums": 2029.2830138852
+      },
+      {
+        "fund": 863.743357981059,
+        "last_payout_day": -1,
+        "nation": "ARM",
+        "payouts": 0.0,
+        "premiums": 863.743357981059
+      },
+      {
+        "fund": 218.949815703989,
+        "last_payout_day": -1,
+        "nation": "ATG",
+        "payouts": 0.0,
+        "premiums": 218.949815703989
+      },
+      {
+        "fund": 7349.14566638116,
+        "last_payout_day": -1,
+        "nation": "AUS",
+        "payouts": 0.0,
+        "premiums": 7349.14566638116
+      },
+      {
+        "fund": 970.477392902802,
+        "last_payout_day": -1,
+        "nation": "AUT",
+        "payouts": 0.0,
+        "premiums": 970.477392902802
+      },
+      {
+        "fund": 898.271991389654,
+        "last_payout_day": -1,
+        "nation": "AZE",
+        "payouts": 0.0,
+        "premiums": 898.271991389654
+      },
+      {
+        "fund": 286.37620697719,
+        "last_payout_day": -1,
+        "nation": "BDI",
+        "payouts": 0.0,
+        "premiums": 286.37620697719
+      },
+      {
+        "fund": 487.121377617987,
+        "last_payout_day": -1,
+        "nation": "BEL",
+        "payouts": 0.0,
+        "premiums": 487.121377617987
+      },
+      {
+        "fund": 159.973234165564,
+        "last_payout_day": -1,
+        "nation": "BEN",
+        "payouts": 0.0,
+        "premiums": 159.973234165564
+      },
+      {
+        "fund": 194.41175355703,
+        "last_payout_day": -1,
+        "nation": "BFA",
+        "payouts": 0.0,
+        "premiums": 194.41175355703
+      },
+      {
+        "fund": 1619.50248716193,
+        "last_payout_day": -1,
+        "nation": "BGD",
+        "payouts": 0.0,
+        "premiums": 1619.50248716193
+      },
+      {
+        "fund": 892.335552656476,
+        "last_payout_day": -1,
+        "nation": "BGR",
+        "payouts": 0.0,
+        "premiums": 892.335552656476
+      },
+      {
+        "fund": 88.9746042009582,
+        "last_payout_day": -1,
+        "nation": "BHR",
+        "payouts": 0.0,
+        "premiums": 88.9746042009582
+      },
+      {
+        "fund": 301.365028315145,
+        "last_payout_day": -1,
+        "nation": "BHS",
+        "payouts": 0.0,
+        "premiums": 301.365028315145
+      },
+      {
+        "fund": 639.820654514638,
+        "last_payout_day": -1,
+        "nation": "BIH",
+        "payouts": 0.0,
+        "premiums": 639.820654514638
+      },
+      {
+        "fund": 976.315863254397,
+        "last_payout_day": -1,
+        "nation": "BLR",
+        "payouts": 0.0,
+        "premiums": 976.315863254397
+      },
+      {
+        "fund": 0.0000449539750532762,
+        "last_payout_day": -1,
+        "nation": "BLZ",
+        "payouts": 0.0,
+        "premiums": 0.0000449539750532762
+      },
+      {
+        "fund": 1268.23524611253,
+        "last_payout_day": -1,
+        "nation": "BOL",
+        "payouts": 0.0,
+        "premiums": 1268.23524611253
+      },
+      {
+        "fund": 8059.16126454527,
+        "last_payout_day": -1,
+        "nation": "BRA",
+        "payouts": 0.0,
+        "premiums": 8059.16126454527
+      },
+      {
+        "fund": 35.8567069768189,
+        "last_payout_day": -1,
+        "nation": "BRB",
+        "payouts": 0.0,
+        "premiums": 35.8567069768189
+      },
+      {
+        "fund": 61.7681921688451,
+        "last_payout_day": -1,
+        "nation": "BRN",
+        "payouts": 0.0,
+        "premiums": 61.7681921688451
+      },
+      {
+        "fund": 210.978828947146,
+        "last_payout_day": -1,
+        "nation": "BTN",
+        "payouts": 0.0,
+        "premiums": 210.978828947146
+      },
+      {
+        "fund": 0.00573518717071846,
+        "last_payout_day": -1,
+        "nation": "BWA",
+        "payouts": 0.0,
+        "premiums": 0.00573518717071846
+      },
+      {
+        "fund": 283.898591067645,
+        "last_payout_day": -1,
+        "nation": "CAF",
+        "payouts": 0.0,
+        "premiums": 283.898591067645
+      },
+      {
+        "fund": 6041.50778315828,
+        "last_payout_day": -1,
+        "nation": "CAN",
+        "payouts": 0.0,
+        "premiums": 6041.50778315828
+      },
+      {
+        "fund": 891.999235566156,
+        "last_payout_day": -1,
+        "nation": "CHE",
+        "payouts": 0.0,
+        "premiums": 891.999235566156
+      },
+      {
+        "fund": 2680.92964014622,
+        "last_payout_day": -1,
+        "nation": "CHL",
+        "payouts": 0.0,
+        "premiums": 2680.92964014622
+      },
+      {
+        "fund": 14247.4725287686,
+        "last_payout_day": -1,
+        "nation": "CHN",
+        "payouts": 0.0,
+        "premiums": 14247.4725287686
+      },
+      {
+        "fund": 747.164234771161,
+        "last_payout_day": -1,
+        "nation": "CIV",
+        "payouts": 0.0,
+        "premiums": 747.164234771161
+      },
+      {
+        "fund": 919.270463591057,
+        "last_payout_day": -1,
+        "nation": "CMR",
+        "payouts": 0.0,
+        "premiums": 919.270463591057
+      },
+      {
+        "fund": 2387.31128182948,
+        "last_payout_day": -1,
+        "nation": "COD",
+        "payouts": 0.0,
+        "premiums": 2387.31128182948
+      },
+      {
+        "fund": 708.247819437822,
+        "last_payout_day": -1,
+        "nation": "COG",
+        "payouts": 0.0,
+        "premiums": 708.247819437822
+      },
+      {
+        "fund": 1730.39935685064,
+        "last_payout_day": -1,
+        "nation": "COL",
+        "payouts": 0.0,
+        "premiums": 1730.39935685064
+      },
+      {
+        "fund": 124.994382412738,
+        "last_payout_day": -1,
+        "nation": "CRI",
+        "payouts": 0.0,
+        "premiums": 124.994382412738
+      },
+      {
+        "fund": 1034.9354545757,
+        "last_payout_day": -1,
+        "nation": "CUB",
+        "payouts": 0.0,
+        "premiums": 1034.9354545757
+      },
+      {
+        "fund": 403.200726335127,
+        "last_payout_day": -1,
+        "nation": "CYP",
+        "payouts": 0.0,
+        "premiums": 403.200726335127
+      },
+      {
+        "fund": 898.209748383088,
+        "last_payout_day": -1,
+        "nation": "CZE",
+        "payouts": 0.0,
+        "premiums": 898.209748383088
+      },
+      {
+        "fund": 1114.76909086891,
+        "last_payout_day": -1,
+        "nation": "DEU",
+        "payouts": 0.0,
+        "premiums": 1114.76909086891
+      },
+      {
+        "fund": 205.715818311835,
+        "last_payout_day": -1,
+        "nation": "DJI",
+        "payouts": 0.0,
+        "premiums": 205.715818311835
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "DMA",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 1042.21557734371,
+        "last_payout_day": -1,
+        "nation": "DNK",
+        "payouts": 0.0,
+        "premiums": 1042.21557734371
+      },
+      {
+        "fund": 572.29966943886,
+        "last_payout_day": -1,
+        "nation": "DOM",
+        "payouts": 0.0,
+        "premiums": 572.29966943886
+      },
+      {
+        "fund": 1267.64358602666,
+        "last_payout_day": -1,
+        "nation": "DZA",
+        "payouts": 0.0,
+        "premiums": 1267.64358602666
+      },
+      {
+        "fund": 1645.05918349703,
+        "last_payout_day": -1,
+        "nation": "ECU",
+        "payouts": 0.0,
+        "premiums": 1645.05918349703
+      },
+      {
+        "fund": 819.605855728895,
+        "last_payout_day": -1,
+        "nation": "EGY",
+        "payouts": 0.0,
+        "premiums": 819.605855728895
+      },
+      {
+        "fund": 97.3543416562543,
+        "last_payout_day": -1,
+        "nation": "ERI",
+        "payouts": 0.0,
+        "premiums": 97.3543416562543
+      },
+      {
+        "fund": 902.083281704086,
+        "last_payout_day": -1,
+        "nation": "ESP",
+        "payouts": 0.0,
+        "premiums": 902.083281704086
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "EST",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 1324.78364615872,
+        "last_payout_day": -1,
+        "nation": "ETH",
+        "payouts": 0.0,
+        "premiums": 1324.78364615872
+      },
+      {
+        "fund": 72.9360399023581,
+        "last_payout_day": -1,
+        "nation": "FIN",
+        "payouts": 0.0,
+        "premiums": 72.9360399023581
+      },
+      {
+        "fund": 321.637950564887,
+        "last_payout_day": -1,
+        "nation": "FJI",
+        "payouts": 0.0,
+        "premiums": 321.637950564887
+      },
+      {
+        "fund": 2345.16607490431,
+        "last_payout_day": -1,
+        "nation": "FRA",
+        "payouts": 0.0,
+        "premiums": 2345.16607490431
+      },
+      {
+        "fund": 106.806180298079,
+        "last_payout_day": -1,
+        "nation": "GAB",
+        "payouts": 0.0,
+        "premiums": 106.806180298079
+      },
+      {
+        "fund": 1517.68227016385,
+        "last_payout_day": -1,
+        "nation": "GBR",
+        "payouts": 0.0,
+        "premiums": 1517.68227016385
+      },
+      {
+        "fund": 499.844640304288,
+        "last_payout_day": -1,
+        "nation": "GEO",
+        "payouts": 0.0,
+        "premiums": 499.844640304288
+      },
+      {
+        "fund": 513.855293337304,
+        "last_payout_day": -1,
+        "nation": "GHA",
+        "payouts": 0.0,
+        "premiums": 513.855293337304
+      },
+      {
+        "fund": 2322.52661329562,
+        "last_payout_day": -1,
+        "nation": "GIN",
+        "payouts": 0.0,
+        "premiums": 2322.52661329562
+      },
+      {
+        "fund": 68.2094423851711,
+        "last_payout_day": -1,
+        "nation": "GMB",
+        "payouts": 0.0,
+        "premiums": 68.2094423851711
+      },
+      {
+        "fund": 758.629405631612,
+        "last_payout_day": -1,
+        "nation": "GNB",
+        "payouts": 0.0,
+        "premiums": 758.629405631612
+      },
+      {
+        "fund": 50.9141876491859,
+        "last_payout_day": -1,
+        "nation": "GNQ",
+        "payouts": 0.0,
+        "premiums": 50.9141876491859
+      },
+      {
+        "fund": 1052.9041226424,
+        "last_payout_day": -1,
+        "nation": "GRC",
+        "payouts": 0.0,
+        "premiums": 1052.9041226424
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "GRD",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 626.49693211456,
+        "last_payout_day": -1,
+        "nation": "GTM",
+        "payouts": 0.0,
+        "premiums": 626.49693211456
+      },
+      {
+        "fund": 1849.97531976384,
+        "last_payout_day": -1,
+        "nation": "GUY",
+        "payouts": 0.0,
+        "premiums": 1849.97531976384
+      },
+      {
+        "fund": 330.550841289285,
+        "last_payout_day": -1,
+        "nation": "HND",
+        "payouts": 0.0,
+        "premiums": 330.550841289285
+      },
+      {
+        "fund": 524.811043393435,
+        "last_payout_day": -1,
+        "nation": "HRV",
+        "payouts": 0.0,
+        "premiums": 524.811043393435
+      },
+      {
+        "fund": 539.628202902839,
+        "last_payout_day": -1,
+        "nation": "HTI",
+        "payouts": 0.0,
+        "premiums": 539.628202902839
+      },
+      {
+        "fund": 722.702767323947,
+        "last_payout_day": -1,
+        "nation": "HUN",
+        "payouts": 0.0,
+        "premiums": 722.702767323947
+      },
+      {
+        "fund": 5276.71178873351,
+        "last_payout_day": -1,
+        "nation": "IDN",
+        "payouts": 0.0,
+        "premiums": 5276.71178873351
+      },
+      {
+        "fund": 11869.7605905558,
+        "last_payout_day": -1,
+        "nation": "IND",
+        "payouts": 0.0,
+        "premiums": 11869.7605905558
+      },
+      {
+        "fund": 1047.28836196674,
+        "last_payout_day": -1,
+        "nation": "IRL",
+        "payouts": 0.0,
+        "premiums": 1047.28836196674
+      },
+      {
+        "fund": 2110.76347617588,
+        "last_payout_day": -1,
+        "nation": "IRN",
+        "payouts": 0.0,
+        "premiums": 2110.76347617588
+      },
+      {
+        "fund": 260.483662845245,
+        "last_payout_day": -1,
+        "nation": "IRQ",
+        "payouts": 0.0,
+        "premiums": 260.483662845245
+      },
+      {
+        "fund": 545.826426676121,
+        "last_payout_day": -1,
+        "nation": "ISL",
+        "payouts": 0.0,
+        "premiums": 545.826426676121
+      },
+      {
+        "fund": 884.287098986537,
+        "last_payout_day": -1,
+        "nation": "ISR",
+        "payouts": 0.0,
+        "premiums": 884.287098986537
+      },
+      {
+        "fund": 1146.58374278704,
+        "last_payout_day": -1,
+        "nation": "ITA",
+        "payouts": 0.0,
+        "premiums": 1146.58374278704
+      },
+      {
+        "fund": 882.078090849813,
+        "last_payout_day": -1,
+        "nation": "JAM",
+        "payouts": 0.0,
+        "premiums": 882.078090849813
+      },
+      {
+        "fund": 406.975878437757,
+        "last_payout_day": -1,
+        "nation": "JOR",
+        "payouts": 0.0,
+        "premiums": 406.975878437757
+      },
+      {
+        "fund": 669.875196297989,
+        "last_payout_day": -1,
+        "nation": "JPN",
+        "payouts": 0.0,
+        "premiums": 669.875196297989
+      },
+      {
+        "fund": 2435.64551937537,
+        "last_payout_day": -1,
+        "nation": "KAZ",
+        "payouts": 0.0,
+        "premiums": 2435.64551937537
+      },
+      {
+        "fund": 1540.42665253083,
+        "last_payout_day": -1,
+        "nation": "KEN",
+        "payouts": 0.0,
+        "premiums": 1540.42665253083
+      },
+      {
+        "fund": 419.987734724355,
+        "last_payout_day": -1,
+        "nation": "KGZ",
+        "payouts": 0.0,
+        "premiums": 419.987734724355
+      },
+      {
+        "fund": 1105.61217546441,
+        "last_payout_day": -1,
+        "nation": "KHM",
+        "payouts": 0.0,
+        "premiums": 1105.61217546441
+      },
+      {
+        "fund": 45.9485563722913,
+        "last_payout_day": -1,
+        "nation": "KNA",
+        "payouts": 0.0,
+        "premiums": 45.9485563722913
+      },
+      {
+        "fund": 270.635517328083,
+        "last_payout_day": -1,
+        "nation": "KOR",
+        "payouts": 0.0,
+        "premiums": 270.635517328083
+      },
+      {
+        "fund": 98.993830168997,
+        "last_payout_day": -1,
+        "nation": "KWT",
+        "payouts": 0.0,
+        "premiums": 98.993830168997
+      },
+      {
+        "fund": 804.213848723098,
+        "last_payout_day": -1,
+        "nation": "LAO",
+        "payouts": 0.0,
+        "premiums": 804.213848723098
+      },
+      {
+        "fund": 321.263601816794,
+        "last_payout_day": -1,
+        "nation": "LBN",
+        "payouts": 0.0,
+        "premiums": 321.263601816794
+      },
+      {
+        "fund": 472.804330731221,
+        "last_payout_day": -1,
+        "nation": "LBR",
+        "payouts": 0.0,
+        "premiums": 472.804330731221
+      },
+      {
+        "fund": 375.48380008402,
+        "last_payout_day": -1,
+        "nation": "LBY",
+        "payouts": 0.0,
+        "premiums": 375.48380008402
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "LCA",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 1528.52640160631,
+        "last_payout_day": -1,
+        "nation": "LKA",
+        "payouts": 0.0,
+        "premiums": 1528.52640160631
+      },
+      {
+        "fund": 11.0188167771627,
+        "last_payout_day": -1,
+        "nation": "LSO",
+        "payouts": 0.0,
+        "premiums": 11.0188167771627
+      },
+      {
+        "fund": 789.725393631751,
+        "last_payout_day": -1,
+        "nation": "LTU",
+        "payouts": 0.0,
+        "premiums": 789.725393631751
+      },
+      {
+        "fund": 87.8244125234615,
+        "last_payout_day": -1,
+        "nation": "LUX",
+        "payouts": 0.0,
+        "premiums": 87.8244125234615
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "LVA",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 1165.07572759786,
+        "last_payout_day": -1,
+        "nation": "MAR",
+        "payouts": 0.0,
+        "premiums": 1165.07572759786
+      },
+      {
+        "fund": 788.147590499407,
+        "last_payout_day": -1,
+        "nation": "MDA",
+        "payouts": 0.0,
+        "premiums": 788.147590499407
+      },
+      {
+        "fund": 312.73798581229,
+        "last_payout_day": -1,
+        "nation": "MDG",
+        "payouts": 0.0,
+        "premiums": 312.73798581229
+      },
+      {
+        "fund": 4372.66645751528,
+        "last_payout_day": -1,
+        "nation": "MEX",
+        "payouts": 0.0,
+        "premiums": 4372.66645751528
+      },
+      {
+        "fund": 352.819297189867,
+        "last_payout_day": -1,
+        "nation": "MKD",
+        "payouts": 0.0,
+        "premiums": 352.819297189867
+      },
+      {
+        "fund": 203.0651234225,
+        "last_payout_day": -1,
+        "nation": "MLI",
+        "payouts": 0.0,
+        "premiums": 203.0651234225
+      },
+      {
+        "fund": 79.661973281385,
+        "last_payout_day": -1,
+        "nation": "MLT",
+        "payouts": 0.0,
+        "premiums": 79.661973281385
+      },
+      {
+        "fund": 1313.15387719702,
+        "last_payout_day": -1,
+        "nation": "MMR",
+        "payouts": 0.0,
+        "premiums": 1313.15387719702
+      },
+      {
+        "fund": 64.0194473526898,
+        "last_payout_day": -1,
+        "nation": "MNE",
+        "payouts": 0.0,
+        "premiums": 64.0194473526898
+      },
+      {
+        "fund": 4.23163138495479,
+        "last_payout_day": -1,
+        "nation": "MNG",
+        "payouts": 0.0,
+        "premiums": 4.23163138495479
+      },
+      {
+        "fund": 1044.4198902191,
+        "last_payout_day": -1,
+        "nation": "MOZ",
+        "payouts": 0.0,
+        "premiums": 1044.4198902191
+      },
+      {
+        "fund": 1187.58236149027,
+        "last_payout_day": -1,
+        "nation": "MRT",
+        "payouts": 0.0,
+        "premiums": 1187.58236149027
+      },
+      {
+        "fund": 585.123913037346,
+        "last_payout_day": -1,
+        "nation": "MWI",
+        "payouts": 0.0,
+        "premiums": 585.123913037346
+      },
+      {
+        "fund": 1560.67875745304,
+        "last_payout_day": -1,
+        "nation": "MYS",
+        "payouts": 0.0,
+        "premiums": 1560.67875745304
+      },
+      {
+        "fund": 24.1652796500723,
+        "last_payout_day": -1,
+        "nation": "NAM",
+        "payouts": 0.0,
+        "premiums": 24.1652796500723
+      },
+      {
+        "fund": 750.703927964063,
+        "last_payout_day": -1,
+        "nation": "NED",
+        "payouts": 0.0,
+        "premiums": 750.703927964063
+      },
+      {
+        "fund": 186.114244383534,
+        "last_payout_day": -1,
+        "nation": "NER",
+        "payouts": 0.0,
+        "premiums": 186.114244383534
+      },
+      {
+        "fund": 1937.25481518237,
+        "last_payout_day": -1,
+        "nation": "NGA",
+        "payouts": 0.0,
+        "premiums": 1937.25481518237
+      },
+      {
+        "fund": 446.522063210981,
+        "last_payout_day": -1,
+        "nation": "NIC",
+        "payouts": 0.0,
+        "premiums": 446.522063210981
+      },
+      {
+        "fund": 408.297359716279,
+        "last_payout_day": -1,
+        "nation": "NOR",
+        "payouts": 0.0,
+        "premiums": 408.297359716279
+      },
+      {
+        "fund": 1123.10631966449,
+        "last_payout_day": -1,
+        "nation": "NPL",
+        "payouts": 0.0,
+        "premiums": 1123.10631966449
+      },
+      {
+        "fund": 969.793370323828,
+        "last_payout_day": -1,
+        "nation": "NZL",
+        "payouts": 0.0,
+        "premiums": 969.793370323828
+      },
+      {
+        "fund": 209.654521657272,
+        "last_payout_day": -1,
+        "nation": "OMN",
+        "payouts": 0.0,
+        "premiums": 209.654521657272
+      },
+      {
+        "fund": 2059.95692637949,
+        "last_payout_day": -1,
+        "nation": "PAK",
+        "payouts": 0.0,
+        "premiums": 2059.95692637949
+      },
+      {
+        "fund": 533.461101998947,
+        "last_payout_day": -1,
+        "nation": "PAN",
+        "payouts": 0.0,
+        "premiums": 533.461101998947
+      },
+      {
+        "fund": 2386.33537277125,
+        "last_payout_day": -1,
+        "nation": "PER",
+        "payouts": 0.0,
+        "premiums": 2386.33537277125
+      },
+      {
+        "fund": 1543.69398331228,
+        "last_payout_day": -1,
+        "nation": "PHL",
+        "payouts": 0.0,
+        "premiums": 1543.69398331228
+      },
+      {
+        "fund": 92.5454405259815,
+        "last_payout_day": -1,
+        "nation": "PNG",
+        "payouts": 0.0,
+        "premiums": 92.5454405259815
+      },
+      {
+        "fund": 1671.31129067839,
+        "last_payout_day": -1,
+        "nation": "POL",
+        "payouts": 0.0,
+        "premiums": 1671.31129067839
+      },
+      {
+        "fund": 486.968361402205,
+        "last_payout_day": -1,
+        "nation": "PRK",
+        "payouts": 0.0,
+        "premiums": 486.968361402205
+      },
+      {
+        "fund": 657.391284920412,
+        "last_payout_day": -1,
+        "nation": "PRT",
+        "payouts": 0.0,
+        "premiums": 657.391284920412
+      },
+      {
+        "fund": 1216.02108980278,
+        "last_payout_day": -1,
+        "nation": "PRY",
+        "payouts": 0.0,
+        "premiums": 1216.02108980278
+      },
+      {
+        "fund": 54.1204750983682,
+        "last_payout_day": -1,
+        "nation": "PSX",
+        "payouts": 0.0,
+        "premiums": 54.1204750983682
+      },
+      {
+        "fund": 7.78811720725895,
+        "last_payout_day": -1,
+        "nation": "QAT",
+        "payouts": 0.0,
+        "premiums": 7.78811720725895
+      },
+      {
+        "fund": 848.887273591013,
+        "last_payout_day": -1,
+        "nation": "ROU",
+        "payouts": 0.0,
+        "premiums": 848.887273591013
+      },
+      {
+        "fund": 11459.5103608435,
+        "last_payout_day": -1,
+        "nation": "RUS",
+        "payouts": 0.0,
+        "premiums": 11459.5103608435
+      },
+      {
+        "fund": 914.061230179932,
+        "last_payout_day": -1,
+        "nation": "RWA",
+        "payouts": 0.0,
+        "premiums": 914.061230179932
+      },
+      {
+        "fund": 4.79956800514969,
+        "last_payout_day": -1,
+        "nation": "SAH",
+        "payouts": 0.0,
+        "premiums": 4.79956800514969
+      },
+      {
+        "fund": 616.905099055943,
+        "last_payout_day": -1,
+        "nation": "SAU",
+        "payouts": 0.0,
+        "premiums": 616.905099055943
+      },
+      {
+        "fund": 790.20430221517,
+        "last_payout_day": -1,
+        "nation": "SDN",
+        "payouts": 0.0,
+        "premiums": 790.20430221517
+      },
+      {
+        "fund": 75.2198460194,
+        "last_payout_day": -1,
+        "nation": "SEN",
+        "payouts": 0.0,
+        "premiums": 75.2198460194
+      },
+      {
+        "fund": 575.529307282541,
+        "last_payout_day": -1,
+        "nation": "SGP",
+        "payouts": 0.0,
+        "premiums": 575.529307282541
+      },
+      {
+        "fund": 7.49919490146063,
+        "last_payout_day": -1,
+        "nation": "SLB",
+        "payouts": 0.0,
+        "premiums": 7.49919490146063
+      },
+      {
+        "fund": 961.645738497458,
+        "last_payout_day": -1,
+        "nation": "SLE",
+        "payouts": 0.0,
+        "premiums": 961.645738497458
+      },
+      {
+        "fund": 536.924620734882,
+        "last_payout_day": -1,
+        "nation": "SLV",
+        "payouts": 0.0,
+        "premiums": 536.924620734882
+      },
+      {
+        "fund": 549.113819030195,
+        "last_payout_day": -1,
+        "nation": "SOL",
+        "payouts": 0.0,
+        "premiums": 549.113819030195
+      },
+      {
+        "fund": 132.961957554521,
+        "last_payout_day": -1,
+        "nation": "SOM",
+        "payouts": 0.0,
+        "premiums": 132.961957554521
+      },
+      {
+        "fund": 567.435068493639,
+        "last_payout_day": -1,
+        "nation": "SRB",
+        "payouts": 0.0,
+        "premiums": 567.435068493639
+      },
+      {
+        "fund": 41.6868887415487,
+        "last_payout_day": -1,
+        "nation": "SSD",
+        "payouts": 0.0,
+        "premiums": 41.6868887415487
+      },
+      {
+        "fund": 873.628121873122,
+        "last_payout_day": -1,
+        "nation": "SUR",
+        "payouts": 0.0,
+        "premiums": 873.628121873122
+      },
+      {
+        "fund": 483.669160559943,
+        "last_payout_day": -1,
+        "nation": "SVK",
+        "payouts": 0.0,
+        "premiums": 483.669160559943
+      },
+      {
+        "fund": 226.235392074741,
+        "last_payout_day": -1,
+        "nation": "SVN",
+        "payouts": 0.0,
+        "premiums": 226.235392074741
+      },
+      {
+        "fund": 1870.09650314482,
+        "last_payout_day": -1,
+        "nation": "SWE",
+        "payouts": 0.0,
+        "premiums": 1870.09650314482
+      },
+      {
+        "fund": 0.0000307443467422243,
+        "last_payout_day": -1,
+        "nation": "SWZ",
+        "payouts": 0.0,
+        "premiums": 0.0000307443467422243
+      },
+      {
+        "fund": 618.187576224754,
+        "last_payout_day": -1,
+        "nation": "SYR",
+        "payouts": 0.0,
+        "premiums": 618.187576224754
+      },
+      {
+        "fund": 49.7752940386824,
+        "last_payout_day": -1,
+        "nation": "TCD",
+        "payouts": 0.0,
+        "premiums": 49.7752940386824
+      },
+      {
+        "fund": 47.0414471241991,
+        "last_payout_day": -1,
+        "nation": "TGO",
+        "payouts": 0.0,
+        "premiums": 47.0414471241991
+      },
+      {
+        "fund": 1508.66016368134,
+        "last_payout_day": -1,
+        "nation": "THA",
+        "payouts": 0.0,
+        "premiums": 1508.66016368134
+      },
+      {
+        "fund": 1244.86540004967,
+        "last_payout_day": -1,
+        "nation": "TJK",
+        "payouts": 0.0,
+        "premiums": 1244.86540004967
+      },
+      {
+        "fund": 292.261571717837,
+        "last_payout_day": -1,
+        "nation": "TKM",
+        "payouts": 0.0,
+        "premiums": 292.261571717837
+      },
+      {
+        "fund": 1094.0578234244,
+        "last_payout_day": -1,
+        "nation": "TLS",
+        "payouts": 0.0,
+        "premiums": 1094.0578234244
+      },
+      {
+        "fund": 226.584595204978,
+        "last_payout_day": -1,
+        "nation": "TTO",
+        "payouts": 0.0,
+        "premiums": 226.584595204978
+      },
+      {
+        "fund": 459.914128063234,
+        "last_payout_day": -1,
+        "nation": "TUN",
+        "payouts": 0.0,
+        "premiums": 459.914128063234
+      },
+      {
+        "fund": 2112.89086136099,
+        "last_payout_day": -1,
+        "nation": "TUR",
+        "payouts": 0.0,
+        "premiums": 2112.89086136099
+      },
+      {
+        "fund": 862.238214571679,
+        "last_payout_day": -1,
+        "nation": "TWN",
+        "payouts": 0.0,
+        "premiums": 862.238214571679
+      },
+      {
+        "fund": 276.085916144081,
+        "last_payout_day": -1,
+        "nation": "TZA",
+        "payouts": 0.0,
+        "premiums": 276.085916144081
+      },
+      {
+        "fund": 1043.76878423877,
+        "last_payout_day": -1,
+        "nation": "UGA",
+        "payouts": 0.0,
+        "premiums": 1043.76878423877
+      },
+      {
+        "fund": 1540.62258143974,
+        "last_payout_day": -1,
+        "nation": "UKR",
+        "payouts": 0.0,
+        "premiums": 1540.62258143974
+      },
+      {
+        "fund": 935.802021369087,
+        "last_payout_day": -1,
+        "nation": "URY",
+        "payouts": 0.0,
+        "premiums": 935.802021369087
+      },
+      {
+        "fund": 10748.7628465338,
+        "last_payout_day": -1,
+        "nation": "USA",
+        "payouts": 0.0,
+        "premiums": 10748.7628465338
+      },
+      {
+        "fund": 1107.03313597222,
+        "last_payout_day": -1,
+        "nation": "UZB",
+        "payouts": 0.0,
+        "premiums": 1107.03313597222
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "VCT",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 888.304473307519,
+        "last_payout_day": -1,
+        "nation": "VEN",
+        "payouts": 0.0,
+        "premiums": 888.304473307519
+      },
+      {
+        "fund": 1609.57418004926,
+        "last_payout_day": -1,
+        "nation": "VNM",
+        "payouts": 0.0,
+        "premiums": 1609.57418004926
+      },
+      {
+        "fund": 509.906654206951,
+        "last_payout_day": -1,
+        "nation": "XKX",
+        "payouts": 0.0,
+        "premiums": 509.906654206951
+      },
+      {
+        "fund": 321.181689263856,
+        "last_payout_day": -1,
+        "nation": "YEM",
+        "payouts": 0.0,
+        "premiums": 321.181689263856
+      },
+      {
+        "fund": 1913.72307748719,
+        "last_payout_day": -1,
+        "nation": "ZAF",
+        "payouts": 0.0,
+        "premiums": 1913.72307748719
+      },
+      {
+        "fund": 2406.3901372743,
+        "last_payout_day": -1,
+        "nation": "ZMB",
+        "payouts": 0.0,
+        "premiums": 2406.3901372743
+      },
+      {
+        "fund": 46.0666822778062,
+        "last_payout_day": -1,
+        "nation": "ZWE",
+        "payouts": 0.0,
+        "premiums": 46.0666822778062
+      }
+    ],
+    "insured_payout": 0.0,
+    "lolr_borrowed": 0.0,
+    "lolr_interest": 0.0,
+    "payouts": 0.0,
+    "premiums": 204853.292337185,
+    "resolutions": 0,
+    "run_cash": 0.0,
+    "run_days": 0,
+    "run_public": 0.0,
+    "run_withdrawn": 0.0,
+    "runs": 0,
+    "treasury_rescue": 0.0
+  },
+  "bankruptcies": 2,
+  "banks": {
+    "capital": 0.0,
+    "cash": 2823855.60994773,
+    "defaults": 0,
+    "deposits": 35460744.5383255,
+    "dividends": 3231734.78178196,
+    "equity": 567550.452065222,
+    "harvest_interest": 10772.5407876586,
+    "interest_expense": 0.0,
+    "interest_income": 370930.976764386,
+    "loans": 32599940.7333079,
+    "loans_count": 2529,
+    "m0": 6523551982.90245,
+    "m1": 6556188871.83082,
+    "remittance": 275780.343352024,
+    "remittance_origin": 337605.534051925,
+    "retained": 567550.452065222,
+    "writeoffs": 0.0
+  },
+  "credit": {
+    "bc_borrowing": 0.0,
+    "capital": 0.0,
+    "defaults": 0,
+    "enabled": true,
+    "equity": 567550.452065222,
+    "group_debt": 32599940.7333079,
+    "loans": 32599940.7333079,
+    "loans_count": 2529,
+    "writeoffs": 0.0
+  },
+  "days": 365,
+  "drift": 0.00543580316884449,
+  "final_day": 365,
+  "food_gate": {
+    "below": [
+      "SLB",
+      "PSX",
+      "HTI",
+      "SOM",
+      "COD",
+      "JPN",
+      "COG",
+      "MLI",
+      "BFA",
+      "GMB",
+      "DJI",
+      "AUT",
+      "ITA",
+      "CAN",
+      "USA",
+      "CHN",
+      "HRV",
+      "SEN",
+      "GRC",
+      "NED",
+      "SVN",
+      "SRB",
+      "SAU",
+      "CYP",
+      "SGP",
+      "ESP",
+      "BEL",
+      "HUN",
+      "URY",
+      "CHE",
+      "KOR",
+      "ISR",
+      "ALB",
+      "BRN",
+      "BIH",
+      "FRA",
+      "QAT",
+      "DNK",
+      "MKD",
+      "YEM",
+      "ROU",
+      "THA",
+      "POL",
+      "ARG",
+      "MYS",
+      "GEO",
+      "FIN",
+      "TUR",
+      "COL",
+      "SVK",
+      "DOM",
+      "IRL",
+      "CRI",
+      "ARM",
+      "BLR",
+      "TKM",
+      "VEN",
+      "BHS",
+      "BHR",
+      "EGY",
+      "PRT",
+      "LCA",
+      "PAN",
+      "EST",
+      "AZE",
+      "DEU",
+      "GAB",
+      "SUR",
+      "ERI",
+      "GRD",
+      "DMA",
+      "LBR",
+      "NGA",
+      "UKR",
+      "JOR",
+      "TTO",
+      "PRY",
+      "BTN",
+      "BRA",
+      "BRB",
+      "PER",
+      "OMN",
+      "ARE",
+      "JAM",
+      "NOR",
+      "KAZ",
+      "GBR",
+      "GUY",
+      "BGR",
+      "LVA",
+      "IRN",
+      "RUS",
+      "CZE"
+    ],
+    "below_gate": 93,
+    "mean": 0.905446365135654,
+    "median": 0.970162087586384,
+    "nations": 179,
+    "worst": [
+      {
+        "food_avg30": 0.146018845206899,
+        "nation": "SLB"
+      },
+      {
+        "food_avg30": 0.207724411273411,
+        "nation": "PSX"
+      },
+      {
+        "food_avg30": 0.266899623484134,
+        "nation": "HTI"
+      },
+      {
+        "food_avg30": 0.282914668564539,
+        "nation": "SOM"
+      },
+      {
+        "food_avg30": 0.429948267167905,
+        "nation": "COD"
+      },
+      {
+        "food_avg30": 0.493189176123524,
+        "nation": "JPN"
+      },
+      {
+        "food_avg30": 0.551804253522907,
+        "nation": "COG"
+      },
+      {
+        "food_avg30": 0.557984309081401,
+        "nation": "MLI"
+      },
+      {
+        "food_avg30": 0.586867112923224,
+        "nation": "BFA"
+      },
+      {
+        "food_avg30": 0.664958376369367,
+        "nation": "GMB"
+      }
+    ]
+  },
+  "fx": {
+    "by_anchor": {
+      "<null>": 57,
+      "EUR": 10,
+      "INR": 2,
+      "SGD": 1,
+      "USD": 58,
+      "ZAR": 3
+    },
+    "by_regime": {
+      "band": 64,
+      "floating": 44,
+      "peg": 27
+    },
+    "devaluations": 0,
+    "devalued_currencies": [],
+    "locked_currencies": 7,
+    "source": "Regime Cambial de Facto por Moeda (FMI/AREAER 2026) (2026-04-30)"
+  },
+  "harvest_credit_rate": true,
+  "invariant_violation_samples": [],
+  "invariant_violations": 0,
+  "max_daily_drift": 0.00543580316884449,
+  "monetary": {
+    "controlled": 0,
+    "currencies": 135,
+    "currencies_with_inflation": 135,
+    "emission_today": 0.0,
+    "emission_total": 0.0,
+    "government_debt": 0.0,
+    "inflation_12m_pct": {
+      "median": 1.58319093807591,
+      "n": 179,
+      "p10": -0.326800466716359,
+      "p90": 4.81498486673002
+    },
+    "inflation_annualized_pct": {
+      "median": 1.58319093807591,
+      "n": 179,
+      "p10": -0.326800466716359,
+      "p90": 4.81498486673002
+    },
+    "nations_annualized": 179,
+    "nations_has_12m": 179,
+    "rate_pct": {
+      "median": 1.5338560684722,
+      "n": 135,
+      "p10": 0.0356957706511869,
+      "p90": 5.59125711811237
+    },
+    "securities": 0.0
+  },
+  "monetary_timeline": [
+    {
+      "day": 7,
+      "gap_pp": {
+        "median": 0.0,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      },
+      "target_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      }
+    },
+    {
+      "day": 15,
+      "gap_pp": {
+        "median": 0.0,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      },
+      "target_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      }
+    },
+    {
+      "day": 30,
+      "gap_pp": {
+        "median": -2.06044136386455,
+        "n": 135,
+        "p10": -12.4795458402045,
+        "p90": -1.49764723098554
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.47646972710497,
+        "n": 135,
+        "p10": 2.44289992108562,
+        "p90": 2.48289684498496
+      },
+      "target_pct": {
+        "median": 1.46977931806772,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 1.75117638450723
+      }
+    },
+    {
+      "day": 45,
+      "gap_pp": {
+        "median": -0.910728753300649,
+        "n": 135,
+        "p10": -11.7130397880975,
+        "p90": -0.420065543418548
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.30333581891079,
+        "n": 135,
+        "p10": 1.72739109995972,
+        "p90": 2.37199654837514
+      },
+      "target_pct": {
+        "median": 2.04463562334968,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.28996722829073
+      }
+    },
+    {
+      "day": 60,
+      "gap_pp": {
+        "median": -0.65948046834614,
+        "n": 135,
+        "p10": -11.5023124212049,
+        "p90": -0.144468997038389
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.25467252417155,
+        "n": 135,
+        "p10": 1.22144996054281,
+        "p90": 2.37471899863147
+      },
+      "target_pct": {
+        "median": 2.17025976582693,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.42776550148081
+      }
+    },
+    {
+      "day": 63,
+      "gap_pp": {
+        "median": -0.645324225210435,
+        "n": 135,
+        "p10": -11.4840675364066,
+        "p90": -0.127144517433817
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.24640151462673,
+        "n": 135,
+        "p10": 1.13965311069777,
+        "p90": 2.37837832140954
+      },
+      "target_pct": {
+        "median": 2.17733788739478,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.43642774128309
+      }
+    },
+    {
+      "day": 90,
+      "gap_pp": {
+        "median": -0.605486349810714,
+        "n": 135,
+        "p10": -11.402834725592,
+        "p90": -0.060628418741268
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.22779885532014,
+        "n": 135,
+        "p10": 0.610724980271402,
+        "p90": 2.41263900264103
+      },
+      "target_pct": {
+        "median": 2.19725682509464,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.46968579062937
+      }
+    },
+    {
+      "day": 120,
+      "gap_pp": {
+        "median": -0.580951437942036,
+        "n": 135,
+        "p10": -11.3422400839672,
+        "p90": -0.0658781027043341
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.66276507182139,
+        "n": 179,
+        "p10": 2.37334244002123,
+        "p90": 9.76803508377404
+      },
+      "inflation_used_pct": {
+        "median": 3.7617441045916,
+        "n": 135,
+        "p10": 2.40900142454734,
+        "p90": 9.76536061128139
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.28293834573407,
+        "n": 135,
+        "p10": 0.495669147443321,
+        "p90": 6.81290843061945
+      },
+      "target_pct": {
+        "median": 4.53424678190187,
+        "n": 135,
+        "p10": 0.0148639291562565,
+        "p90": 12.6746989923702
+      }
+    },
+    {
+      "day": 150,
+      "gap_pp": {
+        "median": -0.574406213713109,
+        "n": 135,
+        "p10": -11.2692857761107,
+        "p90": -0.0654953913669401
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.35030208586566,
+        "n": 179,
+        "p10": 1.69906915251601,
+        "p90": 8.63739132727173
+      },
+      "inflation_used_pct": {
+        "median": 3.23210798332205,
+        "n": 135,
+        "p10": 2.01181079028705,
+        "p90": 8.62910722688095
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.58060172909466,
+        "n": 135,
+        "p10": 0.560382810178331,
+        "p90": 9.15264955501847
+      },
+      "target_pct": {
+        "median": 3.92591883197713,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 13.182796329321
+      }
+    },
+    {
+      "day": 180,
+      "gap_pp": {
+        "median": -0.568571488406285,
+        "n": 135,
+        "p10": -11.1896348948324,
+        "p90": -0.0648619086241708
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.74666826965109,
+        "n": 179,
+        "p10": 1.42016015318049,
+        "p90": 9.31424834736414
+      },
+      "inflation_used_pct": {
+        "median": 3.50738677625342,
+        "n": 135,
+        "p10": 1.65809856469243,
+        "p90": 9.41060385922341
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.84380717705278,
+        "n": 135,
+        "p10": 1.11222241352807,
+        "p90": 10.9732435719897
+      },
+      "target_pct": {
+        "median": 3.84539802102921,
+        "n": 135,
+        "p10": 0.109710751979346,
+        "p90": 12.9397507418706
+      }
+    },
+    {
+      "day": 210,
+      "gap_pp": {
+        "median": -0.447144597694332,
+        "n": 135,
+        "p10": -11.1122768279873,
+        "p90": -0.0509415916701394
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.24709781134604,
+        "n": 179,
+        "p10": 1.01367214993864,
+        "p90": 8.21336962793417
+      },
+      "inflation_used_pct": {
+        "median": 3.19696787484696,
+        "n": 135,
+        "p10": 1.17875692749587,
+        "p90": 8.19993073246461
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.49852479178557,
+        "n": 135,
+        "p10": 0.706808005417746,
+        "p90": 9.88295382063145
+      },
+      "target_pct": {
+        "median": 3.00087369792443,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 10.3606360167615
+      }
+    },
+    {
+      "day": 240,
+      "gap_pp": {
+        "median": -0.542953700402289,
+        "n": 135,
+        "p10": -11.04555251276,
+        "p90": -0.054058489702955
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 2.2584705333927,
+        "n": 179,
+        "p10": 0.215603428578337,
+        "p90": 5.53085828373665
+      },
+      "inflation_used_pct": {
+        "median": 2.2584705333927,
+        "n": 135,
+        "p10": 0.833363585986913,
+        "p90": 5.22696051038254
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.83103930950226,
+        "n": 135,
+        "p10": 0.353404002708872,
+        "p90": 8.04490403039767
+      },
+      "target_pct": {
+        "median": 2.07302874038812,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 6.7689164669264
+      }
+    },
+    {
+      "day": 270,
+      "gap_pp": {
+        "median": -0.474012289206313,
+        "n": 135,
+        "p10": -10.9784454783218,
+        "p90": -0.0453454412638373
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 2.13857287345731,
+        "n": 179,
+        "p10": 0.202240032684209,
+        "p90": 5.21916785484235
+      },
+      "inflation_used_pct": {
+        "median": 2.19312418531006,
+        "n": 135,
+        "p10": 0.482029614525037,
+        "p90": 4.69735032858569
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.34078850736195,
+        "n": 135,
+        "p10": 0.179077672569646,
+        "p90": 6.91908427569171
+      },
+      "target_pct": {
+        "median": 1.82946900922234,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 5.74558869788987
+      }
+    },
+    {
+      "day": 300,
+      "gap_pp": {
+        "median": -0.296132366083682,
+        "n": 135,
+        "p10": -10.9131656153317,
+        "p90": -0.038445523775781
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 1.8309505819428,
+        "n": 179,
+        "p10": 0.179894916066092,
+        "p90": 4.68592933111376
+      },
+      "inflation_used_pct": {
+        "median": 1.92729832034249,
+        "n": 135,
+        "p10": 0.282352008240427,
+        "p90": 4.64818546781243
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 1.95198980432687,
+        "n": 135,
+        "p10": 0.0895388362848227,
+        "p90": 6.4398742319586
+      },
+      "target_pct": {
+        "median": 1.65197440487378,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 6.13065427637981
+      }
+    },
+    {
+      "day": 330,
+      "gap_pp": {
+        "median": -0.546643897711972,
+        "n": 135,
+        "p10": -10.8510590915319,
+        "p90": -0.0530425888767535
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 1.6569131208461,
+        "n": 179,
+        "p10": -0.474642436399519,
+        "p90": 4.52098211319223
+      },
+      "inflation_used_pct": {
+        "median": 1.90197753805919,
+        "n": 135,
+        "p10": 0.116701699549382,
+        "p90": 4.40353323381584
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 1.62001900809648,
+        "n": 135,
+        "p10": 0.0532420468729219,
+        "p90": 5.95005343472126
+      },
+      "target_pct": {
+        "median": 1.32591249623512,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 5.23293626194763
+      }
+    },
+    {
+      "day": 365,
+      "gap_pp": {
+        "median": -0.5692424981056,
+        "n": 135,
+        "p10": -10.9710625835918,
+        "p90": -0.0509008486109414
+      },
+      "inflation_12m_pct": {
+        "median": 1.58319093807591,
+        "n": 179,
+        "p10": -0.326800466716359,
+        "p90": 4.81498486673002
+      },
+      "inflation_annualized_pct": {
+        "median": 1.58319093807591,
+        "n": 179,
+        "p10": -0.326800466716359,
+        "p90": 4.81498486673002
+      },
+      "inflation_used_pct": {
+        "median": 1.62359220308188,
+        "n": 135,
+        "p10": -0.0811884316596845,
+        "p90": 5.44637057426807
+      },
+      "nations_has_12m": 179,
+      "rate_pct": {
+        "median": 1.5338560684722,
+        "n": 135,
+        "p10": 0.0356957706511869,
+        "p90": 5.59125711811237
+      },
+      "target_pct": {
+        "median": 1.50171420906001,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 6.43845031138481
+      }
+    }
+  ],
+  "money_end": 6559012727.44077,
+  "money_start": 6523551982.9,
+  "property": false,
+  "stalled_days": 0,
+  "stock": {
+    "bankruptcies": 2,
+    "book_equity": 26366638952.1158,
+    "confidence_p10": 0.912857896533403,
+    "confidence_p50": 0.996485469680678,
+    "confidence_p90": 1.05867044143244,
+    "dividends_paid": 15089681.8074863,
+    "equity_identity": 0.0,
+    "exchange_changes": 148,
+    "exchanges": 179,
+    "formation_earnings_pct": {
+      "p1": 5169.11748400503,
+      "p10": 680290.479606601,
+      "p25": 3447701.69250345,
+      "p5": 142417.826476206,
+      "p50": 13201155.3757073,
+      "p90": 119753135.378633,
+      "p99": 558614424.947423
+    },
+    "formation_papers": 250,
+    "formation_price_pct": {
+      "p1": 0.0,
+      "p10": 4.87362962858699,
+      "p25": 26.828939529209,
+      "p5": 1.14381544550092,
+      "p50": 106.243895159091,
+      "p90": 1011.60905940761,
+      "p99": 4183.34779138078
+    },
+    "index_global": 89.1337787017288,
+    "investment_capex_total": 19270746.9519518,
+    "listed": 251,
+    "market_cap": 89035941243.5542,
+    "paper_base_floor": 1.0,
+    "paper_below_base": 0,
+    "paper_changes": 237,
+    "paper_extremes": [
+      {
+        "change": 15.2169346556246,
+        "confidence_change": 0.0443001920128423,
+        "confidence_end": 0.95075922998675,
+        "confidence_start": 0.910427133173464,
+        "group_id": "G-BHR-food-22",
+        "nation": "BHR",
+        "pe": 6.88313701663435,
+        "price_end": 32.7518973537336,
+        "price_start": 2.01961086045162,
+        "profit_change": 15.5994123716499,
+        "profit_ema_end": 13036.3852135757,
+        "profit_ema_start": 785.352211373488,
+        "q": 1347.29176886794,
+        "rate_end": 0.0468873833749019,
+        "rate_start": 0.0234430311420448
+      },
+      {
+        "change": 15.1181403635081,
+        "confidence_change": 0.0671682829727807,
+        "confidence_end": 1.00264301626489,
+        "confidence_start": 0.939535996583274,
+        "group_id": "G-SDN-food-207",
+        "nation": "SDN",
+        "pe": 8.24361699360163,
+        "price_end": 393.531163687007,
+        "price_start": 24.4154198196444,
+        "profit_change": 13.9109721111394,
+        "profit_ema_end": 130788.168904748,
+        "profit_ema_start": 8771.27043964098,
+        "q": 4.21783954403128,
+        "rate_end": 0.000237166356551269,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 5.82218889432448,
+        "confidence_change": 0.0748272801176562,
+        "confidence_end": 1.01291007235617,
+        "confidence_start": 0.942393341789101,
+        "group_id": "G-CAF-food-38",
+        "nation": "CAF",
+        "pe": 7.97838637704137,
+        "price_end": 54.3383288425125,
+        "price_start": 7.96494053216815,
+        "profit_change": 5.54088164829768,
+        "profit_ema_end": 18659.4289596575,
+        "profit_ema_start": 2852.73912034684,
+        "q": 55.6011471526886,
+        "rate_end": 0.00177742435440908,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 4.49416203787734,
+        "confidence_change": 0.10390372489749,
+        "confidence_end": 1.07686087649461,
+        "confidence_start": 0.975502529982505,
+        "group_id": "G-GNQ-food-96",
+        "nation": "GNQ",
+        "pe": 8.6584009719533,
+        "price_end": 10.495728378255,
+        "price_start": 1.91034197861226,
+        "profit_change": 4.02443897765208,
+        "profit_ema_end": 3321.10054818934,
+        "profit_ema_start": 660.989328950172,
+        "q": 60.3701950926768,
+        "rate_end": 0.00177742435440908,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 4.05143293185226,
+        "confidence_change": 0.0753048972107342,
+        "confidence_end": 0.977070449761365,
+        "confidence_start": 0.908645029233864,
+        "group_id": "G-TCD-food-224",
+        "nation": "TCD",
+        "pe": 8.13171720540365,
+        "price_end": 120.319979195705,
+        "price_start": 23.8189798457022,
+        "profit_change": 3.58165080337551,
+        "profit_ema_end": 40538.0278595175,
+        "profit_ema_start": 8847.90866856359,
+        "q": 1.180209575671,
+        "rate_end": 0.00177742435440908,
+        "rate_start": 0.0113965311069777
+      }
+    ],
+    "paper_variation_p10": -0.360269251379981,
+    "paper_variation_p50": -0.0372871882700936,
+    "paper_variation_p90": 0.562182128395146,
+    "q_p50": 15.7881310934386,
+    "remittance": 925232.700078963,
+    "remittance_origin": 1238185.31288829,
+    "variation_p10": -0.372498363563331,
+    "variation_p50": -0.106756270692703,
+    "variation_p90": 0.475532542174444
+  },
+  "stock_timeline": [
+    {
+      "book_equity": 12823698014.1832,
+      "confidence_median": 0.962610165543758,
+      "day": 63,
+      "earnings_daily_sum": 35191196.4472198,
+      "index_global": 100.0,
+      "listed": 238,
+      "market_cap": 99863426935.7556,
+      "rate_median": 0.022575672386463
+    },
+    {
+      "book_equity": 15696772459.6422,
+      "confidence_median": 0.957938831091736,
+      "day": 120,
+      "earnings_daily_sum": 34270636.1690728,
+      "index_global": 91.8942213394089,
+      "listed": 239,
+      "market_cap": 91770498850.2925,
+      "rate_median": 0.0338975589746914
+    },
+    {
+      "book_equity": 20237746532.6297,
+      "confidence_median": 0.95754198238107,
+      "day": 200,
+      "earnings_daily_sum": 33399838.9566493,
+      "index_global": 82.3378785791818,
+      "listed": 240,
+      "market_cap": 82242364943.6148,
+      "rate_median": 0.0389679541701051
+    },
+    {
+      "book_equity": 25649274781.174,
+      "confidence_median": 0.99166639997178,
+      "day": 300,
+      "earnings_daily_sum": 32798288.4311278,
+      "index_global": 85.6513183978567,
+      "listed": 251,
+      "market_cap": 85556417369.0186,
+      "rate_median": 0.0187493956118372
+    },
+    {
+      "book_equity": 26366638952.1158,
+      "confidence_median": 0.996485469680678,
+      "day": 365,
+      "earnings_daily_sum": 32273483.7814841,
+      "index_global": 89.1337787017288,
+      "listed": 251,
+      "market_cap": 89035941243.5542,
+      "rate_median": 0.012752223057225
+    }
+  ],
+  "threads": 1,
+  "trajectory_end": {
+    "bank_capital_flight": 0.0,
+    "bank_confidence_sum": 278.715852803876,
+    "bank_crisis_events": 0,
+    "bank_fund": 204853.292337185,
+    "credit_capacity": 178.346204499308,
+    "m0": 14474606493.5984,
+    "private_stock_t": 59672542.4772739
+  },
+  "trajectory_fields": [
+    "day",
+    "money_total(6)",
+    "bankruptcies",
+    "food_ratio_sum(9)",
+    "m0_total(6)",
+    "private_stock_t(6)",
+    "credit_capacity(9)",
+    "bank_confidence_sum(9)",
+    "bank_crisis_events",
+    "bank_fund(6)",
+    "bank_capital_flight(6)"
+  ],
+  "trajectory_sha256": "9fcd0caa1bacb82f4cb101068d93f6c7368e4d9e181d4d1c7a133b17e9c43635",
+  "wall_s": 250.805
+}

@@ -39,7 +39,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 33
+const SAVE_VERSION := 34
 const EPS := 1e-3
 
 var _failures: Array[String] = []
@@ -194,7 +194,7 @@ func _test_fixture() -> void:
 	migrated.from_dict(old)
 	var migrated_save: Dictionary = migrated.to_dict()
 	_check(int(migrated_save.get("version", 0)) == SAVE_VERSION,
-		"(migração) v25 deveria sair como v31 (saiu %s)"
+		"(migração) v25 deveria sair como v34 (saiu %s)"
 			% str(migrated_save.get("version", 0)))
 	var arrears_total := 0.0
 	for city: Dictionary in migrated_save.get("cities", []):

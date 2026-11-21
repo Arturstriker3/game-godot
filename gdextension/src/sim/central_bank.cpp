@@ -154,6 +154,11 @@ MoneyAllocation allocate_money(const WorldState& ws, double money_total) {
 	for (const auto& row : ws.banks) {
 		add(currency_index_of(ws, row.second.nation), row.second.cash);
 	}
+	// C6 (D-114): o fundo de seguro de depósito é caixa do mundo na moeda da
+	// sua nação (prêmio do banco, pagamento de volta ao banco).
+	for (const auto& row : ws.deposit_insurance) {
+		add(currency_index_of(ws, row.first), row.second.fund);
+	}
 	// Caixas de setor sem nação atribuível e a posição do exterior.
 	out.sector_cash = ws.transport_cash + ws.construction_cash;
 	out.external = ws.foreign_cash;

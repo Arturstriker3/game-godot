@@ -1,5 +1,6 @@
 #include "sim_day.h"
 
+#include "bank_crisis.h"
 #include "profiling.h"
 #include "stock.h"
 #include "urban_land.h"
@@ -146,6 +147,17 @@ void tick_day(WorldState& ws, SimCore& core) {
 	{
 		OGS_SIM_ZONE(kPhaseStock);
 		stock::phase(ws);
+	}
+
+	// 9g. C6 (D-114): crise bancária. Prêmio do seguro, indicadores e
+	// confiança do depositante (com a confiança da bolsa acima), corrida com
+	// redesconto do BC/papel-moeda/fuga para o banco público, aperto de
+	// crédito e resolução do insolvente (bail-in → seguro → Tesouro →
+	// incorporação). Roda depois da bolsa e antes dos invariantes: a
+	// variação de depósitos da crise entra no dinheiro bancário do dia.
+	{
+		OGS_SIM_ZONE(kPhaseBankCrisis);
+		bank_crisis::phase(ws);
 	}
 
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,

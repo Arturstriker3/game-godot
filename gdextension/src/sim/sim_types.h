@@ -1046,6 +1046,135 @@ namespace ogs {
 		int loans_count = 0;
 		int last_default_day = -1;
 		int last_dividend_day = -1;
+		// ------------------------------------------------------------------
+		// C6 (D-114) - CRISE, CORRIDA E RESOLUCAO. Contrato em
+		// docs/economy/C6_bank_crisis.md e parametros em
+		// data/definitions/economy/bank_crisis.json (default de jogo).
+		//
+		// `confidence` e a confianca do depositante (0..1), suavizada por dia:
+		// nasce 1,0 e converge para a leitura MEDIDA de solvencia, liquidez,
+		// perdas recentes, contagio da mesma nacao e confianca da bolsa (C5).
+		// Abaixo de `run_threshold` o banco entra em corrida: uma fracao
+		// declarada dos depositos sai por dia e vira papel-moeda (reserva
+		// liberada), deposito do banco publico (fuga para qualidade) ou
+		// remessa ao exterior (banco estrangeiro). Tudo conserva dinheiro.
+		//
+		// O banco abaixo do capital minimo corta credito novo; o insolvente
+		// (patrimonio < 0) passa pela hierarquia de resolucao: acionistas
+		// zerados -> deposito nao segurado cortado -> fundo de seguro ->
+		// Tesouro/divida publica -> incorporacao pelo banco publico. Os
+		// custos ficam registrados em `BankCrisisEvent` e somam o rombo.
+		// ------------------------------------------------------------------
+		double confidence = 1.0;
+		bool loss_seeded = false;    // 1a perda entra inteira na EMA
+		double loss_ema = 0.0;       // perda recente (EMA, valor absoluto)
+		// Choque reconhecido HOJE (medicao). Vai ao save v34: sem ele, um load
+		// no meio do dia perdia a perda do dia e a continuação divergia.
+		double loss_today = 0.0;
+		// C6: a confianca mede DETERIORACAO contra a referencia do proprio
+		// banco (o estado que o depositante conhecia), nao um nivel absoluto:
+		// o banco da C4 nasce com patrimonio fino e sem reserva, e usar o
+		// nivel absoluto faria todo o mundo base correr sem nenhum choque.
+		bool baseline_seeded = false;
+		double open_capital_ratio = 0.0;
+		double open_liquidity_ratio = 0.0;
+		int run_days = 0;
+		int last_run_day = -1;
+		double run_withdrawn = 0.0;  // saques acumulados (ancora)
+		double run_cash = 0.0;       // parte paga em papel-moeda
+		double run_public = 0.0;     // parte migrada ao banco publico
+		double lolr_borrowed = 0.0;  // redesconto acumulado (BC)
+		double lolr_interest = 0.0;  // juro de penalidade pago
+		int lolr_days = 0;
+		double insured_payout = 0.0; // seguro de deposito recebido
+		double bailin_cut = 0.0;     // deposito NAO segurado cortado
+		double treasury_rescue = 0.0;// Tesouro (caixa + divida emitida)
+		double capital_flight = 0.0; // remessa da matriz estrangeira (ancora)
+		int resolution_day = -1;
+		bool resolved = false;
+		std::string resolution = "none";  // bailin|insurance|treasury|takeover|liquidation
+		// Banco absorvido pelo publico: a linha fica como casca (saldos 0,
+		// share 0) para nao recriar o papel e para o tomador continuar mapeado.
+		std::string absorbed_into;
+		// Indicadores do ULTIMO fechamento (publicados; recomputados por dia).
+		double last_capital_ratio = 0.0;
+		double last_liquidity_ratio = 0.0;
+		double last_npl_ratio = 0.0;
+	};
+
+	// C6 (D-114) - FUNDO DE SEGURO DE DEPOSITO por nacao. Entra no dinheiro
+	// do mundo (o premio sai do caixa do banco e o pagamento volta como caixa
+	// do banco resolvido): nenhuma etapa cria ou some com dinheiro.
+	struct DepositInsurance {
+		double fund = 0.0;
+		double premiums = 0.0;
+		double payouts = 0.0;
+		int last_payout_day = -1;
+	};
+
+	// C6 (D-114) - evento de crise (anel de 64; o contador total fica no
+	// `WorldState`). Todo custo e registrado por PARTE: o que o acionista
+	// perdeu, o que o depositante nao segurado perdeu, o que o fundo pagou, o
+	// que o Tesouro pagou e o que a incorporacao custou ao banco publico.
+	struct BankCrisisEvent {
+		int day = -1;
+		std::string bank;      // "<NACAO>/<papel>"
+		std::string nation;
+		// run | lolr | resolution | insurance | treasury | takeover |
+		// liquidation | credit_cut
+		std::string kind;
+		std::string cause;
+		double gap = 0.0;               // rombo reconhecido (patrimonio < 0)
+		double cost_shareholders = 0.0;
+		double cost_depositors = 0.0;
+		double cost_fund = 0.0;
+		double cost_treasury = 0.0;
+		double cost_takeover = 0.0;
+		double capital_flight = 0.0;
+		double lolr = 0.0;
+		double emission = 0.0;
+	};
+
+	// C6 (D-114) - REGRAS da crise (0 = default declarado em
+	// `sim/bank_crisis.h`, espelho de bank_crisis.json). `enabled` e ESTADO
+	// (vai ao save); o resto e regra carregada pelo dado/comando.
+	struct BankCrisisPolicy {
+		bool enabled = true;
+		double capital_min = 0.0;         // 0 = kCapitalMinDefault
+		double capital_cut_floor = 0.0;   // 0 = kCapitalCutFloorDefault
+		// RESERVADO: nenhuma regra consome o minimo de liquidez hoje (o sinal
+		// de confianca usa a referencia do proprio banco, nao um piso). Fica
+		// no save/status como parametro declarado, sem prometer efeito.
+		double liquidity_min = 0.0;       // reservado (0 = kLiquidityMinDefault)
+		double loss_scale = 0.0;          // 0 = kLossScaleDefault
+		double loss_ema_days = 0.0;       // 0 = kLossEmaDaysDefault
+		double confidence_start = 0.0;    // 0 = kConfidenceStartDefault
+		double smoothing = 0.0;           // 0 = kConfidenceSmoothingDefault
+		double w_solvency = 0.0;
+		double w_liquidity = 0.0;
+		double w_losses = 0.0;
+		double w_contagion = 0.0;
+		double w_market = 0.0;
+		double run_threshold = 0.0;       // 0 = kRunThresholdDefault
+		double run_share = 0.0;           // 0 = kRunShareDefault
+		double flight_to_quality = 0.0;   // 0 = kFlightToQualityDefault
+		double lolr_spread = 0.0;         // 0 = kLolrSpreadDefault
+		double lolr_haircut = 0.0;        // 0 = kLolrHaircutDefault
+		double lolr_max_assets = 0.0;     // 0 = kLolrMaxAssetsDefault
+		double insured_share = 0.0;       // 0 = kInsuredShareDefault
+		double premium_daily = 0.0;       // 0 = kPremiumDailyDefault
+		double fund_target_ratio = 0.0;   // 0 = kFundTargetRatioDefault
+		double capital_flight_share = 0.0;// 0 = kCapitalFlightShareDefault
+		// Materialidade: patrimonio so e' "insolvente" abaixo desta tolerancia
+		// (0 = default declarado). Sem ela, o arredondamento do juro deixava
+		// equity = -1e-9 e o banco era "resolvido" por zero.
+		double insolvency_tolerance = 0.0;  // 0 = kInsolvencyToleranceDefault
+		// Tolerancia RELATIVA aos ativos (1e-6 = 1 parte por milhao): bancos
+		// grandes tem ruido de juro maior que bancos pequenos.
+		double insolvency_tolerance_ratio = 0.0;
+		// Alavancas de resolucao (laboratorio/teste; default de jogo = true).
+		bool treasury_debt_rescue = true; // Tesouro emite divida / BC carrega
+		bool takeover_public = true;      // residual vira banco publico
 	};
 
 	// C5 (D-112) - BOLSA DE VALORES POR PAÍS: uma praça por nação com os grupos
@@ -1516,6 +1645,9 @@ struct Region {
 		// mensal). Roda depois do crédito e antes dos invariantes — o retrato do
 		// tick e a reversão precisam ver o preço/confiança finais.
 		kPhaseStock,
+		// C6 (D-114): crise bancaria (confianca, corrida, redesconto,
+		// aperto e resolucao). Roda depois da bolsa e antes dos invariantes.
+		kPhaseBankCrisis,
 		kPhaseCount
 	};
 
@@ -1632,6 +1764,9 @@ struct Region {
 		// voltar com o mundo reverted).
 		std::map<std::string, MonetaryState> monetary;
 		std::map<std::string, double> gov_bonds;
+		// C6 (D-114): títulos do resgate sem BC em poder do exterior. Reverter
+		// um tick tem de desfazer o título junto com o caixa que o pagou.
+		std::map<std::string, double> external_bonds;
 		std::map<std::string, double> gov_cash_open;
 		// C2b2 (D-106): reservas/paridade/eventos. Reverter um tick tem de
 		// desfazer a intervenção e a desvalorização do dia junto com o caixa.
@@ -1640,6 +1775,11 @@ struct Region {
 		// C3 (D-107): desfazer um tick tem de desfazer o empréstimo, o juro, o
 		// pagamento e o calote junto com o caixa que eles moveram.
 		std::map<std::string, Bank> banks;
+		// C6 (D-114): fundo de seguro e eventos do dia. Reverter um tick tem de
+		// desfazer premio/pagamento do fundo e os eventos registrados.
+		std::map<std::string, DepositInsurance> deposit_insurance;
+		std::vector<BankCrisisEvent> bank_crisis_events;
+		int bank_crisis_events_total = 0;
 		// C5 (D-112): bolsa por nação e papéis listados. A valorização não move
 		// caixa; o dividendo move (soma zero). Reverter um tick corrompido tem
 		// de desfazer preço, confiança e dividendo.

@@ -267,8 +267,8 @@ func _test_money_and_save() -> void:
 			money_initial, money_final])
 
 	var saved: Dictionary = sim.to_dict()
-	if int(saved.get("version", 0)) != 33:
-		_fail("(d) save v%d != v33 (as minas não mudaram; a versão sobe com o save)" % int(
+	if int(saved.get("version", 0)) != 34:
+		_fail("(d) save v%d != v34 (as minas não mudaram; a versão sobe com o save)" % int(
 			saved.get("version", 0)))
 	var clone = EconomySim.new()
 	clone.set_goods(_load_goods())

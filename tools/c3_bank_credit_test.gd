@@ -261,14 +261,22 @@ func _test_default_is_creditor_loss() -> void:
 			% [loaded.get_status().get("calendar_day"), writeoff, charged,
 				equity_delta, money_delta])
 		_check("A5 baixa do credor > 0", writeoff > 0.0, "%.6f" % writeoff)
-		_check("A5 Δpatrimônio = juro do dia − baixa",
-			absf(equity_delta - (charged - writeoff)) <= EPS,
-			"Δeq=%.6f esperado=%.6f" % [equity_delta, charged - writeoff])
+		# C6 (D-114): o patrimônio negativo é RESOLVIDO no mesmo tick, então a
+		# leitura antiga "Δpatrimônio = juro − baixa" e "equity < 0" não valem
+		# mais: o buraco passa pela hierarquia (bail-in → fundo → Tesouro) e a
+		# perda continua sendo do credor/depositante/Tesouro, não do mundo.
+		var resolution := _last_resolution_event(loaded)
+		_check("A5 banco resolvido pela C6", not resolution.is_empty(),
+			"events=%s" % str(loaded.get_bank_status().get("events", [])))
+		_check("A5 rombo da resolução > 0",
+			float(resolution.get("gap", 0.0)) > 0.0,
+			"gap=%s" % str(resolution.get("gap")))
+		_check("A5 patrimônio não fica negativo depois da resolução",
+			float(now.get("equity", 0.0)) >= -1.0,
+			"equity=%.3f Δeq=%.3f" % [float(now.get("equity", 0.0)),
+				equity_delta])
 		_check("A5 dinheiro só cai no calote (caixa tomado/juro básico)",
 			money_delta <= EPS, "Δm=%.6f" % money_delta)
-		_check("A5 patrimônio do banco fica negativo (resolução é C6)",
-			float(now.get("equity", 0.0)) < 0.0,
-			"equity=%.3f" % float(now.get("equity", 0.0)))
 		var row := _bank_group(loaded, group_id)
 		_check("A5 grupo com dívida 0", absf(float(row.get("debt", -1.0))) <= EPS,
 			"debt=" + str(row.get("debt")))
@@ -304,7 +312,7 @@ func _test_save() -> void:
 	sim.group_borrow(_first_group(sim), 1.0e9)
 	sim.tick_day()
 	var saved: Dictionary = sim.to_dict()
-	_check("A6 save na versão 33", int(saved.get("version", 0)) == 33,
+	_check("A6 save na versão 34", int(saved.get("version", 0)) == 34,
 		"version=" + str(saved.get("version")))
 	_check("A6 save publica o banco e o crédito",
 		saved.has("banks")
@@ -342,8 +350,8 @@ func _test_save() -> void:
 	_check("A6 v29 carrega com dívida 0",
 		absf(float(old_bank.get("totals", {}).get("group_debt", -1.0))) <= EPS,
 		"debt=" + str(old_bank.get("totals", {}).get("group_debt")))
-	_check("A6 v29 migra para 33",
-		int(old.to_dict().get("version", 0)) == 33,
+	_check("A6 v29 migra para 34",
+		int(old.to_dict().get("version", 0)) == 34,
 		"version=" + str(old.to_dict().get("version")))
 
 
@@ -452,6 +460,16 @@ func _bank_group(sim, group_id: String) -> Dictionary:
 	for row: Dictionary in sim.get_bank_status().get("groups", []):
 		if String(row.get("id", "")) == group_id:
 			return row
+	return {}
+
+
+## C6 (D-114): último evento de resolução do anel do status.
+func _last_resolution_event(sim) -> Dictionary:
+	var events: Array = sim.get_bank_status().get("events", [])
+	for index in range(events.size() - 1, -1, -1):
+		var event: Dictionary = events[index]
+		if String(event.get("kind", "")) == "resolution":
+			return event
 	return {}
 
 

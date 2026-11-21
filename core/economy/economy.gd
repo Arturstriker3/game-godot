@@ -227,6 +227,11 @@ func _ready() -> void:
 	# bancos ficam sem nome (`no_data`) e só público/privado existem.
 	if sim.has_method("set_bank_definitions"):
 		sim.set_bank_definitions(_load_json_dict_optional(BANKS_PATH))
+	# C6 (D-114): os parâmetros da crise (bank_crisis.json) têm espelho
+	# compilado em `sim/bank_crisis.h`, que é o default do jogo e do CLI — o
+	# GDScript NÃO sobrescreve, para jogo e linha de comando verem o mesmo
+	# estado (mesma convenção do bank_credit.json da C3/D-111). O teste C6
+	# confere que o JSON e o espelho são iguais.
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
 	geo.apply_to_sim(sim, _cities_with_center())

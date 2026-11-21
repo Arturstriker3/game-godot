@@ -581,6 +581,9 @@ func _run() -> void:
 		# C4 (D-110): totais dos bancos no fim do mundo — depósitos, retido,
 		# dividendo e remessa do banco estrangeiro. Só medição.
 		"banks": _banks_totals(sim),
+		# C6 (D-114): crise bancária no fecho — confiança, corridas,
+		# resoluções, fundo de seguro e redesconto. Só medição.
+		"bank_crisis": _bank_crisis_report(sim),
 		"stock": _stock_report(sim, stock_start, status_final, stock_formed),
 		"stock_timeline": stock_timeline,
 		"monetary_timeline": monetary_timeline,
@@ -605,6 +608,17 @@ func _run() -> void:
 		+ "portão=%d/%d mediana=%.4f trajectory=%s"
 		% [int(food["below_gate"]), int(food["nations"]),
 			float(food["median"]), String(out["trajectory_sha256"]).substr(0, 8)])
+	var crisis_report: Dictionary = out.get("bank_crisis", {})
+	print("[c1] C6: corridas=%d resoluções=%d eventos=%d fundo=%.2f prêmios=%.2f "
+		% [int(crisis_report.get("runs", 0)),
+		int(crisis_report.get("resolutions", 0)),
+		int(crisis_report.get("crisis_events", 0)),
+		float(crisis_report.get("fund", 0.0)),
+		float(crisis_report.get("premiums", 0.0))]
+		+ "redesconto=%.2f fuga=%.2f confiança_min=%.4f"
+		% [float(crisis_report.get("lolr_borrowed", 0.0)),
+		float(crisis_report.get("capital_flight", 0.0)),
+		float(crisis_report.get("confidence_min", 1.0))])
 	print("[c1] balanço: financeiro=%.6f caixa_residual=%.6f PL_famílias=%.0f "
 		% [float((balance["invariant"] as Dictionary).get("financial_sum", 0.0)),
 			float((balance["invariant"] as Dictionary).get("cash_residual", 0.0)),
@@ -654,6 +668,24 @@ func _credit_report(sim) -> Dictionary:
 		"defaults": int(totals.get("defaults", 0)),
 		"writeoffs": float(totals.get("writeoffs", 0.0)),
 	}
+
+
+## C6 (D-114): medição da crise no fecho do mundo (só leitura).
+func _bank_crisis_report(sim) -> Dictionary:
+	if not sim.has_method("get_bank_status"):
+		return {}
+	var status: Dictionary = sim.get_bank_status()
+	var totals: Dictionary = status.get("totals", {})
+	var out := {}
+	for key in ["confidence_min", "confidence_max", "confidence_sum", "fund",
+			"premiums", "payouts", "runs", "run_days", "resolutions",
+			"run_withdrawn", "run_cash", "run_public", "capital_flight",
+			"lolr_borrowed", "lolr_interest", "insured_payout", "bailin_cut",
+			"treasury_rescue", "crisis_events"]:
+		out[key] = totals.get(key, 0.0)
+	out["insurance"] = status.get("insurance", [])
+	out["events"] = status.get("events", [])
+	return out
 
 
 func _banks_totals(sim) -> Dictionary:

@@ -5,6 +5,7 @@
 #include "sim/agriculture.h"
 #include "sim/balance.h"
 #include "sim/bank.h"
+#include "sim/bank_crisis.h"
 #include "sim/central_bank.h"
 #include "sim/exchange.h"
 #include "sim/monetary.h"
@@ -311,6 +312,12 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("group_borrow", "group_id", "amount"),
 		&EconomySim::group_borrow);
 	ClassDB::bind_method(D_METHOD("get_bank_status"), &EconomySim::get_bank_status);
+	// C6 (D-114): crise bancária (regras de laboratório e choque de perda).
+	ClassDB::bind_method(D_METHOD("set_bank_crisis", "config"),
+		&EconomySim::set_bank_crisis);
+	ClassDB::bind_method(D_METHOD("bank_shock", "bank_id", "loss",
+		"loss_share"), &EconomySim::bank_shock,
+		DEFVAL(0.0));
 	ClassDB::bind_method(D_METHOD("set_stock_exchange", "config"),
 		&EconomySim::set_stock_exchange);
 	ClassDB::bind_method(D_METHOD("get_stock_status"), &EconomySim::get_stock_status);
@@ -1123,6 +1130,9 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	// C5 (D-112): a bolsa é dos grupos deste mundo; o estado anterior não vale
 	// e a bolsa nasce no primeiro tick com o patrimônio medido do grupo.
 	ogs::stock::reset(ws_);
+	// C6 (D-114): mundo novo zera fundo de seguro, eventos e estado de crise
+	// (os bancos nascem calmos e sem resolução).
+	ogs::bank_crisis::reset(ws_);
 	// §19: mundo novo zera os vetores urbanos; o set_urban os preenche
 	// depois (o casamento é pelo id da cidade criada aqui).
 	ws_.land.clear();
@@ -9776,6 +9786,222 @@ void EconomySim::set_bank_definitions(const Dictionary& definitions) {
 	status_invalidate();
 }
 
+Dictionary EconomySim::set_bank_crisis(const Dictionary& raw_config) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// C6 (D-114): alavancas de configuração (laboratório/teste). `enabled` é
+	// estado e vai ao save; o resto é regra (0 = default de sim/bank_crisis.h).
+	// Aceita o JSON como está (seções capital/liquidity/losses/confidence/
+	// lolr/insurance/resolution) e também as chaves planas.
+	Dictionary config_flat = raw_config;
+	const auto sub = [&raw_config](const char* section) {
+		const Variant value = raw_config.get(section, Variant());
+		return value.get_type() == Variant::DICTIONARY
+			? Dictionary(value) : Dictionary();
+	};
+	const Dictionary capital = sub("capital");
+	const Dictionary liquidity = sub("liquidity");
+	const Dictionary losses = sub("losses");
+	const Dictionary confidence = sub("confidence");
+	const Dictionary weights = [&confidence]() {
+		const Variant value = confidence.get("weights", Variant());
+		return value.get_type() == Variant::DICTIONARY
+			? Dictionary(value) : Dictionary();
+	}();
+	const Dictionary lolr = sub("lolr");
+	const Dictionary insurance = sub("insurance");
+	const Dictionary resolution = sub("resolution");
+	const auto copy = [&config_flat](const Dictionary& src,
+			const char* from, const char* to) {
+		if (config_flat.has(to) || !src.has(from)) {
+			return;
+		}
+		config_flat[to] = src.get(from, Variant());
+	};
+	if (!config_flat.has("enabled") && raw_config.has("enabled")) {
+		config_flat["enabled"] = raw_config.get("enabled", Variant());
+	}
+	copy(capital, "min_ratio", "capital_min");
+	copy(capital, "credit_cut_floor", "capital_cut_floor");
+	copy(liquidity, "min_ratio", "liquidity_min");
+	copy(losses, "confidence_scale", "loss_scale");
+	copy(losses, "ema_days", "loss_ema_days");
+	copy(confidence, "start", "confidence_start");
+	copy(confidence, "smoothing", "smoothing");
+	copy(confidence, "run_threshold", "run_threshold");
+	copy(confidence, "run_share", "run_share");
+	copy(confidence, "flight_to_quality", "flight_to_quality");
+	copy(weights, "solvency", "w_solvency");
+	copy(weights, "liquidity", "w_liquidity");
+	copy(weights, "losses", "w_losses");
+	copy(weights, "contagion", "w_contagion");
+	copy(weights, "market", "w_market");
+	copy(lolr, "spread", "lolr_spread");
+	copy(lolr, "collateral_haircut", "lolr_haircut");
+	copy(lolr, "max_share_of_assets", "lolr_max_assets");
+	copy(insurance, "insured_share", "insured_share");
+	copy(insurance, "premium_daily", "premium_daily");
+	copy(insurance, "fund_target_ratio", "fund_target_ratio");
+	copy(resolution, "treasury_debt_rescue", "treasury_debt_rescue");
+	copy(resolution, "takeover_public", "takeover_public");
+	copy(resolution, "capital_flight_share", "capital_flight_share");
+	copy(resolution, "insolvency_tolerance", "insolvency_tolerance");
+	copy(resolution, "insolvency_tolerance_ratio",
+		"insolvency_tolerance_ratio");
+	const Dictionary& config = config_flat;
+	const auto number = [&config](const char* key) {
+		return double(config.get(key, 0.0));
+	};
+	if (config.has("enabled")) {
+		ws_.bank_crisis.enabled = bool(config.get("enabled", true));
+	}
+	if (config.has("capital_min")) {
+		ws_.bank_crisis.capital_min = std::max(0.0,
+			number("capital_min"));
+	}
+	if (config.has("capital_cut_floor")) {
+		ws_.bank_crisis.capital_cut_floor = std::clamp(
+			number("capital_cut_floor"), 0.0, 1.0);
+	}
+	// RESERVADO: `liquidity_min` é publicado/salvo, mas nenhuma regra o
+	// consome (o sinal de liquidez da confiança usa a referência do banco).
+	if (config.has("liquidity_min")) {
+		ws_.bank_crisis.liquidity_min = std::max(0.0,
+			number("liquidity_min"));
+	}
+	if (config.has("loss_scale")) {
+		ws_.bank_crisis.loss_scale = std::max(0.0, number("loss_scale"));
+	}
+	if (config.has("loss_ema_days")) {
+		ws_.bank_crisis.loss_ema_days = std::max(0.0,
+			number("loss_ema_days"));
+	}
+	if (config.has("smoothing")) {
+		ws_.bank_crisis.smoothing = std::clamp(number("smoothing"),
+			0.0, 1.0);
+	}
+	if (config.has("run_threshold")) {
+		ws_.bank_crisis.run_threshold = std::max(0.0,
+			number("run_threshold"));
+	}
+	if (config.has("run_share")) {
+		ws_.bank_crisis.run_share = std::clamp(number("run_share"),
+			0.0, 1.0);
+	}
+	if (config.has("flight_to_quality")) {
+		ws_.bank_crisis.flight_to_quality = std::clamp(
+			number("flight_to_quality"), 0.0, 1.0);
+	}
+	if (config.has("lolr_spread")) {
+		ws_.bank_crisis.lolr_spread = std::max(0.0,
+			number("lolr_spread"));
+	}
+	if (config.has("lolr_haircut")) {
+		ws_.bank_crisis.lolr_haircut = std::clamp(
+			number("lolr_haircut"), 0.0, 1.0);
+	}
+	if (config.has("lolr_max_assets")) {
+		ws_.bank_crisis.lolr_max_assets = std::clamp(
+			number("lolr_max_assets"), 0.0, 1.0);
+	}
+	if (config.has("insured_share")) {
+		ws_.bank_crisis.insured_share = std::clamp(
+			number("insured_share"), 0.0, 1.0);
+	}
+	if (config.has("premium_daily")) {
+		ws_.bank_crisis.premium_daily = std::max(0.0,
+			number("premium_daily"));
+	}
+	if (config.has("fund_target_ratio")) {
+		ws_.bank_crisis.fund_target_ratio = std::max(0.0,
+			number("fund_target_ratio"));
+	}
+	if (config.has("capital_flight_share")) {
+		ws_.bank_crisis.capital_flight_share = std::clamp(
+			number("capital_flight_share"), 0.0, 1.0);
+	}
+	if (config.has("w_solvency")) {
+		ws_.bank_crisis.w_solvency = std::max(0.0, number("w_solvency"));
+	}
+	if (config.has("w_liquidity")) {
+		ws_.bank_crisis.w_liquidity = std::max(0.0,
+			number("w_liquidity"));
+	}
+	if (config.has("w_losses")) {
+		ws_.bank_crisis.w_losses = std::max(0.0, number("w_losses"));
+	}
+	if (config.has("w_contagion")) {
+		ws_.bank_crisis.w_contagion = std::max(0.0,
+			number("w_contagion"));
+	}
+	if (config.has("w_market")) {
+		ws_.bank_crisis.w_market = std::max(0.0, number("w_market"));
+	}
+	if (config.has("insolvency_tolerance")) {
+		ws_.bank_crisis.insolvency_tolerance = std::max(0.0,
+			number("insolvency_tolerance"));
+	}
+	if (config.has("insolvency_tolerance_ratio")) {
+		ws_.bank_crisis.insolvency_tolerance_ratio = std::max(0.0,
+			number("insolvency_tolerance_ratio"));
+	}
+	if (config.has("treasury_debt_rescue")) {
+		ws_.bank_crisis.treasury_debt_rescue = bool(
+			config.get("treasury_debt_rescue", true));
+	}
+	if (config.has("takeover_public")) {
+		ws_.bank_crisis.takeover_public = bool(
+			config.get("takeover_public", true));
+	}
+	status_invalidate();
+	const ogs::bank_crisis::Policy pol = ogs::bank_crisis::policy(ws_);
+	Dictionary out;
+	out["enabled"] = pol.enabled;
+	out["capital_min"] = pol.capital_min;
+	out["liquidity_min"] = pol.liquidity_min;
+	out["loss_scale"] = pol.loss_scale;
+	out["loss_ema_days"] = pol.loss_ema_days;
+	out["smoothing"] = pol.smoothing;
+	out["w_solvency"] = pol.w_solvency;
+	out["w_liquidity"] = pol.w_liquidity;
+	out["w_losses"] = pol.w_losses;
+	out["w_contagion"] = pol.w_contagion;
+	out["w_market"] = pol.w_market;
+	out["run_threshold"] = pol.run_threshold;
+	out["run_share"] = pol.run_share;
+	out["flight_to_quality"] = pol.flight_to_quality;
+	out["lolr_spread"] = pol.lolr_spread;
+	out["lolr_haircut"] = pol.lolr_haircut;
+	out["lolr_max_assets"] = pol.lolr_max_assets;
+	out["insured_share"] = pol.insured_share;
+	out["premium_daily"] = pol.premium_daily;
+	out["fund_target_ratio"] = pol.fund_target_ratio;
+	out["capital_flight_share"] = pol.capital_flight_share;
+	out["insolvency_tolerance"] = pol.insolvency_tolerance;
+	out["insolvency_tolerance_ratio"] = pol.insolvency_tolerance_ratio;
+	out["treasury_debt_rescue"] = pol.treasury_debt_rescue;
+	out["takeover_public"] = pol.takeover_public;
+	return out;
+}
+
+Dictionary EconomySim::bank_shock(const String& bank_id, double loss,
+		double loss_share) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string id(bank_id.utf8().get_data());
+	double written = 0.0;
+	if (loss > 0.0) {
+		written = ogs::bank_crisis::apply_loss(ws_, id, loss);
+	} else if (loss_share > 0.0) {
+		written = ogs::bank_crisis::apply_loss_share(ws_, id, loss_share);
+	}
+	status_invalidate();
+	Dictionary out;
+	out["ok"] = written > 0.0;
+	out["bank"] = bank_id;
+	out["written"] = written;
+	out["loss_share"] = loss_share;
+	return out;
+}
+
 Dictionary EconomySim::group_borrow(const String& group_id, double amount) {
 	ogs::Command cmd;
 	cmd.type = ogs::CommandType::GroupBorrow;
@@ -10063,6 +10289,35 @@ Dictionary EconomySim::get_bank_status() const {
 		capital_source["private"] = "households (national owner)";
 		capital_source["foreign"] = "external (foreign owner)";
 		policy["capital_source"] = capital_source;
+		// C6 (D-114): crise, corrida e resolucao. Todos os numeros sao default
+		// de jogo declarado em data/definitions/economy/bank_crisis.json.
+		const ogs::bank_crisis::Policy crisis = ogs::bank_crisis::policy(ws_);
+		policy["crisis_enabled"] = crisis.enabled;
+		policy["capital_min_ratio"] = crisis.capital_min;
+		policy["liquidity_min_ratio"] = crisis.liquidity_min;
+		policy["loss_scale"] = crisis.loss_scale;
+		policy["loss_ema_days"] = crisis.loss_ema_days;
+		policy["confidence_smoothing"] = crisis.smoothing;
+		policy["run_threshold"] = crisis.run_threshold;
+		policy["run_share"] = crisis.run_share;
+		policy["flight_to_quality"] = crisis.flight_to_quality;
+		policy["lolr_spread"] = crisis.lolr_spread;
+		policy["lolr_haircut"] = crisis.lolr_haircut;
+		policy["lolr_max_assets"] = crisis.lolr_max_assets;
+		policy["insured_share"] = crisis.insured_share;
+		policy["premium_daily"] = crisis.premium_daily;
+		policy["fund_target_ratio"] = crisis.fund_target_ratio;
+		policy["capital_flight_share"] = crisis.capital_flight_share;
+		policy["insolvency_tolerance"] = crisis.insolvency_tolerance;
+		policy["insolvency_tolerance_ratio"] =
+			crisis.insolvency_tolerance_ratio;
+		policy["treasury_debt_rescue"] = crisis.treasury_debt_rescue;
+		policy["takeover_public"] = crisis.takeover_public;
+		policy["crisis_source"] =
+			"default de jogo (data/definitions/economy/bank_crisis.json)";
+		policy["rescue_order"] =
+			"shareholders -> uninsured deposits -> insurance fund -> "
+			"treasury/debt -> public bank takeover";
 		out["policy"] = policy;
 	}
 	const ogs::bank::Totals totals = ogs::bank::totals(ws_);
@@ -10099,6 +10354,28 @@ Dictionary EconomySim::get_bank_status() const {
 		}
 		row["m1"] = std::max(0.0, money_total() - vault);
 		row["m0"] = sim_core_.m0_total();
+		// C6 (D-114): totais da crise (fundos, corridas, redesconto, custos).
+		const ogs::bank_crisis::Totals crisis =
+			ogs::bank_crisis::totals(ws_);
+		row["confidence_sum"] = crisis.confidence_sum;
+		row["confidence_min"] = crisis.confidence_min;
+		row["confidence_max"] = crisis.confidence_max;
+		row["fund"] = crisis.fund_total;
+		row["premiums"] = crisis.premiums;
+		row["payouts"] = crisis.payouts;
+		row["runs"] = crisis.runs;
+		row["run_days"] = crisis.run_days;
+		row["resolutions"] = crisis.resolutions;
+		row["run_withdrawn"] = crisis.run_withdrawn;
+		row["run_cash"] = crisis.run_cash;
+		row["run_public"] = crisis.run_public;
+		row["capital_flight"] = crisis.capital_flight;
+		row["lolr_borrowed"] = crisis.lolr_borrowed;
+		row["lolr_interest"] = crisis.lolr_interest;
+		row["insured_payout"] = crisis.insured_payout;
+		row["bailin_cut"] = crisis.bailin_cut;
+		row["treasury_rescue"] = crisis.treasury_rescue;
+		row["crisis_events"] = crisis.events_total;
 		out["totals"] = row;
 	}
 	// Participação efetiva nos empréstimos da nação (0 sem crédito) e lista
@@ -10154,6 +10431,32 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["remittance_origin"] = bank.remittance_origin;
 		entry["harvest_interest"] = bank.harvest_interest;
 		entry["last_dividend_day"] = bank.last_dividend_day;
+		// C6 (D-114): confiança, indicadores medidos, corrida, redesconto,
+		// seguro e resolução. `credit_factor` é o aperto aplicado ao crédito
+		// novo (1 = sem aperto; 0 = crédito cortado).
+		const ogs::bank_crisis::Indicators crisis_ind =
+			ogs::bank_crisis::indicators(bank);
+		entry["confidence"] = bank.confidence;
+		entry["capital_ratio"] = crisis_ind.capital_ratio;
+		entry["liquidity_ratio"] = crisis_ind.liquidity_ratio;
+		entry["npl_ratio"] = crisis_ind.npl_ratio;
+		entry["credit_factor"] =
+			ogs::bank_crisis::credit_factor(ws_, bank);
+		entry["run_days"] = bank.run_days;
+		entry["last_run_day"] = bank.last_run_day;
+		entry["run_withdrawn"] = bank.run_withdrawn;
+		entry["run_cash"] = bank.run_cash;
+		entry["run_public"] = bank.run_public;
+		entry["capital_flight"] = bank.capital_flight;
+		entry["lolr_borrowed"] = bank.lolr_borrowed;
+		entry["lolr_interest"] = bank.lolr_interest;
+		entry["insured_payout"] = bank.insured_payout;
+		entry["bailin_cut"] = bank.bailin_cut;
+		entry["treasury_rescue"] = bank.treasury_rescue;
+		entry["resolved"] = bank.resolved;
+		entry["resolution"] = String(bank.resolution.c_str());
+		entry["resolution_day"] = bank.resolution_day;
+		entry["absorbed_into"] = String(bank.absorbed_into.c_str());
 		banks.append(entry);
 	}
 	// Agregado por nação (soma dos papéis) — contrato da C3 preservado.
@@ -10252,6 +10555,50 @@ Dictionary EconomySim::get_bank_status() const {
 			&& std::abs(book.financial_sum()) <= tolerance
 			&& std::abs(book.cash_residual()) <= tolerance;
 		out["invariant"] = invariant;
+	}
+	// C6 (D-114): fundo de seguro por nação e o anel de eventos (dia, banco,
+	// causa e custo por parte). O total de eventos fica em `totals`.
+	{
+		Array funds;
+		for (const auto& row : ws_.deposit_insurance) {
+			Dictionary entry;
+			entry["nation"] = String(row.first.c_str());
+			entry["fund"] = row.second.fund;
+			entry["premiums"] = row.second.premiums;
+			entry["payouts"] = row.second.payouts;
+			entry["last_payout_day"] = row.second.last_payout_day;
+			funds.append(entry);
+		}
+		out["insurance"] = funds;
+		Array events;
+		for (const ogs::BankCrisisEvent& event : ws_.bank_crisis_events) {
+			Dictionary entry;
+			entry["day"] = event.day;
+			entry["bank"] = String(event.bank.c_str());
+			entry["nation"] = String(event.nation.c_str());
+			entry["kind"] = String(event.kind.c_str());
+			entry["cause"] = String(event.cause.c_str());
+			entry["gap"] = event.gap;
+			entry["cost_shareholders"] = event.cost_shareholders;
+			entry["cost_depositors"] = event.cost_depositors;
+			entry["cost_fund"] = event.cost_fund;
+			entry["cost_treasury"] = event.cost_treasury;
+			entry["cost_takeover"] = event.cost_takeover;
+			entry["capital_flight"] = event.capital_flight;
+			entry["lolr"] = event.lolr;
+			entry["emission"] = event.emission;
+			events.append(entry);
+		}
+		out["events"] = events;
+		Dictionary sources;
+		sources["parameters"] = "data/definitions/economy/bank_crisis.json";
+		sources["liquidity"] =
+			"cash / deposits (C4 banks hold no reserves: default min is 0)";
+		sources["insured_ceiling"] =
+			"declared share of deposits (no depositor ledger in the model)";
+		sources["resolution"] =
+			"shareholders -> uninsured -> fund -> treasury/debt -> takeover";
+		out["crisis_sources"] = sources;
 	}
 	return out;
 }

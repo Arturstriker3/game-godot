@@ -29,7 +29,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 33
+const SAVE_VERSION := 34
 const TAX_RATE := 0.15
 
 var _failures: Array = []
@@ -131,7 +131,7 @@ func _run() -> void:
 	var sim := _make_world()
 	var save: Dictionary = sim.to_dict()
 	_check(int(save.get("version", 0)) == SAVE_VERSION,
-		"save deve ser v31 (é %s)" % str(save.get("version")))
+		"save deve ser v34 (é %s)" % str(save.get("version")))
 	var ci := _pick_city(save)
 	if ci < 0:
 		_fail("nenhuma cidade com quintis e demografia prontos")
@@ -479,7 +479,7 @@ func _run() -> void:
 		_load_chains(rt2)
 		rt2.from_dict(rt)
 		var rt3: Dictionary = rt2.to_dict()
-		_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip mantém v31")
+		_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip mantém v34")
 		# Os blocos B7 precisam voltar idênticos (a identidade byte a byte do
 		# save inteiro é coberta por economy_save_load_roundtrip_test, que usa
 		# "load + continuar == rodar direto" — alguns fluxos derivados do
@@ -518,7 +518,7 @@ func _run() -> void:
 		migrated.from_dict(v21)
 		var after: Dictionary = migrated.to_dict()
 		_check(int(after.get("version", 0)) == SAVE_VERSION,
-			"v21 deve migrar para v31 (é %s)" % str(after.get("version")))
+			"v21 deve migrar para v34 (é %s)" % str(after.get("version")))
 		# A migração semeia a informalidade (dado/âncora) e os contadores zerados.
 		var mcity: Dictionary = after.get("cities", [])[ci]
 		var minformal: Dictionary = mcity.get("pop", {}).get("informal", {})

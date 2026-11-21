@@ -27,6 +27,15 @@ extends RefCounted
 ##                             do fator `1 / (1 + r · 60/365)` na taxa vigente da
 ##                             moeda. 179,0 = mundo inteiro com taxa zero;
 ##                             1,0 por nação sem moeda no estado.
+##   8. `bank_confidence_sum` (9) — C6 (D-114): soma da confiança do depositante
+##                             por banco com posição (0..1 cada). -1 = sem o
+##                             status de bancos (mundo anterior à C4).
+##   9. `bank_crisis_events`  — C6: total de eventos de crise (corrida,
+##                             redesconto, resolução) desde o dia 0.
+##  10. `bank_fund` (6)       — C6: saldo do fundo de seguro de depósito no
+##                             mundo (dinheiro conservado).
+##  11. `bank_capital_flight` (6) — C6: remessa acumulada das matrizes
+##                             estrangeiras (fuga de capital, âncora).
 ##
 ## NOTAS DE HONESTIDADE:
 ## - Não existe livro de empréstimos até a C4: `credit_capacity` é o TERMO que o
@@ -50,6 +59,10 @@ const FIELDS := [
 	"m0_total(6)",
 	"private_stock_t(6)",
 	"credit_capacity(9)",
+	"bank_confidence_sum(9)",
+	"bank_crisis_events",
+	"bank_fund(6)",
+	"bank_capital_flight(6)",
 ]
 
 
@@ -95,7 +108,9 @@ static func food_sum(ratios: Dictionary) -> float:
 ## Totais do dia que entram no hash: M0, estoque privado e termo de crédito.
 ## Ausência é declarada como -1 (não se inventa zero).
 static func totals(sim: Object) -> Dictionary:
-	var out := {"m0": -1.0, "private_stock_t": -1.0, "credit_capacity": -1.0}
+	var out := {"m0": -1.0, "private_stock_t": -1.0, "credit_capacity": -1.0,
+		"bank_confidence_sum": -1.0, "bank_crisis_events": -1,
+		"bank_fund": -1.0, "bank_capital_flight": -1.0}
 	if sim != null and sim.has_method("get_central_bank_status"):
 		var bank: Dictionary = sim.get_central_bank_status()
 		var totals_block: Dictionary = bank.get("totals", {})
@@ -120,6 +135,18 @@ static func totals(sim: Object) -> Dictionary:
 		if storage_totals.has("private_stock_t"):
 			out["private_stock_t"] = float(
 				storage_totals.get("private_stock_t", 0.0))
+	# C6 (D-114): confiança, eventos, fundo e fuga de capital dos bancos.
+	if sim != null and sim.has_method("get_bank_status"):
+		var banks: Dictionary = sim.get_bank_status()
+		var bank_totals: Dictionary = banks.get("totals", {})
+		if bank_totals.has("confidence_sum"):
+			out["bank_confidence_sum"] = float(
+				bank_totals.get("confidence_sum", 0.0))
+			out["bank_crisis_events"] = int(
+				bank_totals.get("crisis_events", -1))
+			out["bank_fund"] = float(bank_totals.get("fund", 0.0))
+			out["bank_capital_flight"] = float(
+				bank_totals.get("capital_flight", 0.0))
 	return out
 
 
@@ -127,7 +154,7 @@ static func totals(sim: Object) -> Dictionary:
 ## instância do núcleo (para M0/estoque/crédito).
 static func line(day: int, status: Dictionary, sim: Object) -> String:
 	var day_totals := totals(sim)
-	return "%d:%.6f:%d:%.9f:%.6f:%.6f:%.9f" % [
+	return "%d:%.6f:%d:%.9f:%.6f:%.6f:%.9f:%.9f:%d:%.6f:%.6f" % [
 		day,
 		float(status.get("money_total", 0.0)),
 		int(status.get("bankruptcies", -1)),
@@ -135,6 +162,10 @@ static func line(day: int, status: Dictionary, sim: Object) -> String:
 		float(day_totals["m0"]),
 		float(day_totals["private_stock_t"]),
 		float(day_totals["credit_capacity"]),
+		float(day_totals["bank_confidence_sum"]),
+		int(day_totals["bank_crisis_events"]),
+		float(day_totals["bank_fund"]),
+		float(day_totals["bank_capital_flight"]),
 	]
 
 

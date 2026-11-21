@@ -17,7 +17,7 @@ extends SceneTree
 ##       desligado; o market cap muda).
 ##   C6  migração v32 -> v33: a bolsa nasce com preço = fundamental medido e a
 ##       carteira do default declarado.
-##   C7  save v33: round-trip bit-exato e continuação de 5 dias idêntica.
+##   C7  save v34: round-trip bit-exato e continuação de 5 dias idêntica.
 ##   C8  aquecimento (D-112 fix): índice não publicado e preço sem reação antes
 ##       de kIndexWarmupDays; formação no fundamental medido; papel de lucro
 ##       estável não oscila > 20 % fora do aquecimento.
@@ -55,7 +55,7 @@ func _init() -> void:
 			+ "carteiras = emissores, preço convergente ao fundamental, juro "
 			+ "alto derrubando preço/confiança (expectativa adaptativa), "
 			+ "dividendo conservado, valorização sem dinheiro novo, migração "
-			+ "v32->v33, save v33 bit-exato, aquecimento com lucro de "
+			+ "v32->v33, save v34 bit-exato, aquecimento com lucro de "
 			+ "referência medido e banda de P/L declarada.")
 		quit(0)
 	else:
@@ -326,8 +326,8 @@ func _test_migration_v32() -> void:
 	_check("C6 carteira inicial soma 100 % das ações", bad_holdings == 0,
 		"papeis_fora=%d" % bad_holdings)
 	var resaved: Dictionary = loaded.to_dict()
-	_check("C6 re-save é v33 e tem o bloco da bolsa",
-		int(resaved.get("version", 0)) == 33 and resaved.has("stock"),
+	_check("C6 re-save é v34 e tem o bloco da bolsa",
+		int(resaved.get("version", 0)) == 34 and resaved.has("stock"),
 		"version=%s" % resaved.get("version"))
 
 
@@ -336,7 +336,7 @@ func _test_save_v33() -> void:
 	var sim = _world(12)
 	var saved: Dictionary = sim.to_dict()
 	var loaded = _load(saved)
-	_check("C7 round-trip v33 bit-exato",
+	_check("C7 round-trip v34 bit-exato",
 		JSON.stringify(loaded.to_dict()) == JSON.stringify(saved), "difere")
 	for day in 5:
 		sim.tick_day()
