@@ -34,6 +34,7 @@ const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
+const FX_REGIMES_PATH := "res://data/definitions/economy/fx_regimes_2026.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 const INFORMALITY_PATH := "res://data/definitions/economy/informality.json"
@@ -102,6 +103,9 @@ func _make_world() -> Object:
 	sim.set_recipes(_load(RECIPES_PATH))
 	sim.set_needs(_load(NEEDS_PATH))
 	sim.set_services(_load(SERVICES_PATH))
+	# C2c (D-108): regime real por moeda ANTES do carregamento das moedas.
+	if sim.has_method("set_fx_regimes"):
+		sim.set_fx_regimes(_load(FX_REGIMES_PATH))
 	sim.set_currencies(_load(CURRENCIES_PATH))
 	sim.set_sector_employment(_load(SECTOR_EMPLOYMENT_PATH))
 	sim.set_age_structure(_load(AGE_STRUCTURE_PATH))
@@ -232,6 +236,42 @@ func _monetary_report(sim: Object) -> Dictionary:
 		"emission_today": float(totals.get("emission_today", 0.0)),
 		"securities": float(totals.get("securities", 0.0)),
 		"government_debt": float(totals.get("government_debt", 0.0)),
+	}
+
+
+## C2c (D-108): regimes reais — mistura inicial/efetiva, âncoras, trava de
+## união e as desvalorizações forçadas do mundo default (quais moedas).
+func _fx_summary(sim: Object) -> Dictionary:
+	var bank: Dictionary = sim.get_central_bank_status()
+	var currencies: Dictionary = bank.get("currencies", {})
+	var by_regime: Dictionary = {}
+	var by_anchor: Dictionary = {}
+	var devalued: Array = []
+	var devaluations := 0
+	var locked := 0
+	for code: Variant in currencies:
+		var row: Dictionary = currencies[code]
+		var fx: Dictionary = row.get("fx", {})
+		var regime := String(fx.get("regime_saved", ""))
+		by_regime[regime] = int(by_regime.get(regime, 0)) + 1
+		var anchor := String(fx.get("anchor", ""))
+		if not anchor.is_empty():
+			by_anchor[anchor] = int(by_anchor.get(anchor, 0)) + 1
+		if bool(fx.get("locked", false)):
+			locked += 1
+		var count := int(fx.get("devaluations", 0))
+		devaluations += count
+		if count > 0:
+			devalued.append({"currency": String(code), "count": count,
+				"last_day": int(fx.get("last_event_day", -1))})
+	return {
+		"source": String(bank.get("monetary_policy", {}).get(
+			"regime_source", "")),
+		"by_regime": by_regime,
+		"by_anchor": by_anchor,
+		"locked_currencies": locked,
+		"devaluations": devaluations,
+		"devalued_currencies": devalued,
 	}
 
 
@@ -449,6 +489,7 @@ func _run() -> void:
 		"trajectory_end": TrajectoryDigest.totals(sim),
 		"harvest_credit_rate": _harvest_credit_rate(sim),
 		"monetary": _monetary_report(sim),
+		"fx": _fx_summary(sim),
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	if _fx_seed_days > 0:

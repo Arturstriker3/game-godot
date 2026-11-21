@@ -246,6 +246,292 @@ double parity_of(const WorldState& ws, const Currency& currency) {
 	return 1.0;
 }
 
+namespace {
+
+// Taxa de uma moeda pelo código (âncora). 0 = moeda ausente/taxa inválida.
+double rate_of_code(const WorldState& ws, const std::string& code) {
+	const auto found = ws.currency_by_code.find(code);
+	if (found == ws.currency_by_code.end()) {
+		return 0.0;
+	}
+	const std::size_t index = static_cast<std::size_t>(found->second);
+	if (index >= ws.currencies.size()) {
+		return 0.0;
+	}
+	return currency_rate_guard(ws.currencies[index]);
+}
+
+const FxRegimeInfo* regime_info(const WorldState& ws, const std::string& code) {
+	const auto found = ws.fx_regime.find(code);
+	return found == ws.fx_regime.end() ? nullptr : &found->second;
+}
+
+} // namespace
+
+bool has_anchor(const WorldState& ws, const Currency& currency) {
+	const FxRegimeInfo* info = regime_info(ws, currency.code);
+	if (info == nullptr) {
+		return false;
+	}
+	if (info->anchor_type == "currency") {
+		return !info->anchor.empty();
+	}
+	if (info->anchor_type == "composite") {
+		return true;
+	}
+	return false;
+}
+
+double anchor_value(const WorldState& ws, const Currency& currency) {
+	const FxRegimeInfo* info = regime_info(ws, currency.code);
+	if (info == nullptr) {
+		return 0.0;
+	}
+	if (info->anchor_type == "currency") {
+		return rate_of_code(ws, info->anchor);
+	}
+	if (info->anchor_type != "composite") {
+		return 0.0;
+	}
+	// Cesta: composição PUBLICADA (info->basket) ou resolvida no estado
+	// (state.basket). Sem pesos, a âncora não tem alvo — ausência declarada.
+	std::map<std::string, double> weights = info->basket;
+	if (weights.empty()) {
+		const auto state = ws.fx.find(currency.code);
+		if (state != ws.fx.end()) {
+			weights = state->second.basket;
+		}
+	}
+	if (weights.empty()) {
+		return 0.0;
+	}
+	double log_sum = 0.0;
+	double weight_sum = 0.0;
+	for (const auto& row : weights) {
+		if (!(row.second > 0.0)) {
+			continue;
+		}
+		const double rate = rate_of_code(ws, row.first);
+		if (!(rate > 0.0)) {
+			return 0.0;
+		}
+		log_sum += row.second * std::log(rate);
+		weight_sum += row.second;
+	}
+	if (!(weight_sum > 0.0)) {
+		return 0.0;
+	}
+	return std::exp(log_sum / weight_sum);
+}
+
+void resolve_baskets(WorldState& ws) {
+	if (ws.currencies.empty() || ws.cities.empty()) {
+		return;
+	}
+	std::vector<std::string> pending;
+	for (const auto& row : ws.fx_regime) {
+		if (row.second.anchor_type != "composite"
+				|| !row.second.basket.empty()) {
+			continue;
+		}
+		pending.push_back(row.first);
+	}
+	if (pending.empty()) {
+		return;
+	}
+	// Comércio medido por moeda (o mesmo vetor que o `tick` usa).
+	std::vector<double> trade(ws.currencies.size(), 0.0);
+	for (const City& city : ws.cities) {
+		const auto found = ws.nation_currency.find(city.nation);
+		if (found == ws.nation_currency.end()) {
+			continue;
+		}
+		const std::size_t index = static_cast<std::size_t>(found->second);
+		if (index >= trade.size()) {
+			continue;
+		}
+		for (int product = 0; product < ws.products; ++product) {
+			trade[index] += std::max(0.0, city.export_value[product])
+				+ std::max(0.0, city.import_value[product]);
+		}
+	}
+	double total = 0.0;
+	for (const double value : trade) {
+		total += value;
+	}
+	if (!(total > kEpsilon)) {
+		// Sem comércio medido ainda: a cesta fica sem pesos (nada inventado).
+		return;
+	}
+	// Candidatos = as moedas com maior comércio medido (top 3), excluindo a
+	// própria. É DEFAULT DE JOGO: o quadro do FMI não publica a composição.
+	std::vector<std::size_t> order(ws.currencies.size());
+	for (std::size_t index = 0; index < order.size(); ++index) {
+		order[index] = index;
+	}
+	std::stable_sort(order.begin(), order.end(),
+		[&](std::size_t left, std::size_t right) {
+			if (trade[left] != trade[right]) {
+				return trade[left] > trade[right];
+			}
+			return ws.currencies[left].code < ws.currencies[right].code;
+		});
+	for (const std::string& code : pending) {
+		const auto found = ws.currency_by_code.find(code);
+		if (found == ws.currency_by_code.end()) {
+			continue;
+		}
+		const std::size_t self = static_cast<std::size_t>(found->second);
+		FxState& state = ws.fx[code];
+		if (!state.basket.empty()) {
+			continue;
+		}
+		double sum = 0.0;
+		std::map<std::string, double> basket;
+		for (const std::size_t index : order) {
+			if (index == self || basket.size() >= 3) {
+				continue;
+			}
+			if (!(trade[index] > kEpsilon)) {
+				break;
+			}
+			basket[ws.currencies[index].code] = trade[index];
+			sum += trade[index];
+		}
+		if (basket.empty() || !(sum > kEpsilon)) {
+			continue;
+		}
+		for (auto& row : basket) {
+			row.second /= sum;
+		}
+		state.basket = std::move(basket);
+		state.basket_source = "default de jogo: participacao no comercio "
+			"medido (a composicao da cesta nao e publicada pelo FMI)";
+	}
+}
+
+void initialize_anchors(WorldState& ws) {
+	for (const Currency& currency : ws.currencies) {
+		if (!has_anchor(ws, currency)) {
+			continue;
+		}
+		FxState& state = ws.fx[currency.code];
+		if (state.parity > 0.0) {
+			continue;
+		}
+		const double anchor = anchor_value(ws, currency);
+		const double base = currency.base_rate > 0.0
+			? currency.base_rate : currency_rate_guard(currency);
+		if (!(anchor > 0.0) || !(base > 0.0)) {
+			continue;
+		}
+		// Paridade CRUZADA derivada da taxa com que o mundo nasceu: o peg não
+		// move a taxa no dia 1 (§7.2 de fx_regimes_data.md).
+		state.parity = anchor / base;
+	}
+}
+
+double target_rate(const WorldState& ws, const Currency& currency) {
+	if (!has_anchor(ws, currency)) {
+		return parity_of(ws, currency);
+	}
+	const double anchor = anchor_value(ws, currency);
+	const double parity = parity_of(ws, currency);
+	if (!(anchor > 0.0) || !(parity > 0.0)) {
+		// Cesta sem composição: alvo indisponível; a taxa fica onde está (é o
+		// peg administrativo do F5, sem custo e sem número inventado).
+		return currency_rate_guard(currency);
+	}
+	return anchor / parity;
+}
+
+double migrate_currency(WorldState& ws, const std::string& from,
+		const std::string& to, double units_per_target) {
+	if (from == to || !(units_per_target > 0.0)) {
+		return 0.0;
+	}
+	const auto from_found = ws.currency_by_code.find(from);
+	const auto to_found = ws.currency_by_code.find(to);
+	if (from_found == ws.currency_by_code.end()
+			|| to_found == ws.currency_by_code.end()) {
+		return 0.0;
+	}
+	const int from_index = from_found->second;
+	const int to_index = to_found->second;
+	if (from_index < 0 || to_index < 0 || from_index == to_index
+			|| from_index >= static_cast<int>(ws.currencies.size())
+			|| to_index >= static_cast<int>(ws.currencies.size())) {
+		return 0.0;
+	}
+	Currency& source = ws.currencies[static_cast<std::size_t>(from_index)];
+	Currency& dest = ws.currencies[static_cast<std::size_t>(to_index)];
+	for (const std::string& nation : source.nations) {
+		if (!nation_in(dest, nation)) {
+			dest.nations.push_back(nation);
+		}
+	}
+	// Paridade LOCAL (unidades por 1 âncora): 1 unidade do destino vale
+	// `units_per_target` unidades extintas, então divide.
+	double converted = 0.0;
+	const auto fx_source = ws.fx.find(from);
+	if (fx_source != ws.fx.end()) {
+		const FxState state = fx_source->second;
+		FxState& target = ws.fx[to];
+		converted = state.parity;
+		if (state.parity > 0.0 && target.parity <= 0.0) {
+			target.parity = state.parity / units_per_target;
+		}
+		target.reserves += state.reserves;
+		target.funded = target.funded || state.funded;
+		if (target.band_width < 0.0) {
+			target.band_width = state.band_width;
+		}
+		if (target.conversion_price <= 0.0) {
+			target.conversion_price = state.conversion_price;
+		}
+		target.devaluations += state.devaluations;
+		if (state.last_event_day > target.last_event_day) {
+			target.last_event_day = state.last_event_day;
+		}
+		ws.fx.erase(fx_source);
+	}
+	// Ouro do BC, emissão e bancos: valores em âncora/nação — mudam de CHAVE,
+	// não de valor (o balanço financeiro soma zero nos dois lados).
+	const auto gold = ws.reserve_gold_tonnes.find(from);
+	if (gold != ws.reserve_gold_tonnes.end()) {
+		ws.reserve_gold_tonnes[to] += gold->second;
+		ws.reserve_gold_tonnes.erase(gold);
+	}
+	const auto monetary = ws.monetary.find(from);
+	if (monetary != ws.monetary.end()) {
+		MonetaryState& target = ws.monetary[to];
+		target.emission += monetary->second.emission;
+		target.securities += monetary->second.securities;
+		if (target.rate < 0.0) {
+			target.rate = monetary->second.rate;
+		}
+		ws.monetary.erase(monetary);
+	}
+	for (auto& row : ws.banks) {
+		if (row.second.currency == from) {
+			row.second.currency = to;
+		}
+	}
+	// A moeda extinta não tem mais política própria (nem regime no arquivo).
+	ws.fx_regime.erase(from);
+	ws.currencies.erase(ws.currencies.begin() + from_index);
+	ws.currency_by_code.clear();
+	ws.nation_currency.clear();
+	for (std::size_t index = 0; index < ws.currencies.size(); ++index) {
+		const Currency& row = ws.currencies[index];
+		ws.currency_by_code[row.code] = static_cast<int>(index);
+		for (const std::string& nation : row.nations) {
+			ws.nation_currency[nation] = static_cast<int>(index);
+		}
+	}
+	return converted;
+}
+
 double band_of(const WorldState& ws, const Currency& currency) {
 	const auto found = ws.fx.find(currency.code);
 	if (found != ws.fx.end() && found->second.band_width >= 0.0) {
@@ -288,6 +574,10 @@ DayStats tick(WorldState& ws, const std::vector<double>& base_prices) {
 	if (ws.currencies.empty() || ws.cities.empty()) {
 		return stats;
 	}
+	// C2c (D-108): a cesta sem composição publicada ganha pesos do comércio
+	// medido do próprio mundo e a paridade cruzada nasce da taxa inicial.
+	resolve_baskets(ws);
+	initialize_anchors(ws);
 	const Parameters params = parameters(ws);
 	std::vector<double> exports(ws.currencies.size(), 0.0);
 	std::vector<double> imports(ws.currencies.size(), 0.0);
@@ -318,10 +608,17 @@ DayStats tick(WorldState& ws, const std::vector<double>& base_prices) {
 			continue;
 		}
 		const double parity = parity_of(ws, currency);
+		// C2c (D-108): com âncora, o alvo é a taxa CRUZADA (âncora ÷ paridade)
+		// — um peg a USD acompanha o dólar em vez de arrastar a taxa pelo XGS.
+		// Sem âncora o caminho é o da C2b2, número por número.
+		const double anchor = has_anchor(ws, currency)
+			? anchor_value(ws, currency) : 0.0;
+		const bool cross = anchor > 0.0 && parity > 0.0;
+		const double target = cross ? anchor / parity : parity;
 		const double width = regime == central_bank::kRegimeBand
 			? band_of(ws, currency) : 0.0;
-		const double low = parity * (1.0 - width);
-		const double high = parity * (1.0 + width);
+		const double low = target * (1.0 - width);
+		const double high = target * (1.0 + width);
 		const double shadow = floating_step(currency);
 		// Sem reserva declarada o fixo/banda é ADMINISTRATIVO (o F5 já segura a
 		// taxa em `base_rate` sem custo): a defesa medida só existe quando há
@@ -329,11 +626,12 @@ DayStats tick(WorldState& ws, const std::vector<double>& base_prices) {
 		if (!state.funded) {
 			currency.rate = regime == central_bank::kRegimeBand
 				? std::clamp(shadow, low, high)
-				: parity;
+				: target;
 			continue;
 		}
-		const double volume_anchor = currency.gross_ema / std::max(parity,
-			kEpsilon);
+		// Volume em unidades da ÂNCORA: o comércio é medido em XGS.
+		const double volume_anchor = currency.gross_ema / std::max(
+			cross ? anchor : parity, kEpsilon);
 		if (shadow > high) {
 			// Depreciação: o BC vende moeda de reserva e recolhe (destrói) a
 			// moeda local paga pelos importadores da moeda.
@@ -343,8 +641,8 @@ DayStats tick(WorldState& ws, const std::vector<double>& base_prices) {
 			double used = std::min(need, std::max(0.0, state.reserves));
 			if (used > kEpsilon) {
 				const double local = destroy_local_money(ws, currency,
-					used * parity);
-				used = local / std::max(parity, kEpsilon);
+					used * target);
+				used = local / std::max(target, kEpsilon);
 				state.reserves = std::max(0.0, state.reserves - used);
 				state.intervention_today -= used;
 				stats.reserves_sold += used;
@@ -355,7 +653,9 @@ DayStats tick(WorldState& ws, const std::vector<double>& base_prices) {
 				// Não há reserva para o excesso: desvalorização forçada para o
 				// câmbio sombreado. A paridade nova é a taxa de mercado.
 				const double old_parity = parity;
-				state.parity = shadow;
+				// A paridade nova mantém a relação com a âncora: taxa = alvo.
+				state.parity = cross ? anchor / std::max(shadow, kEpsilon)
+					: shadow;
 				state.reserves = 0.0;
 				currency.rate = shadow;
 				state.devaluations += 1;
@@ -379,7 +679,7 @@ DayStats tick(WorldState& ws, const std::vector<double>& base_prices) {
 			const double amount = std::max(0.0, volume_anchor * gap
 				* params.defence_share);
 			if (amount > kEpsilon) {
-				const double local = amount * parity;
+				const double local = amount * target;
 				state.reserves += amount;
 				create_local_money(ws, currency, local);
 				state.intervention_today += amount;

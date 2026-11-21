@@ -97,14 +97,6 @@
       "source": "derived:gdp_ppp"
     },
     {
-      "code": "BGN",
-      "nations": [
-        "BGR"
-      ],
-      "rate_per_anchor": 0.493812,
-      "source": "derived:gdp_ppp"
-    },
-    {
       "code": "BHD",
       "nations": [
         "BHR"
@@ -323,6 +315,7 @@
       "nations": [
         "AUT",
         "BEL",
+        "BGR",
         "CYP",
         "DEU",
         "ESP",

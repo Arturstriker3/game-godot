@@ -8,6 +8,7 @@
 #include "save_state.h"
 
 #include "central_bank.h"
+#include "exchange.h"
 #include "sim_constants.h"
 #include "sim_core.h"
 #include "storage.h"
@@ -28,6 +29,24 @@ namespace {
 Dictionary make_object() { return Value::make_object(); }
 
 Array make_array() { return Value::make_array(); }
+
+// C2c (D-108e) — MOEDAS EXTINTAS no cenário. A taxa irrevocável converte a
+// paridade LOCAL (unidades por 1 âncora); o dinheiro do núcleo é em XGS e não
+// se move. HRK não existe no cenário (a Croácia já nasce no EUR): a linha fica
+// como regra declarada e nunca dispara.
+struct CurrencySuccession {
+	const char* from;
+	const char* to;
+	double units_per_target;
+	const char* source;
+};
+
+constexpr CurrencySuccession kCurrencySuccessions[] = {
+	{"BGN", "EUR", 1.95583,
+		"Decisao (UE) 2025/1407: Bulgaria no euro em 2026-01-01, 1 EUR = 1,95583 BGN"},
+	{"HRK", "EUR", 7.53450,
+		"Croatia no euro em 2023-01-01, 1 EUR = 7,53450 HRK (moeda fora do cenario)"},
+};
 
 // ---------------------------------------------------------------------------
 // B7 — serialização/leitura dos blocos informal/mortality/dissatisfaction. O
@@ -1353,6 +1372,14 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["funded"] = row.second.funded;
 			entry["devaluations"] = row.second.devaluations;
 			entry["last_event_day"] = row.second.last_event_day;
+			// C2c (v31/D-108): composição da cesta resolvida no mundo.
+			Dictionary basket = make_object();
+			for (const auto& unit : row.second.basket) {
+				basket[sim_str(unit.first.c_str())] = unit.second;
+			}
+			entry["basket"] = basket;
+			entry["basket_source"] =
+				sim_str(row.second.basket_source.c_str());
 			currencies[sim_str(row.first.c_str())] = entry;
 		}
 		block["currencies"] = currencies;
@@ -1374,6 +1401,39 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		params["gold_reserve_ratio"] = ws.fx_gold_reserve_ratio;
 		block["parameters"] = params;
 		data["fx"] = block;
+	}
+	// C2c (v31/D-108) — REGIME REAL por moeda (IMF AREAER 30/04/2026): regime,
+	// âncora (moeda ou cesta), fonte, emissor e a trava de união monetária.
+	// ADITIVO: v30 carrega os regimes do arquivo pelo `set_fx_regimes`.
+	{
+		Dictionary block = make_object();
+		block["source"] = sim_str(ws.fx_regime_source.c_str());
+		Array no_policy = make_array();
+		for (const std::string& nation : ws.fx_no_policy_nations) {
+			no_policy.append(sim_str(nation.c_str()));
+		}
+		block["no_policy"] = no_policy;
+		Dictionary countries = make_object();
+		for (const auto& row : ws.fx_regime) {
+			Dictionary entry = make_object();
+			entry["regime"] =
+				sim_str(central_bank::regime_name(row.second.regime));
+			entry["anchor"] = sim_str(row.second.anchor.c_str());
+			entry["anchor_type"] = sim_str(row.second.anchor_type.c_str());
+			entry["anchor_source"] =
+				sim_str(row.second.anchor_source.c_str());
+			entry["issuer"] = sim_str(row.second.issuer.c_str());
+			entry["locked"] = row.second.locked;
+			entry["source"] = sim_str(row.second.source.c_str());
+			Dictionary basket = make_object();
+			for (const auto& unit : row.second.basket) {
+				basket[sim_str(unit.first.c_str())] = unit.second;
+			}
+			entry["basket"] = basket;
+			countries[sim_str(row.first.c_str())] = entry;
+		}
+		block["currencies"] = countries;
+		data["fx_regimes"] = block;
 	}
 	// C3 (v30/D-107) — CRÉDITO DE EMPRESA: banco agregado por nação e o
 	// estado do crédito. ADITIVO: v29 carrega desligado, sem banco e com
@@ -1844,6 +1904,23 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				state.devaluations = std::max(0,
 					int(row.get("devaluations", 0)));
 				state.last_event_day = int(row.get("last_event_day", -1));
+				// C2c (v31/D-108): cesta resolvida (v30 chega vazia e o
+				// `resolve_baskets` a preenche pelo comércio medido).
+				const Variant basket_variant = row.get("basket", Variant());
+				if (basket_variant.get_type() == Variant::DICTIONARY) {
+					const Dictionary basket = basket_variant;
+					for (const auto& unit : basket.entries()) {
+						const std::string code(
+							String(unit.first).utf8().get_data());
+						const double weight = double(unit.second);
+						if (!code.empty() && std::isfinite(weight)
+								&& weight > 0.0) {
+							state.basket[code] = weight;
+						}
+					}
+				}
+				state.basket_source = std::string(
+					String(row.get("basket_source", "")).utf8().get_data());
 				ws.fx[row_entry.first] = state;
 			}
 		}
@@ -3747,6 +3824,90 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			ws.storage_sites.push_back(std::move(site));
 		}
 	}
+	// C2c (v31/D-108) — REGIMES REAIS e SUCESSÃO de moeda.
+	// 1. O bloco salvo (v31) manda; save v30 e anteriores fica com o que o
+	//    `set_fx_regimes` carregou do arquivo ANTES do load (o mundo antigo
+	//    recebe os regimes reais — decisão D-108a).
+	if (data.has("fx_regimes")) {
+		// v31: o bloco do save substitui o que veio do arquivo.
+		ws.fx_regime.clear();
+		ws.fx_no_policy_nations.clear();
+		ws.fx_regime_source.clear();
+		const Dictionary block = data.get("fx_regimes", Dictionary());
+		ws.fx_regime_source = std::string(
+			String(block.get("source", "")).utf8().get_data());
+		const Variant no_policy_variant = block.get("no_policy", Array());
+		if (no_policy_variant.get_type() == Variant::ARRAY) {
+			const Array no_policy = no_policy_variant;
+			for (int index = 0; index < no_policy.size(); ++index) {
+				const std::string tag(String(no_policy[index]).utf8().get_data());
+				if (!tag.empty()) {
+					ws.fx_no_policy_nations.push_back(tag);
+				}
+			}
+		}
+		const Variant rows_variant = block.get("currencies", Dictionary());
+		if (rows_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary rows = rows_variant;
+			for (const auto& row_entry : rows.entries()) {
+				if (row_entry.first.empty()
+						|| row_entry.second.get_type()
+							!= Variant::DICTIONARY) {
+					continue;
+				}
+				const std::string code(
+					String(row_entry.first).utf8().get_data());
+				const Dictionary row = row_entry.second;
+				FxRegimeInfo info;
+				info.regime = central_bank::regime_from_name(
+					std::string(String(row.get("regime", "")).utf8().get_data()),
+					central_bank::kRegimeBand);
+				info.anchor = std::string(String(row.get("anchor", ""))
+					.utf8().get_data());
+				info.anchor_type = std::string(String(row.get("anchor_type",
+					"none")).utf8().get_data());
+				info.anchor_source = std::string(String(row.get(
+					"anchor_source", "")).utf8().get_data());
+				info.issuer = std::string(String(row.get("issuer", ""))
+					.utf8().get_data());
+				info.locked = bool(row.get("locked", false));
+				info.source = std::string(String(row.get("source", ""))
+					.utf8().get_data());
+				const Variant basket_variant = row.get("basket", Variant());
+				if (basket_variant.get_type() == Variant::DICTIONARY) {
+					const Dictionary basket = basket_variant;
+					for (const auto& unit : basket.entries()) {
+						const std::string unit_code(
+							String(unit.first).utf8().get_data());
+						const double weight = double(unit.second);
+						if (!unit_code.empty() && std::isfinite(weight)
+								&& weight > 0.0) {
+							info.basket[unit_code] = weight;
+						}
+					}
+				}
+				ws.fx_regime[code] = std::move(info);
+			}
+		}
+	}
+	// 2. O regime SALVO da moeda acompanha o regime real (o dado vence o
+	//    "peg administrativo" que o save v30 carregava por default).
+	for (Currency& currency : ws.currencies) {
+		const auto found = ws.fx_regime.find(currency.code);
+		if (found == ws.fx_regime.end()) {
+			continue;
+		}
+		currency.exchange_regime = found->second.regime;
+		currency.floating = found->second.regime
+			!= central_bank::kRegimePeg;
+	}
+	// 3. Moeda extinta (D-108e): funde no substituto conservando valor.
+	for (const CurrencySuccession& row : kCurrencySuccessions) {
+		exchange::migrate_currency(ws, row.from, row.to,
+			row.units_per_target);
+	}
+	// 4. Paridade cruzada onde o save antigo não tinha paridade.
+	exchange::initialize_anchors(ws);
 	// Índices derivados dos planos (cidade × produto) e a resolução do bem
 	// `fertilizer`: só agora as cidades existem.
 	core.rebuild_crop_indexes();

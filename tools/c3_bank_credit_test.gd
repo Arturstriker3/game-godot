@@ -287,7 +287,7 @@ func _test_save() -> void:
 	sim.group_borrow(_first_group(sim), 1.0e9)
 	sim.tick_day()
 	var saved: Dictionary = sim.to_dict()
-	_check("A6 save na versão 30", int(saved.get("version", 0)) == 30,
+	_check("A6 save na versão 30", int(saved.get("version", 0)) == 31,
 		"version=" + str(saved.get("version")))
 	_check("A6 save publica o banco e o crédito",
 		saved.has("banks")
@@ -298,7 +298,7 @@ func _test_save() -> void:
 	# Os parâmetros de REGRA do laboratório (spread/teto de alavancagem) não
 	# são estado salvo: reaplicados no carregado para a continuação.
 	loaded.set_bank_policy(0.02, LEVERAGE_CAP, 2.0, 30, 0.5)
-	_check("A6 round-trip v30 bit-exato",
+	_check("A6 round-trip v31 bit-exato",
 		JSON.stringify(loaded.to_dict()) == JSON.stringify(saved), "difere")
 	for day in 5:
 		sim.tick_day()
@@ -326,7 +326,7 @@ func _test_save() -> void:
 		absf(float(old_bank.get("totals", {}).get("group_debt", -1.0))) <= EPS,
 		"debt=" + str(old_bank.get("totals", {}).get("group_debt")))
 	_check("A6 v29 migra para 30",
-		int(old.to_dict().get("version", 0)) == 30,
+		int(old.to_dict().get("version", 0)) == 31,
 		"version=" + str(old.to_dict().get("version")))
 
 

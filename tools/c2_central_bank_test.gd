@@ -47,7 +47,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 30
+const SAVE_VERSION := 31
 const EPS := 1e-3
 const CPI_SAMPLE_DAYS := 30
 const MODEL_YEAR_DAYS := 360
