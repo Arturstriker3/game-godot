@@ -29,7 +29,7 @@ const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employmen
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 const EXCHANGE_PATH := "res://data/definitions/economy/exchange_policy.json"
 
-const SAVE_VERSION := 33
+const SAVE_VERSION := 34
 const EPS := 1e-3
 
 var _failures: Array[String] = []
@@ -398,7 +398,7 @@ func _test_save_and_migration() -> void:
 	copy.from_dict(save)
 	_check(JSON.stringify(copy.to_dict(), "", true, true)
 		== JSON.stringify(save, "", true, true),
-		"save: round-trip v29 não é bit-exato")
+		"save: round-trip não é bit-exato")
 	for day in 5:
 		sim.tick_day()
 		copy.tick_day()
@@ -432,4 +432,4 @@ func _test_save_and_migration() -> void:
 		"migração: evento inventado para trás")
 	_check(int((migrated.to_dict() as Dictionary).get("version", 0))
 		== SAVE_VERSION,
-		"migração: o save carregado não foi regravado na v29")
+		"migração: o save carregado não foi regravado na v34")

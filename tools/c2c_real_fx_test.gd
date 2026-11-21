@@ -26,7 +26,7 @@ const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 
-const SAVE_VERSION := 33
+const SAVE_VERSION := 34
 const EPS := 1e-6
 
 var _failures: Array[String] = []
@@ -301,7 +301,7 @@ func _test_save_and_migration() -> void:
 	copy.from_dict(save)
 	_check(JSON.stringify(copy.to_dict(), "", true, true)
 		== JSON.stringify(save, "", true, true),
-		"save: round-trip v31 não é bit-exato")
+		"save: round-trip não é bit-exato")
 	var fx_copy := _fx(copy, "DEM")
 	_check(String(fx_copy.get("anchor", "")) == "ANC",
 		"save: âncora não voltou no load")
@@ -351,7 +351,7 @@ func _test_save_and_migration() -> void:
 	migrated.set_fx_regimes(_regimes())
 	migrated.from_dict(old)
 	_check(int(migrated.to_dict().get("version", 0)) == SAVE_VERSION,
-		"migração: o save carregado não foi regravado na v31")
+		"migração: o save carregado não foi regravado na v34")
 	_check(String(_fx(migrated, "ANC").get("regime_saved", "")) == "floating",
 		"migração: ANC deveria virar floating pelo arquivo (%s)" % _fx(
 			migrated, "ANC").get("regime_saved", ""))
