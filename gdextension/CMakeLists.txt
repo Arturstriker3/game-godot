@@ -42,6 +42,7 @@ add_library(opengs_sim STATIC
     src/sim/agriculture.cpp
     src/sim/balance.cpp
     src/sim/bank.cpp
+    src/sim/bank_crisis.cpp
     src/sim/stock.cpp
     src/sim/central_bank.cpp
     src/sim/monetary.cpp

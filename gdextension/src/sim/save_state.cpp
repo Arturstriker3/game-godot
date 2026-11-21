@@ -8,6 +8,7 @@
 #include "save_state.h"
 
 #include "bank.h"
+#include "bank_crisis.h"
 #include "central_bank.h"
 #include "exchange.h"
 #include "sim_constants.h"
@@ -1473,10 +1474,112 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["loans_count"] = bank.loans_count;
 			entry["last_default_day"] = bank.last_default_day;
 			entry["last_dividend_day"] = bank.last_dividend_day;
+			// C6 (D-114): estado de crise por banco (confianca, corrida,
+			// redesconto, seguro, bail-in, resolucao).
+			entry["confidence"] = bank.confidence;
+			entry["loss_seeded"] = bank.loss_seeded;
+			entry["loss_ema"] = bank.loss_ema;
+			entry["run_days"] = bank.run_days;
+			entry["last_run_day"] = bank.last_run_day;
+			entry["run_withdrawn"] = bank.run_withdrawn;
+			entry["run_cash"] = bank.run_cash;
+			entry["run_public"] = bank.run_public;
+			entry["run_foreign"] = bank.run_foreign;
+			entry["lolr_borrowed"] = bank.lolr_borrowed;
+			entry["lolr_interest"] = bank.lolr_interest;
+			entry["lolr_days"] = bank.lolr_days;
+			entry["insured_payout"] = bank.insured_payout;
+			entry["bailin_cut"] = bank.bailin_cut;
+			entry["treasury_rescue"] = bank.treasury_rescue;
+			entry["capital_flight"] = bank.capital_flight;
+			entry["recapitalized"] = bank.recapitalized;
+			entry["resolution_day"] = bank.resolution_day;
+			entry["resolved"] = bank.resolved;
+			entry["resolution"] = sim_str(bank.resolution.c_str());
+			entry["absorbed_into"] = sim_str(bank.absorbed_into.c_str());
+			entry["baseline_seeded"] = bank.baseline_seeded;
+			entry["open_capital_ratio"] = bank.open_capital_ratio;
+			entry["open_liquidity_ratio"] = bank.open_liquidity_ratio;
+			entry["last_capital_ratio"] = bank.last_capital_ratio;
+			entry["last_liquidity_ratio"] = bank.last_liquidity_ratio;
+			entry["last_npl_ratio"] = bank.last_npl_ratio;
 			rows[sim_str(row.first.c_str())] = entry;
 		}
 		block["banks"] = rows;
 		data["banks"] = block;
+	}
+	// C6 (v34/D-114) - CRISE BANCARIA: regra, fundo de seguro por nacao e o
+	// anel de eventos. ADITIVO: v33 e anteriores chegam sem o bloco e a
+	// migracao (`bank_crisis::after_load`) inicia os bancos calmos.
+	{
+		Dictionary block = make_object();
+		block["enabled"] = ws.bank_crisis.enabled;
+		Dictionary policy = make_object();
+		policy["capital_min"] = ws.bank_crisis.capital_min;
+		policy["capital_healthy"] = ws.bank_crisis.capital_healthy;
+		policy["capital_cut_floor"] = ws.bank_crisis.capital_cut_floor;
+		policy["liquidity_min"] = ws.bank_crisis.liquidity_min;
+		policy["liquidity_scale"] = ws.bank_crisis.liquidity_scale;
+		policy["loss_scale"] = ws.bank_crisis.loss_scale;
+		policy["loss_ema_days"] = ws.bank_crisis.loss_ema_days;
+		policy["confidence_start"] = ws.bank_crisis.confidence_start;
+		policy["smoothing"] = ws.bank_crisis.smoothing;
+		policy["w_solvency"] = ws.bank_crisis.w_solvency;
+		policy["w_liquidity"] = ws.bank_crisis.w_liquidity;
+		policy["w_losses"] = ws.bank_crisis.w_losses;
+		policy["w_contagion"] = ws.bank_crisis.w_contagion;
+		policy["w_market"] = ws.bank_crisis.w_market;
+		policy["run_threshold"] = ws.bank_crisis.run_threshold;
+		policy["run_share"] = ws.bank_crisis.run_share;
+		policy["flight_to_quality"] = ws.bank_crisis.flight_to_quality;
+		policy["lolr_spread"] = ws.bank_crisis.lolr_spread;
+		policy["lolr_haircut"] = ws.bank_crisis.lolr_haircut;
+		policy["lolr_max_assets"] = ws.bank_crisis.lolr_max_assets;
+		policy["insured_share"] = ws.bank_crisis.insured_share;
+		policy["premium_daily"] = ws.bank_crisis.premium_daily;
+		policy["fund_target_ratio"] = ws.bank_crisis.fund_target_ratio;
+		policy["capital_flight_share"] =
+			ws.bank_crisis.capital_flight_share;
+		policy["insolvency_tolerance"] =
+			ws.bank_crisis.insolvency_tolerance;
+		policy["insolvency_tolerance_ratio"] =
+			ws.bank_crisis.insolvency_tolerance_ratio;
+		policy["treasury_debt_rescue"] =
+			ws.bank_crisis.treasury_debt_rescue;
+		policy["takeover_public"] = ws.bank_crisis.takeover_public;
+		block["policy"] = policy;
+		Dictionary funds = make_object();
+		for (const auto& fund_row : ws.deposit_insurance) {
+			Dictionary entry = make_object();
+			entry["fund"] = fund_row.second.fund;
+			entry["premiums"] = fund_row.second.premiums;
+			entry["payouts"] = fund_row.second.payouts;
+			entry["last_payout_day"] = fund_row.second.last_payout_day;
+			funds[sim_str(fund_row.first.c_str())] = entry;
+		}
+		block["funds"] = funds;
+		Array events = make_array();
+		for (const BankCrisisEvent& event : ws.bank_crisis_events) {
+			Dictionary entry = make_object();
+			entry["day"] = event.day;
+			entry["bank"] = sim_str(event.bank.c_str());
+			entry["nation"] = sim_str(event.nation.c_str());
+			entry["kind"] = sim_str(event.kind.c_str());
+			entry["cause"] = sim_str(event.cause.c_str());
+			entry["gap"] = event.gap;
+			entry["cost_shareholders"] = event.cost_shareholders;
+			entry["cost_depositors"] = event.cost_depositors;
+			entry["cost_fund"] = event.cost_fund;
+			entry["cost_treasury"] = event.cost_treasury;
+			entry["cost_takeover"] = event.cost_takeover;
+			entry["capital_flight"] = event.capital_flight;
+			entry["lolr"] = event.lolr;
+			entry["emission"] = event.emission;
+			events.append(entry);
+		}
+		block["events"] = events;
+		block["events_total"] = ws.bank_crisis_events_total;
+		data["bank_crisis"] = block;
 	}
 	// C5 (v33/D-112) - BOLSA: uma praça por nação e um papel por grupo
 	// listado. ADITIVO: v32 e anteriores chegam sem o bloco e recebem a bolsa
@@ -2128,6 +2231,59 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					row.get("last_default_day", -1));
 				bank.last_dividend_day = int(
 					row.get("last_dividend_day", -1));
+				// C6 (D-114): estado de crise. v33 e anteriores nao tem as
+				// chaves: o banco carrega CALMO (confianca 1,0, sem corrida,
+				// sem resolucao) - nada inventado para tras.
+				bank.confidence = std::clamp(
+					double(row.get("confidence", 1.0)), 0.0, 1.0);
+				bank.loss_seeded = bool(row.get("loss_seeded", false));
+				bank.loss_ema = std::max(0.0,
+					double(row.get("loss_ema", 0.0)));
+				bank.run_days = std::max(0, int(row.get("run_days", 0)));
+				bank.last_run_day = int(row.get("last_run_day", -1));
+				bank.run_withdrawn = std::max(0.0,
+					double(row.get("run_withdrawn", 0.0)));
+				bank.run_cash = std::max(0.0,
+					double(row.get("run_cash", 0.0)));
+				bank.run_public = std::max(0.0,
+					double(row.get("run_public", 0.0)));
+				bank.run_foreign = std::max(0.0,
+					double(row.get("run_foreign", 0.0)));
+				bank.lolr_borrowed = std::max(0.0,
+					double(row.get("lolr_borrowed", 0.0)));
+				bank.lolr_interest = std::max(0.0,
+					double(row.get("lolr_interest", 0.0)));
+				bank.lolr_days = std::max(0,
+					int(row.get("lolr_days", 0)));
+				bank.insured_payout = std::max(0.0,
+					double(row.get("insured_payout", 0.0)));
+				bank.bailin_cut = std::max(0.0,
+					double(row.get("bailin_cut", 0.0)));
+				bank.treasury_rescue = std::max(0.0,
+					double(row.get("treasury_rescue", 0.0)));
+				bank.capital_flight = std::max(0.0,
+					double(row.get("capital_flight", 0.0)));
+				bank.recapitalized = std::max(0.0,
+					double(row.get("recapitalized", 0.0)));
+				bank.resolution_day = int(
+					row.get("resolution_day", -1));
+				bank.resolved = bool(row.get("resolved", false));
+				bank.resolution = std::string(String(
+					row.get("resolution", "none")).utf8().get_data());
+				bank.absorbed_into = std::string(String(
+					row.get("absorbed_into", "")).utf8().get_data());
+				bank.baseline_seeded = bool(
+					row.get("baseline_seeded", false));
+				bank.open_capital_ratio = double(
+					row.get("open_capital_ratio", 0.0));
+				bank.open_liquidity_ratio = double(
+					row.get("open_liquidity_ratio", 0.0));
+				bank.last_capital_ratio = double(
+					row.get("last_capital_ratio", 0.0));
+				bank.last_liquidity_ratio = double(
+					row.get("last_liquidity_ratio", 0.0));
+				bank.last_npl_ratio = double(
+					row.get("last_npl_ratio", 0.0));
 				ws.banks[bank.id] = bank;
 			}
 		} else if (nations_variant.get_type() == Variant::DICTIONARY) {
@@ -2453,6 +2609,132 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				ws.stock_tickers[ticker.group_id] = ticker;
 			}
 		}
+	}
+	// C6 (v34/D-114) - CRISE BANCARIA. v33 e anteriores chegam SEM o bloco:
+	// `bank_crisis::after_load` inicia os bancos calmos (confianca 1,0), fundo
+	// 0 e nenhum evento. O policy salvo e' regra (0 = default declarado).
+	ws.bank_crisis = BankCrisisPolicy{};
+	ws.deposit_insurance.clear();
+	ws.bank_crisis_events.clear();
+	ws.bank_crisis_events_total = 0;
+	if (data.has("bank_crisis")) {
+		const Dictionary block = data.get("bank_crisis", Dictionary());
+		ws.bank_crisis.enabled = bool(block.get("enabled", true));
+		const Value& policy_variant = block.get("policy", Value());
+		if (policy_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary params = policy_variant;
+			BankCrisisPolicy& pol = ws.bank_crisis;
+			pol.capital_min = std::max(0.0,
+				double(params.get("capital_min", 0.0)));
+			pol.capital_healthy = std::max(0.0,
+				double(params.get("capital_healthy", 0.0)));
+			pol.capital_cut_floor = std::clamp(
+				double(params.get("capital_cut_floor", 0.0)), 0.0, 1.0);
+			pol.liquidity_min = std::max(0.0,
+				double(params.get("liquidity_min", 0.0)));
+			pol.liquidity_scale = std::max(0.0,
+				double(params.get("liquidity_scale", 0.0)));
+			pol.loss_scale = std::max(0.0,
+				double(params.get("loss_scale", 0.0)));
+			pol.loss_ema_days = std::max(0.0,
+				double(params.get("loss_ema_days", 0.0)));
+			pol.confidence_start = std::max(0.0,
+				double(params.get("confidence_start", 0.0)));
+			pol.smoothing = std::clamp(
+				double(params.get("smoothing", 0.0)), 0.0, 1.0);
+			pol.w_solvency = std::max(0.0,
+				double(params.get("w_solvency", 0.0)));
+			pol.w_liquidity = std::max(0.0,
+				double(params.get("w_liquidity", 0.0)));
+			pol.w_losses = std::max(0.0,
+				double(params.get("w_losses", 0.0)));
+			pol.w_contagion = std::max(0.0,
+				double(params.get("w_contagion", 0.0)));
+			pol.w_market = std::max(0.0,
+				double(params.get("w_market", 0.0)));
+			pol.run_threshold = std::max(0.0,
+				double(params.get("run_threshold", 0.0)));
+			pol.run_share = std::clamp(
+				double(params.get("run_share", 0.0)), 0.0, 1.0);
+			pol.flight_to_quality = std::clamp(
+				double(params.get("flight_to_quality", 0.0)), 0.0, 1.0);
+			pol.lolr_spread = std::max(0.0,
+				double(params.get("lolr_spread", 0.0)));
+			pol.lolr_haircut = std::clamp(
+				double(params.get("lolr_haircut", 0.0)), 0.0, 1.0);
+			pol.lolr_max_assets = std::clamp(
+				double(params.get("lolr_max_assets", 0.0)), 0.0, 1.0);
+			pol.insured_share = std::clamp(
+				double(params.get("insured_share", 0.0)), 0.0, 1.0);
+			pol.premium_daily = std::max(0.0,
+				double(params.get("premium_daily", 0.0)));
+			pol.fund_target_ratio = std::max(0.0,
+				double(params.get("fund_target_ratio", 0.0)));
+			pol.capital_flight_share = std::clamp(
+				double(params.get("capital_flight_share", 0.0)),
+				0.0, 1.0);
+			pol.insolvency_tolerance = std::max(0.0,
+				double(params.get("insolvency_tolerance", 0.0)));
+			pol.insolvency_tolerance_ratio = std::max(0.0,
+				double(params.get("insolvency_tolerance_ratio", 0.0)));
+			pol.treasury_debt_rescue = bool(
+				params.get("treasury_debt_rescue", true));
+			pol.takeover_public = bool(
+				params.get("takeover_public", true));
+		}
+		const Value& funds_variant = block.get("funds", Value());
+		if (funds_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& funds = funds_variant;
+			for (const auto& row_entry : funds.entries()) {
+				if (row_entry.first.empty()
+						|| row_entry.second.get_type()
+							!= Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary& row = row_entry.second;
+				DepositInsurance fund;
+				fund.fund = std::max(0.0,
+					double(row.get("fund", 0.0)));
+				fund.premiums = std::max(0.0,
+					double(row.get("premiums", 0.0)));
+				fund.payouts = std::max(0.0,
+					double(row.get("payouts", 0.0)));
+				fund.last_payout_day = int(
+					row.get("last_payout_day", -1));
+				ws.deposit_insurance[std::string(row_entry.first)] = fund;
+			}
+		}
+		const Array events = block.get("events", Array());
+		for (int index = 0; index < events.size(); ++index) {
+			const Dictionary row = events[index];
+			BankCrisisEvent event;
+			event.day = int(row.get("day", -1));
+			event.bank = std::string(
+				String(row.get("bank", "")).utf8().get_data());
+			event.nation = std::string(
+				String(row.get("nation", "")).utf8().get_data());
+			event.kind = std::string(
+				String(row.get("kind", "")).utf8().get_data());
+			event.cause = std::string(
+				String(row.get("cause", "")).utf8().get_data());
+			event.gap = double(row.get("gap", 0.0));
+			event.cost_shareholders = double(
+				row.get("cost_shareholders", 0.0));
+			event.cost_depositors = double(
+				row.get("cost_depositors", 0.0));
+			event.cost_fund = double(row.get("cost_fund", 0.0));
+			event.cost_treasury = double(
+				row.get("cost_treasury", 0.0));
+			event.cost_takeover = double(
+				row.get("cost_takeover", 0.0));
+			event.capital_flight = double(
+				row.get("capital_flight", 0.0));
+			event.lolr = double(row.get("lolr", 0.0));
+			event.emission = double(row.get("emission", 0.0));
+			ws.bank_crisis_events.push_back(event);
+		}
+		ws.bank_crisis_events_total = int(
+			block.get("events_total", 0));
 	}
 	ws.fdi_policies.clear();
 	ws.fdi_lookup.clear();
@@ -4286,6 +4568,9 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	// patrimônio medido, carteira do default declarado); v33+ só completa
 	// linhas novas. Depende de grupos, construções e bancos já carregados.
 	stock::after_load(ws, version);
+	// C6 (D-114): v33 e anteriores recebem os bancos CALMOS (confianca 1,0),
+	// fundo 0 e nenhum evento; v34+ carrega o estado salvo.
+	bank_crisis::after_load(ws, version);
 }
 
 } // namespace ogs::save

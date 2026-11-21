@@ -6,6 +6,7 @@
 #include "bank.h"
 
 #include "balance.h"
+#include "bank_crisis.h"
 #include "exchange.h"
 #include "monetary.h"
 #include "sim_constants.h"
@@ -74,8 +75,23 @@ void renormalize(WorldState& ws, const std::string& nation) {
 	Bank* pub = find_mut(ws, nation, kRolePublic);
 	Bank* pri = find_mut(ws, nation, kRolePrivate);
 	Bank* fgn = find_mut(ws, nation, kRoleForeign);
-	const int count = (pub != nullptr ? 1 : 0) + (pri != nullptr ? 1 : 0)
-		+ (fgn != nullptr ? 1 : 0);
+	// C6 (D-114): papel absorvido pelo banco publico fica como CASCA (share 0)
+	// e nao volta a participar do sorteio de tomador quando as definicoes sao
+	// reaplicadas depois de um save.
+	const auto active = [](Bank* bank) {
+		return bank != nullptr && bank->absorbed_into.empty();
+	};
+	if (pub != nullptr && !pub->absorbed_into.empty()) {
+		pub->share = 0.0;
+	}
+	if (pri != nullptr && !pri->absorbed_into.empty()) {
+		pri->share = 0.0;
+	}
+	if (fgn != nullptr && !fgn->absorbed_into.empty()) {
+		fgn->share = 0.0;
+	}
+	const int count = (active(pub) ? 1 : 0) + (active(pri) ? 1 : 0)
+		+ (active(fgn) ? 1 : 0);
 	if (count == 0) {
 		return;
 	}
@@ -86,27 +102,27 @@ void renormalize(WorldState& ws, const std::string& nation) {
 		return;
 	}
 	if (count == 1) {
-		Bank* only = pub != nullptr ? pub : (pri != nullptr ? pri : fgn);
+		Bank* only = active(pub) ? pub : (active(pri) ? pri : fgn);
 		only->share = 1.0;
 		return;
 	}
-	if (pub != nullptr && pri != nullptr) {
+	if (active(pub) && active(pri)) {
 		pub->share = 0.55;
 		pri->share = 0.45;
 		return;
 	}
 	// Par público+estrangeiro (não acontece na prática; private sempre existe
 	// quando o par é criado): divide pelo peso declarado dos dois papéis.
-	const double wp = pub != nullptr ? kSharePublic : 0.0;
-	const double wf = fgn != nullptr ? kShareForeign : 0.0;
+	const double wp = active(pub) ? kSharePublic : 0.0;
+	const double wf = active(fgn) ? kShareForeign : 0.0;
 	const double total = wp + wf;
 	if (total <= 0.0) {
 		return;
 	}
-	if (pub != nullptr) {
+	if (active(pub)) {
 		pub->share = wp / total;
 	}
-	if (fgn != nullptr) {
+	if (active(fgn)) {
 		fgn->share = wf / total;
 	}
 }
@@ -133,6 +149,19 @@ void merge_into(Bank& into, const Bank& from) {
 		from.last_default_day);
 	into.last_dividend_day = std::max(into.last_dividend_day,
 		from.last_dividend_day);
+	// C6 (D-114): estado de crise tambem e' conservado na fusao por definicao
+	// (0 no mundo novo; so importa se o dado mudar no meio de uma crise).
+	into.confidence = std::min(into.confidence, from.confidence);
+	into.run_withdrawn += from.run_withdrawn;
+	into.run_cash += from.run_cash;
+	into.run_public += from.run_public;
+	into.run_foreign += from.run_foreign;
+	into.lolr_borrowed += from.lolr_borrowed;
+	into.lolr_interest += from.lolr_interest;
+	into.insured_payout += from.insured_payout;
+	into.bailin_cut += from.bailin_cut;
+	into.treasury_rescue += from.treasury_rescue;
+	into.capital_flight += from.capital_flight;
 }
 
 } // namespace
@@ -316,7 +345,7 @@ const Bank* lender(const WorldState& ws, const Group& group) {
 	const Bank* last = nullptr;
 	for (const int role : {kRolePublic, kRolePrivate, kRoleForeign}) {
 		const Bank* bank = find(ws, group.origin_nation, role);
-		if (bank == nullptr) {
+		if (bank == nullptr || !bank->absorbed_into.empty()) {
 			continue;
 		}
 		last = bank;
@@ -379,11 +408,21 @@ bool lend(WorldState& ws, const std::string& group_id, double amount,
 		}
 		return false;
 	}
-	const double granted = std::min(amount, limit);
 	Bank* bank = lender(ws, *group);
 	if (bank == nullptr) {
 		if (error != nullptr) {
 			*error = "nacao sem banco";
+		}
+		return false;
+	}
+	// C6 (D-114): banco abaixo do indice de capital minimo corta credito novo
+	// proporcionalmente (1,0 acima do minimo; 0 sem credito). No mundo base a
+	// razao esta acima do piso declarado e o fator e' 1.
+	const double tightening = bank_crisis::credit_factor(ws, *bank);
+	const double granted = std::min(amount, limit * tightening);
+	if (granted <= 1e-9) {
+		if (error != nullptr) {
+			*error = "credito cortado pelo capital do banco";
 		}
 		return false;
 	}

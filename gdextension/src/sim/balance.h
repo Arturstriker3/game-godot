@@ -107,11 +107,17 @@ struct Ledger {
 	// construção, entram com sinais opostos — valorização não cria dinheiro.
 	double stock_assets = 0.0;
 	double stock_claims = 0.0;
+	// C6 (D-114): caixa do fundo de seguro de depósito. O prêmio sai do caixa
+	// do banco (reduz `banking`) e entra aqui; o pagamento faz o caminho
+	// inverso. Sem o fundo, a enumeração de caixa ficaria menor que o
+	// `money_total` pelo saldo acumulado.
+	double insurance_fund = 0.0;
 
 	// Enumeração INDEPENDENTE do caixa: se divergir de `money_total`, algum
 	// caixa ficou de fora de um dos dois lados (é o que o invariante pega).
 	double cash_total() const {
-		return families_cash + firms_cash + government + external + bank_cash;
+		return families_cash + firms_cash + government + external + bank_cash
+			+ insurance_fund;
 	}
 	// Soma mundial das posições financeiras (deve ser 0). C4 (D-110): entram os
 	// claims de capital das famílias e do exterior e o M0 líquido de depósitos.
@@ -119,7 +125,7 @@ struct Ledger {
 	double financial_sum() const {
 		return families + firms + government + government_claims
 			+ household_claims + external + external_claims + banking
-			+ stock_assets - stock_claims
+			+ stock_assets - stock_claims + insurance_fund
 			- government_debt - monetary_base;
 	}
 	double cash_residual() const { return cash_total() - money_total; }

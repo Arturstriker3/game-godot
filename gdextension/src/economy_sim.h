@@ -519,6 +519,27 @@ public:
 	 */
 	Dictionary get_bank_status() const;
 	/**
+	 * C6 (D-114) — regras da crise bancária (laboratório/teste):
+	 * `enabled`, `capital_min`, `capital_healthy`, `liquidity_min`,
+	 * `liquidity_scale`, `loss_scale`, `loss_ema_days`, `smoothing`,
+	 * `run_threshold`, `run_share`, `flight_to_quality`, `lolr_spread`,
+	 * `lolr_haircut`, `lolr_max_assets`, `insured_share`, `premium_daily`,
+	 * `fund_target_ratio`, `capital_flight_share`, `treasury_debt_rescue`,
+	 * `takeover_public` e os pesos `w_solvency`/`w_liquidity`/`w_losses`/
+	 * `w_contagion`/`w_market`. `enabled` é estado (vai ao save); o resto é
+	 * regra (0 = default declarado em `sim/bank_crisis.h`).
+	 * @returns os valores efetivos.
+	 */
+	Dictionary set_bank_crisis(const Dictionary& config);
+	/**
+	 * C6 (D-114) — choque de perda de crédito no banco (teste/estresse):
+	 * baixa `loss` da carteira e da dívida dos tomadores na mesma proporção,
+	 * sem mover dinheiro. `loss_share` é a fração da carteira (0,30 = 30 %).
+	 * @returns `{ok, bank, written, share}`.
+	 */
+	Dictionary bank_shock(const String& bank_id, double loss,
+		double loss_share = 0.0);
+	/**
 	 * C5 (D-112) — alavancas de configuração da bolsa (laboratório): `enabled`,
 	 * `investment_channel`, `risk_premium`, `payout_ratio`, `step`,
 	 * `expectation_k`. `enabled` é estado (vai ao save); os parâmetros são regra

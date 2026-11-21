@@ -28,7 +28,7 @@ const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employmen
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 const MONETARY_PATH := "res://data/definitions/economy/monetary_policy.json"
 
-const SAVE_VERSION := 33
+const SAVE_VERSION := 34
 const EPS := 1e-3
 const DAYS_INDEPENDENT := 40
 const DAYS_CONTROLLED := 60

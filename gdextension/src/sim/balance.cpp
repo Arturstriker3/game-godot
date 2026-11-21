@@ -117,6 +117,11 @@ Ledger ledger(const WorldState& ws, double money_total) {
 	out.monetary_claims += out.bank_borrowing;
 	out.monetary_base = money_total - out.monetary_claims
 		- out.bank_deposits;
+	// C6 (D-114): fundo de seguro de depósito (caixa do mundo, sem passivo
+	// correspondente: o prêmio é transferência do banco).
+	for (const auto& row : ws.deposit_insurance) {
+		out.insurance_fund += row.second.fund;
+	}
 
 	for (const City& city : ws.cities) {
 		// Famílias: poupança dos quintis (o escalar da cidade é a soma), as

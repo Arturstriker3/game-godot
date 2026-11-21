@@ -208,6 +208,12 @@ double SimCore::money_total() const {
 	for (const auto& row : ws_.banks) {
 		total += row.second.cash;
 	}
+	// C6 (D-114): o fundo de seguro de depósito é dinheiro do mundo (o
+	// prêmio sai do caixa do banco; o pagamento volta como caixa do banco
+	// resolvido). Sem fundo (mundo base) o total é idêntico à C4.
+	for (const auto& row : ws_.deposit_insurance) {
+		total += row.second.fund;
+	}
 	// §15: o fundo reservado de cada obra (capital do investimento debitado no
 	// início) é dinheiro do mundo — soma para a conservação valer entre o débito
 	// (na decisão) e o pagamento incremental (no tick).
@@ -255,6 +261,11 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.fx_events = ws_.fx_events;
 	// C3 (D-107): o banco agregado (crédito, juro, calote) e a emissão líquida.
 	out.banks = ws_.banks;
+	// C6 (D-114): fundo de seguro e eventos entram no retrato (a crise move
+	// caixa e destrói depósito; reverter tem de desfazer os dois).
+	out.deposit_insurance = ws_.deposit_insurance;
+	out.bank_crisis_events = ws_.bank_crisis_events;
+	out.bank_crisis_events_total = ws_.bank_crisis_events_total;
 	// C5 (D-112): preço, confiança e dividendo da bolsa são estado do dia.
 	out.stock_exchanges = ws_.stock_exchanges;
 	out.stock_tickers = ws_.stock_tickers;
@@ -894,6 +905,10 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.fx = in.fx;
 	ws_.fx_events = in.fx_events;
 	ws_.banks = in.banks;
+	// C6 (D-114): fundo de seguro, eventos e a resolução andam juntos.
+	ws_.deposit_insurance = in.deposit_insurance;
+	ws_.bank_crisis_events = in.bank_crisis_events;
+	ws_.bank_crisis_events_total = in.bank_crisis_events_total;
 	// C5 (D-112): desfazer o tick desfaz preço, confiança e dividendo pago.
 	ws_.stock_exchanges = in.stock_exchanges;
 	ws_.stock_tickers = in.stock_tickers;

@@ -419,6 +419,14 @@ struct WorldState {
 	double bank_interest_cover = 0.0; // 0 = kInterestCoverDefault (2,0)
 	int bank_default_days = 0;        // 0 = kDefaultDaysDefault (30)
 	double bank_repay_share = 0.0;    // 0 = kRepayShareDefault (0,5)
+	// C6 (D-114) - CRISE BANCARIA: regras declaradas (bank_crisis.json, espelho
+	// em sim/bank_crisis.h), o fundo de seguro por nacao e o anel de eventos.
+	// `enabled` e estado (save v34); o resto e REGRA (0 = default declarado).
+	// O fundo entra no `money_total` (premio/pagamento conservam dinheiro).
+	BankCrisisPolicy bank_crisis;
+	std::map<std::string, DepositInsurance> deposit_insurance;
+	std::vector<BankCrisisEvent> bank_crisis_events;  // anel de 64
+	int bank_crisis_events_total = 0;                // contador total (save)
 	// C5 (D-112) - BOLSA: uma praça por nação e um papel por grupo listado.
 	// `stock_enabled` é ESTADO (vai ao save); os demais são REGRA (0 = default
 	// declarado em sim/stock.h). O canal de investimento (q de Tobin) é uma
