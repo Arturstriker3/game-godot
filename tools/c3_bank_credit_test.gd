@@ -70,8 +70,9 @@ func _test_absence() -> void:
 			and absf(float(totals.get("group_debt", -1.0))) <= EPS,
 		"capital=%s debt=%s" % [totals.get("capital"),
 			totals.get("group_debt")])
-	_check("A7 depósito ausente declarado",
-		String(policy.get("deposits", "")) == "absent",
+	_check("A7 depósito é dinheiro bancário (C4)",
+		String(policy.get("deposits", "")) == "firm deposits (bank money, C4)"
+			and String(policy.get("resolution", "")) == "C6",
 		String(policy.get("deposits", "")))
 	_check("A7 nenhuma nação inventada",
 		(bank.get("nations", []) as Array).is_empty(),
@@ -91,32 +92,46 @@ func _test_loan_creates_and_payment_destroys() -> void:
 	var group_id := _first_group(sim)
 	var money0 := float(sim.get_status().get("money_total"))
 	var emission0 := _emission(sim)
+	var deposits0 := float(_bank_totals(sim).get("deposits", 0.0))
+	var m0_0 := float(_bank_totals(sim).get("m0", 0.0))
 	var borrow: Dictionary = sim.group_borrow(group_id, 1.0e9)
 	var granted := float(borrow.get("granted", 0.0))
 	_check("A3 empresta algo", granted > 0.0, JSON.stringify(borrow))
 	var money1 := float(sim.get_status().get("money_total"))
-	_check("A3 empréstimo cria M0 (Δm = A)",
+	# C4 (D-110): o empréstimo cria DINHEIRO BANCÁRIO (depósito do tomador), não
+	# M0 — M1 sobe A, M0 não muda e o BC não emite.
+	_check("A3 empréstimo cria dinheiro bancário (Δm = A)",
 		absf(money1 - money0 - granted) <= EPS,
 		"Δm=%.6f A=%.6f" % [money1 - money0, granted])
-	_check("A3 empréstimo é emissão do BC",
-		absf(_emission(sim) - emission0 - granted) <= EPS,
-		"Δemissão=%.6f A=%.6f" % [_emission(sim) - emission0, granted])
+	_check("A3 empréstimo cria depósito (Δdep = A)",
+		absf(float(_bank_totals(sim).get("deposits", 0.0)) - deposits0
+			- granted) <= EPS,
+		"Δdep=%.6f A=%.6f" % [float(_bank_totals(sim).get("deposits", 0.0))
+			- deposits0, granted])
+	_check("A3 empréstimo NÃO é emissão do BC",
+		absf(_emission(sim) - emission0) <= EPS,
+		"Δemissão=%.6f" % (_emission(sim) - emission0))
+	_check("A3 M0 não muda com o empréstimo",
+		absf(float(_bank_totals(sim).get("m0", 0.0)) - m0_0) <= EPS,
+		"ΔM0=%.6f" % (float(_bank_totals(sim).get("m0", 0.0)) - m0_0))
 	var loans_count := int(_bank_totals(sim).get("loans_count", 0))
 	_check("A3 fixture empresta só o pedido do teste", loans_count == 1,
 		"loans_count=%d" % loans_count)
+	var income0 := float(_bank_totals(sim).get("interest_income", 0.0))
 	sim.tick_day()
 	var loans_after := float(_bank_totals(sim).get("loans", 0.0))
 	var paid_principal := granted - loans_after
-	var base_interest := float(_bank_totals(sim).get("interest_expense", 0.0))
+	var paid_interest := float(_bank_totals(sim).get("interest_income", 0.0)) \
+		- income0
 	var money2 := float(sim.get_status().get("money_total"))
-	print(("[c3-bank] A3 amortização: A=%.3f P=%.3f juro básico=%.3f Δm=%.3f"
-		% [granted, paid_principal, base_interest, money2 - money1]))
+	print(("[c3-bank] A3 amortização: A=%.3f P=%.3f juro pago=%.3f Δm=%.3f"
+		% [granted, paid_principal, paid_interest, money2 - money1]))
 	_check("A3 amortização exige principal > 0", paid_principal > 0.0,
 		"P=%.6f" % paid_principal)
-	_check("A3 pagamento destrói M0 (Δm = −P − juro básico)",
-		absf(money2 - money1 + paid_principal + base_interest) <= EPS,
+	_check("A3 pagamento destrói dinheiro bancário (Δm = −P − juro pago)",
+		absf(money2 - money1 + paid_principal + paid_interest) <= EPS,
 		"Δm=%.6f esperado=%.6f" % [money2 - money1,
-			-(paid_principal + base_interest)])
+			-(paid_principal + paid_interest)])
 
 
 # --- A2 -------------------------------------------------------------------
@@ -287,12 +302,12 @@ func _test_save() -> void:
 	sim.group_borrow(_first_group(sim), 1.0e9)
 	sim.tick_day()
 	var saved: Dictionary = sim.to_dict()
-	_check("A6 save na versão 30", int(saved.get("version", 0)) == 31,
+	_check("A6 save na versão 32", int(saved.get("version", 0)) == 32,
 		"version=" + str(saved.get("version")))
 	_check("A6 save publica o banco e o crédito",
 		saved.has("banks")
 			and (saved.get("banks", {}) as Dictionary).has("enabled")
-			and (saved.get("banks", {}) as Dictionary).has("nations"),
+			and (saved.get("banks", {}) as Dictionary).has("banks"),
 		"keys=" + str((saved.get("banks", {}) as Dictionary).keys()))
 	var loaded = _load(saved)
 	# Os parâmetros de REGRA do laboratório (spread/teto de alavancagem) não
@@ -325,8 +340,8 @@ func _test_save() -> void:
 	_check("A6 v29 carrega com dívida 0",
 		absf(float(old_bank.get("totals", {}).get("group_debt", -1.0))) <= EPS,
 		"debt=" + str(old_bank.get("totals", {}).get("group_debt")))
-	_check("A6 v29 migra para 30",
-		int(old.to_dict().get("version", 0)) == 31,
+	_check("A6 v29 migra para 32",
+		int(old.to_dict().get("version", 0)) == 32,
 		"version=" + str(old.to_dict().get("version")))
 
 

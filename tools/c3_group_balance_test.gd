@@ -123,8 +123,8 @@ func _test_credit_off(sim) -> void:
 	var totals: Dictionary = bank.get("totals", {})
 	_check("crédito nasce desligado", not bool(policy.get("enabled", true)),
 		"enabled=" + str(policy.get("enabled")))
-	_check("depósito declarado ausente (C4)",
-		String(policy.get("deposits", "")) == "absent",
+	_check("depósito é dinheiro bancário (C4)",
+		String(policy.get("deposits", "")) == "firm deposits (bank money, C4)",
 		String(policy.get("deposits", "")))
 	_check("resolução declarada (C6)",
 		String(policy.get("resolution", "")) == "C6",

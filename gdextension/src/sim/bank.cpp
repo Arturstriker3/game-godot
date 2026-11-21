@@ -8,6 +8,7 @@
 #include "balance.h"
 #include "exchange.h"
 #include "monetary.h"
+#include "sim_constants.h"
 
 #include <algorithm>
 #include <cmath>
@@ -402,7 +403,43 @@ bool lend(WorldState& ws, const std::string& group_id, double amount,
 namespace {
 
 // Capital pago pelas famílias da nação: sai da poupança das cidades na ordem
-// de tamanho, conservado. Devolve o efetivamente pago.
+// de tamanho, CONSERVADO. A poupança tem duas camadas (`pop.savings` é
+// reconstruída de `pop.stratum_savings` na renda do dia): debitar só o escalar
+// faria o dinheiro voltar — as duas andam juntas.
+double debit_households(Pop& pop, double amount) {
+	double total = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		total += std::max(0.0, pop.stratum_savings[s]);
+	}
+	if (total <= 0.0 || amount <= 0.0) {
+		return 0.0;
+	}
+	const double take = std::min(amount, total);
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		const double share = std::max(0.0, pop.stratum_savings[s]) / total;
+		pop.stratum_savings[s] = std::max(0.0,
+			pop.stratum_savings[s] - take * share);
+	}
+	pop.savings = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		pop.savings += std::max(0.0, pop.stratum_savings[s]);
+	}
+	return take;
+}
+
+// Credita as famílias na mesma camada (dividendo do banco privado): entra no
+// estrato mais alto (são os donos do banco no modelo) e a escalar acompanha.
+void credit_households(Pop& pop, double amount) {
+	if (!(amount > 0.0)) {
+		return;
+	}
+	pop.stratum_savings[kIncomeStrata - 1] += amount;
+	pop.savings = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		pop.savings += std::max(0.0, pop.stratum_savings[s]);
+	}
+}
+
 double pay_from_households(WorldState& ws, const std::string& nation,
 		double amount) {
 	std::vector<City*> cities;
@@ -422,13 +459,7 @@ double pay_from_households(WorldState& ws, const std::string& nation,
 		if (paid >= amount) {
 			break;
 		}
-		const double take = std::min(amount - paid,
-			std::max(0.0, city->pop.savings));
-		if (take <= 0.0) {
-			continue;
-		}
-		city->pop.savings -= take;
-		paid += take;
+		paid += debit_households(city->pop, amount - paid);
 	}
 	return paid;
 }
@@ -555,7 +586,7 @@ void distribute_dividends(WorldState& ws, const Policy& pol) {
 				bank.deposits -= payout;
 				continue;
 			}
-			city->pop.savings += payout;
+			credit_households(city->pop, payout);
 		} else {
 			ws.foreign_cash += payout;
 			bank.remittance += payout;

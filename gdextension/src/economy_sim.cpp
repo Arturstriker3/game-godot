@@ -9667,6 +9667,14 @@ void EconomySim::set_bank_definitions(const Dictionary& definitions) {
 	}
 	const Dictionary nations = nations_variant;
 	const Array codes = nations.keys();
+	// Dado com `null` (ausência declarada) vira "" — nunca "<null>".
+	const auto text_of = [](const Dictionary& row, const char* key) {
+		const Variant value = row.get(key, Variant());
+		if (value.get_type() != Variant::STRING) {
+			return std::string();
+		}
+		return std::string(String(value).utf8().get_data());
+	};
 	std::vector<ogs::bank::NameData> defs;
 	defs.reserve(static_cast<std::size_t>(codes.size()));
 	for (int index = 0; index < codes.size(); ++index) {
@@ -9681,25 +9689,21 @@ void EconomySim::set_bank_definitions(const Dictionary& definitions) {
 		const Variant pub_variant = entry.get("public", Variant());
 		if (pub_variant.get_type() == Variant::DICTIONARY) {
 			const Dictionary pub = pub_variant;
-			data.public_name = std::string(
-				String(pub.get("name", "")).utf8().get_data());
-			data.public_present = bool(pub.get("status", "") == "present");
+			data.public_name = text_of(pub, "name");
+			data.public_present = text_of(pub, "status") == "present";
 		}
 		const Variant pri_variant = entry.get("private", Variant());
 		if (pri_variant.get_type() == Variant::DICTIONARY) {
 			const Dictionary pri = pri_variant;
-			data.private_name = std::string(
-				String(pri.get("name", "")).utf8().get_data());
-			data.private_present = bool(pri.get("status", "") == "present");
+			data.private_name = text_of(pri, "name");
+			data.private_present = text_of(pri, "status") == "present";
 		}
 		const Variant fgn_variant = entry.get("foreign", Variant());
 		if (fgn_variant.get_type() == Variant::DICTIONARY) {
 			const Dictionary fgn = fgn_variant;
-			data.foreign_name = std::string(String(
-				fgn.get("branch_candidate", "")).utf8().get_data());
-			data.foreign_origin = std::string(
-				String(fgn.get("origin_iso3", "")).utf8().get_data());
-			data.foreign_present = bool(fgn.get("status", "") == "present");
+			data.foreign_name = text_of(fgn, "branch_candidate");
+			data.foreign_origin = text_of(fgn, "origin_iso3");
+			data.foreign_present = text_of(fgn, "status") == "present";
 		}
 		defs.push_back(data);
 	}
@@ -9793,7 +9797,11 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["id"] = String(bank.id.c_str());
 		entry["nation"] = String(bank.nation.c_str());
 		entry["role"] = String(ogs::bank::role_key(bank.role));
-		entry["name"] = String(bank.name.c_str());
+		// Nome só quando o dado o declara: chave ausente é a ausência honesta
+		// (`name_status = no_data`), nunca um nome inventado.
+		if (!bank.name.empty()) {
+			entry["name"] = String::utf8(bank.name.c_str());
+		}
 		entry["name_status"] = String(bank.name_status.c_str());
 		entry["owner_kind"] = String(bank.owner_kind.c_str());
 		entry["owner_nation"] = String(bank.owner_nation.c_str());
