@@ -255,6 +255,9 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.fx_events = ws_.fx_events;
 	// C3 (D-107): o banco agregado (crédito, juro, calote) e a emissão líquida.
 	out.banks = ws_.banks;
+	// C5 (D-112): preço, confiança e dividendo da bolsa são estado do dia.
+	out.stock_exchanges = ws_.stock_exchanges;
+	out.stock_tickers = ws_.stock_tickers;
 	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
@@ -891,6 +894,9 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.fx = in.fx;
 	ws_.fx_events = in.fx_events;
 	ws_.banks = in.banks;
+	// C5 (D-112): desfazer o tick desfaz preço, confiança e dividendo pago.
+	ws_.stock_exchanges = in.stock_exchanges;
+	ws_.stock_tickers = in.stock_tickers;
 	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;
@@ -1006,6 +1012,35 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 				+ std::to_string(book.bank_borrowing) + " divida="
 				+ std::to_string(book.group_debt) + " depositos="
 				+ std::to_string(book.bank_deposits));
+		}
+		// C5 (D-112) - BOLSA: a carteira dos detentores tem de fechar com as
+		// ações emitidas (senão haveria ação criada do nada) e o preço é um
+		// ativo — finito e não negativo. Valorização não entra na conservação
+		// de dinheiro: só o dividendo move caixa.
+		const double stock_gap = book.stock_assets - book.stock_claims;
+		if (!std::isfinite(stock_gap)
+				|| std::abs(stock_gap) > book_tolerance) {
+			violations.push_back("bolsa: acoes nao fecham dos dois lados: dia="
+				+ std::to_string(ws_.day) + " carteiras="
+				+ std::to_string(book.stock_assets) + " emissores="
+				+ std::to_string(book.stock_claims) + " gap="
+				+ std::to_string(stock_gap));
+		}
+		for (const auto& row : ws_.stock_tickers) {
+			const StockTicker& ticker = row.second;
+			const double claims = ticker.holdings.total() - ticker.shares;
+			const double tolerance = std::max(1e-6,
+				std::abs(ticker.shares) * 1e-9);
+			if (!std::isfinite(ticker.price) || ticker.price < 0.0
+					|| !std::isfinite(claims)
+					|| std::abs(claims) > tolerance) {
+				violations.push_back("bolsa: papel inconsistente: dia="
+					+ std::to_string(ws_.day) + " grupo="
+					+ ticker.group_id + " preco="
+					+ std::to_string(ticker.price) + " carteira="
+					+ std::to_string(ticker.holdings.total()) + " acoes="
+					+ std::to_string(ticker.shares));
+			}
 		}
 		for (const auto& row : ws_.banks) {
 			const Bank& bank = row.second;

@@ -1,6 +1,7 @@
 #include "sim_day.h"
 
 #include "profiling.h"
+#include "stock.h"
 #include "urban_land.h"
 
 namespace ogs {
@@ -136,6 +137,16 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// insolvente além do prazo — o calote, com a perda no banco. Sem crédito
 	// (default) a fase não toca no estado.
 	core.phase_credit();
+
+	// 9f. C5 (D-112): bolsa de valores. Lucro esperado e confiança (diários),
+	// preço convergente no fechamento SEMANAL e dividendo no fechamento
+	// MENSAL, pagos do caixa do emissor aos detentores (soma zero). A
+	// valorização não move caixa. Roda antes dos invariantes para que a
+	// reversão de um tick corrompido desfaça preço/confiança/dividendo.
+	{
+		OGS_SIM_ZONE(kPhaseStock);
+		stock::phase(ws);
+	}
 
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra

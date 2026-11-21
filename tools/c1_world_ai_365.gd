@@ -456,6 +456,9 @@ func _run() -> void:
 	var day_before := int(sim.get_status().get("day", 0))
 	var hash_lines := PackedStringArray()
 	var wall_start := Time.get_ticks_msec()
+	var stock_start: Dictionary = {}
+	var stock_formed: Dictionary = {}
+	var stock_timeline: Array = []
 
 	for day in _days:
 		if _fx_seed_days > 0 and day == 30:
@@ -486,6 +489,16 @@ func _run() -> void:
 		# comida, M0, estoque privado, crédito). Ver
 		# core/economy/trajectory_digest.gd e docs/economy/inv_c2b1_gate/README.md.
 		hash_lines.append(TrajectoryDigest.line(day_now, status, sim))
+		if day == 0 and sim.has_method("get_stock_status"):
+			# C5 (D-112): a bolsa nasce no primeiro tick; a variação do ano é
+			# medida deste fechamento até o último.
+			stock_start = sim.get_stock_status()
+		if day_now == 63 and sim.has_method("get_stock_status"):
+			# C5-fix (D-112): o índice só é publicado depois do aquecimento;
+			# os papéis são medidos do dia de formação até o fim do ano.
+			stock_formed = sim.get_stock_status()
+		if [63, 120, 200, 300, 365].has(day_now) and sim.has_method("get_stock_status"):
+			stock_timeline.append(_stock_timeline_row(sim, day_now))
 		if int(day_now) % 30 == 0 or day == _days - 1:
 			print("[c1] progresso dia %d/%d t=%.1fs"
 				% [int(day_now), _days,
@@ -520,6 +533,8 @@ func _run() -> void:
 		# C4 (D-110): totais dos bancos no fim do mundo — depósitos, retido,
 		# dividendo e remessa do banco estrangeiro. Só medição.
 		"banks": _banks_totals(sim),
+		"stock": _stock_report(sim, stock_start, status_final, stock_formed),
+		"stock_timeline": stock_timeline,
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	if _fx_seed_days > 0:
@@ -547,6 +562,21 @@ func _run() -> void:
 			float((balance["world"] as Dictionary).get("families_net_worth", 0.0))]
 		+ "atrasado=%.0f saída=" % float((balance["invariant"] as Dictionary)
 			.get("receivables", 0.0)) + _out)
+	var stock_line: Dictionary = out.get("stock", {})
+	if not stock_line.is_empty():
+		print("[c1] bolsa (C5): indice=%.1f variacao p10/p50/p90=%.2f%%/%.2f%%/%.2f%%"
+			% [float(stock_line.get("index_global", 100.0)),
+				100.0 * float(stock_line.get("variation_p10", 0.0)),
+				100.0 * float(stock_line.get("variation_p50", 0.0)),
+				100.0 * float(stock_line.get("variation_p90", 0.0))]
+			+ " confianca p10/p50/p90=%.3f/%.3f/%.3f papeis=%d dividendo=%.0f"
+			% [float(stock_line.get("confidence_p10", 1.0)),
+				float(stock_line.get("confidence_p50", 1.0)),
+				float(stock_line.get("confidence_p90", 1.0)),
+				int(stock_line.get("listed", 0)),
+				float(stock_line.get("dividends_paid", 0.0))]
+			+ " investimento=%.0f"
+			% float(stock_line.get("investment_capex_total", 0.0)))
 	print("[c1] OK: 365 d medidos")
 	if _credit or bool(credit["enabled"]):
 		print("[c1] crédito (C3): ligado=%s empréstimos=%d dívida=%.3f "
@@ -589,3 +619,170 @@ func _banks_totals(sim) -> Dictionary:
 	for key in keys:
 		out[key] = totals.get(key, 0.0)
 	return out
+
+
+## Percentil linear de uma lista JÁ ordenada (0..1); vazio = 0.
+func _pct(values: Array, fraction: float) -> float:
+	if values.is_empty():
+		return 0.0
+	var position := fraction * float(values.size() - 1)
+	var low := int(floor(position))
+	var high := int(ceil(position))
+	var weight := position - float(low)
+	return float(values[low]) * (1.0 - weight) + float(values[high]) * weight
+
+
+func _stock_report(sim, start: Dictionary, final_status: Dictionary,
+		formed: Dictionary = {}) -> Dictionary:
+	# C5 (D-112): índice das praças no ano (variação por bolsa), confiança
+	# final, dividendos/remessa e o investimento medido dos grupos. Só medição.
+	if not sim.has_method("get_stock_status"):
+		return {}
+	var end: Dictionary = sim.get_stock_status()
+	var totals: Dictionary = end.get("totals", {})
+	var out: Dictionary = {
+		"index_global": float(totals.get("index_global", 100.0)),
+		"market_cap": float(totals.get("market_cap", 0.0)),
+		"book_equity": float(totals.get("book_equity", 0.0)),
+		"listed": int(totals.get("listed", 0)),
+		"exchanges": int(totals.get("exchanges", 0)),
+		"dividends_paid": float(totals.get("dividends_paid", 0.0)),
+		"remittance": float(totals.get("remittance", 0.0)),
+		"remittance_origin": float(totals.get("remittance_origin", 0.0)),
+		"equity_identity": float(totals.get("equity_identity", 0.0)),
+	}
+	var start_index: Dictionary = {}
+	for row: Dictionary in start.get("exchanges", []):
+		start_index[String(row.get("nation", ""))] = float(
+			row.get("index", 100.0))
+	var changes: Array = []
+	var confidences: Array = []
+	for row: Dictionary in end.get("exchanges", []):
+		var nation := String(row.get("nation", ""))
+		confidences.append(float(row.get("confidence", 1.0)))
+		if not start_index.has(nation):
+			continue
+		var base := float(start_index[nation])
+		if base <= 0.0 or float(row.get("index_base", 0.0)) <= 0.0:
+			continue
+		changes.append(float(row.get("index", 100.0)) / base - 1.0)
+	changes.sort()
+	confidences.sort()
+	out["exchange_changes"] = changes.size()
+	out["variation_p10"] = _pct(changes, 0.10)
+	out["variation_p50"] = _pct(changes, 0.50)
+	out["variation_p90"] = _pct(changes, 0.90)
+	out["confidence_p10"] = _pct(confidences, 0.10)
+	out["confidence_p50"] = _pct(confidences, 0.50)
+	out["confidence_p90"] = _pct(confidences, 0.90)
+	var qs: Array = []
+	for row: Dictionary in end.get("tickers", []):
+		if bool(row.get("listed", false)):
+			qs.append(float(row.get("q", 0.0)))
+	qs.sort()
+	out["q_p50"] = _pct(qs, 0.50)
+	# Investimento total medido: capex acumulado dos grupos (C3/C4).
+	var invested := 0.0
+	for group: Dictionary in sim.get_groups():
+		invested += float(group.get("capex_total", 0.0))
+	out["investment_capex_total"] = invested
+	out["bankruptcies"] = int(final_status.get("bankruptcies", -1))
+	# C5-fix (D-112): variação por PAPEL da formação do índice até o fim do ano,
+	# com a causa medida (lucro de referência e confiança da praça).
+	var paper_changes: Array = []
+	var paper_detail: Array = []
+	var base_ema: Dictionary = {}
+	var base_conf: Dictionary = {}
+	var base_price: Dictionary = {}
+	var base_rate: Dictionary = {}
+	var end_rate: Dictionary = {}
+	for row: Dictionary in formed.get("exchanges", []):
+		base_conf[String(row.get("nation", ""))] = float(
+			row.get("confidence", 1.0))
+		base_rate[String(row.get("nation", ""))] = float(
+			row.get("policy_rate", 0.0))
+	for row: Dictionary in end.get("exchanges", []):
+		end_rate[String(row.get("nation", ""))] = float(
+			row.get("policy_rate", 0.0))
+	for row: Dictionary in formed.get("tickers", []):
+		base_ema[String(row.get("group_id", ""))] = float(
+			row.get("profit_ema", 0.0))
+		base_price[String(row.get("group_id", ""))] = float(
+			row.get("price", 0.0))
+	for row: Dictionary in end.get("tickers", []):
+		if not bool(row.get("listed", false)):
+			continue
+		var group_id := String(row.get("group_id", ""))
+		var old_price := float(base_price.get(group_id, 0.0))
+		if old_price <= 0.0 or not base_price.has(group_id):
+			continue
+		var new_price := float(row.get("price", 0.0))
+		var change := new_price / old_price - 1.0
+		var old_ema := float(base_ema.get(group_id, 0.0))
+		var new_ema := float(row.get("profit_ema", 0.0))
+		var nation := String(row.get("exchange", ""))
+		var old_conf := float(base_conf.get(nation, 1.0))
+		var new_conf := float(_confidence_of(end, nation))
+		paper_changes.append(change)
+		paper_detail.append({
+			"group_id": group_id,
+			"nation": nation,
+			"change": change,
+			"price_start": old_price,
+			"price_end": new_price,
+			"profit_ema_start": old_ema,
+			"profit_ema_end": new_ema,
+			"profit_change": (new_ema / old_ema - 1.0) if old_ema > 0.0 else null,
+			"confidence_start": old_conf,
+			"confidence_end": new_conf,
+			"confidence_change": new_conf / old_conf - 1.0 if old_conf > 0.0 else null,
+			"rate_start": float(base_rate.get(nation, 0.0)),
+			"rate_end": float(end_rate.get(nation, 0.0)),
+			"pe": float(row.get("pe", 0.0)),
+			"q": float(row.get("q", 0.0)),
+		})
+	paper_changes.sort()
+	out["paper_changes"] = paper_changes.size()
+	out["paper_variation_p10"] = _pct(paper_changes, 0.10)
+	out["paper_variation_p50"] = _pct(paper_changes, 0.50)
+	out["paper_variation_p90"] = _pct(paper_changes, 0.90)
+	paper_detail.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return absf(float(a["change"])) > absf(float(b["change"])))
+	out["paper_extremes"] = paper_detail.slice(0, 5)
+	return out
+
+
+## Linha do tempo agregada da bolsa (só medição): o que move o índice — lucro
+## de referência, patrimônio medido, múltiplo (taxa) ou confiança.
+func _stock_timeline_row(sim, day: int) -> Dictionary:
+	var status: Dictionary = sim.get_stock_status()
+	var totals: Dictionary = status.get("totals", {})
+	var earnings := 0.0
+	for row: Dictionary in status.get("tickers", []):
+		if bool(row.get("listed", false)):
+			earnings += float(row.get("profit_ema", 0.0))
+	var rates: Array = []
+	var confs: Array = []
+	for row: Dictionary in status.get("exchanges", []):
+		rates.append(float(row.get("policy_rate", 0.0)))
+		confs.append(float(row.get("confidence", 1.0)))
+	rates.sort()
+	confs.sort()
+	return {
+		"day": day,
+		"listed": int(totals.get("listed", 0)),
+		"market_cap": float(totals.get("market_cap", 0.0)),
+		"book_equity": float(totals.get("book_equity", 0.0)),
+		"index_global": float(totals.get("index_global", 100.0)),
+		"earnings_daily_sum": earnings,
+		"rate_median": _pct(rates, 0.50),
+		"confidence_median": _pct(confs, 0.50),
+	}
+
+
+## Confiança da praça no status (1.0 se a nação não aparece).
+func _confidence_of(status: Dictionary, nation: String) -> float:
+	for row: Dictionary in status.get("exchanges", []):
+		if String(row.get("nation", "")) == nation:
+			return float(row.get("confidence", 1.0))
+	return 1.0

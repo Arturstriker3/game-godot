@@ -414,12 +414,23 @@ struct WorldState {
 	// novo desde a D-111 (a C4 criou o credor); save antigo sem o bloco do
 	// banco continua carregando desligado.
 	std::map<std::string, Bank> banks;
-	bool bank_credit_enabled = true;
-	double bank_spread = 0.0;         // 0 = kSpreadDefault (2 p.p.)
+	bool bank_credit_enabled = true;	double bank_spread = 0.0;         // 0 = kSpreadDefault (2 p.p.)
 	double bank_leverage_cap = 0.0;   // 0 = kLeverageCapDefault (1,0)
 	double bank_interest_cover = 0.0; // 0 = kInterestCoverDefault (2,0)
 	int bank_default_days = 0;        // 0 = kDefaultDaysDefault (30)
 	double bank_repay_share = 0.0;    // 0 = kRepayShareDefault (0,5)
+	// C5 (D-112) - BOLSA: uma praça por nação e um papel por grupo listado.
+	// `stock_enabled` é ESTADO (vai ao save); os demais são REGRA (0 = default
+	// declarado em sim/stock.h). O canal de investimento (q de Tobin) é uma
+	// alavanca de laboratório para o A/B do aceite, não um número de jogo.
+	std::map<std::string, StockExchange> stock_exchanges;
+	std::map<std::string, StockTicker> stock_tickers;
+	bool stock_enabled = true;
+	bool stock_investment_channel = true;
+	double stock_risk_premium = 0.0;   // 0 = kRiskPremiumDefault (4 %)
+	double stock_payout_ratio = 0.0;   // 0 = kPayoutRatioDefault (0,5)
+	double stock_step = 0.0;           // 0 = kStepDefault (0,35/semana)
+	double stock_expectation_k = 0.0;  // 0 = kExpectationKDefault (5 %/dia)
 	// Caixa do governo por nação na ABERTURA do dia: a medição do déficit
 	// (runtime; não vai ao save).
 	std::map<std::string, double> gov_cash_open;
@@ -434,3 +445,4 @@ struct WorldState {
 };
 
 } // namespace ogs
+

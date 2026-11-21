@@ -870,8 +870,8 @@ func _test_perishability(snapshot: Dictionary) -> void:
 func _test_save(sim: Object) -> void:
 	var snapshot: Dictionary = sim.to_snapshot()
 	var save: Dictionary = snapshot.get("save", {})
-	if int(save.get("version", 0)) != 32:
-		_fail("save v32 esperado, veio %s" % str(save.get("version")))
+	if int(save.get("version", 0)) != 33:
+		_fail("save v33 esperado, veio %s" % str(save.get("version")))
 		return
 	if not save.has("agriculture"):
 		_fail("save v24 sem o bloco 'agriculture'")

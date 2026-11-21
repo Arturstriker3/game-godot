@@ -26,7 +26,7 @@ const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 
-const SAVE_VERSION := 32
+const SAVE_VERSION := 33
 const EPS := 1e-6
 
 var _failures: Array[String] = []

@@ -29,7 +29,7 @@ const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
 const TOLERANCE := 0.5
-const SAVE_VERSION := 32
+const SAVE_VERSION := 33
 
 var _failures: Array = []
 

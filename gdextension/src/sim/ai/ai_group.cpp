@@ -27,6 +27,8 @@
 #include "ai_templates.h"
 #include "ai_view.h"
 
+#include "../stock.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -517,7 +519,8 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 			risk *= 1.0 + local_share;
 		}
 	}
-	const double score = profit_day / std::max(cost, 1.0) / risk;
+	const double score = profit_day / std::max(cost, 1.0) / risk
+		* ogs::stock::investment_factor(ctx.ws, group.id);
 	out = Opportunity();
 	out.valid = true;
 	out.city = entry.city;

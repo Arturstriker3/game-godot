@@ -1048,6 +1048,56 @@ namespace ogs {
 		int last_dividend_day = -1;
 	};
 
+	// C5 (D-112) - BOLSA DE VALORES POR PAÍS: uma praça por nação com os grupos
+	// listados. A ação é ativo do detentor e claim do emissor; o preço é de
+	// ativo (valorização NÃO cria dinheiro) e só o dividendo move caixa.
+	// Contrato em docs/economy/C5_stock_exchange.md.
+	struct StockHoldings {
+		double households_high = 0.0;         // ações do estrato alto da nação
+		std::map<std::string, double> banks;  // banco -> ações
+		std::map<std::string, double> groups; // grupo -> ações
+		double foreign = 0.0;                 // exterior (banco estrangeiro)
+		double total() const;
+	};
+	struct StockTicker {
+		std::string group_id;
+		std::string nation;    // nação da bolsa (origem do grupo)
+		std::string exchange;  // id da bolsa == nação
+		double shares = 0.0;
+		double price = 0.0;
+		// Patrimônio medido do grupo no último fechamento semanal (base do q de
+		// Tobin, gravado para o score da IA não varrer as construções).
+		double book_equity = 0.0;
+		// Lucro diário esperado (EMA do lucro medido) e o acumulado do grupo no
+		// último fechamento de dividendo (base do lucro do período).
+		double profit_ema = 0.0;
+		double profit_at_last_dividend = 0.0;
+		double dividend_last = 0.0;
+		double dividend_limited = 0.0;
+		int dividend_day = -1;
+		int listed_day = 0;
+		int delisted_day = -1;
+		bool listed = false;
+		std::string reason = "listed"; // listed | no_origin | state_owned | ...
+		StockHoldings holdings;
+	};
+	struct StockExchange {
+		std::string nation;
+		std::string name;                  // fictício/genérico; nunca marca real
+		std::string name_status = "game_default";
+		std::string currency;
+		double confidence = 1.0;           // expectativa adaptativa
+		double index_base = 0.0;           // market cap no dia de formação
+		int last_price_day = -1;
+		// Distribuição acumulada (soma zero: sai do emissor, entra no detentor).
+		double dividends_paid = 0.0;
+		double remittance = 0.0;           // fatia do exterior (âncora)
+		double remittance_origin = 0.0;    // a mesma remessa na moeda de origem
+		// Medição do dia (não serializada).
+		double production_ema = 0.0;
+		bool production_seeded = false;
+	};
+
 	// F9: abertura ao capital estrangeiro por (nação, setor).
 	struct FdiPolicy {
 		std::string nation;
@@ -1462,6 +1512,10 @@ struct Region {
 		// governo/privado, perdas e manutenção). Roda logo depois da agricultura
 		// e antes da produção/comércio.
 		kPhaseStorage,
+		// C5 (D-112): bolsa de valores (confiança, preço semanal e dividendo
+		// mensal). Roda depois do crédito e antes dos invariantes — o retrato do
+		// tick e a reversão precisam ver o preço/confiança finais.
+		kPhaseStock,
 		kPhaseCount
 	};
 
@@ -1586,6 +1640,11 @@ struct Region {
 		// C3 (D-107): desfazer um tick tem de desfazer o empréstimo, o juro, o
 		// pagamento e o calote junto com o caixa que eles moveram.
 		std::map<std::string, Bank> banks;
+		// C5 (D-112): bolsa por nação e papéis listados. A valorização não move
+		// caixa; o dividendo move (soma zero). Reverter um tick corrompido tem
+		// de desfazer preço, confiança e dividendo.
+		std::map<std::string, StockExchange> stock_exchanges;
+		std::map<std::string, StockTicker> stock_tickers;
 		double emission_today = 0.0;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;

@@ -518,6 +518,20 @@ public:
 	 * banco/nação, os grupos endividados e o invariante dos dois lados.
 	 */
 	Dictionary get_bank_status() const;
+	/**
+	 * C5 (D-112) — alavancas de configuração da bolsa (laboratório): `enabled`,
+	 * `investment_channel`, `risk_premium`, `payout_ratio`, `step`,
+	 * `expectation_k`. `enabled` é estado (vai ao save); os parâmetros são regra
+	 * (0 = default declarado em `sim/stock.h`). Não é feature de jogador.
+	 * @returns `{enabled, investment_channel}`.
+	 */
+	Dictionary set_stock_exchange(const Dictionary& config);
+	/**
+	 * C5 (D-112) — status A4 da bolsa: política, totais, uma linha por praça
+	 * (índice, confiança e sinais medidos) e um papel por grupo listado
+	 * (preço, fundamental, q de Tobin, dividendos e carteiras).
+	 */
+	Dictionary get_stock_status() const;
 	/** G2 — mapeamento produto→tipo de armazém em vigor (tabela declarada +
 	 *  overrides do JSON). `{produto: tipo}`; usado pelo StorageService. */
 	Dictionary get_storage_product_types() const;

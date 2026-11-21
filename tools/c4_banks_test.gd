@@ -211,7 +211,7 @@ func _test_migration_v31_conserves() -> void:
 		"deposits=%s" % after.get("deposits"))
 	_check("B3 versão migra para 32",
 		int(save.get("version", 0)) == 31
-			and int(loaded.to_dict().get("version", 0)) == 32,
+			and int(loaded.to_dict().get("version", 0)) == 33,
 		"version=%s" % loaded.to_dict().get("version"))
 	var invariant: Dictionary = loaded.get_balance_status().get("invariant", {})
 	_check("B3 identidade fecha depois da migração",
@@ -383,7 +383,7 @@ func _test_save_v32() -> void:
 	sim.group_borrow(_first_group(sim), 1.0e9)
 	sim.tick_day()
 	var saved: Dictionary = sim.to_dict()
-	_check("B7 save é v32", int(saved.get("version", 0)) == 32,
+	_check("B7 save é v33", int(saved.get("version", 0)) == 33,
 		"version=" + str(saved.get("version")))
 	_check("B7 save publica bancos com papel e dono",
 		(saved.get("banks", {}) as Dictionary).has("banks")
