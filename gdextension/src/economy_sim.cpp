@@ -9179,6 +9179,16 @@ Dictionary EconomySim::get_central_bank_status() const {
 			active["neutral_rate"] = ogs::monetary::kNeutralRate;
 			active["max_step_per_day"] = ogs::monetary::kMaxRateStepPerDay;
 			active["smoothing"] = ogs::monetary::kRateSmoothing;
+			// D-113: a suavização é por decisão mensal; a taxa anda pelo
+			// equivalente diário. Os dois valores vão publicados para a
+			// medição não precisar recalcular.
+			active["smoothing_per_day"] = 1.0 - std::pow(
+				1.0 - ogs::monetary::kRateSmoothing,
+				1.0 / static_cast<double>(
+					ogs::central_bank::kCpiSampleDays));
+			active["gap_baseline_day"] = ogs::monetary::kGapBaselineDay;
+			active["annualize_min_span_days"] =
+				ogs::central_bank::kAnnualizeMinSpanDays;
 			active["inflation_weight"] =
 				ogs::monetary::kTaylorInflationWeight;
 			active["gap_weight"] = ogs::monetary::kTaylorGapWeight;
@@ -9190,6 +9200,8 @@ Dictionary EconomySim::get_central_bank_status() const {
 				? state->second.unfunded : 0.0;
 			active["gap"] = state != ws_.monetary.end()
 				? state->second.gap : 0.0;
+			// D-113: separa "hiato ausente" de "hiato zero".
+			active["has_gap"] = ogs::monetary::has_gap_reading(ws_, bank.code);
 			active["has_inflation"] = state != ws_.monetary.end()
 				&& state->second.has_inflation;
 			active["inflation_used"] = state != ws_.monetary.end()
@@ -9828,6 +9840,9 @@ Dictionary EconomySim::get_stock_status() const {
 		policy["pe_floor"] = ogs::stock::kPeFloor;
 		policy["pe_ceiling"] = ogs::stock::kPeCeiling;
 		policy["rate_pass_through"] = ogs::stock::kRatePassThrough;
+		// D-113 (calibração pré-C6): porte mínimo de listagem declarado.
+		policy["min_listed_price"] = ogs::stock::kMinListedPrice;
+		policy["listing_reason"] = "below_min_price";
 		policy["rate_expected"] =
 			"neutral + pass_through * (spot - neutral) (D-112 fix)";
 		policy["profit_reference"] =

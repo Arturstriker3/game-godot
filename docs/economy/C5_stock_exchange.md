@@ -56,11 +56,40 @@ Não existe fonte de listagem real por empresa no repositório. O critério é
 | `origin_nation` vazio | não listado | `no_origin` |
 | `state_owned == true` | não listado | `state_owned` (estatal é unidade orçamentária; o Estado entra na bolsa pela carteira do **banco público**, cujo dono é o Tesouro) |
 | `revenue_total <= 0` | não listado | `no_measured_earnings` |
+| preço de formação (fundamental medido) < `min_listed_price` | não listado | `below_min_price` (D-113, porte mínimo) |
 | caso contrário | **listado** | `listed` |
 
 Um papel por grupo. A lista é recalculada a cada fechamento semanal; grupo que
 deixa de ter receita medida sai da lista (e o valor das ações vai a zero de
 forma declarada, `delisted_day`), não é removido em silêncio.
+
+### 3.1 Porte mínimo de listagem (D-113, calibração pré-C6)
+
+A C5 listava com `revenue_total > 0` e isso deixava entrar **micro-cap de
+lucro-base ~0**: o preço de formação ia a ~1e-3 XGS/ação e a variação relativa
+sobre essa base não é informação de mercado. Medição da D-112 (250 papéis no dia
+63): preço de formação p1 **0,026** e p5 **0,73** XGS/ação; o pior caso era QAT
+com **+4.163.420 %** (lucro-base 0,51/dia → 18 100/dia).
+
+Critério declarado (default de jogo, `sim/stock.h: kMinListedPrice`):
+
+```
+papel só é listado se o preço de ABERTURA (fundamental medido × confiança da praça) >= 1 unidade monetária por ação
+```
+
+Com as 1 000 000 ações declaradas, isso equivale a um **market cap mínimo de
+1 000 000** e é exatamente o **piso da base** da variação publicada: a bolsa
+nunca publica variação percentual sobre preço de abertura < 1. Papel abaixo do
+piso nasce com `listed = false`, `reason = below_min_price` e preço 0; o
+fechamento semanal o promove quando o preço de abertura cruzar o piso (IPO
+declarado, preço = fundamental × confiança). Papel listado que cai abaixo do piso
+sai da lista pelo mesmo caminho (preço → 0, `delisted_day`). Um papel **já
+listado** pode andar abaixo de 1 pelo passo semanal convergente; se isso
+acontecer, o harness conta em `paper_below_base` em vez de esconder (0 na
+medição da D-113).
+
+Isto **não** esconde variação real de grupo grande: a cauda restante é medida
+(lucro EMA e confiança publicados por papel no status e no A/B, §12).
 
 ## 4. Ação no balanço da C1
 
@@ -402,14 +431,55 @@ papéis) no JSON para a C6.
    preço fundamental fica muito acima do patrimônio. O canal de investimento é
    **limitado** (0,8…1,2) justamente para o q não virar multiplicador; o valor
    bruto fica publicado para a calibração.
-2. **Micro-caps dominam a cauda**: com 260 papéis em 179 praças, a praça
-   mediana tem **um** papel; uma empresa minúscula com lucro que explode move
-   "o índice do país" inteiro. Falta um critério de porte mínimo de listagem —
-   declarado como dívida para depois da C6 (não inventado agora).
+2. **Micro-caps na cauda — dívida FECHADA na D-113**: com o critério antigo
+   (`revenue_total > 0`) a cauda era de papel com lucro-base ~0 e preço de
+   formação de milésimos (§3.1). O **porte mínimo de listagem** (`kMinListedPrice`
+   = 1,0 XGS/ação) fecha o caso degenerado; o que resta na cauda é variação
+   **medida** de grupo grande (§12.5).
 3. **Expectativa de lucro de janela anual**: uma mudança permanente de nível é
    reconhecida com constante de tempo de ~1 ano. É o preço de não transformar
    rampa de 1º ano em volatilidade; a C6 tem o canal rápido (confiança) para a
    corrida/crash.
+
+### 12.5 Depois da calibração pré-C6 (D-113)
+
+`tools/c1_world_ai_365.gd --days=365`, IA, `threads=1`, DLL debug, mundo default:
+
+| indicador | antes (D-112) | **depois (D-113)** |
+|---|---|---|
+| papéis listados / praças | 260 / 179 | **249** / 179 |
+| variação por PAPEL p10 / p50 / p90 | −13,5 % / +41,6 % / +167,0 % | **−35,7 % / −3,5 % / +53,1 %** |
+| variação por praça p10 / p50 / p90 | −15,4 % / +26,5 % / +106,9 % | **−36,0 % / −10,5 % / +47,4 %** |
+| papel mais extremo | +4 163 420 % (QAT) | **+1 519 % (SDN)** |
+| preço de formação p5 / p10 / p50 | 0,73 / 2,96 / 68,4 | **1,14 / 4,87 / 106,2** |
+| papéis abaixo do piso de base | 4 | **0** |
+| market cap / q p50 | 82,4 bi / 13,32 | **89,2 bi / 15,85** |
+| dividendos / capex | 15 154 506,91 / 19 058 661,48 | 15 181 805,09 / 18 901 658,58 |
+| identidade carteiras − market cap | 0,0 | **0,0** |
+| portão de comida / falências / violações | 93/179 · 3 · 0 | **94/179 · 2 · 0** |
+
+A variação mediana por papel deixa de ser **+41,6 %** (que era, em boa parte, a
+normalização da taxa básica do 1º ano re-avaliando o mercado — §12.1) e passa a
+**−3,4 %**: com a taxa no neutro desde o começo (D-113, §3 do doc da C2b1), o
+preço do ano mede **lucro**, não re-rating. Medição versionada:
+`docs/economy/perf/cal1_d113_gate_default.json` (depois) e
+`cal1_d113_gate_before.json` (antes); `paper_below_base` = **0**, ou seja, nenhum
+papel listado publica variação sobre base abaixo do piso de 1,0. Os 5 extremos
+de agora:
+
+| papel | praça | variação (365 d) | causa medida |
+|---|---|---|---|
+| `G-SDN-food-207` | SDN | +1 519 % | lucro de referência +1 400 % (8 771 → 131 609/dia) |
+| `G-BHR-food-22` | BHR | +1 454 % | lucro +1 448 % (785 → 12 159/dia) |
+| `G-CAF-food-38` | CAF | +576 % | lucro +548 % (2 853 → 18 484/dia) |
+| `G-GNQ-food-96` | GNQ | +449 % | lucro +407 % (661 → 3 350/dia) |
+| `G-TCD-food-224` | TCD | +420 % | lucro +378 % (8 848 → 42 331/dia) |
+
+Todos partem de preço de formação **≥ 1,9 XGS/ação** (nenhum é papel de base
+zero) e a variação é o lucro medido do grupo — a cauda agora é econômica.
+
+Todos partem de preço de formação **≥ 1,9 XGS/ação** (nenhum é papel de base
+zero) e a variação é o lucro medido do grupo — a cauda agora é econômica.
 
 **Defeito latente corrigido nesta fase:** o crédito de dividendo ao domicílio
 (`fiscal.cpp`) e o débito de capital da IA (`actions.cpp`) podiam arredondar

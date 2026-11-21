@@ -111,6 +111,23 @@ func _test_listing_and_identity() -> void:
 				bad_names += 1
 	_check("C1 só lista grupo não estatal com receita medida", bad_listing == 0,
 		"fora_do_criterio=%d" % bad_listing)
+	# D-113: porte mínimo — o papel listado abre no fundamental medido e nenhum
+	# preço de formação fica abaixo do piso declarado (`min_listed_price`).
+	var min_price := float((status.get("policy", {}) as Dictionary).get(
+		"min_listed_price", -1.0))
+	_check("C1 min_listed_price publicado no status", min_price > 0.0,
+		"min_price=%s" % min_price)
+	var below_min := 0
+	for row: Dictionary in tickers:
+		if not bool(row.get("listed", false)):
+			continue
+		if float(row.get("fundamental", 0.0)) < min_price - 1e-9:
+			below_min += 1
+			continue
+		if String(row.get("reason", "")) != "listed":
+			below_min += 1
+	_check("C1 papel listado tem porte mínimo (preço de formação >= piso)",
+		below_min == 0, "abaixo_do_piso=%d" % below_min)
 	_check("C1 carteira de cada papel fecha com as ações emitidas",
 		bad_holdings == 0, "papeis_quebrados=%d" % bad_holdings)
 	_check("C1 nome fictício/genérico, sem marca real", bad_names == 0,

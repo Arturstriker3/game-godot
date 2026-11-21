@@ -48,6 +48,11 @@ const BANKS_PATH := "res://data/definitions/economy/banks.json"
 
 const GATE := 0.975
 const WINDOW := 30
+# Calibração pré-C6 (D-113): a política monetária é amostrada ao longo do ano
+# (trajetória MENSAL da mediana da taxa e da inflação), não só no fecho. Sem
+# isso o colapso da taxa no 1º ano só aparecia como um número final.
+const MONETARY_SAMPLE_DAYS := [7, 15, 30, 45, 60, 63, 90, 120, 150, 180, 210,
+	240, 270, 300, 330, 365]
 const SAMPLE_NATIONS: Array[String] = ["USA", "CHN", "IND", "BRA", "DEU", "NGA",
 	"RUS", "IDN", "MEX", "ZAF"]
 
@@ -268,6 +273,45 @@ func _monetary_report(sim: Object) -> Dictionary:
 
 ## C2c (D-108): regimes reais — mistura inicial/efetiva, âncoras, trava de
 ## união e as desvalorizações forçadas do mundo default (quais moedas).
+func _monetary_timeline_row(sim: Object, day: int) -> Dictionary:
+	# Calibração pré-C6 (D-113): uma linha por amostra do ano com a distribuição
+	# da taxa básica, do alvo da regra e do hiato por moeda, e da inflação por
+	# país. Só medição — lê o status público da C2a/C2b1.
+	var bank: Dictionary = sim.get_central_bank_status()
+	var rates: Array = []
+	var targets: Array = []
+	var gaps: Array = []
+	var infl_used: Array = []
+	var currencies: Dictionary = bank.get("currencies", {})
+	for code: Variant in currencies:
+		var row: Dictionary = currencies[code]
+		var policy: Dictionary = row.get("policy", {})
+		rates.append(float(policy.get("rate", 0.0)) * 100.0)
+		targets.append(float(policy.get("target_rate", 0.0)) * 100.0)
+		gaps.append(float(policy.get("gap", 0.0)))
+		if bool(policy.get("has_inflation", false)):
+			infl_used.append(float(policy.get("inflation_used", 0.0)) * 100.0)
+	var infl_12m: Array = []
+	var infl_ann: Array = []
+	var cpi: Dictionary = bank.get("cpi", {})
+	for nation: Variant in cpi:
+		var row: Dictionary = cpi[nation]
+		if bool(row.get("has_12m", false)):
+			infl_12m.append(float(row.get("inflation_12m", 0.0)) * 100.0)
+		if bool(row.get("has_annualized", false)):
+			infl_ann.append(float(row.get("inflation_annualized", 0.0)) * 100.0)
+	return {
+		"day": day,
+		"rate_pct": _spread(rates),
+		"target_pct": _spread(targets),
+		"gap_pp": _spread(gaps),
+		"inflation_used_pct": _spread(infl_used),
+		"inflation_12m_pct": _spread(infl_12m),
+		"nations_has_12m": infl_12m.size(),
+		"inflation_annualized_pct": _spread(infl_ann),
+	}
+
+
 func _fx_summary(sim: Object) -> Dictionary:
 	var bank: Dictionary = sim.get_central_bank_status()
 	var currencies: Dictionary = bank.get("currencies", {})
@@ -459,6 +503,7 @@ func _run() -> void:
 	var stock_start: Dictionary = {}
 	var stock_formed: Dictionary = {}
 	var stock_timeline: Array = []
+	var monetary_timeline: Array = []
 
 	for day in _days:
 		if _fx_seed_days > 0 and day == 30:
@@ -499,6 +544,9 @@ func _run() -> void:
 			stock_formed = sim.get_stock_status()
 		if [63, 120, 200, 300, 365].has(day_now) and sim.has_method("get_stock_status"):
 			stock_timeline.append(_stock_timeline_row(sim, day_now))
+		# Calibração pré-C6 (D-113): trajetória monetária mensal (mediana/p10/p90).
+		if MONETARY_SAMPLE_DAYS.has(day_now):
+			monetary_timeline.append(_monetary_timeline_row(sim, day_now))
 		if int(day_now) % 30 == 0 or day == _days - 1:
 			print("[c1] progresso dia %d/%d t=%.1fs"
 				% [int(day_now), _days,
@@ -535,6 +583,7 @@ func _run() -> void:
 		"banks": _banks_totals(sim),
 		"stock": _stock_report(sim, stock_start, status_final, stock_formed),
 		"stock_timeline": stock_timeline,
+		"monetary_timeline": monetary_timeline,
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	if _fx_seed_days > 0:
@@ -691,6 +740,10 @@ func _stock_report(sim, start: Dictionary, final_status: Dictionary,
 	# com a causa medida (lucro de referência e confiança da praça).
 	var paper_changes: Array = []
 	var paper_detail: Array = []
+	# D-113: piso de base da variação = preço mínimo de listagem declarado.
+	var base_floor := float((end.get("policy", {}) as Dictionary).get(
+		"min_listed_price", 0.0))
+	var below_base := 0
 	var base_ema: Dictionary = {}
 	var base_conf: Dictionary = {}
 	var base_price: Dictionary = {}
@@ -715,6 +768,11 @@ func _stock_report(sim, start: Dictionary, final_status: Dictionary,
 		var group_id := String(row.get("group_id", ""))
 		var old_price := float(base_price.get(group_id, 0.0))
 		if old_price <= 0.0 or not base_price.has(group_id):
+			continue
+		# D-113: a bolsa não publica variação percentual sobre base abaixo do
+		# piso de listagem declarado. Papel assim é CONTADO, não escondido.
+		if old_price < base_floor:
+			below_base += 1
 			continue
 		var new_price := float(row.get("price", 0.0))
 		var change := new_price / old_price - 1.0
@@ -743,9 +801,40 @@ func _stock_report(sim, start: Dictionary, final_status: Dictionary,
 		})
 	paper_changes.sort()
 	out["paper_changes"] = paper_changes.size()
+	out["paper_below_base"] = below_base
+	out["paper_base_floor"] = base_floor
 	out["paper_variation_p10"] = _pct(paper_changes, 0.10)
 	out["paper_variation_p50"] = _pct(paper_changes, 0.50)
 	out["paper_variation_p90"] = _pct(paper_changes, 0.90)
+	# Calibração pré-C6 (D-113): PORTE do papel no dia de formação — preço e
+	# lucro anualizado medido. É o que define micro-cap de base ~0 (a variação
+	# relativa sobre preço perto de zero não é informação de mercado).
+	var formation_price: Array = []
+	var formation_earnings: Array = []
+	for row: Dictionary in formed.get("tickers", []):
+		formation_price.append(float(row.get("price", 0.0)))
+		formation_earnings.append(float(row.get("profit_ema", 0.0)) * 365.0)
+	formation_price.sort()
+	formation_earnings.sort()
+	out["formation_papers"] = formation_price.size()
+	out["formation_price_pct"] = {
+		"p1": _pct(formation_price, 0.01),
+		"p5": _pct(formation_price, 0.05),
+		"p10": _pct(formation_price, 0.10),
+		"p25": _pct(formation_price, 0.25),
+		"p50": _pct(formation_price, 0.50),
+		"p90": _pct(formation_price, 0.90),
+		"p99": _pct(formation_price, 0.99),
+	}
+	out["formation_earnings_pct"] = {
+		"p1": _pct(formation_earnings, 0.01),
+		"p5": _pct(formation_earnings, 0.05),
+		"p10": _pct(formation_earnings, 0.10),
+		"p25": _pct(formation_earnings, 0.25),
+		"p50": _pct(formation_earnings, 0.50),
+		"p90": _pct(formation_earnings, 0.90),
+		"p99": _pct(formation_earnings, 0.99),
+	}
 	paper_detail.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return absf(float(a["change"])) > absf(float(b["change"])))
 	out["paper_extremes"] = paper_detail.slice(0, 5)

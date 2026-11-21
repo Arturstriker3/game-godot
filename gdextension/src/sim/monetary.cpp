@@ -134,6 +134,12 @@ Reading reading(const WorldState& ws, const std::string& code,
 			city.pop.unemployed / labor, 0.0, 1.0);
 		// Hiato em pontos percentuais de força de trabalho: desemprego abaixo
 		// do natural = economia aquecida (hiato positivo).
+		// D-113: antes do baseline do mercado de trabalho (dia 1..29) o modelo
+		// ainda está alocando a força de trabalho e a leitura não existe —
+		// ausência declarada, o hiato não entra na regra.
+		if (ws.day < kGapBaselineDay) {
+			continue;
+		}
 		const double gap_pp = (ws.natural_unemployment - unemployment) * 100.0;
 		gap_sum += gap_pp * population;
 		gap_weight += population;
@@ -150,8 +156,28 @@ Reading reading(const WorldState& ws, const std::string& code,
 	return out;
 }
 
-double taylor_target(const Reading& in) {
-	double target = kNeutralRate;
+bool has_gap_reading(const WorldState& ws, const std::string& code) {
+	if (ws.day < kGapBaselineDay) {
+		return false;
+	}
+	const auto found = ws.currency_by_code.find(code);
+	if (found == ws.currency_by_code.end()) {
+		return false;
+	}
+	const Currency& currency =
+		ws.currencies[static_cast<std::size_t>(found->second)];
+	for (const City& city : ws.cities) {
+		if (!has_nation(currency.nations, city.nation)) {
+			continue;
+		}
+		if (city.pop.labor_force > 1e-9) {
+			return true;
+		}
+	}
+	return false;
+}
+
+double taylor_target(const Reading& in) {	double target = kNeutralRate;
 	if (in.has_inflation) {
 		target += kTaylorInflationWeight * (in.inflation - kTargetInflation);
 	}
@@ -160,7 +186,13 @@ double taylor_target(const Reading& in) {
 }
 
 double next_rate(double current, double target) {
-	const double smoothed = current + (target - current) * (1.0 - kRateSmoothing);
+	// D-113: a suavização declarada (0,5) é por DECISÃO e a leitura do CPI tem
+	// cadência mensal (central_bank::kCpiSampleDays). Convertida ao passo diário,
+	// 1 − (1 − 0,5)^(1/30) ≈ 0,0228: a taxa percorre 2,28 % do hiato por dia em
+	// vez de metade (meia-vida de 1 dia, teleporte ao alvo em ~4 dias).
+	const double smoothing = 1.0 - std::pow(1.0 - kRateSmoothing,
+		1.0 / static_cast<double>(central_bank::kCpiSampleDays));
+	const double smoothed = current + (target - current) * smoothing;
 	const double step = std::clamp(smoothed - current, -kMaxRateStepPerDay,
 		kMaxRateStepPerDay);
 	return std::clamp(current + step, kRateFloor, kRateCap);

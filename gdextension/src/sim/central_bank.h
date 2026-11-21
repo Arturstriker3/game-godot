@@ -80,6 +80,13 @@ int standard_from_name(const std::string& name, int fallback);
 constexpr int kCpiSampleDays = 30;
 constexpr int kCpiSampleSlots = 13;  // 12 meses de intervalo + a amostra atual
 constexpr int kModelYearDays = 360;
+// D-113 (calibração pré-C6): a anualização de uma janela CURTA não é leitura de
+// inflação. Com 2 amostras (30 dias) o expoente 360/30 = 12 multiplicava a
+// variação do 1º mês pelo fator 12: no dia 45 a anualizada mediana era 8,9 %
+// (p90 24,1 %) e a regra de Taylor mirava 12,5 %, levando a taxa de ~0 % a ~10 %
+// em 2 semanas. Antes de um trimestre de série a inflação é AUSENTE (declarada)
+// e a regra usa só o neutro (e o hiato, depois do baseline).
+constexpr int kAnnualizeMinSpanDays = 90;
 
 // ---------------------------------------------------------------------------
 // Dinheiro do dia atribuído às moedas (leitura).
