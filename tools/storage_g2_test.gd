@@ -25,7 +25,7 @@ const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 
 const AGRIA_CENTER := Vector2(2532.6, 571.4)
 const PORTUS_CENTER := Vector2(2560.4, 543.8)
-const SAVE_VERSION := 32
+const SAVE_VERSION := 33
 ## Tolerância da conservação (XGS ou t) — o mundo demo roda em double.
 const EPS := 1e-6
 

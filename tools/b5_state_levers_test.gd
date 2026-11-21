@@ -26,7 +26,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 32
+const SAVE_VERSION := 33
 # Parâmetros espelhados de sim_constants.h (âncoras do teste).
 const ACCESS_PENALTY_MAX := 0.30
 const EXODUS_BOOST_MAX := 0.50

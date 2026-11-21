@@ -93,7 +93,11 @@ void SimCore::phase_fiscal() {
 			const double credited = credit_nation_households(
 				group.origin_nation, payable);
 			if (credited > 0.0) {
-				group.cash -= credited;
+				// C5 (D-112): `credit_nation_households` pode devolver o
+				// arredondamento do último crédito acima de `payable`; o caixa
+				// do grupo não pode ficar negativo (o load normaliza em 0 e o
+				// round-trip deixaria de ser bit-exato).
+				group.cash = std::max(0.0, group.cash - credited);
 				group.distributable = std::max(0.0, group.distributable - credited);
 				group.dividends_total += credited;
 				ws_.group_flows[group.origin_nation].dividends += credited;
@@ -130,7 +134,9 @@ void SimCore::phase_fiscal() {
 			group.profit_by_host.erase(host);
 		}
 		if (credited_total > 0.0) {
-			group.cash -= credited_total;
+			// C5 (D-112): mesma proteção do ramo acima (soma de créditos com
+			// arredondamento não deixa o caixa do grupo negativo).
+			group.cash = std::max(0.0, group.cash - credited_total);
 			group.distributable = std::max(0.0,
 				group.distributable - credited_total);
 			group.dividends_total += credited_total;

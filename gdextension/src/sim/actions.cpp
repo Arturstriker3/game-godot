@@ -521,10 +521,10 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 			result.cost = cost;
 			return result;
 		}
-		group->cash -= owner_cost;
+		group->cash = std::max(0.0, group->cash - owner_cost);
 		group->capex_total += owner_cost;
 		if (partner != nullptr && partner_cost > 0.0) {
-			partner->cash -= partner_cost;
+			partner->cash = std::max(0.0, partner->cash - partner_cost);
 			partner->capex_total += partner_cost;
 		}
 
@@ -646,7 +646,7 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 	project.total_cost = owner_cost;
 	// §15 calibração: reserva o capital da obra no início (investimento).
 	project.reserved = owner_cost;
-	group->cash -= owner_cost;
+	group->cash = std::max(0.0, group->cash - owner_cost);
 	core.add_construction_project(project);
 	result.created = true;
 	result.cost = cost;
