@@ -170,11 +170,12 @@ func _test_defaults_and_data() -> void:
 	_check_day(sim, "defaults")
 
 
-# --- 1b. D-105: juro do envelope da safra desligado por padrão ------------
-## O dado declara `harvest_credit.apply_policy_rate`; o núcleo expõe a flag no
-## status e o gancho de A/B (`set_balance`) liga/desliga sem mover dinheiro nem
-## quebrar a identidade financeira. A prova do EFECTO no portão de comida é a
-## rodada de 365 d (`tools/c1_world_ai_365.gd`, ver D-105).
+# --- 1b. D-105/D-111: juro do envelope da safra LIGADO por padrão ----------
+## O dado declara `harvest_credit.apply_policy_rate` (true desde a D-111, quando
+## a C4 criou o credor); o núcleo expõe a flag no status e o gancho de A/B
+## (`set_balance`) liga/desliga sem mover dinheiro nem quebrar a identidade
+## financeira. A prova do EFECTO no portão de comida é a rodada de 365 d
+## (`tools/c1_world_ai_365.gd`, ver D-105/D-111).
 func _test_harvest_credit_flag() -> void:
 	var data: Dictionary = _json(MONETARY_PATH)
 	var harvest: Dictionary = data.get("harvest_credit", {})
@@ -182,8 +183,8 @@ func _test_harvest_credit_flag() -> void:
 		"dados: monetary_policy.json sem bloco `harvest_credit` (D-105)")
 	_check(harvest.has("apply_policy_rate"),
 		"dados: harvest_credit sem `apply_policy_rate`")
-	_check(bool(harvest.get("apply_policy_rate", true)) == false,
-		"dados: harvest_credit.apply_policy_rate deveria ser false até a C4")
+	_check(bool(harvest.get("apply_policy_rate", false)) == true,
+		"dados: harvest_credit.apply_policy_rate deveria ser true desde a D-111")
 	var sim := _make_sim()
 	var world: Dictionary = sim.get_central_bank_status().get(
 		"monetary_policy", {})

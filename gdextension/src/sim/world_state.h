@@ -226,15 +226,17 @@ struct WorldState {
 	// kInfraAccessPenaltyMax; só o A/B da infra a zera para isolar o frete.
 	// Não é persistido (knob de calibração, como income_basket_margin).
 	double infra_access_penalty = kInfraAccessPenaltyMax;
-	// D-105 (C2b1-fix): juro da taxa básica no ENVELOPE de crédito da safra
-	// (D-099, `SimCore::crop_liquidity_factor`). DESLIGADO por padrão: até a C4
-	// não há credor com contraparte no balanço, então o juro seria custo sem
-	// recebedor. Ligado, o envelope vira `asset / (60 · (1 + r · 60/365))`;
+	// D-105 (C2b1-fix) + C4 (D-110) + D-111: juro da taxa básica no ENVELOPE
+	// de crédito da safra (D-099, `SimCore::crop_liquidity_factor`). LIGADO por
+	// padrão desde a D-111: a C4 criou o credor (banco público da nação) que
+	// recebe o juro (`bank.cash`/`bank.harvest_interest`), então não é mais
+	// custo sem recebedor. Sem banco público o valor não é cobrado (D-105).
+	// Ligado, o envelope vira `asset / (60 · (1 + r · 60/365))`;
 	// declarado em `data/definitions/economy/monetary_policy.json`
 	// (`harvest_credit.apply_policy_rate`) e conferido por
 	// `tools/c2b1_monetary_test.gd`. Não é persistido (parâmetro de regra, como
 	// infra_access_penalty).
-	bool harvest_credit_rate = false;
+	bool harvest_credit_rate = true;
 	double inventory_cover_days = 3.0;
 	double inventory_recovery = 0.5;
 	// Índice espacial do comércio de alimento: por comprador, só os K
@@ -408,9 +410,11 @@ struct WorldState {
 	// crédito. `bank_credit_enabled` é ESTADO (vai ao save: pode ser ligado por
 	// comando A3); os parâmetros abaixo são REGRA (vêm de
 	// data/definitions/economy/bank_credit.json, como os do câmbio/emissão) e
-	// 0 significa "usar o default declarado em sim/bank.h".
+	// 0 significa "usar o default declarado em sim/bank.h". LIGADO no mundo
+	// novo desde a D-111 (a C4 criou o credor); save antigo sem o bloco do
+	// banco continua carregando desligado.
 	std::map<std::string, Bank> banks;
-	bool bank_credit_enabled = false;
+	bool bank_credit_enabled = true;
 	double bank_spread = 0.0;         // 0 = kSpreadDefault (2 p.p.)
 	double bank_leverage_cap = 0.0;   // 0 = kLeverageCapDefault (1,0)
 	double bank_interest_cover = 0.0; // 0 = kInterestCoverDefault (2,0)
