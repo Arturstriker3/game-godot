@@ -59,9 +59,11 @@ var _fx_seed_days := 0
 # default do jogo é LIGADO; a flag continua servindo ao A/B (--credit=0 desliga).
 # Só laboratório: não existe botão/atalho/HUD para isso no jogo.
 var _credit := false
+var _credit_set := false
 # C4 (D-110) + D-111: A/B do CANAL do juro no envelope de crédito da safra
 # (D-105). Desde a D-111 o default do jogo é LIGADO; --harvest-rate=0 desliga.
 var _harvest_rate := false
+var _harvest_rate_set := false
 
 
 func _init() -> void:
@@ -78,8 +80,10 @@ func _init() -> void:
 			_out = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--credit="):
 			_credit = arg.split("=", true, 1)[1] != "0"
+			_credit_set = true
 		elif arg.begins_with("--harvest-rate="):
 			_harvest_rate = arg.split("=", true, 1)[1] != "0"
+			_harvest_rate_set = true
 		elif arg.begins_with("--fx-seed-days="):
 			# C2b2 (D-106): cenário de estresse — funda as reservas de cada
 			# moeda com N dias de importação MEDIDA do mundo e o peg passa a ser
@@ -159,15 +163,20 @@ func _make_world() -> Object:
 		storage.apply_to_sim(sim, cities, buildings,
 			{"only_missing": true, "initial_stock": true})
 	sim.set_ai_enabled(true)
-	if _credit:
-		sim.set_bank_credit(true)
-		print("[c1] C3: credito de empresa LIGADO por flag (--credit=1)")
-	if _harvest_rate:
+	# D-111: sem flag vale o default do jogo (LIGADO). Com flag, ela MANDA --
+	# inclusive `--credit=0`/`--harvest-rate=0` (braço "off" do A/B).
+	if _credit_set:
+		sim.set_bank_credit(_credit)
+		print("[c1] C3: credito de empresa %s por flag (--credit=%d)"
+			% ["LIGADO" if _credit else "DESLIGADO", 1 if _credit else 0])
+	if _harvest_rate_set:
 		sim.set_balance({
-			"harvest_credit_rate": 1.0,
+			"harvest_credit_rate": 1.0 if _harvest_rate else 0.0,
 			"income_basket_margin": 0.0,
 		})
-		print("[c1] C4: juro do envelope da safra LIGADO por flag (--harvest-rate=1)")
+		print("[c1] C4: juro do envelope da safra %s por flag (--harvest-rate=%d)"
+			% ["LIGADO" if _harvest_rate else "DESLIGADO",
+				1 if _harvest_rate else 0])
 	return sim
 
 
@@ -550,8 +559,8 @@ func _run() -> void:
 
 
 func _credit_report(sim) -> Dictionary:
-	# C3 (D-107): o crédito de empresa medido no fim do mundo. Default do jogo
-	# continua DESLIGADO; este bloco só existe na rodada de laboratório.
+	# C3 (D-107) + D-111: o crédito de empresa medido no fim do mundo. Medido
+	# sempre que o mundo tem crédito ligado (default do jogo ou flag).
 	var bank: Dictionary = sim.get_bank_status()
 	var totals: Dictionary = bank.get("totals", {})
 	return {

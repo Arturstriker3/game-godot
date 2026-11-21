@@ -3,8 +3,9 @@ extends SceneTree
 ## C3 (D-107) — CRÉDITO DE EMPRESA PELO BANCO AGREGADO (aceites A2–A7).
 ##
 ## Cenário: fixture AGRIA/PORTUS (duas cidades, nação DEMO, moeda DEM). O
-## crédito nasce DESLIGADO; o laboratório liga por comando A3, como o §4 do
-## docs/economy/C3_group_balance.md manda.
+## crédito nasce LIGADO no jogo desde a D-111; os casos que o exercitam ligam
+## por comando A3 (explícito) e o default compilado é conferido em
+## `_test_default_on`.
 ##
 ##   A2  identidade da C1 fecha em TODO dia com o banco ativo (60 d, capital
 ##       pedido de 1e6 — o que o Tesouro do fixture paga é DECLARADO no log).
@@ -40,6 +41,7 @@ var _failures: Array[String] = []
 
 
 func _init() -> void:
+	_test_default_on()
 	_test_absence()
 	_test_loan_creates_and_payment_destroys()
 	_test_identity_with_bank()
@@ -384,6 +386,26 @@ func _test_status_contract() -> void:
 
 
 # --- helpers --------------------------------------------------------------
+## D-111 (C4b): o credito de empresa nasce LIGADO no mundo novo -- o default
+## compilado (`WorldState::bank_credit_enabled`) tem de casar com o dado
+## declarado em `bank_credit.json`, e o comando A3 tem de desligar de verdade.
+func _test_default_on() -> void:
+	var data: Variant = _json("res://data/definitions/economy/bank_credit.json")
+	_check("D-111: dado declara credito LIGADO",
+		data is Dictionary and bool((data as Dictionary).get("enabled", false)),
+		"enabled no dado = " + str((data as Dictionary).get("enabled")))
+	var sim = _world(0)
+	var policy: Dictionary = sim.get_bank_status().get("policy", {})
+	_check("D-111: mundo novo nasce com credito LIGADO (default compilado)",
+		bool(policy.get("enabled", false)),
+		"enabled=" + str(policy.get("enabled")))
+	sim.set_bank_credit(false)
+	policy = sim.get_bank_status().get("policy", {})
+	_check("D-111: set_bank_credit(false) desliga explicitamente",
+		not bool(policy.get("enabled", true)),
+		"enabled=" + str(policy.get("enabled")))
+
+
 func _world(days: int):
 	var sim = EconomySim.new()
 	sim.set_goods(_json(GOODS_PATH))

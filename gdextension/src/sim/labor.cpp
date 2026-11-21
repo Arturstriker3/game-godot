@@ -112,11 +112,11 @@ void SimCore::phase_labor() {
 	};
 	pool().parallel_for(ws_.cities.size(), process_city);
 
-	// C4 (D-110) + D-105: com o juro da safra LIGADO, o valor que o envelope
-	// desconta da lavoura deixa de ser custo sem recebedor — é cobrado do
-	// tomador (caixa da cidade) e creditado no banco PÚBLICO da nação. Sem
-	// banco público NADA é cobrado (ausência declarada; comportamento da
-	// D-105). O default do jogo mantém a flag DESLIGADA.
+	// C4 (D-110) + D-105 + D-111: com o juro da safra LIGADO (default do jogo
+	// desde a D-111), o valor que o envelope desconta da lavoura deixa de ser
+	// custo sem recebedor — é cobrado do tomador (caixa da cidade) e creditado
+	// no banco PÚBLICO da nação. Sem banco público NADA é cobrado (ausência
+	// declarada; comportamento da D-105).
 	if (ws_.harvest_credit_rate) {
 		const double span = double(kLossDaysBeforeClose) / 365.0;
 		for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
