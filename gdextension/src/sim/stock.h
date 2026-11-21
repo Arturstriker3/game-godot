@@ -90,6 +90,17 @@ constexpr double kUnemploymentScale = 0.04;  // 4 p.p. em torno do natural
 // de investimento sem calibração (§7).
 constexpr double kQFactorFloor = 0.8;
 constexpr double kQFactorCeiling = 1.2;
+// D-113 (calibração pré-C6) — PORTE MÍNIMO DE LISTAGEM, declarado como default
+// de jogo. O critério da C5 (`revenue_total > 0`) deixava entrar grupo cujo
+// lucro anualizado medido é uma fração de unidade: o preço de formação caía para
+// ~1e-3 XGS/ação e a variação relativa sobre essa base não é informação de
+// mercado (medição da D-112: QAT +4.163.420 % com lucro-base de 0,51/dia; preço
+// de formação p1 0,026 e p5 0,73 XGS/ação em 250 papéis).
+// A régua é o PREÇO DE FORMAÇÃO: um papel só é listado se abre em pelo menos 1
+// unidade monetária por ação. Com as 1 000 000 ações declaradas, isso é um
+// market cap mínimo de 1 000 000 — e é exatamente o piso da base da variação
+// publicada: a bolsa nunca publica variação percentual sobre preço < 1.
+constexpr double kMinListedPrice = 1.0;
 
 struct Policy {
 	bool enabled = true;
@@ -107,6 +118,11 @@ Policy policy(const WorldState& ws);
 
 // --- Elegibilidade (§3): grupo não estatal, com origem e receita medida.
 bool eligible(const Group& group, std::string* reason);
+// D-113: porte mínimo de listagem — o papel tem de abrir com preço de formação
+// >= `kMinListedPrice`. Usa o fundamental medido (lucro EMA × múltiplo), sem a
+// confiança da praça, para não acoplar listagem a expectativa.
+bool material(const WorldState& ws, const StockTicker& ticker,
+	const Policy& pol);
 
 // --- Garantia das linhas (idempotente): cria bolsa da nação e o papel do
 // grupo. `seed` usa o patrimônio MEDIDO do grupo por ação (nunca preço

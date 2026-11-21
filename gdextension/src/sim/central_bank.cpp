@@ -280,7 +280,7 @@ Inflation inflation_of(const CpiHistory& history) {
 			out.rate_12m = out.index / first - 1.0;
 		}
 	}
-	if (count >= 2 && out.span_days > 0) {
+	if (count >= 2 && out.span_days >= kAnnualizeMinSpanDays) {
 		const double first = history.samples[0];
 		if (std::isfinite(first) && first > 0.0) {
 			out.annualized = std::pow(out.index / first,

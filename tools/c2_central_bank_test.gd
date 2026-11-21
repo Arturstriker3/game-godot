@@ -286,8 +286,9 @@ func _test_fixture() -> void:
 			% int(row.get("observations", 0)))
 	_check(bool(row.get("has_12m", true)) == false,
 		"(fixture) 40 d não pode ter inflação de 12 meses")
-	_check(bool(row.get("has_annualized", false)),
-		"(fixture) 2 amostras em 30 d já anualizam")
+	# D-113: 40 d de série não anualizam (janela mínima de um trimestre).
+	_check(bool(row.get("has_annualized", true)) == false,
+		"(fixture) 40 d não anualizam: ausência declarada (D-113)")
 
 	# --- Save v27: round-trip bit-exato e continuação idêntica -----------
 	_check(int(save.get("version", 0)) == SAVE_VERSION,
@@ -613,7 +614,9 @@ func _check_inflation_reader(save: Dictionary) -> void:
 	_check(_rel_close(float(row.get("inflation_12m", -9.0)), 0.1, 1e-12),
 		"(inflação) 12 m deveria ser exatamente 10%% (veio %.9f)"
 			% float(row.get("inflation_12m", -9.0)))
-	# Duas amostras: sem 12 meses, mas com anualização declarada.
+	# Duas amostras: sem 12 meses e SEM anualização — D-113: a janela mínima
+	# para anualizar é um trimestre (90 d); anualizar 30 d multiplicava a variação
+	# do 1º mês por 12 (a regra de Taylor mirava o teto com ruído de preço).
 	var short_probe: Dictionary = save.duplicate(true)
 	(short_probe.get("central_bank", {}) as Dictionary)["cpi"] = {
 		nation: {"index": [1.0, 1.1], "days": [0, CPI_SAMPLE_DAYS]},
@@ -626,13 +629,30 @@ func _check_inflation_reader(save: Dictionary) -> void:
 		.get("cpi", {}) as Dictionary).get(nation, {})
 	_check(bool(short_row.get("has_12m", true)) == false,
 		"(inflação) 2 amostras não podem fechar 12 meses")
-	_check(bool(short_row.get("has_annualized", false)),
-		"(inflação) 2 amostras deveriam anualizar")
-	var expected := pow(1.1, float(MODEL_YEAR_DAYS) / float(CPI_SAMPLE_DAYS)) - 1.0
-	_check(absf(float(short_row.get("inflation_annualized", -9.0)) - expected)
+	_check(bool(short_row.get("has_annualized", true)) == false,
+		"(inflação) 2 amostras (30 d) NÃO anualizam: ausência declarada (D-113)")
+	# Quatro amostras = 90 d de janela: a anualização volta a existir.
+	var quarter_probe: Dictionary = save.duplicate(true)
+	(quarter_probe.get("central_bank", {}) as Dictionary)["cpi"] = {
+		nation: {"index": [1.0, 1.0, 1.0, 1.1],
+			"days": [0, CPI_SAMPLE_DAYS, 2 * CPI_SAMPLE_DAYS, 3 * CPI_SAMPLE_DAYS]},
+	}
+	(quarter_probe.get("central_bank", {}) as Dictionary)["cpi_last_day"] = 90
+	var quarter_sim = EconomySim.new()
+	_load_chains(quarter_sim)
+	quarter_sim.from_dict(quarter_probe)
+	var quarter_row: Dictionary = (quarter_sim.get_central_bank_status()
+		.get("cpi", {}) as Dictionary).get(nation, {})
+	_check(int(quarter_row.get("span_days", 0)) == 3 * CPI_SAMPLE_DAYS,
+		"(inflação) 4 amostras deveriam dar span de 90 d")
+	_check(bool(quarter_row.get("has_annualized", false)),
+		"(inflação) 90 d de série deveriam anualizar (D-113)")
+	var expected := pow(1.1, float(MODEL_YEAR_DAYS)
+		/ float(3 * CPI_SAMPLE_DAYS)) - 1.0
+	_check(absf(float(quarter_row.get("inflation_annualized", -9.0)) - expected)
 		<= 1e-9,
 		"(inflação) anualizada %.9f != %.9f"
-			% [float(short_row.get("inflation_annualized", -9.0)), expected])
+			% [float(quarter_row.get("inflation_annualized", -9.0)), expected])
 
 
 ## A política é ESTADO: viaja no save e não move um centavo. Dois mundos com

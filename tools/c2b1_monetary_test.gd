@@ -237,9 +237,13 @@ func _test_independent() -> void:
 			"taylor: target publicado != regra recomputada no dia %d (%.9f vs "
 				% [day + 1, float(policy.get("target_rate", -1.0))]
 				+ "%.9f)" % target)
-		var smooth := float(policy.get("smoothing", 0.0))
+		# D-113: a suavização é declarada por DECISÃO mensal e publicada também
+		# no equivalente diário (`smoothing_per_day`), que é o que move a taxa.
+		var smooth := float(policy.get("smoothing_per_day", -1.0))
+		_check(smooth > 0.0 and smooth < 1.0,
+			"taylor: smoothing_per_day ausente/inválido no dia %d" % (day + 1))
 		var step_v := float(policy.get("max_step_per_day", 0.0))
-		var expected := rate_prev + clampf((target - rate_prev) * (1.0 - smooth),
+		var expected := rate_prev + clampf((target - rate_prev) * smooth,
 			-step_v, step_v)
 		expected = clampf(expected, floor_v, cap_v)
 		_check(_close(rate, expected, 1e-12),
@@ -358,10 +362,18 @@ func _test_controlled() -> void:
 		maxf(EPS, 1e-9 * emission_end)),
 		"controlado: dívida de DEMO != emissão")
 	# Juro do governo: abaixo do neutro (objetivo declarado do controlado).
+	# D-113: com a suavização mensal o alvo é alcançado por convergência, não em
+	# poucos dias; a checagem é contra o alvo publicado (neutro − spread).
 	var policy := _policy(sim)
-	_check(_close(float(policy.get("rate", -1.0)), 0.02, 1e-9),
-		"controlado: taxa deveria convergir a 2%% (saiu %.6f)" %
-			float(policy.get("rate", -1.0)))
+	var controlled_target := maxf(0.0, float(policy.get("neutral_rate", 0.0))
+		- float(_json(MONETARY_PATH).get("defaults", {})
+			.get("controlled_spread", 0.0)))
+	var controlled_rate := float(policy.get("rate", -1.0))
+	_check(controlled_rate < float(policy.get("neutral_rate", 0.0)) + 1e-12,
+		"controlado: taxa (%.6f) deveria ficar abaixo do neutro" % controlled_rate)
+	_check(_close(controlled_rate, controlled_target, 5e-3),
+		"controlado: taxa deveria convergir ao alvo %.6f (saiu %.6f)"
+			% [controlled_target, controlled_rate])
 	print("[c2b1] controlado: %d dias com emissão, máxima %.6f/dia, total "
 		% [emitted_days, max_emission] + "%.6f" % emission_end)
 
@@ -433,8 +445,10 @@ func _test_save_and_migration() -> void:
 	var migrated_policy := _policy(migrated)
 	_check(int(migrated_policy.get("last_day", 0)) == -1,
 		"migração: taxa salva deveria nascer sem decisão")
-	_check(_close(float(migrated_policy.get("rate", -1.0)), 0.04, 1e-12),
-		"migração: taxa deveria resolver no neutro declarado")
+	_check(_close(float(migrated_policy.get("rate", -1.0)),
+		float(_json(MONETARY_PATH).get("defaults", {}).get("neutral_rate",
+			-1.0)), 1e-12),
+		"migração: taxa deveria resolver no neutro declarado (D-113)")
 	var migrated_totals: Dictionary = _totals(migrated)
 	_check(_close(float(migrated_totals.get("emission_total", -1.0)), 0.0,
 		1e-12), "migração: emissão deveria ser 0 (nada inventado para trás)")

@@ -57,18 +57,47 @@ política ser escolhida, e o status publica `saved` × `effective`.
 
 | parâmetro | valor | por quê |
 |---|---|---|
-| `target_inflation` | 3 % a.a. | meta declarada do jogo |
-| `neutral_rate` | 4 % a.a. | taxa real neutra 1 % + meta |
+| `target_inflation` | 1,5 % a.a. (D-113) | meta declarada do jogo, **calibrada à tendência medida do CPI** (ver §3.1) |
+| `neutral_rate` | 2,5 % a.a. (D-113) | taxa real neutra 1 % + meta de 1,5 % |
 | pesos de Taylor | 1,5 (inflação) / 0,5 (hiato) | forma padrão da regra |
 | passo máximo | 25 pb por dia | evita degrau e instabilidade |
-| suavização | 0,5 | metade do caminho por dia |
+| suavização | 0,5 **por decisão mensal** | aplicada como equivalente diário 1−(1−0,5)^(1/30) ≈ 2,28 %/dia (D-113) |
 | piso / teto da taxa | 0 % / 30 % a.a. | limites declarados |
 | juro do BC controlado | neutro − 2 pp (piso 0) | "juros mais baixos" |
 | emissão máxima | 1 % do M0 da moeda por dia | senhoriagem com limite |
-| hiato | (desemprego natural − desemprego medido) em pp | medido no modelo |
+| hiato | (desemprego natural − desemprego medido) em pp | medido no modelo, **só a partir do dia 30** (D-113) |
+| janela mínima de anualização | 90 d (D-113) | antes disso a inflação é ausência declarada |
 
 Sem inflação na série o termo de inflação **não entra** (`has_inflation=false`) e
 a taxa fica em neutro + hiato — nada é completado com número inventado.
+
+### 3.1 Calibração pré-C6 (D-113): por que meta e neutro mudaram
+
+O par meta 3 % / neutro 4 % era **incompatível com o regime de preços deste
+modelo**. O CPI da C2a é um índice de **nível relativo aos preços-base**
+(`central_bank::cpi_by_nation` → `price / base_price`), isto é, nenhum bem
+carrega tendência inflacionária própria; a inflação de 12 meses medida no mundo
+default em 365 d tem **mediana 1,55 %** (p10 −0,23 %, p90 4,85 %;
+`docs/economy/perf/c5_gate_default.json`). Com meta de 3 %, o termo de inflação
+ficava permanentemente em −2,2 pp e a política vivia em viés expansionista: a
+taxa básica **mediana** caía de 10,0 % (dia 63) para 0,77 % (dia 365).
+
+A meta de 1,5 % **não é meta de banco central real** — é default de jogo
+calibrado à tendência *medida* do CPI acima (o repositório não tem fonte de meta
+por país; ver C2a). O neutro passa a ser 1 % real + 1,5 % = 2,5 %.
+
+Três defeitos de regra foram corrigidos junto (§ linha do código em parênteses):
+
+1. **Suavização por dia, não por decisão** (`sim/monetary.cpp: next_rate`): 0,5
+   aplicado a cada dia dava meia-vida de 1 dia e a taxa teleportava para o alvo
+   em ~4 dias. A cadência da leitura do CPI é mensal (`kCpiSampleDays` = 30).
+2. **Anualização de janela curta** (`sim/central_bank.cpp: inflation_of`): com 2
+   amostras o expoente 360/30 = 12 multiplicava a variação do 1º mês — no dia 45
+   a anualizada mediana era 8,9 % (p90 24,1 %) e a regra mirava 12,5 %.
+3. **Hiato antes do baseline do mercado de trabalho** (`sim/monetary.cpp:
+   reading`): no dia 7 o desemprego medido era 21,5 % contra 6,1 % do regime e o
+   hiato saía −17,5 pp, derrubando a taxa de 4 % para 0,25 % em 15 dias por
+   artefato de inicialização. Antes do dia 30 a leitura é ausente (declarada).
 
 ## 4. Status e save
 
@@ -139,8 +168,59 @@ a taxa fica em neutro + hiato — nada é completado com número inventado.
   é idêntica ao caminho direto (o teste de round-trip gasta e cobra emissão dos
   dois lados).
 
-## 6. Lacunas declaradas
+## 5.1 Calibração pré-C6 (D-113) — medição
 
+`tools/c1_world_ai_365.gd --days=365`, IA, `threads=1`, DLL debug. A trajetória
+mensal da **mediana** da taxa básica no mundo default (`monetary_timeline` do
+JSON do harness):
+
+| dia | antes (D-112) | **depois (D-113)** |
+|---|---|---|
+| 7 | 2,25 % | 2,50 % (= neutro) |
+| 15 | **0,25 %** | 2,50 % |
+| 30 | 2,88 % | 2,48 % |
+| 45 | 6,47 % | 2,30 % |
+| 60 | **10,20 %** | 2,25 % |
+| 63 | 9,99 % | 2,25 % (espelho da C5) |
+| 90 | 5,97 % | 2,23 % |
+| 120 | 3,78 % | 3,28 % |
+| 180 | 2,92 % | 3,89 % |
+| 240 | 1,34 % | 3,07 % |
+| 300 | 0,92 % | 1,96 % |
+| 365 | **0,77 %** | 1,56 % |
+
+O 1º ano calmo deixa de **colapsar** (0,25 % no dia 15) e de **estourar**
+(10,2 % no dia 60): a taxa fica em torno do neutro de 2,5 % e se afasta por
+razão econômica medida — no meio do ano a inflação anualizada de 90 d sobe a
+3,4-3,9 % (> meta 1,5 %) e a taxa vai a 3,9 %; no fim do ano ela volta a 1,6 %
+com a anualizada em 1,55 % e o hiato em −0,6 pp.
+
+| medida (dia 365) | antes (D-112) | **depois (D-113)** |
+|---|---|---|
+| taxa básica mediana / p10 / p90 (135 moedas) | 0,77 % / 0,00 % / 5,19 % | **1,56 % / 0,04 % / 5,76 %** |
+| inflação 12 m mediana / p10 / p90 (179 nações) | 1,55 % / −0,23 % / 4,85 % | 1,55 % / **−0,45 %** / 4,68 % |
+| falências | 3 | **2** |
+| portão de comida | 93/179 | 96/179 |
+| violações / travados | 0 / 0 | 0 / 0 |
+| hash de trajetória | `bb9b5cca…` | `ac1223dc…` |
+
+**Atribuição por canal** (A/B de 365 d, um de cada vez, só o canal ligado):
+
+| só a regra de Taylor (sem o piso de listagem da C5) | antes | só-Taylor | as duas |
+|---|---|---|---|
+| falências | 3 | **4** | **2** |
+| portão de comida | 93/179 | 94/179 | 96/179 |
+| violações | 0 | 0 | 0 |
+
+A regra sozinha **piora** falências (3 → 4) e portão (+1) porque a taxa estável
+e mais baixa que antes no começo do ano barateia o crédito e o custo de capital
+sem o contrapeso que o piso de listagem trouxe ao canal da bolsa (dois papéis
+micro-cap deixam de existir e o dividendo/q dos grupos muda). O par fecha em
+**2 falências** (o melhor dos três mundos) e portão 96/179 (limite do critério
+≤ 98). Fica declarado que a regra isolada **não** atende ao teto de falências:
+se a C6 mexer no canal da bolsa, este A/B precisa ser refeito.
+
+## 6. Lacunas declaradas
 - Sem banco: reservas bancárias, redesconto, M1/M2 emergindo do crédito e o
   **credor** do juro da safra são C4. O juro hoje só reduz a capacidade da linha
   (não é pago a ninguém).

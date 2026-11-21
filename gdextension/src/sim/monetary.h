@@ -35,16 +35,36 @@ struct CpiRow;
 namespace monetary {
 
 // --- Defaults de jogo (espelho de data/definitions/economy/monetary_policy.json)
-constexpr double kTargetInflation = 0.03;       // meta: 3 % a.a.
-constexpr double kNeutralRate = 0.04;           // taxa real neutra 1 % + meta
+// D-113 (calibração pré-C6): a meta e o neutro estavam INCOMPATÍVEIS com o
+// regime de preços deste modelo. O CPI da C2a é um índice de NÍVEL relativo aos
+// preços-base (nenhum bem carrega tendência inflacionária própria): medido em
+// 365 d no mundo default, a inflação de 12 meses tem mediana 1,55 %
+// (p10 −0,23 %, p90 4,85 %; docs/economy/perf/c5_gate_default.json). Com meta
+// 3 % o termo de inflação ficava permanentemente negativo (−2,2 pp) e a política
+// vivia em viés expansionista: a taxa mediana do 1º ano caía de ~10 % para 0,3 %.
+// A meta passa a ser 1,5 % (declarada, calibrada à tendência MEDIDA do CPI; não
+// é meta de banco central real — o repositório não tem essa fonte, ver C2a) e o
+// neutro 1 % real + meta = 2,5 %.
+constexpr double kTargetInflation = 0.015;      // meta: 1,5 % a.a. (D-113)
+constexpr double kNeutralRate = 0.025;          // taxa real neutra 1 % + meta
 constexpr double kTaylorInflationWeight = 1.5;  // resposta à inflação
 constexpr double kTaylorGapWeight = 0.5;        // resposta ao hiato (pp)
 constexpr double kMaxRateStepPerDay = 0.0025;   // 25 pb por dia
-constexpr double kRateSmoothing = 0.5;          // metade do caminho por dia
+// D-113: `kRateSmoothing` é por DECISÃO (cadência da leitura do CPI = 1 mês).
+// Aplicado por dia, 0,5 dava meia-vida de 1 dia e a taxa teleportava para o
+// alvo em ~4 dias; `next_rate` converte para o equivalente diário
+// (1 − (1 − 0,5)^(1/30) ≈ 2,28 %/dia), declarado em sim/central_bank.h.
+constexpr double kRateSmoothing = 0.5;          // metade do caminho por mês
 constexpr double kRateFloor = 0.0;
 constexpr double kRateCap = 0.30;
 constexpr double kControlledSpread = 0.02;      // controlado: neutro − 2 pp
 constexpr double kControlledEmissionShareOfM0 = 0.01;  // senhoriagem ≤1 %/dia
+// D-113: o hiato do produto NÃO entra antes do baseline do mercado de trabalho.
+// No dia 0 o modelo ainda está alocando a força de trabalho (desemprego medido
+// 21,5 % no dia 7 contra 6,1 % no regime): o hiato saía −17,5 pp e a taxa caía
+// de 4 % para 0,25 % em 15 dias por um artefato de inicialização. Até o
+// primeiro fechamento mensal a leitura é AUSENTE (declarada, nada é completado).
+constexpr int kGapBaselineDay = 30;
 constexpr int kIndependenceDefault =
 	1;  // central_bank::kIndependenceIndependent (default declarado)
 

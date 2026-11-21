@@ -396,8 +396,15 @@ bool eligible(const Group& group, std::string* reason) {
 	return true;
 }
 
-StockExchange& ensure_exchange(WorldState& ws, const std::string& nation) {
-	StockExchange& exchange = ws.stock_exchanges[nation];
+bool material(const WorldState& ws, const StockTicker& ticker,
+		const Policy& pol) {
+	// D-113: preço de formação (fundamental medido) >= kMinListedPrice. É o
+	// mesmo número que o status publica e o piso da base da variação.
+	return std::isfinite(ticker.profit_ema)
+		&& fundamental_price(ws, ticker, pol) >= kMinListedPrice;
+}
+
+StockExchange& ensure_exchange(WorldState& ws, const std::string& nation) {	StockExchange& exchange = ws.stock_exchanges[nation];
 	if (exchange.nation.empty()) {
 		exchange.nation = nation;
 		// Nome fictício/genérico: nenhuma bolsa real (sigla ou marca) é usada.
@@ -499,11 +506,21 @@ void seed(WorldState& ws) {
 		// Preço de formação = a PRÓPRIA fórmula (fundamental × confiança, com a
 		// confiança inicial 1,0) sobre o lucro MEDIDO. O patrimônio contábil
 		// fica como `book_equity` (referência do q), não como preço.
-		ticker.price = fundamental_price(ws, ticker, pol);
+		if (material(ws, ticker, pol)) {
+			ticker.listed = true;
+			ticker.reason = "listed";
+			ticker.listed_day = ws.day;
+			ticker.price = fundamental_price(ws, ticker, pol);
+		} else {
+			// D-113: abaixo do porte mínimo o papel nasce NÃO listado e com
+			// preço zero (nada de preço inventado); o fechamento semanal
+			// promove quando o fundamental medido cruzar o piso.
+			ticker.listed = false;
+			ticker.reason = "below_min_price";
+			ticker.listed_day = -1;
+			ticker.price = 0.0;
+		}
 		ticker.profit_at_last_dividend = group.profit_total;
-		ticker.listed = true;
-		ticker.reason = "listed";
-		ticker.listed_day = ws.day;
 		ticker.holdings = default_holdings(ws, group, ticker.shares);
 		ensure_exchange(ws, ticker.nation);
 		ws.stock_tickers[ticker.group_id] = ticker;
@@ -667,6 +684,14 @@ void phase(WorldState& ws) {
 			if (group != nullptr) {
 				eligible(*group, &reason);
 			}
+			// Patrimônio medido do grupo no fechamento (base do q de Tobin).
+			// D-113: atualizado ANTES do teste de porte/listagem.
+			const auto sheet_found = sheet_index.find(ticker.group_id);
+			if (sheet_found != sheet_index.end()
+					&& sheet_found->second < sheets.size()) {
+				ticker.book_equity = std::max(0.0,
+					book_equity(sheets[sheet_found->second]));
+			}
 			if (group == nullptr || reason != "listed") {
 				if (ticker.listed) {
 					ticker.listed = false;
@@ -674,6 +699,17 @@ void phase(WorldState& ws) {
 					ticker.delisted_day = ws.day;
 					// Papel retirado: o valor de mercado vai a zero de forma
 					// declarada (não fica um preço velho no balanço).
+					ticker.price = 0.0;
+				}
+				continue;
+			}
+			// D-113: porte mínimo medido. Abaixo do piso o papel sai da lista
+			// com motivo publicado (mesma regra da retirada: preço vai a zero).
+			if (!material(ws, ticker, pol)) {
+				if (ticker.listed) {
+					ticker.listed = false;
+					ticker.reason = "below_min_price";
+					ticker.delisted_day = ws.day;
 					ticker.price = 0.0;
 				}
 				continue;
@@ -687,13 +723,6 @@ void phase(WorldState& ws) {
 				fresh = true;
 			}
 			const StockExchange& exchange = ensure_exchange(ws, ticker.nation);
-			// Patrimônio medido do grupo no fechamento (base do q de Tobin).
-			const auto sheet_found = sheet_index.find(ticker.group_id);
-			if (sheet_found != sheet_index.end()
-					&& sheet_found->second < sheets.size()) {
-				ticker.book_equity = std::max(0.0,
-					book_equity(sheets[sheet_found->second]));
-			}
 			// Aquecimento (D-112): o preço de referência NÃO reage antes da
 			// média medida estar formada; o índice também não é publicado.
 			if (ws.day < kIndexWarmupDays) {
