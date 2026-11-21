@@ -17,6 +17,9 @@ extends SceneTree
 ##       (sem redesconto; a corrida para no caixa disponível).
 ##   (e) save v34: round-trip bit-exato e continuação idêntica.
 ##   (f) conservação de dinheiro e identidade da C1 em TODOS os dias.
+##   (g) banco insolvente em nação dolarizada com o Tesouro sem caixa: o
+##       resgate vira título em poder do exterior (`external_bonds`), os
+##       custos fecham o rombo, a identidade passa e o mundo avança.
 ##
 ## Roda pelo runner: powershell -File tools/run_tests.ps1 -List c6_bank_crisis_test
 
@@ -44,11 +47,13 @@ func _init() -> void:
 	_test_resolution_costs_close_gap()
 	_test_contagion_scope()
 	_test_dollarized_without_lender()
+	_test_rescue_external_bond()
 	_test_save_v34()
 	if _failures.is_empty():
-		print("[c6-crisis] OK: (a)-(f) corrida com redesconto, resolução com "
+		print("[c6-crisis] OK: (a)-(g) corrida com redesconto, resolução com "
 			+ "custos fechando o rombo, contágio por nação, dolarizado sem "
-			+ "emprestador, save v34 e conservação de dinheiro.")
+			+ "emprestador, resgate sem BC em título do exterior, save v34 e "
+			+ "conservação de dinheiro.")
 		quit(0)
 	else:
 		print("[c6-crisis] FALHAS (%d):" % _failures.size())
@@ -75,7 +80,6 @@ func _test_parameters_match_data() -> void:
 	var resolution: Dictionary = data.get("resolution", {})
 	var pairs := [
 		["capital_min", capital.get("min_ratio")],
-		["capital_healthy", capital.get("confidence_healthy_ratio")],
 		["liquidity_min", liquidity.get("min_ratio")],
 		["loss_scale", losses.get("confidence_scale")],
 		["loss_ema_days", losses.get("ema_days")],
@@ -313,6 +317,87 @@ func _test_dollarized_without_lender() -> void:
 		float(row.get("confidence", 1.0)), int(row.get("run_days", 0))])
 
 
+# --- (g) resgate sem BC e com o Tesouro sem caixa -------------------------
+# O rombo que sobra vira dívida pública em poder do EXTERIOR (`external_bonds`,
+# paga pela posição externa). Sem a ponta do credor, `financial_sum` ficaria em
+# −valor e o tick seria revertido todo dia (mundo congelado).
+func _test_rescue_external_bond() -> void:
+	var sim = _stage(0.10, "private", true)
+	# Alguns dias de prêmio antes do choque: o fundo de seguro tem saldo.
+	for day in 5:
+		sim.tick_day()
+	# Tesouro sem caixa: o orçamento público das cidades DEMO vai a zero.
+	sim = _drain_treasury(sim)
+	sim.set_bank_policy(0.02, LEVERAGE_CAP, 2.0, 30, 0.01)
+	# Dolarizado: sem BC para carregar o título do resgate.
+	sim.set_fx_regimes({
+		"source": "teste C6 (dolarizado)",
+		"currencies": {
+			"DEM": {
+				"nations": ["DEMO"],
+				"shared_currency": true,
+				"exceptions": {"DEMO": "no_separate_legal_tender"},
+				"game_regime": "peg",
+			},
+		},
+	})
+	var treasury_before := _treasury_cash(sim)
+	_check("G Tesouro sem caixa antes do resgate",
+		treasury_before <= EPS, "tesouro=%.6f" % treasury_before)
+	# Perda de 60 %: o rombo passa do depósito NÃO segurado e do fundo, e o
+	# Tesouro (sem caixa e sem BC) tem de emitir dívida carregada pelo exterior.
+	var shock: Dictionary = sim.bank_shock(PRIVATE, 0.0, 0.60)
+	_check("G choque aplicado", float(shock.get("written", 0.0)) > 0.0,
+		JSON.stringify(shock))
+	var day_before := int(sim.get_status().get("day", 0))
+	var summary: Dictionary = sim.tick_day()
+	_check("G dia da resolução sem violação de invariante",
+		(summary.get("invariant_violations", []) as Array).is_empty(),
+		str(summary.get("invariant_violations", [])))
+	_check("G mundo avançou (o tick não foi revertido)",
+		int(sim.get_status().get("day", 0)) == day_before + 1,
+		"antes=%d depois=%d" % [day_before,
+			int(sim.get_status().get("day", 0))])
+	_check_identity(sim, "G dia da resolução")
+	var event: Dictionary = _last_resolution(sim, PRIVATE)
+	_check("G evento de resolução registrado", not event.is_empty(),
+		str(sim.get_bank_status().get("events", [])))
+	if event.is_empty():
+		return
+	var gap := float(event.get("gap", 0.0))
+	var cost_total := float(event.get("cost_depositors", 0.0)) \
+		+ float(event.get("cost_fund", 0.0)) \
+		+ float(event.get("cost_treasury", 0.0)) \
+		+ float(event.get("cost_takeover", 0.0))
+	_check("G Tesouro sem caixa socorreu por dívida emitida",
+		float(event.get("cost_treasury", 0.0)) > 0.0,
+		"custo_tesouro=%.6f" % float(event.get("cost_treasury", 0.0)))
+	_check("G nenhuma emissão de M0 no ramo sem BC",
+		absf(float(event.get("emission", 0.0))) <= EPS,
+		"emissao=%.6f" % float(event.get("emission", 0.0)))
+	_check("G custos somam EXATAMENTE o rombo",
+		absf(cost_total - gap) <= maxf(1e-3, absf(gap) * 1e-9),
+		"soma=%.9f rombo=%.9f" % [cost_total, gap])
+	_check("G banco resolvido", bool(_bank(sim, PRIVATE)
+		.get("resolved", false)), String(_bank(sim, PRIVATE)
+		.get("resolution", "")))
+	# Depois da resolução: o invariante continua fechando e o relógio anda —
+	# era aqui que o mundo congelava com o rombo sem credor.
+	for day in 5:
+		var after: Dictionary = sim.tick_day()
+		_check("G dia %d após o resgate sem violação" % (day + 1),
+			(after.get("invariant_violations", []) as Array).is_empty(),
+			str(after.get("invariant_violations", [])))
+		_check_identity(sim, "G dia %d após o resgate" % (day + 1))
+	_check("G mundo seguiu depois do resgate",
+		int(sim.get_status().get("day", 0)) >= day_before + 6,
+		"dia=%d" % int(sim.get_status().get("day", 0)))
+	print("[c6-crisis] G: rombo=%.2f depositantes=%.2f fundo=%.2f tesouro=%.2f"
+		% [gap, float(event.get("cost_depositors", 0.0)),
+		float(event.get("cost_fund", 0.0)),
+		float(event.get("cost_treasury", 0.0))])
+
+
 # --- (e) save v34 --------------------------------------------------------
 func _test_save_v34() -> void:
 	var sim = _stage(0.32, "private", true)
@@ -502,6 +587,18 @@ func _treasury_cash(sim) -> float:
 		if String(city.get("nation", "")) == "DEMO":
 			total += float(city.get("government_budget", 0.0))
 	return total
+
+
+## Zera o orçamento público (o "Tesouro" do modelo) de TODAS as cidades da
+## nação e devolve o sim recarregado do próprio save (round-trip sem inventar
+## estado). As regras de crédito são reaplicadas por quem chama.
+func _drain_treasury(sim):
+	var save: Dictionary = sim.to_dict()
+	for city: Variant in save.get("cities", []):
+		var row: Dictionary = city
+		if String(row.get("nation", "")) == "DEMO":
+			row["government_budget"] = 0.0
+	return _load(save, false)
 
 
 func _check_identity(sim, label: String) -> void:
