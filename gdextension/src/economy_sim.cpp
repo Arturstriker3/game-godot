@@ -5266,14 +5266,15 @@ void EconomySim::set_balance(const Dictionary& values) {
 	// padrão continua sendo kInfraAccessPenaltyMax.
 	ws_.infra_access_penalty = std::clamp(
 		number("infra_access_penalty", ws_.infra_access_penalty), 0.0, 1.0);
-	// D-105: juro da taxa básica no envelope de crédito da safra. Padrão do
-	// jogo = DESLIGADO (sem credor até a C4); o A/B de 365 d liga por aqui.
+	// D-105 + D-111: juro da taxa básica no envelope de crédito da safra.
+	// Padrão do jogo = LIGADO (a C4 criou o credor); o A/B desliga por aqui.
 	if (values.has("harvest_credit_rate")) {
 		ws_.harvest_credit_rate = number("harvest_credit_rate", 0.0) > 0.5;
 	}
 	// C3 (D-107): regras do crédito de empresa (default de jogo em
 	// data/definitions/economy/bank_credit.json). 0 = default do sim/bank.h.
-	// O teste/laboratório liga o crédito por aqui; o jogo nasce desligado.
+	// O mundo novo nasce com o crédito ligado (D-111); o teste/laboratório
+	// desliga ou liga explicitamente por aqui.
 	if (values.has("bank_credit_enabled")) {
 		ws_.bank_credit_enabled =
 			number("bank_credit_enabled", 0.0) > 0.5;
@@ -9042,9 +9043,10 @@ Dictionary EconomySim::get_central_bank_status() const {
 			ogs::central_bank::standard_name(ws_.monetary_standard);
 		policy["reserve_currency"] = String(ws_.reserve_currency.c_str());
 		policy["active"] = true;
-		// D-105: o juro da taxa básica no envelope de crédito da safra (D-099)
-		// está ligado? Falso = desligado até existir credor (C4). Declarado em
-		// `data/definitions/economy/monetary_policy.json` e conferido pelo teste.
+		// D-105 + D-111: o juro da taxa básica no envelope de crédito da safra
+		// (D-099) está ligado? Verdadeiro desde a D-111 (a C4 criou o credor).
+		// Declarado em `data/definitions/economy/monetary_policy.json` e
+		// conferido pelo teste.
 		policy["harvest_credit_rate"] = ws_.harvest_credit_rate;
 		// C2b2 (D-106): o padrão AGE (Bretton Woods e padrão ouro forçam o peg
 		// e a conversão do ouro). A troca é só por comando na fila A3.

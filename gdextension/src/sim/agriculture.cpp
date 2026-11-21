@@ -445,15 +445,13 @@ double SimCore::crop_liquidity_factor(const City& city,
 	}
 	const double asset = balance::marketable_assets(ws_, city_index, building,
 		price, crop_standing_value(city.id, building.output_product, price));
-	// C2b1 (D-104) + D-105 (C2b1-fix): o crédito da safra pode custar a TAXA
-	// BÁSICA da moeda do país, descontando o ENVELOPE da linha (a capacidade que
-	// o ativo da lavoura financia em `kLossDaysBeforeClose` dias), não o caixa:
-	// não há banco para recebê-lo (é a C4), então nenhum dinheiro sai da firma.
-	// Até a C4 o juro fica DESLIGADO por padrão
-	// (`WorldState::harvest_credit_rate`): sem credor com contraparte no
-	// balanço, o juro seria custo sem recebedor. O canal está pronto para a C4 e
-	// o A/B de 365 d liga por `set_balance`. Taxa 0 (nação sem moeda no estado)
-	// devolve o comportamento original da D-099.
+	// C2b1 (D-104) + D-105 (C2b1-fix) + D-111: o crédito da safra pode custar a
+	// TAXA BÁSICA da moeda do país, descontando o ENVELOPE da linha (a
+	// capacidade que o ativo da lavoura financia em `kLossDaysBeforeClose`
+	// dias), não o caixa. Desde a D-111 o juro é LIGADO por padrão
+	// (`WorldState::harvest_credit_rate`): o valor cobrado vai ao banco público
+	// da nação (C4). O A/B de 365 d desliga/liga por `set_balance`. Taxa 0
+	// (nação sem moeda no estado) devolve o comportamento original da D-099.
 	const double policy_rate = ws_.harvest_credit_rate
 		? monetary::rate_for_nation(ws_, city.nation) : 0.0;
 	const double credit_span_years = double(kLossDaysBeforeClose) / 365.0;

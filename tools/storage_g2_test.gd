@@ -719,6 +719,11 @@ func _make_world(ai: bool) -> Dictionary:
 	var sim = EconomySim.new()
 	sim.set_instant_construction(true)
 	sim.initialize_scenario()
+	# D-111: o credito de empresa nasce LIGADO no jogo. Este fixture mede
+	# conservacao de dinheiro e custo de armazenagem, nao credito, entao o
+	# desliga EXPLICITAMENTE (com credito ligado, o emprestimo cria dinheiro
+	# bancario e money_total cresce por desenho -- C4/D-110).
+	sim.set_bank_credit(false)
 	var geo = GeoScript.new()
 	geo.apply_to_sim(sim, [
 		{"id": "AGRIA", "center": AGRIA_CENTER},

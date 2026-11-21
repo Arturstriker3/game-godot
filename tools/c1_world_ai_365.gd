@@ -55,12 +55,15 @@ var _days := 365
 var _property := false
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 var _fx_seed_days := 0
-# C3 (D-107): medição com o crédito de empresa LIGADO (default do jogo = false).
+# C3 (D-107) + D-111: forçar o crédito de empresa por flag. Desde a D-111 o
+# default do jogo é LIGADO; a flag continua servindo ao A/B (--credit=0 desliga).
 # Só laboratório: não existe botão/atalho/HUD para isso no jogo.
 var _credit := false
-# C4 (D-110): A/B do CANAL do juro no envelope de crédito da safra (D-105).
-# Só laboratório: sem flag o default do jogo (DESLIGADO) continua valendo.
+var _credit_set := false
+# C4 (D-110) + D-111: A/B do CANAL do juro no envelope de crédito da safra
+# (D-105). Desde a D-111 o default do jogo é LIGADO; --harvest-rate=0 desliga.
 var _harvest_rate := false
+var _harvest_rate_set := false
 
 
 func _init() -> void:
@@ -77,8 +80,10 @@ func _init() -> void:
 			_out = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--credit="):
 			_credit = arg.split("=", true, 1)[1] != "0"
+			_credit_set = true
 		elif arg.begins_with("--harvest-rate="):
 			_harvest_rate = arg.split("=", true, 1)[1] != "0"
+			_harvest_rate_set = true
 		elif arg.begins_with("--fx-seed-days="):
 			# C2b2 (D-106): cenário de estresse — funda as reservas de cada
 			# moeda com N dias de importação MEDIDA do mundo e o peg passa a ser
@@ -158,15 +163,20 @@ func _make_world() -> Object:
 		storage.apply_to_sim(sim, cities, buildings,
 			{"only_missing": true, "initial_stock": true})
 	sim.set_ai_enabled(true)
-	if _credit:
-		sim.set_bank_credit(true)
-		print("[c1] C3: credito de empresa LIGADO por flag (--credit=1)")
-	if _harvest_rate:
+	# D-111: sem flag vale o default do jogo (LIGADO). Com flag, ela MANDA --
+	# inclusive `--credit=0`/`--harvest-rate=0` (braço "off" do A/B).
+	if _credit_set:
+		sim.set_bank_credit(_credit)
+		print("[c1] C3: credito de empresa %s por flag (--credit=%d)"
+			% ["LIGADO" if _credit else "DESLIGADO", 1 if _credit else 0])
+	if _harvest_rate_set:
 		sim.set_balance({
-			"harvest_credit_rate": 1.0,
+			"harvest_credit_rate": 1.0 if _harvest_rate else 0.0,
 			"income_basket_margin": 0.0,
 		})
-		print("[c1] C4: juro do envelope da safra LIGADO por flag (--harvest-rate=1)")
+		print("[c1] C4: juro do envelope da safra %s por flag (--harvest-rate=%d)"
+			% ["LIGADO" if _harvest_rate else "DESLIGADO",
+				1 if _harvest_rate else 0])
 	return sim
 
 
@@ -514,8 +524,11 @@ func _run() -> void:
 	}
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
-	if _credit:
-		out["credit"] = _credit_report(sim)
+	# C3/D-111: o bloco do crédito é medido sempre que o mundo tem crédito
+	# ligado — por flag de laboratório OU por default do jogo (D-111).
+	var credit := _credit_report(sim)
+	if _credit or bool(credit["enabled"]):
+		out["credit"] = credit
 	var file := FileAccess.open(_out, FileAccess.WRITE)
 	if file == null:
 		print("[c1] FALHA: não escreveu " + _out)
@@ -535,8 +548,7 @@ func _run() -> void:
 		+ "atrasado=%.0f saída=" % float((balance["invariant"] as Dictionary)
 			.get("receivables", 0.0)) + _out)
 	print("[c1] OK: 365 d medidos")
-	if _credit:
-		var credit := _credit_report(sim)
+	if _credit or bool(credit["enabled"]):
 		print("[c1] crédito (C3): ligado=%s empréstimos=%d dívida=%.3f "
 			% [str(credit["enabled"]), int(credit["loans_count"]),
 				float(credit["group_debt"])]
@@ -547,8 +559,8 @@ func _run() -> void:
 
 
 func _credit_report(sim) -> Dictionary:
-	# C3 (D-107): o crédito de empresa medido no fim do mundo. Default do jogo
-	# continua DESLIGADO; este bloco só existe na rodada de laboratório.
+	# C3 (D-107) + D-111: o crédito de empresa medido no fim do mundo. Medido
+	# sempre que o mundo tem crédito ligado (default do jogo ou flag).
 	var bank: Dictionary = sim.get_bank_status()
 	var totals: Dictionary = bank.get("totals", {})
 	return {

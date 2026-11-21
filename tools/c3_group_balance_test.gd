@@ -11,9 +11,9 @@ extends SceneTree
 ##      = patrimônio líquido.
 ##   3. Aditividade declarada: os grupos são um SUBCONJUNTO das firmas da C1;
 ##      o caixa/estoque/capital fixo dos grupos nunca excede o total das firmas.
-##   4. Sem crédito (default de jogo): dívida 0, alavancagem 0, banco sem
-##      empréstimo/capital e `deposits: absent` — ausência declarada, não número
-##      inventado.
+##   4. Com o crédito DESLIGADO explicitamente (o default do jogo é ligado desde
+##      a D-111): dívida 0, alavancagem 0, banco sem empréstimo/capital e
+##      `deposits: absent` — ausência declarada, não número inventado.
 ##   5. `unallocated` publica o que não tem nação atribuível (leitura).
 ##
 ## Roda pelo runner: powershell -File tools/run_tests.ps1 -List c3_group_balance_test
@@ -121,7 +121,8 @@ func _test_credit_off(sim) -> void:
 	var bank: Dictionary = sim.get_bank_status()
 	var policy: Dictionary = bank.get("policy", {})
 	var totals: Dictionary = bank.get("totals", {})
-	_check("crédito nasce desligado", not bool(policy.get("enabled", true)),
+	_check("crédito desligado explicitamente (default do jogo é ligado, D-111)",
+		not bool(policy.get("enabled", true)),
 		"enabled=" + str(policy.get("enabled")))
 	_check("depósito é dinheiro bancário (C4)",
 		String(policy.get("deposits", "")) == "firm deposits (bank money, C4)",
@@ -132,6 +133,13 @@ func _test_credit_off(sim) -> void:
 	_check("fonte do default declarada",
 		String(policy.get("source", "")).contains("bank_credit.json"),
 		String(policy.get("source", "")))
+	# D-111: o default declarado no dado e LIGADO (a C4 criou o credor). O
+	# teste roda com o credito desligado por flag, mas o dado tem de dizer a
+	# verdade do jogo.
+	var data: Variant = _json("res://data/definitions/economy/bank_credit.json")
+	_check("dado declara crédito LIGADO (D-111)",
+		data is Dictionary and bool((data as Dictionary).get("enabled", false)),
+		"enabled no dado = " + str((data as Dictionary).get("enabled")))
 	_check("sem banco: nenhuma nação publicada",
 		(bank.get("nations", []) as Array).is_empty(),
 		"nations=%d" % (bank.get("nations", []) as Array).size())
@@ -185,6 +193,10 @@ func _world(days: int):
 		}],
 	})
 	sim.initialize_scenario()
+	# D-111: o credito de empresa nasce LIGADO no jogo; este teste mede o
+	# balanco por grupo SEM credito (ausencia declarada), entao desliga
+	# EXPLICITAMENTE (o default ligado e conferido em _test_credit_off).
+	sim.set_bank_credit(false)
 	for day in days:
 		sim.tick_day()
 	return sim
