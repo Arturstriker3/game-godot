@@ -38,10 +38,12 @@ constexpr int kPricePeriodDays = 7;            // fechamento semanal
 constexpr int kDividendPeriodDays = 30;        // fechamento mensal
 constexpr double kExpectationDefault = 1.0;
 // C5-fix (D-112) - AQUECIMENTO E REFERENCIA DE LUCRO.
-// O lucro de referência do papel NÃO nasce de um dia: nos primeiros 63 dias a
-// referência é a MÉDIA MEDIDA desde a listagem (peso 1/n) e o preço não reage;
-// o índice da praça só é publicado (base 100) no primeiro fechamento semanal
-// depois do aquecimento. Depois disso a referência vira EMA de 50 dias.
+// O lucro de referência do papel NÃO nasce de um dia: é semeado com a MÉDIA
+// MEDIDA desde o início do mundo e, nos primeiros 63 dias, converge ao nível
+// recente por EMA (`kProfitWarmupK` = 0,05, meia-vida ~14 d); o preço não reage
+// nesse aquecimento e o índice da praça só é publicado (base 100) no primeiro
+// fechamento semanal depois dele. Depois disso a referência vira janela anual
+// (`kProfitEmaK` = 1/365 por dia).
 constexpr int kIndexWarmupDays = 63;           // 9 semanas de aquecimento
 // Durante o aquecimento a referência converge ao NÍVEL RECENTE do lucro
 // (EMA de ~20 dias, partindo da média medida) e o preço não reage: no fim

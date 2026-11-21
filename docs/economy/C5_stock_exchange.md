@@ -250,7 +250,8 @@ direto. `book_equity` é o patrimônio medido no último fechamento (base do q).
 
 **Migração v32 → v33:** o estado antigo não tem bolsa. A migração **cria** as
 bolsas das nações com grupos listados (§3), com preço inicial igual ao
-fundamental medido (lucro do dia de formação, confiança 1,0) e a carteira pelo
+fundamental medido (lucro de referência **medido**: média acumulada do grupo
+desde o início do mundo, §12.1; confiança 1,0) e a carteira pelo
 default declarado do §4. Nada de preço ou carteira é inventado: preço =
 `payout × E[lucro] × 365 / (taxa + prêmio) / ações` e carteira = rateio
 declarado. Grupo não listado fica fora (nada é criado). Round-trip v33 é
@@ -375,18 +376,23 @@ crise; 151 praças (as com papel em ambos os fechamentos) entram na conta.
 
 ### 12.4 Os 5 papéis mais extremos e a causa medida
 
-| papel | praça | variação | causa medida |
-|---|---|---|---|
-| `G-QAT-food-192` | QAT | +41 634 % | lucro de referência **+35 501x** partindo de base ~0 (micro-cap: q ≈ 400) |
-| `G-SWE-food-220` | SWE | +158,0 % | lucro **+116,9x**; confiança +8,1 % |
-| `G-VCT-food-250` | VCT | +66,4 % | lucro **+44,9x**; confiança +16,8 % |
-| `G-COL-energy-63` | COL | +41,3 % | lucro **+28,7x**; confiança +13,8 % |
-| `G-SDN-food-207` | SDN | +22,5 % | lucro **+14,6x**; confiança +20,5 % |
+| papel | praça | variação (365 d) | q | causa medida |
+|---|---|---|---|---|
+| `G-QAT-food-192` | QAT | **+4 163 320 %** (41 634x) | 187,5 | lucro de referência **+35 501x** partindo de base ~0 (micro-cap) |
+| `G-SWE-food-220` | SWE | +15 698,6 % (158x) | 0,94 | lucro **+116,9x**; confiança +8,1 % |
+| `G-VCT-food-250` | VCT | +6 541,0 % (66,4x) | 8,82 | lucro **+44,9x**; confiança +16,8 % |
+| `G-COL-energy-63` | COL | +4 026,7 % (41,3x) | 133,8 | lucro **+28,7x**; confiança +13,8 % |
+| `G-SDN-food-207` | SDN | +2 148,6 % (22,5x) | 3,68 | lucro **+14,6x**; confiança +20,5 % |
+
+(`change` no JSON é **razão** preço_fim/preço_início; a tabela converte para %,
+por isso os valores ficam 100x a leitura antiga desta seção, que estava errada.
+`paper_extremes` guarda só os 5 mais extremos, não a lista dos 260 papéis.)
 
 Todos os extremos são **lucro medido**, não preço inventado: a referência do
 papel subiu 14x-35 000x no ano. O caso QAT é degenerado por escala (grupo com
 patrimônio registrado quase nulo e lucro que salta de ~0), não por erro de
-preço; a lista completa (`paper_extremes`) fica no JSON para a C6.
+preço; `paper_extremes` guarda **só os 5 mais extremos** (não a lista dos 260
+papéis) no JSON para a C6.
 
 **Artefatos declarados (não escondidos):**
 

@@ -488,8 +488,8 @@ void seed(WorldState& ws) {
 		// C5-fix (D-112): o lucro de referência nasce da MÉDIA MEDIDA do grupo
 		// (lucro acumulado ÷ dias de mundo), não do último dia. No dia 0 a média
 		// ainda é um dia; por isso o preço não reage e o índice não é publicado
-		// antes do aquecimento (`kIndexWarmupDays`), onde a referência passa a
-		// ser a média acumulada exata (peso 1/n).
+		// antes do aquecimento (`kIndexWarmupDays`), onde a referência converge
+		// ao nível recente por EMA k=0,05 (`kProfitWarmupK`).
 		const double age = std::max(1.0, static_cast<double>(ws.day));
 		if (index < sheets.size() && group.profit_total > 0.0) {
 			ticker.profit_ema = group.profit_total / age;

@@ -1905,6 +1905,7 @@ Dictionary EconomySim::get_profile() const {
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
 		"region", "migration", "social", "property", "agriculture", "storage",
+		"stock",
 	};
 	Dictionary profile;
 	if (!profile_) {
