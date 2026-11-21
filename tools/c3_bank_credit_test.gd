@@ -298,7 +298,7 @@ func _test_save() -> void:
 	# Os parâmetros de REGRA do laboratório (spread/teto de alavancagem) não
 	# são estado salvo: reaplicados no carregado para a continuação.
 	loaded.set_bank_policy(0.02, LEVERAGE_CAP, 2.0, 30, 0.5)
-	_check("A6 round-trip v30 bit-exato",
+	_check("A6 round-trip v31 bit-exato",
 		JSON.stringify(loaded.to_dict()) == JSON.stringify(saved), "difere")
 	for day in 5:
 		sim.tick_day()

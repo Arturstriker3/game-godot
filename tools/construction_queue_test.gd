@@ -395,8 +395,8 @@ func _test_v13_migration() -> void:
 			project.get("total_cost", -1.0)))
 	# O schema novo sai em v18 (B2 + minas, D-086) e a obra antiga entrega as
 	# unidades.
-	if int(sim.to_dict().get("version", 0)) != 30:
-		_fail("migracao v13: save regravado não saiu como v30")
+	if int(sim.to_dict().get("version", 0)) != 31:
+		_fail("migracao v13: save regravado não saiu como v31")
 	var share_before := _owner_share_of(sim, 1)
 	if not _tick(sim, 7, "migracao-v13"):
 		return

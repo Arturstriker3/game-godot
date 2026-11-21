@@ -8276,7 +8276,7 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			currency.exchange_regime = regime;
 			// O toggle do F5 acompanha: o regime é a fonte, agora que ele age.
 			currency.floating = regime
-				== ogs::central_bank::kRegimeFloating;
+				!= ogs::central_bank::kRegimePeg;
 			// O espelho de estado acompanha o comando: o load restaura
 			// `currency.exchange_regime` a partir de `fx_regime`
 			// (save_state.cpp, bloco 2), então sem isto um regime comandado
