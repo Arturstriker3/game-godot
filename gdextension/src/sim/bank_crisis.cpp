@@ -542,6 +542,9 @@ double resolve(WorldState& ws, const std::string& bank_id,
 			bank.deposits = 0.0;
 			bank.bc_borrowing = 0.0;
 			bank.share = 0.0;
+			// Resolvido e absorvido: não está mais "em corrida hoje". O
+			// acumulado de saques fica para a medição.
+			bank.run_days = 0;
 			// Acumulados JA copiados para o banco publico: a casca zera para
 			// `bank::totals` nao contar duas vezes (writeoffs/defaults/
 			// loans_count/juros/dividendos/juro da safra). A ANCORA da
@@ -923,6 +926,19 @@ Totals totals(const WorldState& ws) {
 	for (const auto& row : ws.banks) {
 		const Bank& bank = row.second;
 		if (!bank.absorbed_into.empty()) {
+			// Casca absorvida: sem saldo, mas os acumuladores de medição que
+			// NÃO foram copiados ao banco público continuam aqui e entram UMA
+			// vez no total (corrida, redesconto, seguro, bail-in, Tesouro e
+			// fuga). Os copiados foram zerados na incorporação.
+			out.capital_flight += bank.capital_flight;
+			out.run_withdrawn += bank.run_withdrawn;
+			out.run_cash += bank.run_cash;
+			out.run_public += bank.run_public;
+			out.lolr_borrowed += bank.lolr_borrowed;
+			out.lolr_interest += bank.lolr_interest;
+			out.insured_payout += bank.insured_payout;
+			out.bailin_cut += bank.bailin_cut;
+			out.treasury_rescue += bank.treasury_rescue;
 			continue;
 		}
 		const bool any = bank.loans > kEps || bank.arrears > kEps

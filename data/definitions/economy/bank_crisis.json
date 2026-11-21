@@ -44,12 +44,11 @@
     "note": "o modelo nao tem cadastro de depositante, entao o TETO do seguro e declarado como a fatia dos depositos coberta (60%). O premio diario e cobrado do caixa do banco (sem caixa, nao ha premio - ausencia declarada). O fundo e por nacao, entra no dinheiro do mundo e paga a resolucao ate o saldo."
   },
   "resolution": {
-    "bailin_uninsured_first": true,
     "treasury_debt_rescue": true,
     "takeover_public": true,
     "capital_flight_share": 0.25,
     "insolvency_tolerance": 1.0,
     "insolvency_tolerance_ratio": 0.000001,
-    "note": "ordem: acionistas zerados (capital) e papel da bolsa baixado se houver; depositos NAO segurados sofrem corte; fundo de seguro paga ate o saldo; Tesouro paga do caixa e, se faltar, emite divida publica carregada pelo BC da moeda; o residual e absorvido pelo banco publico (incorporacao) ou, sem ele, liquidacao. Os custos registrados somam o rombo. `insolvency_tolerance` (1,0 XGS) e `insolvency_tolerance_ratio` (1e-6 dos ativos) sao materialidade: a tolerancia efetiva e' max(absoluta, ativos x razao); patrimonio negativo abaixo dela e' arredondamento do juro/dividendo, nao rombo, e nao dispara resolucao (medido: 14 'resolucoes' de epsilon no mundo base sem tolerancia, todas abaixo de 0,72 XGS; com so a absoluta, 7 entre 1,01 e 1,68 XGS em bancos de milhoes)."
+    "note": "ordem: acionistas zerados (capital) e papel da bolsa baixado se houver; depositos NAO segurados sofrem corte; fundo de seguro paga ate o saldo; Tesouro paga do caixa e, se faltar, emite divida publica carregada pelo BC da moeda - sem BC (dolarizado/sem moeda propria, ou moeda sem estado monetario salvo), o titulo fica com o exterior (`external_bonds`); o residual e absorvido pelo banco publico (incorporacao) ou, sem ele, liquidacao. Os custos registrados somam o rombo. `insolvency_tolerance` (1,0 XGS) e `insolvency_tolerance_ratio` (1e-6 dos ativos) sao materialidade: a tolerancia efetiva e' max(absoluta, ativos x razao); patrimonio negativo abaixo dela e' arredondamento do juro/dividendo, nao rombo, e nao dispara resolucao (medido: 14 'resolucoes' de epsilon no mundo base sem tolerancia, todas abaixo de 0,72 XGS; com so a absoluta, 7 entre 1,01 e 1,68 XGS em bancos de milhoes)."
   }
 }
