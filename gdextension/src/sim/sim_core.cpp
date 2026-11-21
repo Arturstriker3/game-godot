@@ -1024,8 +1024,8 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 
 	// 2b. C2a (D-103) — BANCO CENTRAL POR MOEDA: o caixa do dia tem de ser
 	// integralmente atribuível às moedas do mundo (ou declarado como não
-	// atribuível). C4 (D-110): a atribuição continua sendo de CAIXA (M1); o M0
-	// global é `money_total − depósitos` e a política monetária lê `m0_total()`.
+	// atribuível). C4 (D-110): a atribuição é de CAIXA; o M0 por moeda é
+	// `caixa − depósitos` e o M1 é `caixa − reservas`.
 	{
 		const central_bank::MoneyAllocation money =
 			central_bank::allocate_money(ws_, money_after);

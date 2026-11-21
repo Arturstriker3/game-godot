@@ -165,12 +165,12 @@ struct CurrencyBank {
 	std::vector<std::string> nations;
 
 	// Passivo: base monetária.
-	double currency_in_circulation = 0.0;  // M0 em poder do público
+	double currency_in_circulation = 0.0;  // caixa total da moeda (público + bancos)
 	double bank_reserves = 0.0;            // reservas dos bancos (0: sem banco)
-	double m0 = 0.0;                       // circulação + reservas
+	double m0 = 0.0;                       // caixa − depósitos (público + reservas)
 	// Agregados (medidos do balanço da C1; sem emissão nova).
-	double m1 = 0.0;  // M0 + depósitos à vista (0: C4)
-	double m2 = 0.0;  // M1 + depósitos de poupança/prazo (0: C4)
+	double m1 = 0.0;  // caixa − reservas (público + depósitos à vista; C4)
+	double m2 = 0.0;  // M1 + depósitos de poupança/prazo (C4: = M1)
 
 	// Ativo: reservas internacionais e títulos.
 	double gold_tonnes = 0.0;               // ouro fino (dado real da G2)

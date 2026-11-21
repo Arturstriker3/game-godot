@@ -9777,7 +9777,13 @@ Dictionary EconomySim::get_bank_status() const {
 		row["remittance_origin"] = totals.remittance_origin;
 		row["harvest_interest"] = totals.harvest_interest;
 		row["banks"] = totals.banks;
-		row["m1"] = money_total();
+		// C4 (D-110): M1 global = dinheiro do mundo − cofre dos bancos (o
+		// cofre é reserva, que é M0 e não M1); M0 = dinheiro − depósitos.
+		double vault = 0.0;
+		for (const auto& bank_row : ws_.banks) {
+			vault += std::max(0.0, bank_row.second.cash);
+		}
+		row["m1"] = std::max(0.0, money_total() - vault);
 		row["m0"] = sim_core_.m0_total();
 		out["totals"] = row;
 	}
