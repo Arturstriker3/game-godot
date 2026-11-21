@@ -245,9 +245,10 @@ tomador e creditado no banco público da nação** como juro de crédito
 (`bank.cash += valor`, `bank.harvest_interest += valor`, caixa da firma
 `−= valor`). Assim o custo não é mais sem recebedor e a soma financeira fecha.
 
-- A flag continua **DESLIGADA** por default (`monetary_policy.json`,
-  `harvest_credit.apply_policy_rate = false`): ligar muda o mundo e é decisão
-  de calibração, não default.
+- A flag está **LIGADA** por default desde a **D-111** (`monetary_policy.json`,
+  `harvest_credit.apply_policy_rate = true`): a decisão do dono veio depois da
+  medição abaixo, com o credor já existente; o A/B e os testes desligam por
+  `set_balance({"harvest_credit_rate": 0})`.
 - A ligação só é permitida com banco público existente na nação; sem banco, o
   valor **não** é cobrado (ausência declarada, comportamento da D-105).
 - A/B por canal (§10) mede o canal isolado, sem calibrar às cegas.
@@ -270,7 +271,7 @@ além do `state_owned` e painel de UI (depois da Fase H).
 
 | # | critério | medida |
 |---|---|---|
-| B1 | mundo default não piora | 365 d IA threads=1: falências ≤ 3, portão ≥ 94/179, violações 0 |
+| B1 | mundo default não piora | 365 d IA threads=1: falências ≤ 3, portão ≤ 98/179 (revisado pela D-111; na C4 era ≤ 94), violações 0 |
 | B2 | participações | por nação somam 1 (0,45/0,40/0,15 ou 0,55/0,45); `Δ ≤ 1e-12` |
 | B3 | migração conserva valor | save v31 sintético: soma por nação antes = depois (bit-exato por nação), 3 papéis |
 | B4 | dinheiro bancário | empréstimo: `Δmoney_total = Δdepósitos = A`, `ΔM0 = 0`; pagamento destrói `P` |
@@ -295,10 +296,10 @@ ligado ele **não** é vazamento: é o estoque de dinheiro bancário criado
 a identidade do balanço (`financial_sum ≈ 0`, `cash_residual ≈ 0`), que fecha
 em todos os dias das três rodadas.
 
-### 10.1 Default (juro da safra D-105 e crédito C3 desligados)
+### 10.1 Default ANTES da D-111 (juro da safra D-105 e crédito C3 desligados)
 
-O default do jogo continua sem crédito (`bank_credit.json: enabled = false`) e
-com `harvest_credit_rate = false`; só o harness liga por flag.
+Tabela **histórica**: era o default até a D-111, quando só o harness ligava por
+flag. Serve de base do A/B de 10.2; o default atual é o da seção 11.
 
 | medida | default |
 |---|---|
@@ -371,15 +372,73 @@ do banco sobe o suficiente para pagar dividendos ligeiramente maiores
 (691.359,15 vs 679.114,22) e remessa um pouco menor (30.786,97 vs 32.176,97).
 
 O bloqueio da D-105 ("juro sem recebedor") está resolvido pela C4 quando o
-crédito está ligado. A flag continua **desligada** por default: ligá-la é
-decisão do dono, não default de implementação.
+crédito está ligado. **A D-111 tornou essa ligação o default do jogo** (seção 11).
 
-### 10.4 Candidato a default (decisão do dono)
+### 10.4 Candidato a default → decidido pela D-111
 
 Com o crédito ligado o mundo de 365 d não piorou em nenhuma medida e melhorou
-em duas (falências e portão), sem calote e com a identidade fechando. Fica como
-**candidato** a virar default numa decisão do dono — pendências antes disso:
-C6 (resolução de crise) inexistente, capital bancário ainda 0 no estado inicial
-(semeado pelas famílias no primeiro dia) e nenhuma calibração de spread/teto
-contra um credor com passivo próprio.
+em duas (falências e portão), sem calote e com a identidade fechando. O dono
+**decidiu** ligar por padrão na **D-111** (seção 11), mantendo como dívida
+declarada o que a C4 listou: C6 (resolução de crise) inexistente, capital
+bancário 0 no estado inicial (semeado pelas famílias no primeiro dia) e nenhuma
+calibração de spread/teto contra um credor com passivo próprio.
+
+## 11. D-111 — crédito e juro da safra ligados por padrão (decisão do dono)
+
+A C4 mediu o candidato (10.2/10.4) e o dono decidiu ligar os dois canais no
+default do jogo, porque o credor com contraparte no balanço agora existe:
+
+| dado | antes | desde a D-111 |
+|---|---|---|
+| `data/definitions/economy/bank_credit.json` → `enabled` | `false` | **`true`** |
+| `data/definitions/economy/monetary_policy.json` → `harvest_credit.apply_policy_rate` | `false` | **`true`** |
+| espelho compilado `WorldState::bank_credit_enabled` | `false` | **`true`** |
+| espelho compilado `WorldState::harvest_credit_rate` | `false` | **`true`** |
+
+Nenhuma lógica nova: só o default e a declaração de dados. O jogo
+(`core/economy/economy.gd` → `initialize_world`) e o `opengs_sim_cli` não
+passam esses valores por cima, então os dois leem o default compilado — o
+CLI×Godot de 10 d com IA segue byte-idêntico depois da mudança.
+
+**Medição de aceite (365 d, IA, `threads=1`, sem flags)**, saída
+`docs/economy/perf/c4b_gate_default.json` — é bit a bit a rodada C4 de
+`--credit=1 --harvest-rate=1`:
+
+| medida | valor |
+|---|---|
+| falências | **2** (critério ≤ 3) |
+| portão de comida | **98/179** (mediana 0,9693; critério revisado ≤ 98) |
+| violações do invariante / dias travados | **0 / 0** |
+| dívida total dos grupos | 24.551.743,26 |
+| contratos / calotes / baixas | 2.515 / 0 / 0 |
+| juro recebido pelos bancos (inclui safra) | 377.533,77 (safra 8.277,29) |
+| patrimônio / dividendos / remessa | 98.097,73 / 691.359,15 / 30.786,97 |
+| M0 / M1 | 6.523.551.982,90 / 6.548.409.274,25 |
+| hash da trajetória | `66534505` |
+
+**Critério revisado pelo dono:** falências **≤ 3**, portão **≤ 98/179** e
+violações **0**. A meta **≤ 86/179** da dívida #1 da Parte E (`M2_marco.md`)
+**segue aberta** como calibração — a decisão aceita o portão em 98 no default
+com essa dívida declarada, não a fecha.
+
+**Testes:** a lista de 19 do runner passou (`c4_banks`, `c3_bank_credit`,
+`c3_group_balance`, `c2_central_bank`, `c2b1_monetary`, `c2b2_fx_gold`,
+`c2c_real_fx`, `c2c_p1_fx_passthrough`, `currency_trade`,
+`economy_integration`, `services`, `storage_g2`, `agriculture_seasonal`,
+`c1_balance`, `economy_save_load_roundtrip`, `urban_load`, `b5_state_levers`,
+`b6_property`, `b7_informality`). Dois testes que mediam outro invariante
+(`c3_group_balance`, `storage_g2`) passaram a desligar o crédito
+EXPLICITAMENTE por `set_bank_credit(false)`, sem afrouxar asserções;
+`c2b1_monetary` agora exige a paridade dado↔status com a flag **ligada**.
+
+**Goldens** regerados com 2 rodadas idênticas cada: A0 `b168290a…`/`9add05dd…`
+(money 6.527.002.332,97), S0 `real_60_ai` `9387de1f…`/`f6f03e8c…`,
+`real_60_noai` `56f95314…`/`860f9c90…`, `demo_365_noai`
+`f6502503…`/`6e450a61…`. Os S0 não criam banco: o status fica igual e só o
+save muda (a flag persistida).
+
+**Save/load:** `enabled` é estado e vai ao save (v32). Save sem o bloco do
+banco (v29 e anteriores) continua carregando **desligado** — a migração segue
+sem inventar credor.
+
 
