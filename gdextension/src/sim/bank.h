@@ -1,34 +1,32 @@
 #pragma once
-// C3 (D-107) — CRÉDITO DE EMPRESA: O BANCO AGREGADO COMO CREDOR MÍNIMO.
-// Desenho e contrato: docs/economy/C3_group_balance.md.
+// C4 (D-110) — BANCOS COM DONO: público, privado nacional e estrangeiro.
+// Desenho e contrato: docs/economy/C4_banks.md.
 //
-// O plano da PARTE C pede "DemoGroup ganha dívida, estoque, capital fixo e
-// patrimônio líquido; falência atinge credores". Para a dívida ter
-// contraparte (o invariante da C1: todo ativo é passivo de alguém) esta fase
-// traz o "1 banco agregado por nação" da C2 como **credor**, sem depósitos e
-// sem capital próprio — as duas coisas são C4 e estão declaradas como
-// ausência, não inventadas.
+// A C3 (D-107) tinha "1 banco agregado por nação" como credor mínimo, sem
+// depósito e sem capital. A C4 o substitui por até três bancos com dono:
 //
-// Como o dinheiro se move (tudo contabilizado no balanço da C1):
-//   * EMPRÉSTIMO (A): o BC cria A de M0 em favor do banco (`bc_borrowing`), o
-//     banco entrega A ao grupo (`loans`, `group.debt`, `group.cash`).
-//   * PAGAMENTO (P): o grupo paga P, o banco abate a dívida com o BC — o M0
-//     correspondente é destruído (`emission_today` fica negativo).
-//   * JURO: o grupo paga em caixa; o banco repassa a parcela da taxa básica
-//     ao BC (abate reservas) e retém o spread como caixa. Sem caixa, o juro
-//     vencido vai para `credit_arrears`/`arrears` — nunca é capitalizado em
-//     silêncio.
-//   * CALOTE: o banco toma o caixa do grupo, fecha as construções dele (a
-//     mesma regra de falência das firmas) e lança a diferença em `writeoffs`;
-//     a perda cai no patrimônio do banco e o dinheiro em circulação não muda
-//     além do caixa tomado. Resolver o banco insolvente é C6.
+//   * PÚBLICO   — dono o Estado/Tesouro da nação (`owner_kind = state`);
+//   * PRIVADO   — dono as famílias da nação (`owner_kind = national`);
+//   * ESTRANGEIRO — dono a nação de origem (`owner_kind = foreign`), só existe
+//     quando banks.json declara a presença (nunca inventado).
 //
-// Default do jogo: DESLIGADO (`enabled = false`) — um banco sem capital fica
-// insolvente no primeiro calote e socorrê-lo é C6. Ver §4 do doc.
+// Dinheiro bancário: o empréstimo cria DEPÓSITO (passivo do banco, caixa do
+// tomador), não M0 — `money_total` sobe e `M0` não (M1 = M0 + depósitos). O
+// pagamento do principal e o juro DESTROEM depósito; o juro vira patrimônio do
+// banco; o calote vira perda no patrimônio (C6 resolve, não esta fase).
+//
+// Cada grupo tem UM banco credor (regra declarada no §3 do doc): grupo estatal
+// → banco público (crédito dirigido); os demais → papel sorteado por hash
+// estável do id contra as participações declaradas. Isso mantém a matemática
+// da C3 por par banco↔grupo e `Σ group.debt = Σ bank.loans`.
+//
+// Default do jogo: crédito DESLIGADO (`enabled = false`) — o mundo default não
+// muda. Os bancos existem com posição zero; nada é inventado.
 
 #include "world_state.h"
 
 #include <string>
+#include <vector>
 
 namespace ogs {
 
@@ -47,6 +45,16 @@ constexpr double kRepayShareDefault = 0.5;       // metade do excedente por dia
 constexpr double kDaysPerYear = 365.0;
 constexpr double kWorkingCapitalDays = 30.0;     // caixa de giro protegido
 
+// --- C4: papéis, participações e dividendo (default de jogo declarado, §3/§4)
+constexpr int kRolePublic = 0;
+constexpr int kRolePrivate = 1;
+constexpr int kRoleForeign = 2;
+constexpr double kSharePublic = 0.45;   // com banco estrangeiro
+constexpr double kSharePrivate = 0.40;
+constexpr double kShareForeign = 0.15;
+constexpr double kDividendPayoutDefault = 0.5;  // metade do lucro retido
+constexpr int kDividendPeriodDays = 30;         // fechamento mensal
+
 struct Policy {
 	bool enabled = false;
 	double spread = kSpreadDefault;
@@ -54,6 +62,7 @@ struct Policy {
 	double interest_cover = kInterestCoverDefault;
 	int default_days = kDefaultDaysDefault;
 	double repay_share = kRepayShareDefault;
+	double dividend_payout = kDividendPayoutDefault;
 };
 
 // Política efetiva: estado salvo (ligado/desligado) + parâmetros de regra
@@ -67,13 +76,46 @@ const std::string& currency_of_nation(const WorldState& ws,
 // Taxa ANUAL do empréstimo = taxa básica efetiva da moeda (C2b1) + spread.
 double loan_rate(const WorldState& ws, const std::string& nation);
 
-// Banco agregado da nação; cria a linha zerada na primeira chamada.
-Bank& ensure(WorldState& ws, const std::string& nation);
+// --- Identidade e papéis
+const char* role_key(int role);                    // "public" | "private" | "foreign"
+int role_from_key(const std::string& key);         // -1 = inválido
+std::string bank_id(const std::string& nation, int role);
+
+// Banco do papel; cria a linha zerada na primeira chamada (nome vazio =
+// `no_data`, participação do default declarado).
+Bank& ensure(WorldState& ws, const std::string& nation, int role);
+Bank& ensure(WorldState& ws, const std::string& nation);  // papel público
+const Bank* find(const WorldState& ws, const std::string& nation, int role);
 const Bank* find(const WorldState& ws, const std::string& nation);
+const Bank* find_id(const WorldState& ws, const std::string& id);
+
+// Participação declarada de cada papel quando os três existem (renormaliza
+// entre os existentes; 0 para papel ausente).
+double declared_share(const WorldState& ws, const std::string& nation,
+	int role);
+
+// --- Definições (banks.json → nomes/estrangeiro). O parsing do JSON fica na
+// fachada (`EconomySim::set_bank_definitions`); aqui só a regra.
+struct NameData {
+	std::string nation;
+	std::string public_name;
+	bool public_present = false;
+	std::string private_name;
+	bool private_present = false;
+	std::string foreign_name;
+	bool foreign_present = false;
+	std::string foreign_origin;  // ISO3 do país de origem
+};
+// Cria/renomeia os bancos de cada nação do dado, renormaliza as participações
+// e — quando o dado NÃO declara banco estrangeiro — funde o papel estrangeiro
+// no privado CONSERVANDO todos os valores. Nunca inventa banco estrangeiro.
+void apply_definitions(WorldState& ws, const std::vector<NameData>& defs);
 
 // Patrimônio do banco: caixa + empréstimos + juros a receber − dívida com o
-// BC + capital. Pode ser negativo: é a perda medida (§6 do doc).
+// BC − depósitos. Pode ser negativo: é a perda medida (§6 do doc).
 double equity(const Bank& bank);
+// Lucro retido = patrimônio − capital pago pelo dono (capital não é lucro).
+double retained(const Bank& bank);
 
 // Limite de crédito do grupo = min(alavancagem sobre o patrimônio,
 // cobertura de juros do lucro anual). `sheet` pode vir pré-calculado.
@@ -82,36 +124,58 @@ double credit_limit(const WorldState& ws, const balance::GroupSheet& sheet,
 double credit_limit(const WorldState& ws, const Group& group,
 	double rate = -1.0);
 
-// Empréstimo ao grupo, limitado pelo crédito disponível. Devolve `false` com
-// `error` quando recusado; `out_amount` é o concedido (pode ser menor).
+// Banco credor do grupo (regra declarada do §3). nullptr = nação sem banco.
+const Bank* lender(const WorldState& ws, const Group& group);
+Bank* lender(WorldState& ws, const Group& group);
+
+// Empréstimo ao grupo, limitado pelo crédito disponível. Cria depósito
+// (dinheiro bancário) e não M0. Devolve `false` com `error` quando recusado;
+// `out_amount` é o concedido (pode ser menor).
 bool lend(WorldState& ws, const std::string& group_id, double amount,
 	double* out_amount, std::string* error);
 
-// Capital pago pelo Tesouro da nação ao banco (dono estado, até a C4). O
-// dinheiro sai do orçamento da maior cidade da nação (o "tesouro nacional" do
-// modelo): não cria dinheiro. `out_paid` = efetivamente pago.
+// Capital pago pelo dono do banco (Tesouro, famílias ou exterior). Conservado:
+// não cria dinheiro. `out_paid` = efetivamente pago.
+double inject_capital(WorldState& ws, const std::string& nation, int role,
+	double amount, double* out_paid, std::string* error);
+// Compatibilidade C3: capital do banco público (dono Estado).
 double inject_capital(WorldState& ws, const std::string& nation, double amount,
 	double* out_paid, std::string* error);
 
-// Fase do dia: juros, atraso, amortização e calote. Devolve o nº de calotes.
+// Juro do envelope de crédito da safra (D-105): o caixa do tomador já foi
+// debitado pelo chamador; credita o banco público da nação. Sem banco público
+// devolve 0 (o valor NÃO é cobrado; ausência declarada).
+double receive_harvest_interest(WorldState& ws, const std::string& nation,
+	double amount);
+
+// Fase do dia: juros, atraso, amortização, calote e dividendo mensal.
+// Devolve o nº de calotes.
 int phase(WorldState& ws);
 
 struct Totals {
 	double loans = 0.0;
 	double arrears = 0.0;
+	double deposits = 0.0;
 	double bc_borrowing = 0.0;
 	double cash = 0.0;
 	double capital = 0.0;
 	double equity = 0.0;
+	double retained = 0.0;
 	double writeoffs = 0.0;
 	double interest_income = 0.0;
 	double interest_expense = 0.0;
+	double dividends = 0.0;
+	double remittance = 0.0;
+	double remittance_origin = 0.0;
+	double harvest_interest = 0.0;
 	int defaults = 0;
 	int loans_count = 0;
+	int banks = 0;
 };
 Totals totals(const WorldState& ws);
 double total_group_debt(const WorldState& ws);
 double total_group_arrears(const WorldState& ws);
+double deposits_total(const WorldState& ws);
 
 } // namespace bank
 } // namespace ogs

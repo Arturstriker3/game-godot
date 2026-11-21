@@ -218,6 +218,8 @@ public:
 	// cidades/nações/tarifas só mudam no carregamento).
 	void rebuild_indexes(bool full = true);
 	double money_total() const;
+	// C4 (D-110): M0 = money_total − depósitos à vista (M1 = money_total).
+	double m0_total() const;
 	void init_pop_needs(Pop& pop) const;
 	static double extraction_efficiency(const Deposit& deposit);
 	double base_price(int product) const;

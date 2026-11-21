@@ -353,7 +353,16 @@ std::vector<CurrencyBank> banks(const WorldState& ws,
 			}
 		}
 		bank.m0 = bank.currency_in_circulation + bank.bank_reserves;
-		bank.m1 = bank.m0;
+		// C4 (D-110): o dinheiro bancário (depósitos à vista) é M1 − M0. Por
+		// moeda, M1 = caixa atribuído + depósitos dos bancos daquela moeda.
+		double deposits = 0.0;
+		for (const auto& row : ws.banks) {
+			if (currency_index_of(ws, row.second.nation)
+					== static_cast<int>(index)) {
+				deposits += nonneg(row.second.deposits);
+			}
+		}
+		bank.m1 = bank.m0 + deposits;
 		bank.m2 = bank.m1;
 		const auto gold = ws.reserve_gold_tonnes.find(currency.code);
 		bank.gold_tonnes = gold != ws.reserve_gold_tonnes.end()

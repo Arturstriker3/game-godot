@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "sim/ai/ai_phase.h"
+#include "sim/bank.h"
 #include "sim/commands.h"
 #include "sim/sim_types.h"
 #include "sim/sim_core.h"
@@ -492,11 +493,20 @@ public:
 	void set_bank_policy(double spread, double leverage_cap,
 		double interest_cover, int default_days, double repay_share);
 	/**
-	 * Capital pago pelo Tesouro da nação ao banco (o Estado é o dono declarado
-	 * até a C4). Não cria dinheiro: sai do orçamento da maior cidade.
-	 * @returns `{ok, paid, nation, error}`.
+	 * Capital pago pelo DONO do banco (C4/D-110). `role` = "public" (Tesouro,
+	 * default), "private" (poupança das famílias) ou "foreign" (posição do
+	 * exterior). Não cria dinheiro: sai do dono e vira capital do banco.
+	 * @returns `{ok, paid, nation, role, error}`.
 	 */
-	Dictionary set_bank_capital(const String& nation, double amount);
+	Dictionary set_bank_capital(const String& nation, double amount,
+		const String& role = String("public"));
+	/**
+	 * C4 (D-110) — definições de `banks.json`: nomes (fictícios/genéricos),
+	 * presença do banco estrangeiro e país de origem. Cria/renomeia os bancos
+	 * e renormaliza as participações; quando o dado não declara banco
+	 * estrangeiro, o papel é fundido no privado conservando valores.
+	 */
+	void set_bank_definitions(const Dictionary& definitions);
 	/**
 	 * Pede crédito para um grupo pela fila A3. Limitado pelo crédito
 	 * disponível (alavancagem e cobertura de juros).
@@ -1909,6 +1919,10 @@ private:
 	// completo é montado sob demanda (não há status do dia guardado aqui).
 	ogs::AiPhase ai_phase_;
 	bool ai_enabled_ = false;
+	// C4 (D-110): definições de `banks.json` (nomes, estrangeiro e origem).
+	// Guardadas para reaplicar DEPOIS de um load (o save v31 migrado não tem
+	// nomes e o v32 pode vir de um mundo com outro dado).
+	std::vector<ogs::bank::NameData> bank_defs_;
 
 	// Status reaproveitado entre dias (ver StatusCache). Dois slots
 	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA

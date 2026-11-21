@@ -46,6 +46,8 @@ struct Sheet {
 	// do Tesouro sobre o banco (capital pago). Financeiros.
 	double loans = 0.0;
 	double equity_claims = 0.0;
+	// C4 (D-110): depósitos à vista do setor bancário (passivo).
+	double deposits = 0.0;
 
 	double financial_assets() const {
 		return cash + receivables + loans + equity_claims;
@@ -90,6 +92,11 @@ struct Ledger {
 	double bank_arrears = 0.0;
 	double bank_borrowing = 0.0;
 	double bank_capital = 0.0;
+	// C4 (D-110): depósitos à vista (passivo do banco, dinheiro bancário) e os
+	// claims de capital dos donos não-estatais (famílias e exterior).
+	double bank_deposits = 0.0;
+	double household_claims = 0.0;
+	double external_claims = 0.0;
 	// Claim de patrimônio do governo sobre o banco (capital pago). É ativo
 	// financeiro, NÃO caixa: por isso fica fora de `cash_total`.
 	double government_claims = 0.0;
@@ -101,10 +108,12 @@ struct Ledger {
 	double cash_total() const {
 		return families_cash + firms_cash + government + external + bank_cash;
 	}
-	// Soma mundial das posições financeiras (deve ser 0).
+	// Soma mundial das posições financeiras (deve ser 0). C4 (D-110): entram os
+	// claims de capital das famílias e do exterior e o M0 líquido de depósitos.
 	double financial_sum() const {
-		return families + firms + government + government_claims + external
-			+ banking - government_debt - monetary_base;
+		return families + firms + government + government_claims
+			+ household_claims + external + external_claims + banking
+			- government_debt - monetary_base;
 	}
 	double cash_residual() const { return cash_total() - money_total; }
 };

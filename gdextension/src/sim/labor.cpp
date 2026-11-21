@@ -3,6 +3,8 @@
 // SimCore:: métodos movidos de sim_core.cpp — realocação byte-idêntica.
 #include "sim_core.h"
 
+#include "bank.h"
+#include "monetary.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
@@ -109,6 +111,57 @@ void SimCore::phase_labor() {
 		}
 	};
 	pool().parallel_for(ws_.cities.size(), process_city);
+
+	// C4 (D-110) + D-105: com o juro da safra LIGADO, o valor que o envelope
+	// desconta da lavoura deixa de ser custo sem recebedor — é cobrado do
+	// tomador (caixa da cidade) e creditado no banco PÚBLICO da nação. Sem
+	// banco público NADA é cobrado (ausência declarada; comportamento da
+	// D-105). O default do jogo mantém a flag DESLIGADA.
+	if (ws_.harvest_credit_rate) {
+		const double span = double(kLossDaysBeforeClose) / 365.0;
+		for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+			City& city = ws_.cities[index];
+			if (index >= ws_.buildings_by_city.size()) {
+				continue;
+			}
+			const double rate = monetary::rate_for_nation(ws_, city.nation);
+			if (rate <= 0.0) {
+				continue;
+			}
+			for (const int bi : ws_.buildings_by_city[index]) {
+				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
+				if (building.bankrupt) {
+					continue;
+				}
+				const double paid = std::max(0.0, building.paid_wages)
+					+ std::max(0.0, building.paid_opex);
+				if (paid <= 1e-12) {
+					continue;
+				}
+				const double operating = operating_of(city, building);
+				const double daily_cost = building.opex
+					* opex_factor(city, building) * operating
+					+ building.jobs * building.wage * operating;
+				const double liquidity = crop_liquidity_factor(city, building,
+					daily_cost);
+				if (liquidity >= 1.0 - 1e-9) {
+					continue;
+				}
+				const double interest = paid * rate * span;
+				const double take = std::min(interest,
+					std::max(0.0, city.firm_cash));
+				if (take <= 1e-12) {
+					continue;
+				}
+				const double credited = bank::receive_harvest_interest(ws_,
+					city.nation, take);
+				if (credited <= 0.0) {
+					continue;
+				}
+				city.firm_cash -= credited;
+			}
+		}
+	}
 
 	OGS_SIM_PHASE_LAP(kPhaseLabor);
 }

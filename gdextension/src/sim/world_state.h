@@ -399,6 +399,11 @@ struct WorldState {
 	std::string fx_regime_source;              // ex.: "IMF AREAER 2026 (30/04/2026)"
 	std::vector<std::string> fx_no_policy_nations;  // dolarizados/sem moeda propria
 	double emission_today = 0.0;
+	// C4 (D-110): dinheiro BANCÁRIO criado no dia (variação dos depósitos na
+	// fase de crédito; positiva ao emprestar/dividendar, negativa ao receber
+	// principal/juro e no calote). O BC só cria M0: a conservação do dia vira
+	// `money_after = money_before + emission_today + bank_money_today`.
+	double bank_money_today = 0.0;
 	// C3 (D-107) - CRÉDITO DE EMPRESA: banco agregado por nação e as regras do
 	// crédito. `bank_credit_enabled` é ESTADO (vai ao save: pode ser ligado por
 	// comando A3); os parâmetros abaixo são REGRA (vêm de

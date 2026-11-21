@@ -7,6 +7,7 @@
 // depende disso.
 #include "save_state.h"
 
+#include "bank.h"
 #include "central_bank.h"
 #include "exchange.h"
 #include "sim_constants.h"
@@ -1441,25 +1442,39 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	{
 		Dictionary block = make_object();
 		block["enabled"] = ws.bank_credit_enabled;
-		Dictionary nations = make_object();
+		Dictionary rows = make_object();
 		for (const auto& row : ws.banks) {
 			const Bank& bank = row.second;
 			Dictionary entry = make_object();
+			entry["id"] = sim_str(bank.id.c_str());
+			entry["nation"] = sim_str(bank.nation.c_str());
+			entry["role"] = sim_str(bank::role_key(bank.role));
+			entry["name"] = sim_str(bank.name.c_str());
+			entry["name_status"] = sim_str(bank.name_status.c_str());
+			entry["owner_kind"] = sim_str(bank.owner_kind.c_str());
+			entry["owner_nation"] = sim_str(bank.owner_nation.c_str());
+			entry["share"] = bank.share;
 			entry["currency"] = sim_str(bank.currency.c_str());
 			entry["loans"] = bank.loans;
 			entry["arrears"] = bank.arrears;
+			entry["deposits"] = bank.deposits;
 			entry["bc_borrowing"] = bank.bc_borrowing;
 			entry["cash"] = bank.cash;
 			entry["capital"] = bank.capital;
 			entry["interest_income"] = bank.interest_income;
 			entry["interest_expense"] = bank.interest_expense;
 			entry["writeoffs"] = bank.writeoffs;
+			entry["dividends"] = bank.dividends;
+			entry["remittance"] = bank.remittance;
+			entry["remittance_origin"] = bank.remittance_origin;
+			entry["harvest_interest"] = bank.harvest_interest;
 			entry["defaults"] = bank.defaults;
 			entry["loans_count"] = bank.loans_count;
 			entry["last_default_day"] = bank.last_default_day;
-			nations[sim_str(row.first.c_str())] = entry;
+			entry["last_dividend_day"] = bank.last_dividend_day;
+			rows[sim_str(row.first.c_str())] = entry;
 		}
-		block["nations"] = nations;
+		block["banks"] = rows;
 		data["banks"] = block;
 	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
@@ -1969,10 +1984,13 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	if (data.has("banks")) {
 		const Dictionary block = data.get("banks", Dictionary());
 		ws.bank_credit_enabled = bool(block.get("enabled", false));
-		const Variant nations_variant = block.get("nations", Dictionary());
-		if (nations_variant.get_type() == Variant::DICTIONARY) {
-			const Dictionary& nations = nations_variant;
-			for (const auto& row_entry : nations.entries()) {
+		// v32 (C4/D-110): um registro por banco (`banks`), com papel e dono.
+		const Value& rows_variant = block.get("banks", Value());
+		const Value& nations_variant = block.get("nations", Value());
+		if (rows_variant.get_type() == Variant::DICTIONARY
+				&& !Dictionary(rows_variant).is_empty()) {
+			const Dictionary& rows = rows_variant;
+			for (const auto& row_entry : rows.entries()) {
 				if (row_entry.first.empty()
 						|| row_entry.second.get_type()
 							!= Variant::DICTIONARY) {
@@ -1980,11 +1998,39 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				}
 				const Dictionary& row = row_entry.second;
 				Bank bank;
-				bank.nation = row_entry.first;
+				bank.id = row_entry.first;
+				bank.nation = std::string(String(row.get("nation", ""))
+					.utf8().get_data());
+				if (bank.nation.empty()) {
+					const std::size_t slash = bank.id.find('/');
+					bank.nation = slash == std::string::npos ? bank.id
+						: bank.id.substr(0, slash);
+				}
+				int role = bank::role_from_key(std::string(
+					String(row.get("role", "")).utf8().get_data()));
+				if (role < 0) {
+					const std::size_t slash = bank.id.find('/');
+					role = slash == std::string::npos ? -1
+						: bank::role_from_key(bank.id.substr(slash + 1));
+				}
+				bank.role = role < 0 ? 1 : role;
+				bank.name = std::string(String(row.get("name", ""))
+					.utf8().get_data());
+				bank.name_status = std::string(
+					String(row.get("name_status", "no_data"))
+						.utf8().get_data());
+				bank.owner_kind = std::string(
+					String(row.get("owner_kind", "national"))
+						.utf8().get_data());
+				bank.owner_nation = std::string(
+					String(row.get("owner_nation", "")).utf8().get_data());
+				bank.share = std::max(0.0, double(row.get("share", 0.0)));
 				bank.currency = std::string(
 					String(row.get("currency", "")).utf8().get_data());
 				bank.loans = std::max(0.0, double(row.get("loans", 0.0)));
 				bank.arrears = std::max(0.0, double(row.get("arrears", 0.0)));
+				bank.deposits = std::max(0.0,
+					double(row.get("deposits", 0.0)));
 				bank.bc_borrowing = std::max(0.0,
 					double(row.get("bc_borrowing", 0.0)));
 				bank.cash = std::max(0.0, double(row.get("cash", 0.0)));
@@ -1995,12 +2041,123 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					double(row.get("interest_expense", 0.0)));
 				bank.writeoffs = std::max(0.0,
 					double(row.get("writeoffs", 0.0)));
+				bank.dividends = std::max(0.0,
+					double(row.get("dividends", 0.0)));
+				bank.remittance = std::max(0.0,
+					double(row.get("remittance", 0.0)));
+				bank.remittance_origin = std::max(0.0,
+					double(row.get("remittance_origin", 0.0)));
+				bank.harvest_interest = std::max(0.0,
+					double(row.get("harvest_interest", 0.0)));
 				bank.defaults = std::max(0, int(row.get("defaults", 0)));
 				bank.loans_count = std::max(0,
 					int(row.get("loans_count", 0)));
 				bank.last_default_day = int(
 					row.get("last_default_day", -1));
-				ws.banks[bank.nation] = bank;
+				bank.last_dividend_day = int(
+					row.get("last_dividend_day", -1));
+				ws.banks[bank.id] = bank;
+			}
+		} else if (nations_variant.get_type() == Variant::DICTIONARY) {
+			// MIGRAÇÃO v31 -> v32: o banco AGREGADO por nação da C3 é dividido
+			// pelos três papéis com as participações declaradas (0,45 / 0,40 /
+			// 0,15) e o resíduo de arredondamento fica no estrangeiro, de modo
+			// que a soma por nação é bit-exata. `deposits = 0` (a C3 não tinha
+			// dinheiro bancário). Nomes entram por `set_bank_definitions`; aqui
+			// só a conservação.
+			const Dictionary& nations = nations_variant;
+			for (const auto& row_entry : nations.entries()) {
+				if (row_entry.first.empty()
+						|| row_entry.second.get_type()
+							!= Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary& row = row_entry.second;
+				const double loans =
+					std::max(0.0, double(row.get("loans", 0.0)));
+				const double arrears =
+					std::max(0.0, double(row.get("arrears", 0.0)));
+				const double borrowing = std::max(0.0,
+					double(row.get("bc_borrowing", 0.0)));
+				const double cash =
+					std::max(0.0, double(row.get("cash", 0.0)));
+				const double capital =
+					std::max(0.0, double(row.get("capital", 0.0)));
+				const double income = std::max(0.0,
+					double(row.get("interest_income", 0.0)));
+				const double expense = std::max(0.0,
+					double(row.get("interest_expense", 0.0)));
+				const double writeoffs = std::max(0.0,
+					double(row.get("writeoffs", 0.0)));
+				const int defaults =
+					std::max(0, int(row.get("defaults", 0)));
+				const int count = std::max(0,
+					int(row.get("loans_count", 0)));
+				const int last_default = int(
+					row.get("last_default_day", -1));
+				const std::string currency = std::string(
+					String(row.get("currency", "")).utf8().get_data());
+				static const double kShares[3] = { 0.45, 0.40, 0.15 };
+				double loan_part = 0.0;
+				double arrears_part = 0.0;
+				double borrowing_part = 0.0;
+				double cash_part = 0.0;
+				double capital_part = 0.0;
+				double income_part = 0.0;
+				double expense_part = 0.0;
+				double writeoff_part = 0.0;
+				int count_part = 0;
+				for (int part = 0; part < 3; ++part) {
+					const bool last = part == 2;
+					const double l = last ? loans - loan_part
+						: loans * kShares[part];
+					const double a = last ? arrears - arrears_part
+						: arrears * kShares[part];
+					const double b = last ? borrowing - borrowing_part
+						: borrowing * kShares[part];
+					const double c = last ? cash - cash_part
+						: cash * kShares[part];
+					const double k = last ? capital - capital_part
+						: capital * kShares[part];
+					const double i = last ? income - income_part
+						: income * kShares[part];
+					const double e = last ? expense - expense_part
+						: expense * kShares[part];
+					const double w = last ? writeoffs - writeoff_part
+						: writeoffs * kShares[part];
+					const int n = last ? count - count_part
+						: static_cast<int>(count * kShares[part]);
+					loan_part += l;
+					arrears_part += a;
+					borrowing_part += b;
+					cash_part += c;
+					capital_part += k;
+					income_part += i;
+					expense_part += e;
+					writeoff_part += w;
+					count_part += n;
+					Bank bank;
+					bank.nation = row_entry.first;
+					bank.role = part;
+					bank.id = bank::bank_id(bank.nation, part);
+					bank.currency = currency;
+					bank.owner_kind = part == 0 ? "state"
+						: (part == 1 ? "national" : "foreign");
+					bank.name_status = "no_data";
+					bank.share = kShares[part];
+					bank.loans = l;
+					bank.arrears = a;
+					bank.bc_borrowing = b;
+					bank.cash = c;
+					bank.capital = k;
+					bank.interest_income = i;
+					bank.interest_expense = e;
+					bank.writeoffs = w;
+					bank.loans_count = n;
+					bank.defaults = part == 0 ? defaults : 0;
+					bank.last_default_day = part == 0 ? last_default : -1;
+					ws.banks[bank.id] = bank;
+				}
 			}
 		}
 	}

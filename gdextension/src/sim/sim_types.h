@@ -1006,27 +1006,46 @@ namespace ogs {
 		int credit_defaults = 0;
 	};
 
-	// C3 (D-107) - BANCO AGREGADO POR NAÇÃO: o "1 banco agregado por nação"
-	// da C2, que nasce aqui como o credor mínimo da empresa. Não tem depósito
-	// (M1 = M2 = M0 até a C4) e nasce sem capital (ausência declarada: capital
-	// bancário por país é dado de C4). O banco central o financia: o
-	// empréstimo ao grupo cria M0 (`bc_borrowing`), o pagamento do principal
-	// destrói, o juro é caixa que o banco repassa ao BC e o calote vira perda
-	// no patrimônio do banco — nunca dinheiro que some.
+	// C4 (D-110) - BANCO COM DONO: a C3 tinha "1 banco agregado por nação";
+	// aqui cada nação ganha até TRÊS bancos, identificados por papel: público
+	// (dono Estado/Tesouro), privado nacional (dono as famílias da nação) e
+	// estrangeiro (dono grupo/nação de outro país; só existe quando o dado
+	// declara). Contrato em docs/economy/C4_banks.md.
+	//
+	// Dinheiro bancário: o empréstimo cria DEPÓSITO (`deposits`, passivo do
+	// banco e caixa do tomador), não M0 — `money_total` sobe, `M0` não
+	// (M1 = M0 + depósitos). O capital pago pelo dono é claim dele
+	// (`capital`), o lucro retido é `equity − capital` e o dividendo mensal
+	// converte parte do retido em depósito do dono. Calote e resolução são
+	// C6: o patrimônio pode ficar negativo e nada socorre o banco.
 	struct Bank {
+		std::string id;             // "<NAÇÃO>/<papel>"
 		std::string nation;
 		std::string currency;
+		// 0 = público (Estado), 1 = privado nacional (famílias), 2 = estrangeiro.
+		int role = 1;
+		std::string name;           // banks.json (fictício/genérico); vazio = no_data
+		std::string name_status = "no_data";  // present | no_data
+		std::string owner_kind = "national";  // state | national | foreign
+		std::string owner_nation;   // país de origem do banco estrangeiro
+		double share = 0.0;         // participação inicial declarada (soma 1)
 		double loans = 0.0;         // principal a receber (ativo)
 		double arrears = 0.0;       // juros vencidos a receber (ativo)
-		double bc_borrowing = 0.0;  // dívida com o BC (passivo; M0 criado)
+		double deposits = 0.0;      // depósitos à vista (passivo; dinheiro bancário)
+		double bc_borrowing = 0.0;  // dívida com o BC (reserva criada; 0 na C4)
 		double cash = 0.0;          // caixa do banco (dinheiro do mundo)
-		double capital = 0.0;       // capital pago pelo Tesouro (passivo; dono estado)
+		double capital = 0.0;       // capital pago pelo dono (claim do dono)
 		double interest_income = 0.0;
 		double interest_expense = 0.0;
 		double writeoffs = 0.0;     // perda acumulada por calote
+		double dividends = 0.0;     // dividendo distribuído acumulado (âncora)
+		double remittance = 0.0;    // remessa do estrangeiro ao país de origem (âncora)
+		double remittance_origin = 0.0;  // a mesma remessa na moeda de origem (C2c)
+		double harvest_interest = 0.0;   // juro do envelope da safra recebido
 		int defaults = 0;
 		int loans_count = 0;
 		int last_default_day = -1;
+		int last_dividend_day = -1;
 	};
 
 	// F9: abertura ao capital estrangeiro por (nação, setor).

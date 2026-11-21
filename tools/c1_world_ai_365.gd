@@ -43,6 +43,8 @@ const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
+# C4 (D-110): bancos com dono (nomes fictícios/genéricos; presença do estrangeiro).
+const BANKS_PATH := "res://data/definitions/economy/banks.json"
 
 const GATE := 0.975
 const WINDOW := 30
@@ -56,6 +58,9 @@ var _fx_seed_days := 0
 # C3 (D-107): medição com o crédito de empresa LIGADO (default do jogo = false).
 # Só laboratório: não existe botão/atalho/HUD para isso no jogo.
 var _credit := false
+# C4 (D-110): A/B do CANAL do juro no envelope de crédito da safra (D-105).
+# Só laboratório: sem flag o default do jogo (DESLIGADO) continua valendo.
+var _harvest_rate := false
 
 
 func _init() -> void:
@@ -72,6 +77,8 @@ func _init() -> void:
 			_out = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--credit="):
 			_credit = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--harvest-rate="):
+			_harvest_rate = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--fx-seed-days="):
 			# C2b2 (D-106): cenário de estresse — funda as reservas de cada
 			# moeda com N dias de importação MEDIDA do mundo e o peg passa a ser
@@ -119,6 +126,10 @@ func _make_world() -> Object:
 		buildings = geo.resolve_initial_mines(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
 	GeoScript.apply_initial_infra(sim)
+	# C4 (D-110): bancos com dono do dado (nomes fictícios/genéricos). Depois do
+	# mundo: a moeda de cada nação e o BC da C2a já existem.
+	if sim.has_method("set_bank_definitions"):
+		sim.set_bank_definitions(_load(BANKS_PATH))
 	if sim.has_method("set_urban"):
 		sim.set_urban(_load(URBAN_LAND_PATH), _load(HOUSING_CITY_PATH),
 			_load(HOUSING_PATH), _load(MUNICIPAL_FINANCE_PATH))
@@ -150,6 +161,12 @@ func _make_world() -> Object:
 	if _credit:
 		sim.set_bank_credit(true)
 		print("[c1] C3: credito de empresa LIGADO por flag (--credit=1)")
+	if _harvest_rate:
+		sim.set_balance({
+			"harvest_credit_rate": 1.0,
+			"income_basket_margin": 0.0,
+		})
+		print("[c1] C4: juro do envelope da safra LIGADO por flag (--harvest-rate=1)")
 	return sim
 
 
