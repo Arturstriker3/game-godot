@@ -334,13 +334,25 @@ void SimCore::phase_monetary() {
 	for (int product = 0; product < ws_.products; ++product) {
 		base_list[static_cast<std::size_t>(product)] = base_price(product);
 	}
-	monetary::tick(ws_, money_total(), base_list);
+	monetary::tick(ws_, m0_total(), base_list);
 }
 
 void SimCore::phase_credit() {
 	// C3 (D-107): sem crédito e sem dívida o dia não muda (o default do jogo
 	// é desligado) - a fase sai sem tocar no estado.
+	// C4 (D-110): a variação dos depósitos é o dinheiro BANCÁRIO criado no dia
+	// (empréstimo e dividendo criam; principal, juro e calote destroem). O
+	// invariante da conservação soma este valor ao `emission_today` do BC.
+	double deposits_before = 0.0;
+	for (const auto& row : ws_.banks) {
+		deposits_before += row.second.deposits;
+	}
 	bank::phase(ws_);
+	double deposits_after = 0.0;
+	for (const auto& row : ws_.banks) {
+		deposits_after += row.second.deposits;
+	}
+	ws_.bank_money_today += deposits_after - deposits_before;
 }
 
 } // namespace ogs

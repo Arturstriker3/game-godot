@@ -220,6 +220,17 @@ double SimCore::money_total() const {
 	return total;
 }
 
+// C4 (D-110): base monetária = dinheiro total − depósitos à vista (dinheiro
+// bancário criado pelo crédito). Sem crédito os depósitos são 0 e `m0_total`
+// é exatamente o `money_total` da C2a/C3.
+double SimCore::m0_total() const {
+	double deposits = 0.0;
+	for (const auto& row : ws_.banks) {
+		deposits += std::max(0.0, row.second.deposits);
+	}
+	return money_total() - deposits;
+}
+
 void SimCore::snapshot_state(Snapshot& out) const {
 	out.cities = ws_.cities;
 	out.buildings = ws_.buildings;
@@ -270,6 +281,7 @@ void SimCore::prologue() {
 	// violou o invariante devolve o dia sem emissão (o dia não aconteceu) e sem
 	// a medição de déficit dele.
 	ws_.emission_today = 0.0;
+	ws_.bank_money_today = 0.0;
 	for (auto& row : ws_.monetary) {
 		row.second.emission_today = 0.0;
 		row.second.deficit_measured = 0.0;
@@ -913,7 +925,8 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 	// `ws_.emission_today` é exatamente o que ele registrou no dia. Qualquer
 	// outra diferença (inclusive emissão sem registro) continua violação.
 	const double money_after = money_total();
-	const double expected_after = money_before + ws_.emission_today;
+	const double expected_after = money_before + ws_.emission_today
+		+ ws_.bank_money_today;
 	const double drift = std::abs(money_after - expected_after);
 	const double tolerance = std::max(1e-3, std::abs(money_before) * 1e-12);
 	if (!std::isfinite(money_after) || drift > tolerance) {
@@ -985,21 +998,34 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 		if (book.bank_loans < -1e-6 || book.bank_arrears < -1e-6
 				|| book.bank_borrowing < -1e-6 || book.bank_cash < -1e-6
 				|| book.group_debt < -1e-6
-				|| book.group_arrears < -1e-6) {
+				|| book.group_arrears < -1e-6
+				|| book.bank_deposits < -1e-6) {
 			violations.push_back("posicao de credito negativa: dia="
 				+ std::to_string(ws_.day) + " banco="
 				+ std::to_string(book.bank_loans) + " reservas="
 				+ std::to_string(book.bank_borrowing) + " divida="
-				+ std::to_string(book.group_debt));
+				+ std::to_string(book.group_debt) + " depositos="
+				+ std::to_string(book.bank_deposits));
+		}
+		for (const auto& row : ws_.banks) {
+			const Bank& bank = row.second;
+			if (!std::isfinite(bank.deposits) || bank.deposits < -1e-6
+					|| !std::isfinite(bank.capital)
+					|| bank.capital < -1e-6
+					|| !std::isfinite(bank.cash) || bank.cash < -1e-6) {
+				violations.push_back("banco com posicao negativa: dia="
+					+ std::to_string(ws_.day) + " " + bank.id + " depositos="
+					+ std::to_string(bank.deposits) + " capital="
+					+ std::to_string(bank.capital) + " caixa="
+					+ std::to_string(bank.cash));
+			}
 		}
 	}
 
-	// 2b. C2a (D-103) — BANCO CENTRAL POR MOEDA: a moeda em circulação do dia
-	// tem de ser integralmente atribuível às moedas do mundo (ou declarada como
-	// não atribuível), e a base monetária medida (M0) tem de fechar com o
-	// passivo do emissor da C1. Nenhuma emissão nova: a soma dos M0 por moeda +
-	// os buckets sem nação = `money_total` do dia. Sem banco (C4) as reservas
-	// bancárias são 0, então M0 por moeda é exatamente a moeda atribuída.
+	// 2b. C2a (D-103) — BANCO CENTRAL POR MOEDA: o caixa do dia tem de ser
+	// integralmente atribuível às moedas do mundo (ou declarado como não
+	// atribuível). C4 (D-110): a atribuição é de CAIXA; o M0 por moeda é
+	// `caixa − depósitos` e o M1 é `caixa − reservas`.
 	{
 		const central_bank::MoneyAllocation money =
 			central_bank::allocate_money(ws_, money_after);

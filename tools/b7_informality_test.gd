@@ -29,7 +29,7 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 31
+const SAVE_VERSION := 32
 const TAX_RATE := 0.15
 
 var _failures: Array = []

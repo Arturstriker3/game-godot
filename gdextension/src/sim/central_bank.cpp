@@ -346,14 +346,24 @@ std::vector<CurrencyBank> banks(const WorldState& ws,
 		// (M0 em poder do banco). Sem banco, M1 = M2 = M0 e a ausência de
 		// depósito continua declarada — a C4 é quem traz o depósito.
 		bank.bank_reserves = 0.0;
+		double deposits = 0.0;
 		for (const auto& row : ws.banks) {
 			if (currency_index_of(ws, row.second.nation)
 					== static_cast<int>(index)) {
 				bank.bank_reserves += nonneg(row.second.cash);
+				deposits += nonneg(row.second.deposits);
 			}
 		}
-		bank.m0 = bank.currency_in_circulation + bank.bank_reserves;
-		bank.m1 = bank.m0;
+		// C4 (D-110): `currency_in_circulation` é o CAIXA TOTAL atribuído à
+		// moeda — a alocação da C2a soma todo o caixa do mundo, inclusive o
+		// cofre dos bancos (a reserva) e o dinheiro bancário que o empréstimo
+		// espelha no caixa do tomador. Logo:
+		//   M0 = caixa − depósitos   (público + reservas dos bancos no BC)
+		//   M1 = caixa − reservas    (público + depósitos à vista)
+		// Somar as reservas ao caixa as contaria duas vezes (o caixa já as
+		// inclui) e somar os depósitos ao caixa os contaria como caixa.
+		bank.m0 = nonneg(bank.currency_in_circulation - deposits);
+		bank.m1 = nonneg(bank.currency_in_circulation - bank.bank_reserves);
 		bank.m2 = bank.m1;
 		const auto gold = ws.reserve_gold_tonnes.find(currency.code);
 		bank.gold_tonnes = gold != ws.reserve_gold_tonnes.end()

@@ -141,7 +141,7 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // (moeda ou cesta), fonte, emissor e trava de união monetária; a cesta
 // resolvida vai no `fx.currencies[moeda]`. ADITIVO: v30 carrega com os regimes
 // do arquivo (`set_fx_regimes`) e as moedas extintas fundidas no substituto.
-constexpr int kSaveVersion = 31;
+constexpr int kSaveVersion = 32;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

@@ -1,0 +1,410 @@
+{
+  "balance": {
+    "arrears": {
+      "plants": 615014.618443801,
+      "rural": 10494106069.862,
+      "service": 26862478.295625
+    },
+    "invariant": {
+      "arrears_plants": 615014.618443801,
+      "arrears_rural": 10494106069.862,
+      "arrears_service": 26862478.295625,
+      "cash_residual": -0.0000400543212890625,
+      "cash_total": 6548141838.32446,
+      "financial_sum": -0.0000162124633789063,
+      "monetary_base": 6523551982.90238,
+      "money_total": 6548141838.3245,
+      "ok": true,
+      "payables": 10521583562.7761,
+      "receivables": 10521583562.7761
+    },
+    "nations": 179,
+    "sample_nations": {
+      "BRA": {
+        "families_cash": 611222482.467122,
+        "families_net_worth": 779718761.144375,
+        "families_property": 0.0,
+        "families_receivables": 168496278.677253,
+        "firms_inventory": 10057979080.0812,
+        "firms_net_worth": 9962721472.57735,
+        "firms_payables": 168496278.677253,
+        "government_net_worth": 185924569.153651,
+        "net_worth_per_capita": 9.42233660735068
+      },
+      "CHN": {
+        "families_cash": 1972853307.13224,
+        "families_net_worth": 3629263003.66428,
+        "families_property": 0.0,
+        "families_receivables": 1656409696.53203,
+        "firms_inventory": 17590373733.9491,
+        "firms_net_worth": 16692814024.1968,
+        "firms_payables": 1656409696.53203,
+        "government_net_worth": 882388310.918784,
+        "net_worth_per_capita": 10.1706297303231
+      },
+      "DEU": {
+        "families_cash": 134197960.572501,
+        "families_net_worth": 245147627.092224,
+        "families_property": 0.0,
+        "families_receivables": 110949666.519723,
+        "firms_inventory": 625328349.834658,
+        "firms_net_worth": 540561399.387118,
+        "firms_payables": 110949666.519723,
+        "government_net_worth": 53584012.7510587,
+        "net_worth_per_capita": 11.2351602266104
+      },
+      "IDN": {
+        "families_cash": 352422636.959211,
+        "families_net_worth": 725616625.003642,
+        "families_property": 0.0,
+        "families_receivables": 373193988.044431,
+        "firms_inventory": 857438177.716169,
+        "firms_net_worth": 554278619.183809,
+        "firms_payables": 373193988.04443,
+        "government_net_worth": 7475062.73240116,
+        "net_worth_per_capita": 11.8625853846626
+      },
+      "IND": {
+        "families_cash": 575549286.327956,
+        "families_net_worth": 3126691753.03211,
+        "families_property": 0.0,
+        "families_receivables": 2551142466.70416,
+        "firms_inventory": 6845470193.84623,
+        "firms_net_worth": 4573237417.22579,
+        "firms_payables": 2551142466.70416,
+        "government_net_worth": 736677260.706878,
+        "net_worth_per_capita": 17.4122248626665
+      },
+      "MEX": {
+        "families_cash": 296419238.966471,
+        "families_net_worth": 438047630.948625,
+        "families_property": 0.0,
+        "families_receivables": 141628391.982154,
+        "firms_inventory": 359865623.301252,
+        "firms_net_worth": 278785426.847075,
+        "firms_payables": 141628391.982154,
+        "government_net_worth": 16868184.823449,
+        "net_worth_per_capita": 8.43490202329798
+      },
+      "NGA": {
+        "families_cash": 103902638.145236,
+        "families_net_worth": 376715391.107695,
+        "families_property": 0.0,
+        "families_receivables": 272812752.962459,
+        "firms_inventory": 262982670.553094,
+        "firms_net_worth": 50345325.997534,
+        "firms_payables": 272812752.962459,
+        "government_net_worth": 9265859.5094989,
+        "net_worth_per_capita": 7.75940046287208
+      },
+      "RUS": {
+        "families_cash": 342766305.32565,
+        "families_net_worth": 471513754.294066,
+        "families_property": 0.0,
+        "families_receivables": 128747448.968417,
+        "firms_inventory": 2529852369.95573,
+        "firms_net_worth": 2557689442.87727,
+        "firms_payables": 128747448.968417,
+        "government_net_worth": 51411232.7925642,
+        "net_worth_per_capita": 9.30098635260376
+      },
+      "USA": {
+        "families_cash": 815236359.659086,
+        "families_net_worth": 1107133604.89205,
+        "families_property": 0.0,
+        "families_receivables": 291897245.232964,
+        "firms_inventory": 8661501052.59527,
+        "firms_net_worth": 8456302771.70478,
+        "firms_payables": 291897245.232965,
+        "government_net_worth": 217713295.6264,
+        "net_worth_per_capita": 8.41107281542262
+      },
+      "ZAF": {
+        "families_cash": 98326984.5991945,
+        "families_net_worth": 159188570.253539,
+        "families_property": 0.0,
+        "families_receivables": 60861585.6543443,
+        "firms_inventory": 349410038.383586,
+        "firms_net_worth": 320378329.012737,
+        "firms_payables": 60861585.6543443,
+        "government_net_worth": 66803402.522065,
+        "net_worth_per_capita": 5.73762892829253
+      }
+    },
+    "world": {
+      "external_cash": -9622266703.40882,
+      "families_cash": 10698659338.2366,
+      "families_inventory": 0.0,
+      "families_net_worth": 21220242901.0127,
+      "families_property": 0.0,
+      "families_receivables": 10521583562.7761,
+      "firms_fixed_capital": 2919543808.75506,
+      "firms_inventory": 72837081039.9477,
+      "firms_net_worth": 65759359934.9428,
+      "firms_payables": 10521583562.7761,
+      "firms_solvency": {
+        "count": 4163,
+        "illiquid": 2,
+        "insolvent": 0,
+        "liquid": 4161
+      },
+      "government_inventory": 366353236.592458,
+      "government_net_worth": 3548462029.69732
+    }
+  },
+  "bankruptcies": 2,
+  "banks": {
+    "capital": 0.0,
+    "cash": 0.0,
+    "defaults": 0,
+    "deposits": 24589855.4221211,
+    "dividends": 679114.215244251,
+    "equity": 98507.6503764369,
+    "harvest_interest": 0.0,
+    "interest_expense": 0.0,
+    "interest_income": 376373.993628858,
+    "loans": 24287115.2005057,
+    "loans_count": 2488,
+    "m0": 6523551982.90238,
+    "m1": 6548141838.3245,
+    "remittance": 32176.9690751405,
+    "remittance_origin": 24251.7423399054,
+    "retained": 98507.6503764369,
+    "writeoffs": 0.0
+  },
+  "credit": {
+    "bc_borrowing": 0.0,
+    "capital": 0.0,
+    "defaults": 0,
+    "enabled": true,
+    "equity": 98507.6503764369,
+    "group_debt": 24287115.2005057,
+    "loans": 24287115.2005057,
+    "loans_count": 2488,
+    "writeoffs": 0.0
+  },
+  "days": 365,
+  "drift": 0.00376939671653666,
+  "final_day": 365,
+  "food_gate": {
+    "below": [
+      "SLB",
+      "PSX",
+      "HTI",
+      "SOM",
+      "COD",
+      "JPN",
+      "BFA",
+      "COG",
+      "MLI",
+      "GMB",
+      "DJI",
+      "AUT",
+      "CAN",
+      "ITA",
+      "USA",
+      "NED",
+      "CHN",
+      "HRV",
+      "SEN",
+      "BEL",
+      "GRC",
+      "SAH",
+      "SVN",
+      "SRB",
+      "QAT",
+      "SAU",
+      "ESP",
+      "CYP",
+      "HUN",
+      "URY",
+      "CHE",
+      "ALB",
+      "SGP",
+      "BIH",
+      "BRN",
+      "FRA",
+      "YEM",
+      "DNK",
+      "MKD",
+      "ROU",
+      "THA",
+      "ISR",
+      "POL",
+      "ARG",
+      "BHS",
+      "COL",
+      "FIN",
+      "KOR",
+      "SVK",
+      "MYS",
+      "DOM",
+      "IRL",
+      "GEO",
+      "TUR",
+      "JAM",
+      "BLR",
+      "TKM",
+      "ARM",
+      "LBR",
+      "EGY",
+      "VEN",
+      "PRT",
+      "BRB",
+      "LCA",
+      "CRI",
+      "EST",
+      "OMN",
+      "DEU",
+      "GAB",
+      "NGA",
+      "AZE",
+      "PAN",
+      "SUR",
+      "CAF",
+      "UKR",
+      "TTO",
+      "BHR",
+      "ERI",
+      "DMA",
+      "PRY",
+      "GRD",
+      "BRA",
+      "BTN",
+      "JOR",
+      "PER",
+      "NOR",
+      "ATG",
+      "KAZ",
+      "GBR",
+      "GUY",
+      "ARE",
+      "BGR",
+      "PRK",
+      "RUS",
+      "IRN",
+      "LVA",
+      "CZE",
+      "AUS"
+    ],
+    "below_gate": 98,
+    "mean": 0.903571260418827,
+    "median": 0.966058468017123,
+    "nations": 179,
+    "worst": [
+      {
+        "food_avg30": 0.144194503364343,
+        "nation": "SLB"
+      },
+      {
+        "food_avg30": 0.210125626752626,
+        "nation": "PSX"
+      },
+      {
+        "food_avg30": 0.249948806812225,
+        "nation": "HTI"
+      },
+      {
+        "food_avg30": 0.29061199918462,
+        "nation": "SOM"
+      },
+      {
+        "food_avg30": 0.42672770280591,
+        "nation": "COD"
+      },
+      {
+        "food_avg30": 0.462770910056236,
+        "nation": "JPN"
+      },
+      {
+        "food_avg30": 0.5227645293695,
+        "nation": "BFA"
+      },
+      {
+        "food_avg30": 0.559973123866108,
+        "nation": "COG"
+      },
+      {
+        "food_avg30": 0.593897382212968,
+        "nation": "MLI"
+      },
+      {
+        "food_avg30": 0.707683727802876,
+        "nation": "GMB"
+      }
+    ]
+  },
+  "fx": {
+    "by_anchor": {
+      "<null>": 57,
+      "EUR": 10,
+      "INR": 2,
+      "SGD": 1,
+      "USD": 58,
+      "ZAR": 3
+    },
+    "by_regime": {
+      "band": 64,
+      "floating": 44,
+      "peg": 27
+    },
+    "devaluations": 0,
+    "devalued_currencies": [],
+    "locked_currencies": 7,
+    "source": "Regime Cambial de Facto por Moeda (FMI/AREAER 2026) (2026-04-30)"
+  },
+  "harvest_credit_rate": false,
+  "invariant_violation_samples": [],
+  "invariant_violations": 0,
+  "max_daily_drift": 0.00378319833643589,
+  "monetary": {
+    "controlled": 0,
+    "currencies": 135,
+    "currencies_with_inflation": 135,
+    "emission_today": 0.0,
+    "emission_total": 0.0,
+    "government_debt": 0.0,
+    "inflation_12m_pct": {
+      "median": 1.59682976360258,
+      "n": 179,
+      "p10": -0.271113272616585,
+      "p90": 5.01611824589467
+    },
+    "inflation_annualized_pct": {
+      "median": 1.59682976360258,
+      "n": 179,
+      "p10": -0.271113272616585,
+      "p90": 5.01611824589467
+    },
+    "nations_annualized": 179,
+    "nations_has_12m": 179,
+    "rate_pct": {
+      "median": 0.801765616839729,
+      "n": 135,
+      "p10": 0.0,
+      "p90": 5.02958642159931
+    },
+    "securities": 0.0
+  },
+  "money_end": 6548141838.3245,
+  "money_start": 6523551982.9,
+  "property": false,
+  "stalled_days": 0,
+  "threads": 1,
+  "trajectory_end": {
+    "credit_capacity": 178.525163979946,
+    "m0": 14471610893.2572,
+    "private_stock_t": 59680210.0452128
+  },
+  "trajectory_fields": [
+    "day",
+    "money_total(6)",
+    "bankruptcies",
+    "food_ratio_sum(9)",
+    "m0_total(6)",
+    "private_stock_t(6)",
+    "credit_capacity(9)"
+  ],
+  "trajectory_sha256": "bfc4ed21644a1b6e48ae1c03e6eb615049c9f261a3c822acf28c7991493a5590",
+  "wall_s": 243.756
+}

@@ -302,8 +302,11 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_bank_policy", "spread", "leverage_cap",
 		"interest_cover", "default_days", "repay_share"),
 		&EconomySim::set_bank_policy);
-	ClassDB::bind_method(D_METHOD("set_bank_capital", "nation", "amount"),
-		&EconomySim::set_bank_capital);
+	ClassDB::bind_method(D_METHOD("set_bank_capital", "nation", "amount",
+		"role"), &EconomySim::set_bank_capital,
+		DEFVAL(String("public")));
+	ClassDB::bind_method(D_METHOD("set_bank_definitions", "definitions"),
+		&EconomySim::set_bank_definitions);
 	ClassDB::bind_method(D_METHOD("group_borrow", "group_id", "amount"),
 		&EconomySim::group_borrow);
 	ClassDB::bind_method(D_METHOD("get_bank_status"), &EconomySim::get_bank_status);
@@ -7961,6 +7964,13 @@ void EconomySim::from_dict(const Dictionary& data) {
 	commands_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
 	ogs::edge::from_dict(ws_, sim_core_, data);
+	// C4 (D-110): o save v31 migrado não tem nomes e o v32 pode vir de outro
+	// dado; as definições de `banks.json` são reaplicadas para nomear os
+	// bancos e — se o dado não declara estrangeiro — fundir o papel no
+	// privado conservando valores.
+	if (!bank_defs_.empty()) {
+		ogs::bank::apply_definitions(ws_, bank_defs_);
+	}
 }
 
 Dictionary EconomySim::to_snapshot() const {
@@ -9622,21 +9632,84 @@ void EconomySim::set_bank_policy(double spread, double leverage_cap,
 	status_invalidate();
 }
 
-Dictionary EconomySim::set_bank_capital(const String& nation, double amount) {
+Dictionary EconomySim::set_bank_capital(const String& nation, double amount,
+		const String& role) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string role_key = to_std(role);
+	const int role_index = ogs::bank::role_from_key(role_key);
 	double paid = 0.0;
 	std::string error;
-	ogs::bank::inject_capital(ws_, std::string(nation.utf8().get_data()),
-		amount, &paid, &error);
+	if (role_index < 0) {
+		error = "papel de banco desconhecido";
+	} else {
+		ogs::bank::inject_capital(ws_, std::string(nation.utf8().get_data()),
+			role_index, amount, &paid, &error);
+	}
 	status_invalidate();
 	Dictionary out;
 	out["ok"] = paid > 0.0;
 	out["paid"] = paid;
 	out["nation"] = nation;
+	out["role"] = role;
 	if (paid <= 0.0) {
 		out["error"] = String(error.c_str());
 	}
 	return out;
+}
+
+void EconomySim::set_bank_definitions(const Dictionary& definitions) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// Formato de banks.json: { nations: { ISO3: { public:{name,status},
+	// private:{name,status}, foreign:{status,branch_candidate,origin_iso3} }}}.
+	const Variant nations_variant = definitions.get("nations", Variant());
+	if (nations_variant.get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	const Dictionary nations = nations_variant;
+	const Array codes = nations.keys();
+	// Dado com `null` (ausência declarada) vira "" — nunca "<null>".
+	const auto text_of = [](const Dictionary& row, const char* key) {
+		const Variant value = row.get(key, Variant());
+		if (value.get_type() != Variant::STRING) {
+			return std::string();
+		}
+		return std::string(String(value).utf8().get_data());
+	};
+	std::vector<ogs::bank::NameData> defs;
+	defs.reserve(static_cast<std::size_t>(codes.size()));
+	for (int index = 0; index < codes.size(); ++index) {
+		const std::string code(String(codes[index]).utf8().get_data());
+		const Variant entry_variant = nations.get(codes[index], Variant());
+		if (code.empty() || entry_variant.get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = entry_variant;
+		ogs::bank::NameData data;
+		data.nation = code;
+		const Variant pub_variant = entry.get("public", Variant());
+		if (pub_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary pub = pub_variant;
+			data.public_name = text_of(pub, "name");
+			data.public_present = text_of(pub, "status") == "present";
+		}
+		const Variant pri_variant = entry.get("private", Variant());
+		if (pri_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary pri = pri_variant;
+			data.private_name = text_of(pri, "name");
+			data.private_present = text_of(pri, "status") == "present";
+		}
+		const Variant fgn_variant = entry.get("foreign", Variant());
+		if (fgn_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary fgn = fgn_variant;
+			data.foreign_name = text_of(fgn, "branch_candidate");
+			data.foreign_origin = text_of(fgn, "origin_iso3");
+			data.foreign_present = text_of(fgn, "status") == "present";
+		}
+		defs.push_back(data);
+	}
+	bank_defs_ = defs;
+	ogs::bank::apply_definitions(ws_, bank_defs_);
+	status_invalidate();
 }
 
 Dictionary EconomySim::group_borrow(const String& group_id, double amount) {
@@ -9663,10 +9736,19 @@ Dictionary EconomySim::get_bank_status() const {
 		policy["source"] =
 			"default de jogo (data/definitions/economy/bank_credit.json)";
 		// Ausências declaradas desta fase (C4/C6), não números inventados.
-		policy["deposits"] = "absent";
+		// C4 (D-110): depósitos à vista são dinheiro bancário (firmas), e o
+		// capital de cada banco é pago pelo SEU dono (Estado, famílias ou
+		// exterior). Resolução de banco insolvente é C6.
+		policy["deposits"] = "firm deposits (bank money, C4)";
 		policy["deposits_owner"] = "C4";
 		policy["resolution"] = "C6";
-		policy["capital_source"] = "treasury (state owner until C4)";
+		policy["dividend_payout"] = ogs::bank::kDividendPayoutDefault;
+		policy["dividend_period_days"] = ogs::bank::kDividendPeriodDays;
+		Dictionary capital_source;
+		capital_source["public"] = "treasury (state owner)";
+		capital_source["private"] = "households (national owner)";
+		capital_source["foreign"] = "external (foreign owner)";
+		policy["capital_source"] = capital_source;
 		out["policy"] = policy;
 	}
 	const ogs::bank::Totals totals = ogs::bank::totals(ws_);
@@ -9687,14 +9769,52 @@ Dictionary EconomySim::get_bank_status() const {
 		row["loans_count"] = totals.loans_count;
 		row["group_debt"] = group_debt;
 		row["group_arrears"] = group_arrears;
+		// C4 (D-110): dinheiro bancário e distribuição ao dono.
+		row["deposits"] = totals.deposits;
+		row["retained"] = totals.retained;
+		row["dividends"] = totals.dividends;
+		row["remittance"] = totals.remittance;
+		row["remittance_origin"] = totals.remittance_origin;
+		row["harvest_interest"] = totals.harvest_interest;
+		row["banks"] = totals.banks;
+		// C4 (D-110): M1 global = dinheiro do mundo − cofre dos bancos (o
+		// cofre é reserva, que é M0 e não M1); M0 = dinheiro − depósitos.
+		double vault = 0.0;
+		for (const auto& bank_row : ws_.banks) {
+			vault += std::max(0.0, bank_row.second.cash);
+		}
+		row["m1"] = std::max(0.0, money_total() - vault);
+		row["m0"] = sim_core_.m0_total();
 		out["totals"] = row;
 	}
+	// Participação efetiva nos empréstimos da nação (0 sem crédito) e lista
+	// por BANCO (C4/D-110). O agregado por nação vem logo abaixo.
+	std::map<std::string, double> nation_assets;
+	for (const auto& row : ws_.banks) {
+		nation_assets[row.second.nation] += row.second.loans
+			+ row.second.arrears;
+	}
+	Array banks;
 	// Uma linha por banco (o mapa é ordenado por nação: ordem determinística).
 	Array nations;
 	for (const auto& row : ws_.banks) {
 		const ogs::Bank& bank = row.second;
 		Dictionary entry;
+		entry["id"] = String(bank.id.c_str());
 		entry["nation"] = String(bank.nation.c_str());
+		entry["role"] = String(ogs::bank::role_key(bank.role));
+		// Nome só quando o dado o declara: chave ausente é a ausência honesta
+		// (`name_status = no_data`), nunca um nome inventado.
+		if (!bank.name.empty()) {
+			entry["name"] = String::utf8(bank.name.c_str());
+		}
+		entry["name_status"] = String(bank.name_status.c_str());
+		entry["owner_kind"] = String(bank.owner_kind.c_str());
+		entry["owner_nation"] = String(bank.owner_nation.c_str());
+		entry["share"] = bank.share;
+		const double nation_total = nation_assets[bank.nation];
+		entry["share_loans"] = nation_total > 1e-9
+			? (bank.loans + bank.arrears) / nation_total : 0.0;
 		entry["currency"] = String(bank.currency.c_str());
 		entry["policy_rate"] = ogs::monetary::rate_for_nation(ws_,
 			bank.nation);
@@ -9713,9 +9833,71 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["defaults"] = bank.defaults;
 		entry["loans_count"] = bank.loans_count;
 		entry["last_default_day"] = bank.last_default_day;
+		entry["deposits"] = bank.deposits;
+		entry["retained"] = ogs::bank::retained(bank);
+		entry["dividends"] = bank.dividends;
+		entry["remittance"] = bank.remittance;
+		entry["remittance_origin"] = bank.remittance_origin;
+		entry["harvest_interest"] = bank.harvest_interest;
+		entry["last_dividend_day"] = bank.last_dividend_day;
+		banks.append(entry);
+	}
+	// Agregado por nação (soma dos papéis) — contrato da C3 preservado.
+	std::vector<std::string> nation_order;
+	std::map<std::string, Dictionary> by_nation;
+	for (const auto& row : ws_.banks) {
+		const ogs::Bank& bank = row.second;
+		auto found = by_nation.find(bank.nation);
+		if (found == by_nation.end()) {
+			Dictionary entry;
+			entry["nation"] = String(bank.nation.c_str());
+			entry["currency"] = String(bank.currency.c_str());
+			entry["policy_rate"] = ogs::monetary::rate_for_nation(ws_,
+				bank.nation);
+			entry["loan_rate"] = ogs::bank::loan_rate(ws_, bank.nation);
+			entry["loans"] = 0.0;
+			entry["arrears"] = 0.0;
+			entry["deposits"] = 0.0;
+			entry["bc_borrowing"] = 0.0;
+			entry["cash"] = 0.0;
+			entry["capital"] = 0.0;
+			entry["equity"] = 0.0;
+			entry["writeoffs"] = 0.0;
+			entry["defaults"] = 0;
+			entry["loans_count"] = 0;
+			entry["last_default_day"] = -1;
+			entry["banks"] = 0;
+			found = by_nation.emplace(bank.nation, entry).first;
+			nation_order.push_back(bank.nation);
+		}
+		Dictionary entry = found->second;
+		entry["loans"] = double(entry["loans"]) + bank.loans;
+		entry["arrears"] = double(entry["arrears"]) + bank.arrears;
+		entry["deposits"] = double(entry["deposits"]) + bank.deposits;
+		entry["bc_borrowing"] = double(entry["bc_borrowing"])
+			+ bank.bc_borrowing;
+		entry["cash"] = double(entry["cash"]) + bank.cash;
+		entry["capital"] = double(entry["capital"]) + bank.capital;
+		entry["equity"] = double(entry["equity"])
+			+ ogs::bank::equity(bank);
+		entry["writeoffs"] = double(entry["writeoffs"]) + bank.writeoffs;
+		entry["defaults"] = int(entry["defaults"]) + bank.defaults;
+		entry["loans_count"] = int(entry["loans_count"]) + bank.loans_count;
+		entry["last_default_day"] = std::max(int(entry["last_default_day"]),
+			bank.last_default_day);
+		entry["banks"] = int(entry["banks"]) + 1;
+		found->second = entry;
+	}
+	for (const std::string& code : nation_order) {
+		Dictionary entry = by_nation[code];
+		const double assets = double(entry["loans"])
+			+ double(entry["arrears"]);
+		entry["equity_ratio"] = assets > 1e-9
+			? double(entry["equity"]) / assets : 0.0;
 		nations.append(entry);
 	}
 	out["nations"] = nations;
+	out["banks"] = banks;
 	// Só os grupos com posição de crédito (a lista inteira é o
 	// `get_balance_status().world.groups`).
 	Array groups;

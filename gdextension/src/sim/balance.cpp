@@ -82,8 +82,9 @@ Ledger ledger(const WorldState& ws, double money_total) {
 	for (const auto& row : ws.gov_bonds) {
 		out.government_debt += row.second;
 	}
-	// C3: setor bancário. O capital pago pelo Tesouro é passivo do banco e
-	// claim do governo (o Estado é o dono declarado até a C4).
+	// C3: setor bancário. O capital pago pelo dono é passivo do banco e claim
+	// do dono. C4 (D-110): o capital é separado por dono (Estado, famílias,
+	// exterior) e o depósito à vista é passivo do banco (dinheiro bancário).
 	for (const auto& row : ws.banks) {
 		const Bank& bank = row.second;
 		out.bank_cash += bank.cash;
@@ -91,11 +92,20 @@ Ledger ledger(const WorldState& ws, double money_total) {
 		out.bank_arrears += bank.arrears;
 		out.bank_borrowing += bank.bc_borrowing;
 		out.bank_capital += bank.capital;
+		out.bank_deposits += bank.deposits;
+		if (bank.owner_kind == "state") {
+			out.government_claims += bank.capital;
+		} else if (bank.owner_kind == "foreign") {
+			out.external_claims += bank.capital;
+		} else {
+			out.household_claims += bank.capital;
+		}
 	}
 	out.banking = out.bank_cash + out.bank_loans + out.bank_arrears
-		- out.bank_borrowing - out.bank_capital;
+		- out.bank_borrowing - out.bank_capital - out.bank_deposits;
 	out.monetary_claims += out.bank_borrowing;
-	out.monetary_base = money_total - out.monetary_claims;
+	out.monetary_base = money_total - out.monetary_claims
+		- out.bank_deposits;
 
 	for (const City& city : ws.cities) {
 		// Famílias: poupança dos quintis (o escalar da cidade é a soma), as
@@ -144,9 +154,9 @@ Ledger ledger(const WorldState& ws, double money_total) {
 
 	// Governo: orçamento nacional por cidade + prefeituras (caixa e obras).
 	out.government += city_gov::money_total(ws);
-	// C3: o capital do banco é claim do Tesouro (o Estado é o dono declarado).
-	// NÃO entra em `government` (que é caixa) nem em `cash_total`.
-	out.government_claims += out.bank_capital;
+	// C4: o claim de capital do Estado já foi somado no laço dos bancos
+	// (`government_claims`); NÃO entra em `government` (que é caixa) nem em
+	// `cash_total`.
 
 	// Setor externo: `foreign_cash` pode ser negativo por desenho (o exterior
 	// financia importação). É a posição do exterior, não dinheiro doméstico.
@@ -287,16 +297,21 @@ Sheet government(const WorldState& ws, const std::string& nation) {
 			sheet.debt += found->second;
 		}
 	}
-	// C3 (D-107): o capital pago ao banco agregado é claim do Tesouro (o
-	// Estado é o dono declarado até a C4 trazer os donos privados).
+	// C3 (D-107): o capital pago ao banco é claim do Tesouro. C4 (D-110): só o
+	// capital do banco PÚBLICO é claim do Estado; o do privado é das famílias e
+	// o do estrangeiro é do exterior (ver `ledger`).
 	if (nation.empty()) {
 		for (const auto& row : ws.banks) {
-			sheet.equity_claims += std::max(0.0, row.second.capital);
+			if (row.second.owner_kind == "state") {
+				sheet.equity_claims += std::max(0.0, row.second.capital);
+			}
 		}
 	} else {
-		const auto found = ws.banks.find(nation);
-		if (found != ws.banks.end()) {
-			sheet.equity_claims += std::max(0.0, found->second.capital);
+		for (const auto& row : ws.banks) {
+			if (row.second.nation == nation
+					&& row.second.owner_kind == "state") {
+				sheet.equity_claims += std::max(0.0, row.second.capital);
+			}
 		}
 	}
 	return sheet;
@@ -422,21 +437,24 @@ Sheet banking(const WorldState& ws) {
 		const Bank& bank = row.second;
 		sheet.cash += bank.cash;
 		sheet.loans += bank.loans + bank.arrears;
-		sheet.debt += bank.bc_borrowing + bank.capital;
+		sheet.debt += bank.bc_borrowing + bank.capital + bank.deposits;
+		sheet.deposits += bank.deposits;
 	}
 	return sheet;
 }
 
 Sheet banking_nation(const WorldState& ws, const std::string& nation) {
 	Sheet sheet;
-	const auto found = ws.banks.find(nation);
-	if (found == ws.banks.end()) {
-		return sheet;
+	for (const auto& row : ws.banks) {
+		if (row.second.nation != nation) {
+			continue;
+		}
+		const Bank& bank = row.second;
+		sheet.cash += bank.cash;
+		sheet.loans += bank.loans + bank.arrears;
+		sheet.debt += bank.bc_borrowing + bank.capital + bank.deposits;
+		sheet.deposits += bank.deposits;
 	}
-	const Bank& bank = found->second;
-	sheet.cash = bank.cash;
-	sheet.loans = bank.loans + bank.arrears;
-	sheet.debt = bank.bc_borrowing + bank.capital;
 	return sheet;
 }
 
