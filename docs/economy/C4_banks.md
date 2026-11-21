@@ -24,7 +24,8 @@ credor), `src/economy_sim.cpp`; dados
 3. **Participação de mercado inicial** declarada (default de jogo, §3) — o
    repositório não tem fonte de participação por banco/nação.
 4. **Depósitos de firmas** passam a existir: o empréstimo cria **dinheiro
-   bancário** (depósito) em vez de M0; `M1 = M0 + depósitos`. O depósito é
+   bancário** (depósito) em vez de M0; o cofre do banco (reserva) é M0 e não
+   M1, então `M1 = M0 + depósitos − reservas`. O depósito é
    do tomador (grupo), que é quem recebe o crédito nesta fase.
 5. **Capital próprio por dono**: cada banco tem capital pago pelo seu dono
    (Tesouro, famílias domésticas ou exterior), com a mesma conservação da C1.
@@ -120,7 +121,8 @@ group.cash += A ; group.debt += A
 ```
 
 Famílias/firmas (+A caixa, +A dívida) e banco (+A ativo, +A depósito) somam
-zero; `money_total` sobe A e `M0` **não** muda (`M1 = M0 + depósitos`).
+zero; `money_total` sobe A e `M0` **não** muda (`M1 = M0 + depósitos −
+reservas`; o cofre do banco é M0).
 
 **Pagamento de principal (P)**: `group.cash −= P` (o depósito do grupo cai),
 `bank.deposits −= P`, `bank.loans −= P`. Dinheiro bancário destruído; soma 0.
@@ -159,7 +161,8 @@ dinheiro do dono sem destruir a identidade.
 banking = bank_cash + b_loans + b_arrears − b_borrowing − b_capital − b_deposits
 financial_sum = famílias + firmas + governo + gov_claims + household_claims
               + exterior + external_claims + banking − dívida_pública − M0
-M0 = money_total − depósitos   (M1 = money_total)
+M0 = money_total − depósitos   (público + reservas dos bancos)
+M1 = money_total − cofre       (público + depósitos à vista)
 ```
 
 **Invariantes diários** (em `SimCore::check_invariants`): os da C3 mais
@@ -278,5 +281,105 @@ além do `state_owned` e painel de UI (depois da Fase H).
 
 ## 10. Medição
 
-(preenchida ao fim da implementação; ver §10.1 default, §10.2 crédito ligado,
-§10.3 A/B do canal da safra.)
+365 dias com IA, mundo real completo, `threads=1`, DLL debug recompilada,
+**um Godot por vez** (`tools/c1_world_ai_365.gd`; harness de medição, não
+catalogado no runner — que não passa argumentos; as três rodadas saíram em
+sequência no mesmo terminal, 238-247 s cada). Saídas:
+`docs/economy/perf/c4_gate_default.json`, `c4_gate_credit.json` e
+`c4_gate_credit_harvest.json` (bloco `banks` novo: totais dos bancos na data
+final).
+
+O `drift` do harness é `(money_end − money_start) / money_start`. Com crédito
+ligado ele **não** é vazamento: é o estoque de dinheiro bancário criado
+(depósitos à vista − principal já amortizado). A conferência de conservação é
+a identidade do balanço (`financial_sum ≈ 0`, `cash_residual ≈ 0`), que fecha
+em todos os dias das três rodadas.
+
+### 10.1 Default (juro da safra D-105 e crédito C3 desligados)
+
+O default do jogo continua sem crédito (`bank_credit.json: enabled = false`) e
+com `harvest_credit_rate = false`; só o harness liga por flag.
+
+| medida | default |
+|---|---|
+| falências | 3 |
+| portão de comida | 94/179 (mediana 0,9700) |
+| violações do invariante | 0 |
+| dias travados | 0 |
+| drift de dinheiro | 1,6e-13 |
+| inflação 12 m (mediana / p10 / p90) | 1,58 % / −0,24 % / 4,73 % (179 países) |
+| taxa básica (mediana / p10 / p90) | 0,67 % / 0,00 % / 5,35 % (135 moedas) |
+| dívida total dos grupos | 0 |
+| calotes / baixas | 0 / 0 |
+| depósitos, lucro, remessa dos bancos | 0 / 0 / 0 |
+| M0 / M1 | 6.523.551.982,90 / 6.523.551.982,90 |
+| hash da trajetória | `08770914` |
+
+Igual ao portão da base (3 falências, 94/179, 0 violações): **B1 cumprido**, o
+mundo default não piorou.
+
+### 10.2 Crédito ligado (e a variante com o juro da safra)
+
+| medida | default | `--credit=1` | `--credit=1 --harvest-rate=1` |
+|---|---|---|---|
+| falências | 3 | **2** | **2** |
+| portão de comida | 94/179 (0,9700) | **98/179** (0,9661) | **98/179** (0,9693) |
+| violações / dias travados | 0 / 0 | 0 / 0 | 0 / 0 |
+| inflação 12 m (med / p10 / p90) | 1,58 / −0,24 / 4,73 % | 1,60 / −0,27 / 5,02 % | 1,59 / −0,39 / 4,59 % |
+| taxa básica (med / p10 / p90) | 0,67 / 0,00 / 5,35 % | 0,80 / 0,00 / 5,03 % | 0,78 / 0,00 / 5,45 % |
+| dívida total dos grupos | 0 | 24.287.115,20 | 24.551.743,26 |
+| empréstimos (contratos) | 0 | 2.488 | 2.515 |
+| calotes / baixas | 0 / 0 | 0 / 0,00 | 0 / 0,00 |
+| depósitos à vista | 0 | 24.589.855,42 | 24.865.568,64 |
+| juro recebido pelos bancos | 0 | 376.373,99 | 377.533,77 |
+| juro pago (dívida do banco) | 0 | 0 | 0 |
+| lucro retido (patrimônio) | 0 | 98.507,65 | 98.097,73 |
+| dividendos pagos | 0 | 679.114,22 | 691.359,15 |
+| remessa do banco estrangeiro | 0 | 32.176,97 | 30.786,97 |
+| ... dos quais de origem (`origin_amount`) | 0 | 24.251,74 | 23.697,91 |
+| M0 | 6.523.551.982,90 | 6.523.551.982,90 | 6.523.551.982,90 |
+| M1 | 6.523.551.982,90 | 6.548.141.838,32 | 6.548.409.274,25 |
+| drift de dinheiro | 1,6e-13 | 0,003769 | 0,003812 |
+| hash da trajetória | `08770914` | `bfc4ed21` | `66534505` |
+
+Leitura:
+
+- **M0 não muda** ao ligar o crédito (Δ = 1,3e-3 em 6,5e9, ruído de soma) e
+  **M1 − M0 = depósitos à vista − cofre do banco** nas duas rodadas com
+  crédito: 24.589.855,42 com o cofre zerado, e 24.857.291,35 na variante com o
+  juro da safra (diferença de 8.277,29 = o caixa do banco). É a definição da §3
+  funcionando: `M0 = caixa − depósitos` (público + reservas),
+  `M1 = caixa − reservas` (público + depósitos).
+- O `drift` das rodadas com crédito **é** o estoque de dinheiro bancário:
+  24.589.855,42 / 6.523.551.982,90 = 0,003769 (idem na variante). A identidade
+  do balanço fecha (`financial_sum` entre −2e-5 e +2e-5).
+- **Nenhum calote** em 365 d (0 de 2.488 e 0 de 2.515 contratos) e juro pago
+  pelo banco 0 (sem empréstimo do BC): o banco é lucrativo, mas fino —
+  patrimônio de 98,5 mil contra 24,3 milhões de dívida de grupos (a alavancagem
+  efetiva vem do capital semeado pelas famílias, não de passivo).
+- Com crédito ligado o mundo **melhora**, não piora: 3 → 2 falências e portão
+  94 → 98 (as quatro nações a mais acima do portão). Não há canal que piore
+  (inflação, juros e comida ficam dentro da dispersão da base).
+
+### 10.3 A/B do canal da safra (D-105)
+
+Comparando `--credit=1` com `--credit=1 --harvest-rate=1`: falências, portão e
+violações **idênticos**; a diferença é o juro do envelope, que agora **tem
+recebedor**: 8.277,29 entram no caixa do banco (`harvest_interest` = caixa do
+banco na data final), a soma financeira continua fechando (+2,0e-5) e o lucro
+do banco sobe o suficiente para pagar dividendos ligeiramente maiores
+(691.359,15 vs 679.114,22) e remessa um pouco menor (30.786,97 vs 32.176,97).
+
+O bloqueio da D-105 ("juro sem recebedor") está resolvido pela C4 quando o
+crédito está ligado. A flag continua **desligada** por default: ligá-la é
+decisão do dono, não default de implementação.
+
+### 10.4 Candidato a default (decisão do dono)
+
+Com o crédito ligado o mundo de 365 d não piorou em nenhuma medida e melhorou
+em duas (falências e portão), sem calote e com a identidade fechando. Fica como
+**candidato** a virar default numa decisão do dono — pendências antes disso:
+C6 (resolução de crise) inexistente, capital bancário ainda 0 no estado inicial
+(semeado pelas famílias no primeiro dia) e nenhuma calibração de spread/teto
+contra um credor com passivo próprio.
+

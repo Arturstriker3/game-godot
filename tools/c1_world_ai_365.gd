@@ -507,6 +507,9 @@ func _run() -> void:
 		"harvest_credit_rate": _harvest_credit_rate(sim),
 		"monetary": _monetary_report(sim),
 		"fx": _fx_summary(sim),
+		# C4 (D-110): totais dos bancos no fim do mundo — depósitos, retido,
+		# dividendo e remessa do banco estrangeiro. Só medição.
+		"banks": _banks_totals(sim),
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	if _fx_seed_days > 0:
@@ -560,3 +563,17 @@ func _credit_report(sim) -> Dictionary:
 		"defaults": int(totals.get("defaults", 0)),
 		"writeoffs": float(totals.get("writeoffs", 0.0)),
 	}
+
+
+func _banks_totals(sim) -> Dictionary:
+	# C4 (D-110): agregados dos bancos na data final (medidos do estado).
+	var status: Dictionary = sim.get_bank_status()
+	var totals: Dictionary = status.get("totals", {})
+	var out := {}
+	var keys := ["cash", "capital", "equity", "deposits", "loans",
+		"interest_income", "interest_expense", "retained", "dividends",
+		"remittance", "remittance_origin", "harvest_interest",
+		"defaults", "writeoffs", "loans_count", "m0", "m1"]
+	for key in keys:
+		out[key] = totals.get(key, 0.0)
+	return out
