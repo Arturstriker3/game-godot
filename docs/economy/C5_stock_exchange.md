@@ -378,15 +378,16 @@ crise; 151 praças (as com papel em ambos os fechamentos) entram na conta.
 
 | papel | praça | variação (365 d) | q | causa medida |
 |---|---|---|---|---|
-| `G-QAT-food-192` | QAT | **+4 163 320 %** (41 634x) | 187,5 | lucro de referência **+35 501x** partindo de base ~0 (micro-cap) |
-| `G-SWE-food-220` | SWE | +15 698,6 % (158x) | 0,94 | lucro **+116,9x**; confiança +8,1 % |
-| `G-VCT-food-250` | VCT | +6 541,0 % (66,4x) | 8,82 | lucro **+44,9x**; confiança +16,8 % |
-| `G-COL-energy-63` | COL | +4 026,7 % (41,3x) | 133,8 | lucro **+28,7x**; confiança +13,8 % |
-| `G-SDN-food-207` | SDN | +2 148,6 % (22,5x) | 3,68 | lucro **+14,6x**; confiança +20,5 % |
+| `G-QAT-food-192` | QAT | **+4 163 420 %** (41 635x) | 187,5 | lucro de referência **+35 501x** partindo de base ~0 (micro-cap) |
+| `G-SWE-food-220` | SWE | +15 798,6 % (159x) | 0,94 | lucro **+116,9x**; confiança +8,1 % |
+| `G-VCT-food-250` | VCT | +6 641,0 % (67x) | 8,82 | lucro **+44,9x**; confiança +16,8 % |
+| `G-COL-energy-63` | COL | +4 126,7 % (42x) | 133,8 | lucro **+28,7x**; confiança +13,8 % |
+| `G-SDN-food-207` | SDN | +2 248,6 % (23x) | 3,68 | lucro **+14,6x**; confiança +20,5 % |
 
-(`change` no JSON é **razão** preço_fim/preço_início; a tabela converte para %,
-por isso os valores ficam 100x a leitura antiga desta seção, que estava errada.
-`paper_extremes` guarda só os 5 mais extremos, não a lista dos 260 papéis.)
+(`change` no JSON é o **ganho** `preço_fim / preço_início − 1`
+— `c1_world_ai_365.gd:720` —, então a variação em % é `change × 100`, e o
+múltiplo em "x" é `1 + change`. `paper_extremes` guarda só os 5 mais extremos,
+não a lista dos 260 papéis.)
 
 Todos os extremos são **lucro medido**, não preço inventado: a referência do
 papel subiu 14x-35 000x no ano. O caso QAT é degenerado por escala (grupo com
