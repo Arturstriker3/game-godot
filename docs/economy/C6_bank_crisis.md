@@ -247,6 +247,7 @@ policy:      crisis_enabled, capital_min_ratio, liquidity_min_ratio (reservado:
              flight_to_quality, lolr_spread, lolr_haircut, lolr_max_assets,
              insured_share, premium_daily, fund_target_ratio,
              capital_flight_share, treasury_debt_rescue, takeover_public,
+             insolvency_tolerance, insolvency_tolerance_ratio,
              crisis_source, rescue_order
 totals:      confidence_sum/min/max, fund, premiums, payouts, runs, run_days,
              resolutions, run_withdrawn, run_cash, run_public,
@@ -269,7 +270,11 @@ acumulado histórico). `capital_flight` é a remessa da matriz estrangeira; não
 há campo `run_foreign` separado (o mesmo valor não aparece duas vezes no
 contrato). `resolutions` conta o dia da resolução de **todo** banco, inclusive
 a casca absorvida pelo banco público (ela ficou sem saldo, mas a resolução
-aconteceu); `resolved_markets` considera só quem ainda tem linha com posição.
+aconteceu). Os acumuladores de medição que ficam na casca (saques, redesconto,
+seguro, bail-in, Tesouro e fuga) entram **uma vez** no `totals`; só os saldos e
+os acumuladores copiados ao banco público (writeoffs/defaults/loans_count/
+juros/dividendos/juro da safra) saem da casca. `resolved_markets` é interno ao
+`bank_crisis::Totals` (não é publicado no status).
 
 ## 9. Parâmetros (`bank_crisis.json`)
 
@@ -316,7 +321,7 @@ O runner descobre o teste sozinho (`*_test.gd`). Cenários forçados:
 | d | dolarizado | sem redesconto (`bc_borrowing = 0`), a corrida para no caixa |
 | e | save v34 | round-trip bit-exato e continuação de 5 dias idêntica |
 | f | conservação | identidade da C1 e `invariant_violations = 0` em todos os dias de todos os cenários |
-| g | resgate sem BC | dolarizado + Tesouro sem caixa: o rombo vira dívida em poder do exterior (`external_bonds`); custos fecham o rombo, a identidade passa e o mundo avança (o tick não é revertido) |
+| g | resgate sem BC | dolarizado + Tesouro sem caixa: o rombo vira dívida em poder do exterior (`gov_bonds` + `external_bonds`; a dívida pública emitida é medida no Ledger); custos fecham o rombo, a identidade passa e o mundo avança (o tick não é revertido) |
 
 O fixture é o cenário AGRIA/PORTUS (1 grupo); o teste declara 100 % da
 participação no papel-alvo no save para a carteira ir para o banco certo e usa
