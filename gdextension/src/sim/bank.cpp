@@ -155,7 +155,6 @@ void merge_into(Bank& into, const Bank& from) {
 	into.run_withdrawn += from.run_withdrawn;
 	into.run_cash += from.run_cash;
 	into.run_public += from.run_public;
-	into.run_foreign += from.run_foreign;
 	into.lolr_borrowed += from.lolr_borrowed;
 	into.lolr_interest += from.lolr_interest;
 	into.insured_payout += from.insured_payout;

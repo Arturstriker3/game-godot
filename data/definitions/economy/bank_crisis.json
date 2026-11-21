@@ -1,16 +1,15 @@
 {
   "_comment": "C6 (docs/economy/C6_bank_crisis.md, D-114) - parametros da crise bancaria, corrida e resolucao. TODOS sao DEFAULT DE JOGO declarado: o repositorio nao tem fonte publica de indice de capital regulatorio por banco, teto de seguro de deposito por pais, premio do fundo garantidor, spread de redesconto ou ordem de bail-in. Nenhum numero aqui e dado observado. Os valores foram calibrados ao MODELO da C4 (bancos com patrimonio fino, sem reservas proprias: o caixa do banco so nasce do capital pago pelo dono e do juro da safra), e nao a uma regulamentacao real.",
   "source": "default de jogo",
-  "source_note": "D-114. A C4 deixa os bancos com patrimonio ~0,4% dos ativos e caixa ~0 (o credito cria deposito, nao reserva). O minimo de capital abaixo e o piso do MODELO, nao Basileia: com o mundo base em ~0,4%, 0,1% deixa margem para o credito nao ser cortado sem choque. O minimo de liquidez nasce 0 porque o banco da C4 nao guarda reserva alguma - exigir reserva hoje acionaria corrida em todo banco do mundo base sem nenhum choque. O indicador de liquidez continua medido e publicado e o canal de confianca esta ligado; o estresse sobe o minimo por `set_bank_crisis`.",
+  "source_note": "D-114. A C4 deixa os bancos com patrimonio ~0,4% dos ativos e caixa ~0 (o credito cria deposito, nao reserva). O minimo de capital abaixo e o piso do MODELO, nao Basileia: com o mundo base em ~0,4%, 0,1% deixa margem para o credito nao ser cortado sem choque. O indicador de liquidez continua medido e publicado e o canal de confianca usa a referencia do proprio banco; `liquidity.min_ratio` e RESERVADO (0, nenhuma regra o consome hoje).",
   "enabled": true,
   "capital": {
     "min_ratio": 0.001,
-    "confidence_healthy_ratio": 0.08,
     "credit_cut_floor": 0.0
   },
   "liquidity": {
     "min_ratio": 0.0,
-    "confidence_scale": 0.10
+    "reserved_note": "reservado: nenhuma regra consome este minimo. O sinal de liquidez da confianca e relativo a referencia do banco (caixa/depositos do primeiro fecho), nao um piso absoluto. Fica declarado para nao prometer efeito inexistente."
   },
   "losses": {
     "confidence_scale": 0.02,

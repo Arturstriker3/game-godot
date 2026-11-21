@@ -520,8 +520,9 @@ public:
 	Dictionary get_bank_status() const;
 	/**
 	 * C6 (D-114) — regras da crise bancária (laboratório/teste):
-	 * `enabled`, `capital_min`, `capital_healthy`, `liquidity_min`,
-	 * `liquidity_scale`, `loss_scale`, `loss_ema_days`, `smoothing`,
+	 * `enabled`, `capital_min`, `capital_cut_floor`, `liquidity_min`
+	 * (RESERVADO: nenhuma regra o consome), `loss_scale`, `loss_ema_days`,
+	 * `smoothing`,
 	 * `run_threshold`, `run_share`, `flight_to_quality`, `lolr_spread`,
 	 * `lolr_haircut`, `lolr_max_assets`, `insured_share`, `premium_daily`,
 	 * `fund_target_ratio`, `capital_flight_share`, `treasury_debt_rescue`,

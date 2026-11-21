@@ -86,10 +86,13 @@ double pay_from_government(WorldState& ws, const std::string& nation,
 	return paid;
 }
 
-// Divida publica carregada pelo BC da moeda (ou pelo exterior quando a nacao
-// nao tem BC: dolarizado/sem moeda propria). Conserva dinheiro: o BC emite o
-// valor creditado ao banco e o titulo entra na carteira dele; o exterior paga
-// da posicao (pode ficar negativa por desenho, como na C4).
+// Dívida pública carregada pelo BC da moeda (ou pelo exterior quando a nação
+// não tem BC: dolarizado/sem moeda própria). Conserva dinheiro: com BC, ele
+// emite o valor creditado ao banco e o título entra na carteira dele; sem BC,
+// o título fica com o SETOR EXTERIOR, pago da posição externa (`foreign_cash`,
+// que pode ficar negativa por desenho, como na C4) e registrado em
+// `external_bonds` (claim do credor em `Ledger.external_claims`). A ponta do
+// credor é obrigatória: sem ela `financial_sum = −valor` e o tick é revertido.
 double rescue_with_debt(WorldState& ws, const std::string& nation,
 		double amount, bool* out_emitted) {
 	if (out_emitted != nullptr) {
@@ -104,21 +107,24 @@ double rescue_with_debt(WorldState& ws, const std::string& nation,
 		&& std::find(ws.fx_no_policy_nations.begin(),
 			ws.fx_no_policy_nations.end(), nation)
 			== ws.fx_no_policy_nations.end();
-	if (lender) {
-		MonetaryState* state = monetary_of(ws, code);
-		if (state != nullptr) {
-			state->emission += amount;
-			state->emission_today += amount;
-			state->securities += amount;
-		}
+	// Moeda com BC, mas SEM estado monetário salvo: não há carteira do BC nem
+	// emissão registrada possível. O título vai para o exterior (nunca um
+	// `emission_today` sem o título correspondente).
+	MonetaryState* state = lender ? monetary_of(ws, code) : nullptr;
+	if (state != nullptr) {
+		state->emission += amount;
+		state->emission_today += amount;
+		state->securities += amount;
 		ws.emission_today += amount;
 		if (out_emitted != nullptr) {
 			*out_emitted = true;
 		}
 		return amount;
 	}
-	// Sem BC: o Tesouro toma do exterior (posicao externa). O dinheiro sai da
-	// posicao do exterior e entra no banco — soma zero.
+	// Sem BC: o Tesouro toma do exterior (posição externa). O dinheiro sai da
+	// posição do exterior e entra no banco (soma zero); o título é o claim do
+	// credor.
+	ws.external_bonds[nation] += amount;
 	ws.foreign_cash -= amount;
 	return amount;
 }
@@ -144,12 +150,8 @@ Policy policy(const WorldState& ws) {
 	Policy out;
 	out.enabled = saved.enabled;
 	out.capital_min = pick(saved.capital_min, kCapitalMinDefault);
-	out.capital_healthy = pick(saved.capital_healthy,
-		kCapitalHealthyDefault);
 	out.capital_cut_floor = saved.capital_cut_floor;
 	out.liquidity_min = saved.liquidity_min;
-	out.liquidity_scale = pick(saved.liquidity_scale,
-		kLiquidityScaleDefault);
 	out.loss_scale = pick(saved.loss_scale, kLossScaleDefault);
 	out.loss_ema_days = pick(saved.loss_ema_days, kLossEmaDaysDefault);
 	out.confidence_start = pick(saved.confidence_start,
@@ -540,6 +542,17 @@ double resolve(WorldState& ws, const std::string& bank_id,
 			bank.deposits = 0.0;
 			bank.bc_borrowing = 0.0;
 			bank.share = 0.0;
+			// Acumulados JA copiados para o banco publico: a casca zera para
+			// `bank::totals` nao contar duas vezes (writeoffs/defaults/
+			// loans_count/juros/dividendos/juro da safra). A ANCORA da
+			// resolucao continua na casca (`resolution`, `resolution_day`).
+			bank.writeoffs = 0.0;
+			bank.defaults = 0;
+			bank.loans_count = 0;
+			bank.interest_income = 0.0;
+			bank.interest_expense = 0.0;
+			bank.dividends = 0.0;
+			bank.harvest_interest = 0.0;
 			bank.absorbed_into = pub_id;
 			// Redistribui a participacao entre os bancos que sobraram na nacao.
 			double share_sum = 0.0;
@@ -925,7 +938,6 @@ Totals totals(const WorldState& ws) {
 		out.run_withdrawn += bank.run_withdrawn;
 		out.run_cash += bank.run_cash;
 		out.run_public += bank.run_public;
-		out.run_foreign += bank.capital_flight;
 		out.lolr_borrowed += bank.lolr_borrowed;
 		out.lolr_interest += bank.lolr_interest;
 		out.insured_payout += bank.insured_payout;
@@ -936,8 +948,15 @@ Totals totals(const WorldState& ws) {
 		}
 		out.run_days += bank.run_days;
 		if (bank.resolution_day >= 0) {
+			out.resolved_markets += 1;
+		}
+	}
+	// Resoluções: conta o dia de TODO banco, inclusive a casca absorvida pelo
+	// banco público (a linha não tem saldo, mas a resolução aconteceu). Contar
+	// no laço acima perdia a resolução no momento da incorporação.
+	for (const auto& row : ws.banks) {
+		if (row.second.resolution_day >= 0) {
 			out.resolutions += 1;
-			out.resolved_markets += bank.absorbed_into.empty() ? 1 : 0;
 		}
 	}
 	for (const auto& row : ws.deposit_insurance) {
@@ -964,7 +983,6 @@ void reset(WorldState& ws) {
 		bank.run_withdrawn = 0.0;
 		bank.run_cash = 0.0;
 		bank.run_public = 0.0;
-		bank.run_foreign = 0.0;
 		bank.lolr_borrowed = 0.0;
 		bank.lolr_interest = 0.0;
 		bank.lolr_days = 0;
@@ -972,7 +990,6 @@ void reset(WorldState& ws) {
 		bank.bailin_cut = 0.0;
 		bank.treasury_rescue = 0.0;
 		bank.capital_flight = 0.0;
-		bank.recapitalized = 0.0;
 		bank.resolution_day = -1;
 		bank.resolved = false;
 		bank.resolution = "none";

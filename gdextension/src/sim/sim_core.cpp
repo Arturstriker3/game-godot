@@ -255,6 +255,7 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	// C2b1: política monetária, dívida pública e emissão do dia.
 	out.monetary = ws_.monetary;
 	out.gov_bonds = ws_.gov_bonds;
+	out.external_bonds = ws_.external_bonds;
 	out.gov_cash_open = ws_.gov_cash_open;
 	// C2b2 (D-106): a intervenção cambial e a desvalorização são estado do dia.
 	out.fx = ws_.fx;
@@ -901,6 +902,7 @@ void SimCore::restore_state(const Snapshot& in) {
 	// C2b1: desfazer o tick desfaz a taxa, o M0 emitido e a dívida pública.
 	ws_.monetary = in.monetary;
 	ws_.gov_bonds = in.gov_bonds;
+	ws_.external_bonds = in.external_bonds;
 	ws_.gov_cash_open = in.gov_cash_open;
 	ws_.fx = in.fx;
 	ws_.fx_events = in.fx_events;

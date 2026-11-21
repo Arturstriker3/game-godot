@@ -83,6 +83,12 @@ Ledger ledger(const WorldState& ws, double money_total) {
 	for (const auto& row : ws.gov_bonds) {
 		out.government_debt += row.second;
 	}
+	// C6 (D-114): títulos do resgate SEM banco central ficam em poder do
+	// exterior. São claim do credor e pagos pela posição externa; sem esta
+	// ponta a identidade da C1 ficaria em −valor.
+	for (const auto& row : ws.external_bonds) {
+		out.external_claims += row.second;
+	}
 	// C3: setor bancário. O capital pago pelo dono é passivo do banco e claim
 	// do dono. C4 (D-110): o capital é separado por dono (Estado, famílias,
 	// exterior) e o depósito à vista é passivo do banco (dinheiro bancário).

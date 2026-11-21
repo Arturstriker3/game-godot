@@ -47,10 +47,11 @@ namespace bank_crisis {
 // piso de capital e' 0,1 % (do MODELO, nao Basileia) e o minimo de liquidez
 // nasce 0 (o banco da C4 nao guarda reserva). Ver o `source_note` do JSON.
 constexpr double kCapitalMinDefault = 0.001;
-constexpr double kCapitalHealthyDefault = 0.08;
 constexpr double kCapitalCutFloorDefault = 0.0;
+// RESERVADO: nenhuma regra consome o mínimo de liquidez (o sinal de confiança
+// usa a referência do próprio banco). Publicado no JSON/política para não
+// prometer um efeito que o núcleo não tem.
 constexpr double kLiquidityMinDefault = 0.0;
-constexpr double kLiquidityScaleDefault = 0.10;
 constexpr double kLossScaleDefault = 0.02;
 constexpr double kLossEmaDaysDefault = 10.0;
 constexpr double kConfidenceStartDefault = 1.0;
@@ -87,10 +88,8 @@ constexpr double kDaysPerYear = 365.0;
 struct Policy {
 	bool enabled = true;
 	double capital_min = kCapitalMinDefault;
-	double capital_healthy = kCapitalHealthyDefault;
 	double capital_cut_floor = kCapitalCutFloorDefault;
-	double liquidity_min = kLiquidityMinDefault;
-	double liquidity_scale = kLiquidityScaleDefault;
+	double liquidity_min = kLiquidityMinDefault;  // reservado (sem regra)
 	double loss_scale = kLossScaleDefault;
 	double loss_ema_days = kLossEmaDaysDefault;
 	double confidence_start = kConfidenceStartDefault;
@@ -174,11 +173,13 @@ struct Totals {
 	double confidence_sum = 0.0;
 	double confidence_min = 1.0;
 	double confidence_max = 0.0;
+	// A remessa da matriz estrangeira é medida em `Bank::capital_flight` (não
+	// há cópia separada): `run_foreign` foi removido para não apelidar o mesmo
+	// valor duas vezes no contrato.
 	double capital_flight = 0.0;
 	double run_withdrawn = 0.0;
 	double run_cash = 0.0;
 	double run_public = 0.0;
-	double run_foreign = 0.0;
 	double lolr_borrowed = 0.0;
 	double lolr_interest = 0.0;
 	double insured_payout = 0.0;
@@ -188,9 +189,11 @@ struct Totals {
 	double premiums = 0.0;
 	double payouts = 0.0;
 	int runs = 0;          // bancos em corrida hoje
-	int run_days = 0;      // soma dos dias de corrida acumulados
+	int run_days = 0;      // dias de corrida CORRENTES somados (zera ao sair)
+	// Conta o dia da resolução de TODO banco, inclusive a casca absorvida pelo
+	// banco público (a casca não tem saldo, mas a resolução aconteceu).
 	int resolutions = 0;
-	int resolved_markets = 0;
+	int resolved_markets = 0;  // resolvidos que ainda têm linha com posição
 	int events_total = 0;
 	int banks = 0;
 };

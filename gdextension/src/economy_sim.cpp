@@ -9821,10 +9821,8 @@ Dictionary EconomySim::set_bank_crisis(const Dictionary& raw_config) {
 		config_flat["enabled"] = raw_config.get("enabled", Variant());
 	}
 	copy(capital, "min_ratio", "capital_min");
-	copy(capital, "confidence_healthy_ratio", "capital_healthy");
 	copy(capital, "credit_cut_floor", "capital_cut_floor");
 	copy(liquidity, "min_ratio", "liquidity_min");
-	copy(liquidity, "confidence_scale", "liquidity_scale");
 	copy(losses, "confidence_scale", "loss_scale");
 	copy(losses, "ema_days", "loss_ema_days");
 	copy(confidence, "start", "confidence_start");
@@ -9860,21 +9858,15 @@ Dictionary EconomySim::set_bank_crisis(const Dictionary& raw_config) {
 		ws_.bank_crisis.capital_min = std::max(0.0,
 			number("capital_min"));
 	}
-	if (config.has("capital_healthy")) {
-		ws_.bank_crisis.capital_healthy = std::max(0.0,
-			number("capital_healthy"));
-	}
 	if (config.has("capital_cut_floor")) {
 		ws_.bank_crisis.capital_cut_floor = std::clamp(
 			number("capital_cut_floor"), 0.0, 1.0);
 	}
+	// RESERVADO: `liquidity_min` é publicado/salvo, mas nenhuma regra o
+	// consome (o sinal de liquidez da confiança usa a referência do banco).
 	if (config.has("liquidity_min")) {
 		ws_.bank_crisis.liquidity_min = std::max(0.0,
 			number("liquidity_min"));
-	}
-	if (config.has("liquidity_scale")) {
-		ws_.bank_crisis.liquidity_scale = std::max(0.0,
-			number("liquidity_scale"));
 	}
 	if (config.has("loss_scale")) {
 		ws_.bank_crisis.loss_scale = std::max(0.0, number("loss_scale"));
@@ -9965,9 +9957,7 @@ Dictionary EconomySim::set_bank_crisis(const Dictionary& raw_config) {
 	Dictionary out;
 	out["enabled"] = pol.enabled;
 	out["capital_min"] = pol.capital_min;
-	out["capital_healthy"] = pol.capital_healthy;
 	out["liquidity_min"] = pol.liquidity_min;
-	out["liquidity_scale"] = pol.liquidity_scale;
 	out["loss_scale"] = pol.loss_scale;
 	out["loss_ema_days"] = pol.loss_ema_days;
 	out["smoothing"] = pol.smoothing;
@@ -10304,9 +10294,7 @@ Dictionary EconomySim::get_bank_status() const {
 		const ogs::bank_crisis::Policy crisis = ogs::bank_crisis::policy(ws_);
 		policy["crisis_enabled"] = crisis.enabled;
 		policy["capital_min_ratio"] = crisis.capital_min;
-		policy["capital_healthy_ratio"] = crisis.capital_healthy;
 		policy["liquidity_min_ratio"] = crisis.liquidity_min;
-		policy["liquidity_scale"] = crisis.liquidity_scale;
 		policy["loss_scale"] = crisis.loss_scale;
 		policy["loss_ema_days"] = crisis.loss_ema_days;
 		policy["confidence_smoothing"] = crisis.smoothing;

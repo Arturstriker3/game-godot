@@ -1349,6 +1349,13 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			bonds[sim_str(row.first.c_str())] = row.second;
 		}
 		block["gov_bonds"] = bonds;
+		// C6 (D-114): títulos do resgate sem BC em poder do exterior (claim do
+		// credor; pago pela posição externa). Aditivo no v34 — ausente = 0.
+		Dictionary external_bonds = make_object();
+		for (const auto& row : ws.external_bonds) {
+			external_bonds[sim_str(row.first.c_str())] = row.second;
+		}
+		block["external_bonds"] = external_bonds;
 		// Janela do déficit (medição que alimenta a decisão do dia seguinte):
 		// sem ela, um load recomeçaria a janela no caixa do load e a
 		// monetização divergiria do caminho direto.
@@ -1479,12 +1486,14 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["confidence"] = bank.confidence;
 			entry["loss_seeded"] = bank.loss_seeded;
 			entry["loss_ema"] = bank.loss_ema;
+			// Perda reconhecida HOJE: sem ela, um load no meio do dia perdia o
+			// choque que ainda não entrou na EMA e a continuação divergia.
+			entry["loss_today"] = bank.loss_today;
 			entry["run_days"] = bank.run_days;
 			entry["last_run_day"] = bank.last_run_day;
 			entry["run_withdrawn"] = bank.run_withdrawn;
 			entry["run_cash"] = bank.run_cash;
 			entry["run_public"] = bank.run_public;
-			entry["run_foreign"] = bank.run_foreign;
 			entry["lolr_borrowed"] = bank.lolr_borrowed;
 			entry["lolr_interest"] = bank.lolr_interest;
 			entry["lolr_days"] = bank.lolr_days;
@@ -1492,7 +1501,6 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["bailin_cut"] = bank.bailin_cut;
 			entry["treasury_rescue"] = bank.treasury_rescue;
 			entry["capital_flight"] = bank.capital_flight;
-			entry["recapitalized"] = bank.recapitalized;
 			entry["resolution_day"] = bank.resolution_day;
 			entry["resolved"] = bank.resolved;
 			entry["resolution"] = sim_str(bank.resolution.c_str());
@@ -1516,10 +1524,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		block["enabled"] = ws.bank_crisis.enabled;
 		Dictionary policy = make_object();
 		policy["capital_min"] = ws.bank_crisis.capital_min;
-		policy["capital_healthy"] = ws.bank_crisis.capital_healthy;
 		policy["capital_cut_floor"] = ws.bank_crisis.capital_cut_floor;
 		policy["liquidity_min"] = ws.bank_crisis.liquidity_min;
-		policy["liquidity_scale"] = ws.bank_crisis.liquidity_scale;
 		policy["loss_scale"] = ws.bank_crisis.loss_scale;
 		policy["loss_ema_days"] = ws.bank_crisis.loss_ema_days;
 		policy["confidence_start"] = ws.bank_crisis.confidence_start;
@@ -2007,6 +2013,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	// emissão/carteira/dívida 0 e a emissão do dia 0 (só o dia conta).
 	ws.monetary.clear();
 	ws.gov_bonds.clear();
+	ws.external_bonds.clear();
 	ws.gov_cash_open.clear();
 	ws.emission_today = 0.0;
 	if (data.has("monetary")) {
@@ -2057,6 +2064,22 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				const double value = double(row.second);
 				if (std::isfinite(value)) {
 					ws.gov_cash_open[row.first] = value;
+				}
+			}
+		}
+		// C6 (D-114): títulos do resgate sem BC em poder do exterior. v33 e
+		// anteriores chegam sem a chave: mapa vazio (ausência declarada).
+		const Variant external_variant =
+			block.get("external_bonds", Dictionary());
+		if (external_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& external = external_variant;
+			for (const auto& row : external.entries()) {
+				if (row.first.empty()) {
+					continue;
+				}
+				const double value = double(row.second);
+				if (std::isfinite(value) && value > 0.0) {
+					ws.external_bonds[row.first] = value;
 				}
 			}
 		}
@@ -2239,6 +2262,8 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				bank.loss_seeded = bool(row.get("loss_seeded", false));
 				bank.loss_ema = std::max(0.0,
 					double(row.get("loss_ema", 0.0)));
+				bank.loss_today = std::max(0.0,
+					double(row.get("loss_today", 0.0)));
 				bank.run_days = std::max(0, int(row.get("run_days", 0)));
 				bank.last_run_day = int(row.get("last_run_day", -1));
 				bank.run_withdrawn = std::max(0.0,
@@ -2247,8 +2272,6 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					double(row.get("run_cash", 0.0)));
 				bank.run_public = std::max(0.0,
 					double(row.get("run_public", 0.0)));
-				bank.run_foreign = std::max(0.0,
-					double(row.get("run_foreign", 0.0)));
 				bank.lolr_borrowed = std::max(0.0,
 					double(row.get("lolr_borrowed", 0.0)));
 				bank.lolr_interest = std::max(0.0,
@@ -2263,8 +2286,6 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					double(row.get("treasury_rescue", 0.0)));
 				bank.capital_flight = std::max(0.0,
 					double(row.get("capital_flight", 0.0)));
-				bank.recapitalized = std::max(0.0,
-					double(row.get("recapitalized", 0.0)));
 				bank.resolution_day = int(
 					row.get("resolution_day", -1));
 				bank.resolved = bool(row.get("resolved", false));
@@ -2626,14 +2647,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			BankCrisisPolicy& pol = ws.bank_crisis;
 			pol.capital_min = std::max(0.0,
 				double(params.get("capital_min", 0.0)));
-			pol.capital_healthy = std::max(0.0,
-				double(params.get("capital_healthy", 0.0)));
 			pol.capital_cut_floor = std::clamp(
 				double(params.get("capital_cut_floor", 0.0)), 0.0, 1.0);
 			pol.liquidity_min = std::max(0.0,
 				double(params.get("liquidity_min", 0.0)));
-			pol.liquidity_scale = std::max(0.0,
-				double(params.get("liquidity_scale", 0.0)));
 			pol.loss_scale = std::max(0.0,
 				double(params.get("loss_scale", 0.0)));
 			pol.loss_ema_days = std::max(0.0,
@@ -2732,6 +2749,16 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			event.lolr = double(row.get("lolr", 0.0));
 			event.emission = double(row.get("emission", 0.0));
 			ws.bank_crisis_events.push_back(event);
+		}
+		// O anel publicado tem tamanho fixo: um save adulterado (ou com mais
+		// de kEventRing eventos) não pode inchar o status. Fica o mais recente,
+		// como em `register_event`; `events_total` guarda o total.
+		if (static_cast<int>(ws.bank_crisis_events.size())
+				> bank_crisis::kEventRing) {
+			const auto first = ws.bank_crisis_events.end()
+				- bank_crisis::kEventRing;
+			ws.bank_crisis_events.erase(
+				ws.bank_crisis_events.begin(), first);
 		}
 		ws.bank_crisis_events_total = int(
 			block.get("events_total", 0));

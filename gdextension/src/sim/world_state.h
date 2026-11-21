@@ -385,6 +385,13 @@ struct WorldState {
 	// por moeda da C2a), a dívida pública por nação e o M0 criado no dia.
 	std::map<std::string, MonetaryState> monetary;
 	std::map<std::string, double> gov_bonds;
+	// C6 (D-114): títulos públicos emitidos no resgate de um banco SEM banco
+	// central (dolarizado/sem moeda própria, ou moeda sem estado monetário
+	// salvo). Não há BC para carregar o papel: ele fica em poder do SETOR
+	// EXTERIOR, pago pela posição externa (`foreign_cash`). O título é o claim
+	// do credor e entra em `Ledger.external_claims`, fechando a identidade da
+	// C1 (sem ele, `financial_sum = −valor`). Save v34.
+	std::map<std::string, double> external_bonds;
 	// C2b2 (D-106) — CÂMBIO: estado por moeda (paridade, banda, reservas,
 	// conversão do ouro), o anel de eventos do status e os parâmetros de regra
 	// (largura da banda, fatia de defesa, cobertura do padrão ouro; default de

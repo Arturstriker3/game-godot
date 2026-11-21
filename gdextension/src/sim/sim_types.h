@@ -1068,7 +1068,9 @@ namespace ogs {
 		double confidence = 1.0;
 		bool loss_seeded = false;    // 1a perda entra inteira na EMA
 		double loss_ema = 0.0;       // perda recente (EMA, valor absoluto)
-		double loss_today = 0.0;     // choque reconhecido hoje (medicao; nao serializado)
+		// Choque reconhecido HOJE (medicao). Vai ao save v34: sem ele, um load
+		// no meio do dia perdia a perda do dia e a continuação divergia.
+		double loss_today = 0.0;
 		// C6: a confianca mede DETERIORACAO contra a referencia do proprio
 		// banco (o estado que o depositante conhecia), nao um nivel absoluto:
 		// o banco da C4 nasce com patrimonio fino e sem reserva, e usar o
@@ -1081,7 +1083,6 @@ namespace ogs {
 		double run_withdrawn = 0.0;  // saques acumulados (ancora)
 		double run_cash = 0.0;       // parte paga em papel-moeda
 		double run_public = 0.0;     // parte migrada ao banco publico
-		double run_foreign = 0.0;    // parte remetida ao exterior
 		double lolr_borrowed = 0.0;  // redesconto acumulado (BC)
 		double lolr_interest = 0.0;  // juro de penalidade pago
 		int lolr_days = 0;
@@ -1089,7 +1090,6 @@ namespace ogs {
 		double bailin_cut = 0.0;     // deposito NAO segurado cortado
 		double treasury_rescue = 0.0;// Tesouro (caixa + divida emitida)
 		double capital_flight = 0.0; // remessa da matriz estrangeira (ancora)
-		double recapitalized = 0.0;  // capital novo pos-resolucao
 		int resolution_day = -1;
 		bool resolved = false;
 		std::string resolution = "none";  // bailin|insurance|treasury|takeover|liquidation
@@ -1141,10 +1141,11 @@ namespace ogs {
 	struct BankCrisisPolicy {
 		bool enabled = true;
 		double capital_min = 0.0;         // 0 = kCapitalMinDefault
-		double capital_healthy = 0.0;     // 0 = kCapitalHealthyDefault
 		double capital_cut_floor = 0.0;   // 0 = kCapitalCutFloorDefault
-		double liquidity_min = 0.0;       // 0 = kLiquidityMinDefault (0)
-		double liquidity_scale = 0.0;     // 0 = kLiquidityScaleDefault
+		// RESERVADO: nenhuma regra consome o minimo de liquidez hoje (o sinal
+		// de confianca usa a referencia do proprio banco, nao um piso). Fica
+		// no save/status como parametro declarado, sem prometer efeito.
+		double liquidity_min = 0.0;       // reservado (0 = kLiquidityMinDefault)
 		double loss_scale = 0.0;          // 0 = kLossScaleDefault
 		double loss_ema_days = 0.0;       // 0 = kLossEmaDaysDefault
 		double confidence_start = 0.0;    // 0 = kConfidenceStartDefault
@@ -1763,6 +1764,9 @@ struct Region {
 		// voltar com o mundo reverted).
 		std::map<std::string, MonetaryState> monetary;
 		std::map<std::string, double> gov_bonds;
+		// C6 (D-114): títulos do resgate sem BC em poder do exterior. Reverter
+		// um tick tem de desfazer o título junto com o caixa que o pagou.
+		std::map<std::string, double> external_bonds;
 		std::map<std::string, double> gov_cash_open;
 		// C2b2 (D-106): reservas/paridade/eventos. Reverter um tick tem de
 		// desfazer a intervenção e a desvalorização do dia junto com o caixa.
