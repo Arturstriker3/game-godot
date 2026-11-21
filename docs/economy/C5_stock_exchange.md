@@ -81,9 +81,12 @@ valor de mercado = price × shares
   participação da C4), grupos não listados da mesma nação **15 %**, exterior
   **10 %**. Sem banco estrangeiro na nação a fatia do exterior também sai do
   dado: nesse caso ela vai para as famílias (a soma continua 100 %).
-- **Preço inicial:** `book_equity / shares` (patrimônio medido do grupo, não um
-  número inventado), com `shares` fixo por papel (1 000 000) só para dar
-  granularidade. No dia 0 o market cap é igual ao patrimônio do grupo.
+- **Preço inicial:** o **próprio fundamental** sobre o lucro medido do dia de
+  formação (EMA semeada com o lucro do dia, confiança 1,0) — o papel nasce
+  avaliado pelo lucro, não por um múltiplo de balanço. O patrimônio medido do
+  grupo (`book_equity`) fica como referência do q. `shares` fixo por papel
+  (1 000 000) só para dar granularidade. No dia 0 o market cap não é
+  arbitrário: é `payout × E[lucro] × 365 / (taxa + prêmio)`.
 - **Livro do dia (`balance::Ledger`)** ganha `stock_assets` (carteiras) e
   `stock_claims` (emissores). Os dois são **iguais por construção** e entram com
   sinais opostos em `financial_sum()`, portanto a identidade da C1 **não muda**
@@ -227,9 +230,10 @@ direto. `book_equity` é o patrimônio medido no último fechamento (base do q).
 
 **Migração v32 → v33:** o estado antigo não tem bolsa. A migração **cria** as
 bolsas das nações com grupos listados (§3), com preço inicial igual ao
-patrimônio medido do grupo por ação e a carteira pelo default declarado do §4.
-Nada de preço ou carteira é inventado: preço = book equity medido, carteira =
-rateio declarado. Grupo não listado fica fora (nada é criado). Round-trip v33 é
+fundamental medido (lucro do dia de formação, confiança 1,0) e a carteira pelo
+default declarado do §4. Nada de preço ou carteira é inventado: preço =
+`payout × E[lucro] × 365 / (taxa + prêmio) / ações` e carteira = rateio
+declarado. Grupo não listado fica fora (nada é criado). Round-trip v33 é
 bit-exato e a continuação após load é idêntica.
 
 ## 10. Invariantes e critérios de aceite
@@ -266,3 +270,69 @@ Aceite da fase:
   `economy_integration`, `services`, `storage_g2`, `agriculture_seasonal`,
   `c1_balance` (versão de save atualizada onde era a versão corrente).
 - `tools/c1_world_ai_365.gd` — aceite de 365 d com IA (`threads=1`).
+
+## 12. Medição (365 d com IA, `threads=1`, DLL debug, um Godot por vez)
+
+`docs/economy/perf/c5_gate_default.json`, 365 d, **240,8 s** (base D-111: 238-247 s):
+
+| indicador | C5 (default) | base D-111 |
+|---|---|---|
+| falências | **3** | 2 |
+| portão de comida (30 d) | **93/179** (mediana 0,9725) | 98/179 (0,9693) |
+| violações de invariante | **0** | 0 |
+| travados | 0 | 0 |
+| hash de trajetória | `bb9b5cca…` | `66534505…` |
+| dinheiro | 6 559 257 558,69 | 6 523 551 982,90 |
+| drift máximo diário | 0,547 % (estoque de dinheiro bancário) | 0,377 % |
+| calotes (crédito) | 1 (baixa 7 649,01) | 0 |
+
+Aceite da fase (D-111): falências ≤ 3, portão ≤ 98/179 e violações 0 — **cumprido**
+(3 / 93 / 0). A C5 **melhora o portão** (98 → 93) e adiciona **uma falência**
+(2 → 3), no teto do critério; não há A/B por canal porque o limite não estourou.
+
+Bolsa no dia 365 (`stock` do JSON):
+
+| indicador | valor |
+|---|---|
+| praças / papéis listados | 179 / **260** |
+| índice global (base 100 na formação) | **113,1** |
+| variação no ano por praça p10 / p50 / p90 | **−78,2 % / +3,7 % / +304,7 %** |
+| confiança por nação p10 / p50 / p90 | **0,952 / 1,034 / 1,096** |
+| market cap / patrimônio medido | 106,9 bi / 26,4 bi |
+| q de Tobin p50 | **15,39** |
+| dividendos pagos no ano | **15 154 506,91** |
+| remessa do exterior (âncora / origem) | 916 914,33 / 1 238 129,26 |
+| investimento medido (capex acumulado dos grupos) | **19 058 661,48** |
+| identidade carteiras − market cap | **0,0** |
+
+**Artefatos declarados (não escondidos):**
+
+1. **Preço/lucro** é limitado pela própria fórmula: `P/E = payout / (taxa +
+   prêmio)` ∈ **1,5 … 12,5** (0,5/0,34 a 0,5/0,04) — plausível por construção.
+2. **q de Tobin alto (p50 15,4)**: o modelo mede uma rentabilidade sobre o
+   capital registrado muito alta (o livro do grupo é conservador), então o
+   preço fundamental fica muito acima do patrimônio. O canal de investimento é
+   **limitado** (0,8…1,2) justamente para o q não virar multiplicador; o valor
+   bruto fica publicado para a calibração.
+3. **Dispersão da variação anual** (p10 −78 %, p90 +305 %): a EMA do lucro é
+   semeada no dia de formação com **um** dia de lucro medido; empresas com um
+   dia atípico nascem muito caras ou muito baratas e o preço persegue isso sem
+   teto. É dívida de calibração (semente com mais de um dia de histórico e/ou
+   prêmio de risco por volatilidade), não um número inventado. A C6 herda essa
+   dívida junto com crash/corrida.
+4. **Falência a mais**: a terceira falência entra pelo canal de investimento
+   (score × q saturado em 1,2 em quase todos os papéis), não pelo preço — o
+   preço não move dinheiro. Fica no teto (3 ≤ 3) e registrada para o QA.
+
+**Defeito latente corrigido nesta fase:** o crédito de dividendo ao domicílio
+(`fiscal.cpp`) e o débito de capital da IA (`actions.cpp`) podiam arredondar
+acima do caixa do grupo e deixar `cash = −1,16e-10`; o load normaliza em 0 e o
+round-trip deixava de ser bit-exato (`c2_central_bank_test`). Os dois débitos
+passam a ser limitados a 0 — nada de caixa negativo.
+
+**Testes:** `c5_stock_exchange_test` (C1-C7) e 14 vizinhos verdes pelo runner
+(`c1_balance`, `c2_central_bank`, `c2b1_monetary`, `c2b2_fx_gold`,
+`c2c_real_fx`, `c3_bank_credit`, `c3_group_balance`, `c4_banks`,
+`currency_trade`, `economy_integration`, `services`, `storage_g2`,
+`agriculture_seasonal`), com a versão de save corrente (33) nos testes que a
+exigem.

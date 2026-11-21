@@ -470,17 +470,24 @@ void seed(WorldState& ws) {
 		const double equity = index < sheets.size()
 			? book_equity(sheets[index]) : 0.0;
 		ticker.book_equity = std::max(0.0, equity);
-		ticker.price = ticker.shares > 0.0
-			? ticker.book_equity / ticker.shares : 0.0;
 		ticker.profit_ema = index < sheets.size()
 			? std::max(0.0, sheets[index].daily_profit) : 0.0;
+		// Preço de formação = a PRÓPRIA fórmula (fundamental × confiança, com a
+		// confiança inicial 1,0) sobre o lucro MEDIDO do dia. O patrimônio
+		// contábil fica como `book_equity` (referência do q), não como preço:
+		// o papel nasce avaliado pelo lucro, não por um múltiplo de balanço.
+		const double rate = monetary::rate_for_nation(ws, ticker.nation);
+		const double discount = std::max(kPriceFloorRate,
+			rate + pol.risk_premium);
+		const double dividend = pol.payout_ratio * ticker.profit_ema * 365.0;
+		ticker.price = ticker.shares > 0.0
+			? dividend / discount / ticker.shares : 0.0;
 		ticker.profit_at_last_dividend = group.profit_total;
 		ticker.listed = true;
 		ticker.reason = "listed";
 		ticker.listed_day = ws.day;
 		ticker.holdings = default_holdings(ws, group, ticker.shares);
-		StockExchange& exchange = ensure_exchange(ws, ticker.nation);
-		form_index(ws, exchange);
+		ensure_exchange(ws, ticker.nation);
 		ws.stock_tickers[ticker.group_id] = ticker;
 	}
 	for (auto& row : ws.stock_exchanges) {

@@ -274,7 +274,8 @@ func _test_migration_v32() -> void:
 	var bad_holdings := 0
 	for row: Dictionary in status.get("tickers", []):
 		var shares := float(row.get("shares", 0.0))
-		var expected := float(row.get("book_equity", 0.0)) / shares \
+		var expected := (float(row.get("fundamental", 0.0))
+			* _confidence_of(status, String(row.get("exchange", "")))) \
 			if shares > 0.0 else 0.0
 		if absf(float(row.get("price", 0.0)) - expected) > 1e-9:
 			bad_price += 1
