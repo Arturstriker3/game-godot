@@ -347,8 +347,8 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
   - **Solvência:** resgate pelo Tesouro (bail-out, vira dívida pública), bail-in (credores/acionistas
     perdem), fusão forçada com banco saudável, estatização, ou liquidação.
   - **Banco público:** capitalizado pelo Tesouro (custo fiscal; pode ser usado para crédito dirigido e
-    acumular perda). **Banco estrangeiro:** matriz pode socorrer ou abandonar — canal de contágio
-    externo.
+    acumular perda). **Banco estrangeiro:** a matriz **só remete** (fuga de capital na corrida) — socorro
+    pela matriz não é modelado; o abandono é a remessa antes do saque.
   - Em zona de moeda única o BC é comum: socorro depende do bloco, não só do país.
   - Aceite: falência de banco gera perda para alguém (depositante acima do teto, credor, acionista ou
     Tesouro) — nunca dinheiro que some; invariante da C1 fecha em toda crise.

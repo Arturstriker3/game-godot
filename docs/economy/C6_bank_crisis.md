@@ -55,7 +55,8 @@ inadimplência   = atrasados / (empréstimos + atrasados)
 
 Os indicadores são **publicados** todo dia. Só o índice de capital tem um
 **mínimo regulatório declarado** (`capital.min_ratio`), usado no aperto de
-crédito (§4); o mínimo de liquidez nasce **0** (ver §9).
+crédito (§4); o mínimo de liquidez está **reservado** (0, nenhuma regra o
+consome — ver §9).
 
 **Confiança.** A referência de cada banco é o **melhor estado já conhecido**
 (índice de capital e liquidez no primeiro fechamento com posição, seguido para
@@ -137,7 +138,7 @@ patrimônio retido é fino — medido em §11.
 | 2 | **Depósito não segurado** | depositantes acima do teto (`1 - insured_share`) | corte cobrado do caixa dos tomadores proporcional à dívida, limitado ao caixa de cada um; o depósito é destruído junto |
 | 3 | **Seguro de depósito** | fundo da nação (prêmio dos bancos) | fundo → caixa do banco; nunca cria dinheiro |
 | 4 | **Tesouro (caixa)** | orçamento público | prefeitura → caixa do banco (transferência) |
-| 5 | **Tesouro (dívida)** | dívida pública carregada pelo BC da moeda (ou pelo exterior, sem BC) | caixa do banco + `gov_bonds` + emissão registrada (BC) |
+| 5 | **Tesouro (dívida)** | dívida pública carregada pelo BC da moeda (ou pelo exterior, sem BC; o título entra em `external_bonds` e no `Ledger.external_claims`) | caixa do banco + `gov_bonds` + emissão registrada (BC) ou posição externa (`foreign_cash`) |
 | 6 | **Incorporação** | banco público | absorve saldos e o residual como perda do público (equity cai); o papel quebrado vira casca (`absorbed_into`, share 0) |
 | 7 | **Liquidação** | depositantes (sem Tesouro/BC/banco público) | residual declarado no patrimônio negativo; nenhuma soma quebra |
 
@@ -155,7 +156,9 @@ cobre o ruído proporcional ao tamanho da carteira. Sem ela, o mundo base mediu
 qualquer efeito econômico. As duas tolerâncias são default de jogo publicado em
 `policy`; o banco abaixo dela fica calmo e monitorado, sem entrar na hierarquia.
 
-**Estrangeiro:** a matriz pode remeter (fuga de capital, §3) e/ou socorrer; o
+**Estrangeiro:** a matriz **só remete** — a corrida do papel estrangeiro leva
+até `capital_flight_share` do saque para a posição do exterior (§3). O modelo
+**não** tem socorro da matriz: a decisão de injetar capital não é simulada e o
 abandono é representado pela remessa antes do saque. Diplomacia (sanções,
 congelamento, reciprocidade) fica fora.
 
@@ -175,7 +178,7 @@ O **fundo de seguro** é caixa do mundo: entra em `SimCore::money_total()`, no
 `Ledger.cash_total()`/`financial_sum()` (`insurance_fund`) e na atribuição por
 moeda da C2a. O invariante diário (`financial_sum ≈ 0`, `cash_residual ≈ 0`,
 M0 atribuível) vale em todas as fases da crise — ver `tools/c6_bank_crisis_test.gd`
-(cenário f).
+(cenários f e g, incluindo o resgate sem BC com o título em poder do exterior).
 
 ## 7. Save v34 e migração v33 → v34
 
@@ -186,11 +189,12 @@ M0 atribuível) vale em todas as fases da crise — ver `tools/c6_bank_crisis_te
     "banks": {
       "BRA/private": {
         "confidence": 1.0, "loss_seeded": false, "loss_ema": 0.0,
+        "loss_today": 0.0,
         "run_days": 0, "last_run_day": -1, "run_withdrawn": 0.0,
-        "run_cash": 0.0, "run_public": 0.0, "run_foreign": 0.0,
+        "run_cash": 0.0, "run_public": 0.0,
         "lolr_borrowed": 0.0, "lolr_interest": 0.0, "lolr_days": 0,
         "insured_payout": 0.0, "bailin_cut": 0.0, "treasury_rescue": 0.0,
-        "capital_flight": 0.0, "recapitalized": 0.0,
+        "capital_flight": 0.0,
         "resolution_day": -1, "resolved": false, "resolution": "none",
         "absorbed_into": "", "baseline_seeded": false,
         "open_capital_ratio": 0.0, "open_liquidity_ratio": 0.0,
@@ -198,6 +202,10 @@ M0 atribuível) vale em todas as fases da crise — ver `tools/c6_bank_crisis_te
         "last_npl_ratio": 0.0
       }
     }
+  },
+  "monetary": {
+    "gov_bonds": { "BRA": 0.0 },
+    "external_bonds": { "BRA": 0.0 }
   },
   "bank_crisis": {
     "enabled": true,
@@ -221,16 +229,20 @@ M0 atribuível) vale em todas as fases da crise — ver `tools/c6_bank_crisis_te
 **Migração v33 → v34:** aditiva. Sem o bloco `bank_crisis` e sem as chaves por
 banco, `bank_crisis::after_load` inicia **todos os bancos calmos** (confiança
 1,0, sem corrida, sem resolução, referência ainda não semeada), fundo 0 e
-nenhum evento — nada é inventado para trás. Round-trip v34 é bit-exato e a
-continuação de 5 dias é idêntica (cenário e).
+nenhum evento — nada é inventado para trás. `loss_today` viaja no bloco de cada
+banco (continuação idêntica no meio do dia) e `monetary.external_bonds` guarda
+os títulos do resgate sem BC em poder do exterior; ausentes em v33 = 0/vazio.
+O anel de eventos lido do save é limitado a `kEventRing` (64), como o publicado
+em `register_event`. Round-trip v34 é bit-exato e a continuação de 5 dias é
+idêntica (cenário e).
 
 ## 8. Status A4 — `get_bank_status()`
 
 Acrescenta ao contrato da C4:
 
 ```
-policy:      crisis_enabled, capital_min_ratio, capital_healthy_ratio,
-             liquidity_min_ratio, liquidity_scale, loss_scale, loss_ema_days,
+policy:      crisis_enabled, capital_min_ratio, liquidity_min_ratio (reservado:
+             nenhuma regra o consome), loss_scale, loss_ema_days,
              confidence_smoothing, run_threshold, run_share,
              flight_to_quality, lolr_spread, lolr_haircut, lolr_max_assets,
              insured_share, premium_daily, fund_target_ratio,
@@ -251,8 +263,13 @@ events[]:    anel de 64 eventos (dia, banco, nação, tipo, causa, gap e custo
 ```
 
 `confidence_min/max` consideram só bancos com posição (banco vazio não tem
-sinal). `runs` é o número de bancos em corrida **hoje**; `run_days` é o
-acumulado de dias-bancos.
+sinal). `runs` é o número de bancos em corrida **hoje**; `run_days` é a soma dos
+**dias em corrida correntes** (zera quando o banco sai da corrida — não é um
+acumulado histórico). `capital_flight` é a remessa da matriz estrangeira; não
+há campo `run_foreign` separado (o mesmo valor não aparece duas vezes no
+contrato). `resolutions` conta o dia da resolução de **todo** banco, inclusive
+a casca absorvida pelo banco público (ela ficou sem saldo, mas a resolução
+aconteceu); `resolved_markets` considera só quem ainda tem linha com posição.
 
 ## 9. Parâmetros (`bank_crisis.json`)
 
@@ -266,9 +283,7 @@ confere JSON × núcleo campo a campo.
 | chave | valor | razão declarada |
 |---|---|---|
 | `capital.min_ratio` | 0,001 (0,1 %) | piso do **modelo**: o banco da C4 vive ~0,4 % de patrimônio/ativos; 0,1 % deixa margem para o crédito sem choque |
-| `capital.confidence_healthy_ratio` | 0,08 | escala do sinal de solvência da confiança (não é regra) |
-| `liquidity.min_ratio` | 0,0 | o banco da C4 **não guarda reserva**; exigir reserva hoje acionaria corrida sem choque |
-| `liquidity.confidence_scale` | 0,10 | escala do sinal de liquidez quando há referência |
+| `liquidity.min_ratio` | 0,0 | **reservado**: nenhuma regra consome o mínimo de liquidez (o sinal de confiança usa a referência do próprio banco); declarado para não prometer efeito inexistente |
 | `losses.confidence_scale` | 0,02 | perda de 2 % dos ativos zera o sinal de perdas |
 | `losses.ema_days` | 10 | memória da perda recente |
 | `confidence.smoothing` | 0,12/dia | sem saltos diários |
@@ -301,6 +316,7 @@ O runner descobre o teste sozinho (`*_test.gd`). Cenários forçados:
 | d | dolarizado | sem redesconto (`bc_borrowing = 0`), a corrida para no caixa |
 | e | save v34 | round-trip bit-exato e continuação de 5 dias idêntica |
 | f | conservação | identidade da C1 e `invariant_violations = 0` em todos os dias de todos os cenários |
+| g | resgate sem BC | dolarizado + Tesouro sem caixa: o rombo vira dívida em poder do exterior (`external_bonds`); custos fecham o rombo, a identidade passa e o mundo avança (o tick não é revertido) |
 
 O fixture é o cenário AGRIA/PORTUS (1 grupo); o teste declara 100 % da
 participação no papel-alvo no save para a carteira ir para o banco certo e usa
@@ -324,6 +340,23 @@ uma rodada). Default do jogo (crédito ligado, juro da safra ligado).
 | dinheiro (drift) | 0,003812 (dinheiro bancário) | 0,005436 (dinheiro bancário) | sem vazamento |
 | dívida dos grupos / contratos | 24.551.743,26 / 2.515 | 32.599.940,73 / 2.529 | — |
 | hash da trajetória | `66534505` | `9fcd0caa` | novo formato (D-105 + C6) |
+
+Re-rodado após as correções da QA (t16): mesmas falências, portão, violações,
+fundo e hash — o resgate sem BC não toca o mundo base (0 resoluções). O JSON de
+evidência foi regravado (só o `wall_s` muda).
+
+**Golden A0 (60 d, IA + urbano, semente 0) — antes/depois da C6:** a fase muda
+o mundo base pelo aperto de crédito. `money_total` 6.527.733.844,71 →
+**6.527.733.251,16** (−593,55; −0,000009 %) e negócios de serviço 39.959 →
+**39.960**; 0 falências nos dois. Rodado 2 vezes com save/status shas
+idênticos; a equivalência CLI × Godot A0 (10 d) saiu byte-idêntica (0
+diferenças com tolerância 0). Os goldens S0 (`real_60_ai`, `real_60_noai`,
+`demo_365_noai`) só mudam o `save_sha256` (bloco v34: `loss_today`,
+`external_bonds` e sem os campos mortos); o `status_sha256` do S0 é o mesmo.
+Goldens v34 pós-QA: A0 save `5fadba28…` / status `f6ec0427…`; `real_60_ai`
+`edc686ee…` / `1c2a85fa…`; `real_60_noai` `6d657f25…` / `8ae9f20b…`;
+`demo_365_noai` `dc67ad5c…` / `10583589…`. CLI × Godot A0 (10 d): sha256
+`5D178D9D…EEB44249`, 82.744.869 B, **0 bytes diferentes**.
 
 Leitura: **o mundo base não piorou** — as duas falências são as mesmas, o
 portão até melhora em 1 nação, o invariante fecha em todos os dias e não há
