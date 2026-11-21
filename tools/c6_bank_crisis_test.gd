@@ -79,6 +79,7 @@ func _test_parameters_match_data() -> void:
 	var insurance: Dictionary = data.get("insurance", {})
 	var resolution: Dictionary = data.get("resolution", {})
 	var pairs := [
+		["enabled", data.get("enabled")],
 		["capital_min", capital.get("min_ratio")],
 		["liquidity_min", liquidity.get("min_ratio")],
 		["loss_scale", losses.get("confidence_scale")],
@@ -344,6 +345,7 @@ func _test_rescue_external_bond() -> void:
 	var treasury_before := _treasury_cash(sim)
 	_check("G Tesouro sem caixa antes do resgate",
 		treasury_before <= EPS, "tesouro=%.6f" % treasury_before)
+	var debt_before := _government_debt(sim)
 	# Perda de 60 %: o rombo passa do depósito NÃO segurado e do fundo, e o
 	# Tesouro (sem caixa e sem BC) tem de emitir dívida carregada pelo exterior.
 	var shock: Dictionary = sim.bank_shock(PRIVATE, 0.0, 0.60)
@@ -372,6 +374,15 @@ func _test_rescue_external_bond() -> void:
 	_check("G Tesouro sem caixa socorreu por dívida emitida",
 		float(event.get("cost_treasury", 0.0)) > 0.0,
 		"custo_tesouro=%.6f" % float(event.get("cost_treasury", 0.0)))
+	# O caixa do Tesouro não pagou: a dívida pública (gov_bonds) cresceu no
+	# resgate. Sem BC, esse título só pode ficar com o exterior.
+	var issued := _government_debt(sim) - debt_before
+	_check("G dívida pública emitida no resgate", issued > 0.0,
+		"divida_emitida=%.6f" % issued)
+	_check("G dívida emitida cabe no custo do Tesouro",
+		issued <= float(event.get("cost_treasury", 0.0)) + 1e-6,
+		"emitida=%.6f custo=%.6f" % [issued,
+			float(event.get("cost_treasury", 0.0))])
 	_check("G nenhuma emissão de M0 no ramo sem BC",
 		absf(float(event.get("emission", 0.0))) <= EPS,
 		"emissao=%.6f" % float(event.get("emission", 0.0)))
@@ -587,6 +598,12 @@ func _treasury_cash(sim) -> float:
 		if String(city.get("nation", "")) == "DEMO":
 			total += float(city.get("government_budget", 0.0))
 	return total
+
+
+## Dívida pública emitida (soma de `gov_bonds` no Ledger; não é caixa).
+func _government_debt(sim) -> float:
+	return float(sim.get_balance_status().get("world", {})
+		.get("government", {}).get("debt", 0.0))
 
 
 ## Zera o orçamento público (o "Tesouro" do modelo) de TODAS as cidades da
