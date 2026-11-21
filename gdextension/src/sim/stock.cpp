@@ -397,14 +397,16 @@ bool eligible(const Group& group, std::string* reason) {
 }
 
 bool material(const WorldState& ws, const StockTicker& ticker,
-		const Policy& pol) {
-	// D-113: preço de formação (fundamental medido) >= kMinListedPrice. É o
-	// mesmo número que o status publica e o piso da base da variação.
+		const Policy& pol, double confidence) {
+	// D-113: preço de ABERTURA (fundamental medido × confiança) >= piso. É o
+	// mesmo número que a formação/promoção publica e o piso da base da variação.
 	return std::isfinite(ticker.profit_ema)
-		&& fundamental_price(ws, ticker, pol) >= kMinListedPrice;
+		&& fundamental_price(ws, ticker, pol) * std::max(0.0, confidence)
+			>= kMinListedPrice;
 }
 
-StockExchange& ensure_exchange(WorldState& ws, const std::string& nation) {	StockExchange& exchange = ws.stock_exchanges[nation];
+StockExchange& ensure_exchange(WorldState& ws, const std::string& nation) {
+	StockExchange& exchange = ws.stock_exchanges[nation];
 	if (exchange.nation.empty()) {
 		exchange.nation = nation;
 		// Nome fictício/genérico: nenhuma bolsa real (sigla ou marca) é usada.
@@ -705,7 +707,10 @@ void phase(WorldState& ws) {
 			}
 			// D-113: porte mínimo medido. Abaixo do piso o papel sai da lista
 			// com motivo publicado (mesma regra da retirada: preço vai a zero).
-			if (!material(ws, ticker, pol)) {
+			// A confiança da praça entra no teste: o preço de ABERTURA é
+			// fundamental × confiança, e é ele que a variação usa como base.
+			const StockExchange& exchange = ensure_exchange(ws, ticker.nation);
+			if (!material(ws, ticker, pol, exchange.confidence)) {
 				if (ticker.listed) {
 					ticker.listed = false;
 					ticker.reason = "below_min_price";
@@ -722,7 +727,6 @@ void phase(WorldState& ws) {
 				ticker.delisted_day = -1;
 				fresh = true;
 			}
-			const StockExchange& exchange = ensure_exchange(ws, ticker.nation);
 			// Aquecimento (D-112): o preço de referência NÃO reage antes da
 			// média medida estar formada; o índice também não é publicado.
 			if (ws.day < kIndexWarmupDays) {

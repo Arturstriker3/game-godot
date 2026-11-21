@@ -157,6 +157,15 @@ func _test_defaults_and_data() -> void:
 	_check(_close(float(policy.get("smoothing", -1.0)),
 		float(defaults.get("rate_smoothing", -2.0)), 1e-12),
 		"defaults: suavização do núcleo != JSON")
+	# D-113: as duas regras novas também são paridade núcleo x JSON.
+	_check(int(policy.get("gap_baseline_day", -1))
+			== int(defaults.get("gap_baseline_day", -2)),
+		"defaults: gap_baseline_day do núcleo != JSON")
+	_check(int(policy.get("annualize_min_span_days", -1))
+			== int(defaults.get("annualize_min_span_days", -2)),
+		"defaults: annualize_min_span_days do núcleo != JSON")
+	_check(not bool(policy.get("has_gap", true)),
+		"defaults: no dia 0 o hiato é AUSENTE (has_gap tem de ser falso)")
 	_check(_close(float(policy.get("rate", -1.0)),
 		float(defaults.get("neutral_rate", -2.0)), 1e-12),
 		"defaults: dia 0 sem leitura deveria estar na taxa neutra")
@@ -258,6 +267,17 @@ func _test_independent() -> void:
 			seen_no_inflation = true
 			_check(_close(float(policy.get("inflation_used", -1.0)), 0.0, 1e-12),
 				"taylor: sem inflação o valor usado tem de ser 0")
+		# D-113: o hiato é ausente antes do baseline (dia 30) e presente depois.
+		var has_gap := bool(policy.get("has_gap", true))
+		var baseline_day := int(policy.get("gap_baseline_day", 30))
+		if day + 1 < baseline_day:
+			_check(not has_gap, "taylor: hiato deveria ser AUSENTE no dia %d"
+				% (day + 1))
+			_check(_close(float(policy.get("gap", -9.0)), 0.0, 1e-12),
+				"taylor: hiato ausente tem de publicar 0 no dia %d" % (day + 1))
+		elif day + 1 == baseline_day:
+			_check(has_gap, "taylor: hiato deveria existir no dia %d"
+				% (day + 1))
 		if absf(rate - rate_prev) > 1e-12:
 			moved += 1
 		rate_prev = rate

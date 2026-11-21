@@ -88,6 +88,11 @@ struct Reading {
 
 Reading reading(const WorldState& ws, const std::string& code,
 	const std::map<std::string, central_bank::CpiRow>& cpi);
+// D-113: existe leitura de hiato para esta moeda? Falso antes do baseline do
+// mercado de trabalho (`kGapBaselineDay`) ou quando nenhuma cidade da moeda tem
+// força de trabalho. O status publica `has_gap` para separar "hiato ausente" de
+// "hiato zero" — a regra não completa o número.
+bool has_gap_reading(const WorldState& ws, const std::string& code);
 
 // Regra tipo Taylor (fração anual). Sem inflação o termo não entra.
 double taylor_target(const Reading& in);

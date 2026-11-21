@@ -74,16 +74,19 @@ com **+4.163.420 %** (lucro-base 0,51/dia → 18 100/dia).
 Critério declarado (default de jogo, `sim/stock.h: kMinListedPrice`):
 
 ```
-papel só é listado se o fundamental medido (lucro EMA × múltiplo / ações) >= 1 unidade monetária por ação
+papel só é listado se o preço de ABERTURA (fundamental medido × confiança da praça) >= 1 unidade monetária por ação
 ```
 
 Com as 1 000 000 ações declaradas, isso equivale a um **market cap mínimo de
 1 000 000** e é exatamente o **piso da base** da variação publicada: a bolsa
-nunca publica variação percentual sobre preço de formação < 1. Papel abaixo do
+nunca publica variação percentual sobre preço de abertura < 1. Papel abaixo do
 piso nasce com `listed = false`, `reason = below_min_price` e preço 0; o
-fechamento semanal o promove quando o fundamental medido cruzar o piso (IPO
-declarado, preço = fundamental). Papel listado que cai abaixo do piso sai da
-lista pelo mesmo caminho (preço → 0, `delisted_day`).
+fechamento semanal o promove quando o preço de abertura cruzar o piso (IPO
+declarado, preço = fundamental × confiança). Papel listado que cai abaixo do piso
+sai da lista pelo mesmo caminho (preço → 0, `delisted_day`). Um papel **já
+listado** pode andar abaixo de 1 pelo passo semanal convergente; se isso
+acontecer, o harness conta em `paper_below_base` em vez de esconder (0 na
+medição da D-113).
 
 Isto **não** esconde variação real de grupo grande: a cauda restante é medida
 (lucro EMA e confiança publicados por papel no status e no A/B, §12).
@@ -445,28 +448,35 @@ papéis) no JSON para a C6.
 | indicador | antes (D-112) | **depois (D-113)** |
 |---|---|---|
 | papéis listados / praças | 260 / 179 | **249** / 179 |
-| variação por PAPEL p10 / p50 / p90 | −13,5 % / +41,6 % / +167,0 % | **−36,2 % / −3,4 % / +53,2 %** |
-| variação por praça p10 / p50 / p90 | −15,4 % / +26,5 % / +106,9 % | **−37,0 % / −9,8 % / +47,7 %** |
-| papel mais extremo | +4 163 420 % (QAT) | **+1 809 % (BHR)** |
+| variação por PAPEL p10 / p50 / p90 | −13,5 % / +41,6 % / +167,0 % | **−35,7 % / −3,5 % / +53,1 %** |
+| variação por praça p10 / p50 / p90 | −15,4 % / +26,5 % / +106,9 % | **−36,0 % / −10,5 % / +47,4 %** |
+| papel mais extremo | +4 163 420 % (QAT) | **+1 519 % (SDN)** |
 | preço de formação p5 / p10 / p50 | 0,73 / 2,96 / 68,4 | **1,14 / 4,87 / 106,2** |
 | papéis abaixo do piso de base | 4 | **0** |
-| market cap / q p50 | 82,4 bi / 13,32 | **88,8 bi / 15,97** |
-| dividendos / capex | 15 154 506,91 / 19 058 661,48 | 15 161 937,51 / 18 853 943,00 |
+| market cap / q p50 | 82,4 bi / 13,32 | **89,2 bi / 15,85** |
+| dividendos / capex | 15 154 506,91 / 19 058 661,48 | 15 181 805,09 / 18 901 658,58 |
 | identidade carteiras − market cap | 0,0 | **0,0** |
-| portão de comida / falências / violações | 93/179 · 3 · 0 | **96/179 · 2 · 0** |
+| portão de comida / falências / violações | 93/179 · 3 · 0 | **94/179 · 2 · 0** |
 
 A variação mediana por papel deixa de ser **+41,6 %** (que era, em boa parte, a
 normalização da taxa básica do 1º ano re-avaliando o mercado — §12.1) e passa a
 **−3,4 %**: com a taxa no neutro desde o começo (D-113, §3 do doc da C2b1), o
-preço do ano mede **lucro**, não re-rating. Os 5 extremos de agora:
+preço do ano mede **lucro**, não re-rating. Medição versionada:
+`docs/economy/perf/cal1_d113_gate_default.json` (depois) e
+`cal1_d113_gate_before.json` (antes); `paper_below_base` = **0**, ou seja, nenhum
+papel listado publica variação sobre base abaixo do piso de 1,0. Os 5 extremos
+de agora:
 
 | papel | praça | variação (365 d) | causa medida |
 |---|---|---|---|
-| `G-BHR-food-22` | BHR | +1 809 % | lucro de referência +1 735 % (7,85 → 1 440/dia) |
-| `G-SDN-food-207` | SDN | +1 538 % | lucro +1 418 % (8 770 → 133 000/dia) |
-| `G-CAF-food-38` | CAF | +574 % | lucro +552 % |
-| `G-GNQ-food-96` | GNQ | +450 % | lucro +408 % |
-| `G-TCD-food-224` | TCD | +416 % | lucro +372 % |
+| `G-SDN-food-207` | SDN | +1 519 % | lucro de referência +1 400 % (8 771 → 131 609/dia) |
+| `G-BHR-food-22` | BHR | +1 454 % | lucro +1 448 % (785 → 12 159/dia) |
+| `G-CAF-food-38` | CAF | +576 % | lucro +548 % (2 853 → 18 484/dia) |
+| `G-GNQ-food-96` | GNQ | +449 % | lucro +407 % (661 → 3 350/dia) |
+| `G-TCD-food-224` | TCD | +420 % | lucro +378 % (8 848 → 42 331/dia) |
+
+Todos partem de preço de formação **≥ 1,9 XGS/ação** (nenhum é papel de base
+zero) e a variação é o lucro medido do grupo — a cauda agora é econômica.
 
 Todos partem de preço de formação **≥ 1,9 XGS/ação** (nenhum é papel de base
 zero) e a variação é o lucro medido do grupo — a cauda agora é econômica.

@@ -119,10 +119,13 @@ Policy policy(const WorldState& ws);
 // --- Elegibilidade (§3): grupo não estatal, com origem e receita medida.
 bool eligible(const Group& group, std::string* reason);
 // D-113: porte mínimo de listagem — o papel tem de abrir com preço de formação
-// >= `kMinListedPrice`. Usa o fundamental medido (lucro EMA × múltiplo), sem a
-// confiança da praça, para não acoplar listagem a expectativa.
+// >= `kMinListedPrice`. A régua é o preço de ABERTURA (fundamental medido ×
+// confiança da praça, que é o valor realmente publicado na formação/promoção),
+// não o fundamental sozinho: com confiança 0,65 um papel de fundamental 1,2
+// abriria a 0,84 e furaria o piso declarado. Sem a confiança informada o teste
+// usa 1,0 (criação, antes de a praça existir).
 bool material(const WorldState& ws, const StockTicker& ticker,
-	const Policy& pol);
+	const Policy& pol, double confidence = 1.0);
 
 // --- Garantia das linhas (idempotente): cria bolsa da nação e o papel do
 // grupo. `seed` usa o patrimônio MEDIDO do grupo por ação (nunca preço

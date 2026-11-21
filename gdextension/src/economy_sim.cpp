@@ -9200,6 +9200,8 @@ Dictionary EconomySim::get_central_bank_status() const {
 				? state->second.unfunded : 0.0;
 			active["gap"] = state != ws_.monetary.end()
 				? state->second.gap : 0.0;
+			// D-113: separa "hiato ausente" de "hiato zero".
+			active["has_gap"] = ogs::monetary::has_gap_reading(ws_, bank.code);
 			active["has_inflation"] = state != ws_.monetary.end()
 				&& state->second.has_inflation;
 			active["inflation_used"] = state != ws_.monetary.end()

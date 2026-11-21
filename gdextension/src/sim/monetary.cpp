@@ -156,8 +156,28 @@ Reading reading(const WorldState& ws, const std::string& code,
 	return out;
 }
 
-double taylor_target(const Reading& in) {
-	double target = kNeutralRate;
+bool has_gap_reading(const WorldState& ws, const std::string& code) {
+	if (ws.day < kGapBaselineDay) {
+		return false;
+	}
+	const auto found = ws.currency_by_code.find(code);
+	if (found == ws.currency_by_code.end()) {
+		return false;
+	}
+	const Currency& currency =
+		ws.currencies[static_cast<std::size_t>(found->second)];
+	for (const City& city : ws.cities) {
+		if (!has_nation(currency.nations, city.nation)) {
+			continue;
+		}
+		if (city.pop.labor_force > 1e-9) {
+			return true;
+		}
+	}
+	return false;
+}
+
+double taylor_target(const Reading& in) {	double target = kNeutralRate;
 	if (in.has_inflation) {
 		target += kTaylorInflationWeight * (in.inflation - kTargetInflation);
 	}

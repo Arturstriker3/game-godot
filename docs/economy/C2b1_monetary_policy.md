@@ -95,20 +95,22 @@ Três defeitos de regra foram corrigidos junto (§ linha do código em parêntes
    amostras o expoente 360/30 = 12 multiplicava a variação do 1º mês — no dia 45
    a anualizada mediana era 8,9 % (p90 24,1 %) e a regra mirava 12,5 %.
 3. **Hiato antes do baseline do mercado de trabalho** (`sim/monetary.cpp:
-   reading`): no dia 7 o desemprego medido era 21,5 % contra 6,1 % do regime e o
-   hiato saía −17,5 pp, derrubando a taxa de 4 % para 0,25 % em 15 dias por
-   artefato de inicialização. Antes do dia 30 a leitura é ausente (declarada).
+   reading`): no dia 7 o desemprego medido era **21,5 %** (regime: ~6,1 %)
+   contra o **natural declarado de 4 %** e o hiato saía −17,5 pp, derrubando a
+   taxa de 4 % para 0,25 % em 15 dias por artefato de inicialização. Antes do
+   dia 30 a leitura é ausente (declarada em `has_gap = false`).
 
 ## 4. Status e save
 
 - `get_central_bank_status()`: por moeda, dentro de `currencies[code].policy`:
   `rate`, `target_rate` (o que a regra queria), `target_inflation`,
-  `neutral_rate`, `max_step_per_day`, `smoothing`, `inflation_weight`,
-  `gap_weight`, `rate_floor`/`rate_cap`, `has_inflation`/`inflation_used`,
-  `gap`, `deficit_today`, `unfunded_today`, `emission_today`, `emission_total`,
-  `securities` e `independence_saved` × `independence_effective`; no topo,
-  `totals` (emissão do dia/total, títulos, dívida do governo, M0/M1/M2) e
-  `government_bonds` (dívida por nação).
+  `neutral_rate`, `max_step_per_day`, `smoothing` (+ `smoothing_per_day`, D-113),
+  `inflation_weight`, `gap_weight`, `rate_floor`/`rate_cap`,
+  `has_inflation`/`inflation_used`, `has_gap`/`gap` (D-113), `gap_baseline_day`,
+  `annualize_min_span_days`, `deficit_today`, `unfunded_today`, `emission_today`,
+  `emission_total`, `securities` e `independence_saved` ×
+  `independence_effective`; no topo, `totals` (emissão do dia/total, títulos,
+  dívida do governo, M0/M1/M2) e `government_bonds` (dívida por nação).
 - `get_status()`: `balance.monetary_claims` e `balance.government_debt`
   (resumo diário); nada de novo por cidade.
 - **Save v28** (aditivo): `monetary = {policies: {moeda: {rate, emission,
@@ -172,7 +174,9 @@ Três defeitos de regra foram corrigidos junto (§ linha do código em parêntes
 
 `tools/c1_world_ai_365.gd --days=365`, IA, `threads=1`, DLL debug. A trajetória
 mensal da **mediana** da taxa básica no mundo default (`monetary_timeline` do
-JSON do harness):
+JSON do harness). Medições versionadas: `docs/economy/perf/cal1_d113_gate_before.json`
+(antes), `cal1_d113_gate_default.json` (depois) e `cal1_d113_ab_taylor_only.json`
+(braço "só a regra de Taylor" do A/B por canal).
 
 | dia | antes (D-112) | **depois (D-113)** |
 |---|---|---|
@@ -185,40 +189,43 @@ JSON do harness):
 | 90 | 5,97 % | 2,23 % |
 | 120 | 3,78 % | 3,28 % |
 | 180 | 2,92 % | 3,89 % |
-| 240 | 1,34 % | 3,07 % |
-| 300 | 0,92 % | 1,96 % |
-| 365 | **0,77 %** | 1,56 % |
+| 240 | 1,34 % | 3,02 % |
+| 300 | 0,92 % | 2,03 % |
+| 365 | **0,77 %** | 1,53 % |
 
 O 1º ano calmo deixa de **colapsar** (0,25 % no dia 15) e de **estourar**
 (10,2 % no dia 60): a taxa fica em torno do neutro de 2,5 % e se afasta por
 razão econômica medida — no meio do ano a inflação anualizada de 90 d sobe a
-3,4-3,9 % (> meta 1,5 %) e a taxa vai a 3,9 %; no fim do ano ela volta a 1,6 %
-com a anualizada em 1,55 % e o hiato em −0,6 pp.
+3,4-3,9 % (> meta 1,5 %) e a taxa vai a 3,9 %; no fim do ano ela volta a 1,5 %
+com a anualizada em 1,59 % e o hiato em −0,6 pp.
 
 | medida (dia 365) | antes (D-112) | **depois (D-113)** |
 |---|---|---|
-| taxa básica mediana / p10 / p90 (135 moedas) | 0,77 % / 0,00 % / 5,19 % | **1,56 % / 0,04 % / 5,76 %** |
+| taxa básica mediana / p10 / p90 (135 moedas) | 0,77 % / 0,00 % / 5,19 % | **1,53 % / 0,04 % / 5,58 %** |
 | inflação 12 m mediana / p10 / p90 (179 nações) | 1,55 % / −0,23 % / 4,85 % | 1,55 % / **−0,45 %** / 4,68 % |
 | falências | 3 | **2** |
-| portão de comida | 93/179 | 96/179 |
+| portão de comida | 93/179 | 94/179 |
 | violações / travados | 0 / 0 | 0 / 0 |
-| hash de trajetória | `bb9b5cca…` | `ac1223dc…` |
+| hash de trajetória | `bb9b5cca…` | `4e548871…` |
 
 **Atribuição por canal** (A/B de 365 d, um de cada vez, só o canal ligado):
 
 | só a regra de Taylor (sem o piso de listagem da C5) | antes | só-Taylor | as duas |
 |---|---|---|---|
 | falências | 3 | **4** | **2** |
-| portão de comida | 93/179 | 94/179 | 96/179 |
+| portão de comida | 93/179 | 94/179 | 94/179 |
 | violações | 0 | 0 | 0 |
 
 A regra sozinha **piora** falências (3 → 4) e portão (+1) porque a taxa estável
 e mais baixa que antes no começo do ano barateia o crédito e o custo de capital
-sem o contrapeso que o piso de listagem trouxe ao canal da bolsa (dois papéis
-micro-cap deixam de existir e o dividendo/q dos grupos muda). O par fecha em
-**2 falências** (o melhor dos três mundos) e portão 96/179 (limite do critério
-≤ 98). Fica declarado que a regra isolada **não** atende ao teto de falências:
-se a C6 mexer no canal da bolsa, este A/B precisa ser refeito.
+sem o contrapeso do piso de listagem. **Ressalva de método:** o braço "só
+Taylor" **não é ortogonal** ao canal da C5 — a janela mínima de anualização (90 d)
+também muda o sinal de inflação da confiança da praça nos dias 0-89 (entra em
+`signals.missing`), então a diferença entre os dois braços mistura o canal
+monetário e o efeito colateral na confiança. O par fecha em **2 falências** (o
+melhor dos três mundos) e portão 94/179 (limite do critério ≤ 98). Fica
+declarado que a regra isolada **não** atende ao teto de falências: se a C6 mexer
+no canal da bolsa, este A/B precisa ser refeito.
 
 ## 6. Lacunas declaradas
 - Sem banco: reservas bancárias, redesconto, M1/M2 emergindo do crédito e o

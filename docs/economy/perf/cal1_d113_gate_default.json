@@ -1,0 +1,1233 @@
+{
+  "balance": {
+    "arrears": {
+      "plants": 616458.049037429,
+      "rural": 10494361010.2181,
+      "service": 27477871.7399732
+    },
+    "invariant": {
+      "arrears_plants": 616458.049037429,
+      "arrears_rural": 10494361010.2181,
+      "arrears_service": 27477871.7399732,
+      "cash_residual": -0.0000276565551757813,
+      "cash_total": 6559154933.66747,
+      "financial_sum": -0.0000429153442382813,
+      "monetary_base": 6523551982.90124,
+      "money_total": 6559154933.6675,
+      "ok": true,
+      "payables": 10522455340.0071,
+      "receivables": 10522455340.0071
+    },
+    "nations": 179,
+    "sample_nations": {
+      "BRA": {
+        "families_cash": 611426721.870908,
+        "families_net_worth": 779776410.253641,
+        "families_property": 0.0,
+        "families_receivables": 168349688.382733,
+        "firms_inventory": 10058372761.3357,
+        "firms_net_worth": 9963676729.29795,
+        "firms_payables": 168349688.382733,
+        "government_net_worth": 185899812.489665,
+        "net_worth_per_capita": 9.42303325568485
+      },
+      "CHN": {
+        "families_cash": 1983473086.17112,
+        "families_net_worth": 3639715521.69656,
+        "families_property": 0.0,
+        "families_receivables": 1656242435.52544,
+        "firms_inventory": 17581840322.4574,
+        "firms_net_worth": 16683373642.9701,
+        "firms_payables": 1656242435.52544,
+        "government_net_worth": 884312161.39645,
+        "net_worth_per_capita": 10.1999207143091
+      },
+      "DEU": {
+        "families_cash": 134320897.732726,
+        "families_net_worth": 245270135.914257,
+        "families_property": 0.0,
+        "families_receivables": 110949238.181531,
+        "firms_inventory": 625333083.121693,
+        "firms_net_worth": 540545937.255006,
+        "firms_payables": 110949238.181531,
+        "government_net_worth": 53754287.0152685,
+        "net_worth_per_capita": 11.2407817705435
+      },
+      "IDN": {
+        "families_cash": 352427082.966381,
+        "families_net_worth": 725153668.489384,
+        "families_property": 0.0,
+        "families_receivables": 372726585.523002,
+        "firms_inventory": 859108570.952933,
+        "firms_net_worth": 554944779.536663,
+        "firms_payables": 372726585.523002,
+        "government_net_worth": 7355479.96390079,
+        "net_worth_per_capita": 11.8550112573014
+      },
+      "IND": {
+        "families_cash": 575363840.588966,
+        "families_net_worth": 3129469866.24896,
+        "families_property": 0.0,
+        "families_receivables": 2554106025.65999,
+        "firms_inventory": 6846662650.23325,
+        "firms_net_worth": 4571168347.31523,
+        "firms_payables": 2554106025.65999,
+        "government_net_worth": 736265577.136674,
+        "net_worth_per_capita": 17.4276958895046
+      },
+      "MEX": {
+        "families_cash": 295482371.750824,
+        "families_net_worth": 437118523.301919,
+        "families_property": 0.0,
+        "families_receivables": 141636151.551094,
+        "firms_inventory": 359728422.065052,
+        "firms_net_worth": 278959010.618103,
+        "firms_payables": 141636151.551095,
+        "government_net_worth": 17792624.938377,
+        "net_worth_per_capita": 8.41702470956903
+      },
+      "NGA": {
+        "families_cash": 104827540.852371,
+        "families_net_worth": 377771745.998394,
+        "families_property": 0.0,
+        "families_receivables": 272944205.146023,
+        "firms_inventory": 261875907.419554,
+        "firms_net_worth": 48967253.929525,
+        "firms_payables": 272944205.146023,
+        "government_net_worth": 10955691.5494561,
+        "net_worth_per_capita": 7.78123730890796
+      },
+      "RUS": {
+        "families_cash": 336224884.189357,
+        "families_net_worth": 464839568.529394,
+        "families_property": 0.0,
+        "families_receivables": 128614684.340037,
+        "firms_inventory": 2539593824.08619,
+        "firms_net_worth": 2568066537.48277,
+        "firms_payables": 128614684.340037,
+        "government_net_worth": 50003379.5512891,
+        "net_worth_per_capita": 9.16932276531308
+      },
+      "USA": {
+        "families_cash": 815287989.142873,
+        "families_net_worth": 1107146540.14235,
+        "families_property": 0.0,
+        "families_receivables": 291858550.99948,
+        "firms_inventory": 8661574087.98636,
+        "firms_net_worth": 8456581477.74444,
+        "firms_payables": 291858550.99948,
+        "government_net_worth": 217567460.849816,
+        "net_worth_per_capita": 8.41117533551185
+      },
+      "ZAF": {
+        "families_cash": 98802342.9275047,
+        "families_net_worth": 159614058.819378,
+        "families_property": 0.0,
+        "families_receivables": 60811715.8918734,
+        "firms_inventory": 349058147.470692,
+        "firms_net_worth": 320147029.462603,
+        "firms_payables": 60811715.8918734,
+        "government_net_worth": 66848113.8099039,
+        "net_worth_per_capita": 5.75296480008363
+      }
+    },
+    "world": {
+      "external_cash": -9628340815.8608,
+      "families_cash": 10711100859.425,
+      "families_inventory": 0.0,
+      "families_net_worth": 21233556199.432,
+      "families_property": 0.0,
+      "families_receivables": 10522455340.0071,
+      "firms_fixed_capital": 2920431097.92236,
+      "firms_inventory": 72845995654.9702,
+      "firms_net_worth": 65758039425.9019,
+      "firms_payables": 10522455340.0071,
+      "firms_solvency": {
+        "count": 4179,
+        "illiquid": 2,
+        "insolvent": 0,
+        "liquid": 4177
+      },
+      "government_inventory": 367766701.300821,
+      "government_net_worth": 3547323179.15211
+    }
+  },
+  "bankruptcies": 2,
+  "banks": {
+    "capital": 0.0,
+    "cash": 3048326.35013538,
+    "defaults": 0,
+    "deposits": 35602950.7662601,
+    "dividends": 3455087.91300363,
+    "equity": 575216.739941834,
+    "harvest_interest": 11965.33267351,
+    "interest_expense": 0.0,
+    "interest_income": 371348.304831909,
+    "loans": 32519211.1580884,
+    "loans_count": 2528,
+    "m0": 6523551982.90124,
+    "m1": 6556106607.31737,
+    "remittance": 289682.361182355,
+    "remittance_origin": 345372.751812938,
+    "retained": 575216.739941834,
+    "writeoffs": 0.0
+  },
+  "credit": {
+    "bc_borrowing": 0.0,
+    "capital": 0.0,
+    "defaults": 0,
+    "enabled": true,
+    "equity": 575216.739941834,
+    "group_debt": 32519211.1580884,
+    "loans": 32519211.1580884,
+    "loans_count": 2528,
+    "writeoffs": 0.0
+  },
+  "days": 365,
+  "drift": 0.00545760206415552,
+  "final_day": 365,
+  "food_gate": {
+    "below": [
+      "SLB",
+      "PSX",
+      "HTI",
+      "SOM",
+      "COD",
+      "JPN",
+      "MLI",
+      "COG",
+      "BFA",
+      "GMB",
+      "DJI",
+      "AUT",
+      "ITA",
+      "CAN",
+      "NED",
+      "USA",
+      "CHN",
+      "HRV",
+      "BEL",
+      "SEN",
+      "GRC",
+      "SVN",
+      "SRB",
+      "ESP",
+      "SAU",
+      "HUN",
+      "CYP",
+      "URY",
+      "ALB",
+      "KOR",
+      "BIH",
+      "BHR",
+      "CHE",
+      "FRA",
+      "QAT",
+      "BRN",
+      "DNK",
+      "BHS",
+      "ISR",
+      "MKD",
+      "ROU",
+      "THA",
+      "SGP",
+      "YEM",
+      "POL",
+      "ARG",
+      "COL",
+      "FIN",
+      "SVK",
+      "MYS",
+      "DOM",
+      "TUR",
+      "GEO",
+      "ARM",
+      "IRL",
+      "VEN",
+      "TKM",
+      "BLR",
+      "EGY",
+      "PRT",
+      "CRI",
+      "JAM",
+      "LCA",
+      "EST",
+      "GAB",
+      "DMA",
+      "DEU",
+      "LBR",
+      "NGA",
+      "SUR",
+      "ERI",
+      "TTO",
+      "GRD",
+      "AZE",
+      "UKR",
+      "PAN",
+      "PRY",
+      "JOR",
+      "OMN",
+      "BRA",
+      "BTN",
+      "PER",
+      "NOR",
+      "KAZ",
+      "GBR",
+      "GUY",
+      "BGR",
+      "RUS",
+      "BRB",
+      "IRN",
+      "LVA",
+      "AUS",
+      "CZE",
+      "PRK"
+    ],
+    "below_gate": 94,
+    "mean": 0.905370967980792,
+    "median": 0.97214200109983,
+    "nations": 179,
+    "worst": [
+      {
+        "food_avg30": 0.143945007937267,
+        "nation": "SLB"
+      },
+      {
+        "food_avg30": 0.226435462122276,
+        "nation": "PSX"
+      },
+      {
+        "food_avg30": 0.258297114920067,
+        "nation": "HTI"
+      },
+      {
+        "food_avg30": 0.281525619509481,
+        "nation": "SOM"
+      },
+      {
+        "food_avg30": 0.429123620149727,
+        "nation": "COD"
+      },
+      {
+        "food_avg30": 0.518811834331837,
+        "nation": "JPN"
+      },
+      {
+        "food_avg30": 0.544078397625223,
+        "nation": "MLI"
+      },
+      {
+        "food_avg30": 0.558120382508701,
+        "nation": "COG"
+      },
+      {
+        "food_avg30": 0.566927620761401,
+        "nation": "BFA"
+      },
+      {
+        "food_avg30": 0.690820369279638,
+        "nation": "GMB"
+      }
+    ]
+  },
+  "fx": {
+    "by_anchor": {
+      "<null>": 57,
+      "EUR": 10,
+      "INR": 2,
+      "SGD": 1,
+      "USD": 58,
+      "ZAR": 3
+    },
+    "by_regime": {
+      "band": 64,
+      "floating": 44,
+      "peg": 27
+    },
+    "devaluations": 0,
+    "devalued_currencies": [],
+    "locked_currencies": 7,
+    "source": "Regime Cambial de Facto por Moeda (FMI/AREAER 2026) (2026-04-30)"
+  },
+  "harvest_credit_rate": true,
+  "invariant_violation_samples": [],
+  "invariant_violations": 0,
+  "max_daily_drift": 0.00545760206415552,
+  "monetary": {
+    "controlled": 0,
+    "currencies": 135,
+    "currencies_with_inflation": 135,
+    "emission_today": 0.0,
+    "emission_total": 0.0,
+    "government_debt": 0.0,
+    "inflation_12m_pct": {
+      "median": 1.58657513263978,
+      "n": 179,
+      "p10": -0.351376750116628,
+      "p90": 4.73907770631306
+    },
+    "inflation_annualized_pct": {
+      "median": 1.58657513263978,
+      "n": 179,
+      "p10": -0.351376750116628,
+      "p90": 4.73907770631306
+    },
+    "nations_annualized": 179,
+    "nations_has_12m": 179,
+    "rate_pct": {
+      "median": 1.53008203108199,
+      "n": 135,
+      "p10": 0.0421428720796577,
+      "p90": 5.58439622511598
+    },
+    "securities": 0.0
+  },
+  "monetary_timeline": [
+    {
+      "day": 7,
+      "gap_pp": {
+        "median": 0.0,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      },
+      "target_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      }
+    },
+    {
+      "day": 15,
+      "gap_pp": {
+        "median": 0.0,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      },
+      "target_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      }
+    },
+    {
+      "day": 30,
+      "gap_pp": {
+        "median": -2.06044136386455,
+        "n": 135,
+        "p10": -12.4795458402045,
+        "p90": -1.49764723098554
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.47646972710497,
+        "n": 135,
+        "p10": 2.44289992108562,
+        "p90": 2.48289684498496
+      },
+      "target_pct": {
+        "median": 1.46977931806772,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 1.75117638450723
+      }
+    },
+    {
+      "day": 45,
+      "gap_pp": {
+        "median": -0.910728753300649,
+        "n": 135,
+        "p10": -11.7130397880975,
+        "p90": -0.420065543418548
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.30333581891079,
+        "n": 135,
+        "p10": 1.72739109995972,
+        "p90": 2.37199654837514
+      },
+      "target_pct": {
+        "median": 2.04463562334968,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.28996722829073
+      }
+    },
+    {
+      "day": 60,
+      "gap_pp": {
+        "median": -0.65948046834614,
+        "n": 135,
+        "p10": -11.5023124212049,
+        "p90": -0.144468997038389
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.25467252417155,
+        "n": 135,
+        "p10": 1.22144996054281,
+        "p90": 2.37471899863147
+      },
+      "target_pct": {
+        "median": 2.17025976582693,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.42776550148081
+      }
+    },
+    {
+      "day": 63,
+      "gap_pp": {
+        "median": -0.645324225210435,
+        "n": 135,
+        "p10": -11.4840675364066,
+        "p90": -0.127144517433817
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.24640151462673,
+        "n": 135,
+        "p10": 1.13965311069777,
+        "p90": 2.37837832140954
+      },
+      "target_pct": {
+        "median": 2.17733788739478,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.43642774128309
+      }
+    },
+    {
+      "day": 90,
+      "gap_pp": {
+        "median": -0.605486349810714,
+        "n": 135,
+        "p10": -11.402834725592,
+        "p90": -0.060628418741268
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.22779885532014,
+        "n": 135,
+        "p10": 0.610724980271402,
+        "p90": 2.41263900264103
+      },
+      "target_pct": {
+        "median": 2.19725682509464,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.46968579062937
+      }
+    },
+    {
+      "day": 120,
+      "gap_pp": {
+        "median": -0.580951438157915,
+        "n": 135,
+        "p10": -11.3422400839672,
+        "p90": -0.0658781027043341
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.66276507182139,
+        "n": 179,
+        "p10": 2.37334244002123,
+        "p90": 9.76803508377404
+      },
+      "inflation_used_pct": {
+        "median": 3.7617441045916,
+        "n": 135,
+        "p10": 2.40900142454905,
+        "p90": 9.76536061128139
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.28293834573407,
+        "n": 135,
+        "p10": 0.495669151571634,
+        "p90": 6.81290846341435
+      },
+      "target_pct": {
+        "median": 4.53424621615186,
+        "n": 135,
+        "p10": 0.0148639291562565,
+        "p90": 12.6746989923702
+      }
+    },
+    {
+      "day": 150,
+      "gap_pp": {
+        "median": -0.574407914655258,
+        "n": 135,
+        "p10": -11.2691063028469,
+        "p90": -0.0655268998545874
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.44344516035038,
+        "n": 179,
+        "p10": 1.69057382355811,
+        "p90": 8.6510744149962
+      },
+      "inflation_used_pct": {
+        "median": 3.44344516035038,
+        "n": 135,
+        "p10": 2.01181079028705,
+        "p90": 8.70556151486712
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.58045067083573,
+        "n": 135,
+        "p10": 0.554631506102557,
+        "p90": 9.30107982424018
+      },
+      "target_pct": {
+        "median": 3.92592364351298,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 12.1290291590183
+      }
+    },
+    {
+      "day": 180,
+      "gap_pp": {
+        "median": -0.568582393172162,
+        "n": 135,
+        "p10": -11.1892500920475,
+        "p90": -0.0648465725385699
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.53876338907879,
+        "n": 179,
+        "p10": 1.4252366087673,
+        "p90": 9.38520926490816
+      },
+      "inflation_used_pct": {
+        "median": 3.33693212143507,
+        "n": 135,
+        "p10": 1.72170662199502,
+        "p90": 9.43493415622478
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.88685416840688,
+        "n": 135,
+        "p10": 0.614174263770527,
+        "p90": 10.7380124629032
+      },
+      "target_pct": {
+        "median": 4.05581308776596,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 11.4490516598894
+      }
+    },
+    {
+      "day": 210,
+      "gap_pp": {
+        "median": -0.447039927562907,
+        "n": 135,
+        "p10": -11.1105402176428,
+        "p90": -0.0508254094020527
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.36256808452045,
+        "n": 179,
+        "p10": 1.00843130290518,
+        "p90": 8.09151234369159
+      },
+      "inflation_used_pct": {
+        "median": 3.22418439633399,
+        "n": 135,
+        "p10": 1.18177349799427,
+        "p90": 7.95447394544353
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.74682051053596,
+        "n": 135,
+        "p10": 0.515527412712889,
+        "p90": 9.76167804897656
+      },
+      "target_pct": {
+        "median": 3.19283730698337,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 10.4374774973621
+      }
+    },
+    {
+      "day": 240,
+      "gap_pp": {
+        "median": -0.543238910881018,
+        "n": 135,
+        "p10": -11.0437226094775,
+        "p90": -0.0540362361114144
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 2.35214848339402,
+        "n": 179,
+        "p10": 0.500737611876922,
+        "p90": 5.79783314169653
+      },
+      "inflation_used_pct": {
+        "median": 2.3558834074491,
+        "n": 135,
+        "p10": 0.703262428100282,
+        "p90": 5.20893785146752
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.01578380145122,
+        "n": 135,
+        "p10": 0.269007708218618,
+        "p90": 8.1528035822709
+      },
+      "target_pct": {
+        "median": 2.08365914985576,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 7.02400378429836
+      }
+    },
+    {
+      "day": 270,
+      "gap_pp": {
+        "median": -0.476182025727777,
+        "n": 135,
+        "p10": -10.9765977982939,
+        "p90": -0.0454306027475816
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 2.10204576108397,
+        "n": 179,
+        "p10": 0.268156335429426,
+        "p90": 4.99632742903477
+      },
+      "inflation_used_pct": {
+        "median": 2.13965832869485,
+        "n": 135,
+        "p10": 0.422953025294714,
+        "p90": 4.6741778937853
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.32407792766647,
+        "n": 135,
+        "p10": 0.184780989261118,
+        "p90": 7.25241821215661
+      },
+      "target_pct": {
+        "median": 1.80817112655775,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 6.25838804624603
+      }
+    },
+    {
+      "day": 300,
+      "gap_pp": {
+        "median": -0.296056586281269,
+        "n": 135,
+        "p10": -10.9111217527813,
+        "p90": -0.0379900299461797
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 1.83761069881894,
+        "n": 179,
+        "p10": 0.215588522450694,
+        "p90": 4.50801134263834
+      },
+      "inflation_used_pct": {
+        "median": 1.95066659315153,
+        "n": 135,
+        "p10": 0.30916807764938,
+        "p90": 4.50372421034719
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.02818269335162,
+        "n": 135,
+        "p10": 0.0923904946305587,
+        "p90": 6.42850256264438
+      },
+      "target_pct": {
+        "median": 1.65820529275428,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 6.08739110389636
+      }
+    },
+    {
+      "day": 330,
+      "gap_pp": {
+        "median": -0.546689153303318,
+        "n": 135,
+        "p10": -10.8489076260845,
+        "p90": -0.0530565127630846
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 1.6518881505132,
+        "n": 179,
+        "p10": -0.470640398143718,
+        "p90": 4.70385190747755
+      },
+      "inflation_used_pct": {
+        "median": 1.795718695207,
+        "n": 135,
+        "p10": -0.432430408038265,
+        "p90": 4.70385190747755
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 1.71238569336237,
+        "n": 135,
+        "p10": 0.0617149699234617,
+        "p90": 6.21012339876567
+      },
+      "target_pct": {
+        "median": 1.50934377985003,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 5.65056855282294
+      }
+    },
+    {
+      "day": 365,
+      "gap_pp": {
+        "median": -0.56903382465689,
+        "n": 135,
+        "p10": -10.9688649692738,
+        "p90": -0.050930974050872
+      },
+      "inflation_12m_pct": {
+        "median": 1.58657513263978,
+        "n": 179,
+        "p10": -0.351376750116628,
+        "p90": 4.73907770631306
+      },
+      "inflation_annualized_pct": {
+        "median": 1.58657513263978,
+        "n": 179,
+        "p10": -0.351376750116628,
+        "p90": 4.73907770631306
+      },
+      "inflation_used_pct": {
+        "median": 1.65587886854885,
+        "n": 135,
+        "p10": 0.0678074129797146,
+        "p90": 4.65298059545054
+      },
+      "nations_has_12m": 179,
+      "rate_pct": {
+        "median": 1.53008203108199,
+        "n": 135,
+        "p10": 0.0421428720796577,
+        "p90": 5.58439622511598
+      },
+      "target_pct": {
+        "median": 1.38180347184257,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 6.22765717113844
+      }
+    }
+  ],
+  "money_end": 6559154933.6675,
+  "money_start": 6523551982.9,
+  "property": false,
+  "stalled_days": 0,
+  "stock": {
+    "bankruptcies": 2,
+    "book_equity": 26362363786.5281,
+    "confidence_p10": 0.915090545120037,
+    "confidence_p50": 0.99182671434121,
+    "confidence_p90": 1.05882978076909,
+    "dividends_paid": 15181805.0873094,
+    "equity_identity": 0.0,
+    "exchange_changes": 148,
+    "exchanges": 179,
+    "formation_earnings_pct": {
+      "p1": 5169.11748400503,
+      "p10": 680290.479606601,
+      "p25": 3447701.69250345,
+      "p5": 142417.826476206,
+      "p50": 13201155.3757073,
+      "p90": 119753135.378633,
+      "p99": 558614424.947425
+    },
+    "formation_papers": 250,
+    "formation_price_pct": {
+      "p1": 0.0,
+      "p10": 4.87362962858699,
+      "p25": 26.828939529209,
+      "p5": 1.14381544550092,
+      "p50": 106.243895159091,
+      "p90": 1011.60905940761,
+      "p99": 4183.34779138078
+    },
+    "index_global": 89.2615110640163,
+    "investment_capex_total": 18901658.5792795,
+    "listed": 249,
+    "market_cap": 89185612132.5642,
+    "paper_base_floor": 1.0,
+    "paper_below_base": 0,
+    "paper_changes": 237,
+    "paper_extremes": [
+      {
+        "change": 15.1943903243518,
+        "confidence_change": 0.0653622484521601,
+        "confidence_end": 1.0009461818217,
+        "confidence_start": 0.939535996583274,
+        "group_id": "G-SDN-food-207",
+        "nation": "SDN",
+        "pe": 8.23094545763579,
+        "price_end": 395.392838492236,
+        "price_start": 24.4154198196444,
+        "profit_change": 14.0045753589337,
+        "profit_ema_end": 131609.188305181,
+        "profit_ema_start": 8771.27043964098,
+        "q": 4.25236221270558,
+        "rate_end": 0.000143525847235036,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 14.5435941518366,
+        "confidence_change": 0.021468856976343,
+        "confidence_end": 0.929972963082948,
+        "confidence_start": 0.910427133173464,
+        "group_id": "G-BHR-food-22",
+        "nation": "BHR",
+        "pe": 7.07344100023472,
+        "price_end": 31.3920115595016,
+        "price_start": 2.01961086045162,
+        "profit_change": 14.482143011344,
+        "profit_ema_end": 12158.9352507596,
+        "profit_ema_start": 785.352211373488,
+        "q": 2394.22913659445,
+        "rate_end": 0.0431269957650525,
+        "rate_start": 0.0234430311420448
+      },
+      {
+        "change": 5.75580383671739,
+        "confidence_change": 0.0871769345726037,
+        "confidence_end": 1.02454830448791,
+        "confidence_start": 0.942393341789103,
+        "group_id": "G-CAF-food-38",
+        "nation": "CAF",
+        "pe": 7.97572130921396,
+        "price_end": 53.8095758064475,
+        "price_start": 7.96494053216816,
+        "profit_change": 5.47939827487013,
+        "profit_ema_end": 18484.0329350298,
+        "profit_ema_start": 2852.73912034684,
+        "q": 52.9074059414813,
+        "rate_end": 0.0016664622999714,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 4.49014831654378,
+        "confidence_change": 0.103283172849265,
+        "confidence_end": 1.07625552640158,
+        "confidence_start": 0.975502529982505,
+        "group_id": "G-GNQ-food-96",
+        "nation": "GNQ",
+        "pe": 8.57645327634246,
+        "price_end": 10.488060797901,
+        "price_start": 1.91034197861226,
+        "profit_change": 4.06874166667219,
+        "profit_ema_end": 3350.38415287543,
+        "profit_ema_start": 660.989328950172,
+        "q": 59.3432879393531,
+        "rate_end": 0.0016664622999714,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 4.20307955321139,
+        "confidence_change": 0.0616026551853133,
+        "confidence_end": 0.964619975655607,
+        "confidence_start": 0.908645029233864,
+        "group_id": "G-TCD-food-224",
+        "nation": "TCD",
+        "pe": 8.02105879708097,
+        "price_end": 123.932047013527,
+        "price_start": 23.8189798457022,
+        "profit_change": 3.78430025795647,
+        "profit_ema_end": 42331.051725384,
+        "profit_ema_start": 8847.90866856359,
+        "q": 1.2254358266887,
+        "rate_end": 0.0016664622999714,
+        "rate_start": 0.0113965311069777
+      }
+    ],
+    "paper_variation_p10": -0.357357526948565,
+    "paper_variation_p50": -0.0351978405247022,
+    "paper_variation_p90": 0.531137265500547,
+    "q_p50": 15.8522425332701,
+    "remittance": 920390.604092162,
+    "remittance_origin": 1229927.40305078,
+    "variation_p10": -0.360240747155959,
+    "variation_p50": -0.10454657262386,
+    "variation_p90": 0.474149712226634
+  },
+  "stock_timeline": [
+    {
+      "book_equity": 12823697947.667,
+      "confidence_median": 0.962610165543758,
+      "day": 63,
+      "earnings_daily_sum": 35191196.4471925,
+      "index_global": 100.0,
+      "listed": 238,
+      "market_cap": 99863426935.6794,
+      "rate_median": 0.022575672386463
+    },
+    {
+      "book_equity": 15696297068.9406,
+      "confidence_median": 0.957938831091736,
+      "day": 120,
+      "earnings_daily_sum": 34272754.6566177,
+      "index_global": 91.9161758556411,
+      "listed": 239,
+      "market_cap": 91792423807.8234,
+      "rate_median": 0.0338975589746914
+    },
+    {
+      "book_equity": 20237554199.1596,
+      "confidence_median": 0.960108693054096,
+      "day": 200,
+      "earnings_daily_sum": 33420019.2944399,
+      "index_global": 82.5829334376002,
+      "listed": 241,
+      "market_cap": 82509569672.8725,
+      "rate_median": 0.0440711830189351
+    },
+    {
+      "book_equity": 25649979079.2887,
+      "confidence_median": 0.989190916240393,
+      "day": 300,
+      "earnings_daily_sum": 32802593.8595157,
+      "index_global": 85.8935135950996,
+      "listed": 248,
+      "market_cap": 85819618280.4605,
+      "rate_median": 0.0189595361654691
+    },
+    {
+      "book_equity": 26362363786.5281,
+      "confidence_median": 0.99182671434121,
+      "day": 365,
+      "earnings_daily_sum": 32307066.0062752,
+      "index_global": 89.2615110640163,
+      "listed": 249,
+      "market_cap": 89185612132.5642,
+      "rate_median": 0.0125521856048086
+    }
+  ],
+  "threads": 1,
+  "trajectory_end": {
+    "credit_capacity": 178.346631780957,
+    "m0": 14472785056.3641,
+    "private_stock_t": 59665147.2782765
+  },
+  "trajectory_fields": [
+    "day",
+    "money_total(6)",
+    "bankruptcies",
+    "food_ratio_sum(9)",
+    "m0_total(6)",
+    "private_stock_t(6)",
+    "credit_capacity(9)"
+  ],
+  "trajectory_sha256": "4e5488715fcc364ae86307545f885e27897b7af19faef4561e656b39389ca7e7",
+  "wall_s": 242.378
+}
