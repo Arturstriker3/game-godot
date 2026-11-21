@@ -55,11 +55,12 @@ var _days := 365
 var _property := false
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 var _fx_seed_days := 0
-# C3 (D-107): medição com o crédito de empresa LIGADO (default do jogo = false).
+# C3 (D-107) + D-111: forçar o crédito de empresa por flag. Desde a D-111 o
+# default do jogo é LIGADO; a flag continua servindo ao A/B (--credit=0 desliga).
 # Só laboratório: não existe botão/atalho/HUD para isso no jogo.
 var _credit := false
-# C4 (D-110): A/B do CANAL do juro no envelope de crédito da safra (D-105).
-# Só laboratório: sem flag o default do jogo (DESLIGADO) continua valendo.
+# C4 (D-110) + D-111: A/B do CANAL do juro no envelope de crédito da safra
+# (D-105). Desde a D-111 o default do jogo é LIGADO; --harvest-rate=0 desliga.
 var _harvest_rate := false
 
 
@@ -514,8 +515,11 @@ func _run() -> void:
 	}
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
-	if _credit:
-		out["credit"] = _credit_report(sim)
+	# C3/D-111: o bloco do crédito é medido sempre que o mundo tem crédito
+	# ligado — por flag de laboratório OU por default do jogo (D-111).
+	var credit := _credit_report(sim)
+	if _credit or bool(credit["enabled"]):
+		out["credit"] = credit
 	var file := FileAccess.open(_out, FileAccess.WRITE)
 	if file == null:
 		print("[c1] FALHA: não escreveu " + _out)
@@ -535,8 +539,7 @@ func _run() -> void:
 		+ "atrasado=%.0f saída=" % float((balance["invariant"] as Dictionary)
 			.get("receivables", 0.0)) + _out)
 	print("[c1] OK: 365 d medidos")
-	if _credit:
-		var credit := _credit_report(sim)
+	if _credit or bool(credit["enabled"]):
 		print("[c1] crédito (C3): ligado=%s empréstimos=%d dívida=%.3f "
 			% [str(credit["enabled"]), int(credit["loans_count"]),
 				float(credit["group_debt"])]
