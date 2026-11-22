@@ -29,7 +29,10 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 34
+# Versão do schema vem do núcleo (`kSaveVersion` via get_save_version()): o
+# teste continua exigindo igualdade exata, sem literal que apodrece.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 const TAX_RATE := 0.15
 
 var _failures: Array = []
@@ -131,7 +134,7 @@ func _run() -> void:
 	var sim := _make_world()
 	var save: Dictionary = sim.to_dict()
 	_check(int(save.get("version", 0)) == SAVE_VERSION,
-		"save deve ser v34 (é %s)" % str(save.get("version")))
+		"save deve ser v%d (é %s)" % [SAVE_VERSION, str(save.get("version"))])
 	var ci := _pick_city(save)
 	if ci < 0:
 		_fail("nenhuma cidade com quintis e demografia prontos")
@@ -435,10 +438,13 @@ func _run() -> void:
 			"índices de insatisfação em [0,1]")
 
 	# --- (5b) Insatisfação da REGIÃO: normalização por pesos APLICÁVEIS. ----
-	# O interior só aplica comida+inflação+informalidade (peso 0,50): o índice
-	# deve dividir por 0,50, não pelo total 1,00 (o que capava o interior em
-	# 0,50). Com informalidade=1 e inflação=1, as componentes ficam
-	# 0,10/0,50=0,20 e 0,15/0,50=0,30 — e os componentes somam o índice.
+	# O interior aplica comida+inflacao+informalidade+ENERGIA (pesos
+	# 0,25+0,15+0,10+0,20 = 0,70, D-116): o indice divide pela soma dos
+	# pesos aplicaveis, nao pelo total 1,00. Com informalidade=1 e
+	# inflacao=1, as componentes ficam 0,10/0,70=0,143 e 0,15/0,70=0,214
+	# - e os componentes somam o indice. Urbano: soma 1,20 (era 1,00 antes
+	# da energia). Sem dupla contagem: power_stress entra UMA vez no
+	# numerador e o divisor inclui seu peso UMA vez.
 	if true:
 		var save_reg: Dictionary = sim.to_dict()
 		var c_reg: Dictionary = save_reg.get("cities", [])[ci]
@@ -464,10 +470,10 @@ func _run() -> void:
 			var r_infl := float(rcomp.get("inflation", -1.0))
 			var r_food := float(rcomp.get("food", -1.0))
 			var r_idx := float(rdiss.get("index", -1.0))
-			_check(absf(r_inf - 0.20) < 0.02,
-				"região: componente informalidade ~0,20 (0,10/0,50) — medido %.3f" % r_inf)
-			_check(absf(r_infl - 0.30) < 0.02,
-				"região: componente inflação ~0,30 (0,15/0,50) — medido %.3f" % r_infl)
+			_check(absf(r_inf - 0.10 / 0.70) < 0.02,
+				"região: componente informalidade ~0,20 (0,10/0,70) — medido %.3f" % r_inf)
+			_check(absf(r_infl - 0.15 / 0.70) < 0.02,
+				"região: componente inflação ~0,30 (0,15/0,70) — medido %.3f" % r_infl)
 			_check(absf(r_idx - (r_food + r_infl + r_inf)) < 1e-6,
 				"região: componentes somam o índice (%.4f vs %.4f)"
 				% [r_food + r_infl + r_inf, r_idx])
@@ -479,7 +485,7 @@ func _run() -> void:
 		_load_chains(rt2)
 		rt2.from_dict(rt)
 		var rt3: Dictionary = rt2.to_dict()
-		_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip mantém v34")
+		_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip mantém v%d" % SAVE_VERSION)
 		# Os blocos B7 precisam voltar idênticos (a identidade byte a byte do
 		# save inteiro é coberta por economy_save_load_roundtrip_test, que usa
 		# "load + continuar == rodar direto" — alguns fluxos derivados do
@@ -518,7 +524,7 @@ func _run() -> void:
 		migrated.from_dict(v21)
 		var after: Dictionary = migrated.to_dict()
 		_check(int(after.get("version", 0)) == SAVE_VERSION,
-			"v21 deve migrar para v34 (é %s)" % str(after.get("version")))
+			"v21 deve migrar para v%d (é %s)" % [SAVE_VERSION, str(after.get("version"))])
 		# A migração semeia a informalidade (dado/âncora) e os contadores zerados.
 		var mcity: Dictionary = after.get("cities", [])[ci]
 		var minformal: Dictionary = mcity.get("pop", {}).get("informal", {})

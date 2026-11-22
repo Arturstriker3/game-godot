@@ -29,7 +29,10 @@ const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
 const TOLERANCE := 0.5
-const SAVE_VERSION := 34
+# Versão do schema vem do núcleo (`kSaveVersion` via get_save_version()): o
+# teste continua exigindo igualdade exata, sem literal que apodrece.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 
 var _failures: Array = []
 

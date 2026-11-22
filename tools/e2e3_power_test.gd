@@ -41,7 +41,9 @@ const POWER_PARAMS_PATH := "res://data/definitions/energy/power_params.json"
 
 const EPS := 1e-6
 const MONEY_EPSILON := 1e-3
-const SAVE_VERSION := 37
+# Versao do schema vem do nucleo (kSaveVersion): nunca fixar o numero.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 const DAYS_CONSEQUENCE := 12
 const DAYS_SAVE := 6
 const DAYS_DETERMINISM := 15

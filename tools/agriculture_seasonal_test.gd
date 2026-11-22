@@ -26,6 +26,7 @@ extends SceneTree
 
 const GeoScript := preload("res://core/economy/geography_service.gd")
 const AgriScript := preload("res://core/economy/agriculture_service.gd")
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
@@ -870,8 +871,10 @@ func _test_perishability(snapshot: Dictionary) -> void:
 func _test_save(sim: Object) -> void:
 	var snapshot: Dictionary = sim.to_snapshot()
 	var save: Dictionary = snapshot.get("save", {})
-	if int(save.get("version", 0)) != 34:
-		_fail("save v34 esperado, veio %s" % str(save.get("version")))
+	var schema := SaveSchema.current()
+	if int(save.get("version", 0)) != schema:
+		_fail("save v%d esperado (kSaveVersion), veio %s" % [
+			schema, str(save.get("version"))])
 		return
 	if not save.has("agriculture"):
 		_fail("save v24 sem o bloco 'agriculture'")

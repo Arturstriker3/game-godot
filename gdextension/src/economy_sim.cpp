@@ -237,6 +237,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::get_nation_ranking);
 	ClassDB::bind_method(D_METHOD("get_data_version"),
 	                     &EconomySim::get_data_version);
+	ClassDB::bind_method(D_METHOD("get_save_version"),
+	                     &EconomySim::get_save_version);
 	ClassDB::bind_method(D_METHOD("price_shock", "product", "multiplier"),
 	                     &EconomySim::price_shock);
 	ClassDB::bind_method(D_METHOD("set_suitability", "city_id", "product", "value"),
@@ -1695,6 +1697,10 @@ void EconomySim::status_invalidate() {
 int EconomySim::get_data_version() const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	return data_version_;
+}
+
+int EconomySim::get_save_version() const {
+	return ogs::kSaveVersion;
 }
 
 // ---------------------------------------------------------------------------

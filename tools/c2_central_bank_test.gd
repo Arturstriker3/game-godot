@@ -47,7 +47,10 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 34
+# Versão do schema vem do núcleo (`kSaveVersion` via get_save_version()): o
+# teste continua exigindo igualdade exata, sem literal que apodrece.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 const EPS := 1e-3
 const CPI_SAMPLE_DAYS := 30
 const MODEL_YEAR_DAYS := 360
@@ -328,8 +331,8 @@ func _test_fixture() -> void:
 	migrated.from_dict(old)
 	var migrated_save: Dictionary = migrated.to_dict()
 	_check(int(migrated_save.get("version", 0)) == SAVE_VERSION,
-		"(migração) v26 deveria sair como v27 (saiu %s)"
-			% str(migrated_save.get("version", 0)))
+		"(migração) v26 deveria sair como v%d (saiu %s)"
+			% [SAVE_VERSION, str(migrated_save.get("version", 0))])
 	var migrated_policy: Dictionary = migrated_save.get("monetary_policy", {})
 	_check(String(migrated_policy.get("standard", "")) == "fiat",
 		"(migração) padrão monetário deveria nascer fiat")

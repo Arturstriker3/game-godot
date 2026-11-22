@@ -26,7 +26,10 @@ const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 
-const SAVE_VERSION := 34
+# Versão do schema vem do núcleo (`kSaveVersion` via get_save_version()): o
+# teste continua exigindo igualdade exata, sem literal que apodrece.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 const EPS := 1e-6
 
 var _failures: Array[String] = []
@@ -351,7 +354,7 @@ func _test_save_and_migration() -> void:
 	migrated.set_fx_regimes(_regimes())
 	migrated.from_dict(old)
 	_check(int(migrated.to_dict().get("version", 0)) == SAVE_VERSION,
-		"migração: o save carregado não foi regravado na v34")
+		"migração: o save carregado não foi regravado na v%d" % SAVE_VERSION)
 	_check(String(_fx(migrated, "ANC").get("regime_saved", "")) == "floating",
 		"migração: ANC deveria virar floating pelo arquivo (%s)" % _fx(
 			migrated, "ANC").get("regime_saved", ""))

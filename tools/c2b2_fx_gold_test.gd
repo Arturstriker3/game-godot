@@ -29,7 +29,10 @@ const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employmen
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 const EXCHANGE_PATH := "res://data/definitions/economy/exchange_policy.json"
 
-const SAVE_VERSION := 34
+# Versão do schema vem do núcleo (`kSaveVersion` via get_save_version()): o
+# teste continua exigindo igualdade exata, sem literal que apodrece.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 const EPS := 1e-3
 
 var _failures: Array[String] = []
@@ -432,4 +435,4 @@ func _test_save_and_migration() -> void:
 		"migração: evento inventado para trás")
 	_check(int((migrated.to_dict() as Dictionary).get("version", 0))
 		== SAVE_VERSION,
-		"migração: o save carregado não foi regravado na v34")
+		"migração: o save carregado não foi regravado na v%d" % SAVE_VERSION)

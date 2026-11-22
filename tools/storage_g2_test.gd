@@ -25,7 +25,10 @@ const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 
 const AGRIA_CENTER := Vector2(2532.6, 571.4)
 const PORTUS_CENTER := Vector2(2560.4, 543.8)
-const SAVE_VERSION := 34
+# Versão do schema vem do núcleo (`kSaveVersion` via get_save_version()): o
+# teste continua exigindo igualdade exata, sem literal que apodrece.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 ## Tolerância da conservação (XGS ou t) — o mundo demo roda em double.
 const EPS := 1e-6
 
@@ -576,7 +579,7 @@ func _test_roundtrip_and_migration() -> void:
 	loaded.from_dict(save)
 	var reloaded: Dictionary = loaded.to_dict()
 	_check(int(reloaded.get("version", 0)) == SAVE_VERSION,
-		"save: round-trip mantém v25")
+		"save: round-trip mantém v%d" % SAVE_VERSION)
 	var sites_after: Array = ((reloaded.get("storage", {}) as Dictionary)
 		.get("sites", []))
 	_check(sites_after.size() == sites_save.size(),

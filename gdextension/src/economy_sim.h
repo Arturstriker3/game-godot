@@ -243,6 +243,11 @@ public:
 	 * invalida o status. A UI usa para saber se o retrato em cache está velho. */
 	int get_data_version() const;
 
+	/** Versão atual do schema de save (`kSaveVersion` do núcleo). Somente
+	 * leitura: os testes comparam o save gravado com esta constante em vez de
+	 * fixar o número, que sobe a cada bloco novo (hoje 37). */
+	int get_save_version() const;
+
 	/** Choque de preço em um produto (id de goods.json, ex.: "wheat"). */
 	void price_shock(const String& product, double multiplier);
 

@@ -26,7 +26,10 @@ const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
-const SAVE_VERSION := 34
+# Versão do schema vem do núcleo (`kSaveVersion` via get_save_version()): o
+# teste continua exigindo igualdade exata, sem literal que apodrece.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 # Parâmetros espelhados de sim_constants.h (âncoras do teste).
 const ACCESS_PENALTY_MAX := 0.30
 const EXODUS_BOOST_MAX := 0.50
@@ -304,7 +307,7 @@ func _run() -> void:
 	_load_chains(rt2)
 	rt2.from_dict(rt)
 	var rt3: Dictionary = rt2.to_dict()
-	_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip deve manter v34")
+	_check(int(rt3.get("version", 0)) == SAVE_VERSION, "round-trip deve manter v%d" % SAVE_VERSION)
 
 	# --- (4) Migração v20 → v21. ---
 	var v20: Dictionary = sim.to_dict()
@@ -321,7 +324,7 @@ func _run() -> void:
 	migrated.from_dict(v20)
 	var after: Dictionary = migrated.to_dict()
 	_check(int(after.get("version", 0)) == SAVE_VERSION,
-		"v20 deve migrar para v34 (é %s)" % str(after.get("version")))
+		"v20 deve migrar para v%d (é %s)" % [SAVE_VERSION, str(after.get("version"))])
 	var mcity := _pick_city(after)
 	if mcity != "":
 		var mi := 0
