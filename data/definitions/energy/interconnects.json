@@ -4,12 +4,19 @@
   "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E, E5",
   "decision": "D-117 - comercio de energia entre redes nacionais vizinhas",
   "kind": "derived_data_plus_declared_model",
-  "method": "fluxo medio do importador = net_imports_twh Ember x 1e6/8760; repartido entre os vizinhos exportadores (fronteira terrestre de land_borders.json) proporcional a exportacao liquida Ember de cada um; capacidade = fluxo medio x headroom",
+  "method": "fluxo medio do importador = net_imports_twh Ember x 1e6/8760; repartido entre os vizinhos exportadores (fronteira terrestre de land_borders.json) proporcional a exportacao liquida Ember de cada um; capacidade = fluxo medio x headroom. Pares submarinos/sem exportador liquido usam a capacidade nominal publicada por par (method=public_capacity)",
   "headroom_factor": 1.25,
-  "headroom_rationale": "default de jogo declarado: a NTC (ENTSO-E) e a capacidade maxima de troca entre duas areas, um limite de capacidade e nao um fluxo medio; o modelo despacha energia diaria e a linha e dimensionada no fluxo medio x 1,25 para a variacao diaria caber sem saturar em metade dos dias",
+  "headroom_rationale": "default de jogo declarado: a NTC (ENTSO-E) e a capacidade maxima de troca entre duas areas, um limite de capacidade e nao um fluxo medio; o modelo despacha energia diaria e a linha e dimensionada no fluxo medio x 1,25 para a variacao diaria caber sem saturar em metade dos dias; nas ligacoes com `method=public_capacity` vale o valor NOMINAL publicado",
   "submarine_links": {
-   "included": false,
-   "reason": "o repositorio nao tem dataset publico por par (capacidade ou fluxo); inventar MW seria fabricar dado"
+   "included": true,
+   "method": "capacidade nominal por par de fonte publica (Ofgem, Energinet/Danish Energy Agency, ADB); nao e fluxo medio derivado de Ember",
+   "pairs": 9,
+   "sources": [
+    "adb_bgd_ind",
+    "energinet_dk_interconnectors",
+    "ofgem_interconnectors"
+   ],
+   "rationale": "QA t80: GB e DK nao tem par terrestre (ilhas) e o par BGD-IND nao existe na derivacao porque a India e importadora liquida no ano-base; sem essas linhas a capacidade e ZERO e o par nao entra no modelo"
   },
   "excluded_pairs": [
    {
@@ -31,11 +38,12 @@
    "nations_with_ember_net_imports": 175,
    "importers": 78,
    "exporters": 47,
-   "links": 122,
+   "links": 131,
+   "links_public_capacity": 9,
    "importers_with_link": 66,
    "unserved_importers": 12,
    "total_avg_flow_mw": 31963.354844,
-   "total_capacity_mw": 39954.193555
+   "total_capacity_mw": 56501.193555
   },
   "known_limits": "a reparticao proporcional ignora limites internos de cada exportador (o dado Ember e anual e nacional); ilhas e importadores sem vizinho exportador continuam sem compra - a ausencia e declarada em unserved_importers"
  },
@@ -69,6 +77,104 @@
    "license": "documento publico de referencia (citacao)",
    "used_for": "razao da folga de pico: NTC e a capacidade maxima de troca entre duas areas compativel com seguranca (limite de capacidade, nao fluxo medio)",
    "used_in": "meta.headroom_rationale (default de jogo, nao e dado por par)"
+  },
+  {
+   "id": "ofgem_interconnectors",
+   "title": "Interconnectors (cap and floor regime; capacity by link)",
+   "publisher": "Ofgem (GB regulator)",
+   "url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/interconnectors",
+   "landing_url": "https://www.ofgem.gov.uk/",
+   "license": "publicacao regulatoria publica (citacao)",
+   "accessed_at_utc": "2026-11-22T06:40:00Z",
+   "used_for": "capacidade nominal das ligacoes submarinas GB-Franca (IFA/IFA2/ElecLink), GB-Paises Baixos (BritNed), GB-Belgica (Nemo Link), GB-Noruega (North Sea Link) e GB-Irlanda (East-West/Greenlink)",
+   "used_in": "links[method=public_capacity]"
+  },
+  {
+   "id": "energinet_dk_interconnectors",
+   "title": "Danish electricity market implementation plan according to Article 20 of Regulation (EU) 2019/943 (table 5: interconnector capacity)",
+   "publisher": "Danish Energy Agency / Energinet",
+   "url": "https://ens.dk/media/7817/download",
+   "landing_url": "https://ens.dk/",
+   "license": "publicacao publica (citacao)",
+   "accessed_at_utc": "2026-11-22T06:40:00Z",
+   "used_for": "capacidade nominal das ligacoes da Dinamarca: Skagerrak 1-4 (NO), Konti-Skan + Oresund (SE) e Endrup/Kontek/Kriegers Flak (DE)",
+   "used_in": "links[method=public_capacity]"
+  },
+  {
+   "id": "adb_bgd_ind",
+   "title": "SASEC Second Bangladesh-India Electrical Grid Interconnection Project (Baharampur-Bheramara)",
+   "publisher": "Asian Development Bank (ADB)",
+   "url": "https://www.adb.org/projects/44192-016/main",
+   "landing_url": "https://www.adb.org/",
+   "license": "publicacao publica (citacao)",
+   "accessed_at_utc": "2026-11-22T06:40:00Z",
+   "used_for": "capacidade da ligacao Bangladesh-India: 2x500 MW HVDC back-to-back em Bheramara (500 MW em 2013, 1.000 MW apos o segundo projeto SASEC)",
+   "used_in": "links[method=public_capacity]"
+  }
+ ],
+ "public_capacity_applied": [
+  {
+   "a": "FRA",
+   "b": "GBR",
+   "capacity_mw": 4000.0,
+   "source": "ofgem_interconnectors",
+   "previous_method": null
+  },
+  {
+   "a": "GBR",
+   "b": "NLD",
+   "capacity_mw": 1000.0,
+   "source": "ofgem_interconnectors",
+   "previous_method": null
+  },
+  {
+   "a": "BEL",
+   "b": "GBR",
+   "capacity_mw": 1000.0,
+   "source": "ofgem_interconnectors",
+   "previous_method": null
+  },
+  {
+   "a": "GBR",
+   "b": "NOR",
+   "capacity_mw": 1400.0,
+   "source": "ofgem_interconnectors",
+   "previous_method": null
+  },
+  {
+   "a": "GBR",
+   "b": "IRL",
+   "capacity_mw": 1000.0,
+   "source": "ofgem_interconnectors",
+   "previous_method": null
+  },
+  {
+   "a": "DNK",
+   "b": "NOR",
+   "capacity_mw": 1632.0,
+   "source": "energinet_dk_interconnectors",
+   "previous_method": null
+  },
+  {
+   "a": "DNK",
+   "b": "SWE",
+   "capacity_mw": 2015.0,
+   "source": "energinet_dk_interconnectors",
+   "previous_method": null
+  },
+  {
+   "a": "DEU",
+   "b": "DNK",
+   "capacity_mw": 3500.0,
+   "source": "energinet_dk_interconnectors",
+   "previous_method": null
+  },
+  {
+   "a": "BGD",
+   "b": "IND",
+   "capacity_mw": 1000.0,
+   "source": "adb_bgd_ind",
+   "previous_method": null
   }
  ],
  "unserved_importers": [
@@ -672,6 +778,24 @@
   },
   {
    "a": "BEL",
+   "b": "GBR",
+   "importer": "",
+   "exporter": "",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 0.0,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": -0.0,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 1000.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "ofgem_interconnectors",
+   "capacity_note": "Nemo Link 1.000 MW"
+  },
+  {
+   "a": "BEL",
    "b": "NED",
    "importer": "BEL",
    "exporter": "NED",
@@ -749,6 +873,24 @@
    "capacity_mw": 29.160912,
    "headroom": 1.25,
    "method": "ember_net_imports_x_land_borders"
+  },
+  {
+   "a": "BGD",
+   "b": "IND",
+   "importer": "",
+   "exporter": "",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 0.0,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": -0.0,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 1000.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "adb_bgd_ind",
+   "capacity_note": "Baharampur-Bheramara 400 kV 2xD/c + 2x500 MW HVDC B2B"
   },
   {
    "a": "BGR",
@@ -1248,6 +1390,24 @@
   },
   {
    "a": "DEU",
+   "b": "DNK",
+   "importer": "",
+   "exporter": "",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 0.0,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": -0.0,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 3500.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "energinet_dk_interconnectors",
+   "capacity_note": "Endrup-Alemanha 2.500 + Kontek 600 + Kriegers Flak 400 MW"
+  },
+  {
+   "a": "DEU",
    "b": "FRA",
    "importer": "DEU",
    "exporter": "FRA",
@@ -1293,6 +1453,42 @@
    "capacity_mw": 85.616438,
    "headroom": 1.25,
    "method": "ember_net_imports_x_land_borders"
+  },
+  {
+   "a": "DNK",
+   "b": "NOR",
+   "importer": "DNK",
+   "exporter": "NOR",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 7.41,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": 22.8,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 1632.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "energinet_dk_interconnectors",
+   "capacity_note": "Skagerrak 1-4 (DK1-NO2) 1.632 MW"
+  },
+  {
+   "a": "DNK",
+   "b": "SWE",
+   "importer": "DNK",
+   "exporter": "SWE",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 7.41,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": 33.7,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 2015.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "energinet_dk_interconnectors",
+   "capacity_note": "Konti-Skan 715 (DK1-SE3) + Oresund 1.300 (DK2-SE4) MW"
   },
   {
    "a": "DZA",
@@ -1488,6 +1684,24 @@
   },
   {
    "a": "FRA",
+   "b": "GBR",
+   "importer": "GBR",
+   "exporter": "FRA",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 17.925,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": 93.8,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 4000.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "ofgem_interconnectors",
+   "capacity_note": "IFA 2.000 + IFA2 1.000 + ElecLink 1.000 MW"
+  },
+  {
+   "a": "FRA",
    "b": "ITA",
    "importer": "ITA",
    "exporter": "FRA",
@@ -1517,6 +1731,60 @@
    "capacity_mw": 703.481735,
    "headroom": 1.25,
    "method": "ember_net_imports_x_land_borders"
+  },
+  {
+   "a": "GBR",
+   "b": "IRL",
+   "importer": "",
+   "exporter": "",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 0.0,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": -0.0,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 1000.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "ofgem_interconnectors",
+   "capacity_note": "East-West 500 + Greenlink 504 MW (arredondado a 1 GW pelo Ofgem)"
+  },
+  {
+   "a": "GBR",
+   "b": "NLD",
+   "importer": "GBR",
+   "exporter": "NLD",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 17.925,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": -0.0,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 1000.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "ofgem_interconnectors",
+   "capacity_note": "BritNed 1.000 MW"
+  },
+  {
+   "a": "GBR",
+   "b": "NOR",
+   "importer": "GBR",
+   "exporter": "NOR",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 17.925,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": 22.8,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 1400.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "ofgem_interconnectors",
+   "capacity_note": "North Sea Link 1.400 MW"
   },
   {
    "a": "GEO",

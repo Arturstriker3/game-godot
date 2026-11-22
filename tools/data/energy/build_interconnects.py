@@ -72,6 +72,60 @@ OVERSEAS_ONLY_PAIRS = {
     ),
 }
 
+# Ligações cujo dado derivado (Ember × fronteira terrestre) sai ZERO ou
+# subdimensionado porque o par é submarino ou porque o vizinho não é
+# exportador líquido no ano-base (as duas pontas importam em anos diferentes).
+# A capacidade vem de fonte pública por par — não é modelo: é capacidade
+# nominal publicada pelo regulador/operador. Mesmo assim o núcleo decide a
+# direção do fluxo pelo déficit diário (o campo `importer` aqui é só relatório).
+PUBLIC_LINKS = [
+    {
+        "a": "FRA", "b": "GBR", "capacity_mw": 4000.0,
+        "source": "ofgem_interconnectors",
+        "note": "IFA 2.000 + IFA2 1.000 + ElecLink 1.000 MW",
+    },
+    {
+        "a": "GBR", "b": "NLD", "capacity_mw": 1000.0,
+        "source": "ofgem_interconnectors",
+        "note": "BritNed 1.000 MW",
+    },
+    {
+        "a": "BEL", "b": "GBR", "capacity_mw": 1000.0,
+        "source": "ofgem_interconnectors",
+        "note": "Nemo Link 1.000 MW",
+    },
+    {
+        "a": "GBR", "b": "NOR", "capacity_mw": 1400.0,
+        "source": "ofgem_interconnectors",
+        "note": "North Sea Link 1.400 MW",
+    },
+    {
+        "a": "GBR", "b": "IRL", "capacity_mw": 1000.0,
+        "source": "ofgem_interconnectors",
+        "note": "East-West 500 + Greenlink 504 MW (arredondado a 1 GW pelo Ofgem)",
+    },
+    {
+        "a": "DNK", "b": "NOR", "capacity_mw": 1632.0,
+        "source": "energinet_dk_interconnectors",
+        "note": "Skagerrak 1-4 (DK1-NO2) 1.632 MW",
+    },
+    {
+        "a": "DNK", "b": "SWE", "capacity_mw": 2015.0,
+        "source": "energinet_dk_interconnectors",
+        "note": "Konti-Skan 715 (DK1-SE3) + Oresund 1.300 (DK2-SE4) MW",
+    },
+    {
+        "a": "DEU", "b": "DNK", "capacity_mw": 3500.0,
+        "source": "energinet_dk_interconnectors",
+        "note": "Endrup-Alemanha 2.500 + Kontek 600 + Kriegers Flak 400 MW",
+    },
+    {
+        "a": "BGD", "b": "IND", "capacity_mw": 1000.0,
+        "source": "adb_bgd_ind",
+        "note": "Baharampur-Bheramara 400 kV 2xD/c + 2x500 MW HVDC B2B",
+    },
+]
+
 SOURCES = [
     {
         "id": "ember_yearly",
@@ -106,6 +160,58 @@ SOURCES = [
             "capacidade, nao fluxo medio)"
         ),
         "used_in": "meta.headroom_rationale (default de jogo, nao e dado por par)",
+    },
+    {
+        "id": "ofgem_interconnectors",
+        "title": "Interconnectors (cap and floor regime; capacity by link)",
+        "publisher": "Ofgem (GB regulator)",
+        "url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/interconnectors",
+        "landing_url": "https://www.ofgem.gov.uk/",
+        "license": "publicacao regulatoria publica (citacao)",
+        "accessed_at_utc": "2026-11-22T06:40:00Z",
+        "used_for": (
+            "capacidade nominal das ligacoes submarinas GB-Franca "
+            "(IFA/IFA2/ElecLink), GB-Paises Baixos (BritNed), GB-Belgica "
+            "(Nemo Link), GB-Noruega (North Sea Link) e GB-Irlanda "
+            "(East-West/Greenlink)"
+        ),
+        "used_in": "links[method=public_capacity]",
+    },
+    {
+        "id": "energinet_dk_interconnectors",
+        "title": (
+            "Danish electricity market implementation plan according to "
+            "Article 20 of Regulation (EU) 2019/943 (table 5: interconnector "
+            "capacity)"
+        ),
+        "publisher": "Danish Energy Agency / Energinet",
+        "url": "https://ens.dk/media/7817/download",
+        "landing_url": "https://ens.dk/",
+        "license": "publicacao publica (citacao)",
+        "accessed_at_utc": "2026-11-22T06:40:00Z",
+        "used_for": (
+            "capacidade nominal das ligacoes da Dinamarca: Skagerrak 1-4 "
+            "(NO), Konti-Skan + Oresund (SE) e Endrup/Kontek/Kriegers Flak (DE)"
+        ),
+        "used_in": "links[method=public_capacity]",
+    },
+    {
+        "id": "adb_bgd_ind",
+        "title": (
+            "SASEC Second Bangladesh-India Electrical Grid Interconnection "
+            "Project (Baharampur-Bheramara)"
+        ),
+        "publisher": "Asian Development Bank (ADB)",
+        "url": "https://www.adb.org/projects/44192-016/main",
+        "landing_url": "https://www.adb.org/",
+        "license": "publicacao publica (citacao)",
+        "accessed_at_utc": "2026-11-22T06:40:00Z",
+        "used_for": (
+            "capacidade da ligacao Bangladesh-India: 2x500 MW HVDC "
+            "back-to-back em Bheramara (500 MW em 2013, 1.000 MW apos o "
+            "segundo projeto SASEC)"
+        ),
+        "used_in": "links[method=public_capacity]",
     },
 ]
 
@@ -227,6 +333,70 @@ def build() -> dict:
             )
 
     links.sort(key=lambda row: (row["a"], row["b"]))
+    # --- Ligações submarinas / de capacidade pública por par (QA t80).
+    # A derivação Ember × fronteira terrestre não vê par submarino (GB, DK) e
+    # não cria par quando o vizinho não é exportador líquido no ano-base
+    # (BGD-IND). Para esses pares a capacidade é o valor NOMINAL publicado
+    # pelo regulador/operador; o núcleo decide a direção diária pelo déficit.
+    by_pair = {(row["a"], row["b"]): row for row in links}
+    public_applied = []
+    for item in PUBLIC_LINKS:
+        a, b = sorted((item["a"], item["b"]))
+        capacity = float(item["capacity_mw"])
+        source = item["source"]
+        row = by_pair.get((a, b))
+        if row is not None:
+            if capacity > float(row["capacity_mw"]):
+                row["capacity_mw"] = round(capacity, 6)
+                row["method"] = "public_capacity"
+                row["source"] = source
+                row["capacity_note"] = item["note"]
+                public_applied.append(
+                    {
+                        "a": a,
+                        "b": b,
+                        "capacity_mw": round(capacity, 6),
+                        "source": source,
+                        "previous_method": "ember_net_imports_x_land_borders",
+                    }
+                )
+            continue
+        importer = ""
+        exporter = ""
+        if net_imports.get(a, 0.0) > 0.0 and net_imports.get(b, 0.0) <= 0.0:
+            importer, exporter = a, b
+        elif net_imports.get(b, 0.0) > 0.0 and net_imports.get(a, 0.0) <= 0.0:
+            importer, exporter = b, a
+        row = {
+            "a": a,
+            "b": b,
+            "importer": importer,
+            "exporter": exporter,
+            "border_km": 0.0,
+            "importer_net_imports_twh": round(net_imports.get(importer, 0.0), 6),
+            "importer_avg_import_mw": 0.0,
+            "exporter_net_export_twh": round(-net_imports.get(exporter, 0.0), 6),
+            "neighbor_export_sum_twh": 0.0,
+            "share": 0.0,
+            "avg_flow_mw": 0.0,
+            "capacity_mw": round(capacity, 6),
+            "headroom": None,
+            "method": "public_capacity",
+            "source": source,
+            "capacity_note": item["note"],
+        }
+        links.append(row)
+        by_pair[(a, b)] = row
+        public_applied.append(
+            {
+                "a": a,
+                "b": b,
+                "capacity_mw": round(capacity, 6),
+                "source": source,
+                "previous_method": None,
+            }
+        )
+    links.sort(key=lambda row: (row["a"], row["b"]))
     total_capacity = sum(row["capacity_mw"] for row in links)
     total_flow = sum(row["avg_flow_mw"] for row in links)
     out = {
@@ -239,7 +409,9 @@ def build() -> dict:
                 "fluxo medio do importador = net_imports_twh Ember x 1e6/8760; "
                 "repartido entre os vizinhos exportadores (fronteira terrestre "
                 "de land_borders.json) proporcional a exportacao liquida Ember "
-                "de cada um; capacidade = fluxo medio x headroom"
+                "de cada um; capacidade = fluxo medio x headroom. Pares "
+                "submarinos/sem exportador liquido usam a capacidade nominal "
+                "publicada por par (method=public_capacity)"
             ),
             "headroom_factor": HEADROOM,
             "headroom_rationale": (
@@ -247,13 +419,23 @@ def build() -> dict:
                 "maxima de troca entre duas areas, um limite de capacidade e "
                 "nao um fluxo medio; o modelo despacha energia diaria e a "
                 "linha e dimensionada no fluxo medio x 1,25 para a variacao "
-                "diaria caber sem saturar em metade dos dias"
+                "diaria caber sem saturar em metade dos dias; nas ligacoes "
+                "com `method=public_capacity` vale o valor NOMINAL publicado"
             ),
             "submarine_links": {
-                "included": False,
-                "reason": (
-                    "o repositorio nao tem dataset publico por par "
-                    "(capacidade ou fluxo); inventar MW seria fabricar dado"
+                "included": True,
+                "method": (
+                    "capacidade nominal por par de fonte publica (Ofgem, "
+                    "Energinet/Danish Energy Agency, ADB); nao e fluxo medio "
+                    "derivado de Ember"
+                ),
+                "pairs": len(public_applied),
+                "sources": sorted({row["source"] for row in public_applied}),
+                "rationale": (
+                    "QA t80: GB e DK nao tem par terrestre (ilhas) e o par "
+                    "BGD-IND nao existe na derivacao porque a India e "
+                    "importadora liquida no ano-base; sem essas linhas a "
+                    "capacidade e ZERO e o par nao entra no modelo"
                 ),
             },
             "excluded_pairs": [
@@ -274,6 +456,7 @@ def build() -> dict:
                 "importers": len(importers),
                 "exporters": len(exporters),
                 "links": len(links),
+                "links_public_capacity": len(public_applied),
                 "importers_with_link": len(per_importer),
                 "unserved_importers": len(unserved),
                 "total_avg_flow_mw": round(total_flow, 6),
@@ -287,6 +470,7 @@ def build() -> dict:
             ),
         },
         "_sources": SOURCES,
+        "public_capacity_applied": public_applied,
         "unserved_importers": unserved,
         "by_importer": per_importer,
         "links": links,
@@ -312,7 +496,7 @@ def main() -> int:
         print("[interconnects] ok: arquivo identico ao gerado")
         return 0
 
-    OUT_PATH.write_text(text, encoding="utf-8")
+    OUT_PATH.write_text(text, encoding="utf-8", newline="\n")
     counts = data["meta"]["counts"]
     print(
         "[interconnects] links=%d importadores=%d sem link=%d capacidade=%.1f MW"
