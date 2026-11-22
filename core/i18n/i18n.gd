@@ -261,6 +261,17 @@ const TEMPLATE_STRINGS := {
 
 		"stats.history.months": "{n} meses",
 		"tpl.quadro.trend.note": "Série mensal amostrada no fechamento do dia; até 12 meses.",
+
+		"credits.energy.title": "Créditos — dados de energia elétrica",
+		"credits.energy.ember": "Ember (2026). Yearly Electricity Data. Ember Energy Research CIC — CC BY 4.0.",
+		"credits.energy.wri_gppd": "WRI. Global Power Plant Database v1.3.0 — CC BY 4.0.",
+		"credits.energy.world_bank": "Banco Mundial. World Development Indicators: acesso à eletricidade e perdas T&D — CC BY 4.0.",
+		"credits.energy.solar_atlas": "Global Solar Atlas (Banco Mundial / Solargis) — CC BY 4.0.",
+		"credits.energy.wind_atlas": "Global Wind Atlas (DTU / Banco Mundial) — CC BY 4.0.",
+		"credits.energy.chirps": "CHIRPS (UCSB Climate Hazards Center) — CC BY 4.0.",
+		"credits.energy.chelsa": "CHELSA v2.1 PET (WSL) — CC0 1.0.",
+		"credits.energy.etopo1": "ETOPO1 (NOAA/NCEI) — domínio público.",
+		"credits.energy.natural_earth": "Natural Earth (rios e fronteiras) — domínio público.",
 	},
 	"en": {
 		"tpl.common.page": "Page {page} of {pages}",
@@ -505,6 +516,17 @@ const TEMPLATE_STRINGS := {
 
 		"stats.history.months": "{n} months",
 		"tpl.quadro.trend.note": "Monthly series sampled at day close; up to 12 months.",
+
+		"credits.energy.title": "Credits — electricity data",
+		"credits.energy.ember": "Ember (2026). Yearly Electricity Data. Ember Energy Research CIC — CC BY 4.0.",
+		"credits.energy.wri_gppd": "WRI. Global Power Plant Database v1.3.0 — CC BY 4.0.",
+		"credits.energy.world_bank": "World Bank. World Development Indicators: electricity access and T&D losses — CC BY 4.0.",
+		"credits.energy.solar_atlas": "Global Solar Atlas (World Bank / Solargis) — CC BY 4.0.",
+		"credits.energy.wind_atlas": "Global Wind Atlas (DTU / World Bank) — CC BY 4.0.",
+		"credits.energy.chirps": "CHIRPS (UCSB Climate Hazards Center) — CC BY 4.0.",
+		"credits.energy.chelsa": "CHELSA v2.1 PET (WSL) — CC0 1.0.",
+		"credits.energy.etopo1": "ETOPO1 (NOAA/NCEI) — public domain.",
+		"credits.energy.natural_earth": "Natural Earth (rivers and borders) — public domain.",
 	},
 	"es": {
 		"tpl.common.page": "Página {page} de {pages}",
@@ -749,6 +771,17 @@ const TEMPLATE_STRINGS := {
 
 		"stats.history.months": "{n} meses",
 		"tpl.quadro.trend.note": "Serie mensual muestreada al cierre del día; hasta 12 meses.",
+
+		"credits.energy.title": "Créditos — datos de energía eléctrica",
+		"credits.energy.ember": "Ember (2026). Yearly Electricity Data. Ember Energy Research CIC — CC BY 4.0.",
+		"credits.energy.wri_gppd": "WRI. Global Power Plant Database v1.3.0 — CC BY 4.0.",
+		"credits.energy.world_bank": "Banco Mundial. World Development Indicators: acceso a la electricidad y pérdidas T&D — CC BY 4.0.",
+		"credits.energy.solar_atlas": "Global Solar Atlas (Banco Mundial / Solargis) — CC BY 4.0.",
+		"credits.energy.wind_atlas": "Global Wind Atlas (DTU / Banco Mundial) — CC BY 4.0.",
+		"credits.energy.chirps": "CHIRPS (UCSB Climate Hazards Center) — CC BY 4.0.",
+		"credits.energy.chelsa": "CHELSA v2.1 PET (WSL) — CC0 1.0.",
+		"credits.energy.etopo1": "ETOPO1 (NOAA/NCEI) — dominio público.",
+		"credits.energy.natural_earth": "Natural Earth (ríos y fronteras) — dominio público.",
 	},
 }
 

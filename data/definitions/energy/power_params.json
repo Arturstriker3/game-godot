@@ -30,6 +30,7 @@
     "industry_floor": 0.05,
     "self_generation_floor": 0.15,
     "service_factor_min": 0.5,
+    "industry_cost_share_max": 0.05,
     "stress_per_unserved": 4.0,
     "stress_duration_days": 10.0,
     "ration_threshold": 0.995,

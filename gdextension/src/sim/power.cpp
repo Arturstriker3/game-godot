@@ -107,6 +107,7 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 	get("industry_floor", industry_floor);
 	get("self_generation_floor", self_generation_floor);
 	get("service_factor_min", service_factor_min);
+	get("industry_cost_share_max", industry_cost_share_max);
 	get("stress_per_unserved", stress_per_unserved);
 	get("stress_duration_days", stress_duration_days);
 	get("ration_threshold", ration_threshold);
@@ -194,6 +195,7 @@ void power_params_to_map(const PowerParams& p,
 	put("industry_floor", p.industry_floor);
 	put("self_generation_floor", p.self_generation_floor);
 	put("service_factor_min", p.service_factor_min);
+	put("industry_cost_share_max", p.industry_cost_share_max);
 	put("stress_per_unserved", p.stress_per_unserved);
 	put("stress_duration_days", p.stress_duration_days);
 	put("ration_threshold", p.ration_threshold);
@@ -228,6 +230,28 @@ void seed(WorldState& ws, const PowerParams& params,
 	ws.power_cities.assign(count, PowerCityState());
 	ws.power_plants.clear();
 	ws.power_grids.clear();
+	// Escala do universo simulado: a economia modela a população simulada
+	// (aglomerações urbanas), não a população exibida do mapa. O dado de parque
+	// é NACIONAL (mundo exibido); para MW e dinheiro viverem na mesma escala,
+	// o parque de cada nação é multiplicado pela fração simulada/exibida da
+	// nação. Sem simulação (fixture), a fração é 1 e o parque é o do dado.
+	std::map<std::string, double> sim_pop;
+	std::map<std::string, double> shown_pop;
+	for (const City& city : ws.cities) {
+		if (city.population > 0.0 && city.simulation_population > 0.0) {
+			sim_pop[city.nation] += city.simulation_population;
+			shown_pop[city.nation] += city.population;
+		}
+	}
+	const auto nation_scale = [&sim_pop, &shown_pop](const std::string& nation) {
+		const auto sim = sim_pop.find(nation);
+		const auto shown = shown_pop.find(nation);
+		if (sim == sim_pop.end() || shown == shown_pop.end()
+				|| shown->second <= 0.0) {
+			return 1.0;
+		}
+		return std::clamp(sim->second / shown->second, 0.0, 1.0);
+	};
 	for (std::size_t index = 0; index < count; ++index) {
 		City& city = ws.cities[index];
 		PowerCityState& state = ws.power_cities[index];
@@ -254,6 +278,12 @@ void seed(WorldState& ws, const PowerParams& params,
 		}
 		if (city_found != cities.end()) {
 			def = city_found->second;
+		}
+		// Parque e teto do dado nacional na escala da economia simulada.
+		const double scale = nation_scale(city.nation);
+		for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+			def.park[fuel] = std::max(0.0, def.park[fuel]) * scale;
+			def.cap[fuel] = std::max(0.0, def.cap[fuel]) * scale;
 		}
 		state.has_data = true;
 		state.access_pct = std::clamp(
@@ -638,8 +668,11 @@ void SimCore::phase_power() {
 			city.power_cost_per_value = 0.0;
 			continue;
 		}
-		const double people = city.population > 0.0
-			? city.population : city.simulation_population;
+		// A economia precifica a população SIMULADA (aglomerações); a exibida é
+		// o retrato do mapa. Demanda, contas e custos usam a mesma escala do
+		// parque semeado (fração simulada, ver `seed`).
+		const double people = city.simulation_population > 0.0
+			? city.simulation_population : city.population;
 		const double access = std::clamp(state.access_pct / 100.0,
 			params.access_floor, 1.0);
 		const double income = std::clamp(std::max(0.0, city.external_income_index),
@@ -939,7 +972,8 @@ void SimCore::phase_power() {
 			}
 		}
 		city.power_cost_per_value = value > 1e-9
-			? city.power_cost_industry / value : 0.0;
+			? std::min(city.power_cost_industry / value,
+				std::max(0.0, params.industry_cost_share_max)) : 0.0;
 		// Insatisfação: cresce com a duração do blecaute (dias seguidos).
 		if (ratio < params.ration_threshold) {
 			state.ration_days += 1;

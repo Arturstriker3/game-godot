@@ -77,6 +77,11 @@ struct PowerParams {
 	double industry_floor = 0.05;
 	double self_generation_floor = 0.15;
 	double service_factor_min = 0.5;
+	// Repasse máximo do custo de energia ao preço industrial, como fração do
+	// preço base do bem (modelo declarado): a conta da energia da cidade
+	// dividida pelo valor da indústria local pode explodir onde a cidade tem
+	// poucas plantas; o excedente fica como perda do setor, não vira preço.
+	double industry_cost_share_max = 0.05;
 	double stress_per_unserved = 4.0;
 	double stress_duration_days = 10.0;
 	// Racionamento: fração servida abaixo da qual o dia conta como blecaute.

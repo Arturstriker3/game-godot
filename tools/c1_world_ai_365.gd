@@ -98,6 +98,164 @@ func _init() -> void:
 	_run()
 
 
+## PARTE E (D-116) — linha do dia de energia (agregados do mundo).
+func _power_sample(day: int, power: Dictionary) -> Dictionary:
+	var nations: Dictionary = power.get("nations", {})
+	var grids := 0
+	var connected := 0
+	var partial := 0
+	var isolated := 0
+	for tag: Variant in nations:
+		var row: Dictionary = nations[tag]
+		if not bool(row.get("exists", false)):
+			continue
+		grids += 1
+		connected += int(row.get("connected", 0))
+		partial += int(row.get("partial", 0))
+		isolated += int(row.get("isolated", 0))
+	return {
+		"day": day,
+		"price": float(power.get("average_price", 0.0)),
+		"served_ratio": float(power.get("served_ratio", 0.0)),
+		"demand_mwh": float(power.get("demand_mwh", 0.0)),
+		"served_mwh": float(power.get("served_mwh", 0.0)),
+		"rationing_cities": int(power.get("rationing_cities", 0)),
+		"max_ration_days": int(power.get("max_ration_days", 0)),
+		"loss_pct": float(power.get("loss_pct", 0.0)),
+		"grids": grids,
+		"connected": connected,
+		"partial": partial,
+		"isolated": isolated,
+	}
+
+
+## PARTE E (D-116) — digest do ano: preço médio ponderado pelo servido, % de
+## demanda servida, racionamento (pico e nações no fecho), conexão por cidade e
+## geração por fonte. O top 5 por demanda vem com a capacidade da matriz Ember
+## (dado de E1) ao lado — capacidade não é geração, a comparação é declarada.
+func _power_digest(sim, samples: Array) -> Dictionary:
+	if samples.is_empty():
+		return {"ready": false}
+	var demand := 0.0
+	var served := 0.0
+	var bill := 0.0
+	var max_ration := 0
+	var days_rationing := 0
+	var min_ratio := 1.0
+	for row: Dictionary in samples:
+		demand += float(row.get("demand_mwh", 0.0))
+		served += float(row.get("served_mwh", 0.0))
+		bill += float(row.get("price", 0.0)) * float(row.get("served_mwh", 0.0))
+		max_ration = maxi(max_ration, int(row.get("rationing_cities", 0)))
+		if int(row.get("rationing_cities", 0)) > 0:
+			days_rationing += 1
+		min_ratio = minf(min_ratio, float(row.get("served_ratio", 1.0)))
+	var final: Dictionary = sim.get_power_status()
+	var nations: Dictionary = final.get("nations", {})
+	var grids := 0
+	var connected := 0
+	var partial := 0
+	var isolated := 0
+	var rationing: Array = []
+	var by_nation: Array = []
+	for tag: Variant in nations:
+		var row2: Dictionary = nations[tag]
+		if not bool(row2.get("exists", false)):
+			continue
+		grids += 1
+		connected += int(row2.get("connected", 0))
+		partial += int(row2.get("partial", 0))
+		isolated += int(row2.get("isolated", 0))
+		by_nation.append({
+			"nation": String(tag),
+			"price": float(row2.get("price", 0.0)),
+			"demand_mwh": float(row2.get("demand_mwh", 0.0)),
+			"served_mwh": float(row2.get("served_mwh", 0.0)),
+			"served_ratio": float(row2.get("served_ratio", 0.0)),
+			"ration_days": int(row2.get("ration_days", 0)),
+			"connected": int(row2.get("connected", 0)),
+			"partial": int(row2.get("partial", 0)),
+			"isolated": int(row2.get("isolated", 0)),
+			"generation_mwh_by_fuel": row2.get("generation_mwh_by_fuel", {}),
+		})
+		if float(row2.get("served_ratio", 1.0)) < 0.995:
+			rationing.append(String(tag))
+	rationing.sort()
+	by_nation.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["served_mwh"]) > float(b["served_mwh"]))
+	var top: Array = by_nation.slice(0, 5)
+	var ember: Dictionary = _ember_capacity()
+	for row3: Dictionary in top:
+		var tag2 := String(row3["nation"])
+		if ember.has(tag2):
+			var data: Dictionary = ember[tag2]
+			row3["ember_year"] = int(data.get("year", 0))
+			row3["ember_total_mw"] = float(data.get("total_mw", 0.0))
+			row3["ember_by_source"] = data.get("by_source", {})
+	var city_total := connected + partial + isolated
+	# Custo de energia da indústria por unidade de valor: as cidades com
+	# planta industrial do bootstrap expõem o repasse ao preço.
+	var cost_rows: Array = []
+	var city_rows: Dictionary = final.get("cities", {})
+	for cid: Variant in city_rows:
+		var row4: Dictionary = city_rows[cid]
+		var per_value := float(row4.get("power_cost_per_value", 0.0))
+		if per_value > 0.0:
+			cost_rows.append({
+				"city": String(cid),
+				"nation": String(row4.get("nation", "")),
+				"per_value": per_value,
+				"cost": float(row4.get("power_cost_industry", 0.0)),
+				"price": float(row4.get("price", 0.0)),
+				"served_mwh": float(row4.get("served_mwh", 0.0)),
+			})
+	cost_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["per_value"]) > float(b["per_value"]))
+	return {
+		"ready": true,
+		"days": samples.size(),
+		"average_price": bill / served if served > 0.0 else 0.0,
+		"served_ratio": served / demand if demand > 0.0 else 1.0,
+		"min_served_ratio": min_ratio,
+		"days_with_rationing": days_rationing,
+		"max_rationing_cities": max_ration,
+		"rationing_nations": rationing,
+		"grids": grids,
+		"connected_cities": connected,
+		"partial_cities": partial,
+		"isolated_cities": isolated,
+		"connected_share": float(connected) / float(city_total) if city_total > 0 else 0.0,
+		"loss_pct": float(final.get("loss_pct", 0.0)),
+		"installed_mw_by_fuel": final.get("installed_mw_by_fuel", {}),
+		"generation_mwh_by_fuel": final.get("generation_mwh_by_fuel", {}),
+		"demand_mwh": float(final.get("demand_mwh", 0.0)),
+		"served_mwh": float(final.get("served_mwh", 0.0)),
+		"top5_by_served": top,
+		"industry_cost_top": cost_rows.slice(0, 8),
+		"ember_top5_capacity": _ember_top5(),
+	}
+
+
+func _ember_capacity() -> Dictionary:
+	const PATH := "res://data/definitions/energy/national_capacity.json"
+	if not FileAccess.file_exists(PATH):
+		return {}
+	var data: Variant = _load(PATH)
+	if typeof(data) != TYPE_DICTIONARY:
+		return {}
+	var nations: Variant = (data as Dictionary).get("nations", {})
+	return nations if typeof(nations) == TYPE_DICTIONARY else {}
+
+
+func _ember_top5() -> Array:
+	const PATH := "res://data/definitions/energy/national_capacity.json"
+	var data: Variant = _load(PATH)
+	if typeof(data) != TYPE_DICTIONARY:
+		return []
+	var top: Variant = (data as Dictionary).get("top_by_total_mw", [])
+	return top if typeof(top) == TYPE_ARRAY else []
+
+
 func _load(path: String) -> Variant:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -515,6 +673,8 @@ func _run() -> void:
 	var stock_formed: Dictionary = {}
 	var stock_timeline: Array = []
 	var monetary_timeline: Array = []
+	var power_samples: Array = []
+	var power_timeline: Array = []
 
 	for day in _days:
 		if _fx_seed_days > 0 and day == 30:
@@ -558,6 +718,16 @@ func _run() -> void:
 		# Calibração pré-C6 (D-113): trajetória monetária mensal (mediana/p10/p90).
 		if MONETARY_SAMPLE_DAYS.has(day_now):
 			monetary_timeline.append(_monetary_timeline_row(sim, day_now))
+		# PARTE E (D-116): energia do dia (preço médio, demanda servida,
+		# racionamento e conexão). Amostra diária para a média do ano; a
+		# trajetória publica a cada 30 dias.
+		if sim.has_method("get_power_status"):
+			var power_day: Dictionary = sim.get_power_status()
+			if bool(power_day.get("ready", false)):
+				var power_row := _power_sample(day_now, power_day)
+				power_samples.append(power_row)
+				if int(day_now) % 30 == 0 or day == _days - 1:
+					power_timeline.append(power_row)
 		if int(day_now) % 30 == 0 or day == _days - 1:
 			print("[c1] progresso dia %d/%d t=%.1fs"
 				% [int(day_now), _days,
@@ -598,6 +768,10 @@ func _run() -> void:
 		"stock": _stock_report(sim, stock_start, status_final, stock_formed),
 		"stock_timeline": stock_timeline,
 		"monetary_timeline": monetary_timeline,
+		# PARTE E (D-116): energia — preço médio, % servida, racionamento,
+		# conexão das cidades e geração por fonte. Só medição.
+		"power": _power_digest(sim, power_samples),
+		"power_timeline": power_timeline,
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	if _fx_seed_days > 0:
