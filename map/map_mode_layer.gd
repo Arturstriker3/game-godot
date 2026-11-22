@@ -54,11 +54,6 @@ const ENERGY_TEXTURES := {
 	"wind": preload("res://assets/icons/illustrated/places/power_wind.png"),
 	"hydro": preload("res://assets/icons/illustrated/places/power_hydro.png"),
 }
-const ENERGY_COLORS := {
-	"solar": Color("#E8B028"),
-	"wind": Color("#6F8F8C"),
-	"hydro": Color("#6FA8DC"),
-}
 ## Unidade declarada de cada fonte (a ficha e a legenda usam esta tabela).
 const ENERGY_UNITS := {
 	"solar": "kWh/kWp/ano",
@@ -84,16 +79,33 @@ const ENERGY_THRESHOLDS := {
 	"wind": [117.9, 200.0, 301.5],
 	"hydro": [262.5, 2331.3, 10586.5],
 }
-## Tamanho e opacidade do marcador pela CLASSE: excelente é o maior/mais forte,
-## fraco o menor/mais apagado. Agregado de nação (zoom afastado) cresce um pouco
-## para ler como um resumo, sem competir com os sítios individuais.
+## Cor e tamanho do marcador pela CLASSE: excelente é o maior e verde forte,
+## fraco o menor e cinza. A cor vale já no mundo inteiro — o ponto não compete
+## mais com o ícone de cidade nem esconde a classe em zoom afastado.
+const ENERGY_CLASS_COLORS := {
+	"weak": Color("#8C8C8C"),
+	"medium": Color("#D99A2B"),
+	"good": Color("#A9C24B"),
+	"excellent": Color("#3F8F43"),
+}
 const ENERGY_CLASS_SIZE := {
 	"weak": 0.55, "medium": 0.82, "good": 1.12, "excellent": 1.50,
 }
-const ENERGY_CLASS_ALPHA := {
-	"weak": 0.50, "medium": 0.68, "good": 0.86, "excellent": 1.0,
+## Piso em px de TELA por classe: o marcador nunca vira pontinho, em nenhum
+## zoom. O `power_*` senta num disco de fundo na cor da classe, que o separa do
+## mapa e dos ícones de cidade.
+const ENERGY_CLASS_MIN_PX := {
+	"weak": 22.0, "medium": 26.0, "good": 31.0, "excellent": 36.0,
 }
+const ENERGY_DISC_SCALE := 1.42
+const ENERGY_DISC_ALPHA := 0.96
 const ENERGY_AGGREGATE_SCALE := 1.18
+## Agregado de nação (zoom afastado): um pouco maior que o piso da própria
+## classe, para ler como resumo do MELHOR sítio da nação.
+const ENERGY_AGGREGATE_EXTRA_PX := 4.0
+## Fração de mudança da distância da câmera que refaz o piso de tela. O piso é
+## recalculado só quando o zoom muda de verdade (nunca por frame parado).
+const ENERGY_FLOOR_STEP := 0.04
 ## Célula (px de mapa) da grade espacial de pick: evita projetar os ~2 mil
 ## marcadores por frame. 64 px = 12,8 unidades de mundo.
 const ENERGY_PICK_CELL := 64.0
@@ -163,6 +175,12 @@ var _energy_built_mw: Dictionary = {}
 var _energy_city_px: Dictionary = {}
 var _energy_cells: Dictionary = {}
 var _energy_meshes: Dictionary = {}
+## Disco de fundo por fonte (a cor da CLASSE) desenhado sob o `power_*`.
+var _energy_disc_meshes: Dictionary = {}
+## Último conjunto escrito nos MultiMesh, para refazer só o piso de tela quando
+## o zoom muda dentro da mesma faixa (pan não reescreve nada).
+var _energy_buckets: Dictionary = {}
+var _energy_floor_distance := -1.0
 ## Marcadores visíveis no nível de zoom atual (cidade×fonte perto/médio,
 ## nação×fonte no longe). O pick devolve índice NESTA lista.
 var _energy_drawn: Array = []
@@ -284,6 +302,9 @@ func set_mode(mode: String) -> void:
 		for fuel: Variant in _energy_meshes:
 			var mesh: MultiMeshInstance3D = _energy_meshes[fuel]
 			mesh.visible = false
+		for fuel: Variant in _energy_disc_meshes:
+			var disc: MultiMeshInstance3D = _energy_disc_meshes[fuel]
+			disc.visible = false
 		if _energy_hover >= 0:
 			_energy_hover = -1
 	_update_selection_ring()
@@ -460,8 +481,13 @@ func _ensure_energy_built() -> void:
 	for source in ENERGY_SOURCES:
 		_energy_values[source] = {}
 		_energy_built_mw[source] = {}
+		# Disco na cor da CLASSE por baixo do ícone (prioridade menor): destaca
+		# o marcador do mapa e do ícone de cidade mesmo em zoom afastado.
+		_energy_disc_meshes[source] = _make_marker_layer(
+				"Energy%sDisc" % source.capitalize(), RESOURCE_DOT, 1)
+		_energy_disc_meshes[source].visible = false
 		_energy_meshes[source] = _make_marker_layer(
-				"Energy%s" % source.capitalize(), ENERGY_TEXTURES[source])
+				"Energy%s" % source.capitalize(), ENERGY_TEXTURES[source], 3)
 		_energy_meshes[source].visible = false
 	var renewable: Variant = JSON.parse_string(
 			FileAccess.get_file_as_string(ENERGY_RENEWABLE_PATH))
@@ -745,35 +771,122 @@ func energy_class(source: String, value: float) -> String:
 	return "excellent"
 
 
+## Escreve ícone + disco nos MultiMesh da faixa atual. A cor é a da CLASSE e o
+## tamanho tem piso em px de tela (ver `_energy_marker_world_size`).
 func _write_energy_meshes(buckets: Dictionary) -> void:
+	_energy_buckets = buckets
+	var camera := get_viewport().get_camera_3d()
 	for source in ENERGY_SOURCES:
 		var mesh: MultiMeshInstance3D = _energy_meshes.get(source)
+		var disc: MultiMeshInstance3D = _energy_disc_meshes.get(source)
 		if mesh == null:
 			continue
 		var list: Array = buckets.get(source, [])
 		var multimesh := mesh.multimesh
 		if multimesh.instance_count < list.size():
 			multimesh.instance_count = list.size()
+		if disc != null and disc.multimesh.instance_count < list.size():
+			disc.multimesh.instance_count = list.size()
 		for index in list.size():
 			var marker: Dictionary = list[index]
-			var color: Color = ENERGY_COLORS.get(source, Color.WHITE)
-			var alpha := float(ENERGY_CLASS_ALPHA.get(
-					String(marker["class"]), 0.5))
+			var class_key := String(marker.get("class", "weak"))
+			var class_color: Color = ENERGY_CLASS_COLORS.get(class_key,
+					ENERGY_CLASS_COLORS["weak"])
+			var size := _energy_marker_world_size(marker, camera)
+			if disc != null:
+				_set_marker(disc, index, float(marker["px"]),
+						float(marker["py"]), size * ENERGY_DISC_SCALE,
+						Color(class_color.r, class_color.g, class_color.b,
+								ENERGY_DISC_ALPHA))
+			# O ícone entra em cores naturais; a classe é lida no disco/cor.
 			_set_marker(mesh, index, float(marker["px"]), float(marker["py"]),
-					_energy_marker_size(marker), Color(color.r, color.g,
-							color.b, alpha))
+					size, Color.WHITE)
 		multimesh.visible_instance_count = list.size()
 		mesh.visible = _current == "energy" and not list.is_empty()
+		if disc != null:
+			disc.multimesh.visible_instance_count = list.size()
+			disc.visible = mesh.visible
 
 
-## Tamanho pela CLASSE (excelente maior, fraco menor); o agregado de nação
-## cresce um pouco para ler como resumo.
+## Tamanho lógico pela CLASSE (excelente maior, fraco menor); o agregado de
+## nação cresce um pouco para ler como resumo.
 func _energy_marker_size(marker: Dictionary) -> float:
 	var size := float(ENERGY_CLASS_SIZE.get(
 			String(marker.get("class", "weak")), 0.55))
 	if String(marker.get("kind", "city")) == "aggregate":
 		size *= ENERGY_AGGREGATE_SCALE
 	return size
+
+
+## Piso legível em px de TELA por classe (agregado um pouco maior). Sem câmera
+## (teste headless) fica o tamanho lógico — nada inventado.
+func _energy_marker_min_px(marker: Dictionary) -> float:
+	var min_px := float(ENERGY_CLASS_MIN_PX.get(
+			String(marker.get("class", "weak")), 22.0))
+	if String(marker.get("kind", "city")) == "aggregate":
+		min_px += ENERGY_AGGREGATE_EXTRA_PX
+	return min_px
+
+
+## Tamanho final em unidades de mundo: o maior entre o lógico (classe) e o que
+## mede `min_px` na tela na posição do marcador.
+func _energy_marker_world_size(marker: Dictionary, camera: Camera3D) -> float:
+	var base := _energy_marker_size(marker)
+	if camera == null:
+		return base
+	var world := to_global(_marker_world(
+			[float(marker["px"]), float(marker["py"])]))
+	if camera.is_position_behind(world):
+		return base
+	var px_per_world := _screen_px_per_world(camera, world)
+	if px_per_world <= 0.0001:
+		return base
+	return maxf(base, _energy_marker_min_px(marker) / px_per_world)
+
+
+## Pixels de tela por unidade de mundo no eixo horizontal da câmera.
+func _screen_px_per_world(camera: Camera3D, world: Vector3) -> float:
+	var right := camera.global_transform.basis.x
+	var a := camera.unproject_position(world)
+	var b := camera.unproject_position(world + right)
+	return a.distance_to(b)
+
+
+## Refaz só os tamanhos quando o zoom muda dentro da mesma faixa. Pan puro não
+## passa por aqui: a distância da câmera ao chão é a mesma.
+func _refresh_energy_floor(camera: Camera3D) -> void:
+	if camera == null or _energy_buckets.is_empty():
+		return
+	var parent := get_parent()
+	var distance := 0.0
+	if parent != null and parent.has_method("zoom_distance"):
+		distance = float(parent.call("zoom_distance"))
+	else:
+		distance = camera.global_position.distance_to(to_global(Vector3.ZERO))
+	if distance <= 0.0:
+		return
+	if _energy_floor_distance > 0.0 \
+			and absf(distance - _energy_floor_distance) \
+					<= _energy_floor_distance * ENERGY_FLOOR_STEP:
+		return
+	_energy_floor_distance = distance
+	_write_energy_meshes(_energy_buckets)
+
+
+## Cor e piso de tela da classe de um marcador (a legenda e o teste usam a
+## MESMA tabela do desenho).
+func energy_marker_visual(index: int) -> Dictionary:
+	if index < 0 or index >= _energy_drawn.size():
+		return {}
+	var marker: Dictionary = _energy_drawn[index]
+	var class_key := String(marker.get("class", "weak"))
+	return {
+		"class": class_key,
+		"color": ENERGY_CLASS_COLORS.get(class_key, Color.WHITE),
+		"min_px": _energy_marker_min_px(marker),
+		"size_world": _energy_marker_size(marker),
+		"aggregate": String(marker.get("kind", "city")) == "aggregate",
+	}
 
 
 ## Usina/marcador sob o cursor (índice em `_energy_drawn`), ou -1.
@@ -831,7 +944,7 @@ func _energy_pick_distance(marker: Dictionary, screen_position: Vector2,
 		return -1.0
 	var center := camera.unproject_position(world)
 	var radius: float = MapPickScript.pick_radius_px(camera, world,
-			_energy_marker_size(marker) * 0.5,
+			_energy_marker_world_size(marker, camera) * 0.5,
 			MapPickScript.DEPOSIT_RADIUS_FACTOR)
 	var distance := center.distance_to(screen_position)
 	return distance if distance <= radius else -1.0
@@ -850,7 +963,8 @@ func set_energy_hover(index: int) -> void:
 	var marker: Dictionary = _energy_drawn[index]
 	var point: Array = [float(marker["px"]), float(marker["py"])]
 	_hover_ring.position = _marker_world(point) + Vector3(0.0, 0.01, 0.0)
-	_hover_diameter = _energy_marker_size(marker) * HOVER_RING_FACTOR
+	_hover_diameter = _energy_marker_world_size(marker,
+			get_viewport().get_camera_3d()) * HOVER_RING_FACTOR
 	_hover_ring.pixel_size = _hover_diameter / RING_TEXTURE_PX
 	_hover_ring.modulate = Color(1.0, 1.0, 1.0, 0.8)
 	_hover_ring.visible = true
@@ -1115,7 +1229,8 @@ func _update_selection_ring() -> void:
 		_selection_ring.position = _marker_world(
 				[float(emarker["px"]), float(emarker["py"])]) \
 				+ Vector3(0.0, 0.02, 0.0)
-		_selection_diameter = _energy_marker_size(emarker) * SELECTION_RING_FACTOR
+		_selection_diameter = _energy_marker_world_size(emarker,
+				get_viewport().get_camera_3d()) * SELECTION_RING_FACTOR
 		_selection_ring.pixel_size = _selection_diameter / RING_TEXTURE_PX
 		_selection_ring.modulate = Color(1.0, 0.86, 0.42, 1.0)
 		_selection_ring.visible = true
@@ -1142,6 +1257,10 @@ func _process(_delta: float) -> void:
 		var band := energy_zoom_band()
 		if band != _energy_band:
 			_rebuild_energy(true, band)
+		else:
+			# Mesma faixa, mas o zoom pode ter mudado: o piso de px é recalculado
+			# (só quando a distância muda 4%+; pan não reescreve nada).
+			_refresh_energy_floor(camera)
 	if _hover_ring != null and _hover_ring.visible:
 		var pulse := 1.0 + 0.05 * sin(t * 5.0)
 		_hover_ring.scale = Vector3(pulse, pulse, 1.0)
@@ -1261,7 +1380,8 @@ func deposit_info(index: int) -> Dictionary:
 	}
 
 
-func _make_marker_layer(node_name: String, texture: Texture2D) -> MultiMeshInstance3D:
+func _make_marker_layer(node_name: String, texture: Texture2D,
+		priority: int = 2) -> MultiMeshInstance3D:
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -1275,7 +1395,7 @@ func _make_marker_layer(node_name: String, texture: Texture2D) -> MultiMeshInsta
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.no_depth_test = true
-	material.render_priority = 2
+	material.render_priority = priority
 
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
