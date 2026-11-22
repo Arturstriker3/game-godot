@@ -10,6 +10,7 @@ extends SceneTree
 ## Uso: godot --headless --path . --script res://tools/b3_region_test.gd
 
 const RegionDataScript := preload("res://core/economy/region_data.gd")
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -192,8 +193,10 @@ func _check_v17_migration() -> void:
 	_load_chains(migrated)
 	migrated.from_dict(v17)
 	var after: Dictionary = migrated.to_dict()
-	if int(after.get("version", 0)) != 34:
-		_fail("migração: versão deveria ser 34 (é %s)" % str(after.get("version")))
+	var schema := SaveSchema.current()
+	if int(after.get("version", 0)) != schema:
+		_fail("migração: versão deveria ser %d (%s)" % [
+			schema, str(after.get("version"))])
 		return
 	var checked := 0
 	for city: Dictionary in after.get("cities", []):

@@ -243,6 +243,11 @@ public:
 	 * invalida o status. A UI usa para saber se o retrato em cache está velho. */
 	int get_data_version() const;
 
+	/** Versão atual do schema de save (`kSaveVersion` do núcleo). Somente
+	 * leitura: os testes comparam o save gravado com esta constante em vez de
+	 * fixar o número, que sobe a cada bloco novo (hoje 37). */
+	int get_save_version() const;
+
 	/** Choque de preço em um produto (id de goods.json, ex.: "wheat"). */
 	void price_shock(const String& product, double multiplier);
 
@@ -366,6 +371,61 @@ public:
 	 * quintis. Montado sob demanda (testes/UI).
 	 */
 	Dictionary get_storage_status() const;
+	// ------------------------------------------------------------------
+	// PARTE E (D-116) — ENERGIA ELÉTRICA (save v35). O DADO (acesso, perdas,
+	// parque, potencial e PVOUT mensal) vem de data/definitions/energy/; a
+	// REGRA vem de power_params.json. Nada aqui inventa número: parque/potencial
+	// ausente = cidade sem dado (não se simula blecaute).
+	// ------------------------------------------------------------------
+	/**
+	 * Declara a regra e o dado de energia. `nations` = {tag: {access_pct,
+	 * access_urban_pct, access_rural_pct, loss_pct}}; `cities` = {city_id:
+	 * {access_pct, loss_pct, park: {fonte: MW}, cap: {fonte: MW},
+	 * solar_month: [12]}}. `params` vazio = regra declarada padrão.
+	 * `only_missing` (default true) não sobrescreve o estado de um save.
+	 * Devolve o número de cidades com definição aplicada.
+	 */
+	int set_power_definitions(const Dictionary& nations,
+		const Dictionary& cities, const Dictionary& params,
+		bool only_missing);
+	/** Sobrescreve parâmetros de regra pelo nome do campo (laboratório). */
+	int set_power_params(const Dictionary& values);
+	/** Teste/depuração: força o estado de conexão de uma cidade. */
+	bool set_power_city(const String& city_id, int connection, double line_mw,
+		double access_pct);
+	/**
+	 * Obra de usina pela fila §15 (paga pelo dono: grupo, ou o Estado quando
+	 * `group_id` vazio). `fuel` = "hydro", "solar", "wind", "coal", "gas",
+	 * "oil", "nuclear", "biomass" ou "other".
+	 */
+	Dictionary build_power_plant(const String& city_id, const String& fuel,
+		double mw, const String& group_id);
+	/** Obra de LINHA: leva a cidade (isolada/parcial) a conectada. */
+	Dictionary build_power_line(const String& city_id, double mw,
+		const String& group_id);
+	/**
+	 * E5 (D-117): declara as interconexões do ano-base. `links` = array de
+	 * `{a, b, importer, capacity_mw}` (par canônico; `capacity_mw` na escala do
+	 * dado). Só entram pares com rede NACIONAL nos dois lados; `only_missing`
+	 * (default true) preserva o que veio de um save v36.
+	 * Devolve o número de linhas semeadas.
+	 */
+	int set_power_interconnects(const Array& links, bool only_missing);
+	/**
+	 * E5: obra de interconexão entre duas redes NACIONAIS (mesmo padrão da
+	 * linha de cidade): paga `capex_per_mw_line` × MW do caixa do dono,
+	 * entra na fila §15 e soma capacidade ao par ao concluir.
+	 * `group_id` vazio = governo da maior cidade conectada de `nation_a`.
+	 */
+	Dictionary build_interconnect(const String& nation_a,
+		const String& nation_b, double mw, const String& group_id);
+	/**
+	 * Leitura da rede (testes/UI): por nação (demanda, servido, % servida,
+	 * preço, racionamento, geração por fonte, perdas e membros por estado) e
+	 * por cidade (estado de conexão, linha, acesso, perda efetiva, demanda,
+	 * servido, fator da indústria/serviços, insatisfação e conta da indústria).
+	 */
+	Dictionary get_power_status() const;
 	/**
 	 * C1 (D-102) — BALANÇO POR AGENTE (leitura). Devolve, sob demanda:
 	 *   * `world` — balanço agregado de famílias, firmas, governo e exterior;

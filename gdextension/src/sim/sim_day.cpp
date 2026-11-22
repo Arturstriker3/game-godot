@@ -44,6 +44,14 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// manutenção e custo de acesso. Antes da produção/comércio do dia.
 	core.phase_storage();
 
+	// 2b-E. PARTE E (D-116): energia — demanda, despacho por mérito, preço da
+	// rede e racionamento. Antes do trabalho/produção: o fator de energia
+	// limita o emprego industrial e a produção do dia.
+	{
+		OGS_SIM_ZONE(kPhasePower);
+		core.phase_power();
+	}
+
 	// 2a. B1: demografia (fluxo mensal por cidade, cadência A6). Roda antes do
 	// trabalho: a fase de labor já lê as coortes atualizadas do mês.
 	{
@@ -113,6 +121,14 @@ void tick_day(WorldState& ws, SimCore& core) {
 
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	core.phase_accounting();
+
+	// 7b. PARTE E (D-116): liquidação da energia — consumidor paga ao
+	// gerador, combustível sai do mercado, O&M/salários e lucro do dono.
+	// Depois da contabilidade: as firmas já receberam a receita do dia.
+	{
+		OGS_SIM_ZONE(kPhasePowerSettle);
+		core.phase_power_settle();
+	}
 
 	// 8. Preços reagem a estoque, oferta, demanda e custo de produção.
 	core.phase_prices();

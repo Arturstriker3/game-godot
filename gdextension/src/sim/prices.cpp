@@ -127,6 +127,7 @@ void SimCore::phase_prices() {
 
 				double kind_capacity = 0.0;
 				double kind_labor_opex = 0.0;
+				bool kind_industrial = false;
 				for (const int bi : local_buildings) {
 					const Building& building =
 						ws_.buildings[static_cast<std::size_t>(bi)];
@@ -134,6 +135,10 @@ void SimCore::phase_prices() {
 						kind_capacity += building.capacity;
 						kind_labor_opex += building.workers * building.wage
 							+ building.opex;
+						if (building.recipe >= 0
+								|| building.input_product >= 0) {
+							kind_industrial = true;
+						}
 					}
 				}
 				const double unit_labor_opex = kind_capacity > 0.0
@@ -173,7 +178,9 @@ void SimCore::phase_prices() {
 						break;
 					}
 				}
-				const double unit_cost = unit_labor_opex + unit_input_cost;
+				const double unit_cost = unit_labor_opex + unit_input_cost
+					+ (kind_industrial
+						? city.power_cost_per_value * base : 0.0);
 				// PISO DE CUSTO com âncora leve no preço real inicial: o preço
 				// nunca fica abaixo do custo unitário nem abaixo do base do
 				// catálogo (o preço do dia 0). É um PISO, não um teto.

@@ -116,6 +116,13 @@ public:
 	// calote do banco agregado (perda no credor). Roda depois da política
 	// monetária (a taxa do dia já existe) e antes dos invariantes.
 	void phase_credit();
+	// PARTE E (D-116): despacho por mérito, preço da rede e racionamento.
+	// Antes do trabalho/produção: define o fator de energia de cada cidade
+	// (indústria/serviços/insatisfação). `phase_power_settle` roda depois da
+	// contabilidade e liquida as contas (consumidor → gerador, combustível,
+	// O&M, salários e lucro do dono), sempre com soma zero.
+	void phase_power();
+	void phase_power_settle();
 	// 10. Invariantes: se o tick corrompeu o estado, reverte o retrato.
 	void phase_invariants();
 
@@ -129,6 +136,36 @@ public:
 	// e viaja no bloco `definitions` do snapshot. Produto fora de
 	// [0, ws_.products) ou cidade ausente é ignorado; valor é limitado a >= 0.
 	void set_land_capacity(const std::string& city_id, int product, double value);
+
+	// ------------------------------------------------------------------
+	// PARTE E (D-116) — ENERGIA (sim/power.cpp). API de DECLARAÇÃO (antes do
+	// dia 1 / depois do load) e de OBRA (fila §15). Nada aqui inventa número:
+	// payload vazio = sem energia (ausência declarada).
+	// ------------------------------------------------------------------
+	void set_power_definitions(const PowerParams& params,
+		const std::map<std::string, PowerNationDef>& nations,
+		const std::map<std::string, PowerCityDef>& cities, bool only_missing);
+	// Sobrescreve parâmetros de regra pelo nome do campo (laboratório).
+	void set_power_params(const std::map<std::string, double>& values);
+	// Teste/depuração: força o estado de conexão de uma cidade (não é atalho
+	// de jogo: o caminho de jogo é a obra `build_power_line`).
+	void set_power_city(const std::string& city_id, int connection,
+		double line_mw, double access_pct);
+	// Obra de usina/linha na fila §15 (paga pelo dono conforme avança). Devolve
+	// false com `err` quando a fonte/cidade não existe ou o potencial acabou.
+	bool build_power_plant(const std::string& city_id, const std::string& fuel,
+		double mw, const std::string& group_id, std::string* err);
+	bool build_power_line(const std::string& city_id, double mw,
+		const std::string& group_id, std::string* err);
+	// E5 (D-117): declara as interconexões do ano-base (dado derivado) e a obra
+	// de uma linha nova entre duas REDES NACIONAIS. A obra paga pelo caixa do
+	// dono (grupo ou governo da maior cidade conectada de `nation_a`), consome
+	// material no mercado dessa cidade e, ao concluir, soma capacidade ao par.
+	void set_power_interconnects(const std::vector<InterconnectDef>& defs,
+		bool only_missing);
+	bool build_interconnect(const std::string& nation_a,
+		const std::string& nation_b, double mw, const std::string& group_id,
+		std::string* err);
 
 	// ------------------------------------------------------------------
 	// G — AGRICULTURA SAZONAL (sim/agriculture.cpp, D-096).

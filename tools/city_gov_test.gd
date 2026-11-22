@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+
 ## Teste do pacote W2 da §19 — prefeitura (docs/economy/s19_urban_spec.md).
 ##
 ## Confere o que a spec exige do W2:
@@ -332,8 +334,9 @@ func _run() -> void:
 	for day in range(close_day, SAVE_DAY):
 		_tick(sim, "A dia %d" % (day + 1))
 	var snapshot: Dictionary = sim.to_dict()
-	if int(snapshot.get("version", 0)) != 34:
-		_fail("save version %s != 34" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != SaveSchema.current():
+		_fail("save version %s != %d" % [
+			str(snapshot.get("version")), SaveSchema.current()])
 	if not snapshot.has("city_gov"):
 		_fail("save sem o bloco city_gov da prefeitura")
 	var restored = EconomySim.new()

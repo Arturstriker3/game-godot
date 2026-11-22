@@ -557,6 +557,13 @@ void SimCore::compute_dissatisfaction(City& city) {
 	// o capava em 0,50 (só comida+inflação+informalidade = 0,50) e o índice não
 	// alcançava 1,0 no cenário extremo. Terra (kDissatisfactionLand) segue como
 	// gancho B6 (peso 0) e não entra em nenhum dos dois blocos hoje.
+	//
+	// ENERGIA (D-116, correção t106): o divisor NÃO inclui `kDissatisfactionPower`.
+	// A falta de energia entra ADITIVA sobre o índice que já existia — com
+	// `power_stress == 0` (energia plenamente servida) o índice é IDÊNTICO ao de
+	// antes da energia. Somar o peso novo ao divisor (1,00 → 1,20 no urbano,
+	// 0,50 → 0,70 no interior) diluía a insatisfação de base em 16,7%/28,6%
+	// mesmo sem racionamento, o que amolecia o sistema (viola a D-116).
 	const double urban_weight_sum = kDissatisfactionUnemployment
 		+ kDissatisfactionRent + kDissatisfactionFood
 		+ kDissatisfactionInflation + kDissatisfactionInformality;
@@ -570,6 +577,7 @@ void SimCore::compute_dissatisfaction(City& city) {
 	// Urbano.
 	{
 		Pop& pop = city.pop;
+		const double power_stress = std::clamp(city.power_stress, 0.0, 1.0);
 		double people_total = 0.0;
 		for (int s = 0; s < kIncomeStrata; ++s) {
 			people_total += std::max(0.0, pop.stratum_people[s]);
@@ -602,7 +610,8 @@ void SimCore::compute_dissatisfaction(City& city) {
 					+ kDissatisfactionRent * rent
 					+ kDissatisfactionFood * food
 					+ kDissatisfactionInflation * infl
-					+ kDissatisfactionInformality * inf) / urban_weight_div,
+					+ kDissatisfactionInformality * inf) / urban_weight_div
+					+ kDissatisfactionPower * power_stress,
 				0.0, 1.0);
 			pop.dissatisfaction_by_stratum[s] = idx;
 			const double people = std::max(0.0, pop.stratum_people[s]);
@@ -633,6 +642,7 @@ void SimCore::compute_dissatisfaction(City& city) {
 	// Interior.
 	{
 		Region& region = city.region;
+		const double power_stress = std::clamp(city.power_stress, 0.0, 1.0);
 		if (!region.ready || !region.strata_ready) {
 			return;
 		}
@@ -653,7 +663,8 @@ void SimCore::compute_dissatisfaction(City& city) {
 			const double idx = std::clamp(
 				(kDissatisfactionFood * food
 					+ kDissatisfactionInflation * infl
-					+ kDissatisfactionInformality * inf) / region_weight_div,
+					+ kDissatisfactionInformality * inf) / region_weight_div
+					+ kDissatisfactionPower * power_stress,
 				0.0, 1.0);
 			region.dissatisfaction_by_stratum[s] = idx;
 			const double people = std::max(0.0, region.stratum_people[s]);

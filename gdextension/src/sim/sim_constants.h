@@ -141,7 +141,25 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // (moeda ou cesta), fonte, emissor e trava de união monetária; a cesta
 // resolvida vai no `fx.currencies[moeda]`. ADITIVO: v30 carrega com os regimes
 // do arquivo (`set_fx_regimes`) e as moedas extintas fundidas no substituto.
-constexpr int kSaveVersion = 34;
+// v35 (PARTE E, D-116): ENERGIA ELÉTRICA — bloco raiz `power` com o caixa
+// agregado do setor (`power_cash`), a regra (`policy`), o estado por cidade
+// (conexão conectada/parcial/isolada, capacidade da linha, acesso e perda,
+// teto e parque solar mensal, e os indicadores do dia) e as usinas por cidade.
+// A rede por nação (`grids`) guarda o cooldown da obra da IA. ADITIVO: v34 e
+// anteriores chegam SEM o bloco — `power_ready = false`, sem parque e sem
+// rede (ausência declarada); o PowerService aplica as definições do dado
+// público depois do load e semeia o parque real. As obras de energia em voo
+// viajam em `construction_projects` com `kind = CONSTRUCTION_POWER_PLANT`/
+// `CONSTRUCTION_POWER_LINE` e os campos `power_fuel`/`power_mw`.
+// v36 (PARTE E, D-117): interconexões entre redes NACIONAIS (E5). ADITIVO: o
+// bloco `power` ganha `interconnects` (par a/b, capacidade, fluxo/preço do dia
+// e a marca de linha do ano-base × obra) e `interconnects_ready`; cada rede
+// ganha o ledger `import_mwh`/`export_mwh`/`import_value`/`export_value`. As
+// obras em voo viajam em `construction_projects` com
+// `kind = CONSTRUCTION_INTERCONNECT` e `power_nation_a`/`power_nation_b`. Save
+// v35 carrega sem a chave: `ready = false` e o PowerService semeia as linhas do
+// ano-base depois do load (nada inventado para trás).
+constexpr int kSaveVersion = 37;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -1099,6 +1117,12 @@ constexpr double kDissatisfactionFood = 0.25;
 constexpr double kDissatisfactionInflation = 0.15;
 constexpr double kDissatisfactionInformality = 0.10;
 constexpr double kDissatisfactionLand = 0.00;
+// PARTE E (D-116): falta de energia — peso do componente no bloco urbano e no
+// interior. O valor do componente é `City::power_stress` (0..1), que já cresce
+// com a DURAÇÃO do blecaute (ver power.cpp). O termo é ADITIVO sobre o índice
+// anterior (o divisor segue o antigo: urbano 1,00, interior 0,50), então com
+// energia plenamente servida a insatisfação é a mesma de antes da energia.
+constexpr double kDissatisfactionPower = 0.20;
 // Jovens (15-24) pesam mais na insatisfação com desemprego.
 constexpr double kDissatisfactionYouthWeight = 0.50;
 

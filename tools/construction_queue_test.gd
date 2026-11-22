@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+
 ## §15 unificado — MORADIA, PRÉDIO E INFRA NA MESMA FILA DA CIDADE.
 ##
 ## Guarda de aceite da unificação das obras:
@@ -393,10 +395,10 @@ func _test_v13_migration() -> void:
 			or float(project.get("reserved", -1.0)) != 0.0:
 		_fail("migracao v13: obra migrada cobrou de novo (total=%.2f)" % float(
 			project.get("total_cost", -1.0)))
-	# O schema novo sai em v34 (C6/D-114, crise bancária) e a obra antiga
+	# O schema novo sai na versão atual do núcleo (kSaveVersion) e a obra antiga
 	# entrega as unidades.
-	if int(sim.to_dict().get("version", 0)) != 34:
-		_fail("migracao v13: save regravado não saiu como v34")
+	if int(sim.to_dict().get("version", 0)) != SaveSchema.current():
+		_fail("migracao v13: save regravado nao saiu como v%d" % SaveSchema.current())
 	var share_before := _owner_share_of(sim, 1)
 	if not _tick(sim, 7, "migracao-v13"):
 		return

@@ -5,6 +5,7 @@ extends SceneTree
 ## e save/load. Roda headless e falha com código diferente de zero.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
@@ -302,8 +303,9 @@ func _check_save_load(sim) -> void:
 	# reservas, conversão do ouro e eventos) e o ouro físico no cofre;
 	# v30 (C3/D-107) o bloco `banks` (crédito e banco por nação) e a dívida
 	# dos grupos.
-	if int(snapshot.get("version", 0)) != 34:
-		_fail("save: versão do schema deveria ser 34 (é %s)" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != SaveSchema.current():
+		_fail("save: versão do schema deveria ser %d (é %s)" % [
+			SaveSchema.current(), str(snapshot.get("version"))])
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):
 		_fail("save: bloco 'service_businesses' da F8 ausente")

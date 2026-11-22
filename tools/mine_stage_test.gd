@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+
 ## D-086 — ESTÁGIO DE MINA: o recurso NUNCA acaba (decisão do dono, 2026-11-17).
 ##
 ## Mundo sintético e determinístico (catálogo REAL de bens). Cobre o aceite da
@@ -267,9 +269,9 @@ func _test_money_and_save() -> void:
 			money_initial, money_final])
 
 	var saved: Dictionary = sim.to_dict()
-	if int(saved.get("version", 0)) != 34:
-		_fail("(d) save v%d != v34 (as minas não mudaram; a versão sobe com o save)" % int(
-			saved.get("version", 0)))
+	if int(saved.get("version", 0)) != SaveSchema.current():
+		_fail("(d) save v%d != v%d (as minas não mudaram; a versão sobe com o save)" % [
+			int(saved.get("version", 0)), SaveSchema.current()])
 	var clone = EconomySim.new()
 	clone.set_goods(_load_goods())
 	clone.from_dict(saved)

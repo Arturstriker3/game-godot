@@ -17,6 +17,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/economy_save_load_v11_compat_test.gd
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -169,8 +170,9 @@ func _test_v11_old_save_compat() -> void:
 	sim.tick_day()
 	var full_save: Dictionary = sim.to_dict()
 
-	if int(full_save.get("version", 0)) != 34:
-		_fail("compat: esperava schema v34, veio %s" % str(full_save.get("version")))
+	if int(full_save.get("version", 0)) != SaveSchema.current():
+		_fail("compat: esperava schema v%d, veio %s" % [
+			SaveSchema.current(), str(full_save.get("version"))])
 		return
 
 	# Garante que os campos novos EXISTEM no save atual (senão o teste de

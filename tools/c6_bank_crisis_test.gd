@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+
 ## C6 (D-114) — CRISE BANCÁRIA, CORRIDA E RESOLUÇÃO.
 ##
 ## Cenário: o fixture AGRIA/PORTUS (nação DEMO, moeda DEM) para a mecânica; um
@@ -629,7 +631,7 @@ func _test_save_v34() -> void:
 	for day in 6:
 		sim.tick_day()
 	var saved: Dictionary = sim.to_dict()
-	_check("E save é v34", int(saved.get("version", 0)) == 34,
+	_check("E save é v%d" % SaveSchema.current(), int(saved.get("version", 0)) == SaveSchema.current(),
 		"version=%s" % str(saved.get("version")))
 	var block: Dictionary = saved.get("bank_crisis", {})
 	_check("E save publica o bloco bank_crisis",

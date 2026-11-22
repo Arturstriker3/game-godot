@@ -47,6 +47,7 @@ add_library(opengs_sim STATIC
     src/sim/central_bank.cpp
     src/sim/monetary.cpp
     src/sim/storage.cpp    src/sim/prices.cpp
+    src/sim/power.cpp
     src/sim/consumption.cpp
     src/sim/labor.cpp
     src/sim/services.cpp

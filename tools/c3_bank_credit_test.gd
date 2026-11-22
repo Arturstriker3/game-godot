@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+
 ## C3 (D-107) — CRÉDITO DE EMPRESA PELO BANCO AGREGADO (aceites A2–A7).
 ##
 ## Cenário: fixture AGRIA/PORTUS (duas cidades, nação DEMO, moeda DEM). O
@@ -312,7 +314,7 @@ func _test_save() -> void:
 	sim.group_borrow(_first_group(sim), 1.0e9)
 	sim.tick_day()
 	var saved: Dictionary = sim.to_dict()
-	_check("A6 save na versão 34", int(saved.get("version", 0)) == 34,
+	_check("A6 save na versao atual", int(saved.get("version", 0)) == SaveSchema.current(),
 		"version=" + str(saved.get("version")))
 	_check("A6 save publica o banco e o crédito",
 		saved.has("banks")
@@ -350,8 +352,8 @@ func _test_save() -> void:
 	_check("A6 v29 carrega com dívida 0",
 		absf(float(old_bank.get("totals", {}).get("group_debt", -1.0))) <= EPS,
 		"debt=" + str(old_bank.get("totals", {}).get("group_debt")))
-	_check("A6 v29 migra para 34",
-		int(old.to_dict().get("version", 0)) == 34,
+	_check("A6 v29 migra para a versao atual",
+		int(old.to_dict().get("version", 0)) == SaveSchema.current(),
 		"version=" + str(old.to_dict().get("version")))
 
 

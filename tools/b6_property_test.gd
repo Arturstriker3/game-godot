@@ -39,7 +39,10 @@ const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 const LAND_PROPERTY_PATH := "res://data/definitions/economy/land_property.json"
 
-const SAVE_VERSION := 34
+# Versão do schema vem do núcleo (`kSaveVersion` via get_save_version()): o
+# teste continua exigindo igualdade exata, sem literal que apodrece.
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+var SAVE_VERSION := SaveSchema.current()
 const INFRA_LEVEL := 3
 const INFRA_VALUE_MULTIPLIER := 1.5   # 1 + kPropertyInfraValueGain (0,50)
 const RING_MONTHLY_ABSORB := 0.005    # kPropertyRingMonthlyAbsorb

@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SaveSchema := preload("res://core/economy/save_schema.gd")
+
 ## Teste do pacote W1 da §19 — solo urbano e zoneamento.
 ##
 ## Guarda de regressão do que a spec exige do W1:
@@ -364,6 +366,6 @@ func _test_determinism_and_roundtrip() -> void:
 	var after_portus: Dictionary = _urban(restored, "PORTUS")
 	if JSON.stringify(before_portus, "", true) != JSON.stringify(after_portus, "", true):
 		_fail("save/load: estado urbano divergiu (PORTUS)")
-	if int(one.to_dict().get("version", 0)) != 34:
-		_fail("save version != 34")
+	if int(one.to_dict().get("version", 0)) != SaveSchema.current():
+		_fail("save version != %d" % SaveSchema.current())
 	print("[urban-w1] threads 1/8 identicos; save/load urbano identico (v21)")

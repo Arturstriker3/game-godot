@@ -519,30 +519,80 @@ def check_scaled_plants(report: Report) -> None:
     report.check(abs(float(meta["counts"]["mw_without_city"]) - mw_without_nation) <= 0.01,
                  "scaled: meta.counts.mw_without_city != soma sem nação")
 
-    # Desvio por nação x fonte vs Ember (declarado no próprio arquivo e
-    # recalculado das usinas).
+    # Desvio por nação x fonte: alvo EFETIVO declarado no próprio arquivo
+    # (Ember por subcategoria ou derivado de geração/CF), recalculado das
+    # usinas. Para oil/other, `ember_target_mw` é a subcategoria de
+    # `other_breakdown` (Other fossil / Other renewables), não o total `other`.
     check = meta.get("nation_source_check") or {}
-    failures = []
     for tag, entry in capacity.items():
-        for source, target in (entry.get("by_source") or {}).items():
-            key = "%s/%s" % (tag, source)
-            row = check.get(key)
-            report.check(row is not None,
-                         "scaled: falta nation_source_check %s" % key)
-            if row is None:
-                continue
-            if target is None:
-                report.check(row.get("target_mw") is None,
-                             "%s: alvo null mas target_mw preenchido" % key)
-                continue
-            scaled = round(by_nation_source.get((tag, source), 0.0), 3)
-            report.check(abs(scaled - float(target)) <= 0.01,
-                         "%s: usinas somam %.3f MW vs Ember %.3f MW"
-                         % (key, scaled, target))
-            report.check(row.get("ok") is True,
-                         "%s: nation_source_check.ok falso" % key)
-            if not row.get("ok"):
-                failures.append(key)
+        for source in (entry.get("by_source") or {}):
+            report.check("%s/%s" % (tag, source) in check,
+                         "scaled: falta nation_source_check %s/%s" % (tag, source))
+    failures = []
+    derived_checked = 0
+    for key, row in sorted(check.items()):
+        tag, source = key.split("/", 1)
+        entry = capacity.get(tag) or {}
+        capacity_target = (entry.get("by_source") or {}).get(source)
+        target_source = row.get("target_source")
+        target_mw = row.get("target_mw")
+        ember_target = row.get("ember_target_mw")
+        scaled = round(by_nation_source.get((tag, source), 0.0), 3)
+        if source in ("oil", "other"):
+            breakdown = entry.get("other_breakdown") or {}
+            expected = breakdown.get(
+                "other_fossil_mw" if source == "oil" else "other_renewables_mw")
+            report.check(
+                abs(float(ember_target or 0.0) - float(expected or 0.0)) <= 0.01,
+                "%s: ember_target_mw %.3f != subcategoria Ember %.3f"
+                % (key, float(ember_target or 0.0), float(expected or 0.0)))
+        elif capacity_target is not None:
+            report.check(
+                abs(float(ember_target or 0.0) - float(capacity_target)) <= 0.01,
+                "%s: ember_target_mw != by_source Ember" % key)
+        if target_source in ("derived_generation_over_cf",
+                             "max_ember_capacity_derived_generation"):
+            derived_checked += 1
+            derivation = row.get("derivation") or {}
+            generation = derivation.get("generation_twh")
+            cf = derivation.get("cf")
+            derived_mw = derivation.get("capacity_mw")
+            report.check(generation is not None and float(generation) > 0.0,
+                         "%s: derivação sem geração Ember > 0" % key)
+            report.check(cf is not None and float(cf) > 0.0,
+                         "%s: derivação sem CF declarado > 0" % key)
+            report.check(bool(derivation.get("cf_source")),
+                         "%s: derivação sem fonte do CF" % key)
+            if generation is not None and cf is not None and derived_mw is not None:
+                expected_mw = float(generation) * 1e6 / (float(cf) * 8760.0)
+                report.check(abs(float(derived_mw) - expected_mw) <= 0.01,
+                             "%s: derived_target_mw != geração/(CF*8760)" % key)
+                report.check(
+                    target_mw is not None
+                    and abs(float(target_mw) - max(float(ember_target or 0.0),
+                                                  float(derived_mw))) <= 0.01,
+                    "%s: target_mw != max(Ember, derivado)" % key)
+        elif target_source == "ember_capacity":
+            report.check(
+                target_mw is not None
+                and abs(float(target_mw) - float(ember_target or 0.0)) <= 0.01,
+                "%s: target_mw != ember_target_mw" % key)
+        else:
+            report.check(target_mw is None,
+                         "%s: alvo ausente mas target_mw preenchido" % key)
+        if target_mw is None:
+            report.check(abs(float(row.get("scaled_mw", 0.0)) - scaled) <= 0.01,
+                         "%s: scaled_mw != usinas" % key)
+            continue
+        report.check(abs(scaled - float(target_mw)) <= 0.01,
+                     "%s: usinas somam %.3f MW vs alvo %.3f MW"
+                     % (key, scaled, target_mw))
+        report.check(row.get("ok") is True,
+                     "%s: nation_source_check.ok falso" % key)
+        if not row.get("ok"):
+            failures.append(key)
+    report.check(derived_checked > 0,
+                 "scaled: nenhum alvo derivado declarado (esperado > 0)")
     report.check(not failures, "scaled: %d falhas em nation_source_check: %s"
                  % (len(failures), failures[:8]))
     report.check(not meta.get("gaps", {}).get("nation_source_failures"),
@@ -566,14 +616,14 @@ def check_scaled_plants(report: Report) -> None:
                      "%s: national_target_missing sem scaling_method unscaled"
                      % plant["id"])
 
-    # Óleo: não escalonado, porque a Ember não separa.
+    # Óleo sem alvo derivado/publicado: fica não escalonado (base GPPD).
     base = load("power_plants_base_2021_gppd.json")["by_nation"]
     for tag, entry in base.items():
         base_oil = float((entry.get("by_fuel") or {}).get("oil") or 0.0)
         row = check.get("%s/oil" % tag)
         if row is not None and row.get("target_mw") is None:
             report.check(abs(float(row.get("scaled_mw", 0.0)) - base_oil) <= 0.01,
-                         "%s: óleo escalonado sem alvo Ember" % tag)
+                         "%s: óleo escalonado sem alvo declarado" % tag)
 
 
 def check_renewables(report: Report) -> None:

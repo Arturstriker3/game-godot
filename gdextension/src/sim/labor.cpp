@@ -430,8 +430,10 @@ double SimCore::labor_day(City& city) {
 	// 4. VAGAS por nível: serviços urbanos + cada construção (a mistura da
 	// receita/setor). É a DEMANDA que o mercado de trabalho precisa preencher.
 	double vacancy[kEducationLevels] = {};
+	const double service_power = std::clamp(city.power_service_factor, 0.0, 1.0);
 	for (int level = 0; level < kEducationLevels; ++level) {
-		vacancy[level] += city.service_jobs * kLaborServiceMix[level];
+		vacancy[level] += city.service_jobs * service_power
+			* kLaborServiceMix[level];
 	}
 	const std::size_t city_index =
 		static_cast<std::size_t>(&city - ws_.cities.data());
@@ -449,8 +451,13 @@ double SimCore::labor_day(City& city) {
 			if (seasonal <= 0.0) {
 				continue;
 			}
+			const bool industrial = building.recipe >= 0
+				|| building.input_product >= 0;
+			const double power = industrial
+				? std::clamp(city.power_industry_factor, 0.0, 1.0) : 1.0;
 			for (int level = 0; level < kEducationLevels; ++level) {
-				vacancy[level] += building.jobs * building.education_mix[level];
+				vacancy[level] += building.jobs * power
+					* building.education_mix[level];
 			}
 		}
 	}
@@ -534,6 +541,10 @@ double SimCore::labor_day(City& city) {
 				// D-096: a folha da fazenda sazonal segue o bit do calendário.
 				operating = seasonal;
 			}
+			if (building.recipe >= 0 || building.input_product >= 0) {
+				// PARTE E (D-116): energia servida limita a folha industrial.
+				operating *= std::clamp(city.power_industry_factor, 0.0, 1.0);
+			}
 			const double crop_liquidity = crop_liquidity_factor(city, building,
 				building.jobs * plant_payroll * operating
 				+ building.opex * operating);
@@ -553,7 +564,8 @@ double SimCore::labor_day(City& city) {
 	}
 	// F8: vagas de serviço efetivamente preenchidas (peso da mistura de
 	// escolaridade × preenchimento). É o emprego real do setor, não a meta.
-	city.service_jobs_filled = city.service_jobs * service_fraction;
+	city.service_jobs_filled = city.service_jobs * service_fraction
+		* std::clamp(city.power_service_factor, 0.0, 1.0);
 	city.service_workers = city.service_jobs_filled;
 	pop.employed = 0.0;
 	pop.unemployed = 0.0;
@@ -606,6 +618,9 @@ double SimCore::labor_day(City& city) {
 				plant_payroll += building.education_mix[level] * fill[level]
 					* pop.wage_by_level[level];
 			}
+			if (building.recipe >= 0 || building.input_product >= 0) {
+				operating *= std::clamp(city.power_industry_factor, 0.0, 1.0);
+			}
 			building.paid_wages =
 				building.jobs * plant_payroll * operating * pay_scale;
 			// D-099: a fazenda com plano paga só o que a safra cobre (fator da
@@ -636,7 +651,12 @@ double SimCore::labor_day(City& city) {
 			}
 		}
 	}
-	const double full_service_bill = city.service_jobs * service_payroll_per_job;
+	// PARTE E (D-116): a folha de serviços segue a energia SERVIDA — a vaga de
+	// serviço já nasce limitada por `service_power` (linha ~435) e é esse o
+	// valor creditado às famílias. Cobrar a folha CHEIA aqui destruiria a
+	// diferença (violação de conservação de dinheiro).
+	const double full_service_bill = city.service_jobs * service_power
+		* service_payroll_per_job;
 	const double paid_service_bill = std::min(full_service_bill,
 		std::max(0.0, city.service_cash));
 	// C1: atraso da folha do setor de serviços (caixa insuficiente) — passivo

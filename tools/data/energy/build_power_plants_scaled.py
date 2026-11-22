@@ -45,12 +45,19 @@ import build_energy_common as ec  # noqa: E402
 ENERGY = os.path.join(ec.DEFS, "energy")
 BASE_PATH = os.path.join(ENERGY, "power_plants_base_2021_gppd.json")
 CAPACITY_PATH = os.path.join(ENERGY, "national_capacity.json")
+DEMAND_PATH = os.path.join(ENERGY, "national_demand.json")
+PARAMS_PATH = os.path.join(ENERGY, "power_params.json")
 RENEWABLE_PATH = os.path.join(ENERGY, "renewable_potential.json")
 HYDRO_PATH = os.path.join(ENERGY, "hydro_potential.json")
 OUT_PATH = os.path.join(ENERGY, "power_plants_2026_scaled.json")
 
 GROUPS = ["hydro", "solar", "wind", "coal", "gas", "oil", "nuclear", "biomass",
           "other"]
+# Fontes com alvo DERIVADO da geracao Ember quando a capacidade declarada e
+# ausente/zero ou fisicamente insuficiente (D-115): capacidade = geracao /
+# (CF do modelo * 8760). O CF e o declarado em power_params.json (espelho de
+# sim/power.h), nao um numero inventado.
+DERIVED_SOURCES = ("oil", "other", "biomass")
 TOLERANCE_MW = 0.01
 
 
@@ -133,9 +140,53 @@ def allocate(target_milli, weights):
     return {cid: value for cid, value in floor.items() if value > 0}
 
 
+def ember_sub_target(entry, source, targets):
+    """Capacidade Ember da SUBCATEGORIA certa para oil/other (D-115)."""
+    if entry and source in ("oil", "other"):
+        breakdown = entry.get("other_breakdown") or {}
+        key = ("other_fossil_mw" if source == "oil"
+               else "other_renewables_mw")
+        if key in breakdown and breakdown.get(key) is not None:
+            return float(breakdown[key])
+    return targets.get(source)
+
+
+def derived_capacity(tag, source, demand_nations, cf_model):
+    """Geracao Ember / (CF declarado * 8760) para uma fonte, em MW."""
+    cf = float(cf_model.get(source) or 0.0)
+    if cf <= 0.0:
+        return None
+    row = (demand_nations.get(tag) or {})
+    generation = (row.get("generation_twh") or {}).get(source)
+    if generation is None:
+        return None
+    generation = float(generation)
+    if generation <= 0.0:
+        return None
+    mw = generation * 1e6 / (cf * 8760.0)
+    return {
+        "generation_twh": round(generation, 4),
+        "cf": cf,
+        "capacity_mw": round(mw, 3),
+        "formula": ("generation_twh * 1e6 / (cf * 8760); cf = power_params.json "
+                    "cf_%s (modelo declarado, espelho de sim/power.h)" % source),
+        "cf_source": ("data/definitions/energy/power_params.json "
+                      "(cf_%s; modelo declarado, nao dado observado)" % source),
+        "generation_source": ("Ember, Yearly Electricity Data; bucket %s do "
+                              "national_demand.json (Other fossil->oil, "
+                              "Other renewables->other, Bioenergy->biomass)"
+                              % source),
+    }
+
+
 def main() -> int:
     base = load(BASE_PATH)
     capacity = load(CAPACITY_PATH)
+    demand = load(DEMAND_PATH) if os.path.exists(DEMAND_PATH) else {}
+    params = load(PARAMS_PATH).get("params", {}) if os.path.exists(PARAMS_PATH) else {}
+    demand_nations = demand.get("by_nation") or {}
+    cf_model = {source: float(params.get("cf_" + source) or 0.0)
+                for source in DERIVED_SOURCES}
     renewable = load(RENEWABLE_PATH) if os.path.exists(RENEWABLE_PATH) else {}
     hydro = load(HYDRO_PATH) if os.path.exists(HYDRO_PATH) else {}
     cities = ec.load_cities()
@@ -158,18 +209,50 @@ def main() -> int:
     nation_source_check = {}
     synthetic_count = 0
     no_target = []
-    for tag in sorted(set(base_nations) | set(nations)):
-        targets = (nations.get(tag) or {}).get("by_source") or {}
+    derived_targets = {}
+    for tag in sorted(set(base_nations) | set(nations) | set(demand_nations)):
+        entry = nations.get(tag) or {}
+        targets = entry.get("by_source") or {}
         base_by_fuel = (base_nations.get(tag) or {}).get("by_fuel") or {}
         weights_by_source = city_weights(tag, cities, renewable, hydro)
         for source in GROUPS:
-            target = targets.get(source)
+            ember_target = ember_sub_target(entry, source, targets)
+            derived = (derived_capacity(tag, source, demand_nations, cf_model)
+                       if source in DERIVED_SOURCES else None)
+            target_source = None
+            if derived is not None:
+                derived_mw = float(derived["capacity_mw"])
+                derived_targets["%s/%s" % (tag, source)] = derived
+                if ember_target is None:
+                    target = derived_mw
+                    target_source = "derived_generation_over_cf"
+                elif derived_mw > float(ember_target) + TOLERANCE_MW:
+                    target = derived_mw
+                    target_source = "max_ember_capacity_derived_generation"
+                else:
+                    target = float(ember_target)
+                    target_source = "ember_capacity"
+            elif ember_target is not None:
+                target = float(ember_target)
+                target_source = "ember_capacity"
+            else:
+                target = None
             group = groups.get(tag, {}).get(source, [])
             base_mw = round(sum(float(p["capacity_mw"]) for p in group), 3)
             key = "%s/%s" % (tag, source)
+
+            def derived_fields(row):
+                row["target_source"] = target_source
+                row["ember_target_mw"] = (None if ember_target is None
+                                          else round(float(ember_target), 3))
+                if derived is not None:
+                    row["derived_target_mw"] = derived["capacity_mw"]
+                    row["derivation"] = derived
+                return row
+
             if target is None:
-                # Óleo (Ember não separa) ou nação sem matriz: não escala.
-                note = ("ember_oil_not_separated" if source == "oil"
+                # Geracao nao publicada ou nao ha alvo: nao escala.
+                note = ("ember_oil_generation_missing" if source == "oil"
                         else "national_target_missing")
                 for plant in group:
                     scaled_plants.append(scaled_record(
@@ -178,11 +261,9 @@ def main() -> int:
                 scale_factors[key] = {"base_mw": base_mw, "target_mw": None,
                                       "factor": None, "method": "unscaled",
                                       "note": note}
-                nation_source_check[key] = {"target_mw": None,
-                                            "scaled_mw": base_mw,
-                                            "delta_mw": 0.0,
-                                            "ok": True,
-                                            "note": note}
+                nation_source_check[key] = derived_fields({
+                    "target_mw": None, "scaled_mw": base_mw,
+                    "delta_mw": 0.0, "ok": True, "note": note})
                 continue
 
             target = float(target)
@@ -196,11 +277,11 @@ def main() -> int:
                                       "factor": 0.0,
                                       "method": "scaled_to_ember",
                                       "note": "retired_by_ember_target_zero"}
-                nation_source_check[key] = {"target_mw": target,
-                                            "scaled_mw": 0.0,
-                                            "delta_mw": round(-target, 3),
-                                            "ok": abs(0.0 - target) <= TOLERANCE_MW,
-                                            "method": "retired_by_ember_target_zero"}
+                nation_source_check[key] = derived_fields({
+                    "target_mw": target, "scaled_mw": 0.0,
+                    "delta_mw": round(-target, 3),
+                    "ok": abs(0.0 - target) <= TOLERANCE_MW,
+                    "method": "retired_by_ember_target_zero"})
                 continue
 
             if base_mw > 0.0:
@@ -215,21 +296,28 @@ def main() -> int:
                                   key=lambda i: milli(group[i]["capacity_mw"]))
                     scaled_milli[biggest] += residual
                 for plant, value in zip(group, scaled_milli):
+                    if value <= 0:
+                        note = "scaled_to_zero"
+                    elif target_source == "ember_capacity":
+                        note = None
+                    else:
+                        note = "derived_target_generation_over_cf"
                     scaled_plants.append(scaled_record(
                         plant, value / 1000.0, plant["capacity_mw"], factor,
-                        "scaled_to_ember",
-                        "scaled_to_zero" if value <= 0 else None))
+                        "scaled_to_ember", note))
                 scale_factors[key] = {"base_mw": base_mw, "target_mw": target,
                                       "factor": round(factor, 9),
                                       "method": "scaled_to_ember",
-                                      "note": None}
+                                      "target_source": target_source,
+                                      "note": ("derived_target_generation_over_cf"
+                                               if target_source != "ember_capacity"
+                                               else None)}
                 scaled_mw = round(sum(value / 1000.0 for value in scaled_milli), 3)
-                nation_source_check[key] = {
+                nation_source_check[key] = derived_fields({
                     "target_mw": target, "scaled_mw": scaled_mw,
                     "delta_mw": round(scaled_mw - target, 3),
                     "ok": abs(scaled_mw - target) <= TOLERANCE_MW,
-                    "method": "scaled_to_ember",
-                }
+                    "method": "scaled_to_ember"})
                 continue
 
             # Base zero e alvo > 0: usina sintética por cidade (peso declarado).
@@ -240,11 +328,10 @@ def main() -> int:
                                           "factor": None,
                                           "method": "no_city_for_allocation",
                                           "note": "nação sem cidade para ratear"}
-                    nation_source_check[key] = {
+                    nation_source_check[key] = derived_fields({
                         "target_mw": target, "scaled_mw": 0.0,
                         "delta_mw": round(-target, 3), "ok": False,
-                        "method": "no_city_for_allocation",
-                    }
+                        "method": "no_city_for_allocation"})
                     continue
                 for cid, value in sorted(allocation.items()):
                     city = city_by_id[cid]
@@ -283,24 +370,26 @@ def main() -> int:
                 scale_factors[key] = {"base_mw": 0.0, "target_mw": target,
                                       "factor": None,
                                       "method": "ember_city_allocation",
+                                      "target_source": target_source,
                                       "weight_basis": sorted(set(
                                           row["basis"]
                                           for row in weights_by_source[source].values()))}
                 scaled_mw = round(sum(value / 1000.0
                                       for value in allocation.values()), 3)
-                nation_source_check[key] = {
+                nation_source_check[key] = derived_fields({
                     "target_mw": target, "scaled_mw": scaled_mw,
                     "delta_mw": round(scaled_mw - target, 3),
                     "ok": abs(scaled_mw - target) <= TOLERANCE_MW,
-                    "method": "ember_city_allocation",
-                }
+                    "method": "ember_city_allocation"})
             else:
                 scale_factors[key] = {"base_mw": 0.0, "target_mw": target,
                                       "factor": None, "method": "no_base_no_target",
+                                      "target_source": target_source,
                                       "note": "alvo arredonda a 0"}
-                nation_source_check[key] = {"target_mw": target, "scaled_mw": 0.0,
-                                            "delta_mw": round(-target, 3),
-                                            "ok": True, "method": "rounds_to_zero"}
+                nation_source_check[key] = derived_fields({
+                    "target_mw": target, "scaled_mw": 0.0,
+                    "delta_mw": round(-target, 3),
+                    "ok": True, "method": "rounds_to_zero"})
 
     # Usinas sem nação/cidade (ex.: Antártida) ficam fora do agregado por nação,
     # mas continuam no arquivo e no total, declaradas em mw_without_city.
@@ -364,6 +453,10 @@ def main() -> int:
         row["sources"].add(plant["fuel_group"])
     for row in target_missing_by_nation.values():
         row["sources"] = sorted(row["sources"])
+    used_derived = sorted(
+        key for key, row in nation_source_check.items()
+        if row.get("target_source") in ("derived_generation_over_cf",
+                                        "max_ember_capacity_derived_generation"))
     meta = {
         "generated_by": "tools/data/energy/build_power_plants_scaled.py",
         "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E, E1",
@@ -375,7 +468,12 @@ def main() -> int:
                            "GPPD distribuída pelas cidades por potencial/população"),
         "method": ("fator declarado alvo/base em mili-MW; resto de arredondamento na "
                    "maior usina do grupo; fonte sem base = usina sintética por cidade "
-                   "(maior resto). Nenhum MW fora do alvo Ember ou do GPPD."),
+                   "(maior resto). Alvo Ember por subcategoria (D-115): "
+                   "Other fossil->oil e Other renewables->other; quando a capacidade "
+                   "Ember é ausente/zero ou fisicamente insuficiente para a geração "
+                   "publicada, o alvo é derivado por geração / (CF do modelo * 8760), "
+                   "com CF declarado em power_params.json. Nenhum MW fora do alvo "
+                   "Ember, da derivação declarada ou do GPPD."),
         "target_source": {
             "dataset": "Ember, Yearly Electricity Data (global release)",
             "license": {"name": "CC BY 4.0", "commercial_ok": True},
@@ -396,10 +494,15 @@ def main() -> int:
             "fallback": "sem peso: rateio igual entre as cidades da nação",
         },
         "gaps": {
-            "oil": ("a Ember não separa óleo (dentro de Other fossil); o parque de "
-                    "óleo do GPPD fica NÃO escalonado, com `oil` null em "
-                    "national_capacity.json"),
-            "nations_without_ember": sorted(set(base_nations) - set(nations)),
+            "oil": ("correção D-115: 'Other fossil' ancora o grupo oil e "
+                    "'Other renewables' ancora other. A capacidade Ember da "
+                    "subcategoria vem de `other_breakdown`; quando é "
+                    "ausente/zero ou insuficiente para a geração publicada, o "
+                    "alvo é derivado por geração / (cf_oil * 8760). `oil` "
+                    "continua null em national_capacity.json (a Ember não "
+                    "publica 'Oil' separado)."),
+            "nations_without_ember": sorted(
+                (set(base_nations) | set(demand_nations)) - set(nations)),
             "national_target_missing": {
                 "rule": ("usina real cuja nação×fonte não tem alvo Ember (nação sem "
                          "matriz 2024-2025); o MW do GPPD fica NÃO escalonado e cada "
@@ -410,6 +513,8 @@ def main() -> int:
             },
             "nation_source_failures": failures,
         },
+        "derived_targets": dict(sorted(derived_targets.items())),
+        "derived_targets_used": used_derived,
         "scale_factors": dict(sorted(scale_factors.items())),
         "nation_source_check": dict(sorted(nation_source_check.items())),
         "counts": {
@@ -425,6 +530,11 @@ def main() -> int:
             "by_nation_mw": by_nation_mw,
             "nation_source_checks": len(nation_source_check),
             "nation_source_failures": len(failures),
+            "derived_targets": len(derived_targets),
+            "derived_targets_used": len(used_derived),
+            "derived_target_mw": round(sum(
+                float(row["capacity_mw"])
+                for row in derived_targets.values()), 3),
             "national_target_missing_plants": len(target_missing),
             "national_target_missing_mw": round(
                 sum(float(p["capacity_mw"]) for p in target_missing), 3),

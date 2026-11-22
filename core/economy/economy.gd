@@ -63,7 +63,9 @@ const AgricultureServiceScript := preload("res://core/economy/agriculture_servic
 ## G2 (D-101): armazenagem — capacidade real do país, mapa produto→tipo e a
 ## reserva pública do dia 1, declarados depois da agricultura e antes da IA.
 const StorageServiceScript := preload("res://core/economy/storage_service.gd")
-
+## PARTE E (D-116): energia — acesso/perdas, parque, potencial e o PVOUT mensal
+## do dado público; declarados antes do primeiro dia e reaplicados no load.
+const PowerServiceScript := preload("res://core/economy/power_service.gd")
 ## 1º de janeiro de 2027, 00:00 UTC (D-084). 1798761600 = 2027-01-01T00:00:00Z.
 ## A base de dados (WPP/WorldPop 2026, extração 2025) NÃO é reprojetada: o
 ## calendário do jogo começa em 2027 e a projeção da base é dívida de calibração.
@@ -279,6 +281,19 @@ func _ready() -> void:
 			float(storage_report.get("initial_stock_t", {}).get("oil", 0.0))
 				+ float(storage_report.get("initial_stock_t", {}).get("grain", 0.0)),
 			float(storage_report.get("gold_reserve_t", 0.0))])
+	# PARTE E (D-116): ENERGIA — acesso/perdas (World Bank), parque instalado
+	# (GPPD escalonado à Ember), potencial hídrico e solar/eólico e o PVOUT
+	# mensal. DEPOIS do mundo (as cidades existem) e antes da IA. `only_missing`:
+	# save v35 manda; save v34 e anterior recebe o parque real aqui.
+	if sim.has_method("set_power_definitions"):
+		var power := PowerServiceScript.new()
+		var power_report := power.apply_to_sim(sim, cities, {"only_missing": true})
+		print("[energia] cidades=%d parque=%.0f MW nações=%d operador=%d solar_mensal=%d" % [
+			int(power_report.get("cities_with_park", 0)),
+			float(power_report.get("park_mw", 0.0)),
+			int(power_report.get("nations", 0)),
+			(power_report.get("operator_nations", []) as Array).size(),
+			int(power_report.get("cities_with_solar_month", 0))])
 	# A IA econômica (privado, governo, grupos) roda no núcleo, na virada do dia
 	# (A5). Ligada aqui: o primeiro `tick_day` já decide.
 	sim.set_ai_enabled(true)
@@ -341,6 +356,18 @@ func refresh_storage() -> Dictionary:
 		"only_missing": true,
 		"initial_stock": false,
 	})
+
+
+## PARTE E (D-116): reaplica no núcleo o que FALTAR depois de carregar um save.
+## Save v35 traz o bloco `power` (estado, regra e parque — inclusive o que a IA
+## construiu) e `only_missing` não toca no que veio no save; save v34 e anterior
+## não tem o bloco e recebe o parque real do dado aqui. Sem custo extra: só
+## declara, não cria usina nem muda conexão de cidade.
+func refresh_power() -> Dictionary:
+	if sim == null or not sim.has_method("set_power_definitions"):
+		return {}
+	var power := PowerServiceScript.new()
+	return power.apply_to_sim(sim, _load_cities(), {"only_missing": true})
 
 
 ## F9: nome da maior cidade de cada nacao (usado como {place} no nome dos

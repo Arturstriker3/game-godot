@@ -36,6 +36,20 @@ extends RefCounted
 ##                             mundo (dinheiro conservado).
 ##  11. `bank_capital_flight` (6) — C6: remessa acumulada das matrizes
 ##                             estrangeiras (fuga de capital, âncora).
+##  12. `power_generation_mwh` (6) — E2/E3 (D-116): geração do dia somada por
+##                             fonte (o parque despachado).
+##  13. `power_served_mwh` (6) — E3: energia efetivamente entregue às cidades
+##                             com dado (a carga que pagou tarifa).
+##  14. `power_rationed_mwh` (6) — E3: demanda não servida do dia
+##                             (`demand_mwh - served_mwh`, piso 0). Mede o
+##                             blecaute sem inventar um campo do núcleo.
+##  15. `power_cash` (6)       — E7: caixa do setor de energia no fecho do dia
+##                             (o fecho é soma zero; o valor é 0 por construção
+##                             e muda se a contabilidade quebrar).
+##  16. `power_tariff_sum` (9) — E7: soma da tarifa de varejo por rede
+##                             (nações ordenadas por chave).
+##  17. `power_import_mwh` (6) — E5/E7: energia importada entregue no dia
+##                             (`interconnect_flow_mwh`).
 ##
 ## NOTAS DE HONESTIDADE:
 ## - Não existe livro de empréstimos até a C4: `credit_capacity` é o TERMO que o
@@ -63,6 +77,12 @@ const FIELDS := [
 	"bank_crisis_events",
 	"bank_fund(6)",
 	"bank_capital_flight(6)",
+	"power_generation_mwh(6)",
+	"power_served_mwh(6)",
+	"power_rationed_mwh(6)",
+	"power_cash(6)",
+	"power_tariff_sum(9)",
+	"power_import_mwh(6)",
 ]
 
 
@@ -110,7 +130,10 @@ static func food_sum(ratios: Dictionary) -> float:
 static func totals(sim: Object) -> Dictionary:
 	var out := {"m0": -1.0, "private_stock_t": -1.0, "credit_capacity": -1.0,
 		"bank_confidence_sum": -1.0, "bank_crisis_events": -1,
-		"bank_fund": -1.0, "bank_capital_flight": -1.0}
+		"bank_fund": -1.0, "bank_capital_flight": -1.0,
+		"power_generation_mwh": -1.0, "power_served_mwh": -1.0,
+		"power_rationed_mwh": -1.0, "power_cash": -1.0,
+		"power_tariff_sum": -1.0, "power_import_mwh": -1.0}
 	if sim != null and sim.has_method("get_central_bank_status"):
 		var bank: Dictionary = sim.get_central_bank_status()
 		var totals_block: Dictionary = bank.get("totals", {})
@@ -147,6 +170,31 @@ static func totals(sim: Object) -> Dictionary:
 			out["bank_fund"] = float(bank_totals.get("fund", 0.0))
 			out["bank_capital_flight"] = float(
 				bank_totals.get("capital_flight", 0.0))
+	# PARTE E (D-116/D-117/D-120): energia do dia. Geração, carga servida,
+	# racionamento, caixa do setor, tarifa por rede e fluxo de importação. Com
+	# `power_ready = false` (mundos sem energia semeada) o núcleo publica zeros
+	# declarados — não se inventa estado.
+	if sim != null and sim.has_method("get_power_status"):
+		var power: Dictionary = sim.get_power_status()
+		var generation := 0.0
+		var by_fuel: Dictionary = power.get("generation_mwh_by_fuel", {})
+		for fuel: Variant in by_fuel:
+			generation += float(by_fuel[fuel])
+		var served := float(power.get("served_mwh", 0.0))
+		var demand := float(power.get("demand_mwh", 0.0))
+		var tariffs: Dictionary = power.get("nations", {})
+		var tariff_sum := 0.0
+		var tags: Array = tariffs.keys()
+		tags.sort()
+		for tag: Variant in tags:
+			tariff_sum += float((tariffs[tag] as Dictionary).get("tariff", 0.0))
+		out["power_generation_mwh"] = generation
+		out["power_served_mwh"] = served
+		out["power_rationed_mwh"] = maxf(demand - served, 0.0)
+		out["power_cash"] = float(power.get("cash", 0.0))
+		out["power_tariff_sum"] = tariff_sum
+		out["power_import_mwh"] = float(
+			power.get("interconnect_flow_mwh", 0.0))
 	return out
 
 
@@ -154,7 +202,7 @@ static func totals(sim: Object) -> Dictionary:
 ## instância do núcleo (para M0/estoque/crédito).
 static func line(day: int, status: Dictionary, sim: Object) -> String:
 	var day_totals := totals(sim)
-	return "%d:%.6f:%d:%.9f:%.6f:%.6f:%.9f:%.9f:%d:%.6f:%.6f" % [
+	return "%d:%.6f:%d:%.9f:%.6f:%.6f:%.9f:%.9f:%d:%.6f:%.6f:%.6f:%.6f:%.6f:%.6f:%.9f:%.6f" % [
 		day,
 		float(status.get("money_total", 0.0)),
 		int(status.get("bankruptcies", -1)),
@@ -166,6 +214,12 @@ static func line(day: int, status: Dictionary, sim: Object) -> String:
 		int(day_totals["bank_crisis_events"]),
 		float(day_totals["bank_fund"]),
 		float(day_totals["bank_capital_flight"]),
+		float(day_totals["power_generation_mwh"]),
+		float(day_totals["power_served_mwh"]),
+		float(day_totals["power_rationed_mwh"]),
+		float(day_totals["power_cash"]),
+		float(day_totals["power_tariff_sum"]),
+		float(day_totals["power_import_mwh"]),
 	]
 
 

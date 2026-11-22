@@ -24,6 +24,7 @@ const WEEK_DAYS := 7
 
 const GeneratorScript: Script = preload("res://core/culture/business_name_generator.gd")
 const CultureDbScript: Script = preload("res://core/culture/culture_db.gd")
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 
 var _failures: Array[String] = []
 var _goods: Array = []
@@ -207,9 +208,9 @@ func _test_save() -> void:
 	_set_income(sim)
 	_run(sim, 5)
 	var data: Dictionary = sim.to_dict()
-	_check(int(data.get("version", 0)) == 34,
-		"save deve ser v34 (C6: bloco bank_crisis; era %d)" % int(
-		data.get("version", 0)))
+	_check(int(data.get("version", 0)) == SaveSchema.current(),
+		"save deve ser v%d (C6: bloco bank_crisis; era %d)" % [
+		SaveSchema.current(), int(data.get("version", 0))])
 	var loaded = _load_save(data)
 	if loaded == null:
 		return
