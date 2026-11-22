@@ -568,8 +568,8 @@ dado com as ligações de MDA e do Kosovo), evidência em
 | Ligações aplicadas (com fluxo) | — | 97 (57) | 97 (57) | **100 (58)** |
 | Importado no ano / demanda | — | 0,536 % | 0,536 % | **0,536 %** |
 
-Importado no ano: 54,84 TWh, o mesmo da D-118 (abaixo: por que as 3 linhas novas
-não movem energia). 0 violações de invariante, 0 dias travados, drift 0,0055.
+Importado no ano: 54,84 TWh, 0,04 % acima da D-118 (abaixo: por que as 3 linhas
+novas movem tão pouco). 0 violações de invariante, 0 dias travados, drift 0,0055.
 
 #### (1) Dado: as ligações de MDA e do Kosovo
 
@@ -593,12 +593,15 @@ Kosovo, sem repartição por par. `meta.submarine_links` virou
 fronteira ausente no atlas). 131 → 134 ligações no dado; 100 aplicadas (as demais
 têm ponta sem operador nacional).
 
-**As 3 linhas novas não movem energia.** Nenhuma tem fluxo (0 MWh no ano) e o total
-comercializado é idêntico ao da D-118 (149.373,755 MWh). Motivo: os quatro vizinhos
-são **importadores líquidos** no ano-base Ember (ALB +0,33; SRB +2,03; MKD +0,92;
-ROU +3,74 TWh) e a regra da E5 (`sim/power.cpp`) vende só a **capacidade disponível
-não despachada** do exportador — rede 100 % servida tem sobra ~0 e não vende. O
-tamanho do déficit modelado é coerente com a realidade:
+**As 3 linhas novas movem pouca energia.** `XKX–ALB` entregou **35.997 MWh no ano**
+(ALB exporta 37.497; 4 % de perda) — 1,1 % da demanda de XKX (3,4 TWh) e ~2 % da
+capacidade da linha (4,1 MW médios). `MDA–ROU` e `XKX–MKD` ficaram em **0 MWh**. O
+importado no ano vai de 54,820 para 54,843 TWh (+0,04 %). Motivo: os quatro
+vizinhos são **importadores líquidos** no ano-base Ember (ALB +0,33; SRB +2,03;
+MKD +0,92; ROU +3,74 TWh) e a regra da E5 (`sim/power.cpp`) vende só a
+**capacidade disponível não despachada** do exportador — rede 100 % servida quase
+não tem sobra, e a ALB só tem sobra hídrica em poucos dias. O tamanho do déficit
+modelado é coerente com a realidade:
 
 | Nação | Déficit modelado (não servido) | Importação real Ember (ano-base) |
 |---|---:|---:|
@@ -662,11 +665,11 @@ direção do déficit é a documentada; o modelo é **mais brando** que o relato
 Sem energia nova em jogo: CIV (0,970, 365 d racionando, 91,2 % servido) é **(a)**
 racionamento físico; KNA (0,000, 100 % servida, 1 prédio de comida e 0 t de
 produção) é **(b) dado** (mesma família de SAH, §7.5); SUR (0,9735, já abaixo no
-controle) é **(b) margem**. Nenhuma tem canal de energia ligado às linhas novas:
-elas carregam 0 MWh e o fluxo total é idêntico. O que mudou foi a trajetória (o
-mundo é caótico: `served_ratio` difere na 6ª decimal e a confiança mínima do banco
-vai de 0,992 para 0,494, sem nenhum evento C6). **O portão tem margem de ±3
-nações**: comparar 102 com 93 não separa energia de ruído.
+controle) é **(b) margem**. Nenhuma tem canal de energia: CIV/KNA/SUR não são ponta
+de ligação nova e os 36 GWh entregues no Kosovo não chegam lá. O que mudou foi a
+trajetória (o mundo é caótico: `served_ratio` difere na 6ª decimal e a confiança
+mínima do banco vai de 0,992 para 0,494, sem nenhum evento C6). **O portão tem
+margem de ±3 nações**: comparar 102 com 93 não separa energia de ruído.
 
 #### Classificação final do resíduo (9 extras)
 
@@ -690,9 +693,10 @@ perdas, limite do portão (0,975), a regra de comércio da E5 e o núcleo C++.
   abaixo de 1,5 %** (margem de varejo/T&D/tributo — E7) e o portão de comida
   **102/179** (9 extras; classificação em §8.6 — nenhum bug de dado: são canais (a)
   racionamento físico e (b) regra/margem).
-- **Portão de comida tem margem de ±3 nações** (§8.6): três linhas de fluxo ZERO
-  moveram CIV/KNA/SUR porque o mundo diverge na 6ª decimal. Comparar 102 com 93 não
-  separa energia de ruído; o aceite precisa de banda, não de número exato.
+- **Portão de comida tem margem de ±3 nações** (§8.6): as três linhas novas
+  entregam só 36 GWh (0,04 % do importado) e ainda assim moveram CIV/KNA/SUR,
+  porque o mundo diverge na 6ª decimal. Comparar 102 com 93 não separa energia de
+  ruído; o aceite precisa de banda, não de número exato.
 - `importer_short_days` do runner conta só dias com fluxo (o núcleo publica o
   importador só quando há fluxo): a coluna não mede o déficit do importador. Correção
   exige o núcleo publicar o déficit nacional do dia — fora desta rodada.
