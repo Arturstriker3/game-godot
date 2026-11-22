@@ -143,16 +143,16 @@ func _two_city_world() -> Array:
 func _test_core_payment() -> void:
 	var geo = GeoScript.new()
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(_two_city_world(), [], [])
+	sim.initialize_world(_two_city_world(), [], [])
 	var sau_index := geo.external_income_index("SAU")
 	var bdi_index := geo.external_income_index("BDI")
-	sim.demo_set_external_income_index("SAU-RUH", sau_index)
-	sim.demo_set_external_income_index("BDI-BJM", bdi_index)
+	sim.set_external_income_index("SAU-RUH", sau_index)
+	sim.set_external_income_index("BDI-BJM", bdi_index)
 
-	var before: Dictionary = sim.get_demo_status()
+	var before: Dictionary = sim.get_status()
 	var money_before := float(before.get("money_total", 0.0))
 	var foreign_before := float(before.get("foreign_cash", 0.0))
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 
 	var paid := 0.0
 	# F7: a renda externa é piso de subsistência — o índice acima da média é
@@ -209,14 +209,14 @@ func _test_core_payment() -> void:
 
 func _test_save_load() -> void:
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(_two_city_world(), [], [])
-	sim.demo_set_external_income_index("SAU-RUH", 2.5)
-	sim.demo_set_external_income_index("BDI-BJM", 0.1)
-	var saved: Dictionary = sim.demo_to_dict()
+	sim.initialize_world(_two_city_world(), [], [])
+	sim.set_external_income_index("SAU-RUH", 2.5)
+	sim.set_external_income_index("BDI-BJM", 0.1)
+	var saved: Dictionary = sim.to_dict()
 
 	var loaded = EconomySim.new()
-	loaded.demo_from_dict(saved)
-	var status: Dictionary = loaded.get_demo_status()
+	loaded.from_dict(saved)
+	var status: Dictionary = loaded.get_status()
 	var found := {}
 	for city in status.get("cities", []):
 		found[String(city.get("id", ""))] = float(city.get("external_income_index", -1.0))
@@ -232,8 +232,8 @@ func _test_save_load() -> void:
 	for city in legacy.get("cities", []):
 		city.erase("external_income_index")
 	var restored = EconomySim.new()
-	restored.demo_from_dict(legacy)
-	for city in restored.get_demo_status().get("cities", []):
+	restored.from_dict(legacy)
+	for city in restored.get_status().get("cities", []):
 		if absf(float(city.get("external_income_index", -1.0)) - 1.0) > EPSILON:
 			_fail("save antigo: %s não voltou à média 1,0" % String(city.get("id", "")))
 
@@ -242,11 +242,11 @@ func _test_save_load() -> void:
 
 func _test_clamp() -> void:
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(_two_city_world(), [], [])
-	sim.demo_set_external_income_index("SAU-RUH", 99.0)
-	sim.demo_set_external_income_index("BDI-BJM", -4.0)
+	sim.initialize_world(_two_city_world(), [], [])
+	sim.set_external_income_index("SAU-RUH", 99.0)
+	sim.set_external_income_index("BDI-BJM", -4.0)
 	var found := {}
-	for city in sim.get_demo_status().get("cities", []):
+	for city in sim.get_status().get("cities", []):
 		found[String(city.get("id", ""))] = float(city.get("external_income_index", -1.0))
 	if absf(float(found.get("SAU-RUH", -1.0)) - 8.0) > EPSILON:
 		_fail("limite: índice 99 não foi limitado a 8 (%.3f)" % float(

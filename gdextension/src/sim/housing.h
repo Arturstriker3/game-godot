@@ -37,12 +37,12 @@
 namespace ogs {
 
 struct WorldState;
-struct DemoConstructionProject;
+struct ConstructionProject;
 class SimCore;
 
-// Dono da obra de moradia — vai em `DemoConstructionProject::housing_owner`
+// Dono da obra de moradia — vai em `ConstructionProject::housing_owner`
 // (a obra mora na fila única §15, kind CONSTRUCTION_HOUSING). O máximo de
-// obras de moradia SIMULTÂNEAS por cidade na fila é kDemoHousingMaxProjects.
+// obras de moradia SIMULTÂNEAS por cidade na fila é kHousingMaxProjects.
 enum HousingProjectState : int {
 	HOUSING_PROJECT_IDLE = 0,
 	HOUSING_PROJECT_PRIVATE = 1,     // incorporadora (capital privado)
@@ -50,7 +50,7 @@ enum HousingProjectState : int {
 	HOUSING_PROJECT_GOVERNMENT = 3,  // moradia social (caixa da prefeitura, W2)
 };
 
-constexpr int kDemoHousingMaxProjects = 4;
+constexpr int kHousingMaxProjects = 4;
 
 namespace housing {
 
@@ -60,8 +60,8 @@ double build_cost_unit(const WorldState& ws, std::size_t city_index,
 	int density, int tier);
 
 // Moradia na fila única: valida caixa do dono, cobra o `total_cost` do dono,
-// monta o DemoConstructionProject kind HOUSING e chama
-// core.demo_add_construction_project (que credita a terra à prefeitura e
+// monta o ConstructionProject kind HOUSING e chama
+// core.add_construction_project (que credita a terra à prefeitura e
 // reserva o resto). `owner_state` = HOUSING_PROJECT_PRIVATE (caixa das firmas)
 // | SELF (poupança da POP) | GOVERNMENT (caixa da prefeitura). false + nada
 // pago quando não cabe.
@@ -69,7 +69,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 	int owner_state, int density, int tier, double units);
 
 // Aluguel que os inquilinos devem pagar HOJE (XGS/dia): fatura mensal ÷ 30,
-// limitada pelo teto de ônus (kDemoHousingRentBurdenCap) da renda dos
+// limitada pelo teto de ônus (kHousingRentBurdenCap) da renda dos
 // inquilinos. É a MESMA conta que phase_housing usa para pagar; a fase de
 // renda (consumption.cpp) a desconta do orçamento discricionário do dia, para
 // o aluguel sair da RENDA depois da comida e ANTES de life/luxury (Q-015/B2).
@@ -77,7 +77,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 double daily_rent_obligation(const WorldState& ws, std::size_t city_index);
 
 // Nº de obras de moradia em andamento nesta cidade (nunca maior que
-// kDemoHousingMaxProjects).
+// kHousingMaxProjects).
 int project_count(const WorldState& ws, std::size_t city_index);
 
 // Moradia social em andamento nesta cidade? (a prefeitura financia uma por vez)
@@ -93,7 +93,7 @@ bool start_social_housing(WorldState& ws, SimCore& core, std::size_t city_index,
 // e a fração de POSSE do dono do projeto; tenure novo como aluguel só no caso
 // GOVERNMENT (comportamento atual do W3).
 void apply_completed_project(WorldState& ws,
-	const DemoConstructionProject& project);
+	const ConstructionProject& project);
 
 } // namespace housing
 

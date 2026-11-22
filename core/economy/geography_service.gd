@@ -30,6 +30,12 @@ const PROVINCE_GRID_CELL := 50.0
 ## costa — cobre pré-sal e Mar do Norte sem pontos no meio do oceano.
 const COASTAL_RESOURCES := ["oil", "gas"]
 const COASTAL_RADIUS_CELLS := 20
+## D-086b: custo de engenharia da mina (emprego/t, salário e opex/t) — a MESMA
+## tabela que a IA usa para abrir/expandir mina. A semente não pode nascer com a
+## régua da fazenda (7,5 empregos/t), que é ~2-4× a da mina e afunda a firma.
+const IndustryTemplatesScript := preload("res://core/economy/ai/industry_templates.gd")
+## B5 (D-089): níveis iniciais de infraestrutura por estado (dado World Bank).
+const InitialInfraScript := preload("res://core/economy/initial_infra.gd")
 const MAP_W := 5000.0
 const MAP_H := 2500.0
 
@@ -40,6 +46,20 @@ const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 ## Gini de renda por região (estimado; ver o próprio arquivo para a fonte e a
 ## marca `estimated`). Aplicado ao núcleo como classe de consumo.
 const INCOME_DISTRIBUTION_PATH := "res://data/definitions/economy/income_distribution.json"
+## B2: Gini OBSERVADO por nação e quintis de renda (World Bank SI.POV.GINI e
+## SI.DST; 154/179 nações observadas, o resto regional estimado). É a fonte
+## primária da repartição inicial dos cinco estratos; sem a nação no arquivo,
+## o núcleo usa a proxy lognormal do Gini declarado.
+const INEQUALITY_PATH := "res://data/definitions/economy/inequality.json"
+
+## D-086b — EXTRAÇÃO REAL (semente de 2025). Produção mineral/energética real
+## de 2024 por país (USGS Mineral Commodity Summaries 2025; Energy Institute
+## 2025 via OWID, CC BY 4.0) convertida em participação mundial e distribuída
+## entre as cidades donas das jazidas pela reserva recuperável (regra A1). Cada
+## entrada é um local REAL (cidade × mineral) com a capacidade diária que
+## reproduz a produção real atribuída. O arquivo é auditoria + semente; os
+## números de origem estão em `extraction_production_2024.json`.
+const EXTRACTION_SEED_PATH := "res://data/definitions/natural/extraction_2025.json"
 
 ## Tag do jogo -> código ISO-3 do Natural Earth (adm0_a3). A identidade cobre
 ## quase todas; só NED (NLD), XKX (KOS) e SSD (SDS) divergem. As províncias do
@@ -75,6 +95,13 @@ static var _gini_by_region: Dictionary = {}
 static var _gini_default := 0.0
 static var _gini_meta: Dictionary = {}
 static var _gini_ready := false
+static var _inequality_by_nation: Dictionary = {}
+static var _inequality_ready := false
+## D-086b: semente de extração real. "CITY|resource" ->
+## {capacity_t_day, owner, production_kt_year, reserve_share}. Vazio = arquivo
+## ausente; o núcleo cai na regra histórica (último estágio, piso de 5%).
+static var _extraction_seed: Dictionary = {}
+static var _extraction_seed_ready := false
 
 ## Renda externa: piso do índice (fração da média mundial). Sem piso, países
 ## pobres ficariam com ~0,04 da média e a cidade sem terra não importaria nada —
@@ -428,9 +455,55 @@ static func _load_income_distribution() -> void:
 	}
 
 
+## D-086b — carrega `extraction_2025.json` uma vez. Cada entrada é um local
+## REAL (cidade × mineral) com a capacidade diária que reproduz a produção
+## real 2024 atribuída ao país. Sem o arquivo, o mapa fica vazio e as minas
+## seguem a regra histórica (último estágio).
+static func _load_extraction_seed() -> void:
+	if _extraction_seed_ready:
+		return
+	_extraction_seed_ready = true
+	var file := FileAccess.open(EXTRACTION_SEED_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	var commodities: Dictionary = (data as Dictionary).get("commodities", {})
+	for resource: String in commodities:
+		var entry_commodity: Dictionary = commodities[resource]
+		var countries: Dictionary = entry_commodity.get("countries", {})
+		for tag: String in countries:
+			var country: Dictionary = countries[tag]
+			var owner := String(country.get("owner", "private"))
+			var production_kt_year := float(country.get("production_kt_year", 0.0))
+			for city_entry in (country.get("cities", []) as Array):
+				var city_row: Dictionary = city_entry
+				var city_id := String(city_row.get("city_id", ""))
+				var capacity := float(city_row.get("capacity_t_day", 0.0))
+				if city_id == "" or capacity <= 0.0:
+					continue
+				_extraction_seed[city_id + "|" + resource] = {
+					"capacity_t_day": capacity,
+					"owner": owner,
+					"production_kt_year": production_kt_year,
+					"reserve_share": float(city_row.get("reserve_share", 0.0)),
+					"nation": tag,
+				}
+
+
 ## Gini de renda da nação pela região (estimado). `available = false` quando
 ## não há região no arquivo; o chamador (`apply_to_sim`) então NÃO declara Gini.
+## B2: quando `inequality.json` tem o Gini OBSERVADO da nação (World Bank), ele
+## vence a estimativa regional; a origem vai em `source`.
 func nation_gini(tag: String) -> Dictionary:
+	_load_inequality()
+	var observed: Dictionary = _inequality_by_nation.get(tag, {})
+	if observed.has("gini"):
+		return {"gini": clampf(float(observed["gini"]) / 100.0, 0.0, 1.0),
+			"region": "", "estimated": bool(observed.get("estimated", false)),
+			"available": true, "source": String(observed.get("source", ""))}
 	_load_income_distribution()
 	_load_registry()
 	var region := String((_nation_rows_cache.get(tag, {}) as Dictionary).get(
@@ -440,6 +513,51 @@ func nation_gini(tag: String) -> Dictionary:
 			"available": false}
 	return {"gini": float(_gini_by_region[region]), "region": region,
 		"estimated": true, "available": true}
+
+
+## B2: quintis de RENDA observados da nação (fração da renda total, soma 1) ou
+## Array vazio quando não há dado. Fonte: World Bank SI.DST (lowest_20 …
+## highest_20) em `inequality.json`.
+func nation_quintiles(tag: String) -> Array:
+	_load_inequality()
+	var observed: Dictionary = _inequality_by_nation.get(tag, {})
+	var deciles: Dictionary = observed.get("deciles", {})
+	var keys := ["lowest_20", "second_20", "third_20", "fourth_20", "highest_20"]
+	var shares: Array = []
+	var total := 0.0
+	for key: String in keys:
+		var entry: Variant = deciles.get(key, null)
+		if typeof(entry) != TYPE_DICTIONARY:
+			return []
+		var value := float((entry as Dictionary).get("value", 0.0))
+		if value <= 0.0:
+			return []
+		shares.append(value)
+		total += value
+	if total <= 0.0:
+		return []
+	for i in shares.size():
+		shares[i] = float(shares[i]) / total
+	return shares
+
+
+## Carrega `inequality.json` (Gini observado + quintis) uma vez.
+static func _load_inequality() -> void:
+	if _inequality_ready:
+		return
+	_inequality_ready = true
+	var file := FileAccess.open(INEQUALITY_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	var nations: Dictionary = (data as Dictionary).get("nations", {})
+	for tag: String in nations:
+		var row: Variant = nations[tag]
+		if typeof(row) == TYPE_DICTIONARY:
+			_inequality_by_nation[tag] = row
 
 
 ## Perfil do Gini por região (auditoria e testes). Todo valor é `estimated`.
@@ -769,6 +887,94 @@ func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
 			entry["output_tons_per_day"] = capacity
 		resolved.append(entry)
 	return resolved
+
+
+## D-086 — MINAS/POÇOS INICIAIS. Duas regras de estágio inicial:
+##
+## 1. **Com produção real atribuível (D-086b):** toda (cidade, mineral) da lista
+##    de extração de 2025 nasce OPERANDO — estágio 0, com a capacidade diária
+##    que reproduz a produção real de 2024/2025 daquele local (ver
+##    `_load_extraction_seed`). A cidade que produz muito começa produzindo
+##    muito; a que não tem dado segue a regra histórica.
+## 2. **Sem dado (regra histórica da decisão do dono, 2026-11-17):** a jazida
+##    nasce com a construção EXISTENTE no ÚLTIMO estágio — produção no piso
+##    (5%) — e só volta pagando o aprofundamento (`stage = -1` = "último
+##    estágio"; o número mora no núcleo, não aqui).
+##
+## Uma mina por (cidade, mineral com jazida atribuída pela regra A1) — a MESMA
+## tabela de depósitos que o mapa de recursos desenha, então nenhuma jazida é
+## inventada. Dono: o declarado na semente (Estado/privado) quando há dado; sem
+## ele, Estado por padrão (`ownership_baseline.json` só declara setores estatais
+## em texto livre para 12 nações). A capacidade histórica usa a mesma régua da
+## mina estatal (demanda externa × 1,2, piso 2 t/d, teto 10 t/d).
+##
+## `use_seed = false` ignora SÓ a lista de produção real (diagnóstico A/B com o
+## mesmo mundo em que `extraction_2025.json` está ausente): todas as jazidas caem
+## na regra histórica do último estágio. O jogo usa o padrão (`true`).
+func resolve_initial_mines(buildings: Array, cities: Array,
+		use_seed: bool = true) -> Array:
+	_load_extraction_seed()
+	var out: Array = buildings.duplicate(true)
+	var used := {}
+	for building in out:
+		var key: String = String(building.get("city_id", "")) + "|" \
+				+ String(building.get("resource", ""))
+		used[key] = true
+	for city in cities:
+		var city_id := String(city.get("id", ""))
+		if city_id == "":
+			continue
+		var minerals := _aggregate_deposits(deposits_for_city(city_id))
+		for resource in minerals:
+			var key: String = city_id + "|" + String(resource)
+			if used.has(key):
+				continue
+			used[key] = true
+			var reserve_kt := float(minerals[resource]["reserve_kt"])
+			var quality := float(minerals[resource].get("quality", 0.0))
+			var seed_entry: Dictionary = _extraction_seed.get(key, {}) \
+					if use_seed else {}
+			if not seed_entry.is_empty():
+				# Produção real atribuída: capacidade nominal dividida pela
+				# eficiência da jazida (0,5 + 0,5·qualidade, a MESMA curva do
+				# núcleo em `extraction_efficiency`) para que a produção
+				# EFETIVA do dia 0 seja a produção real do local.
+				var efficiency := 0.5 + 0.5 * clampf(quality, 0.0, 1.0)
+				var nominal := float(seed_entry["capacity_t_day"]) / efficiency
+				var spec: Dictionary = IndustryTemplatesScript.TEMPLATES.get(
+					String(resource), {})
+				out.append({
+					"city_id": city_id,
+					"id": "%s_%s_mine" % [city_id.to_lower().replace("-", "_"), resource],
+					"name": "%s — %s (mina 2024)" % [
+						String(city.get("name", "")), resource],
+					"resource": resource,
+					"output_tons_per_day": float(snappedf(nominal, 0.001)),
+					"owner": String(seed_entry.get("owner", "state")),
+					"stage": 0,
+					# D-086b: a firma semeada usa a régua de engenharia da MINA
+					# declarada na tabela da IA — não a da fazenda (7,5 empregos/t).
+					# Sem isto a mina nasce com ~2-4x a folha de uma mina igual que a
+					# própria IA abre, e a folha não cabe na venda da cidade.
+					"jobs_per_ton": float(spec.get("jobs_per_ton", 7.5)),
+					"wage": float(spec.get("wage", 2.0)),
+					"opex_per_ton": float(spec.get("opex_per_ton", 2.5)),
+				})
+				continue
+			var ceiling := maxf(reserve_kt * 1000.0 / (DEPLETION_YEARS * 365.0),
+					MIN_EXTERNAL_DEMAND)
+			var capacity := clampf(ceiling * 1.2, 2.0, 10.0)
+			out.append({
+				"city_id": city_id,
+				"id": "%s_%s_mine" % [city_id.to_lower().replace("-", "_"), resource],
+				"name": "%s — %s (mina)" % [String(city.get("name", "")), resource],
+				"resource": resource,
+				"output_tons_per_day": float(snappedf(capacity, 0.001)),
+				"owner": "state",
+				"stage": -1,
+			})
+	return out
+
 
 
 ## Cultura da fazenda inicial: trigo quando viável NA BACIA DA CIDADE (aptidão
@@ -1368,9 +1574,33 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 	}
 
 
+## B5 (D-089) — INFRAESTRUTURA INICIAL do estado (dado real).
+##
+## Aplica ao núcleo os níveis 0..3 de estrada/energia/água por estado, derivados
+## de `data/definitions/scenario/state_infrastructure_2026.json` pela regra
+## declarada em `core/economy/initial_infra.gd` (World Bank WDI/LPI; granularidade
+## NACIONAL no arquivo, ver `docs/data/state_infrastructure.md`).
+##
+## Chame DEPOIS de `initialize_world` (as regiões já existem) e ANTES do
+## primeiro dia. O autoload e os harnesses (snapshot do CLI, world_equivalence,
+## economy_refactor_equiv) chamam esta MESMA função com o MESMO arquivo — sem
+## isso o replay não roda o jogo. Binário anterior ao setter ou arquivo ausente
+## não mudam nada: as regiões ficam no nível 0 (ausência explícita, como na B5).
+##
+## @returns Quantidade de estados aplicados (0 = nada mudou).
+static func apply_initial_infra(sim: Object) -> int:
+	if sim == null or not sim.has_method("set_region_infra"):
+		return 0
+	var levels := InitialInfraScript.levels_by_state()
+	if levels.is_empty():
+		return 0
+	sim.set_region_infra(levels)
+	return levels.size()
+
+
 ## Aplica a aptidão de cada cultura e os depósitos minerais de cada cidade ao
 ## núcleo econômico. As culturas renováveis entram como aptidão (0..1); os
-## minerais entram como reserva agregada (demo_set_deposit) + aptidão 1. O C++
+## minerais entram como reserva agregada (set_deposit) + aptidão 1. O C++
 ## ignora produtos que não conhece (ex.: carvão/cobre/gás/petróleo ficam só no
 ## mapa por enquanto).
 ##
@@ -1419,25 +1649,35 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		# mineral: reserva_kt} e os consumidores somam tudo que não é cultura
 		# como reserva. O valor sai por `external_income_index`/perfil.
 		var income_index := external_income_index(String(city.get("nation", "")))
-		sim.demo_set_external_income_index(city_id, income_index)
+		sim.set_external_income_index(city_id, income_index)
 		# F7 calibração — Gini de renda da nação (estimado por região). Divide a
 		# POP em classes basic/life/luxury no núcleo. Sem o dado, não declara
 		# nada e o núcleo mantém a repartição legada por escolaridade.
 		var gini_entry := nation_gini(String(city.get("nation", "")))
 		var gini := float(gini_entry.get("gini", 0.0))
-		if gini > 0.0 and sim.has_method("demo_set_income_gini"):
-			sim.demo_set_income_gini(city_id, gini)
+		if gini > 0.0 and sim.has_method("set_income_gini"):
+			sim.set_income_gini(city_id, gini)
+		# B2: quintis de renda OBSERVADOS da nação (World Bank SI.DST). Sem
+		# dado, não declara nada — o núcleo usa a proxy lognormal do Gini.
+		var quintiles := nation_quintiles(String(city.get("nation", "")))
+		if not quintiles.is_empty() and sim.has_method("set_city_strata"):
+			sim.set_city_strata(city_id, quintiles)
 		for crop in crops:
 			# Aptidão DA CIDADE (bacia de captação), não mais o máximo nacional:
 			# Marselha planta como o seu entorno, não como a Beauce. Cidade sem
 			# nação conhecida mantém o fallback legado do próprio território.
 			var suitability := city_crop_suitability(city_id, crop) if code != "" \
 					else crop_suitability(city_id, center, crop)
-			sim.demo_set_suitability(city_id, crop, suitability)
+			sim.set_suitability(city_id, crop, suitability)
+			# Teto físico de capacidade agrícola (t/dia) da bacia: dado de
+			# geografia (área cultivável × produtividade FAO), não serializado
+			# no save. Só a IA o consome (limite de expansão da lavoura).
+			sim.set_land_capacity(city_id, crop,
+					city_land_capacity_t_day(city_id, crop))
 			city_applied[crop] = suitability
 		var wood := city_forest_cover(city_id) if code != "" \
 				else forest_cover(city_id, center)
-		sim.demo_set_suitability(city_id, "wood", wood)
+		sim.set_suitability(city_id, "wood", wood)
 		city_applied["wood"] = wood
 		# Renováveis não alimentares (soja/algodão/madeira): demanda externa
 		# limitada = base × aptidão (aptidão já declarada acima/agora).
@@ -1445,7 +1685,7 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 			var renewable_ceiling := RENEWABLE_EXPORT_BASE \
 					* float(city_applied.get(renewable, 0.0))
 			if renewable_ceiling > 0.0:
-				sim.demo_set_external_demand(city_id, renewable, renewable_ceiling)
+				sim.set_external_demand(city_id, renewable, renewable_ceiling)
 		# Depósitos atribuídos pela regra A1 (uma cidade por depósito, mesma nação
 		# e mesma massa de terra). Cidade sem nação conhecida usa o território
 		# próprio (fallback legado, sem agregação nacional).
@@ -1454,15 +1694,15 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		var minerals := _aggregate_deposits(deposits)
 		for resource in minerals:
 			var deposit: Dictionary = minerals[resource]
-			sim.demo_set_suitability(city_id, resource, 1.0)
-			sim.demo_set_deposit(city_id, resource,
+			sim.set_suitability(city_id, resource, 1.0)
+			sim.set_deposit(city_id, resource,
 					deposit["reserve_kt"], deposit["quality"], deposit["depth_m"])
 			city_applied[resource] = deposit["reserve_kt"]
 			# Teto de exportação = reserva esgotada em ~25 anos, com piso.
 			var ceiling := maxf(
 				float(deposit["reserve_kt"]) * 1000.0 / (DEPLETION_YEARS * 365.0),
 				MIN_EXTERNAL_DEMAND)
-			sim.demo_set_external_demand(city_id, resource, ceiling)
+			sim.set_external_demand(city_id, resource, ceiling)
 		applied[city_id] = city_applied
 	return applied
 

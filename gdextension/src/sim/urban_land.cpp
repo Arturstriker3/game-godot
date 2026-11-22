@@ -18,11 +18,11 @@ namespace {
 // Fábrica/planta URBANA: indústria com receita (secundária) ou fábrica legada
 // (insumo declarado). Minas e fazendas (extração primária) ficam fora da área
 // urbana e não consomem zona industrial.
-inline bool is_urban_factory(const DemoBuilding& building) {
+inline bool is_urban_factory(const Building& building) {
 	return building.recipe >= 0 || building.input_product >= 0;
 }
 
-inline bool is_urban_factory(const DemoConstructionProject& project) {
+inline bool is_urban_factory(const ConstructionProject& project) {
 	return !project.expand_existing
 		&& (project.recipe >= 0 || project.input_product >= 0);
 }
@@ -32,7 +32,7 @@ inline bool is_urban_factory(const DemoConstructionProject& project) {
 inline double committed_cost(const WorldState& ws, const std::string& city_id,
 		const std::string& owner) {
 	double committed = 0.0;
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (project.city != city_id) {
 			continue;
 		}
@@ -85,7 +85,7 @@ double distance_factor(const CityLand& land) {
 	if (initial_radius <= 0.0 || radius <= 0.0) {
 		return 1.0;
 	}
-	return 1.0 + kDemoUrbanExpandDistanceK
+	return 1.0 + kUrbanExpandDistanceK
 		* std::max(0.0, radius / initial_radius - 1.0);
 }
 
@@ -98,14 +98,14 @@ double relief_factor(const CityLand& land) {
 	const double used = std::clamp(
 		1.0 - std::max(0.0, land.reserve_km2) / land.initial_reserve_km2,
 		0.0, 1.0);
-	return 1.0 + kDemoUrbanExpandReliefK * used;
+	return 1.0 + kUrbanExpandReliefK * used;
 }
 
 // Fração do custo de infraestrutura por km² que o passo de adensamento custa,
 // conforme o nível de destino (LOW→MID barato, MID→HIGH pesado).
 double densify_factor(int density) {
-	return density <= DENSITY_LOW ? kDemoUrbanDensifyCostFactorLowMid
-		: kDemoUrbanDensifyCostFactorMidHigh;
+	return density <= DENSITY_LOW ? kUrbanDensifyCostFactorLowMid
+		: kUrbanDensifyCostFactorMidHigh;
 }
 
 // Escala monetária local da obra: alvo de receita municipal do MÊS (fonte ×
@@ -132,8 +132,8 @@ double municipal_month_scale(const WorldState& ws, std::size_t city_index) {
 // com piso declarado para cidade sem dado municipal.
 double base_infra_cost_per_km2(const WorldState& ws, std::size_t city_index) {
 	const double scale = municipal_month_scale(ws, city_index);
-	return std::max(kDemoUrbanInfraFloorPerKm2,
-		kDemoUrbanInfraCostMonths * scale);
+	return std::max(kUrbanInfraFloorPerKm2,
+		kUrbanInfraCostMonths * scale);
 }
 
 // Troca a receita de material do adensamento MID→HIGH: mais aço e elétrica,
@@ -143,29 +143,29 @@ void reshape_high_density_materials(WorldState& ws, SimCore& core,
 	if (ws.construction_projects.empty()) {
 		return;
 	}
-	DemoConstructionProject& project = ws.construction_projects.back();
+	ConstructionProject& project = ws.construction_projects.back();
 	if (project.id != project_id || project.material_count <= 0) {
 		return;
 	}
 	for (int m = 0; m < project.material_count; ++m) {
 		const int product = project.materials[m];
-		const std::string name = core.demo_product_name(product);
+		const std::string name = core.product_name(product);
 		if (name == "steel_structure") {
-			project.material_qty[m] *= kDemoUrbanDensifyHighSteelWeight;
+			project.material_qty[m] *= kUrbanDensifyHighSteelWeight;
 		} else if (name == "electrical_material") {
-			project.material_qty[m] *= kDemoUrbanDensifyHighElectricalWeight;
+			project.material_qty[m] *= kUrbanDensifyHighElectricalWeight;
 		}
 	}
 	double value_after = 0.0;
 	for (int m = 0; m < project.material_count; ++m) {
 		const int product = project.materials[m];
 		value_after += project.material_qty[m]
-			* std::max(0.0, core.demo_base_price(product));
+			* std::max(0.0, core.base_price(product));
 	}
 	if (value_after <= 0.0) {
 		return;
 	}
-	const double target = kDemoConstructionMaterialShare
+	const double target = kConstructionMaterialShare
 		* std::max(0.0, project.total_cost);
 	const double scale = target / value_after;
 	for (int m = 0; m < project.material_count; ++m) {
@@ -185,7 +185,7 @@ double zone_capacity(const CityLand& land, int zone) {
 	}
 	const int density = std::clamp(
 		static_cast<int>(land.max_density[zone]), 0, DENSITY_COUNT - 1);
-	const double far = kDemoUrbanFar[density];
+	const double far = kUrbanFar[density];
 	if (far <= 0.0) {
 		return 0.0;
 	}
@@ -193,9 +193,9 @@ double zone_capacity(const CityLand& land, int zone) {
 	// (m² úteis por trabalhador, ver sim_constants.h). A zona limita pelo
 	// emprego, então uma metrópole cheia encosta na capacidade de verdade.
 	const double per_unit_m2 = zone == ZONE_RES
-		? kDemoUrbanUnitM2[density][TIER_MEDIO]
-		: zone == ZONE_COM ? kDemoUrbanServiceM2PerWorker
-		: kDemoUrbanFactoryM2PerWorker;
+		? kUrbanUnitM2[density][TIER_MEDIO]
+		: zone == ZONE_COM ? kUrbanServiceM2PerWorker
+		: kUrbanFactoryM2PerWorker;
 	if (per_unit_m2 <= 0.0) {
 		return 0.0;
 	}
@@ -248,7 +248,7 @@ double zone_usage(const WorldState& ws, std::size_t city_index, int zone) {
 			}
 			return usage;
 		}
-		for (const DemoServiceBusiness& business : ws.service_businesses) {
+		for (const ServiceBusiness& business : ws.service_businesses) {
 			if (!business.bankrupt && business.city == city_id) {
 				usage += std::max(0.0, business.jobs);
 			}
@@ -261,7 +261,7 @@ double zone_usage(const WorldState& ws, std::size_t city_index, int zone) {
 		for (const int building_index : ws.buildings_by_city[city_index]) {
 			if (building_index >= 0
 					&& static_cast<std::size_t>(building_index) < ws.buildings.size()) {
-				const DemoBuilding& building =
+				const Building& building =
 					ws.buildings[static_cast<std::size_t>(building_index)];
 				if (is_urban_factory(building)) {
 					usage += std::max(0.0, building.jobs);
@@ -269,13 +269,13 @@ double zone_usage(const WorldState& ws, std::size_t city_index, int zone) {
 			}
 		}
 	} else {
-		for (const DemoBuilding& building : ws.buildings) {
+		for (const Building& building : ws.buildings) {
 			if (building.city == city_id && is_urban_factory(building)) {
 				usage += std::max(0.0, building.jobs);
 			}
 		}
 	}
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (project.city == city_id && is_urban_factory(project)) {
 			usage += std::max(0.0, project.jobs);
 		}
@@ -313,7 +313,7 @@ double zone_capacity_for(const WorldState& ws, std::size_t city_index, int zone)
 	// tem piso em estoque ÷ teto, sem inventar área. Cidade no teto está cheia
 	// — moradia nova exige expandir/adensar (o envelope cresce).
 	const double usage = zone_usage(ws, city_index, zone);
-	return std::max(capacity, usage / kDemoUrbanOccupancyCap);
+	return std::max(capacity, usage / kUrbanOccupancyCap);
 }
 
 bool zone_has_room(const WorldState& ws, std::size_t city_index, int zone,
@@ -338,19 +338,35 @@ void phase_month(WorldState& ws) {
 	if (ws.land.empty() || ws.cities.empty()) {
 		return;
 	}
-	if (kDemoUrbanMonthDays <= 0 || ws.day % kDemoUrbanMonthDays != 0) {
-		return;
-	}
 	const std::size_t count = std::min(
 		{ws.land.size(), ws.housing.size(), ws.cities.size()});
 	if (count == 0) {
 		return;
 	}
-	// Uso por cidade calculado numa passada (a fase roda uma vez por mês): as
-	// unidades de moradia, os negócios de serviço e as plantas industriais são
-	// acumulados por índice de cidade, na ordem estável dos vetores.
+	// A6: cada cidade fecha o mês no seu dia (`(dia - índice) % 30 == 0`), em
+	// vez de todas no dia múltiplo de 30. O trabalho por dia cai a ~1/30 e o
+	// resultado ao longo do mês é o mesmo.
+	const int period = ws.cadence.monthly_period;
+	bool any_due = false;
+	for (std::size_t index = 0; index < count && !any_due; ++index) {
+		any_due = cadence_due(ws.day, index, period);
+	}
+	if (!any_due) {
+		return;
+	}
+	// Uso por cidade — SÓ para as cidades do lote do dia (A6). Calcular as 834
+	// todo dia devolveria o custo ao caminho diário (o índice por cidade evita
+	// 42 mil buscas por id a cada tick). Os negócios vêm do índice
+	// `service_by_city` — a mesma fonte que `zone_usage` já usa.
+	std::vector<char> due_mask(count, 0);
+	for (std::size_t index = 0; index < count; ++index) {
+		due_mask[index] = cadence_due(ws.day, index, period) ? 1 : 0;
+	}
 	std::vector<double> usage(count * ZONE_COUNT, 0.0);
 	for (std::size_t index = 0; index < count; ++index) {
+		if (!due_mask[index]) {
+			continue;
+		}
 		const CityHousing& house = ws.housing[index];
 		double units = 0.0;
 		for (int density = 0; density < DENSITY_COUNT; ++density) {
@@ -360,56 +376,85 @@ void phase_month(WorldState& ws) {
 		}
 		usage[index * ZONE_COUNT + ZONE_RES] = units;
 	}
-	for (const DemoServiceBusiness& business : ws.service_businesses) {
-		if (business.bankrupt) {
+	const bool have_service_index = ws.service_by_city.size() >= count;
+	for (std::size_t index = 0; index < count; ++index) {
+		if (!due_mask[index]) {
 			continue;
 		}
-		const int index = city_index_of(ws, business.city);
-		if (index >= 0 && static_cast<std::size_t>(index) < count) {
-			usage[static_cast<std::size_t>(index) * ZONE_COUNT + ZONE_COM]
-				+= std::max(0.0, business.jobs);
+		if (have_service_index) {
+			for (const int business_index : ws.service_by_city[index]) {
+				if (business_index < 0 || static_cast<std::size_t>(business_index)
+						>= ws.service_businesses.size()) {
+					continue;
+				}
+				const ServiceBusiness& business =
+					ws.service_businesses[static_cast<std::size_t>(business_index)];
+				if (business.bankrupt) {
+					continue;
+				}
+				usage[index * ZONE_COUNT + ZONE_COM]
+					+= std::max(0.0, business.jobs);
+			}
+			continue;
+		}
+		// Índice indisponível (mundo recém-carregado sem o catálogo): varredura
+		// global, o caminho anterior — ausência explícita, sem inventar uso.
+		for (const ServiceBusiness& business : ws.service_businesses) {
+			if (business.bankrupt) {
+				continue;
+			}
+			const int found = city_index_of(ws, business.city);
+			if (found >= 0 && static_cast<std::size_t>(found) == index) {
+				usage[index * ZONE_COUNT + ZONE_COM]
+					+= std::max(0.0, business.jobs);
+			}
 		}
 	}
-	for (const DemoBuilding& building : ws.buildings) {
+	for (const Building& building : ws.buildings) {
 		if (!is_urban_factory(building)) {
 			continue;
 		}
 		const int index = city_index_of(ws, building.city);
-		if (index >= 0 && static_cast<std::size_t>(index) < count) {
+		if (index >= 0 && static_cast<std::size_t>(index) < count
+				&& due_mask[static_cast<std::size_t>(index)] != 0) {
 			usage[static_cast<std::size_t>(index) * ZONE_COUNT + ZONE_IND]
 				+= std::max(0.0, building.jobs);
 		}
 	}
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (!is_urban_factory(project)) {
 			continue;
 		}
 		const int index = city_index_of(ws, project.city);
-		if (index >= 0 && static_cast<std::size_t>(index) < count) {
+		if (index >= 0 && static_cast<std::size_t>(index) < count
+				&& due_mask[static_cast<std::size_t>(index)] != 0) {
 			usage[static_cast<std::size_t>(index) * ZONE_COUNT + ZONE_IND]
 				+= std::max(0.0, project.jobs);
 		}
 	}
 
 	for (std::size_t index = 0; index < count; ++index) {
+		if (!cadence_due(ws.day, index, period)) {
+			continue;  // cidade fora do lote do dia (A6)
+		}
 		CityLand& land = ws.land[index];
-		const DemoCity& city = ws.cities[index];
+		const City& city = ws.cities[index];
 		const CityHousing& house = ws.housing[index];
 		// Base do preço da terra: parcela do terreno no valor do imóvel médio
 		// (XGS/m²) na densidade permitida. Sem preço na fonte (0) o preço da
 		// terra NÃO é inventado: fica como está (ausência explícita).
 		const int density = std::clamp(
 			static_cast<int>(land.max_density[ZONE_RES]), 0, DENSITY_COUNT - 1);
-		const double unit_m2 = kDemoUrbanUnitM2[density][TIER_MEDIO];
+		const double unit_m2 = kUrbanUnitM2[density][TIER_MEDIO];
 		const double price_per_m2 = unit_m2 > 0.0
-			? std::max(0.0, house.price[TIER_MEDIO]) * kDemoUrbanLandShareOfHousePrice
+			? std::max(0.0, house.price[TIER_MEDIO]) * kUrbanLandShareOfHousePrice
 				/ unit_m2 : 0.0;
 		if (price_per_m2 > 0.0) {
 			// Renda média local: índice da nação relativo à média mundial
 			// (1,0), linear e limitado — renda alta encarece o solo.
 			const double income = std::isfinite(city.external_income_index)
 				? city.external_income_index : 1.0;
-			const double income_factor = 1.0 + kDemoUrbanLandIncomeGain
+			const double income_factor = 1.0 + kUrbanLandIncomeGain
 				* std::clamp(income - 1.0, -0.5, 1.0);
 			for (int zone = 0; zone < ZONE_COUNT; ++zone) {
 				const double capacity = zone_capacity(land, zone);
@@ -418,11 +463,11 @@ void phase_month(WorldState& ws) {
 					? used / capacity : (used > 0.0 ? 1.0e9 : 0.0);
 				// Curva convexa perto de 1, com teto: ocupação alta pressiona o
 				// preço muito mais que proporcionalmente.
-				const double pressure = std::min(kDemoUrbanLandMaxPressure,
+				const double pressure = std::min(kUrbanLandMaxPressure,
 					occupancy * occupancy / std::max(0.05, 1.0 - occupancy));
 				const double target = price_per_m2 * income_factor * (1.0 + pressure);
 				land.land_price[zone] += (target - land.land_price[zone])
-					* kDemoUrbanLandPriceSmooth;
+					* kUrbanLandPriceSmooth;
 				if (!std::isfinite(land.land_price[zone])
 						|| land.land_price[zone] < 0.0) {
 					land.land_price[zone] = 0.0;
@@ -431,7 +476,7 @@ void phase_month(WorldState& ws) {
 		}
 		// Sinal antigo perde força: a prefeitura reage à demanda corrente.
 		for (int zone = 0; zone < ZONE_COUNT; ++zone) {
-			land.zone_demand[zone] *= kDemoUrbanZoneDemandDecay;
+			land.zone_demand[zone] *= kUrbanZoneDemandDecay;
 		}
 	}
 }
@@ -482,7 +527,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 		return false;
 	}
 	CityLand& land = ws.land[city_index];
-	DemoCity& city = ws.cities[city_index];
+	City& city = ws.cities[city_index];
 	double cost = 0.0;
 	double area_km2 = 0.0;
 	if (action == URBAN_EXPAND) {
@@ -533,7 +578,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 	}
 	// Anti-duplicação: uma obra urbana por zona (a prefeitura não empilha a
 	// mesma expansão todo mês enquanto a anterior está em andamento).
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (project.city == city.id && project.urban_action != URBAN_NONE
 				&& project.urban_zone == zone) {
 			if (error != nullptr) {
@@ -550,7 +595,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 	// todas as obras do município, então somar `committed_cost("state")` aqui
 	// misturava contas e cobrava a obra duas vezes:
 	//   1. as obras §15 de PRÉDIO do Estado saem de `city.government_budget`
-	//      (economy_sim.cpp, `demo_build`), nunca do caixa municipal — mesmo que
+	//      (economy_sim.cpp, `build`), nunca do caixa municipal — mesmo que
 	//      o campo se chame "state", é o tesouro nacional;
 	//   2. as obras que o município paga (a urbana aqui e a moradia do governo,
 	//      `housing::start_project`) já tiveram `total_cost` debitado do caixa
@@ -579,7 +624,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 		return false;
 	}
 
-	DemoConstructionProject project;
+	ConstructionProject project;
 	// Id estável por cidade/zona/tipo/dia: reprodutível no save/load e único
 	// (a anti-duplicação impede repetir a mesma zona no mesmo dia).
 	project.id = "URB-" + city.id + "-Z" + std::to_string(zone) + "-"
@@ -596,7 +641,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 	// CRESCE com a distância (redes mais longas, spec "Custo crescente").
 	const double size_scale = distance_factor(land);
 	project.capacity = (action == URBAN_EXPAND
-		? area_km2 * kDemoUrbanKm2ToConstructionUnits : 1.0) * size_scale;
+		? area_km2 * kUrbanKm2ToConstructionUnits : 1.0) * size_scale;
 	project.total_cost = cost;
 	project.reserved = cost;
 	project.urban_action = action;
@@ -610,7 +655,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 	} else {
 		city.firm_cash -= cost;
 	}
-	core.demo_add_construction_project(project);
+	core.add_construction_project(project);
 	// MID→HIGH: a receita de obra troca para aço/elétrica (mesma fração do
 	// custo total), depois que o §15 montou a receita padrão.
 	if (action == URBAN_DENSIFY
@@ -624,7 +669,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 }
 
 void apply_completed_project(WorldState& ws,
-		const DemoConstructionProject& project) {
+		const ConstructionProject& project) {
 	if (project.urban_action == URBAN_NONE) {
 		return;
 	}
@@ -639,7 +684,7 @@ void apply_completed_project(WorldState& ws,
 		land.area_km2[zone] += km2;
 		land.reserve_km2 = std::max(0.0, land.reserve_km2 - km2);
 		// Terra nova vem com a infraestrutura da obra: mais gente atendida.
-		land.infra_capacity += km2 * kDemoUrbanInfraPopPerKm2;
+		land.infra_capacity += km2 * kUrbanInfraPopPerKm2;
 	} else if (project.urban_action == URBAN_DENSIFY) {
 		const int density = std::clamp(
 			static_cast<int>(land.max_density[zone]), 0, DENSITY_COUNT - 1);

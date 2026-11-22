@@ -1,0 +1,36 @@
+{
+  "schema": "ogs.economy.monetary_policy.v1",
+  "source": "default de jogo",
+  "note": "Parametros DECLARADOS do jogo para a taxa basica e a emissao (C2b1/D-104; calibracao D-113). Nao sao dado observado de nenhum pais: o repositorio nao tem fonte de meta de inflacao, de taxa neutra nem de independencia de banco central para as 179 nacoes (C2a marcou bank_independence = no_data). O nucleo usa exatamente estes numeros (sim_constants/monetary.h) e o teste tools/c2b1_monetary_test.gd confere a paridade com o status.",
+  "world": {
+    "standard": "fiat",
+    "reserve_currency": "USD"
+  },
+  "defaults": {
+    "bank_independence": "independent",
+    "target_inflation": 0.015,
+    "neutral_rate": 0.025,
+    "taylor_inflation_weight": 1.5,
+    "taylor_gap_weight": 0.5,
+    "max_step_per_day": 0.0025,
+    "rate_smoothing": 0.5,
+    "rate_floor": 0.0,
+    "rate_cap": 0.3,
+    "controlled_spread": 0.02,
+    "controlled_emission_share_of_m0": 0.01,
+    "annualize_min_span_days": 90,
+    "gap_baseline_day": 30
+  },
+  "harvest_credit": {
+    "apply_policy_rate": true,
+    "note": "D-105 (C2b1-fix) + C4 (D-110) + D-111: o juro da taxa básica no ENVELOPE de crédito da safra (D-099, agriculture.cpp) nasceu DESLIGADO porque não existia credor com contraparte no balanço. A C4 criou o credor (banco público da nação) e desde a D-111 o juro é LIGADO por padrão: o envelope vira asset / (60 * (1 + r * 60/365)) e o valor desconta a folha do tomador e é creditado no banco público (bank.cash += valor, bank.harvest_interest += valor). Sem banco público na nação o valor NÃO é cobrado (ausência declarada, comportamento da D-105). O núcleo lê a flag de WorldState::harvest_credit_rate (default true desde a D-111; set_balance e o A/B desligam). Custo de capital do estoque privado (G2, ai_storage.cpp) NÃO é afetado: é custo de oportunidade do capital e não tem credor a receber."
+  },
+  "notes": {
+    "neutral_rate": "taxa real neutra de 1% + meta de 1,5% = 2,5%. D-113 (calibracao pre-C6): a meta era 3% e o neutro 4%, INCOMPATIVEIS com o regime de precos deste modelo - o CPI da C2a e um indice de NIVEL relativo aos precos-base e a inflacao de 12 meses medida em 365 d tem mediana 1,55% (p10 -0,23%, p90 4,85%; docs/economy/perf/c5_gate_default.json). Com meta 3% o termo de inflacao ficava em -2,2 pp de forma permanente e a taxa mediana do 1o ano caia de ~10% para 0,3%. A meta 1,5% NAO e meta de banco central real: e default de jogo calibrado a tendencia MEDIDA do CPI (o repositorio nao tem fonte de meta por pais, ver C2a).",
+    "gap": "hiato = (desemprego natural do modelo - desemprego medido) em pontos percentuais de forca de trabalho. D-113: o hiato NAO entra antes do dia 30 (gap_baseline_day): no dia 0 o modelo ainda aloca a forca de trabalho (desemprego medido 21,5% no dia 7 contra o natural declarado de 4%; o regime do modelo fica em ~6,1%) e o hiato saia -17,5 pp, derrubando a taxa de 4% para 0,25% em 15 dias por artefato de inicializacao.",
+    "max_step_per_day": "25 pontos-base por dia.",
+    "controlled_emission_share_of_m0": "senhoriagem máxima: 1% do M0 da moeda por dia; o excedente do déficit fica não financiado (declarado).",
+    "rate_smoothing": "0,5 por DECISAO mensal (cadencia da leitura do CPI). Aplicado por dia dava meia-vida de 1 dia e a taxa teleportava para o alvo em ~4 dias; o nucleo converte para o equivalente diario 1-(1-0,5)^(1/30) ~= 2,28%/dia (D-113).",
+    "annualize_min_span_days": "janela minima para a inflacao ANUALIZADA (D-113). Com 2 amostras (30 d) o expoente 360/30=12 multiplicava a variacao do 1o mes: no dia 45 a anualizada mediana era 8,9% (p90 24,1%) e a regra mirava 12,5%, levando a taxa de ~0% a ~10% em duas semanas. Antes de um trimestre de serie a inflacao e AUSENTE (declarada) e a regra usa so o neutro e o hiato."
+  }
+}

@@ -1,13 +1,14 @@
 {
+  "agriculture": true,
   "ai": true,
   "bankruptcies": 0,
   "days": 60,
-  "money_total": 2200539587.4000006,
+  "money_total": 6527733251.157351,
   "products": 113,
-  "save_sha256": "3e3ebbbedc29033760201809af2fb46d647b3cf2d83cf35a955cfa8821a3d0b7",
+  "save_sha256": "5fadba280b50a97d893af8dd8c24808630ade2b6add27b7bb58754bfeea4eb47",
   "seed": 0,
-  "service_businesses": 54554,
-  "status_sha256": "d79bfe327fb4c7182d41f67c9381fd0a94562ca10fd3bde2e5ebbd875c95ac9b",
+  "service_businesses": 39960,
+  "status_sha256": "f6ec04276f5650a76353d960541966ca35642ead0efc042cfd70e2e5744bf807",
   "threads": 0,
   "urban": true
 }

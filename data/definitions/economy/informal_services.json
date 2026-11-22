@@ -1,0 +1,565 @@
+{
+  "version": 1,
+  "note": "Catálogo de categorias de trabalho e serviço informal da B7. Cada categoria traz o nome genérico em pt-BR/en/es (mesmo padrão de services.json) e termos locais por país/região, no original, com a língua. Termo sem publicação formal catalogada usa source_key=common_usage (uso corrente documentado em literatura local e imprensa) — a ausência de citação única é declarada, não escondida. Nada aqui é estimativa de tamanho: percentual de informalidade é dado de outra camada (ILO/ILOSTAT + instituto nacional).",
+  "linking_note": "formal_sector liga a categoria ao setor de services.json que ela concorre/atende; null quando não é serviço (agricultura de subsistência, produção domiciliar).",
+  "sources": {
+    "ilo2018": {
+      "title": "ILO — Women and Men in the Informal Economy: A Statistical Picture (3rd edition)",
+      "url": "https://www.ilo.org/publications/women-and-men-informal-economy-statistical-picture-third-edition",
+      "year": 2018
+    },
+    "ilostat": {
+      "title": "ILOSTAT — Informality topic",
+      "url": "https://ilostat.ilo.org/topics/informality/",
+      "year": 2024
+    },
+    "wiego": {
+      "title": "WIEGO — Statistical Picture of the World's Informal Workers",
+      "url": "https://www.wiego.org/statistical-picture",
+      "year": 2023
+    },
+    "ibge_pnadc": {
+      "title": "IBGE — PNAD Contínua, informalidade",
+      "url": "https://www.ibge.gov.br/estatisticas/sociais/trabalho/9173-pesquisa-nacional-por-amostra-de-domicilios-continua-trimestral.html",
+      "year": 2024
+    },
+    "inegi_enoe": {
+      "title": "INEGI — Encuesta Nacional de Ocupación y Empleo (ENOE)",
+      "url": "https://www.inegi.org.mx/programas/enoe/15ymas/",
+      "year": 2024
+    },
+    "dane_geih": {
+      "title": "DANE — Gran Encuesta Integrada de Hogares (GEIH)",
+      "url": "https://www.dane.gov.co/index.php/estadisticas-por-tema/mercado-laboral/empleo-y-desempleo",
+      "year": 2024
+    },
+    "inei_eper": {
+      "title": "INEI — Encuesta Permanente de Empleo (EPEN)",
+      "url": "https://www.inei.gob.pe/",
+      "year": 2024
+    },
+    "inde_arg": {
+      "title": "INDEC — Mercado de trabajo, EPH",
+      "url": "https://www.indec.gob.ar/",
+      "year": 2024
+    },
+    "statsa_qlfs": {
+      "title": "Statistics South Africa — Quarterly Labour Force Survey",
+      "url": "https://www.statssa.gov.za/",
+      "year": 2024
+    },
+    "knbs": {
+      "title": "Kenya National Bureau of Statistics — Economic Survey / Labour",
+      "url": "https://www.knbs.or.ke/",
+      "year": 2024
+    },
+    "nbs_tz": {
+      "title": "Tanzania National Bureau of Statistics — Integrated Labour Force Survey",
+      "url": "https://www.nbs.go.tz/",
+      "year": 2022
+    },
+    "ubos": {
+      "title": "Uganda Bureau of Statistics — Labour Force Survey",
+      "url": "https://www.ubos.org/",
+      "year": 2021
+    },
+    "gss_gh": {
+      "title": "Ghana Statistical Service — Labour Force Report",
+      "url": "https://www.statsghana.gov.gh/",
+      "year": 2023
+    },
+    "nbs_ng": {
+      "title": "National Bureau of Statistics Nigeria — Labour Force Statistics",
+      "url": "https://nigerianstat.gov.ng/",
+      "year": 2023
+    },
+    "capmas": {
+      "title": "CAPMAS Egypt — Labour Force Survey",
+      "url": "https://www.capmas.gov.eg/",
+      "year": 2023
+    },
+    "hcp_ma": {
+      "title": "Haut-Commissariat au Plan (Maroc) — Enquête sur l'emploi",
+      "url": "https://www.hcp.ma/",
+      "year": 2024
+    },
+    "psa_ph": {
+      "title": "Philippine Statistics Authority — Labor Force Survey",
+      "url": "https://psa.gov.ph/",
+      "year": 2024
+    },
+    "bps_id": {
+      "title": "BPS Indonesia — Sakernas (Labour Force Survey)",
+      "url": "https://www.bps.go.id/",
+      "year": 2024
+    },
+    "nso_th": {
+      "title": "National Statistical Office Thailand — Labour Force Survey",
+      "url": "https://www.nso.go.th/",
+      "year": 2024
+    },
+    "gso_vn": {
+      "title": "General Statistics Office of Vietnam — Labour Force Survey",
+      "url": "https://www.gso.gov.vn/",
+      "year": 2024
+    },
+    "mospi_in": {
+      "title": "MoSPI India — Periodic Labour Force Survey (PLFS)",
+      "url": "https://www.mospi.gov.in/",
+      "year": 2024
+    },
+    "bbs_bd": {
+      "title": "Bangladesh Bureau of Statistics — Labour Force Survey",
+      "url": "https://bbs.gov.bd/",
+      "year": 2022
+    },
+    "pbs_pk": {
+      "title": "Pakistan Bureau of Statistics — Labour Force Survey",
+      "url": "https://www.pbs.gov.pk/",
+      "year": 2021
+    },
+    "abs_au": {
+      "title": "Australian Bureau of Statistics — Labour Force",
+      "url": "https://www.abs.gov.au/",
+      "year": 2024
+    },
+    "statsnz": {
+      "title": "Stats NZ — Labour market statistics",
+      "url": "https://www.stats.govt.nz/",
+      "year": 2024
+    },
+    "ine_tl": {
+      "title": "Statistics Timor-Leste — Labour Force Survey",
+      "url": "https://www.statistics.gov.tl/",
+      "year": 2021
+    },
+    "spc": {
+      "title": "Pacific Community (SPC) — Pacific statistics",
+      "url": "https://spc.int/",
+      "year": 2023
+    },
+    "common_usage": {
+      "title": "termo de uso corrente, documentado em literatura acadêmica local e imprensa; sem publicação única catalogada",
+      "url": null,
+      "year": null,
+      "quality": "declared_common_usage"
+    }
+  },
+  "categories": [
+    {
+      "id": "street_vending",
+      "name_pt": "Comércio ambulante",
+      "name_en": "Street vending",
+      "name_es": "Comercio ambulante",
+      "description_pt": "Venda de mercadoria em via pública, calçada, feira ou mercado sem ponto fixo licenciado.",
+      "formal_sector": "retail",
+      "local_terms": [
+        {"iso3": "BRA", "term": "camelô", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "BRA", "term": "vendedor ambulante", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "MEX", "term": "tianguis", "lang": "es", "note": "feira tradicional; o feirante é tianguista", "source_key": "inegi_enoe"},
+        {"iso3": "MEX", "term": "ambulante", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "ARG", "term": "mantero", "lang": "es", "note": "vendedor sobre manta na via pública", "source_key": "inde_arg"},
+        {"iso3": "PER", "term": "ambulante", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "COL", "term": "vendedor ambulante", "lang": "es", "source_key": "dane_geih"},
+        {"iso3": "VEN", "term": "buhonero", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "CHL", "term": "feriante", "lang": "es", "note": "feirante de feira livre", "source_key": "common_usage"},
+        {"iso3": "HTI", "term": "madan sara", "lang": "ht", "note": "comerciante mulher de rua/mercado", "source_key": "common_usage"},
+        {"iso3": "JAM", "term": "higgler", "lang": "en", "note": "vendedora de mercado rural", "source_key": "common_usage"},
+        {"iso3": "USA", "term": "street vendor", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "IND", "term": "hawker", "lang": "en", "source_key": "mospi_in"},
+        {"iso3": "BGD", "term": "hawker", "lang": "en", "source_key": "bbs_bd"},
+        {"iso3": "PAK", "term": "hawker", "lang": "en", "source_key": "pbs_pk"},
+        {"iso3": "IDN", "term": "pedagang kaki lima (PKL)", "lang": "id", "source_key": "bps_id"},
+        {"iso3": "VNM", "term": "bán hàng rong", "lang": "vi", "source_key": "gso_vn"},
+        {"iso3": "CHN", "term": "小贩 (xiǎofàn)", "lang": "zh", "source_key": "common_usage"},
+        {"iso3": "THA", "term": "พ่อค้าเร่ (phokha re)", "lang": "th", "source_key": "nso_th"},
+        {"iso3": "NGA", "term": "street hawker", "lang": "en", "source_key": "nbs_ng"},
+        {"iso3": "KEN", "term": "street hawker", "lang": "en", "source_key": "knbs"},
+        {"iso3": "ZAF", "term": "street trader", "lang": "en", "source_key": "statsa_qlfs"},
+        {"iso3": "TUR", "term": "seyyar satıcı", "lang": "tr", "source_key": "common_usage"},
+        {"iso3": "ESP", "term": "mantero", "lang": "es", "note": "venda sobre manta ('top manta')", "source_key": "common_usage"},
+        {"iso3": "ITA", "term": "venditore ambulante", "lang": "it", "source_key": "common_usage"},
+        {"iso3": "FRA", "term": "vendeur à la sauvette", "lang": "fr", "note": "venda de rua não autorizada", "source_key": "common_usage"},
+        {"iso3": "PRT", "term": "vendedor ambulante", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "GBR", "term": "street trader", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "MAR", "term": "marchand ambulant", "lang": "fr", "source_key": "hcp_ma"}
+      ]
+    },
+    {
+      "id": "street_food",
+      "name_pt": "Comida de rua",
+      "name_en": "Street food",
+      "name_es": "Comida callejera",
+      "description_pt": "Preparo e venda de alimento pronto em barraca, carrinho ou tabuleiro, sem estabelecimento formal.",
+      "formal_sector": "food_service",
+      "local_terms": [
+        {"iso3": "MEX", "term": "puesto de tacos", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "MEX", "term": "tianguis", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "IND", "term": "chai wallah", "lang": "en", "note": "vendedor de chá", "source_key": "common_usage"},
+        {"iso3": "IDN", "term": "warung", "lang": "id", "note": "barraca de comida de bairro", "source_key": "bps_id"},
+        {"iso3": "PHL", "term": "carinderia", "lang": "en", "source_key": "psa_ph"},
+        {"iso3": "KOR", "term": "pojangmacha (포장마차)", "lang": "ko", "note": "barraca de rua com toldo", "source_key": "common_usage"},
+        {"iso3": "JPN", "term": "yatai (屋台)", "lang": "ja", "source_key": "common_usage"},
+        {"iso3": "TUR", "term": "simitçi", "lang": "tr", "note": "vendedor de simit", "source_key": "common_usage"},
+        {"iso3": "USA", "term": "food cart", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "GBR", "term": "street food trader", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "BRA", "term": "ambulante de comida", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "PER", "term": "carretilla", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "COL", "term": "carrito de comida", "lang": "es", "source_key": "dane_geih"}
+      ]
+    },
+    {
+      "id": "informal_transport",
+      "name_pt": "Transporte informal de passageiros",
+      "name_en": "Informal passenger transport",
+      "name_es": "Transporte informal de pasajeros",
+      "description_pt": "Moto, triciclo, van ou carro particular operando rota/tarifa sem licença formal de transporte.",
+      "formal_sector": "passenger_transport",
+      "local_terms": [
+        {"iso3": "BRA", "term": "mototáxi", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "KEN", "term": "boda-boda", "lang": "sw", "source_key": "knbs"},
+        {"iso3": "UGA", "term": "boda-boda", "lang": "sw", "source_key": "ubos"},
+        {"iso3": "TZA", "term": "boda-boda", "lang": "sw", "source_key": "nbs_tz"},
+        {"iso3": "KEN", "term": "matatu", "lang": "sw", "note": "minibus de rota", "source_key": "knbs"},
+        {"iso3": "TZA", "term": "dala-dala", "lang": "sw", "source_key": "nbs_tz"},
+        {"iso3": "UGA", "term": "matatu", "lang": "sw", "source_key": "ubos"},
+        {"iso3": "NGA", "term": "okada", "lang": "en", "note": "moto-táxi", "source_key": "nbs_ng"},
+        {"iso3": "NGA", "term": "keke napep", "lang": "en", "note": "triciclo motorizado", "source_key": "nbs_ng"},
+        {"iso3": "GHA", "term": "trotro", "lang": "en", "note": "minibus de rota", "source_key": "gss_gh"},
+        {"iso3": "GHA", "term": "okada", "lang": "en", "source_key": "gss_gh"},
+        {"iso3": "ZAF", "term": "minibus taxi", "lang": "en", "source_key": "statsa_qlfs"},
+        {"iso3": "ZWE", "term": "kombi", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "ZWE", "term": "mushikashika", "lang": "sn", "note": "carro particular fazendo táxi", "source_key": "common_usage"},
+        {"iso3": "MOZ", "term": "chapa", "lang": "pt", "note": "minibus de passageiros", "source_key": "common_usage"},
+        {"iso3": "AGO", "term": "candongueiro", "lang": "pt", "note": "van/minibus de rota", "source_key": "common_usage"},
+        {"iso3": "BEN", "term": "zemidjan", "lang": "fr", "note": "moto-táxi", "source_key": "common_usage"},
+        {"iso3": "CMR", "term": "bendskin", "lang": "fr", "note": "moto-táxi", "source_key": "common_usage"},
+        {"iso3": "CIV", "term": "gbaka", "lang": "fr", "note": "minibus de rota", "source_key": "common_usage"},
+        {"iso3": "MLI", "term": "sotrama", "lang": "fr", "note": "minibus de rota", "source_key": "common_usage"},
+        {"iso3": "SEN", "term": "car rapide", "lang": "fr", "note": "minibus pintado de rota", "source_key": "common_usage"},
+        {"iso3": "TUN", "term": "louage", "lang": "fr", "note": "táxi coletivo interurbano", "source_key": "common_usage"},
+        {"iso3": "MDG", "term": "pousse-pousse", "lang": "fr", "note": "riquixá", "source_key": "common_usage"},
+        {"iso3": "BDI", "term": "vélo-taxi", "lang": "fr", "note": "bicicleta-táxi", "source_key": "common_usage"},
+        {"iso3": "RWA", "term": "moto", "lang": "rw", "note": "moto-táxi", "source_key": "common_usage"},
+        {"iso3": "EGY", "term": "tuk-tuk", "lang": "ar", "source_key": "capmas"},
+        {"iso3": "SDN", "term": "raksha", "lang": "ar", "note": "triciclo motorizado", "source_key": "common_usage"},
+        {"iso3": "IND", "term": "auto-rickshaw", "lang": "en", "source_key": "mospi_in"},
+        {"iso3": "IND", "term": "cycle rickshaw", "lang": "en", "source_key": "mospi_in"},
+        {"iso3": "BGD", "term": "rickshaw", "lang": "bn", "note": "riquixá de bicicleta", "source_key": "bbs_bd"},
+        {"iso3": "PAK", "term": "rickshaw", "lang": "ur", "source_key": "pbs_pk"},
+        {"iso3": "NPL", "term": "tempo", "lang": "ne", "note": "triciclo/tempo elétrico", "source_key": "common_usage"},
+        {"iso3": "LKA", "term": "three-wheeler", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "THA", "term": "tuk-tuk", "lang": "th", "source_key": "nso_th"},
+        {"iso3": "THA", "term": "songthaew", "lang": "th", "note": "picape adaptada para passageiros", "source_key": "nso_th"},
+        {"iso3": "THA", "term": "win motosai (วินมอเตอร์ไซค์)", "lang": "th", "note": "ponto de moto-táxi", "source_key": "nso_th"},
+        {"iso3": "PHL", "term": "jeepney", "lang": "en", "source_key": "psa_ph"},
+        {"iso3": "PHL", "term": "tricycle", "lang": "en", "source_key": "psa_ph"},
+        {"iso3": "PHL", "term": "pedicab", "lang": "en", "source_key": "psa_ph"},
+        {"iso3": "IDN", "term": "ojek", "lang": "id", "note": "moto-táxi", "source_key": "bps_id"},
+        {"iso3": "IDN", "term": "angkot", "lang": "id", "note": "minibus de rota", "source_key": "bps_id"},
+        {"iso3": "IDN", "term": "bajaj", "lang": "id", "source_key": "bps_id"},
+        {"iso3": "IDN", "term": "becak", "lang": "id", "note": "triciclo a pedal", "source_key": "bps_id"},
+        {"iso3": "VNM", "term": "xe om", "lang": "vi", "note": "moto-táxi", "source_key": "gso_vn"},
+        {"iso3": "KHM", "term": "moto dop", "lang": "km", "note": "moto-táxi", "source_key": "common_usage"},
+        {"iso3": "KHM", "term": "remork", "lang": "km", "note": "tuk-tuk rebocado", "source_key": "common_usage"},
+        {"iso3": "LAO", "term": "jumbo", "lang": "lo", "note": "tuk-tuk", "source_key": "common_usage"},
+        {"iso3": "TLS", "term": "mikrolet", "lang": "tet", "note": "minibus de rota", "source_key": "ine_tl"},
+        {"iso3": "PNG", "term": "PMV (public motor vehicle)", "lang": "en", "source_key": "spc"},
+        {"iso3": "HTI", "term": "tap-tap", "lang": "ht", "note": "caminhão/picape de passageiros", "source_key": "common_usage"},
+        {"iso3": "DOM", "term": "motoconcho", "lang": "es", "note": "moto-táxi", "source_key": "common_usage"},
+        {"iso3": "CUB", "term": "almendrón", "lang": "es", "note": "carro antigo particular fazendo táxi", "source_key": "common_usage"},
+        {"iso3": "PER", "term": "combi", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "PER", "term": "mototaxi", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "COL", "term": "mototaxi", "lang": "es", "source_key": "dane_geih"},
+        {"iso3": "VEN", "term": "por puesto", "lang": "es", "note": "carro de rota com tarifa fixa", "source_key": "common_usage"},
+        {"iso3": "TUR", "term": "dolmuş", "lang": "tr", "note": "táxi coletivo de rota", "source_key": "common_usage"},
+        {"iso3": "RUS", "term": "marshrutka", "lang": "ru", "source_key": "common_usage"},
+        {"iso3": "UKR", "term": "marshrutka", "lang": "uk", "source_key": "common_usage"},
+        {"iso3": "GEO", "term": "marshrutka", "lang": "ka", "source_key": "common_usage"},
+        {"iso3": "ARM", "term": "marshrutka", "lang": "hy", "source_key": "common_usage"},
+        {"iso3": "KAZ", "term": "marshrutka", "lang": "kk", "source_key": "common_usage"},
+        {"iso3": "KGZ", "term": "marshrutka", "lang": "ky", "source_key": "common_usage"},
+        {"iso3": "UZB", "term": "marshrutka", "lang": "uz", "source_key": "common_usage"},
+        {"iso3": "MDA", "term": "marshrutka", "lang": "ro", "source_key": "common_usage"},
+        {"iso3": "SRB", "term": "kombi", "lang": "sr", "source_key": "common_usage"},
+        {"iso3": "BIH", "term": "kombi", "lang": "bs", "source_key": "common_usage"},
+        {"iso3": "MKD", "term": "kombi", "lang": "mk", "source_key": "common_usage"},
+        {"iso3": "MNE", "term": "kombi", "lang": "sr", "source_key": "common_usage"},
+        {"iso3": "ALB", "term": "furgon", "lang": "sq", "note": "van de rota", "source_key": "common_usage"},
+        {"iso3": "JOR", "term": "servees", "lang": "ar", "note": "táxi coletivo", "source_key": "common_usage"},
+        {"iso3": "LBN", "term": "servees", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "SYR", "term": "servees", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "PSX", "term": "servees", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "ISR", "term": "sherut", "lang": "he", "note": "táxi coletivo", "source_key": "common_usage"},
+        {"iso3": "IRQ", "term": "tuk-tuk", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "YEM", "term": "bajaj", "lang": "ar", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "informal_freight",
+      "name_pt": "Transporte informal de carga",
+      "name_en": "Informal goods haulage",
+      "name_es": "Transporte informal de carga",
+      "description_pt": "Carro de mão, bicicleta, carroça ou veículo sem licença movendo carga de terceiros.",
+      "formal_sector": "freight_logistics",
+      "local_terms": [
+        {"iso3": "BRA", "term": "carroceiro", "lang": "pt", "note": "carroça de tração animal", "source_key": "common_usage"},
+        {"iso3": "BRA", "term": "moto frete", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "KEN", "term": "mkokoteni", "lang": "sw", "note": "carro de mão", "source_key": "knbs"},
+        {"iso3": "IND", "term": "thela", "lang": "hi", "note": "carro de mão", "source_key": "common_usage"},
+        {"iso3": "IND", "term": "coolie", "lang": "en", "note": "carregador de estação/mercado", "source_key": "common_usage"},
+        {"iso3": "BGD", "term": "rickshaw van", "lang": "bn", "source_key": "bbs_bd"},
+        {"iso3": "PHL", "term": "kargador", "lang": "en", "note": "carregador de mercado/porto", "source_key": "psa_ph"},
+        {"iso3": "PER", "term": "cargador", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "BOL", "term": "cargador", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "VNM", "term": "xe ba gác", "lang": "vi", "note": "triciclo de carga", "source_key": "gso_vn"},
+        {"iso3": "GHA", "term": "kayayei", "lang": "en", "note": "carregadoras de cabeça (mulheres)", "source_key": "gss_gh"}
+      ]
+    },
+    {
+      "id": "informal_construction",
+      "name_pt": "Construção e reforma informal",
+      "name_en": "Informal construction and repair work",
+      "name_es": "Construcción y reforma informal",
+      "description_pt": "Obra, reforma e acabamento contratados por diária ou empreitada, sem vínculo nem registro.",
+      "formal_sector": "construction",
+      "local_terms": [
+        {"iso3": "BRA", "term": "pedreiro", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "BRA", "term": "servente", "lang": "pt", "note": "ajudante de obra", "source_key": "ibge_pnadc"},
+        {"iso3": "MEX", "term": "albañil", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "ARG", "term": "albañil", "lang": "es", "source_key": "inde_arg"},
+        {"iso3": "PER", "term": "maestro de obra", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "COL", "term": "maestro de obra", "lang": "es", "source_key": "dane_geih"},
+        {"iso3": "IND", "term": "mistri", "lang": "hi", "note": "mestre de obra", "source_key": "mospi_in"},
+        {"iso3": "IND", "term": "beldar", "lang": "hi", "note": "servente de obra", "source_key": "mospi_in"},
+        {"iso3": "BGD", "term": "mistri", "lang": "bn", "source_key": "bbs_bd"},
+        {"iso3": "PAK", "term": "mistri", "lang": "ur", "source_key": "pbs_pk"},
+        {"iso3": "NPL", "term": "mistri", "lang": "ne", "source_key": "common_usage"},
+        {"iso3": "KEN", "term": "fundi", "lang": "sw", "note": "artesão/ técnico autônomo", "source_key": "knbs"},
+        {"iso3": "TZA", "term": "fundi", "lang": "sw", "source_key": "nbs_tz"},
+        {"iso3": "UGA", "term": "fundi", "lang": "sw", "source_key": "ubos"},
+        {"iso3": "RUS", "term": "shabashnik", "lang": "ru", "note": "equipe informal de obra", "source_key": "common_usage"},
+        {"iso3": "VNM", "term": "thợ xây", "lang": "vi", "source_key": "gso_vn"},
+        {"iso3": "IDN", "term": "tukang bangunan", "lang": "id", "source_key": "bps_id"},
+        {"iso3": "PHL", "term": "karpintero", "lang": "en", "source_key": "psa_ph"},
+        {"iso3": "THA", "term": "chang (ช่าง)", "lang": "th", "note": "técnico/artífice", "source_key": "nso_th"},
+        {"iso3": "USA", "term": "day laborer", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "ESP", "term": "peón", "lang": "es", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "domestic_work",
+      "name_pt": "Serviço doméstico",
+      "name_en": "Domestic work",
+      "name_es": "Trabajo doméstico",
+      "description_pt": "Trabalho de casa (limpeza, cozinha, cuidado) remunerado, muitas vezes sem contrato.",
+      "formal_sector": "personal_services",
+      "local_terms": [
+        {"iso3": "BRA", "term": "empregada doméstica", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "BRA", "term": "diarista", "lang": "pt", "note": "faxina por diária", "source_key": "ibge_pnadc"},
+        {"iso3": "MEX", "term": "trabajadora del hogar", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "ARG", "term": "empleada doméstica", "lang": "es", "source_key": "inde_arg"},
+        {"iso3": "COL", "term": "empleada del servicio", "lang": "es", "source_key": "dane_geih"},
+        {"iso3": "CHL", "term": "nana", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "HTI", "term": "restavèk", "lang": "ht", "note": "criança em serviço doméstico (trabalho infantil)", "source_key": "common_usage"},
+        {"iso3": "USA", "term": "domestic worker", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "KEN", "term": "housegirl", "lang": "en", "source_key": "knbs"},
+        {"iso3": "TZA", "term": "housegirl", "lang": "en", "source_key": "nbs_tz"},
+        {"iso3": "UGA", "term": "housegirl", "lang": "en", "source_key": "ubos"},
+        {"iso3": "NGA", "term": "house help", "lang": "en", "source_key": "nbs_ng"},
+        {"iso3": "GHA", "term": "house help", "lang": "en", "source_key": "gss_gh"},
+        {"iso3": "ZAF", "term": "domestic worker", "lang": "en", "source_key": "statsa_qlfs"},
+        {"iso3": "SAU", "term": "khaddama", "lang": "ar", "note": "trabalhadora doméstica migrante", "source_key": "common_usage"},
+        {"iso3": "KWT", "term": "khaddama", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "ARE", "term": "khaddama", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "QAT", "term": "khaddama", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "JOR", "term": "khaddama", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "LBN", "term": "khaddameh", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "PHL", "term": "kasambahay", "lang": "en", "note": "termo oficial da lei RA 10361", "source_key": "psa_ph"},
+        {"iso3": "PHL", "term": "katulong", "lang": "en", "source_key": "psa_ph"},
+        {"iso3": "IDN", "term": "pembantu rumah tangga (PRT)", "lang": "id", "source_key": "bps_id"},
+        {"iso3": "MYS", "term": "pembantu rumah", "lang": "ms", "source_key": "common_usage"},
+        {"iso3": "SGP", "term": "domestic helper", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "CHN", "term": "保姆 (bǎomǔ)", "lang": "zh", "source_key": "common_usage"},
+        {"iso3": "ITA", "term": "colf", "lang": "it", "note": "collaboratrice familiare", "source_key": "common_usage"},
+        {"iso3": "ESP", "term": "empleada de hogar", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "PRT", "term": "empregada doméstica", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "POL", "term": "pomoc domowa", "lang": "pl", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "personal_services",
+      "name_pt": "Serviços pessoais de rua",
+      "name_en": "Street personal services",
+      "name_es": "Servicios personales en la calle",
+      "description_pt": "Barbearia, engraxate, costura rápida e afins, prestados na rua ou em casa sem estabelecimento formal.",
+      "formal_sector": "personal_services",
+      "local_terms": [
+        {"iso3": "BRA", "term": "engraxate", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "BRA", "term": "barbeiro de rua", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "MEX", "term": "bolero", "lang": "es", "note": "engraxate", "source_key": "common_usage"},
+        {"iso3": "IND", "term": "nai", "lang": "hi", "note": "barbeiro/cortador de unhas tradicional", "source_key": "common_usage"},
+        {"iso3": "TUR", "term": "ayakkabı boyacısı", "lang": "tr", "note": "engraxate", "source_key": "common_usage"},
+        {"iso3": "VNM", "term": "đánh giày", "lang": "vi", "note": "engraxate", "source_key": "common_usage"},
+        {"iso3": "NGA", "term": "shoe shiner", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "ZAF", "term": "car guard", "lang": "en", "note": "guarda de carro em estacionamento de rua", "source_key": "statsa_qlfs"},
+        {"iso3": "ARG", "term": "trapito", "lang": "es", "note": "lavador de para-brisa em semáforo", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "street_parking_guarding",
+      "name_pt": "Guarda de carros e estacionamento de rua",
+      "name_en": "Street parking and car guarding",
+      "name_es": "Cuidado de autos y estacionamiento en la calle",
+      "description_pt": "Vigia ou 'guia' informal de vagas em via pública, cobrando gorjeta ou tarifa.",
+      "formal_sector": "cleaning_security_waste",
+      "local_terms": [
+        {"iso3": "BRA", "term": "flanelinha", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "ARG", "term": "trapito", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "MEX", "term": "viene-viene", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "COL", "term": "cuidacarros", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "ZAF", "term": "car guard", "lang": "en", "source_key": "statsa_qlfs"},
+        {"iso3": "IDN", "term": "juru parkir", "lang": "id", "source_key": "bps_id"},
+        {"iso3": "TUR", "term": "vale", "lang": "tr", "note": "manobrista/vigia de vaga", "source_key": "common_usage"},
+        {"iso3": "EGY", "term": "sāyes", "lang": "ar", "note": "vigia de estacionamento", "source_key": "common_usage"},
+        {"iso3": "NGA", "term": "parking boy", "lang": "en", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "waste_picking",
+      "name_pt": "Catação e reciclagem",
+      "name_en": "Waste picking and recycling",
+      "name_es": "Reciclaje y recolección de residuos",
+      "description_pt": "Coleta, triagem e venda de material reciclável em lixões, ruas e pontos de entrega.",
+      "formal_sector": "cleaning_security_waste",
+      "local_terms": [
+        {"iso3": "BRA", "term": "catador de material reciclável", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "ARG", "term": "cartonero", "lang": "es", "source_key": "inde_arg"},
+        {"iso3": "MEX", "term": "pepenador", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "COL", "term": "reciclador de oficio", "lang": "es", "source_key": "dane_geih"},
+        {"iso3": "CHL", "term": "reciclador de base", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "PER", "term": "reciclador", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "EGY", "term": "zabaleen", "lang": "ar", "note": "catadores copta do Cairo", "source_key": "capmas"},
+        {"iso3": "IND", "term": "ragpicker", "lang": "en", "source_key": "mospi_in"},
+        {"iso3": "IND", "term": "kabadiwala", "lang": "hi", "note": "comprador de sucata", "source_key": "common_usage"},
+        {"iso3": "ZAF", "term": "reclaimer", "lang": "en", "source_key": "statsa_qlfs"},
+        {"iso3": "TUR", "term": "atık toplayıcı", "lang": "tr", "note": "catador de reciclável", "source_key": "common_usage"},
+        {"iso3": "IDN", "term": "pemulung", "lang": "id", "source_key": "bps_id"},
+        {"iso3": "VNM", "term": "đồng nát", "lang": "vi", "note": "comprador de sucata", "source_key": "gso_vn"},
+        {"iso3": "CHN", "term": "捡破烂 (jiǎn pòlàn)", "lang": "zh", "source_key": "common_usage"},
+        {"iso3": "USA", "term": "canner", "lang": "en", "note": "catador de latinhas (Califórnia)", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "subsistence_farming",
+      "name_pt": "Agricultura de subsistência",
+      "name_en": "Subsistence farming",
+      "name_es": "Agricultura de subsistencia",
+      "description_pt": "Produção agrícola familiar para autoconsumo, com excedente vendido informalmente.",
+      "formal_sector": null,
+      "local_terms": [
+        {"iso3": "BRA", "term": "roça", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "MEX", "term": "milpa", "lang": "es", "note": "sistema milho-feijão-abóbora", "source_key": "common_usage"},
+        {"iso3": "GTM", "term": "milpa", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "PER", "term": "chacra", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "VEN", "term": "conuco", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "IDN", "term": "ladang", "lang": "id", "note": "roça itinerante", "source_key": "common_usage"},
+        {"iso3": "PHL", "term": "kaingin", "lang": "en", "note": "roça itinerante", "source_key": "common_usage"},
+        {"iso3": "VNM", "term": "nương rẫy", "lang": "vi", "source_key": "common_usage"},
+        {"iso3": "KEN", "term": "shamba", "lang": "sw", "source_key": "knbs"},
+        {"iso3": "TZA", "term": "shamba", "lang": "sw", "source_key": "nbs_tz"},
+        {"iso3": "UGA", "term": "shamba", "lang": "sw", "source_key": "ubos"},
+        {"iso3": "IND", "term": "jhum", "lang": "en", "note": "cultivo itinerante no nordeste", "source_key": "common_usage"},
+        {"iso3": "MMR", "term": "taungya", "lang": "my", "note": "cultivo itinerante", "source_key": "common_usage"},
+        {"iso3": "LKA", "term": "chena", "lang": "si", "note": "roça itinerante", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "informal_repair",
+      "name_pt": "Reparos e manutenção informal",
+      "name_en": "Informal repair and maintenance",
+      "name_es": "Reparaciones y mantenimiento informal",
+      "description_pt": "Conserto de veículo, eletrodoméstico, celular e bicicleta em oficina de fundo de quintal ou na rua.",
+      "formal_sector": "maintenance_repair",
+      "local_terms": [
+        {"iso3": "BRA", "term": "oficina de fundo de quintal", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "KEN", "term": "jua kali", "lang": "sw", "note": "setor informal de artesãos e reparadores", "source_key": "knbs"},
+        {"iso3": "UGA", "term": "jua kali", "lang": "sw", "source_key": "ubos"},
+        {"iso3": "NGA", "term": "roadside mechanic", "lang": "en", "source_key": "common_usage"},
+        {"iso3": "PHL", "term": "talyer", "lang": "en", "note": "oficina de auto", "source_key": "psa_ph"},
+        {"iso3": "VNM", "term": "thợ sửa xe", "lang": "vi", "note": "reparador de moto", "source_key": "gso_vn"},
+        {"iso3": "TUR", "term": "tamirci", "lang": "tr", "source_key": "common_usage"},
+        {"iso3": "USA", "term": "shade-tree mechanic", "lang": "en", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "home_production",
+      "name_pt": "Produção domiciliar e artesanato",
+      "name_en": "Home-based production and handicrafts",
+      "name_es": "Producción domiciliaria y artesanía",
+      "description_pt": "Costura, doce, tecelagem e artesanato produzidos em casa e vendidos por conta própria.",
+      "formal_sector": null,
+      "local_terms": [
+        {"iso3": "BRA", "term": "costureira", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "BRA", "term": "doceira", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "MEX", "term": "tortillera", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "MEX", "term": "artesano", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "GTM", "term": "tejedora", "lang": "es", "note": "tecelã de têxtil tradicional", "source_key": "common_usage"},
+        {"iso3": "PER", "term": "artesano", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "IND", "term": "bidi roller", "lang": "en", "note": "enrolador de cigarro de tendu, trabalho domiciliar", "source_key": "common_usage"},
+        {"iso3": "IDN", "term": "industri rumahan", "lang": "id", "note": "produção doméstica", "source_key": "bps_id"},
+        {"iso3": "TUR", "term": "ev eksenli çalışan", "lang": "tr", "note": "trabalho domiciliar", "source_key": "common_usage"}
+      ]
+    },
+    {
+      "id": "informal_retail_kiosk",
+      "name_pt": "Pequeno comércio e quiosque",
+      "name_en": "Informal shops and kiosks",
+      "name_es": "Comercio en quioscos y tiendas pequeñas",
+      "description_pt": "Loja de bairro, quiosque ou banca sem registro, operando em casa ou na calçada.",
+      "formal_sector": "retail",
+      "local_terms": [
+        {"iso3": "BRA", "term": "mercadinho", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "BRA", "term": "quitanda", "lang": "pt", "source_key": "common_usage"},
+        {"iso3": "MEX", "term": "changarro", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "ARG", "term": "kiosco", "lang": "es", "source_key": "inde_arg"},
+        {"iso3": "PER", "term": "bodega", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "COL", "term": "tienda de barrio", "lang": "es", "source_key": "dane_geih"},
+        {"iso3": "VEN", "term": "abasto", "lang": "es", "source_key": "common_usage"},
+        {"iso3": "ZAF", "term": "spaza shop", "lang": "en", "source_key": "statsa_qlfs"},
+        {"iso3": "KEN", "term": "duka", "lang": "sw", "source_key": "knbs"},
+        {"iso3": "TZA", "term": "duka", "lang": "sw", "source_key": "nbs_tz"},
+        {"iso3": "UGA", "term": "duka", "lang": "sw", "source_key": "ubos"},
+        {"iso3": "IND", "term": "kirana store", "lang": "en", "source_key": "mospi_in"},
+        {"iso3": "PAK", "term": "kiryana", "lang": "ur", "source_key": "pbs_pk"},
+        {"iso3": "IDN", "term": "warung", "lang": "id", "source_key": "bps_id"},
+        {"iso3": "PHL", "term": "sari-sari store", "lang": "en", "source_key": "psa_ph"},
+        {"iso3": "THA", "term": "ráan chamm (ร้านชำ)", "lang": "th", "source_key": "nso_th"},
+        {"iso3": "VNM", "term": "tạp hóa", "lang": "vi", "source_key": "gso_vn"},
+        {"iso3": "TUR", "term": "bakkal", "lang": "tr", "source_key": "common_usage"},
+        {"iso3": "MAR", "term": "hanout", "lang": "ar", "source_key": "hcp_ma"},
+        {"iso3": "TUN", "term": "hanout", "lang": "ar", "source_key": "common_usage"},
+        {"iso3": "EGY", "term": "koshk", "lang": "ar", "note": "quiosque de bairro", "source_key": "capmas"}
+      ]
+    },
+    {
+      "id": "day_labor",
+      "name_pt": "Jornal diário e trabalho casual",
+      "name_en": "Casual day labour",
+      "name_es": "Jornal diario y trabajo casual",
+      "description_pt": "Contratação por dia ou tarefa, sem contrato, em obra, feira, lavoura ou indústria.",
+      "formal_sector": null,
+      "local_terms": [
+        {"iso3": "BRA", "term": "boia-fria", "lang": "pt", "note": "trabalhador rural diarista", "source_key": "ibge_pnadc"},
+        {"iso3": "BRA", "term": "peão", "lang": "pt", "source_key": "ibge_pnadc"},
+        {"iso3": "MEX", "term": "jornalero", "lang": "es", "source_key": "inegi_enoe"},
+        {"iso3": "ARG", "term": "changarín", "lang": "es", "source_key": "inde_arg"},
+        {"iso3": "PER", "term": "jornalero", "lang": "es", "source_key": "inei_eper"},
+        {"iso3": "IND", "term": "mazdoor", "lang": "hi", "note": "trabalhador diarista", "source_key": "mospi_in"},
+        {"iso3": "TZA", "term": "vibarua", "lang": "sw", "note": "diaristas", "source_key": "nbs_tz"},
+        {"iso3": "CHN", "term": "农民工 (nóngmíngōng)", "lang": "zh", "note": "trabalhador migrante rural", "source_key": "common_usage"},
+        {"iso3": "USA", "term": "day laborer", "lang": "en", "source_key": "common_usage"}
+      ]
+    }
+  ]
+}

@@ -4,18 +4,126 @@
 // o SimCore (sim_core.*) recebe e muta a cada tick; a fachada EconomySim
 // (economy_sim.*) guarda UM `WorldState ws_` e converte Godot <-> sim.
 
+#include "sim_constants.h"
 #include "sim_types.h"
 #include "urban_types.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 namespace ogs {
+
+// A2 — tabela de nomes -> índice inteiro. Só a fronteira de I/O (save, status,
+// binding) vê strings; o caminho quente usa o índice.
+//
+// `names` fica em ORDEM LEXICOGRÁFICA: um mapa ordenado por índice tem, então,
+// exatamente a mesma ordem de iteração do antigo std::map<std::string, ...> —
+// somas em ponto flutuante dependem da ordem e não podem mudar.
+struct NameTable {
+	std::vector<std::string> names;               // índice -> nome
+	std::unordered_map<std::string, int> lookup;  // nome -> índice
+
+	void clear() {
+		names.clear();
+		lookup.clear();
+	}
+	int size() const { return static_cast<int>(names.size()); }
+	// -1 quando o nome não está na tabela (ausência explícita).
+	int find(const std::string& name) const {
+		const auto found = lookup.find(name);
+		return found == lookup.end() ? -1 : found->second;
+	}
+	const std::string& at(int index) const { return names[static_cast<std::size_t>(index)]; }
+	// Acrescenta sem ordenar — SÓ no carregamento, antes de build().
+	int intern(const std::string& name) {
+		const auto found = lookup.find(name);
+		if (found != lookup.end()) {
+			return found->second;
+		}
+		const int index = static_cast<int>(names.size());
+		names.push_back(name);
+		lookup.emplace(names.back(), index);
+		return index;
+	}
+	// Ordena e deduplica a partir do conjunto de nomes observado.
+	void build(const std::vector<std::string>& source) {
+		clear();
+		std::vector<std::string> unique;
+		unique.reserve(source.size());
+		for (const std::string& name : source) {
+			unique.push_back(name);
+		}
+		std::sort(unique.begin(), unique.end());
+		unique.erase(std::unique(unique.begin(), unique.end()), unique.end());
+		names = std::move(unique);
+		lookup.reserve(names.size() * 2 + 8);
+		for (std::size_t index = 0; index < names.size(); ++index) {
+			lookup.emplace(names[index], static_cast<int>(index));
+		}
+	}
+};
+
+// A6 — cadência por sistema, escalonada. Cada sistema que sai do diário
+// declara um período em dias; a cidade `index` roda o sistema quando
+// `(dia - index) % período == 0`. É determinístico (dia + índice bastam, sem
+// cursor) e espalha o trabalho: em vez de as 834 cidades fecharem o mês no
+// mesmo dia, ~28 por dia. `period <= 1` faz TODAS as cidades rodarem todo dia
+// (interruptor de teste; não reproduz o calendário antigo).
+inline bool cadence_due(int day, std::size_t index, int period) {
+	if (period <= 1) {
+		return true;
+	}
+	const int offset = static_cast<int>(index % static_cast<std::size_t>(period));
+	return ((day - offset) % period + period) % period == 0;
+}
+
+// Períodos por classe de sistema (A6). Serializado no save (v15): mudar o
+// período muda QUANDO cada cidade fecha o mês/semana, então é estado do mundo.
+struct CadenceState {
+	// Semanal: decisões de abertura/fechamento dos negócios de serviço e a
+	// agenda da IA privada/governo.
+	int weekly_period = 7;
+	// Mensal: preço do solo/zona, fechamento do mês de moradia, fluxo mensal da
+	// prefeitura e agenda da IA de grupos.
+	int monthly_period = 30;
+};
+
+// B1 — estrutura etária observada por nação (age_structure_2026.json). É uma
+// DEFINIÇÃO estática (não entra no save nem no tick): a demografia por coortes
+// vem depois. Os cinco `band` seguem a ordem do arquivo:
+//   0 = 0-14, 1 = 15-24, 2 = 25-44, 3 = 45-64, 4 = 65+.
+// Os valores são frações da população; `valid` falso = sem dado para a nação.
+struct AgeStructure {
+	double band[5] = {};
+	double frac_18_49 = 0.0;
+	double births_per_1000 = 0.0;
+	double deaths_per_1000 = 0.0;
+	double tfr = 0.0;
+	bool valid = false;
+};
+
+// C2a (D-103) — série MENSAL do CPI por nação. Só MEDIÇÃO: guarda o índice
+// medido a cada 30 dias (o modelo tem 12 meses de 30 dias = anel de 13
+// amostras, o que dá 12 meses de intervalo) para a inflação anual. O CPI é a
+// cesta do G2 (ver `central_bank::cpi_by_nation`).
+struct CpiHistory {
+	double samples[13] = {};
+	int sample_day[13] = {};
+	int count = 0;
+};
 
 struct WorldState {
 	int day = 0;
+	CadenceState cadence;
 
 	// Estado do cenário de validação de duas cidades.
 	bool active = false;
 	// true quando o demo foi inicializado a partir do mundo real
-	// (initialize_demo_world), em vez do cenário AGRIA/PORTUS. Ativa o comércio
+	// (initialize_world), em vez do cenário AGRIA/PORTUS. Ativa o comércio
 	// genérico entre cidades no lugar dos blocos específicos de validação.
 	bool world_mode = false;
 	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
@@ -33,22 +141,118 @@ struct WorldState {
 	// inteiro (832/834 cidades). Calibrada no economy_world_test.
 	double income_basket_margin = 2.30;
 	std::unordered_map<std::string, double> minimum_wages;
+	// B1: estrutura etária por tag de nação (age_structure_2026.json ->
+	// set_age_structure). `std::map` para a ordem determinística do dump.
+	std::map<std::string, AgeStructure> age_structures;
+	// B7: definição estática por tag de nação (informality.json e
+	// health_access.json -> set_informality/set_health_access). NÃO entram no
+	// save (como `age_structures`): a fração inicial é semeada no dia 0 e a
+	// referência de saúde só é lida na semeadura/formalização.
+	std::map<std::string, double> informal_rates;
+	std::map<std::string, double> health_access;
+	// ------------------------------------------------------------------
+	// G — AGRICULTURA SAZONAL (save v24). Ver gdextension/src/sim/agriculture.h
+	// e docs/economy/agriculture_seasonal.md.
+	//
+	// DEFINIÇÃO (dado): `crop_plans` (área × rendimento e janelas por cidade/
+	// produto), `crop_loss_pct`/`crop_storage_share_pct` (perda pós-colheita e
+	// a fatia de armazenagem), `crop_shelf_days` (prateleira) e `agri_chain`
+	// (os 12 bens da cadeia, cujo produto é resolvido no catálogo). Tudo chega
+	// pelo AgricultureService e viaja no bloco `definitions` do snapshot.
+	//
+	// ESTADO (save): dentro de `CropPlan::state` (ano/entregue/fertilizante).
+	// ------------------------------------------------------------------
+	std::vector<CropPlan> crop_plans;
+	// ------------------------------------------------------------------
+	// G2 — ARMAZENAGEM (save v25). Ver gdextension/src/sim/storage.{h,cpp}.
+	//
+	// `storage_sites` é o armazém AGREGADO por (cidade, tipo, dono): capacidade
+	// e estoque guardado (governo × privado). O estoque de mercado continua em
+	// `City::markets`; o silo/tanque/gás/pátio ficam na região e a câmara
+	// fria/armazém geral na cidade. `storage_product_type` resolve o tipo de
+	// cada bem pelo catálogo (nomes de goods.json) e aceita override do dado
+	// via `set_storage_product_type` (JSON da G2 quando entrar na base).
+	// ------------------------------------------------------------------
+	std::vector<StorageSite> storage_sites;
+	std::vector<int> storage_product_type;
+	bool storage_index_ready = false;
+	int storage_products = 0;
+	// Chave do mês da perda de armazenagem (derivada; 0 = nunca aplicado).
+	int storage_month_key = 0;
+	// Índice derivado por chave `cidade|produto` -> posição em `crop_plans`
+	// (só leitura depois da carga; não serializado).
+	std::map<std::string, int> crop_plan_lookup;
+	// Índice derivado: `crop_planned[cidade × products + produto] != 0` quando
+	// existe plano sazonal ativo — a produção diária da fazenda é SUPRIMIDA
+	// nesse caso (não contar a mesma tonelada duas vezes).
+	std::vector<char> crop_planned;
+	// Índice derivado do DIA (não serializado): `crop_working[cidade × products
+	// + produto] != 0` quando o par COM plano está dentro de uma janela de
+	// plantio ou de colheita. Fora delas a fazenda sazonal fica parada — sem
+	// equipe, folha ou opex — e não acumula dia de prejuízo na entressafra
+	// (D-096: a folha cheia sem safra falia 324 fazendas em 365 d, 85/85
+	// primárias no dia 75). Recalculado por `phase_agriculture` a partir do
+	// calendário e de `day`; nunca entra no save.
+	std::vector<char> crop_working;
+	bool crop_index_ready = false;
+	// Perda pós-colheita por produto (% do que entra) e a fatia de armazenagem
+	// declarada (-1 = sem dado). Indexados pelo produto (-1 se fora).
+	std::vector<double> crop_loss_pct;          // % (0..100)
+	std::vector<double> crop_storage_share_pct; // % (0..100) ou -1
+	// Dias de prateleira por produto (0 = sem dado: NÃO decai).
+	std::vector<int> crop_shelf_days;
+	// Fração diária de perda por perecibilidade (derivada da meia-vida, para o
+	// tick não pagar `pow`).
+	std::vector<double> crop_shelf_daily;
+	// Bens da cadeia com prateleira publicada, na ordem do arquivo
+	// (product_shelf_life.json). Vazio = pereccibilidade desligada.
+	std::vector<int> agri_chain;
+	// Índice do bem `fertilizer` no catálogo (-1 = não existe).
+	int fertilizer_product = -1;
+	// Chave de mês do livro de perdas (derivada; 0 = nunca aplicado).
+	int agri_month_key = 0;
+	// Acumulados desde o dia 0 (derivados, não serializados) — diagnósticos do
+	// status/teste: perecibilidade, perda de armazenagem e perda de entrada.
+	double agri_perishable_total[kMaxProducts] = {};
+	double agri_storage_total[kMaxProducts] = {};
+	double agri_entry_total[kMaxProducts] = {};
+	// Memória de cálculo do dia (derivada, não serializada): quantas safras
+	// entregaram hoje e quantas toneladas brutas entraram. Serve ao status e ao
+	// teste de sazonalidade.
+	double agri_delivered_today = 0.0;
+	int agri_harvests_today = 0;
+	// B5 (D-089) - gancho de LABORATÓRIO (set_balance): penalidade MÁXIMA de
+	// acesso (estrada 0) usada por `SimCore::infra_access_multiplier`. Padrão =
+	// kInfraAccessPenaltyMax; só o A/B da infra a zera para isolar o frete.
+	// Não é persistido (knob de calibração, como income_basket_margin).
+	double infra_access_penalty = kInfraAccessPenaltyMax;
+	// D-105 (C2b1-fix) + C4 (D-110) + D-111: juro da taxa básica no ENVELOPE
+	// de crédito da safra (D-099, `SimCore::crop_liquidity_factor`). LIGADO por
+	// padrão desde a D-111: a C4 criou o credor (banco público da nação) que
+	// recebe o juro (`bank.cash`/`bank.harvest_interest`), então não é mais
+	// custo sem recebedor. Sem banco público o valor não é cobrado (D-105).
+	// Ligado, o envelope vira `asset / (60 · (1 + r · 60/365))`;
+	// declarado em `data/definitions/economy/monetary_policy.json`
+	// (`harvest_credit.apply_policy_rate`) e conferido por
+	// `tools/c2b1_monetary_test.gd`. Não é persistido (parâmetro de regra, como
+	// infra_access_penalty).
+	bool harvest_credit_rate = true;
 	double inventory_cover_days = 3.0;
 	double inventory_recovery = 0.5;
 	// Índice espacial do comércio de alimento: por comprador, só os K
 	// vendedores mais próximos entram na disputa, além de M ofertas
 	// representativas do mercado externo (as mais baratas por caloria no globo).
-	// Mundos pequenos (<= kDemoTradeExhaustiveLimit) mantêm a varredura completa
+	// Mundos pequenos (<= kTradeExhaustiveLimit) mantêm a varredura completa
 	// para preservar exatamente o comportamento validado no cenário real.
 	int trade_neighbors = 12;
 	int trade_external = 8;
-	std::vector<DemoCity> cities;
-	std::vector<DemoBuilding> buildings;
+	std::vector<City> cities;
+	std::vector<Building> buildings;
 	// §15: obras de construção em andamento (projeto físico). Avançam no prólogo
 	// do tick conforme materiais + capacidade do setor de construção.
-	std::vector<DemoConstructionProject> construction_projects;
+	std::vector<ConstructionProject> construction_projects;
 	// §19 (W0): solo urbano, moradia e prefeitura por cidade. Vetores paralelos
-	// a `cities` (mesmo índice), carregados pelo demo_set_urban. Vazios em
+	// a `cities` (mesmo índice), carregados pelo set_urban. Vazios em
 	// saves v12 e anteriores e no cenário sintético AGRIA/PORTUS.
 	std::vector<CityLand> land;
 	std::vector<CityHousing> housing;
@@ -58,7 +262,7 @@ struct WorldState {
 	bool services_loaded = false;
 	double service_government_share = 0.002;
 	bool sector_loaded = false;
-	std::vector<DemoSectorAnchor> sector_anchors;
+	std::vector<SectorAnchor> sector_anchors;
 	// Demanda de trabalho agrícola: t/dia × base / TFP^expoente.
 	double agri_labor_per_ton = 55.0;
 	double agri_labor_exponent = 1.4486;
@@ -70,39 +274,53 @@ struct WorldState {
 	// Indústria: trabalhadores por unidade de valor adicionado (XGS/dia).
 	double industry_labor_per_va = 3.0;
 	double industry_labor_exponent = 1.4486;
-	std::vector<DemoServiceSector> service_sectors;
-	std::vector<DemoServiceBusiness> service_businesses;
+	std::vector<ServiceSector> service_sectors;
+	std::vector<ServiceBusiness> service_businesses;
 	std::vector<std::vector<int>> service_by_city;
 	std::vector<std::vector<int>> service_by_sector;
 	int next_service_business_id = 1;
 	int service_bankruptcies = 0;
-	// Índices derivados do mundo demo (ver demo_rebuild_indexes).
+	// Índices derivados do mundo demo (ver rebuild_indexes).
 	std::unordered_map<std::string, int> city_lookup;
 	std::vector<std::vector<int>> buildings_by_city;
+	// A2: tabelas de nomes -> índice (ver NameTable). Preenchidas no
+	// carregamento por rebuild_indexes(true); o tick não as reconstrói.
+	NameTable nation_table;
+	NameTable landmass_table;
+	// A2: tarifa resolvida por índices inteiros. Chave = (comprador+1)<<42 |
+	// (vendedor+1)<<21 | (produto+1); -1 codifica o curinga '*'. Preenchida em
+	// rebuild_tariff_lookup(); quando `size()` não bate com `tariff_lookup`
+	// (alguma linha não resolvível), tariff_rate cai no caminho textual.
+	std::unordered_map<std::uint64_t, double> tariff_by_index;
 	// F4: cidades por nação (ordem de índice) para a frota/compra do governo.
 	std::unordered_map<std::string, std::vector<int>> cities_by_nation;
-	std::vector<DemoShipment> in_transit;
+	std::vector<Shipment> in_transit;
 	std::vector<std::string> invariant_violations;
 	// Portos do cenário real (modo mundo) e pedidos de comércio do último tick,
 	// para a camada visual (minimapa e comboios 3D).
 	std::vector<Port> ports;
 	std::vector<TradeOrder> last_orders;
 	int bankruptcies = 0;
+	// D-099: composição das falências do mundo para o diagnóstico do 365 d
+	// (contadores de RUNTIME, não serializados; zeram no load). Por produto
+	// (`output_product`) e quantas eram primárias COM plano de safra.
+	int bankrupt_by_output[kMaxProducts] = {};
+	int bankrupt_planned_primary = 0;
 	int depleted_mines = 0;
 	double transport_cash = 0.0;
 	double foreign_cash = 0.0;
 	// Setor de construção: recebe o capital investido em expansão.
 	double construction_cash = 0.0;
-	double produced[kDemoMaxProducts] = {};
-	double consumed_total[kDemoMaxProducts] = {};
-	double produced_today[kDemoMaxProducts] = {};
-	double consumed_today[kDemoMaxProducts] = {};
-	// Produtos ativos (demo_set_goods). 21 por padrão (cenário de validação).
+	double produced[kMaxProducts] = {};
+	double consumed_total[kMaxProducts] = {};
+	double produced_today[kMaxProducts] = {};
+	double consumed_today[kMaxProducts] = {};
+	// Produtos ativos (set_goods). 21 por padrão (cenário de validação).
 	int products = 21;
 	std::vector<std::string> product_names;
 	std::unordered_map<std::string, int> product_lookup;
 	// Receitas industriais e índice por id (recipes.json).
-	std::vector<DemoRecipe> recipes;
+	std::vector<Recipe> recipes;
 	std::unordered_map<std::string, int> recipe_lookup;
 	// Cesta alimentar data-driven (needs.json); default = 5 culturas validadas.
 	std::vector<int> food_products;
@@ -110,7 +328,7 @@ struct WorldState {
 	// F3: tabela de necessidades por nível (needs.json), substitutos,
 	// equivalência e consumo institucional do governo. `needs_loaded`
 	// falso = comportamento de 1 nível (cenário AGRIA/PORTUS e saves antigos).
-	std::vector<DemoNeedsLevel> needs_levels;
+	std::vector<NeedsLevel> needs_levels;
 	bool needs_loaded = false;
 	int needs_food_level = -1;
 	// Decaimento diário que perde exatamente durable_replacement_per_year em
@@ -123,7 +341,7 @@ struct WorldState {
 	bool industry_seeded = false;
 	// F4: frota por nação (ordem determinística em fleet_order) e índices
 	// dos bens da frota (fuel/truck/cargo_ship/cargo_plane/spare_parts).
-	std::unordered_map<std::string, DemoFleet> fleets;
+	std::unordered_map<std::string, Fleet> fleets;
 	std::vector<std::string> fleet_order;
 	int fleet_product_fuel = -1;
 	int fleet_product_truck = -1;
@@ -131,30 +349,115 @@ struct WorldState {
 	int fleet_product_plane = -1;
 	int fleet_product_parts = -1;
 	// F5: moedas por code/nacao, ordem determinística e tarifas declaradas.
-	std::vector<DemoCurrency> currencies;
+	std::vector<Currency> currencies;
 	std::unordered_map<std::string, int> currency_by_code;
 	std::unordered_map<std::string, int> nation_currency;
-	std::vector<DemoTariff> tariffs;
+	std::vector<Tariff> tariffs;
 	std::unordered_map<std::string, double> tariff_lookup;
 	// F9: grupos/empresas, política de IDE, incentivos, confiança e fluxos.
-	std::vector<DemoGroup> groups;
+	std::vector<Group> groups;
 	std::unordered_map<std::string, int> group_lookup;
 	bool groups_seeded = false;
-	std::vector<DemoFdiPolicy> fdi_policies;
+	std::vector<FdiPolicy> fdi_policies;
 	std::unordered_map<std::string, int> fdi_lookup;
-	std::vector<DemoSectorIncentive> incentives;
+	std::vector<SectorIncentive> incentives;
 	std::unordered_map<std::string, int> incentive_lookup;
 	std::unordered_map<std::string, double> confidence;
 	std::unordered_map<std::string, int> confidence_penalty_day;
-	std::unordered_map<std::string, DemoGroupFlow> group_flows;
+	std::unordered_map<std::string, GroupFlow> group_flows;
+	// C2a (D-103) — BANCO CENTRAL POR MOEDA (estado + medição).
+	// Política do MUNDO: padrão monetário (central_bank::Standard; 0 =
+	// fiduciário, o início declarado pelo plano) e a moeda de reserva global
+	// (default USD, também declarado pelo plano — não é dado observado).
+	int monetary_standard = 0;
+	std::string reserve_currency = "USD";
+	// Reserva de ouro do BC por CÓDIGO de moeda (t de ouro fino). Vem do dado
+	// real da G2/D-101 (`strategic_reserves.json`) por `set_central_bank_gold`;
+	// é ativo REAL (não entra na identidade financeira). `declared` falso =
+	// nenhuma reserva declarada ainda (save v26, mundo sem a G2 aplicada).
+	std::map<std::string, double> reserve_gold_tonnes;
+	bool reserve_gold_declared = false;
+	double reserve_gold_unallocated = 0.0;  // nação sem moeda na tabela
+	// Série mensal do CPI por nação (medição) e o dia da última amostra.
+	std::map<std::string, CpiHistory> cpi_history;
+	int cpi_last_observe_day = -1;
+	// C2b1 (D-104) — POLÍTICA MONETÁRIA: um estado por MOEDA (a mesma entidade
+	// por moeda da C2a), a dívida pública por nação e o M0 criado no dia.
+	std::map<std::string, MonetaryState> monetary;
+	std::map<std::string, double> gov_bonds;
+	// C6 (D-114): títulos públicos emitidos no resgate de um banco SEM banco
+	// central (dolarizado/sem moeda própria, ou moeda sem estado monetário
+	// salvo). Não há BC para carregar o papel: ele fica em poder do SETOR
+	// EXTERIOR, pago pela posição externa (`foreign_cash`). O título é o claim
+	// do credor e entra em `Ledger.external_claims`, fechando a identidade da
+	// C1 (sem ele, `financial_sum = −valor`). Save v34.
+	std::map<std::string, double> external_bonds;
+	// C2b2 (D-106) — CÂMBIO: estado por moeda (paridade, banda, reservas,
+	// conversão do ouro), o anel de eventos do status e os parâmetros de regra
+	// (largura da banda, fatia de defesa, cobertura do padrão ouro; default de
+	// jogo em data/definitions/economy/exchange_policy.json). Save v29.
+	std::map<std::string, FxState> fx;
+	std::vector<FxEvent> fx_events;
+	double fx_band_width = 0.0;        // 0 = default (kBandWidthDefault)
+	double fx_defence_share = 0.0;     // 0 = default (kDefenceShareDefault)
+	double fx_gold_reserve_ratio = 0.0;// 0 = default (kGoldReserveRatioDefault)
+	// C2c (D-108) — REGIME REAL por moeda (IMF AREAER 30/04/2026), ancora
+	// (moeda ou cesta), emissor e trava de uniao monetaria. Save v31; mundo
+	// sem o dado continua com o regime que veio no save (nada e inventado).
+	std::map<std::string, FxRegimeInfo> fx_regime;
+	std::string fx_regime_source;              // ex.: "IMF AREAER 2026 (30/04/2026)"
+	std::vector<std::string> fx_no_policy_nations;  // dolarizados/sem moeda propria
+	double emission_today = 0.0;
+	// C4 (D-110): dinheiro BANCÁRIO criado no dia (variação dos depósitos na
+	// fase de crédito; positiva ao emprestar/dividendar, negativa ao receber
+	// principal/juro e no calote). O BC só cria M0: a conservação do dia vira
+	// `money_after = money_before + emission_today + bank_money_today`.
+	double bank_money_today = 0.0;
+	// C3 (D-107) - CRÉDITO DE EMPRESA: banco agregado por nação e as regras do
+	// crédito. `bank_credit_enabled` é ESTADO (vai ao save: pode ser ligado por
+	// comando A3); os parâmetros abaixo são REGRA (vêm de
+	// data/definitions/economy/bank_credit.json, como os do câmbio/emissão) e
+	// 0 significa "usar o default declarado em sim/bank.h". LIGADO no mundo
+	// novo desde a D-111 (a C4 criou o credor); save antigo sem o bloco do
+	// banco continua carregando desligado.
+	std::map<std::string, Bank> banks;
+	bool bank_credit_enabled = true;	double bank_spread = 0.0;         // 0 = kSpreadDefault (2 p.p.)
+	double bank_leverage_cap = 0.0;   // 0 = kLeverageCapDefault (1,0)
+	double bank_interest_cover = 0.0; // 0 = kInterestCoverDefault (2,0)
+	int bank_default_days = 0;        // 0 = kDefaultDaysDefault (30)
+	double bank_repay_share = 0.0;    // 0 = kRepayShareDefault (0,5)
+	// C6 (D-114) - CRISE BANCARIA: regras declaradas (bank_crisis.json, espelho
+	// em sim/bank_crisis.h), o fundo de seguro por nacao e o anel de eventos.
+	// `enabled` e estado (save v34); o resto e REGRA (0 = default declarado).
+	// O fundo entra no `money_total` (premio/pagamento conservam dinheiro).
+	BankCrisisPolicy bank_crisis;
+	std::map<std::string, DepositInsurance> deposit_insurance;
+	std::vector<BankCrisisEvent> bank_crisis_events;  // anel de 64
+	int bank_crisis_events_total = 0;                // contador total (save)
+	// C5 (D-112) - BOLSA: uma praça por nação e um papel por grupo listado.
+	// `stock_enabled` é ESTADO (vai ao save); os demais são REGRA (0 = default
+	// declarado em sim/stock.h). O canal de investimento (q de Tobin) é uma
+	// alavanca de laboratório para o A/B do aceite, não um número de jogo.
+	std::map<std::string, StockExchange> stock_exchanges;
+	std::map<std::string, StockTicker> stock_tickers;
+	bool stock_enabled = true;
+	bool stock_investment_channel = true;
+	double stock_risk_premium = 0.0;   // 0 = kRiskPremiumDefault (4 %)
+	double stock_payout_ratio = 0.0;   // 0 = kPayoutRatioDefault (0,5)
+	double stock_step = 0.0;           // 0 = kStepDefault (0,35/semana)
+	double stock_expectation_k = 0.0;  // 0 = kExpectationKDefault (5 %/dia)
+	// Caixa do governo por nação na ABERTURA do dia: a medição do déficit
+	// (runtime; não vai ao save).
+	std::map<std::string, double> gov_cash_open;
 	// Setor de cada produto (goods.json → sector). Vazio = "primary".
 	std::vector<std::string> product_sectors;
-	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
-	double base_prices[kDemoMaxProducts] = {
+	// Preços-base dos bens (data-driven: set_goods/initialize_world).
+	double base_prices[kMaxProducts] = {
 		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
 		15.0, 5000.0, 6.0, 60.0, 30.0, 45.0, 35.0, 45.0, 70.0, 25.0, 500.0};
-	// Retrato do tick reaproveitado entre dias (ver demo_tick_core).
-	DemoSnapshot snapshot_buffer;
+	// Retrato do tick reaproveitado entre dias (ver tick_core).
+	Snapshot snapshot_buffer;
 };
 
 } // namespace ogs
+

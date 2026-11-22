@@ -1,7 +1,7 @@
 ---
 description: Gerente de dados do OpenGS — dono de dados reais e pesquisa (definições, coletores, citações, validadores); fonte estatística primeiro, fato histórico só como último recurso, nunca inventar.
 mode: all
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-flash
 steps: 250
 permissions:
   - action: edit

@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "generated_utc": "2026-11-18T02:45:00Z",
+    "branch": "feat/b2-strata",
+    "worktree": "G:/projetos/opengs-wt-b2",
+    "commit": "492eadd",
+    "build": "debug em gdextension/bin (DLL 35.684.352 B, sha256 ae8d744d5467c508ac4b7a8582e1b515064d1db338e0080e03b41c08239a25bc); release de medicao em template_release (sha256 b00f127d21742cd3d3c253a7770b9d4a52915a3480248bb282589fe374247043)"
+  },
+  "goldens": {
+    "a0_60_urban": {
+      "before_b1": {"save_sha256": "4cc3e3c7be182ad5e8d8c0a6c8935d348dc6d1ea3f5e19dc3e2636001390f5ff", "status_sha256": "c4ebe5ee46cc2cca3041feb9ad827de0cd7384b168c47b5c4356a1b2a1a81313"},
+      "after_b2": {"save_sha256": "84d2870074afc6bcc03b04266a6fd944878d076c1b4368bffe13886bb3dc1e9d", "status_sha256": "5f91d311eec854e6a34e6d609f103d545e843438258ef263846d0add4834625b"},
+      "rounds": 2,
+      "differences": 0,
+      "money_total": 2177839209.15,
+      "service_businesses": 42214
+    },
+    "real_60_ai": {
+      "before_b1": {"save_sha256": "76a092b32d9f342e7660ef7d8a415cc2d2aec8fc0314f7b090551a412508a2a9", "status_sha256": "b052f14bf5f15eff2662e029fe4158a42c73b371d1b5931a572a954dbc10f9f9"},
+      "after_b2": {"save_sha256": "d64df2a1696759164cb9a5be60724c0665a14e1b48ef80ae961ab8a1cf0f9a69", "status_sha256": "fc5602213c771dc93e002bfdd15ff47068d8ceabc82679b862d2a541de212a1b"},
+      "differences": 0
+    },
+    "real_60_noai": {
+      "before_b1": {"save_sha256": "1582000d6ac67bccd5fdb714aecaedcfd1231612cd83066d24700cb2424d3c95", "status_sha256": "77c42a773a011abc8c9efc5b5d12ec299de884a0f61f9fbca82e0fb11e3d255e"},
+      "after_b2": {"save_sha256": "7070ff67158774788339bb9884790bbd029546708ac3b958fd5728f46019dd64", "status_sha256": "bb88d8bb77723c7dff1839125ddb170eb41a56dd3aa3d4c0753f9948cc227fed"},
+      "differences": 0
+    },
+    "demo_365_noai": {
+      "before_b1": {"save_sha256": "3f80dd7ee8d489430261610f7e979b963b949a0f9697230d4c64f2d57a8987d1", "status_sha256": "10b6f339c8e886a7d0fc2f9b406d94ec86f1e816fac5b2d0f0f999817c9deb87"},
+      "after_b2": {"save_sha256": "a9dbd376ee633df760cc1bc07b36319c21c2b21c958d041bb12b3d5ed1c0b4d1", "status_sha256": "ab317791c7cde565bdfa4ba2ac20c8c3c156d05c447eb9114a30f7c36b2e7c5a"},
+      "differences": 0,
+      "money_total": 630000.0,
+      "service_businesses": 110
+    }
+  },
+  "determinism": {
+    "days": 60,
+    "ai": 1,
+    "urban": true,
+    "threads": [1, 16],
+    "save_sha256": "84d2870074afc6bcc03b04266a6fd944878d076c1b4368bffe13886bb3dc1e9d",
+    "status_sha256": "5f91d311eec854e6a34e6d609f103d545e843438258ef263846d0add4834625b",
+    "money_total": 2177839209.15,
+    "reports_equal": true
+  },
+  "cli_vs_godot": {
+    "days": 60,
+    "ai": 1,
+    "threads": 1,
+    "config": "debug (CLI e DLL do mesmo build)",
+    "snapshot": "export_world_snapshot --ai=1 do dia 0 (834 cidades, 864 construcoes, 113 produtos, 59165845 B)",
+    "tolerance": 0,
+    "differences": 0,
+    "files_byte_identical": true,
+    "sha256": "2f3a949f71677b9ed0a42f1023f12b8676ad8ce781da4b49cae3f0067de7c85",
+    "money_total": 2177839209.15
+  },
+  "bench": {
+    "file": "docs/economy/perf/b2_main_bench.json",
+    "rounds": 3,
+    "days": 60,
+    "day_total_ms_median": 39.0307,
+    "variation_pct": 6.2363,
+    "limit_pct": 3,
+    "criterion_ok": false,
+    "note": "host ocupado (LeagueClient, Chrome, Steam): todas as fases infladas ~15-30% contra o bench da B1, inclusive as que a B2 nao toca; re-medir em host ocioso"
+  }
+}

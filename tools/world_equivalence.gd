@@ -3,8 +3,8 @@ extends SceneTree
 ## Equivalência funcional A1–A5 do plano `docs/plans/perf_pop_financas_plano.md`.
 ##
 ## Roda o mundo real (cenário + IA + camada urbana S19) por N dias com semente
-## fixa e grava um JSON canônico — `meta`, `save` (`demo_to_dict()`) e `status`
-## (`get_demo_status()`) — em chaves ordenadas e precisão total. O par de SHA-256
+## fixa e grava um JSON canônico — `meta`, `save` (`to_dict()`) e `status`
+## (`get_status()`) — em chaves ordenadas e precisão total. O par de SHA-256
 ## continua sendo a checagem grossa; o dump existe para o comparador
 ## `tools/world_equivalence_compare.py` apontar o PRIMEIRO caminho divergente.
 ##
@@ -18,7 +18,7 @@ extends SceneTree
 ##   `tools/world_equivalence.ps1 -Golden/-Baseline` comparar sem carregar o
 ##   dump de 110 MB. Não altera o dump principal nem os shas.
 ## - `--threads=0` deixa o núcleo decidir o caminho serial/paralelo (mesmo
-##   contrato de `demo_set_sim_threads`).
+##   contrato de `set_sim_threads`).
 ## - `--seed` entra em `meta` apenas: o núcleo não tem RNG, o mundo é
 ##   determinístico por construção. Nenhuma moeda é perturbada aqui — a
 ##   perturbação de câmbio (±1e-12) vive em `tools/economy_world_test.gd` e não
@@ -26,7 +26,16 @@ extends SceneTree
 ## - Saída: 0 ok, 1 falha. Toda falha vira linha `[equiv] FALHA: ...`.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
+const LandPropertyScript := preload("res://core/economy/land_property.gd")
+const GroupNamerScript := preload("res://core/economy/group_namer.gd")
+## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
+const RegionDataScript := preload("res://core/economy/region_data.gd")
+## G (D-096): o replay A0/S0 representa o jogo, então declara os planos de
+## safra como o autoload. `--agriculture=0` mantém o A/B de controle.
+const AgricultureServiceScript := preload("res://core/economy/agriculture_service.gd")
+## G2 (D-101): armazenagem — capacidade do país, mapa produto→tipo e reserva
+## pública do dia 1, como o autoload declara (o replay roda o jogo de verdade).
+const StorageServiceScript := preload("res://core/economy/storage_service.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -37,6 +46,12 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## B1: estrutura etária por nação (definição estática), antes do mundo.
+const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
+## B7: informalidade (ILOSTAT) e cobertura de saúde (OMS/GHO) por nação — os
+## MESMOS dados que o autoload carrega, senão A0/S0 não rodam o jogo de verdade.
+const INFORMALITY_PATH := "res://data/definitions/economy/informality.json"
+const HEALTH_ACCESS_PATH := "res://data/definitions/population/health_access.json"
 ## §19 (W0): mesmos caminhos que o autoload do jogo usa para a camada urbana.
 const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
@@ -46,6 +61,7 @@ const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_financ
 var _days := 60
 var _ai := true
 var _urban := true
+var _agriculture := true
 var _seed := 0
 var _threads := 0
 var _out := ""
@@ -62,6 +78,8 @@ func _init() -> void:
 			_ai = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--urban="):
 			_urban = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--agriculture="):
+			_agriculture = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--seed="):
 			_seed = int(arg.split("=", true, 1)[1])
 		elif arg.begins_with("--threads="):
@@ -115,6 +133,14 @@ func _load_dict(path: String) -> Dictionary:
 	return data
 
 
+## Soma os valores numéricos de um dicionário (relatório do StorageService).
+func _sum_values(row: Dictionary) -> float:
+	var total := 0.0
+	for key in row.keys():
+		total += float(row[key])
+	return total
+
+
 ## Cidades no formato que o GeographyService.apply_to_sim espera.
 func _cities_with_center(cities: Array) -> Array:
 	var result: Array = []
@@ -131,19 +157,32 @@ func _run() -> void:
 	var sim = EconomySim.new()
 
 	# Mesma ordem do jogo ao vivo: definições ANTES de criar o mundo.
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
-	if sim.has_method("demo_set_sim_threads"):
-		sim.demo_set_sim_threads(_threads)
+			sim.set_sector_employment(sector)
+	if sim.has_method("set_age_structure"):
+		var age_structure := _load_dict(AGE_STRUCTURE_PATH)
+		if not age_structure.is_empty():
+			sim.set_age_structure(age_structure)
+	# B7: informalidade e saúde por nação (ILOSTAT/OMS), como o autoload do jogo.
+	if sim.has_method("set_informality"):
+		var informality := _load_dict(INFORMALITY_PATH)
+		if not informality.is_empty():
+			sim.set_informality(informality)
+	if sim.has_method("set_health_access"):
+		var health_access := _load_dict(HEALTH_ACCESS_PATH)
+		if not health_access.is_empty():
+			sim.set_health_access(health_access)
+	if sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(_threads)
 	if not _failures.is_empty():
 		return
 
@@ -154,22 +193,33 @@ func _run() -> void:
 		_fail("cenario vazio (cidades=%d, construcoes=%d)" % [
 			cities.size(), buildings.size()])
 		return
+	# B3: região (estados inteiros) viaja no snapshot pelo bloco `region`.
+	RegionDataScript.attach(cities)
 
 	var geo: Object = null
-	var ai: Object = null
 	if _ai:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
+		# D-086: minas históricas (uma por cidade × mineral com jazida), no
+		# último estágio — o mesmo caminho do autoload do jogo.
+		if geo.has_method("resolve_initial_mines"):
+			buildings = geo.resolve_initial_mines(buildings, cities)
 
-	sim.initialize_demo_world(cities, ports, buildings)
+	sim.initialize_world(cities, ports, buildings)
+	# B5 (D-089): infra inicial do estado (dado real World Bank), igual ao
+	# autoload. Sem isso o replay A0/S0 rodaria com infra 0.
+	GeographyServiceScript.apply_initial_infra(sim)
+	# B6 (D-095): patrimônio da região (hectares + Gini fundiário), igual ao
+	# autoload. Sem isso o replay A0/S0 rodaria sem a B6.
+	LandPropertyScript.apply(sim)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
 	if _urban:
-		if not sim.has_method("demo_set_urban"):
-			_fail("binario sem demo_set_urban (rode o build)")
+		if not sim.has_method("set_urban"):
+			_fail("binario sem set_urban (rode o build)")
 			return
-		sim.demo_set_urban(_load_dict(URBAN_LAND_PATH),
+		sim.set_urban(_load_dict(URBAN_LAND_PATH),
 			_load_dict(HOUSING_CITY_PATH), _load_dict(HOUSING_PATH),
 			_load_dict(MUNICIPAL_FINANCE_PATH))
 		if not _failures.is_empty():
@@ -177,24 +227,49 @@ func _run() -> void:
 
 	if geo != null:
 		geo.apply_to_sim(sim, _cities_with_center(cities))
-		ai = EconomicAIScript.new()
-		ai.setup(sim, geo)
+		# G (D-096): planos de safra DEPOIS da geografia, como no autoload. O
+		# replay A0/S0 roda o jogo de verdade; `--agriculture=0` é o A/B.
+		if _agriculture and sim.has_method("set_crop_plan"):
+			var agri := AgricultureServiceScript.new()
+			var agri_report := agri.apply_to_sim(sim, cities, geo,
+				{"calendar_nations": agri.calendar_nations(cities),
+				"farms": AgricultureServiceScript.farms_of(buildings)})
+			print("[equiv] agricultura: planos=%d cidades=%d estoque=%.0f t" % [
+				int(agri_report.get("plans", 0)),
+				int(agri_report.get("cities", 0)),
+				float(agri_report.get("initial_stock_t", 0.0))])
+		# G2 (D-101): armazenagem, DEPOIS da agricultura e antes da IA, como no
+		# autoload. `only_missing`: nada é reescrito por cima do save.
+		if sim.has_method("set_storage_capacity"):
+			var storage := StorageServiceScript.new()
+			var storage_report := storage.apply_to_sim(sim, cities, buildings,
+				{"only_missing": true})
+			print("[equiv] armazenagem: tipos=%d sites=%d capacidade=%.0f t reserva=%.0f t" % [
+				int(storage_report.get("product_types_applied", 0)),
+				int(storage_report.get("sites_written", 0)),
+				_sum_values(storage_report.get("capacity_t", {})),
+				_sum_values(storage_report.get("initial_stock_t", {}))])
+		# A IA econômica roda no núcleo, como fase do dia (A5). Os grupos são
+		# nomeados SEM `places`: esta corrida não carrega a cultura das cidades.
+		sim.set_ai_enabled(true)
+		GroupNamerScript.name_groups(sim)
 
 	# Aquece os dois slots do status (custo de alocação fora do primeiro tick).
-	if sim.has_method("demo_warm_status"):
-		sim.demo_warm_status()
+	if sim.has_method("warm_status"):
+		sim.warm_status()
 
-	for day in _days:
-		var status: Dictionary = sim.tick_demo()
-		if ai != null:
-			ai.run(int(status.get("day", day + 1)), status)
+	for _day in _days:
+		# A IA já rodou dentro do `tick_day()` (fase pós-status): o retorno é o
+		# status do dia ANTES das decisões dela.
+		var status: Dictionary = sim.tick_day()
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
-			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
+			_fail("dia %d: invariante violado: %s" % [
+				int(status.get("day", 0)), String(violations[0])])
 			return
 
-	var save_dict: Dictionary = sim.demo_to_dict()
-	var status_dict: Dictionary = sim.get_demo_status()
+	var save_dict: Dictionary = sim.to_dict()
+	var status_dict: Dictionary = sim.get_status()
 
 	# Chaves ordenadas + precisão total: o mesmo string serve de hash e de dump.
 	var save_json := JSON.stringify(save_dict, "  ", true, true)
@@ -207,6 +282,7 @@ func _run() -> void:
 			"days": _days,
 			"ai": _ai,
 			"urban": _urban,
+			"agriculture": _agriculture,
 			"seed": _seed,
 			"threads": _threads,
 			"products": Array(status_dict.get("products", [])).size(),

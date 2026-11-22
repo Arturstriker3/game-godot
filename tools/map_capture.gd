@@ -161,14 +161,17 @@ func _capture_map3d() -> void:
 	var route_history: Array = []
 	if _route_days > 0:
 		# Ferramenta de captura: roda dias reais do núcleo (sem inventar fluxo)
-		# e guarda o resumo para alimentar a janela de 7 dias do CityWorld.
+		# e guarda o resumo leve + pedidos do dia para a janela de 7 dias do
+		# CityWorld. A4: o mundo inteiro não é mais publicado por dia.
 		Economy.set_speed(0)
 		for _day in _route_days:
 			Economy._run_day()
 			if not Economy.last_summary.is_empty():
-				route_history.append(Economy.last_summary.duplicate(true))
-	var status: Dictionary = Economy.last_summary if not Economy.last_summary.is_empty() \
-			else Economy.sim.get_demo_status()
+				var entry: Dictionary = Economy.last_summary.duplicate(true)
+				entry["trade_orders"] = Economy.sim.get_trade_orders()
+				route_history.append(entry)
+	var status: Dictionary = Economy.ui_snapshot() \
+			if not Economy.last_summary.is_empty() else Economy.sim.get_status()
 	var cities: Array = status.get("cities", [])
 	var ports: Array = status.get("ports", [])
 	if cities.is_empty():

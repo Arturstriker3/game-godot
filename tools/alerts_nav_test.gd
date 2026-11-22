@@ -127,6 +127,9 @@ func _summary() -> Dictionary:
 	var eco := _eco()
 	if eco == null:
 		return {}
+	# A4: as telas consomem o retrato sob demanda (cidades/nações/pedidos).
+	if eco.has_method("ui_snapshot"):
+		return eco.call("ui_snapshot")
 	return eco.get("last_summary")
 
 

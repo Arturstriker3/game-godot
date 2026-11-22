@@ -705,6 +705,12 @@ func _context_resources(city: Dictionary) -> Dictionary:
 
 
 func _city() -> Dictionary:
+	# A4: ficha leve de UMA cidade, consultada direto do estado do núcleo. Sem
+	# núcleo (fixture de teste), cai no resumo montado à mão.
+	if Economy.sim != null and not _city_id.is_empty():
+		var info: Dictionary = Economy.sim.get_city_info(_city_id)
+		if not info.is_empty():
+			return info
 	for city in _summary.get("cities", []):
 		if String(city["id"]) == _city_id:
 			return city
@@ -734,17 +740,51 @@ func _pop(city: Dictionary) -> Dictionary:
 
 
 func _producers() -> Array:
+	# A4: colunas por cidade, sem varrer Dictionary. Só entram cidades com
+	# produção primária; a ordem é a mesma (produção desc).
+	if Economy.sim == null:
+		var fallback: Array = []
+		for city in _summary.get("cities", []):
+			if float(city.get("production", 0.0)) > 0.0:
+				fallback.append(city)
+		fallback.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return float(a.get("production", 0.0)) \
+					> float(b.get("production", 0.0)))
+		return fallback
+	var columns := Economy.city_columns()
+	var ids: PackedStringArray = columns.get("id", PackedStringArray())
+	var names: PackedStringArray = columns.get("name", PackedStringArray())
+	var nations: PackedStringArray = columns.get("nation", PackedStringArray())
+	var production: PackedFloat64Array = columns.get("production",
+			PackedFloat64Array())
+	var deficit: PackedFloat64Array = columns.get("deficit",
+			PackedFloat64Array())
 	var producers: Array = []
-	for city in _summary.get("cities", []):
-		if float(city.get("production", 0.0)) > 0.0:
-			producers.append(city)
+	for index in ids.size():
+		var value := production[index] if index < production.size() else 0.0
+		if value <= 0.0:
+			continue
+		producers.append({
+			"id": ids[index],
+			"name": names[index] if index < names.size() else "",
+			"nation": nations[index] if index < nations.size() else "",
+			"production": value,
+			"deficit": deficit[index] if index < deficit.size() else 0.0,
+		})
 	producers.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return float(a.get("production", 0.0)) > float(b.get("production", 0.0)))
+		return float(a.get("production", 0.0)) \
+				> float(b.get("production", 0.0)))
 	return producers
 
 
 func _related_orders() -> Array:
-	var log: Array = _summary.get("trade_log", _summary.get("trade_orders", []))
+	# A4: a ficha recebe o log de 7 dias da HUD (`trade_log`); sem ele, usa os
+	# pedidos do último dia da consulta do núcleo.
+	var log: Array = _summary.get("trade_log", [])
+	if log.is_empty() and Economy.sim != null:
+		log = Economy.sim.get_trade_orders()
+	if log.is_empty():
+		log = _summary.get("trade_orders", [])
 	var related: Array = []
 	for order in log:
 		if String(order.get("from_city", "")) == _city_id \

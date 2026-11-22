@@ -106,12 +106,11 @@ func _run_capture() -> void:
 		Economy._ticker.wait()
 	Economy.set_process(false)
 	var sim: Object = Economy.sim
-	var ai: Object = Economy._ai
-	if sim == null or ai == null:
-		_manifest["warnings"].append("autoload Economy sem sim/IA")
+	if sim == null:
+		_manifest["warnings"].append("autoload Economy sem sim")
 		return
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var cities: Array = status.get("cities", [])
 	var ports: Array = status.get("ports", [])
 	if cities.is_empty():
@@ -139,8 +138,7 @@ func _run_capture() -> void:
 
 	var day := 0
 	for next_day in range(1, _days + 1):
-		var summary: Dictionary = sim.tick_demo()
-		ai.run(next_day)
+		var summary: Dictionary = sim.tick_day()
 		day = next_day
 		_convoys.spawn_orders(summary.get("trade_orders", []))
 		_drain_convoys()

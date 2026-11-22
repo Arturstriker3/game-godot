@@ -8,12 +8,14 @@
 
 #include "construction.h"
 #include "housing.h"
+#include "storage.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "urban_land.h"
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 namespace {
 // Segurança numérica: nada de NaN/Inf no estado nem nos outputs.
@@ -24,7 +26,7 @@ inline double safe_nonneg(double v) {
 
 namespace ogs {
 
-int SimCore::demo_project_index(const std::string& building_id) const {
+int SimCore::project_index(const std::string& building_id) const {
 	for (std::size_t index = 0; index < ws_.construction_projects.size(); ++index) {
 		if (ws_.construction_projects[index].building_id == building_id) {
 			return static_cast<int>(index);
@@ -33,8 +35,8 @@ int SimCore::demo_project_index(const std::string& building_id) const {
 	return -1;
 }
 
-void SimCore::demo_mark_project_strategic(const std::string& building_id) {
-	for (DemoConstructionProject& project : ws_.construction_projects) {
+void SimCore::mark_project_strategic(const std::string& building_id) {
+	for (ConstructionProject& project : ws_.construction_projects) {
 		if (project.building_id == building_id) {
 			project.strategic = true;
 			return;
@@ -46,15 +48,15 @@ void SimCore::demo_mark_project_strategic(const std::string& building_id) {
 // solo ocupado (land_price da zona × área). É uma FATIA do `total_cost`, não
 // um custo extra. Sem preço de terra na cidade/zona devolve 0 (ausência
 // explícita — não se inventa preço).
-double SimCore::demo_project_land_cost(
-		const DemoConstructionProject& project) const {
+double SimCore::project_land_cost(
+		const ConstructionProject& project) const {
 	// URBAN_INFRA: a obra É a abertura do solo (a prefeitura paga a
 	// infraestrutura, não o lote) — sem parcela de terra.
 	if (project.kind == CONSTRUCTION_URBAN_INFRA
 			|| project.urban_action != urban_land::URBAN_NONE) {
 		return 0.0;
 	}
-	const DemoCity* city = find_demo_city(project.city);
+	const City* city = find_city(project.city);
 	if (city == nullptr) {
 		return 0.0;
 	}
@@ -76,8 +78,8 @@ double SimCore::demo_project_land_cost(
 			project.housing_density, 0, DENSITY_COUNT - 1);
 		const int tier = std::clamp(project.housing_tier, 0, TIER_COUNT - 1);
 		area_m2 = std::max(0.0, project.housing_units)
-			* kDemoUrbanUnitM2[density][tier]
-			/ std::max(1.0, kDemoUrbanFar[density]);
+			* kUrbanUnitM2[density][tier]
+			/ std::max(1.0, kUrbanFar[density]);
 		price_per_m2 = std::max(0.0, land.land_price[ZONE_RES]);
 	} else {
 		// Prédio econômico URBANO (receita industrial ou fábrica legada com
@@ -89,7 +91,7 @@ double SimCore::demo_project_land_cost(
 		if (!urban_factory) {
 			return 0.0;
 		}
-		area_m2 = std::max(0.0, project.jobs) * kDemoUrbanFactoryM2PerWorker;
+		area_m2 = std::max(0.0, project.jobs) * kUrbanFactoryM2PerWorker;
 		price_per_m2 = std::max(0.0, land.land_price[ZONE_IND]);
 	}
 	if (area_m2 <= 0.0 || price_per_m2 <= 0.0) {
@@ -99,13 +101,13 @@ double SimCore::demo_project_land_cost(
 	if (project.kind == CONSTRUCTION_HOUSING) {
 		// Moradia (Q-015, integração): a parcela de terreno é a MESMA que entra
 		// no custo da unidade (`build_cost_unit`): lote = m² ÷ FAR, limitado a
-		// kDemoHousingLandShareMax do valor. As duas contas precisam bater, ou a
+		// kHousingLandShareMax do valor. As duas contas precisam bater, ou a
 		// terra creditada à prefeitura volta a comer o orçamento inteiro.
-		cost = std::min(cost, kDemoHousingLandShareMax * budget);
+		cost = std::min(cost, kHousingLandShareMax * budget);
 	} else {
 		// Prédio econômico: a terra fica limitada a uma fração do orçamento,
 		// para o material + mão de obra ficarem com o resto.
-		cost = std::min(cost, kDemoConstructionLandShareMax * budget);
+		cost = std::min(cost, kConstructionLandShareMax * budget);
 	}
 	// A terra é uma fatia: nunca mais que o orçamento do dono.
 	cost = std::min(cost, budget);
@@ -115,7 +117,7 @@ double SimCore::demo_project_land_cost(
 // Calcula materiais (receita de obra), prazo e parcela de mão de obra, e
 // empilha o projeto. A ordem dos materiais segue a tabela de
 // construction.h; bens ausentes do catálogo são pulados (não bloqueiam).
-void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
+void SimCore::add_construction_project(ConstructionProject& project) {
 	const bool factory = project.recipe >= 0;
 	const construction::MaterialSpec* specs = nullptr;
 	const int spec_count = factory ? construction::factory_materials(specs)
@@ -126,10 +128,10 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 	// O dono já debitou o `total_cost` inteiro no ponto de criação; aqui a
 	// terra é creditada no caixa municipal e sai do fundo reservado. Dinheiro
 	// conservado (prefeitura + reserved).
-	project.land_cost = demo_project_land_cost(project);
+	project.land_cost = project_land_cost(project);
 	project.reserved = std::max(0.0, project.total_cost - project.land_cost);
 	{
-		DemoCity* land_city = find_demo_city(project.city);
+		City* land_city = find_city(project.city);
 		if (land_city != nullptr && project.land_cost > 0.0) {
 			const std::size_t land_index =
 				static_cast<std::size_t>(land_city - ws_.cities.data());
@@ -140,15 +142,15 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 	}
 	const double build_cost = std::max(0.0, project.total_cost - project.land_cost);
 	// Parcela MATERIAL do orçamento: a moradia (§19 W3) consome mais material
-	// por unidade que um prédio econômico (kDemoHousingMaterialShare).
+	// por unidade que um prédio econômico (kHousingMaterialShare).
 	const double material_share = project.kind == CONSTRUCTION_HOUSING
-		? kDemoHousingMaterialShare : kDemoConstructionMaterialShare;
+		? kHousingMaterialShare : kConstructionMaterialShare;
 	for (int slot = 0; slot < spec_count; ++slot) {
-		const int product = demo_product_index(specs[slot].good);
+		const int product = product_index(specs[slot].good);
 		if (product < 0) {
 			continue;  // bem ausente do catálogo: a obra não exige
 		}
-		const double base = demo_base_price(product);
+		const double base = base_price(product);
 		if (base <= 1e-9) {
 			continue;
 		}
@@ -164,31 +166,43 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 	}
 	project.labor_cost_total =
 		(1.0 - material_share) * build_cost;
-	if (project.kind == CONSTRUCTION_HOUSING) {
+	if (project.deepen_stage >= 0) {
+		// D-086: o aprofundamento tem prazo próprio (90 dias + 30 por estágio
+		// aberto), independente da escala de tamanho da obra nova.
+		project.duration_days = kMineDeepenBaseDays
+			+ kMineDeepenDaysPerStage * project.deepen_stage;
+	} else if (project.kind == CONSTRUCTION_REGION_INFRA) {
+		// B5: obra de infra da região — prazo declarado, independente do tamanho.
+		project.duration_days = std::max(1, kInfraBuildDays);
+	} else if (project.kind == CONSTRUCTION_HOUSING) {
 		// Moradia (§19 W3): prazo declarado, sem escala por tamanho (é a
 		// mesma obra de unidades do W3, agora na fila única).
-		project.duration_days = std::max(1, kDemoHousingBuildDays);
+		project.duration_days = std::max(1, kHousingBuildDays);
+	} else if (project.kind == CONSTRUCTION_STORAGE) {
+		// G2: armazém tem prazo declarado (kStorageBuildDays), independente do
+		// tamanho do lote de capacidade.
+		project.duration_days = std::max(1, kStorageBuildDays);
 	} else {
 		// Duração por tipo + escala pelo tamanho (§15). Comida (fazenda da cesta) é
 		// rápida para não travar a oferta alimentar; mina (primária com jazida) é
 		// média; fábrica (receita) é pesada. O tamanho (capacidade em t/dia) escala
 		// o prazo com fator logarítmico limitado — estimativa declarada.
 		const bool is_food = project.recipe < 0 && project.input_product < 0
-			&& demo_food_calories(project.output_product) > 0.0;
-		DemoCity* project_city = find_demo_city(project.city);
+			&& food_calories(project.output_product) > 0.0;
+		City* project_city = find_city(project.city);
 		const bool is_mine = !factory && !is_food && project_city != nullptr
 			&& project.output_product >= 0
 			&& project_city->deposits[project.output_product].tracked;
 		const double base_days = factory
-			? static_cast<double>(kDemoConstructionFactoryDays)
-			: is_food ? static_cast<double>(kDemoConstructionFoodDays)
-			: is_mine ? static_cast<double>(kDemoConstructionMineDays)
-			: static_cast<double>(kDemoConstructionPrimaryDays);
+			? static_cast<double>(kConstructionFactoryDays)
+			: is_food ? static_cast<double>(kConstructionFoodDays)
+			: is_mine ? static_cast<double>(kConstructionMineDays)
+			: static_cast<double>(kConstructionPrimaryDays);
 		const double size_ratio = std::max(1.0, project.capacity)
-			/ kDemoConstructionSizeReference;
+			/ kConstructionSizeReference;
 		const double size_scale = std::clamp(
-			1.0 + kDemoConstructionSizeLogScale * std::log2(size_ratio),
-			kDemoConstructionSizeScaleMin, kDemoConstructionSizeScaleMax);
+			1.0 + kConstructionSizeLogScale * std::log2(size_ratio),
+			kConstructionSizeScaleMin, kConstructionSizeScaleMax);
 		project.duration_days = std::max(1,
 			static_cast<int>(std::llround(base_days * size_scale)));
 	}
@@ -202,9 +216,71 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 }
 
 namespace {
+// §15/D-086 — saldo NÃO gasto do fundo reservado de uma obra que sai da fila.
+// O dono debitou o orçamento inteiro na abertura e a obra pagou material/mão de
+// obra conforme avançou; o que sobrar (preços de material abaixo do contrato,
+// obra que perdeu o alvo) volta ao dono. Sem isso o capital reservado evaporava
+// com a remoção do projeto (dinheiro não conservado).
+void refund_project_reserved(WorldState& ws, const ConstructionProject& p) {
+	const double amount = std::max(0.0, p.reserved);
+	if (amount <= 0.0) {
+		return;
+	}
+	City* owner_city = nullptr;
+	for (City& city : ws.cities) {
+		if (city.id == p.city) {
+			owner_city = &city;
+			break;
+		}
+	}
+	if (p.owner == "state") {
+		if (owner_city != nullptr) {
+			owner_city->government_budget += amount;
+		} else {
+			ws.construction_cash += amount;
+		}
+		return;
+	}
+	if (p.owner == "private") {
+		if (owner_city != nullptr) {
+			owner_city->firm_cash += amount;
+		} else {
+			ws.construction_cash += amount;
+		}
+		return;
+	}
+	// Grupo F9: `national:<g>` / `foreign:<g>@<nação>`.
+	std::string group_id = p.owner;
+	const std::string national = "national:";
+	const std::string foreign = "foreign:";
+	if (group_id.rfind(national, 0) == 0) {
+		group_id = group_id.substr(national.size());
+	} else if (group_id.rfind(foreign, 0) == 0) {
+		group_id = group_id.substr(foreign.size());
+		const std::size_t at = group_id.find('@');
+		if (at != std::string::npos) {
+			group_id = group_id.substr(0, at);
+		}
+	} else {
+		group_id.clear();
+	}
+	for (Group& group : ws.groups) {
+		if (!group_id.empty() && group.id == group_id) {
+			group.cash += amount;
+			return;
+		}
+	}
+	// Dono não localizado: o saldo fica no setor de construção (dinheiro do
+	// mundo), nunca desaparece.
+	ws.construction_cash += amount;
+}
+
 // Materializa o prédio de uma obra concluída (ou soma capacidade numa expansão).
 // O dinheiro já foi pago ao longo da obra; aqui só entra a operação.
-void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
+void complete_project(WorldState& ws, const ConstructionProject& p) {
+	// O saldo não gasto do fundo volta ao dono (conservação entre o débito na
+	// abertura e a remoção do projeto).
+	refund_project_reserved(ws, p);
 	// HOUSING (§19 W3 / fatia A2): a obra entrega UNIDADES de moradia ao
 	// estoque da cidade e à posse do dono — não materializa prédio.
 	if (p.kind == CONSTRUCTION_HOUSING) {
@@ -218,10 +294,45 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 		urban_land::apply_completed_project(ws, p);
 		return;
 	}
+	// G2: obra de ARMAZÉM — soma capacidade ao site agregado do dono (governo
+	// ou privado). Não materializa prédio.
+	if (p.kind == CONSTRUCTION_STORAGE) {
+		apply_completed_storage_project(ws, p);
+		return;
+	}
+	// B5: obra de infra da região — sobe UM nível do tipo (estrada/energia/
+	// água) na região da cidade. Não materializa prédio.
+	if (p.kind == CONSTRUCTION_REGION_INFRA) {
+		for (City& city : ws.cities) {
+			if (city.id == p.city) {
+				SimCore::infra_level_up(city.region, p.infra_type);
+				break;
+			}
+		}
+		return;
+	}
 	if (p.expand_existing) {
-		for (DemoBuilding& building : ws.buildings) {
+		for (Building& building : ws.buildings) {
 			if (building.id == p.building_id && building.city == p.city) {
+				const double old_capacity = std::max(1e-9, building.capacity);
 				building.capacity += std::max(0.0, p.capacity);
+				// D-086: aprofundamento — abre o estágio novo na MESMA mina, usando
+				// a reserva de REFERÊNCIA da jazida (não o saldo restante), e volta
+				// a produzir 100% enquanto ela durar. A folha/opex sobem na mesma
+				// proporção da capacidade (a mina reaberta volta a operar cheia).
+				if (p.deepen_stage >= 0) {
+					for (City& city : ws.cities) {
+						if (city.id != p.city) {
+							continue;
+						}
+						SimCore::set_mine_stage(city, building, p.deepen_stage);
+						const double scale = building.capacity / old_capacity;
+						building.jobs *= scale;
+						building.opex *= scale;
+						building.loss_days = 0;
+						break;
+					}
+				}
 				return;
 			}
 		}
@@ -229,7 +340,7 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 		// dinheiro já saiu do dono e foi pago a material/serviço — conservado.
 		return;
 	}
-	DemoBuilding building;
+	Building building;
 	building.id = p.building_id;
 	building.city = p.city;
 	building.kind = 0;
@@ -241,11 +352,11 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 	building.capacity = std::max(0.0, p.capacity);
 	building.input_per_output = p.input_per_output;
 	building.capital_per_capacity = p.capacity > 0.0
-		? std::max(1.0, p.total_cost / p.capacity) : kDemoCapitalPerCapacity;
+		? std::max(1.0, p.total_cost / p.capacity) : kCapitalPerCapacity;
 	building.jobs = std::max(0.0, p.jobs);
 	building.wage = std::max(0.0, p.wage);
 	building.opex = std::max(0.0, p.opex);
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		building.education_mix[level] = p.education_mix[level];
 	}
 	building.local_share = std::clamp(p.local_share, 0.0, 1.0);
@@ -259,9 +370,18 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 		building.last_utilization = 0.25;
 	}
 	// Carência de falência (empresa nova real, §15): a planta construída não é
-	// avaliada por prejuízo durante os primeiros kDemoRampDays de operação — o
+	// avaliada por prejuízo durante os primeiros kRampDays de operação — o
 	// capital da obra é investimento, não prejuízo operacional.
-	building.ramp_days = kDemoRampDays;
+	building.ramp_days = kRampDays;
+	// D-086: mina concluída abre o estágio 0 (fatia da reserva da jazida).
+	for (City& city : ws.cities) {
+		if (city.id == building.city) {
+			if (SimCore::is_mine_building(city, building)) {
+				SimCore::set_mine_stage(city, building, 0);
+			}
+			break;
+		}
+	}
 	ws.buildings.push_back(building);
 }
 } // namespace
@@ -270,7 +390,7 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 // um orçamento diário de obra (trabalhadores do setor de construção ×
 // produtividade); cada projeto consome materiais do mercado local, paga o dono
 // conforme avança e conclui quando o prazo fecha.
-void SimCore::demo_tick_construction() {
+void SimCore::tick_construction() {
 	if (ws_.construction_projects.empty()) {
 		return;
 	}
@@ -281,20 +401,22 @@ void SimCore::demo_tick_construction() {
 	// (sector_workers ainda 0).
 	std::vector<double> capacity(ws_.cities.size(), 0.0);
 	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
-		const double workers = std::max(kDemoConstructionWorkerFloor,
+		const double workers = std::max(kConstructionWorkerFloor,
 			ws_.cities[index].sector_workers[1]);
-		capacity[index] = workers * kDemoConstructionValuePerWorkerDay;
+		capacity[index] = workers * kConstructionValuePerWorkerDay;
 	}
 
 	std::vector<std::size_t> completed;
 	for (std::size_t index = 0; index < ws_.construction_projects.size(); ++index) {
-		DemoConstructionProject& project = ws_.construction_projects[index];
+		ConstructionProject& project = ws_.construction_projects[index];
 		project.paused = false;
 		project.pause_reason.clear();
 
-		DemoCity* city = find_demo_city(project.city);
+		City* city = find_city(project.city);
 		if (city == nullptr) {
-			// Cidade sumiu (não deveria): descarta a obra sem pagar.
+			// Cidade sumiu (não deveria): descarta a obra devolvendo o fundo ao
+			// setor de construção (dinheiro conservado).
+			ws_.construction_cash += std::max(0.0, project.reserved);
 			completed.push_back(index);
 			continue;
 		}
@@ -303,7 +425,7 @@ void SimCore::demo_tick_construction() {
 
 		// Necessidades diárias de material (taxa constante: completa no prazo).
 		double day_material_cost = 0.0;
-		double need[kDemoMaxConstructionMaterials] = {};
+		double need[kMaxConstructionMaterials] = {};
 		bool short_material = false;
 		for (int m = 0; m < project.material_count; ++m) {
 			const int product = project.materials[m];
@@ -312,11 +434,11 @@ void SimCore::demo_tick_construction() {
 			}
 			need[m] = project.material_qty[m]
 				/ std::max(1, project.duration_days);
-			DemoMarket& market = city->markets[product];
+			Market& market = city->markets[product];
 			if (market.stock + 1e-9 < need[m]) {
 				short_material = true;
 				project.pause_reason = std::string("sem material: ")
-					+ demo_product_name(product);
+					+ product_name(product);
 				break;
 			}
 			day_material_cost += need[m]
@@ -359,13 +481,14 @@ void SimCore::demo_tick_construction() {
 			if (product < 0 || product >= ws_.products) {
 				continue;
 			}
-			DemoMarket& market = city->markets[product];
+			Market& market = city->markets[product];
 			const double bought = need[m];
 			const double paid = bought * std::max(1e-9, market.price);
 			market.stock -= bought;
 			market.demand += bought;
 			market.sold += bought;
 			market.desired += bought;
+			market.effective += bought;
 			city->firm_cash += paid;
 			city->revenue_by_product[product] += paid;
 			project.material_delivered[m] += bought;
@@ -380,7 +503,7 @@ void SimCore::demo_tick_construction() {
 		}
 
 		if (project.days_elapsed >= project.duration_days) {
-			demo_complete_project(ws_, project);
+			complete_project(ws_, project);
 			completed.push_back(index);
 		}
 	}

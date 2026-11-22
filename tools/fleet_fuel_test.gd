@@ -15,7 +15,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/fleet_fuel_test.gd
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
-const DEMO_NATION := "DEMO"
+const SCENARIO_NATION := "DEMO"
 
 var _failures: Array[String] = []
 
@@ -27,17 +27,17 @@ func _init() -> void:
 		_finish()
 		return
 	var sim = EconomySim.new()
-	sim.demo_set_goods(goods)
-	sim.initialize_demo()
+	sim.set_goods(goods)
+	sim.initialize_scenario()
 
 	# Aquecimento: produção/estoque e o primeiro pedido de trigo.
 	for _day in 4:
-		sim.tick_demo()
-	var warm: Dictionary = sim.get_demo_status()
+		sim.tick_day()
+	var warm: Dictionary = sim.get_status()
 	if _order_count(warm) <= 0:
 		_fail("cenário AGRIA/PORTUS não gerou pedido no aquecimento")
 
-	var derived: Dictionary = sim.demo_get_fleet(DEMO_NATION)
+	var derived: Dictionary = sim.get_fleet(SCENARIO_NATION)
 	if String(derived.get("source", "")) != "derived":
 		_fail("frota inicial deveria ser derivada (source=%s)" % [
 			String(derived.get("source", "?"))])
@@ -49,11 +49,11 @@ func _init() -> void:
 		float(derived.get("spare_parts", 0.0))])
 
 	# 1. Sem frota: nenhum pedido terrestre sai (fuel disponível).
-	sim.demo_set_fleet(DEMO_NATION, 0.0, 0.0, 0.0, 100000.0, 100.0)
-	var no_fleet: Dictionary = sim.tick_demo()
+	sim.set_fleet(SCENARIO_NATION, 0.0, 0.0, 0.0, 100000.0, 100.0)
+	var no_fleet: Dictionary = sim.tick_day()
 	if _order_count(no_fleet) > 0:
 		_fail("embarcou %d pedidos sem frota" % _order_count(no_fleet))
-	var fleet_after_block: Dictionary = sim.demo_get_fleet(DEMO_NATION)
+	var fleet_after_block: Dictionary = sim.get_fleet(SCENARIO_NATION)
 	if float(fleet_after_block.get("queue_today", 0.0)) <= 0.0:
 		_fail("fila não registrou a carga barrada por falta de frota")
 	print("[fleet] sem frota: pedidos=%d fila=%.1f t (sem_veiculo=%.1f)" % [
@@ -61,11 +61,11 @@ func _init() -> void:
 		float(fleet_after_block.get("missed_no_fleet", 0.0))])
 
 	# 2. Frota, mas sem combustível: não embarca.
-	sim.demo_set_fleet(DEMO_NATION, 50.0, 5.0, 5.0, 0.0, 100.0)
-	var no_fuel: Dictionary = sim.tick_demo()
+	sim.set_fleet(SCENARIO_NATION, 50.0, 5.0, 5.0, 0.0, 100.0)
+	var no_fuel: Dictionary = sim.tick_day()
 	if _order_count(no_fuel) > 0:
 		_fail("embarcou %d pedidos sem combustível" % _order_count(no_fuel))
-	var fleet_no_fuel: Dictionary = sim.demo_get_fleet(DEMO_NATION)
+	var fleet_no_fuel: Dictionary = sim.get_fleet(SCENARIO_NATION)
 	if float(fleet_no_fuel.get("missed_no_fuel", 0.0)) <= 0.0:
 		_fail("fila não registrou a carga barrada por falta de combustível")
 	print("[fleet] sem fuel: pedidos=%d fila=%.1f t (sem_fuel=%.1f)" % [
@@ -73,17 +73,17 @@ func _init() -> void:
 		float(fleet_no_fuel.get("missed_no_fuel", 0.0))])
 
 	# 3. Frota + combustível: o pedido volta a embarcar.
-	sim.demo_set_fleet(DEMO_NATION, 50.0, 5.0, 5.0, 100000.0, 100.0)
-	var with_fleet: Dictionary = sim.tick_demo()
+	sim.set_fleet(SCENARIO_NATION, 50.0, 5.0, 5.0, 100000.0, 100.0)
+	var with_fleet: Dictionary = sim.tick_day()
 	if _order_count(with_fleet) <= 0:
 		_fail("não embarcou com frota e combustível disponíveis")
 	print("[fleet] com frota: pedidos=%d" % _order_count(with_fleet))
 
 	# 4. Compra de veículo no mercado interno aumenta a capacidade.
-	sim.demo_set_market_stock("AGRIA", "truck", 20.0)
-	var before_buy: Dictionary = sim.demo_get_fleet(DEMO_NATION)
-	var buy: Dictionary = sim.demo_fleet_buy(DEMO_NATION, "truck", 4.0)
-	var after_buy: Dictionary = sim.demo_get_fleet(DEMO_NATION)
+	sim.set_market_stock("AGRIA", "truck", 20.0)
+	var before_buy: Dictionary = sim.get_fleet(SCENARIO_NATION)
+	var buy: Dictionary = sim.fleet_buy(SCENARIO_NATION, "truck", 4.0)
+	var after_buy: Dictionary = sim.get_fleet(SCENARIO_NATION)
 	print("[fleet] compra truck: bought=%.2f spent=%.2f trucks %.2f -> %.2f" % [
 		float(buy.get("bought", 0.0)), float(buy.get("spent", 0.0)),
 		float(before_buy.get("trucks", 0.0)), float(after_buy.get("trucks", 0.0))])
@@ -94,16 +94,16 @@ func _init() -> void:
 		_fail("compra de truck não aumentou a frota")
 	if float(after_buy.get("capacity_tons", 0.0)) <= float(before_buy.get("capacity_tons", 0.0)):
 		_fail("compra de truck não aumentou a capacidade")
-	var demand_status: Dictionary = sim.get_demo_status()
+	var demand_status: Dictionary = sim.get_status()
 	if _market_demand(sim, demand_status, "truck") <= 0.0:
 		_fail("compra de truck não apareceu como demanda no mercado")
 
 	# 5. Desgaste: um mês sem peças reduz a saúde/capacidade efetiva.
-	sim.demo_set_fleet(DEMO_NATION, 100.0, 10.0, 2.0, 100000.0, 0.0)
-	var before_wear: Dictionary = sim.demo_get_fleet(DEMO_NATION)
+	sim.set_fleet(SCENARIO_NATION, 100.0, 10.0, 2.0, 100000.0, 0.0)
+	var before_wear: Dictionary = sim.get_fleet(SCENARIO_NATION)
 	for _day in 30:
-		sim.tick_demo()
-	var after_wear: Dictionary = sim.demo_get_fleet(DEMO_NATION)
+		sim.tick_day()
+	var after_wear: Dictionary = sim.get_fleet(SCENARIO_NATION)
 	var health: Array = after_wear.get("health", [])
 	var truck_health: float = float(health[0]) if health.size() > 0 else 1.0
 	print("[fleet] desgaste 30 d sem peças: health=%.3f capacidade=%.0f -> %.0f" % [

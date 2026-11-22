@@ -66,8 +66,11 @@ bool zone_has_room(const WorldState& ws, std::size_t city_index, int zone,
 // Registra uma decisão barrada pela falta de espaço (sinal para a prefeitura).
 void signal_zone_demand(CityLand& land, int zone);
 
-// Fase mensal (dia múltiplo de kDemoUrbanMonthDays): preço da terra por zona e
+// Fase mensal (dia múltiplo de kUrbanMonthDays): preço da terra por zona e
 // decadência do sinal de demanda. Não move dinheiro; só lê o mundo.
+// A6: hoje a fase e ESCALONADA por cidade ((dia - indice) %
+// cadence.monthly_period == 0); a linha acima descreve o calendario antigo
+// (dia global), mantida como registro.
 void phase_month(WorldState& ws);
 
 // ---------------------------------------------------------------------------
@@ -98,7 +101,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 
 // Conclusão de uma obra §15 de infraestrutura urbana (chamada por
 // construction.cpp no lugar da materialização do prédio).
-void apply_completed_project(WorldState& ws, const DemoConstructionProject& project);
+void apply_completed_project(WorldState& ws, const ConstructionProject& project);
 
 } // namespace urban_land
 } // namespace ogs

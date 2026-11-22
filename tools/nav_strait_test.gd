@@ -40,6 +40,28 @@ const PORTS := [
 	# Algeciras (r7): o porto fica na Baía de Gibraltar, a ~1 km do centro; a
 	# semente é o mar aberto do Estreito, a sul da baía.
 	["ESP-ALG", Vector2(-5.441, 36.128), Vector2(-5.45, 35.95)],
+	# Singapura (r9, 2026-11-17): a cidade-estado não tinha porto no cenário e
+	# ficava sem rota marítima (única cidade da landmass `singapore`). O cais é
+	# Tanjong Pagar, na costa sul voltada para o Estreito de Singapura; a semente
+	# é o mar aberto a leste do estreito (mar da China Meridional).
+	["SGP-SIN", Vector2(103.8544, 1.2626), Vector2(105.0, 1.3)],
+	# r10 (recal3, 2026-11-17): o porto principal das 14 nações-ilha/costeiras
+	# que estavam sem porto. Par (cais, semente de mar aberto) medido no
+	# nav_mask: os dois no componente principal e o cais a ≤ 9,8 km de terra.
+	["PHL-MAN", Vector2(120.9600, 14.5900), Vector2(119.6000, 14.5000)],
+	["CUB-HAV", Vector2(-82.3700, 23.1450), Vector2(-82.6000, 23.3000)],
+	["NZL-AUC", Vector2(174.7769, -36.8438), Vector2(175.1000, -36.6000)],
+	["MDG-TOA", Vector2(49.4267, -18.1553), Vector2(49.9000, -18.0000)],
+	["JAM-KIN", Vector2(-76.8000, 17.9500), Vector2(-76.5000, 17.7500)],
+	["LKA-COL", Vector2(79.8447, 6.9528), Vector2(79.4000, 6.8000)],
+	["BHS-NAS", Vector2(-77.3466, 25.0791), Vector2(-77.6000, 25.0000)],
+	["FJI-SUV", Vector2(178.4250, -18.1350), Vector2(178.9000, -18.3000)],
+	["TTO-POR", Vector2(-61.5200, 10.6600), Vector2(-61.0000, 10.7000)],
+	["BRB-BRI", Vector2(-59.6131, 13.0969), Vector2(-60.0000, 13.1000)],
+	["SLB-HON", Vector2(159.9556, -9.4319), Vector2(160.5000, -9.4000)],
+	["BHR-MAN", Vector2(50.6200, 26.2000), Vector2(50.9000, 26.4000)],
+	["QAT-DOH", Vector2(51.6020, 25.0150), Vector2(51.9000, 25.2000)],
+	["BRN-BAN", Vector2(115.0705, 5.0242), Vector2(115.4000, 5.2000)],
 ]
 ## Distância máxima (células finas) do cais até a água do componente principal:
 ## o porto tem de alcançar o mar, não uma lagoa/enseada isolada. Medido em

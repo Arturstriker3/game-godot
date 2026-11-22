@@ -24,16 +24,29 @@ add_subdirectory(
     EXCLUDE_FROM_ALL
 )
 
-add_library(economy_gdextension SHARED
-    src/register_types.cpp
-    src/economy_sim.cpp
+# ---------------------------------------------------------------------------
+# opengs_sim — o núcleo da simulação como biblioteca estática C++ pura (A1a).
+# STL e o nlohmann vendorizado apenas: NADA de godot-cpp aqui, para que um
+# executável headless (CLI) rode o mundo com a mesma ordem do dia. A DLL do
+# Godot consome esta biblioteca e só converte tipos na borda (edge/).
+# ---------------------------------------------------------------------------
+add_library(opengs_sim STATIC
     src/sim/profiling.cpp
     src/sim/sim_core.cpp
+    src/sim/sim_day.cpp
+    src/sim/exchange.cpp
     src/sim/freight.cpp
     src/sim/logistics.cpp
     src/sim/trade.cpp
     src/sim/production.cpp
-    src/sim/prices.cpp
+    src/sim/agriculture.cpp
+    src/sim/balance.cpp
+    src/sim/bank.cpp
+    src/sim/bank_crisis.cpp
+    src/sim/stock.cpp
+    src/sim/central_bank.cpp
+    src/sim/monetary.cpp
+    src/sim/storage.cpp    src/sim/prices.cpp
     src/sim/consumption.cpp
     src/sim/labor.cpp
     src/sim/services.cpp
@@ -41,14 +54,50 @@ add_library(economy_gdextension SHARED
     src/sim/fx.cpp
     src/sim/investment.cpp
     src/sim/construction.cpp
+    src/sim/demography.cpp
+    src/sim/strata.cpp
+    src/sim/region.cpp
+    src/sim/migration.cpp
+    src/sim/property.cpp
     src/sim/urban_land.cpp
     src/sim/city_gov.cpp
     src/sim/housing.cpp
+    src/sim/informality.cpp
     src/sim/scenario_fixture.cpp
-    src/edge/save_load.cpp
+    src/sim/commands.cpp
+    src/sim/actions.cpp
+    src/sim/ai/ai_templates.cpp
+    src/sim/ai/ai_view.cpp
+    src/sim/ai/ai_private.cpp
+    src/sim/ai/ai_group.cpp
+    src/sim/ai/ai_government.cpp
+    src/sim/ai/ai_storage.cpp
+    src/sim/ai/ai_phase.cpp
+    src/sim/save_value.cpp
+    src/sim/save_state.cpp
+    src/sim/save_definitions.cpp
 )
 
-target_link_libraries(economy_gdextension PRIVATE godot-cpp)
+target_include_directories(opengs_sim PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+set_target_properties(opengs_sim PROPERTIES
+    CXX_EXTENSIONS OFF
+    # A estática entra na DLL compartilhada: precisa de PIC.
+    POSITION_INDEPENDENT_CODE ON
+)
+
+# ---------------------------------------------------------------------------
+# economy_gdextension — a DLL do Godot: registra a classe e faz a ponte de
+# tipos (edge/). O resto (sim/) vem de opengs_sim.
+# ---------------------------------------------------------------------------
+add_library(economy_gdextension SHARED
+    src/register_types.cpp
+    src/economy_sim.cpp
+    src/edge/save_load.cpp
+    src/edge/value_bridge.cpp
+)
+
+target_link_libraries(economy_gdextension PRIVATE godot-cpp opengs_sim)
 
 # Perfil por fase do tick (src/sim/profiling.h): só no build de desenvolvimento.
 # Em release OGS_PROFILING não é definido e as macros OGS_SIM_* expandem para
@@ -59,8 +108,12 @@ target_link_libraries(economy_gdextension PRIVATE godot-cpp)
 # continua sem perfil e o perfil adiciona só um relógio por fase por dia.
 # Use uma pasta própria (gdextension/build-profile-release) — ela escreve a DLL
 # no mesmo nome template_release do build normal.
+#
+# Vale para os DOIS alvos: o perfil vive no núcleo (opengs_sim) e as macros de
+# escopo também aparecem na fachada.
 option(OGS_PROFILE_RELEASE "Liga o perfil por fase (OGS_PROFILING) no build Release" OFF)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR OGS_PROFILE_RELEASE)
+    target_compile_definitions(opengs_sim PRIVATE OGS_PROFILING)
     target_compile_definitions(economy_gdextension PRIVATE OGS_PROFILING)
 endif()
 
@@ -81,4 +134,24 @@ set_target_properties(economy_gdextension PROPERTIES
 # Runtime C++ estático no MinGW: a DLL não exige libstdc++/libgcc ao lado.
 if(MINGW)
     target_link_options(economy_gdextension PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+
+# ---------------------------------------------------------------------------
+# opengs_sim_cli — executável headless (A1): roda N dias SÓ do núcleo a partir
+# de um snapshot JSON e grava o mundo resultante no MESMO formato, para a
+# comparação campo a campo contra o replay do Godot
+# (tools/world_equivalence_compare.py). Não usa godot-cpp: linka só opengs_sim.
+# ---------------------------------------------------------------------------
+add_executable(opengs_sim_cli src/cli/main.cpp)
+
+target_link_libraries(opengs_sim_cli PRIVATE opengs_sim)
+
+set_target_properties(opengs_sim_cli PROPERTIES
+    CXX_EXTENSIONS OFF
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin"
+)
+
+# Runtime C++ estático no MinGW: o .exe roda sem libstdc++/libgcc ao lado.
+if(MINGW)
+    target_link_options(opengs_sim_cli PRIVATE -static -static-libgcc -static-libstdc++)
 endif()

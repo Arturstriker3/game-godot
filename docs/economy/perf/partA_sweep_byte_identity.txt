@@ -1,0 +1,20 @@
+Prova de que o merge A6/A4 nao moveu o mundo (sweep 365 d, 2026-11-17).
+
+Relatorios POR VARIANTE (user://world_sweep/), SHA-256:
+  00c764e9795228287afe40db1228abb64847b3c65fbf34bf030b85a1d93e64b0  partA_real_365.json
+  00c764e9795228287afe40db1228abb64847b3c65fbf34bf030b85a1d93e64b0  a6_real_365.json
+  21cf109c3e09779ad556a9aabc4030d58ebf91fb53a8f656745dd063daf53b5a  partA_float_365.json
+  21cf109c3e09779ad556a9aabc4030d58ebf91fb53a8f656745dd063daf53b5a  a6_float_365.json
+
+Comando:
+  powershell -NoProfile -ExecutionPolicy Bypass -File tools/s19_world_sweep_parallel.ps1 `
+    -Days 365 -Variants real,float -OutPrefix partA_ `
+    -Baseline res://docs/economy/perf/main_a7_world_sweep.json
+  Get-FileHash <os quatro arquivos> -Algorithm SHA256
+
+O agregado versionado `partA_world_sweep.json` NAO e byte-identico ao
+`a6_world_sweep.json`: o meta carrega campos derivados da rodada (prefixo,
+money_drift e probe) e o bloco `nations` e identico. O conteudo por
+nacao/portao e o mesmo (9 falencias, drift 0,0002,
+nenhuma nacao acima do portao de comida de 30 d, trajectory_hash e5ecfc5b... e
+sonda float 750ce5b2...).

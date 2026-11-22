@@ -116,6 +116,23 @@ Objetivo: sair de "1 POP por cidade" para **coortes**, sem simular indivíduos.
     de infraestrutura rural (luz, água, estrada). O §19 (solo, aluguel, prefeitura) vale só para o urbano.
   - **Consumo:** autoconsumo de comida fora do mercado e sem frete; o resto no mercado da cidade, com
     custo de acesso que cai com a estrada. Acesso menor a saúde/educação.
+- **Cidade + Região (decisão final do dono, 2026-11-17; substitui "interior dividido" e "três segmentos"):**
+  2 blocos por cidade. A **Região** é um bloco só (cidades pequenas + campo, toda a população fora da
+  aglomeração; dado em data/definitions/population/hinterland_2026.json), SEM mercado de solo/moradia e
+  SEM prefeitura própria — a simulação urbana completa existe só na cidade. A urbanização real da nação
+  (~57% vs ~26% coberto pelas aglomerações) define apenas o MIX de empregos da Região (agro/mineração/
+  madeira × indústria leve/serviços locais). Ressalvas de dado: regiões enormes (ex.: Patna 226 M);
+  7 aglomerações maiores que a região ficam com Região 0.
+- **Região = ESTADOS INTEIROS (decisão do dono, opção 1):** a região de cada cidade passa a ser um ou mais
+  estados (admin-1) completos, seguindo a divisa real, em vez de "província → cidade mais próxima". A cidade
+  é a principal do estado; estado sem cidade no roster se junta ao estado vizinho com cidade (mesma nação).
+  Sem cidades novas, sem custo de perf. Regiões com nome real (São Paulo, Bihar, Texas). Opção 3 APROVADA
+  junto da B3: capitais extras só para estados grandes sem cidade (Índia/China sobretudo; ex.: Kolkata 242 M,
+  Guangzhou 238 M).
+- **Papel de gameplay da Região:** é a camada de TERRITÓRIO da cidade — onde ficam terra, jazidas, usinas
+  (Parte E), malha de transporte (Parte F), cobertura de luz/água (E7), base de recrutamento e, no futuro,
+  o território ocupado na guerra. Alavancas do jogador por região: estrada/ferrovia, eletrificação e
+  água, programas agrícolas, concessões de mineração, usinas. Modo de mapa por região.
 - Rótulo do mapa continua mostrando a aglomeração; a ficha mostra também o total da região.
 - **Recalibração grande** (~6,5× consumidores): fase própria, sweep dedicado, goldens refeitos.
 - Aceite: população nacional simulada = dado real; fatia de emprego agrícola cai com a renda do país;
@@ -132,6 +149,134 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 
 ---
 
+### B5 — Gameplay da Região/Estado (aprovado pelo dono, 2026-11-17)
+- **Logo após a B3:** (1) infraestrutura do estado — estrada, luz, água (custo de acesso, produtividade,
+  êxodo); (2) concessões de mineração e terra pelo sistema de grupos F9 (privatizar/estatizar/estrangeiro).
+- **Planos futuros aprovados:** (3) desigualdade regional + transferência do governo central a estados
+  pobres; (4) êxodo para a capital com efeito em favela/aluguel; (5) eventos por estado com dado real
+  (seca/quebra de safra, esgotamento de mina, boom de commodity); (6) instabilidade por estado (com
+  política) e ocupação de estados na guerra.
+- **Evitar:** prédio a prédio no estado, preço separado por estado, mercado imobiliário prédio a prédio no campo (o patrimônio agregado da região entra na B6).
+
+
+### B6 — Patrimônio imobiliário da região (terra + moradia, extensão da cidade) — aprovado pelo dono, 2026-11-18
+- **Objetivo:** dar patrimônio real às pops do interior (6,1 bi) e ligar riqueza a terra/moradia; base para a Parte C (garantia, hipoteca, crédito rural).
+- **Modelo (agregado por região, cadência mensal):**
+  - **Terra produtiva:** hectares × valor que segue a renda das fazendas/minas da região, a infra da B5 (estrada/luz/água) e o preço das commodities (boom sobe, seca/quebra derruba).
+  - **Moradia:** estoque, preço e aluguel por região; **anel periurbano** ligado ao preço da cidade-polo, descontado por distância/estrada. Quando a moradia da cidade lota (limite da B4), o excedente vai para o anel (periferia/favela — absorve o item 4 da B5).
+  - **Propriedade por quintil (B2):** concentração de terra (latifúndio × pequeno produtor) entra no patrimônio e no Gini.
+- **Efeitos:** riqueza e desigualdade do interior; valorização por obra de infra (imposto sobre imóvel/terra como receita do Estado); migração B4 passa a pesar aluguel do anel × cidade; pronto para virar garantia na C1/C4.
+- **Evitar:** prédio a prédio no campo, construtoras no campo, compra e venda individual. (A regra antiga "sem mercado imobiliário no campo" passa a ser "sem mercado prédio a prédio no campo".)
+- **Ordem:** depois do marco M2, desenhada junto com C1 (balanço) para o patrimônio já nascer como ativo.
+- **Requisitos:** conservação de dinheiro, save novo com migração, testes (valorização por infra, transbordo para o anel, conservação), goldens, CLI×Godot, 365 d, bench.
+
+### B7 — Informalidade, serviços informais, mortalidade e insatisfação — aprovado pelo dono, 2026-11-18
+- **Trabalho informal:** fração informal da força de trabalho por quintil e por cidade/região (dado real com fonte — ex.: OIT, emprego informal por país; sem dado → parâmetro declarado). Informal não paga imposto de renda nem contribuição, ganha menos, é o primeiro a perder renda na crise e não tem proteção. Formalização sobe com renda, educação, infra e fiscalização.
+- **Serviços informais:** setor próprio onde esses trabalhadores atuam — comércio ambulante, transporte informal, construção/reforma informal, serviços pessoais e domésticos. Mais barato, sem imposto, produtividade menor, consumido principalmente pelos quintis de baixo (cidade, anel periurbano da B6 e região). Concorre com o serviço formal; cresce quando o formal está caro ou falta emprego formal. Agregado por cidade/região, sem firma individual.
+- **Mortalidade ligada a comida e saúde:** a mortalidade das coortes (B1) deixa de ser só tabela fixa — sobe com falta de comida (food_avg) e de serviço de saúde, com peso maior em 0–14 e 65+; fome prolongada também empurra migração (B4). Tabela real continua sendo a base em situação normal.
+- **Insatisfação por quintil e região:** índice medido a partir de desemprego (peso jovem 15–24), aluguel/ônus de moradia, fome, inflação, desigualdade de terra (B6) e informalidade. Só medição e status agora; vira entrada da parte política (protesto, instabilidade, eleição) quando ela existir.
+- **Requisitos:** conservação de dinheiro e de pessoas, save novo com migração, testes, goldens, CLI×Godot, 365 d, bench.
+
+### Futuro (depende de leis/política e diplomacia)
+- **Previdência e aposentadoria** (coorte 65+ da B1, contribuição dos formais da B7, déficit fiscal, reforma como lei) — junto com a parte política/leis.
+- **Remessas e migração internacional, inclusive ilegal** — junto com política/diplomacia e fronteiras.
+
+---
+
+## PARTE G — Agricultura sazonal (base econômica; pedido do dono, 2026-11-18)
+- **Safra por época:** cada primário de comida (grãos, arroz, soja, cana, frutas, carne/leite com ciclo
+  próprio) tem calendário de plantio e colheita por hemisfério/clima (dado real com fonte, ex. calendários
+  de cultivo da FAO); a produção chega concentrada na colheita, não diária.
+- **Rendimento por hectare** (dado real por país/cultura) × área plantada da região (B3/B6); clima/seca
+  como variação (eventos por estado ficam para depois).
+- **Armazenagem e estoque:** colheita enche o estoque, consumo esvazia ao longo do ano; perda por
+  armazenagem ruim (infra B5); preço sobe na entressafra e cai na colheita.
+- **Cadeia alimentar:** comprar comida básica (primário) → processar (moinho, frigorífico, laticínio,
+  indústria de alimentos) → produto que rende mais/dura mais; importador decide comprar primário e
+  processar ou comprar processado.
+- **Insumos:** fertilizante (liga com gás/energia — Parte E), sementes, diesel/maquinário.
+- **Efeito esperado:** resolve de forma realista a dívida de comida do interior (B3) e dá dinâmica de
+  estoque, entressafra e especulação.
+- **Requisitos:** conservação, save novo, testes (safra chega na época, estoque atravessa a entressafra,
+  preço sazonal), goldens, CLI×Godot, 365 d (comida por país), bench.
+
+## PARTE G2 — Armazenagem, reserva nacional e camada nacional (aprovado pelo dono, 2026-11-19)
+- **Mercado continua por cidade** (estoque/preço próprios; comércio cidade↔cidade com frete e porto).
+  **Não criar mercado nacional** — a camada nacional é de leitura e política.
+- **6 tipos de armazém (construções, fila A3/§15, capacidade, obra, manutenção):**
+
+  | Armazém | Guarda | Onde |
+  |---|---|---|
+  | Silo graneleiro | trigo, arroz, milho, soja, ração, farelo, farinha | **Região** + porto |
+  | Câmara fria / frigorífico | carne, batata, perecíveis (precisa energia — Parte E) | **Cidade** + porto |
+  | Tanque de petróleo/combustíveis | petróleo, combustível, etanol, químicos líquidos | **Região** (campo/refinaria) + porto |
+  | Armazenagem de gás | gás | **Região** |
+  | Pátio de granéis | carvão, minérios, fosfato, enxofre, madeira, algodão | **Região** (mina) + porto |
+  | Armazém geral | semiprocessados e finais (aço, peças, roupas, ferramentas, remédios) | **Cidade** |
+
+  Especiais: **cofre** (ouro, diamante, urânio, terras raras — liga às reservas do BC, C2) na cidade;
+  **paiol militar** (munição/explosivos/ração de combate) fica para a economia de guerra.
+- **Dono:** governo (reserva nacional, fora de venda) **e privado** (produtor/cooperativa/comerciante guarda
+  para vender na entressafra — especulação real).
+- **Governo × privado no jogo:** governo guarda por segurança (compra na colheita, libera na entressafra/
+  crise/guerra; custo fiscal; alavanca contra fome/inflação; alvo militar). Privado guarda por lucro (compra
+  barato, vende caro; suaviza preço; enriquece a região com silo; pode especular na crise; grandes grupos
+  concentram poder). Escolha de país estatista × liberal.
+- **IA privada de armazém (C++, mesmo esquema de payback das minas):** (1) construir quando o spread
+  safra→entressafra × volume da região paga obra+manutenção+perda no prazo; (2) guardar/vender pela data
+  da próxima colheita (calendário da região) e pelo histórico de preço visto (sem bola de cristal — pode
+  errar); (3) especulação na crise emerge da regra (não é programada); perfis conservador × especulador;
+  cadência semanal/mensal por região/cidade; testes contra IA "burra" (nunca constrói) e "gananciosa"
+  (fome em tempo de paz).
+- **Região como pulmão da cidade-polo:** a colheita entra no silo da região e sai para o mercado da cidade
+  aos poucos, pagando o custo de acesso (estrada B5). Região com silo+estrada vende na entressafra; sem
+  silo, vende tudo na colheita barata — deve fazer a sazonalidade de preço aparecer.
+- **Reserva do governo:** comprar (tira do mercado local, segura preço na colheita) / liberar (devolve ao
+  mercado local; para outra cidade via logística). Perdas/perecibilidade pelos dados da G e infra B5.
+  Guerra: conquista captura, bombardeio destrói.
+- **Saldo da nação (leitura):** soma das reservas por produto, capacidade, dias de consumo cobertos.
+- **IPC nacional** e preço médio por produto (média das cidades ponderada pela cesta por quintil) — base de
+  inflação, BC (C2) e indicadores.
+- **Capacidade inicial:** dado real do país quando houver (capacidade de silos, reserva estratégica de
+  petróleo), senão regra declarada (meses de produção).
+- **Ordem:** logo depois da Parte G.
+- **Fica para amadurecer na Parte F (nós logísticos):** armazenagem no porto (pátio/armazém alfandegado/
+  tanque portuário) e no **aeroporto**, transbordo entre modos, custos de manuseio por tonelada, níveis de
+  volume — ver Parte F.
+
+## Formação de preço (diretriz do dono, 2026-11-18)
+- **Livre mercado com base heterodoxa realista**, sem teto fixo de preço:
+  - **Custo (piso):** trabalho + insumos + capital/energia por unidade — valor do trabalho e da cadeia.
+  - **Markup da firma** que se ajusta a estoque, ocupação e concorrência (precificação por custo + margem).
+  - **Demanda por preferência:** hierarquia de necessidades (tipo pirâmide de Maslow — básico → vida →
+    luxo, já presente nas classes de consumo B2), gosto/vontade por estrato e região, elasticidade-renda.
+  - **Oferta e demanda efetiva** como pressão final (não demanda desejada a plena capacidade).
+- **Âncora inicial leve:** preços do dia 0 ancorados em preços reais (como o câmbio), depois livres.
+- **Distorções do governo** (macro político): impostos, subsídios, controle de preço, tarifa, cota,
+  estoque regulador — geram fila, mercado negro e custo fiscal.
+
+## Ordem combinada com o dono (2026-11-18)
+1. **Terminar a base econômica:** B6 (patrimônio da região) e B7 (informalidade/serviços informais/
+   mortalidade/insatisfação) → **Parte G (agricultura sazonal)** → **G2 (armazéns, reserva nacional, IPC)** → Parte C (balanço, BC por moeda com
+   emissão/regimes/padrão monetário, bancos, **bolsa por país (C5) com confiança/expectativas** puxando
+   investimento e consumo) → E (energia) e F (transporte).
+2. **Fase H — Saúde do código (antes das telas; pedido do dono, 2026-11-18):**
+   - **H1 Modularizar:** quebrar `economy_sim.cpp` (>6.600 linhas) — ponte GDExtension fina, regra de jogo
+     em módulos do núcleo (`sim/…`) por sistema; zero mudança de resultado (goldens byte-idênticos).
+   - **H2 Desempenho:** bench canônico com host ocioso, perfil por fase e otimização das fases caras até
+     perto da meta da Parte A (≤15 ms/dia), sem mudar resultado.
+   - **H3 Bateria de testes:** consolidar a suíte (sem teste defasado, runner único com timeout por teste,
+     cenas × scripts), cobertura das fases B–G/C, CI local de um comando.
+3. **Telas:** desenhadas uma a uma com o dono (o que cada tela precisa mostrar), depois da Fase H; só então segue o macro político.
+4. **Macro político (próxima grande parte):** impostos e orçamento, subsídios e controle de preços,
+   balança de pagamentos e dívida externa refinadas, previdência, salário mínimo/leis.
+5. **Órgãos internacionais (com a diplomacia):** FMI (socorro com condições), agências de **rating de
+   crédito** (risco soberano → juro dos títulos), ONU, troca de hegemonia da moeda global, sanções,
+   blocos, geopolítica de bancos estrangeiros, remessas/migração internacional.
+- **Nomes:** bancos e empresas com **nomes genéricos/fictícios** (sem marcas reais, por direitos);
+  bancos centrais como "Banco Central de <país/moeda>"; ocupações informais com nome genérico + termo
+  local comum (camelô, mototáxi, boda-boda, tuk-tuk…).
+
 ## PARTE C — Sistema financeiro
 
 ### C1 — Contabilidade por balanço (novo invariante)
@@ -147,6 +292,32 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 - 1 banco agregado por nação: depósitos, empréstimos, reservas, capital. Juro = básico + risco.
 - Crédito a empresas e ao governo; **títulos públicos** substituem o crédito externo infinito.
 - O setor de serviço `finance` (já existe em `services.json`) vira a face de emprego/receita do banco.
+- **Regimes e padrão monetário (pedido do dono, 2026-11-18):**
+  - Regime cambial escolhível por moeda: **flutuante, fixo (peg), banda/administrado**; troca de regime é
+    decisão de política com custo (reservas, confiança).
+  - **BC independente × controlado pelo governo** (onde controlado, o jogador/IA mexe no juro e na emissão
+    direto; independente segue regra própria, ex. meta de inflação).
+  - **Padrão monetário internacional** como estado do mundo: fiduciário (início), **Bretton Woods**
+    (moedas presas à moeda-âncora, âncora presa ao ouro) ou **padrão ouro** (emissão limitada às reservas).
+  - **Reservas** de cada BC: ouro + moeda(s) de reserva; a **moeda de reserva/comércio global** começa no
+    dólar (tende a ser a da maior economia) — mudança de hegemonia (outro país assumir) fica como **evento
+    futuro** (ONU/diplomacia).
+  - **Ouro é mercadoria física:** reserva de ouro do BC é estoque comprado no mercado mundial (ou de mina
+    própria) — compete com joalheria/indústria e mexe no preço; não some, só muda de dono. Reservas iniciais
+    por país com dado real e fonte (ex. World Gold Council). No padrão ouro/Bretton Woods, déficit
+    comercial drena ouro e força contração; país com mina de ouro ganha alavanca. Hoje o ouro está entre
+    os minerais de nicho com teto fixo (D-083) — revisar quando entrar.
+- **Emissão de moeda (pedido do dono, 2026-11-18):**
+  1. **Base monetária (M0)** criada pelo BC ao comprar títulos públicos, emprestar aos bancos ou financiar
+     o Tesouro direto (monetização do déficit) — registrada como passivo do BC (invariante da C1).
+  2. **M1/M2 emergem do crédito**: empréstimo bancário vira depósito; multiplicador sai do comportamento
+     dos bancos (não fórmula fixa). Alavancas: juro básico e compulsório.
+  3. **Inflação e câmbio** ligados à moeda × produção: emissão demais → inflação e desvalorização (dá
+     sentido ao câmbio flutuante; hoje todas as moedas estão em peg).
+  4. **Senhoriagem com limite**: imprimir alivia o governo no curto prazo e cobra em inflação; caso
+     extremo, hiperinflação.
+  5. **Zona de moeda única** (euro, CFA, dolarizados): o país não emite sozinho; sair da zona devolve a
+     emissão com choque de câmbio e de confiança (liga com blocos futuros).
 - Aceite: importadores sem caixa (DJI/SOL/MRT/UZB) financiam comida por crédito, com limite;
   `foreign_cash` sem crédito infinito.
 
@@ -168,6 +339,19 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 
 ### C6 — Crise e contágio
 - Corrida e falência bancária, resgate, exigência de capital, controle de capitais.
+- **Recuperação/resolução de bancos (pedido do dono, 2026-11-18)** — hierarquia BC (por moeda) →
+  bancos público, privado e estrangeiro (por nação, C4):
+  - **Liquidez:** BC como emprestador de última instância (banco solvente sem caixa, com garantia e juro
+    punitivo).
+  - **Seguro de depósito** (tipo FGC): fundo pago pelos bancos; protege depositantes até um teto.
+  - **Solvência:** resgate pelo Tesouro (bail-out, vira dívida pública), bail-in (credores/acionistas
+    perdem), fusão forçada com banco saudável, estatização, ou liquidação.
+  - **Banco público:** capitalizado pelo Tesouro (custo fiscal; pode ser usado para crédito dirigido e
+    acumular perda). **Banco estrangeiro:** a matriz **só remete** (fuga de capital na corrida) — socorro
+    pela matriz não é modelado; o abandono é a remessa antes do saque.
+  - Em zona de moeda única o BC é comum: socorro depende do bloco, não só do país.
+  - Aceite: falência de banco gera perda para alguém (depositante acima do teto, credor, acionista ou
+    Tesouro) — nunca dinheiro que some; invariante da C1 fecha em toda crise.
 
 **Alavancas rurais (Parte B):** estrada e eletrificação rural, subsídio/preço mínimo agrícola, reforma
 agrária, crédito rural (banco público, C4), aposentadoria rural, cobertura de escola e saúde.
@@ -182,6 +366,14 @@ abertura da bolsa a estrangeiros.
 
 Hoje não existe: `sim_constants.h` registra que energia não tem preço próprio no núcleo. Já existem os
 combustíveis (`coal`, `gas`, `oil`, `fuel`, `uranium`, `wood`, `charcoal`, `ethanol`) e `batteries`.
+
+### E0 — Aceite herdado da D-091/D-092 (não é etapa nova)
+- **Aceite:** devolver ao portão de comida as nações importadoras de energia reprovadas na D-091/D-092
+  (`docs/economy/price_formation.md` §8, dívida #10 do `M2_marco.md` §8). O preço livre + equilíbrio por
+  custo/markup deixou o mineral em platô de 2,6–5,0× o base e a comida em 1,10–1,14× no mundo, mas 31
+  nações caem > 2,5 p.p. no portão: importadores de energia pagam insumo a 1,9–3,2× sem receita de
+  exportação e mercados finos (necessidade < 300 t/d) pagam comida local a ~2× o base. Alvo: com o preço
+  próprio de energia e a oferta de minerais calibrada, o portão volta a ≤ 2,5 p.p. por nação.
 
 ### E1 — Dados de potencial e parque instalado
 - **Solar e eólica:** mapa de potencial por província, agregado por cidade (interior). Fontes candidatas:
@@ -221,6 +413,8 @@ combustíveis (`coal`, `gas`, `oil`, `fuel`, `uranium`, `wood`, `charcoal`, `eth
   nacional; (2) **conexão parcial** — troca com a rede só até a capacidade da linha, o resto é local;
   (3) **isolada** — rede regional: só as usinas da própria cidade/interior abastecem a região, com preço
   e racionamento próprios. Dentro da região, a cobertura do interior é um nível separado.
+- **Perda nunca chega a zero (decisão do dono):** obras de rede reduzem a perda com retorno decrescente até
+  um piso técnico > 0 (referência: perdas T&D das redes mais eficientes, ~4–6%; `access_losses.json`).
 - **Infraestrutura elétrica reduz perdas**, com dois níveis por cidade: urbano e interior. Estado inicial
   por dado público (perdas de transmissão/distribuição % e acesso à eletricidade % por país).
 - **Venda entre nações só entre redes vizinhas com FRONTEIRA TERRESTRE** (sem cabo submarino — decisão
@@ -270,6 +464,36 @@ núcleo, sem painel). A ideia é generalizar o mesmo mecanismo do porto.
 - **Ferrovia (decisão do dono — efeito pequeno, só para existir):** multiplicador leve na carga por
   caminhão nas rotas terrestres; sem veículo nem malha própria. Fica como um número ajustável.
 - Aceite: gargalo aparece (fila) quando o nível é baixo; expandir resolve; dinheiro/balanço consistente.
+- **A amadurecer com o dono (2026-11-19) — nós logísticos e armazenagem em trânsito:**
+  - Porto já tem capacidade t/dia por nível, fila, sobrestadia (demurrage) e expansão — falta **armazenagem
+    portuária** (pátio, armazém alfandegado, tanque portuário) com capacidade própria, e taxa de manuseio
+    por tonelada (embarque/desembarque) separada do frete.
+  - **Aeroporto** por cidade com nível (t/dia e voos/dia): carga pequena, cara e urgente (remédio, peças de
+    precisão, eletrônicos, ouro, perecível de alto valor) e transporte militar; custo por tonelada muito
+    maior que navio/caminhão; terminal de carga com armazenagem pequena.
+  - **Transbordo** região→cidade (estrada), cidade↔cidade (estrada/ferrovia), cidade→porto→navio→porto,
+    cidade→aeroporto→avião: tempo e custo em cada troca de modo; carga acima da capacidade espera no
+    armazém do nó (fila) e paga estadia.
+  - Decisões pendentes: níveis e volumes por nó; quem é dono do porto/aeroporto (estatal/concessão F9);
+    regra de escolha de rota/modo; capacidade inicial com dado real (movimentação portuária/aeroportuária).
+- **Decidido com o dono (2026-11-19):**
+  - **Terrestre fica como está:** caminhão direto na mesma massa de terra (frete por t·km), acesso
+    região→cidade pela estrada B5, ferrovia só como desconto leve no frete.
+  - **Transbordo ABSTRATO (sem estoque nos nós):** custo da rota = Σ trechos + **taxa fixa por troca de
+    modo** (por tonelada) + **dias de manuseio**; a carga não fica parada no porto. O único limite real é a
+    **capacidade do nó** (porto/aeroporto: fila, atraso, sobrestadia — como o porto já faz). "Armazenagem
+    portuária" = tamanho de fila que o nó aguenta (sobe com nível). Armazenagem real só nos armazéns da G2.
+  - **Rota calculada e guardada por par de cidades**, recalculada só quando algo muda (expansão, destruição,
+    fronteira fechada, guerra); o comércio diário só consulta.
+  - **Avião só para carga que compensa:** produtos marcados urgentes/alto valor por tonelada (remédio,
+    vacina, peça de precisão, ouro, eletrônicos, perecível caro) quando o valor supera muito o frete ou a
+    falta é grave; grão/minério/petróleo nunca.
+  - **6 níveis de porto** (×4–5 cada): 1 local/pesqueiro, 2 regional, 3 nacional, 4 principal, 5 hub
+    internacional, 6 megaporto; obra de expansão cada vez mais cara e longa; nível inicial pelo movimento
+    real (com fonte). **Aeroporto** na mesma escala de 6 níveis, capacidade bem menor.
+  - **Cuidado de escala:** volumes do jogo ainda não estão na escala real (ex.: ferro ~17,8 mil t/d no
+    jogo); capacidade em toneladas fica relativa ao volume do jogo até a calibração e passa a números reais
+    quando a produção estiver calibrada.
 
 ---
 
@@ -312,6 +536,7 @@ Regra de calibração: **uma recalibração grande por vez** (A6, B3, E, C2 não
 
 - **M1:** Parte A completa (benchmark, CLI, IA em C++, cadência).
 - **M2:** Parte B (faixas etárias, estratos, interior, migração) — mundo com 8,2 bi.
+- **M2b:** B6 (patrimônio da região, junto com o desenho da C1) e B7 (informalidade, serviços informais, mortalidade, insatisfação).
 - **M3:** Parte F (transporte) e Parte E (energia).
 - **M4:** Parte C (bancos, crédito, hipoteca, bolsa).
 - Em cada marco: parar, rodar a bateria longa e atualizar o `GAME_STATE.md` antes de seguir.

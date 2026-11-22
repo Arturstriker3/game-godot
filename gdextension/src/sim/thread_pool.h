@@ -1,7 +1,7 @@
 #pragma once
 // Pool de threads próprio do núcleo (S16 do docs/economy/core_refactor_plan.md).
 // C++ puro (só STL) — nada de godot_cpp. Usado SOMENTE dentro do tick (que já
-// roda sob o mutex do writer); nunca a partir de get_demo_status.
+// roda sob o mutex do writer); nunca a partir de get_status.
 //
 // Partição ESTÁTICA e contígua por cidade: [0, n) é dividido em até
 // `thread_count()` blocos e cada worker (mais a thread chamadora) processa o

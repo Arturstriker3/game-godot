@@ -2,8 +2,8 @@ extends SceneTree
 
 ## Teste do pacote W0 da §19 (solo urbano, moradia e prefeitura).
 ##
-## Carrega os quatro JSON pelo mesmo caminho do jogo (initialize_demo_world +
-## demo_set_urban) e confere, numa amostra de metrópoles e de uma cidade
+## Carrega os quatro JSON pelo mesmo caminho do jogo (initialize_world +
+## set_urban) e confere, numa amostra de metrópoles e de uma cidade
 ## pequena, o que a spec exige: área por zona, unidades por padrão, posse,
 ## aluguel/preço em XGS > 0 e prefeitura com taxas. Depois faz ida-e-volta de
 ## save/load e exige estado urbano idêntico.
@@ -86,24 +86,24 @@ func _sum(values: Array) -> float:
 
 func _make_world() -> Object:
 	var sim = EconomySim.new()
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
-		sim.demo_set_sector_employment(_load_dict(SECTOR_EMPLOYMENT_PATH))
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
+		sim.set_sector_employment(_load_dict(SECTOR_EMPLOYMENT_PATH))
 	var cities := _load_array(CITIES_PATH)
 	if cities.is_empty():
 		_fail("cities.json vazio")
 		return sim
-	sim.initialize_demo_world(cities, _load_array(PORTS_PATH), _load_array(BUILDINGS_PATH))
-	if not sim.has_method("demo_set_urban"):
-		_fail("o binario GDExtension nao tem demo_set_urban (rode o build)")
+	sim.initialize_world(cities, _load_array(PORTS_PATH), _load_array(BUILDINGS_PATH))
+	if not sim.has_method("set_urban"):
+		_fail("o binario GDExtension nao tem set_urban (rode o build)")
 		return sim
-	sim.demo_set_urban(
+	sim.set_urban(
 		_load_dict(URBAN_LAND_PATH),
 		_load_dict(HOUSING_CITY_PATH),
 		_load_dict(HOUSING_PATH),
@@ -117,14 +117,14 @@ func _run() -> void:
 		return
 	var land_data: Dictionary = _load_dict(URBAN_LAND_PATH).get("cities", {})
 	var housing_data: Dictionary = _load_dict(HOUSING_CITY_PATH).get("cities", {})
-	if land_data.size() != 834 or housing_data.size() != 834:
-		_fail("cobertura: urban_land=%d housing_city=%d (esperado 834)" % [
+	if land_data.size() != 849 or housing_data.size() != 849:
+		_fail("cobertura: urban_land=%d housing_city=%d (esperado 849)" % [
 			land_data.size(), housing_data.size()])
 
 	var total_units := 0.0
 	var total_area := 0.0
 	for city_id in SAMPLE_CITIES:
-		var urban: Dictionary = sim.demo_get_urban_city(city_id)
+		var urban: Dictionary = sim.get_urban_city(city_id)
 		if urban.is_empty():
 			_fail("%s sem estado urbano" % city_id)
 			continue
@@ -207,21 +207,21 @@ func _run() -> void:
 	# Save v14: a ida-e-volta restaura exatamente o estado urbano da amostra.
 	var before: Dictionary = {}
 	for city_id in SAMPLE_CITIES:
-		before[city_id] = JSON.stringify(sim.demo_get_urban_city(city_id), "", true, true)
-	var snapshot: Dictionary = sim.demo_to_dict()
-	if int(snapshot.get("version", 0)) != 14:
-		_fail("save version %s != 14" % str(snapshot.get("version")))
+		before[city_id] = JSON.stringify(sim.get_urban_city(city_id), "", true, true)
+	var snapshot: Dictionary = sim.to_dict()
+	if int(snapshot.get("version", 0)) != 34:
+		_fail("save version %s != 34" % str(snapshot.get("version")))
 	var restored = EconomySim.new()
-	restored.demo_set_goods(_load_array(GOODS_PATH))
-	restored.demo_set_recipes(_load_array(RECIPES_PATH))
-	restored.demo_set_needs(_load_dict(NEEDS_PATH))
-	if restored.has_method("demo_set_services"):
-		restored.demo_set_services(_load_dict(SERVICES_PATH))
-	if restored.has_method("demo_set_currencies"):
-		restored.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	restored.demo_from_dict(snapshot)
+	restored.set_goods(_load_array(GOODS_PATH))
+	restored.set_recipes(_load_array(RECIPES_PATH))
+	restored.set_needs(_load_dict(NEEDS_PATH))
+	if restored.has_method("set_services"):
+		restored.set_services(_load_dict(SERVICES_PATH))
+	if restored.has_method("set_currencies"):
+		restored.set_currencies(_load_dict(CURRENCIES_PATH))
+	restored.from_dict(snapshot)
 	for city_id in SAMPLE_CITIES:
-		var after: String = JSON.stringify(restored.demo_get_urban_city(city_id), "", true, true)
+		var after: String = JSON.stringify(restored.get_urban_city(city_id), "", true, true)
 		if after != String(before[city_id]):
 			_fail("%s: save/load urbano divergiu" % city_id)
 	print("[urban] save/load v14 da amostra: %s" % (
@@ -233,17 +233,17 @@ func _run() -> void:
 	v12.erase("urban")
 	v12["version"] = 12
 	var legacy = EconomySim.new()
-	legacy.demo_set_goods(_load_array(GOODS_PATH))
-	legacy.demo_set_recipes(_load_array(RECIPES_PATH))
-	legacy.demo_set_needs(_load_dict(NEEDS_PATH))
-	if legacy.has_method("demo_set_services"):
-		legacy.demo_set_services(_load_dict(SERVICES_PATH))
-	if legacy.has_method("demo_set_currencies"):
-		legacy.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	legacy.demo_from_dict(v12)
-	if not Dictionary(legacy.demo_get_urban_city("BRA-SAO")).is_empty():
+	legacy.set_goods(_load_array(GOODS_PATH))
+	legacy.set_recipes(_load_array(RECIPES_PATH))
+	legacy.set_needs(_load_dict(NEEDS_PATH))
+	if legacy.has_method("set_services"):
+		legacy.set_services(_load_dict(SERVICES_PATH))
+	if legacy.has_method("set_currencies"):
+		legacy.set_currencies(_load_dict(CURRENCIES_PATH))
+	legacy.from_dict(v12)
+	if not Dictionary(legacy.get_urban_city("BRA-SAO")).is_empty():
 		_fail("v12->v14: save antigo nao deveria ter estado urbano")
-	if int(legacy.demo_to_dict().get("version", 0)) != 14:
-		_fail("v12->v14: save migrado nao saiu como v14")
-	print("[urban] migracao v12->v14: sem estado urbano, schema 14.")
+	if int(legacy.to_dict().get("version", 0)) != 34:
+		_fail("v12->v32: save migrado nao saiu como v32")
+	print("[urban] migracao v12->v32: sem estado urbano, schema 32.")
 

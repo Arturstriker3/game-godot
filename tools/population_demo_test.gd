@@ -14,9 +14,9 @@ var _failures: Array[String] = []
 
 func _init() -> void:
 	var sim = EconomySim.new()
-	sim.initialize_demo()
+	sim.initialize_scenario()
 
-	var initial: Dictionary = sim.get_demo_status()
+	var initial: Dictionary = sim.get_status()
 	# Isola o choque de preço da renda externa. `kDemoExternalIncomePerCapita`
 	# (0,012/pessoa/dia) é um fluxo do resto do mundo que, desde a renda por PIB
 	# PPP (§20), não é gasto em serviços: em AGRIA/PORTUS ele soma mais por dia
@@ -26,7 +26,7 @@ func _init() -> void:
 	# Aqui o índice é zerado e conferido no fim: zero é explicitamente testado,
 	# não presumido.
 	for city in initial.get("cities", []):
-		sim.demo_set_external_income_index(String(city["id"]), 0.0)
+		sim.set_external_income_index(String(city["id"]), 0.0)
 	var money_initial := float(initial["money_total"])
 	var population_initial := _population(initial)
 	var wheat_baseline := 0.0
@@ -34,21 +34,21 @@ func _init() -> void:
 	var wheat_samples := 0
 
 	for day in DAYS:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		_check_conservation(sim, status, money_initial, population_initial, day + 1)
 		if day >= DAYS - 10:
 			wheat_baseline += float(status["consumed_today"][0])
 			food_spend_baseline += _food_spend(sim)
 			wheat_samples += 1
 
-	var before_shock: Dictionary = sim.get_demo_status()
+	var before_shock: Dictionary = sim.get_status()
 	var savings_before := _savings(sim)
-	sim.demo_price_shock("wheat", 100.0)
+	sim.price_shock("wheat", 100.0)
 	var wheat_after := 0.0
 	var food_spend_after := 0.0
 	var after_samples := 0
 	for day in SHOCK_DAYS:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		_check_conservation(sim, status, money_initial, population_initial, DAYS + day + 1)
 		wheat_after += float(status["consumed_today"][0])
 		food_spend_after += _food_spend(sim)
@@ -145,7 +145,7 @@ func _population(status: Dictionary) -> float:
 ## cada cidade é lida sob demanda pelo id.
 func _savings(sim) -> float:
 	var total := 0.0
-	for city in sim.get_demo_status().get("cities", []):
+	for city in sim.get_status().get("cities", []):
 		total += float(sim.get_city_status(String(city["id"])).get("pop", {}).get(
 			"savings", 0.0))
 	return total
@@ -153,7 +153,7 @@ func _savings(sim) -> float:
 
 func _food_spend(sim) -> float:
 	var total := 0.0
-	for city in sim.get_demo_status().get("cities", []):
+	for city in sim.get_status().get("cities", []):
 		total += float(sim.get_city_status(String(city["id"])).get("pop", {}).get(
 			"food_spend", 0.0))
 	return total
@@ -161,7 +161,7 @@ func _food_spend(sim) -> float:
 
 func _external_income(sim) -> float:
 	var total := 0.0
-	for city in sim.get_demo_status().get("cities", []):
+	for city in sim.get_status().get("cities", []):
 		total += float(sim.get_city_status(String(city["id"])).get("pop", {}).get(
 			"external_income", 0.0))
 	return total

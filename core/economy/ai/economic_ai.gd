@@ -15,8 +15,8 @@ class_name EconomicAI
 ## até o orçamento (1,5 ms) e devolve o controle. O autoload `Economy` chama
 ## `pump()` nos frames seguintes, fora do frame da virada.
 ##
-## O status vem do próprio `tick_demo()` (que já devolve o dicionário completo):
-## não há mais um `get_demo_status()` extra de ~6–9 ms por ciclo.
+## O status vem do próprio `tick_day()` (que já devolve o dicionário completo):
+## não há mais um `get_status()` extra de ~6–9 ms por ciclo.
 
 const PrivateInvestorScript := preload("res://core/economy/ai/private_investor.gd")
 const GovernmentAIScript := preload("res://core/economy/ai/government_ai.gd")
@@ -60,8 +60,8 @@ func setup(sim_node: Object, geography: Object) -> bool:
 
 
 ## Executa a IA do dia de forma SÍNCRONA (ferramentas, testes e balance_review).
-## `summary` pode ser o dicionário devolvido por `tick_demo()` — evita um
-## `get_demo_status()` redundante.
+## `summary` pode ser o dicionário devolvido por `tick_day()` — evita um
+## `get_status()` redundante.
 func run(day: int, summary: Dictionary = {}) -> Array:
 	plan(day, summary)
 	_drain_all()
@@ -69,7 +69,7 @@ func run(day: int, summary: Dictionary = {}) -> Array:
 
 
 ## Enfileira as cidades cuja vez é este dia. `summary` é o status do tick; se
-## vazio, busca `get_demo_status()` só quando há cidade agendada.
+## vazio, busca `get_status()` só quando há cidade agendada.
 func plan(day: int, summary: Dictionary = {}) -> void:
 	if is_busy() and _pending_day != day:
 		# Garantia de ordem: um dia novo nunca começa com a fila do anterior
@@ -88,7 +88,7 @@ func plan(day: int, summary: Dictionary = {}) -> void:
 
 	var status := summary
 	if status.is_empty():
-		status = sim.get_demo_status()
+		status = sim.get_status()
 	# Totais do sistema (oferta/vendido/demanda por produto e por nação) são
 	# medidos UMA vez por dia, aqui no plano — nunca no laço por cidade. Antes,
 	# o investidor privado varria todas as cidades por produto em cada decisão

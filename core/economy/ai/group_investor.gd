@@ -125,10 +125,10 @@ func refresh_groups() -> void:
 	_groups = []
 	if _sim == null:
 		return
-	if _sim.has_method("demo_get_group_ranking"):
-		_groups = _sim.demo_get_group_ranking()
-	elif _sim.has_method("demo_get_groups"):
-		_groups = _sim.demo_get_groups()
+	if _sim.has_method("get_group_ranking"):
+		_groups = _sim.get_group_ranking()
+	elif _sim.has_method("get_groups"):
+		_groups = _sim.get_groups()
 
 
 func get_decisions() -> Array:
@@ -191,7 +191,7 @@ func name_groups(place_by_nation: Dictionary = {}) -> int:
 		names[id] = name
 	if names.is_empty():
 		return 0
-	return int(_sim.demo_set_group_names(names))
+	return int(_sim.set_group_names(names))
 
 
 ## Síncrono (ferramentas, testes e `EconomicAI.run()`): agenda e executa o dia
@@ -313,10 +313,10 @@ func _prepare_caches() -> void:
 func _prepare_slice() -> void:
 	if _prepare_step == 0:
 		if _status.is_empty() and _sim != null \
-				and _sim.has_method("get_demo_status"):
+				and _sim.has_method("get_status"):
 			# Ferramentas chamam `plan()` sem o resumo do tick: busca o status
 			# aqui (fora do frame da virada), nunca no plano.
-			_status = _sim.get_demo_status()
+			_status = _sim.get_status()
 		refresh_groups()
 		_queue.clear()
 		var phase := _day % INTERVAL_DAYS
@@ -731,7 +731,7 @@ func _execute(group: Dictionary, opportunity: Dictionary) -> void:
 	var partner := String(opportunity.get("partner", ""))
 	var building_id := "GRP-%s-%d" % [
 		String(group.get("id", "")).replace("-", ""), _day]
-	var result: Dictionary = _sim.demo_group_invest(
+	var result: Dictionary = _sim.group_invest(
 		String(group["id"]), String(city["id"]), building_id,
 		String(opportunity["resource"]), int(opportunity["product"]), capacity,
 		String(opportunity.get("recipe", "")), partner)
@@ -765,10 +765,10 @@ func _execute(group: Dictionary, opportunity: Dictionary) -> void:
 func _load_signals(status: Dictionary) -> void:
 	if _sim == null:
 		_signals = {}
-	elif _sim.has_method("demo_get_investment_signals"):
-		_signals = _sim.demo_get_investment_signals()
-	elif _sim.has_method("demo_get_investment_status"):
-		_signals = _sim.demo_get_investment_status()
+	elif _sim.has_method("get_investment_signals"):
+		_signals = _sim.get_investment_signals()
+	elif _sim.has_method("get_investment_status"):
+		_signals = _sim.get_investment_status()
 	else:
 		_signals = {}
 	_policy_cache.clear()
@@ -805,7 +805,7 @@ func _tariff(nation: String, origin: String, resource: String) -> float:
 	var key := nation + "|" + origin + "|" + resource
 	if _tariff_cache.has(key):
 		return float(_tariff_cache[key])
-	var value := float(_sim.demo_get_tariff(nation, origin, resource))
+	var value := float(_sim.get_tariff(nation, origin, resource))
 	_tariff_cache[key] = value
 	return value
 

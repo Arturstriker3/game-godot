@@ -1,0 +1,14 @@
+{
+  "_comment": "C3 (docs/economy/C3_group_balance.md) - parametros de regra do credito de empresa. TODOS sao default de jogo declarado: o repositorio nao tem fonte publica de spread bancario, limite de alavancagem ou prazo de inadimplencia por nacao. O credito nasce LIGADO (enabled=true) por decisao do dono (D-111), depois que a C4 criou o credor com contraparte no balanco (banco publico/privado/estrangeiro por nacao). Nenhum numero aqui e dado observado.",
+  "source": "default de jogo",
+  "source_note": "C3/D-107 + C4/D-110 + D-111: o credito nasceu desligado porque o banco agregado nao tinha capital nem depositos nem dono. A C4 criou os tres papeis por nacao e o banco publico como credor; a medicao de 365 d com credito ligado (C4, 10.2 de docs/economy/C4_banks.md) deu 2 falencias, portao 98/179 e 0 violacoes, dentro do criterio revisado pela D-111. Resolucao de crise continua C6.",
+  "enabled": true,
+  "spread": 0.02,
+  "leverage_cap": 1.0,
+  "default_days": 30,
+  "repay_share": 0.5,
+  "interest_arrears_days": 90,
+  "note_leverage": "debt <= leverage_cap * equity do grupo (caixa + capital fixo + estoque atribuido - atrasados).",
+  "note_repay": "fracao do caixa livre acima do capital de giro minimo aplicada ao principal por dia.",
+  "note_spread": "loan_rate = taxa basica EFETIVA da moeda (C2b1) + spread."
+}

@@ -1,0 +1,1999 @@
+{
+  "coverage": {
+    "agricultural_land_source_counts": {
+      "faostat_land_use": 178
+    },
+    "agricultural_land_year": {
+      "max": 2023,
+      "min": 2023
+    },
+    "land_gini_range": {
+      "max": 0.9938,
+      "min": 0.389
+    },
+    "land_gini_year": {
+      "max": 2023,
+      "median": 2015,
+      "min": 1960
+    },
+    "land_gini_year_buckets": {
+      "1980_1999": 16,
+      "2000_2009": 19,
+      "2010_em_diante": 108,
+      "ate_1979": 12
+    },
+    "nations_no_agricultural_land": 1,
+    "nations_no_agricultural_land_ids": [
+      "XKX"
+    ],
+    "nations_no_land_gini": 24,
+    "nations_no_land_gini_ids": [
+      "AFG",
+      "AGO",
+      "ARE",
+      "BDI",
+      "BIH",
+      "CUB",
+      "DJI",
+      "ERI",
+      "GMB",
+      "GNQ",
+      "GUY",
+      "PNG",
+      "PRK",
+      "SAH",
+      "SDN",
+      "SLB",
+      "SOL",
+      "SOM",
+      "SSD",
+      "TKM",
+      "TWN",
+      "UKR",
+      "UZB",
+      "XKX"
+    ],
+    "nations_total": 179,
+    "nations_with_agricultural_land": 178,
+    "nations_with_land_gini": 155
+  },
+  "cross_check": {
+    "conclusion": "A FAOSTAT é a série nativa em hectares e já reflete a revisão 2025; o espelho do World Bank ficou atrás em 45 países (ex.: ARG e CHN, onde o valor do WB equivale só a parte da área). Por isso o WB não é usado.",
+    "nations_compared": 175,
+    "nations_over_2pct": 45,
+    "nations_within_2pct": 130,
+    "source": "worldbank_ag_lnd_agri_k2",
+    "unit_conversion": "km2 x 100 = ha",
+    "worst_offsets_pct": [
+      {
+        "delta_pct": -30.4,
+        "faostat_ha": 116136344,
+        "iso3": "ARG",
+        "worldbank_ha": 80799047
+      },
+      {
+        "delta_pct": -24.7,
+        "faostat_ha": 520413000,
+        "iso3": "CHN",
+        "worldbank_ha": 391823000
+      },
+      {
+        "delta_pct": -21.8,
+        "faostat_ha": 2189966,
+        "iso3": "PAN",
+        "worldbank_ha": 1711964
+      },
+      {
+        "delta_pct": 21.5,
+        "faostat_ha": 634000,
+        "iso3": "GMB",
+        "worldbank_ha": 770300
+      },
+      {
+        "delta_pct": 19.5,
+        "faostat_ha": 2360748,
+        "iso3": "LSO",
+        "worldbank_ha": 2820000
+      },
+      {
+        "delta_pct": -17.7,
+        "faostat_ha": 2153236,
+        "iso3": "GAB",
+        "worldbank_ha": 1772640
+      }
+    ]
+  },
+  "dataset": "land_property",
+  "edition": "2026",
+  "method": {
+    "agricultural_land_ha": "FAOSTAT item 00006610, valor inteiro em hectares do último ano disponível (2023 para todas as nações). Sem conversão de unidade; sem arredondamento além do inteiro.",
+    "iso_mapping": "NED->NLD, PSX->PSE, SOL->SLB, SAH->ESH (códigos do jogo -> códigos FAOSTAT/ONU).",
+    "land_gini": "LINEQ v1 lo_gini_all da linha de source_year mais recente por país. Estimativa modelada pela FAO (interpolação Pareto generalizada sobre o censo), marcada como tal em land_gini_census. Escala 0..1, arredondada a 4 casas.",
+    "no_data_rule": "Sem valor na fonte -> null, basis='none' (ou land_gini_source=null). Nunca há número inventado, média regional embutida ou herança de vizinho. A única estimativa permitida é a de runtime declarada em regional_reference/state_distribution, e ela é derivada dos valores observados deste mesmo arquivo."
+  },
+  "nations": {
+    "AFG": {
+      "agricultural_land_ha": 38116000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "AGO": {
+      "agricultural_land_ha": 46063000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ALB": {
+      "agricultural_land_ha": 1044600,
+      "basis": "observed",
+      "land_gini": 0.5734,
+      "land_gini_census": "FAO WCA Main Results - Albania - Agricultural census 2012",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2012,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ARE": {
+      "agricultural_land_ha": 391704,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ARG": {
+      "agricultural_land_ha": 116136344,
+      "basis": "observed",
+      "land_gini": 0.8501,
+      "land_gini_census": "FAO WCA Main Results - Argentina - Agricultural census 2018",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2018,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ARM": {
+      "agricultural_land_ha": 1652300,
+      "basis": "observed",
+      "land_gini": 0.5373,
+      "land_gini_census": "FAO WCA Main Results - Armenia - Agricultural census 2014",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2014,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ATG": {
+      "agricultural_land_ha": 9000,
+      "basis": "observed",
+      "land_gini": 0.7706,
+      "land_gini_census": "data tables published in the 1960 World Census of Agriculture Report - Antigua and Barbuda Agricultural Census 1960",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1960,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "AUS": {
+      "agricultural_land_ha": 363243680,
+      "basis": "observed",
+      "land_gini": 0.9153,
+      "land_gini_census": "FAO WCA Main Results - Australia - Agricultural census 2015/16",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2021,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "AUT": {
+      "agricultural_land_ha": 2597263,
+      "basis": "observed",
+      "land_gini": 0.5344,
+      "land_gini_census": "FAO WCA Main Results - Austria - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "AZE": {
+      "agricultural_land_ha": 4779600,
+      "basis": "observed",
+      "land_gini": 0.7698,
+      "land_gini_census": "FAO WCA Main Results - Azerbaijan - Agricultural census 2015",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2015,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BDI": {
+      "agricultural_land_ha": 2154207,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BEL": {
+      "agricultural_land_ha": 1353300,
+      "basis": "observed",
+      "land_gini": 0.5193,
+      "land_gini_census": "FAO WCA Main Results - Belgium - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BEN": {
+      "agricultural_land_ha": 4716752,
+      "basis": "observed",
+      "land_gini": 0.6174,
+      "land_gini_census": "Harmonized Survey on Household Living Conditions - National Institute of Statistics and Economic Analysis (INSAE)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2022,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BFA": {
+      "agricultural_land_ha": 14610789,
+      "basis": "observed",
+      "land_gini": 0.4755,
+      "land_gini_census": "Harmonized Survey on Household Living Conditions - National Institute of Statistics and Demography (INSD)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BGD": {
+      "agricultural_land_ha": 9399000,
+      "basis": "observed",
+      "land_gini": 0.4966,
+      "land_gini_census": "FAO WCA Main Results - Bangladesh - Agricultural census 2019",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BGR": {
+      "agricultural_land_ha": 5002990,
+      "basis": "observed",
+      "land_gini": 0.8754,
+      "land_gini_census": "FAO WCA Main Results - Bulgaria - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BHR": {
+      "agricultural_land_ha": 8100,
+      "basis": "observed",
+      "land_gini": 0.5292,
+      "land_gini_census": "data tables published in the 1980 World Census of Agriculture Report - Bahrain Agricultural Census 1980",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1980,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BHS": {
+      "agricultural_land_ha": 13000,
+      "basis": "observed",
+      "land_gini": 0.8846,
+      "land_gini_census": "data tables published in the 1990 World Census of Agriculture Report - Bahamas Agricultural Census 1994",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1994,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BIH": {
+      "agricultural_land_ha": 1113000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BLR": {
+      "agricultural_land_ha": 8034000,
+      "basis": "observed",
+      "land_gini": 0.9843,
+      "land_gini_census": "FAO WCA Main Results - Belarus - Agricultural census 2019",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BLZ": {
+      "agricultural_land_ha": 182000,
+      "basis": "observed",
+      "land_gini": 0.8258,
+      "land_gini_census": "data tables published in the 1980 World Census of Agriculture Report - Belize Agricultural Census 1985",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1985,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BOL": {
+      "agricultural_land_ha": 38815400,
+      "basis": "observed",
+      "land_gini": 0.9035,
+      "land_gini_census": "Bolivia Household Survey - National Institute of Statistics (INE)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2015,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BRA": {
+      "agricultural_land_ha": 236758800,
+      "basis": "observed",
+      "land_gini": 0.8643,
+      "land_gini_census": "FAO WCA Main Results - Brazil - Agricultural census 2017",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2017,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BRB": {
+      "agricultural_land_ha": 10000,
+      "basis": "observed",
+      "land_gini": 0.9467,
+      "land_gini_census": "data tables published in the 1990 World Census of Agriculture Report - Barbados Agricultural Census 1989",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1989,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BRN": {
+      "agricultural_land_ha": 13400,
+      "basis": "observed",
+      "land_gini": 0.7705,
+      "land_gini_census": "data tables published in the 1960 World Census of Agriculture Report - Brunei Darussalam Agricultural Census 1960",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1960,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BTN": {
+      "agricultural_land_ha": 527000,
+      "basis": "observed",
+      "land_gini": 0.4907,
+      "land_gini_census": "suplementary data by Lowder, Sanchez and Bertini (2021) - Bhutan - Agricultural census 2009",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2009,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "BWA": {
+      "agricultural_land_ha": 25862000,
+      "basis": "observed",
+      "land_gini": 0.521,
+      "land_gini_census": "FAO WCA Main Results - Botswana - Agricultural census 2004",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2004,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CAF": {
+      "agricultural_land_ha": 5668800,
+      "basis": "observed",
+      "land_gini": 0.389,
+      "land_gini_census": "data tables published in the 1970 World Census of Agriculture Report - Central African Republic Agricultural Census 1974",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1974,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CAN": {
+      "agricultural_land_ha": 56875000,
+      "basis": "observed",
+      "land_gini": 0.735,
+      "land_gini_census": "FAO WCA Main Results - Canada - Agricultural census 2016",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2021,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CHE": {
+      "agricultural_land_ha": 1493223,
+      "basis": "observed",
+      "land_gini": 0.4086,
+      "land_gini_census": "FAO WCA Main Results - Switzerland - Agricultural census 2010",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2010,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CHL": {
+      "agricultural_land_ha": 10697537,
+      "basis": "observed",
+      "land_gini": 0.9759,
+      "land_gini_census": "FAO WCA Main Results - Chile - Agricultural census 2021",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2021,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CHN": {
+      "agricultural_land_ha": 520413000,
+      "basis": "observed",
+      "land_gini": 0.5825,
+      "land_gini_census": "Third National Agricultural Census, Steering Group Office of the Third National Agricultural Census of the State Council",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2016,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CIV": {
+      "agricultural_land_ha": 27499310,
+      "basis": "observed",
+      "land_gini": 0.542,
+      "land_gini_census": "Harmonized Survey on Household Living Conditions -  National Institute of Statistics (INS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CMR": {
+      "agricultural_land_ha": 9896900,
+      "basis": "observed",
+      "land_gini": 0.5879,
+      "land_gini_census": "Fourth Cameroon Household Survey - National Institute of Statistics (INS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2014,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "COD": {
+      "agricultural_land_ha": 35095664,
+      "basis": "observed",
+      "land_gini": 0.4975,
+      "land_gini_census": "data tables published in the 1990 World Census of Agriculture Report - Democratic Republic of the Congo Agricultural Census 1990",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1990,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "COG": {
+      "agricultural_land_ha": 10651400,
+      "basis": "observed",
+      "land_gini": 0.7544,
+      "land_gini_census": "FAO-WCA Main Results - Congo Agricultural Census 2015",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2015,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "COL": {
+      "agricultural_land_ha": 40483000,
+      "basis": "observed",
+      "land_gini": 0.9393,
+      "land_gini_census": "National Agricultural Survey - National Administrative Department of Statistics (DANE)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CRI": {
+      "agricultural_land_ha": 1692333,
+      "basis": "observed",
+      "land_gini": 0.8146,
+      "land_gini_census": "FAO WCA Main Results - Costa Rica - Agricultural census 2014",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2014,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CUB": {
+      "agricultural_land_ha": 6401000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CYP": {
+      "agricultural_land_ha": 128996,
+      "basis": "observed",
+      "land_gini": 0.7784,
+      "land_gini_census": "FAO WCA Main Results - Cyprus - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "CZE": {
+      "agricultural_land_ha": 3534414,
+      "basis": "observed",
+      "land_gini": 0.8361,
+      "land_gini_census": "FAO WCA Main Results - Czechia - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "DEU": {
+      "agricultural_land_ha": 16586000,
+      "basis": "observed",
+      "land_gini": 0.6445,
+      "land_gini_census": "FAO WCA Main Results - Germany - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "DJI": {
+      "agricultural_land_ha": 1703900,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "DMA": {
+      "agricultural_land_ha": 25000,
+      "basis": "observed",
+      "land_gini": 0.6738,
+      "land_gini_census": "data tables published in the 1990 World Census of Agriculture Report - Dominica Agricultural Census 1995",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1995,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "DNK": {
+      "agricultural_land_ha": 2621000,
+      "basis": "observed",
+      "land_gini": 0.6941,
+      "land_gini_census": "FAO WCA Main Results - Denmark - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "DOM": {
+      "agricultural_land_ha": 2667909,
+      "basis": "observed",
+      "land_gini": 0.829,
+      "land_gini_census": "data tables published in the 1970 World Census of Agriculture Report - Dominican Republic Agricultural Census 1971",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1971,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "DZA": {
+      "agricultural_land_ha": 41344700,
+      "basis": "observed",
+      "land_gini": 0.6465,
+      "land_gini_census": "FAO WCA Main Results - Algeria - Agricultural census 2001",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2001,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ECU": {
+      "agricultural_land_ha": 5350000,
+      "basis": "observed",
+      "land_gini": 0.7896,
+      "land_gini_census": "Living Conditions Survey -  National Institute of Statistics and Censuses (INEC)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2014,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "EGY": {
+      "agricultural_land_ha": 4058000,
+      "basis": "observed",
+      "land_gini": 0.6706,
+      "land_gini_census": "FAO WCA Main Results - Egypt - Agricultural census 2009/10",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2010,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ERI": {
+      "agricultural_land_ha": 7592000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ESP": {
+      "agricultural_land_ha": 24772662,
+      "basis": "observed",
+      "land_gini": 0.7935,
+      "land_gini_census": "FAO WCA Main Results - Spain - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "EST": {
+      "agricultural_land_ha": 988000,
+      "basis": "observed",
+      "land_gini": 0.7741,
+      "land_gini_census": "FAO WCA Main Results - Estonia - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ETH": {
+      "agricultural_land_ha": 38456932,
+      "basis": "observed",
+      "land_gini": 0.528,
+      "land_gini_census": "Ethiopia Socioeconomic Survey, Central Statistical Agency",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "FIN": {
+      "agricultural_land_ha": 2262000,
+      "basis": "observed",
+      "land_gini": 0.6045,
+      "land_gini_census": "FAO WCA Main Results - Finland - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "FJI": {
+      "agricultural_land_ha": 311600,
+      "basis": "observed",
+      "land_gini": 0.8099,
+      "land_gini_census": "FAO WCA Main Results - Fiji - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "FRA": {
+      "agricultural_land_ha": 28297244,
+      "basis": "observed",
+      "land_gini": 0.574,
+      "land_gini_census": "FAO WCA Main Results - France - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GAB": {
+      "agricultural_land_ha": 2153236,
+      "basis": "observed",
+      "land_gini": 0.5013,
+      "land_gini_census": "data tables published in the 1970 World Census of Agriculture Report - Gabon Agricultural Census 1975",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1975,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GBR": {
+      "agricultural_land_ha": 17009452,
+      "basis": "observed",
+      "land_gini": 0.7196,
+      "land_gini_census": "Main Results - United Kingdom - Agricultural census 2021",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2021,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GEO": {
+      "agricultural_land_ha": 2371900,
+      "basis": "observed",
+      "land_gini": 0.6274,
+      "land_gini_census": "Survey of Agricultural Holdings -  National Statistics Office of Georgia (GEOSTAT)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2022,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GHA": {
+      "agricultural_land_ha": 12603740,
+      "basis": "observed",
+      "land_gini": 0.56,
+      "land_gini_census": "Ghana Living Standards Survey - Ghana Statistical Services",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2017,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GIN": {
+      "agricultural_land_ha": 17993890,
+      "basis": "observed",
+      "land_gini": 0.5176,
+      "land_gini_census": "FAO WCA Main Results - Guinea - Agricultural census 2000/2001",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2001,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GMB": {
+      "agricultural_land_ha": 634000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GNB": {
+      "agricultural_land_ha": 840530,
+      "basis": "observed",
+      "land_gini": 0.9014,
+      "land_gini_census": "Harmonized Survey on Household Living Conditions -  National Institute of Statistics (INE)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GNQ": {
+      "agricultural_land_ha": 104720,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GRC": {
+      "agricultural_land_ha": 5372038,
+      "basis": "observed",
+      "land_gini": 0.6667,
+      "land_gini_census": "FAO WCA Main Results - Greece - Agricultural census 2021",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GRD": {
+      "agricultural_land_ha": 8000,
+      "basis": "observed",
+      "land_gini": 0.7657,
+      "land_gini_census": "data tables published in the 1990 World Census of Agriculture Report - Grenada Agricultural Census 1995",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1995,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GTM": {
+      "agricultural_land_ha": 4612000,
+      "basis": "observed",
+      "land_gini": 0.5291,
+      "land_gini_census": "FAO WCA Main Results - Guatemala - Agricultural census 2003",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2014,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "GUY": {
+      "agricultural_land_ha": 720000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "HND": {
+      "agricultural_land_ha": 3576000,
+      "basis": "observed",
+      "land_gini": 0.6751,
+      "land_gini_census": "data tables published in the 1990 World Census of Agriculture Report - Honduras Agricultural Census 1993",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1993,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "HRV": {
+      "agricultural_land_ha": 1486000,
+      "basis": "observed",
+      "land_gini": 0.7437,
+      "land_gini_census": "FAO WCA Main Results - Croatia - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "HTI": {
+      "agricultural_land_ha": 1795000,
+      "basis": "observed",
+      "land_gini": 0.4561,
+      "land_gini_census": "FAO WCA Main Results - Haiti - Agricultural census 2008/09",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2009,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "HUN": {
+      "agricultural_land_ha": 5083046,
+      "basis": "observed",
+      "land_gini": 0.857,
+      "land_gini_census": "FAO WCA Main Results - Hungary - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "IDN": {
+      "agricultural_land_ha": 55122204,
+      "basis": "observed",
+      "land_gini": 0.4305,
+      "land_gini_census": "suplementary data by Lowder, Sanchez and Bertini (2021) -  Indonesia - Agricultural census 2013",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2013,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "IND": {
+      "agricultural_land_ha": 178571000,
+      "basis": "observed",
+      "land_gini": 0.4455,
+      "land_gini_census": "Socio-economic Survey, National Sample Survey Office (NSSO)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "IRL": {
+      "agricultural_land_ha": 4189000,
+      "basis": "observed",
+      "land_gini": 0.4673,
+      "land_gini_census": "FAO WCA Main Results - Ireland - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "IRN": {
+      "agricultural_land_ha": 47067000,
+      "basis": "observed",
+      "land_gini": 0.7225,
+      "land_gini_census": "FAO WCA Main Results - Iran - Agricultural census 2014",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2014,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "IRQ": {
+      "agricultural_land_ha": 9477400,
+      "basis": "observed",
+      "land_gini": 0.5908,
+      "land_gini_census": "Household Socio-economic Survey - Central Organization of Statistics and Information Technology (COSIT)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2012,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ISL": {
+      "agricultural_land_ha": 1638000,
+      "basis": "observed",
+      "land_gini": 0.5619,
+      "land_gini_census": "FAO WCA Main Results - Iceland - Agricultural census 2010",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2010,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ISR": {
+      "agricultural_land_ha": 536700,
+      "basis": "observed",
+      "land_gini": 0.8653,
+      "land_gini_census": "data tables published in the 1980 World Census of Agriculture Report - Israel Agricultural Census 1981",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1981,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ITA": {
+      "agricultural_land_ha": 13087557,
+      "basis": "observed",
+      "land_gini": 0.7414,
+      "land_gini_census": "FAO WCA Main Results - Italy - Agricultural census 2021",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "JAM": {
+      "agricultural_land_ha": 417000,
+      "basis": "observed",
+      "land_gini": 0.8111,
+      "land_gini_census": "FAO WCA Main Results - Jamaica - Agricultural census 2007",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2007,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "JOR": {
+      "agricultural_land_ha": 1024000,
+      "basis": "observed",
+      "land_gini": 0.8629,
+      "land_gini_census": "FAO WCA Main Results - Jordan - Agricultural census 2017",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2017,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "JPN": {
+      "agricultural_land_ha": 4607000,
+      "basis": "observed",
+      "land_gini": 0.7247,
+      "land_gini_census": "FAO WCA Main Results - Japan - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "KAZ": {
+      "agricultural_land_ha": 214265700,
+      "basis": "observed",
+      "land_gini": 0.9039,
+      "land_gini_census": "FAO WCA Main Results - Kazakhstan - Agricultural census 2006/07",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2007,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "KEN": {
+      "agricultural_land_ha": 28768666,
+      "basis": "observed",
+      "land_gini": 0.4895,
+      "land_gini_census": "Kenya Integrated Household Budget Survey, Kenya National Bureau of Statistics (KNBS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2016,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "KGZ": {
+      "agricultural_land_ha": 10358844,
+      "basis": "observed",
+      "land_gini": 0.9003,
+      "land_gini_census": "FAO WCA Main Results - Kyrgyzstan - Agricultural census 2002",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2002,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "KHM": {
+      "agricultural_land_ha": 6154340,
+      "basis": "observed",
+      "land_gini": 0.6152,
+      "land_gini_census": "FAO WCA Main Results - Cambodia - Agricultural census 2013",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "KNA": {
+      "agricultural_land_ha": 6000,
+      "basis": "observed",
+      "land_gini": 0.5014,
+      "land_gini_census": "suplementary data by Lowder, Sanchez and Bertini (2021) - Saint Kitts and Nevis Agricultural Census 1987",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1987,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "KOR": {
+      "agricultural_land_ha": 1568000,
+      "basis": "observed",
+      "land_gini": 0.6291,
+      "land_gini_census": "FAO WCA Main Results - Republic of Korea - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "KWT": {
+      "agricultural_land_ha": 150000,
+      "basis": "observed",
+      "land_gini": 0.7656,
+      "land_gini_census": "data tables published in the 1970 World Census of Agriculture Report - Kuwait Agricultural Census 1970",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1970,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LAO": {
+      "agricultural_land_ha": 2287200,
+      "basis": "observed",
+      "land_gini": 0.4383,
+      "land_gini_census": "FAO WCA Main Results - Lao PDR - Agricultural census 2010/11",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2011,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LBN": {
+      "agricultural_land_ha": 674214,
+      "basis": "observed",
+      "land_gini": 0.691,
+      "land_gini_census": "FAO WCA Main Results - Lebanon - Agricultural census 2010",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2010,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LBR": {
+      "agricultural_land_ha": 1923040,
+      "basis": "observed",
+      "land_gini": 0.4119,
+      "land_gini_census": "Household Income and Expenditure Survey - Liberia Institute of Statistics and Geo-Information Services (LISGIS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2016,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LBY": {
+      "agricultural_land_ha": 15350000,
+      "basis": "observed",
+      "land_gini": 0.726,
+      "land_gini_census": "suplementary data by Lowder, Sanchez and Bertini (2021) - Libya Agricultural Census 1987",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1987,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LCA": {
+      "agricultural_land_ha": 9940,
+      "basis": "observed",
+      "land_gini": 0.6853,
+      "land_gini_census": "FAO WCA Main Results - Saint Lucia - Agricultural census 2007",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2007,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LKA": {
+      "agricultural_land_ha": 3006900,
+      "basis": "observed",
+      "land_gini": 0.6088,
+      "land_gini_census": "FAO WCA Main Results - Sri Lanka - Agricultural census 2013/14",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2014,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LSO": {
+      "agricultural_land_ha": 2360748,
+      "basis": "observed",
+      "land_gini": 0.5216,
+      "land_gini_census": "suplementary data by Lowder, Sanchez and Bertini (2021) - Lesotho Agricultural Census 1990",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1990,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LTU": {
+      "agricultural_land_ha": 2873000,
+      "basis": "observed",
+      "land_gini": 0.7751,
+      "land_gini_census": "FAO WCA Main Results - Lithuania - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LUX": {
+      "agricultural_land_ha": 132998,
+      "basis": "observed",
+      "land_gini": 0.5161,
+      "land_gini_census": "FAO WCA Main Results - Luxembourg - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "LVA": {
+      "agricultural_land_ha": 1971000,
+      "basis": "observed",
+      "land_gini": 0.8023,
+      "land_gini_census": "FAO WCA Main Results - Latvia - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MAR": {
+      "agricultural_land_ha": 29788266,
+      "basis": "observed",
+      "land_gini": 0.624,
+      "land_gini_census": "FAO WCA Main Results - Moroco - Agricultural census 1996",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1996,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MDA": {
+      "agricultural_land_ha": 2440000,
+      "basis": "observed",
+      "land_gini": 0.8341,
+      "land_gini_census": "FAO WCA Main Results - Moldova - Agricultural census 2011",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2011,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MDG": {
+      "agricultural_land_ha": 40895000,
+      "basis": "observed",
+      "land_gini": 0.8188,
+      "land_gini_census": "data tables published in the 1980 World Census of Agriculture Report - Madagascar Agricultural Census 1985",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1985,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MEX": {
+      "agricultural_land_ha": 98545416,
+      "basis": "observed",
+      "land_gini": 0.849,
+      "land_gini_census": "FAO WCA Main Results - Mexico - Agricultural census 2022",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2022,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MKD": {
+      "agricultural_land_ha": 1251000,
+      "basis": "observed",
+      "land_gini": 0.6299,
+      "land_gini_census": "FAO WCA Main Results - Macedonia - Agricultural census 2007",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2007,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MLI": {
+      "agricultural_land_ha": 43279490,
+      "basis": "observed",
+      "land_gini": 0.4972,
+      "land_gini_census": "Harmonized Survey on Household Living Conditions -  National Institute of Statistics (INSTAT)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MLT": {
+      "agricultural_land_ha": 8291,
+      "basis": "observed",
+      "land_gini": 0.5554,
+      "land_gini_census": "FAO WCA Main Results - Malta - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MMR": {
+      "agricultural_land_ha": 12997332,
+      "basis": "observed",
+      "land_gini": 0.4858,
+      "land_gini_census": "FAO WCA Main Results - Myanmar - Agricultural census 2010",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2010,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MNE": {
+      "agricultural_land_ha": 263520,
+      "basis": "observed",
+      "land_gini": 0.8357,
+      "land_gini_census": "FAO WCA Main Results - Montenegro - Agricultural census 2010",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2010,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MNG": {
+      "agricultural_land_ha": 107467240,
+      "basis": "observed",
+      "land_gini": 0.8394,
+      "land_gini_census": "FAO WCA Main Results - Mongolia - Agricultural census 2011",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MOZ": {
+      "agricultural_land_ha": 41512332,
+      "basis": "observed",
+      "land_gini": 0.4424,
+      "land_gini_census": "suplementary data by Lowder, Sanchez and Bertini (2021) - Mozambique - Agricultural census 2009/10",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2010,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MRT": {
+      "agricultural_land_ha": 39710000,
+      "basis": "observed",
+      "land_gini": 0.601,
+      "land_gini_census": "data tables published in the 1980 World Census of Agriculture Report - Mauritania Agricultural Census 1985",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1985,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MWI": {
+      "agricultural_land_ha": 6050000,
+      "basis": "observed",
+      "land_gini": 0.4058,
+      "land_gini_census": "Fifth Integrated Household Survey - National Statistical Office (NSO)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "MYS": {
+      "agricultural_land_ha": 8571000,
+      "basis": "observed",
+      "land_gini": 0.4802,
+      "land_gini_census": "data tables published in the 1960 World Census of Agriculture Report - Malaysia Agricultural Census 1960",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1960,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "NAM": {
+      "agricultural_land_ha": 38812000,
+      "basis": "observed",
+      "land_gini": 0.6172,
+      "land_gini_census": "suplementary data by Lowder, Sanchez and Bertini (2021) -  Namibia - Agricultural census 2013/14",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2014,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "NED": {
+      "agricultural_land_ha": 1803000,
+      "basis": "observed",
+      "land_gini": 0.5275,
+      "land_gini_census": "FAO WCA Main Results - Netherlands - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "NER": {
+      "agricultural_land_ha": 46598500,
+      "basis": "observed",
+      "land_gini": 0.404,
+      "land_gini_census": "Harmonized Survey on Household Living Conditions,** National Institute of Statistics (INS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2022,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "NGA": {
+      "agricultural_land_ha": 69398210,
+      "basis": "observed",
+      "land_gini": 0.534,
+      "land_gini_census": "Living Standards Survey - National Bureau of Statistics (NBS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "NIC": {
+      "agricultural_land_ha": 5091000,
+      "basis": "observed",
+      "land_gini": 0.7808,
+      "land_gini_census": "FAO WCA Main Results - Nicaragua - Agricultural census 2011",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2011,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "NOR": {
+      "agricultural_land_ha": 982000,
+      "basis": "observed",
+      "land_gini": 0.4842,
+      "land_gini_census": "FAO WCA Main Results - Norway - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "NPL": {
+      "agricultural_land_ha": 3744100,
+      "basis": "observed",
+      "land_gini": 0.5251,
+      "land_gini_census": "FAO WCA Main Results - Nepal - Agricultural census 2021/22",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2022,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "NZL": {
+      "agricultural_land_ha": 9711000,
+      "basis": "observed",
+      "land_gini": 0.7866,
+      "land_gini_census": "FAO WCA Main Results - New Zealand - Agricultural census 2017",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2017,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "OMN": {
+      "agricultural_land_ha": 1471730,
+      "basis": "observed",
+      "land_gini": 0.8309,
+      "land_gini_census": "FAO WCA Main Results - Oman - Agricultural census 2012/13",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2013,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PAK": {
+      "agricultural_land_ha": 35995000,
+      "basis": "observed",
+      "land_gini": 0.5297,
+      "land_gini_census": "Pakistan Social and Living Standards Measurement Survey/Household Integrated Economic Survey -  Pakistan Bureau of Statistics (PBS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PAN": {
+      "agricultural_land_ha": 2189966,
+      "basis": "observed",
+      "land_gini": 0.8693,
+      "land_gini_census": "FAO WCA Main Results - Panama - Agricultural census 2011",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2011,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PER": {
+      "agricultural_land_ha": 24385560,
+      "basis": "observed",
+      "land_gini": 0.7945,
+      "land_gini_census": "National Agricultural Survey - National Institute of Statistics and Informatics (INEI)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PHL": {
+      "agricultural_land_ha": 12722600,
+      "basis": "observed",
+      "land_gini": 0.6495,
+      "land_gini_census": "FAO WCA Main Results - Philippines - Agricultural census 2012",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2012,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PNG": {
+      "agricultural_land_ha": 1405000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "POL": {
+      "agricultural_land_ha": 14580000,
+      "basis": "observed",
+      "land_gini": 0.6463,
+      "land_gini_census": "FAO WCA Main Results - Poland - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PRK": {
+      "agricultural_land_ha": 2595300,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PRT": {
+      "agricultural_land_ha": 3969960,
+      "basis": "observed",
+      "land_gini": 0.8406,
+      "land_gini_census": "FAO WCA Main Results - Portugal - Agricultural census 2019",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PRY": {
+      "agricultural_land_ha": 21427000,
+      "basis": "observed",
+      "land_gini": 0.7477,
+      "land_gini_census": "Permanent Household Survey - National Institute of Statistics (INE)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2023,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "PSX": {
+      "agricultural_land_ha": 391200,
+      "basis": "observed",
+      "land_gini": 0.7405,
+      "land_gini_census": "FAO WCA Main Results - State of Palestine - Agricultural census 2021",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2021,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "QAT": {
+      "agricultural_land_ha": 74000,
+      "basis": "observed",
+      "land_gini": 0.9091,
+      "land_gini_census": "FAO WCA Main Results - Qatar - Agricultural census 2001/02",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2001,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ROU": {
+      "agricultural_land_ha": 12715000,
+      "basis": "observed",
+      "land_gini": 0.819,
+      "land_gini_census": "FAO WCA Main Results - Romania - Agricultural census 2010",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2010,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "RUS": {
+      "agricultural_land_ha": 215701000,
+      "basis": "observed",
+      "land_gini": 0.9938,
+      "land_gini_census": "FAO WCA Main Results - Russian Federation - Agricultural census 2016",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2016,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "RWA": {
+      "agricultural_land_ha": 1883131,
+      "basis": "observed",
+      "land_gini": 0.5614,
+      "land_gini_census": "Integrated Household Living Conditions Survey, National Institute of Statistics of Rwanda (NISR)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2017,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SAH": {
+      "agricultural_land_ha": 5004000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SAU": {
+      "agricultural_land_ha": 173637420,
+      "basis": "observed",
+      "land_gini": 0.9178,
+      "land_gini_census": "FAO WCA Main Results - Saudi Arabia - Agricultural census 2015",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2015,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SDN": {
+      "agricultural_land_ha": 112665000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SEN": {
+      "agricultural_land_ha": 9511000,
+      "basis": "observed",
+      "land_gini": 0.4639,
+      "land_gini_census": "Harmonized Survey on Household Living Conditions - National Agency of Statistics and Demography(ANSD)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2022,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SGP": {
+      "agricultural_land_ha": 660,
+      "basis": "observed",
+      "land_gini": 0.4396,
+      "land_gini_census": "data tables published in the 1970 World Census of Agriculture Report - Singapore Agricultural Census 1973",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1973,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SLB": {
+      "agricultural_land_ha": 109200,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SLE": {
+      "agricultural_land_ha": 3949000,
+      "basis": "observed",
+      "land_gini": 0.498,
+      "land_gini_census": "data tables published in the 1980 World Census of Agriculture Report - Sierra Leone Agricultural Census 1985",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1985,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SLV": {
+      "agricultural_land_ha": 1195700,
+      "basis": "observed",
+      "land_gini": 0.7568,
+      "land_gini_census": "suplementary data by Lowder, Sanchez and Bertini (2021) - El Salvador - Agricultural census 2007/08",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2007,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SOL": {
+      "agricultural_land_ha": 109200,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SOM": {
+      "agricultural_land_ha": 44129200,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SRB": {
+      "agricultural_land_ha": 3396000,
+      "basis": "observed",
+      "land_gini": 0.6984,
+      "land_gini_census": "FAO WCA Main Results - Serbia - Agricultural census 2012",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2012,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SSD": {
+      "agricultural_land_ha": 28347232,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SUR": {
+      "agricultural_land_ha": 71432,
+      "basis": "observed",
+      "land_gini": 0.7682,
+      "land_gini_census": "Suriname Survey of Living Conditions, Inter-American Development Bank (IDB)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2016,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SVK": {
+      "agricultural_land_ha": 1825000,
+      "basis": "observed",
+      "land_gini": 0.8463,
+      "land_gini_census": "FAO WCA Main Results - Slovakia - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SVN": {
+      "agricultural_land_ha": 611200,
+      "basis": "observed",
+      "land_gini": 0.5901,
+      "land_gini_census": "FAO WCA Main Results - Slovenia - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SWE": {
+      "agricultural_land_ha": 2982000,
+      "basis": "observed",
+      "land_gini": 0.668,
+      "land_gini_census": "FAO WCA Main Results - Sweden - Agricultural census 2020",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2020,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SWZ": {
+      "agricultural_land_ha": 1195000,
+      "basis": "observed",
+      "land_gini": 0.9184,
+      "land_gini_census": "data tables published in the 1970 World Census of Agriculture Report - Eswatini Agricultural Census 1972",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1972,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "SYR": {
+      "agricultural_land_ha": 13606000,
+      "basis": "observed",
+      "land_gini": 0.7153,
+      "land_gini_census": "data tables published in the 1970 World Census of Agriculture Report - Syrian Arab Republic Agricultural Census 1971",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1971,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TCD": {
+      "agricultural_land_ha": 50337300,
+      "basis": "observed",
+      "land_gini": 0.389,
+      "land_gini_census": "data tables published in the 1970 World Census of Agriculture Report - Chad Agricultural Census 1973",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1973,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TGO": {
+      "agricultural_land_ha": 3820000,
+      "basis": "observed",
+      "land_gini": 0.6116,
+      "land_gini_census": "Harmonized Survey on Household Living Conditions,** National Institute of Statistics",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2022,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "THA": {
+      "agricultural_land_ha": 22376000,
+      "basis": "observed",
+      "land_gini": 0.5085,
+      "land_gini_census": "FAO WCA Main Results - Thailand - Agricultural census 2013",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2013,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TJK": {
+      "agricultural_land_ha": 3878700,
+      "basis": "observed",
+      "land_gini": 0.6015,
+      "land_gini_census": "Living Standards Survey - State Statistical Agency (TAJSTAT)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2007,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TKM": {
+      "agricultural_land_ha": 39578240,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TLS": {
+      "agricultural_land_ha": 341400,
+      "basis": "observed",
+      "land_gini": 0.8203,
+      "land_gini_census": "FAO-WCA Main Results - Timor-Leste Agricultural Census 2019",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2019,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TTO": {
+      "agricultural_land_ha": 54000,
+      "basis": "observed",
+      "land_gini": 0.7403,
+      "land_gini_census": "FAO WCA Main Results - Trinidad and Tobago - Agricultural census 2004",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2004,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TUN": {
+      "agricultural_land_ha": 9700500,
+      "basis": "observed",
+      "land_gini": 0.6671,
+      "land_gini_census": "FAO WCA Main Results - Tunisia - Agricultural census 2004/2005",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2004,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TUR": {
+      "agricultural_land_ha": 38588000,
+      "basis": "observed",
+      "land_gini": 0.5924,
+      "land_gini_census": "FAO WCA Main Results - Turkey - Agricultural census 2001",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2001,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TWN": {
+      "agricultural_land_ha": 779000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "TZA": {
+      "agricultural_land_ha": 39521200,
+      "basis": "observed",
+      "land_gini": 0.5623,
+      "land_gini_census": "National Panel Survey - National Bureau of Statistics (NBS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2015,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "UGA": {
+      "agricultural_land_ha": 14415000,
+      "basis": "observed",
+      "land_gini": 0.4656,
+      "land_gini_census": "Uganda National Panel Survey - Uganda Bureau of Statistics (UBOS)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2016,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "UKR": {
+      "agricultural_land_ha": 41311000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "URY": {
+      "agricultural_land_ha": 14238600,
+      "basis": "observed",
+      "land_gini": 0.7683,
+      "land_gini_census": "FAO WCA Main Results - Uruguay - Agricultural census 2011",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2011,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "USA": {
+      "agricultural_land_ha": 421540380,
+      "basis": "observed",
+      "land_gini": 0.8649,
+      "land_gini_census": "FAO WCA Main Results - United States of America - Agricultural census 2017",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2022,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "UZB": {
+      "agricultural_land_ha": 25582000,
+      "basis": "observed",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "VCT": {
+      "agricultural_land_ha": 7000,
+      "basis": "observed",
+      "land_gini": 0.6863,
+      "land_gini_census": "FAO WCA Main Results - Saint Vincent and the Grenadines - Agricultural census 2000",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2000,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "VEN": {
+      "agricultural_land_ha": 21500000,
+      "basis": "observed",
+      "land_gini": 0.8649,
+      "land_gini_census": "FAO WCA Main Results - Venezuela - Agricultural census 2008",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2008,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "VNM": {
+      "agricultural_land_ha": 12291036,
+      "basis": "observed",
+      "land_gini": 0.6388,
+      "land_gini_census": "FAO WCA Main Results - Viet Nam - Agricultural census 2016",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2016,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "XKX": {
+      "agricultural_land_ha": null,
+      "basis": "none",
+      "land_gini": null,
+      "land_gini_census": null,
+      "land_gini_source": null,
+      "land_gini_year": null,
+      "source": null,
+      "year": null
+    },
+    "YEM": {
+      "agricultural_land_ha": 23452000,
+      "basis": "observed",
+      "land_gini": 0.7507,
+      "land_gini_census": "FAO WCA Main Results - Yemen - Agricultural census 2003",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2002,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ZAF": {
+      "agricultural_land_ha": 96341000,
+      "basis": "observed",
+      "land_gini": 0.8161,
+      "land_gini_census": "FAO WCA Main Results - South Africa - Agricultural census 2017",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2017,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ZMB": {
+      "agricultural_land_ha": 23839000,
+      "basis": "observed",
+      "land_gini": 0.4144,
+      "land_gini_census": "Rural Agricultural Livelihoods Survey - Central Statistical Office (CSO)",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 2015,
+      "source": "faostat_land_use",
+      "year": 2023
+    },
+    "ZWE": {
+      "agricultural_land_ha": 16167122,
+      "basis": "observed",
+      "land_gini": 0.6044,
+      "land_gini_census": "data tables published in the 1960 World Census of Agriculture Report - NA Agricultural Census 1960",
+      "land_gini_source": "fao_lineq_v1",
+      "land_gini_year": 1960,
+      "source": "faostat_land_use",
+      "year": 2023
+    }
+  },
+  "note": "Área agrícola e concentração fundiária por nação. agricultural_land_ha = FAOSTAT 'Land Use', item 00006610 'Agricultural land' (elemento Area 005110), já em hectares — a série é nativa em ha e nenhuma conversão foi aplicada; definição FAO: terra cultivada (arable + culturas permanentes) + pastagens e prados permanentes; ano 2023 em todas as nações (edição 2025 da FAOSTAT, lida via Our World in Data em 2026-02-25). land_gini = FAO LINEQ v1 (Cabrera Cevallos, de la O Campos & O'Neill, 2026, DOI 10.5281/zenodo.18630849), coluna lo_gini_all: Gini da área OPERADA entre estabelecimentos agrícolas, ESTIMATIVA MODELADA pela FAO por interpolação Pareto generalizada sobre as tabulações do censo agropecuário (WCA) — não é Gini de propriedade registral, não é medição direta e não foi calculada por nós; land_gini_year é o ano do censo/levantamento de origem (campo source_year do LINEQ) e land_gini_census nomeia esse censo. Recência é desigual: mediana de 2015, mas 47 nações vêm de censo anterior a 2010 e 28 de antes de 2000 (mínimo 1960) — o ano está em land_gini_year e não foi atualizado nem extrapolado por nós. Sem censo na base, land_gini fica null (24 nações) — nenhum valor foi estimado, interpolado ou copiado de vizinho; a regra de fallback em runtime está em regional_reference/state_distribution. XKX (Kosovo) não aparece nem na FAOSTAT nem no LINEQ: fica null e basis none. O World Bank AG.LND.AGRI.K2 foi conferido e NÃO é a série principal (ver cross_check): ele é publicado em km² e ficou defasado frente à revisão atual da FAOSTAT em 45 países. ATENÇÃO DE LICENÇA: o LINEQ é CC BY-NC-SA 4.0 (uso não comercial); ver docs/data/land_property.md antes de distribuir build comercial.",
+  "regional_reference": {
+    "fallback_rule": "land_gini_runtime = land_gini da nação; se null, mediana da região do jogo; se a região tiver n < 3, mediana global (region_global).",
+    "global": {
+      "median_land_gini": 0.6706,
+      "n": 155
+    },
+    "note": "DERIVADO: mediana dos land_gini observados deste arquivo por região do jogo. Não é fonte externa. Usar só como fallback declarado quando land_gini é null.",
+    "regions": {
+      "africa": {
+        "max": 0.9184,
+        "median_land_gini": 0.538,
+        "min": 0.389,
+        "n": 40
+      },
+      "asia": {
+        "max": 0.9039,
+        "median_land_gini": 0.5924,
+        "min": 0.4305,
+        "n": 27
+      },
+      "europe": {
+        "max": 0.9938,
+        "median_land_gini": 0.6963,
+        "min": 0.4086,
+        "n": 38
+      },
+      "middle_east": {
+        "max": 0.9178,
+        "median_land_gini": 0.7507,
+        "min": 0.5292,
+        "n": 13
+      },
+      "north_america": {
+        "max": 0.9467,
+        "median_land_gini": 0.7681,
+        "min": 0.4561,
+        "n": 22
+      },
+      "oceania": {
+        "max": 0.9153,
+        "median_land_gini": 0.8151,
+        "min": 0.7866,
+        "n": 4
+      },
+      "south_america": {
+        "max": 0.9759,
+        "median_land_gini": 0.8501,
+        "min": 0.7477,
+        "n": 11
+      }
+    }
+  },
+  "sources": {
+    "fao_lineq_v1": {
+      "license": "CC BY-NC-SA 4.0 (não comercial, compartilha-igual)",
+      "period": "1929..2023 (WCA 1930..2020)",
+      "publisher": "FAO (Cabrera Cevallos, de la O Campos & O'Neill) / Zenodo",
+      "title": "Global Database of Land Distribution and Inequality (LINEQ), v1 — variável lo_gini_all (Gini da área operada, todos os estabelecimentos)",
+      "unit": "index 0..1",
+      "url": "https://doi.org/10.5281/zenodo.18630849",
+      "year": 2026
+    },
+    "faostat_land_use": {
+      "accessed_via": "https://ourworldindata.org/grapher/land-use.csv (Our World in Data, lastUpdated 2026-02-25)",
+      "definition": "terra cultivada + pastagens e prados permanentes",
+      "license": "CC BY 4.0",
+      "publisher": "FAO — Food and Agriculture Organization of the United Nations",
+      "title": "FAOSTAT — Land, Inputs and Sustainability: Land Use, item 00006610 'Agricultural land' (Area 005110, hectares)",
+      "unit": "hectares",
+      "url": "https://www.fao.org/faostat/en/#data/RL",
+      "year": 2025
+    },
+    "worldbank_ag_lnd_agri_k2": {
+      "license": "CC BY 4.0",
+      "publisher": "World Bank (WDI; fonte primária FAOSTAT)",
+      "role": "conferência apenas — não entra nos valores do arquivo",
+      "title": "World Bank — Agricultural land (AG.LND.AGRI.K2), km²",
+      "unit": "km2 (x100 = ha)",
+      "url": "https://data.worldbank.org/indicator/AG.LND.AGRI.K2",
+      "year": 2026
+    }
+  },
+  "state_distribution": {
+    "file": null,
+    "reason": "FAOSTAT e LINEQ publicam só por nação; nenhuma fonte por admin-1 foi integrada nesta versão (USDA NASS e IBGE/SIDRA cobririam um país cada e exigem extração própria). Por isso land_property_states.json não existe.",
+    "rule": "ha_estado = ha_nacao * w_estado / soma(w) sobre os estados da nação em state_regions.json, com w_estado = area_km2(estado) * aptidao_agricola(estado); aptidao = média dos territórios TRT que interceptam o estado (data/definitions/natural/agriculture.json, 0..1). Se soma(w)=0, w = area_km2. Clamp: ha_estado <= 100 * area_km2(estado); o excedente volta para os estados não clampados, proporcional a w. A soma dos estados é sempre o total nacional."
+  },
+  "units": {
+    "agricultural_land": "ha",
+    "land_gini": "index 0..1"
+  },
+  "version": 1
+}

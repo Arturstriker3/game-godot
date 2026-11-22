@@ -76,8 +76,9 @@ func _on_trade_filter_changed(land: bool, sea: bool) -> void:
 
 
 ## Mantém os modos de mapa (população, economia, indústria, recursos) vivos.
-func _on_status_updated(summary: Dictionary) -> void:
-	city_world.refresh_modes(summary.get("cities", []))
+func _on_status_updated(_summary: Dictionary) -> void:
+	# A4: o mapa lê as colunas por cidade, não o Dictionary do mundo.
+	city_world.refresh_modes(Economy.city_columns())
 
 
 ## Alimenta a janela de 7 dias das setas de comércio (modo rotas).
@@ -108,9 +109,10 @@ func _build_city_world() -> void:
 	city_world = CityWorldScript.new()
 	add_child(city_world)
 
-	var status: Dictionary = Economy.sim.get_demo_status()
-	var cities: Array = status["cities"]
-	var ports: Array = status.get("ports", [])
+	# A4: as linhas completas (id/nome/nação/centro) vêm sob demanda UMA vez no
+	# build; o dia a dia usa as colunas (`get_city_columns`).
+	var cities: Array = Economy.sim.get_city_rows()
+	var ports: Array = Economy.sim.get_ports()
 	city_world.build(cities, ports)
 	_center_world(cities)
 

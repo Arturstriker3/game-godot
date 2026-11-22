@@ -51,7 +51,7 @@ const MIN_SEGMENT_SECONDS := 0.35
 const EFFECTIVE_KMH_BY_MODE := {"truck": 25.8, "ship": 33.0, "plane": 800.0}
 ## Teto de comboios VISÍVEIS ao mesmo tempo (LOD): os pedidos além disso não
 ## viram veículo, mas a economia não muda — o comércio é simulado no núcleo
-## C++ (`demo_in_transit_`/shipments) antes de existir pedido; o comboio é só
+## C++ (`in_transit_`/shipments) antes de existir pedido; o comboio é só
 ## a representação no mapa. 24 é o piso da faixa recomendada (24–32): cada
 ## comboio visível custa uma rota de A* (~5 ms/dia no total a 650 cidades).
 ## Comandado pelo `spawn_orders`, que ordena os pedidos por prioridade (nação do

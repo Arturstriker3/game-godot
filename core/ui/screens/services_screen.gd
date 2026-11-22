@@ -13,9 +13,10 @@ extends Control
 ## lucro/prejuízo e situação (aberto/fechando), com busca, filtro por setor e
 ## paginação que preenche a altura.
 ##
-## Fonte dos números: `get_demo_status()` (cidades, contadores e o catálogo
-## `service_sectors`) e `demo_get_services_detail(city_id)` (setores e negócios
-## do dia). O nome do negócio NÃO vem da simulação: é gerado aqui por
+## Fonte dos números: retrato sob demanda de `Economy.ui_snapshot()` (A4:
+## cidades, contadores e o catálogo `service_sectors`) e
+## `get_services_detail(city_id)` (setores e negócios do dia). O nome do negócio
+## NÃO vem da simulação: é gerado aqui por
 ## `core/culture/business_name_generator.gd` a partir de setor + `name_seed` +
 ## cultura do dono, como `tools/services_test.gd` faz — nada disso volta para o
 ## núcleo. Busca, filtro, aba e seleção são estado de exibição.
@@ -498,7 +499,7 @@ func _detail(city_id: String) -> Dictionary:
 	var sim: Object = economy.get("sim") if economy != null else null
 	if sim == null:
 		return {}
-	var detail: Dictionary = sim.demo_get_services_detail(city_id)
+	var detail: Dictionary = sim.get_services_detail(city_id)
 	_details[city_id] = detail
 	return detail
 

@@ -88,11 +88,12 @@ func _run() -> void:
 			for _day in _route_days:
 				economy._run_day()
 				if not economy.last_summary.is_empty():
-					route_history.append(economy.last_summary.duplicate(true))
-			if not route_history.is_empty():
-				var last: Dictionary = route_history[route_history.size() - 1]
-				cities = last.get("cities", cities)
-				ports = last.get("ports", ports)
+					var entry: Dictionary = economy.last_summary.duplicate(true)
+					entry["trade_orders"] = economy.sim.get_trade_orders()
+					route_history.append(entry)
+			if not route_history.is_empty() and economy.sim != null:
+				cities = economy.sim.get_city_rows()
+				ports = economy.sim.get_ports()
 	if cities.is_empty():
 		print("[camera_bench] sem cidades; abortando")
 		get_tree().quit(1)

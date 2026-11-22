@@ -45,17 +45,17 @@ func _load(path: String) -> Variant:
 
 func _new_sim() -> EconomySim:
 	var sim := EconomySim.new()
-	sim.demo_set_goods(_load(GoodsPath))
-	sim.demo_set_recipes(_load(RecipesPath))
-	sim.demo_set_needs(_load(NeedsPath))
+	sim.set_goods(_load(GoodsPath))
+	sim.set_recipes(_load(RecipesPath))
+	sim.set_needs(_load(NeedsPath))
 	# Padrão: construção física (projeto), não instantânea.
-	sim.demo_set_instant_construction(false)
-	sim.initialize_demo()
+	sim.set_instant_construction(false)
+	sim.initialize_scenario()
 	return sim
 
 
 func _projects(sim: EconomySim) -> Array:
-	return sim.demo_to_dict().get("construction_projects", [])
+	return sim.to_dict().get("construction_projects", [])
 
 
 func _project(sim: EconomySim) -> Dictionary:
@@ -64,23 +64,23 @@ func _project(sim: EconomySim) -> Dictionary:
 
 
 func _set_government_budget(sim: EconomySim, city_id: String, budget: float) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for city in snapshot["cities"]:
 		if String(city["id"]) == city_id:
 			city["government_budget"] = budget
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 
 
 func _seed_materials(sim: EconomySim, tons: float) -> void:
-	sim.demo_set_market_stock("AGRIA", "construction_material", tons)
-	sim.demo_set_market_stock("AGRIA", "steel_structure", tons)
-	sim.demo_set_market_stock("AGRIA", "electrical_material", tons)
+	sim.set_market_stock("AGRIA", "construction_material", tons)
+	sim.set_market_stock("AGRIA", "steel_structure", tons)
+	sim.set_market_stock("AGRIA", "electrical_material", tons)
 
 
 func _test_project_lifecycle() -> void:
 	var sim := _new_sim()
 	# 1. cria a obra (projeto físico, custo 10.000).
-	var result: Dictionary = sim.demo_build("AGRIA", "T-FARM", "wheat", -1, WHEAT,
+	var result: Dictionary = sim.build("AGRIA", "T-FARM", "wheat", -1, WHEAT,
 		5.0, 0.0, 0.0, 0.0, 0.0, "state", 10000.0)
 	if not bool(result.get("created", false)):
 		_fail("obra: criação falhou (%s)" % String(result.get("error", "")))
@@ -90,7 +90,7 @@ func _test_project_lifecycle() -> void:
 		return
 
 	# 2. sem material -> ATRASA (não falha): dias não avançam e motivo é material.
-	sim.tick_demo()
+	sim.tick_day()
 	var project: Dictionary = _project(sim)
 	if int(project.get("days_elapsed", -1)) != 0:
 		_fail("sem material: projeto avançou (dias=%s)" % str(project.get("days_elapsed")))
@@ -101,7 +101,7 @@ func _test_project_lifecycle() -> void:
 
 	# 3. material entregue -> avança (pausa desfeita).
 	_seed_materials(sim, 100.0)
-	sim.tick_demo()
+	sim.tick_day()
 	project = _project(sim)
 	if int(project.get("days_elapsed", -1)) <= 0:
 		_fail("material entregue: projeto não avançou (dias=%s)" % str(
@@ -114,7 +114,7 @@ func _test_project_lifecycle() -> void:
 	# cobre o avanço; dias continuam.
 	var elapsed_before := int(_project(sim).get("days_elapsed", -1))
 	_set_government_budget(sim, "AGRIA", 0.0)
-	sim.tick_demo()
+	sim.tick_day()
 	project = _project(sim)
 	if int(project.get("days_elapsed", -1)) <= elapsed_before:
 		_fail("capital reservado: projeto não avançou (dias %d -> %d)" % [
@@ -127,7 +127,7 @@ func _test_project_lifecycle() -> void:
 	_set_government_budget(sim, "AGRIA", 1000000.0)
 	_seed_materials(sim, 100000.0)
 	for day in 40:
-		sim.tick_demo()
+		sim.tick_day()
 		if _projects(sim).is_empty():
 			break
 	if not _projects(sim).is_empty():
@@ -144,7 +144,7 @@ func _test_project_lifecycle() -> void:
 					building.get("capacity")))
 	if not found:
 		_fail("conclusão: prédio não entrou em operação")
-	var produced: Array = sim.get_demo_status().get("produced_total", [])
+	var produced: Array = sim.get_status().get("produced_total", [])
 	if produced.size() <= WHEAT or float(produced[WHEAT]) <= 0.0:
 		_fail("conclusão: prédio não produziu trigo")
 
@@ -154,20 +154,20 @@ func _test_project_lifecycle() -> void:
 func _test_money_conservation() -> void:
 	var sim := _new_sim()
 	_seed_materials(sim, 100000.0)
-	var money_before := float(sim.get_demo_status().get("money_total", 0.0))
-	var result: Dictionary = sim.demo_build("AGRIA", "T-FARM2", "wheat", -1, WHEAT,
+	var money_before := float(sim.get_status().get("money_total", 0.0))
+	var result: Dictionary = sim.build("AGRIA", "T-FARM2", "wheat", -1, WHEAT,
 		5.0, 0.0, 0.0, 0.0, 0.0, "state", 10000.0)
 	if not bool(result.get("created", false)):
 		_fail("conservação: obra não criada (%s)" % String(result.get("error", "")))
 		return
 	for day in 30:
-		sim.tick_demo()
-		var violations: Array = sim.get_demo_status().get("invariant_violations", [])
+		sim.tick_day()
+		var violations: Array = sim.get_status().get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("conservação: invariante violado no dia %d: %s" % [
 				day + 1, String(violations[0])])
 			return
-	var money_after := float(sim.get_demo_status().get("money_total", 0.0))
+	var money_after := float(sim.get_status().get("money_total", 0.0))
 	if absf(money_after - money_before) > 0.01:
 		_fail("conservação: dinheiro não conservado (%.2f -> %.2f)" % [
 			money_before, money_after])

@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Diagnóstico de balanceamento global (Fase A — só leitura).
 ##
-## Roda o MESMO pipeline do jogo ao vivo (initialize_demo_world + demo_set_goods
+## Roda o MESMO pipeline do jogo ao vivo (initialize_world + set_goods
 ## + GeographyService.apply_to_sim + EconomicAI) por um período longo e tabele,
 ## por nação e por bem, produção/dia, consumo/dia, estoque e satisfação alimentar.
 ## Não altera código nem dados: apenas mede e escreve
@@ -54,8 +54,8 @@ func _run() -> void:
 		geo.load_data()  # FIX: carrega antes (o jogo ao vivo não faz isso)
 	# Resolve a fazenda inicial de cada cidade para o alimento básico de maior
 	# aptidão × caloria da nação (o mesmo que o jogo ao vivo faz em economy.gd).
-	sim.initialize_demo_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
-	sim.demo_set_goods(goods)
+	sim.initialize_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
+	sim.set_goods(goods)
 	var applied := geo.apply_to_sim(sim, _cities_with_center(cities))
 
 	var ai = EconomicAIScript.new()
@@ -64,8 +64,8 @@ func _run() -> void:
 	var mid: Dictionary = {}
 	var trace: Array = []
 	for day in _days:
-		var status: Dictionary = sim.tick_demo()
-		# Reusa o resumo do tick: a IA não chama get_demo_status de novo.
+		var status: Dictionary = sim.tick_day()
+		# Reusa o resumo do tick: a IA não chama get_status de novo.
 		ai.run(int(status.get("day", 0)), status)
 		if day == _days / 2 - 1:
 			mid = _snapshot(sim)
@@ -73,7 +73,7 @@ func _run() -> void:
 			trace.append(_trace_point(day + 1, sim))
 
 	var final := _snapshot(sim)
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 
 	var report := {
 		"meta": {
@@ -114,7 +114,7 @@ func _cities_with_center(cities: Array) -> Array:
 
 ## Congela o estado relevante do sim (por nação e global) sem depender do C++.
 func _snapshot(sim: Object) -> Dictionary:
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var products: Array = status.get("products", [])
 	var nations := {}
 	var city_nation := {}
@@ -342,7 +342,7 @@ func _print_report(report: Dictionary, mid: Dictionary, final: Dictionary) -> vo
 
 ## Ponto de rastreio da evolução (para explicar o colapso).
 func _trace_point(day: int, sim: Object) -> Dictionary:
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var point := {"day": day}
 	var nations := {}
 	var iron_mine_count := 0

@@ -122,7 +122,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 					_log(day, city_id, "avoid", resource, gate, capacity * capital_cost)
 				else:
 					var new_id := "STATE-%s-%d" % [resource.to_upper(), _id_counter]
-					var result: Dictionary = _sim.demo_build(city_id, new_id, resource,
+					var result: Dictionary = _sim.build(city_id, new_id, resource,
 						int(template["input"]), product, capacity,
 						capacity * float(template["jobs_per_ton"]), float(template["wage"]),
 						capacity * float(template["opex_per_ton"]),
@@ -195,7 +195,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			continue
 		var cost := capacity * capital_cost
 		var new_id := "STATE-%s-%d" % [resource.to_upper(), _id_counter]
-		var result: Dictionary = _sim.demo_build(city_id, new_id, resource,
+		var result: Dictionary = _sim.build(city_id, new_id, resource,
 			-1, product, capacity, capacity * float(template["jobs_per_ton"]),
 			float(template["wage"]), capacity * float(template["opex_per_ton"]),
 			0.0, "state", cost)

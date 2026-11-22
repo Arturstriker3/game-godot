@@ -2,8 +2,8 @@ extends SceneTree
 
 ## Harness de equivalência byte a byte do núcleo econômico C++ (S0 do
 ## `docs/economy/core_refactor_plan.md`). Roda o cenário real (ou o AGRIA/PORTUS)
-## por N dias, captura `demo_to_dict()` (save integral), `get_demo_status()`
-## (status integral) e `demo_get_profile()` (meta informativa) e compara o
+## por N dias, captura `to_dict()` (save integral), `get_status()`
+## (status integral) e `get_profile()` (meta informativa) e compara o
 ## SHA-256 do JSON canônico (chaves ordenadas, precisão total) contra um golden.
 ##
 ##   godot --headless --path . --script res://tools/economy_refactor_equiv.gd \
@@ -16,7 +16,10 @@ extends SceneTree
 ## - Determinismo: rodar duas vezes sem baseline tem de dar o MESMO sha.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const LandPropertyScript := preload("res://core/economy/land_property.gd")
 const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
+## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
+const RegionDataScript := preload("res://core/economy/region_data.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -27,6 +30,11 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## B1: estrutura etária por nação (definição estática), antes do mundo.
+const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
+## B7: informalidade (ILOSTAT) e cobertura de saúde (OMS/GHO) por nação.
+const INFORMALITY_PATH := "res://data/definitions/economy/informality.json"
+const HEALTH_ACCESS_PATH := "res://data/definitions/population/health_access.json"
 
 const AGRIA_CENTER := Vector2(2532.6, 571.4)
 const PORTUS_CENTER := Vector2(2560.4, 543.8)
@@ -117,28 +125,44 @@ func _run() -> void:
 
 	# F2/F3/F8/F9: bens, receitas, necessidades, serviços, moedas e emprego
 	# setorial entram ANTES de criar o mundo (mesma ordem do jogo ao vivo).
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
-	if sim.has_method("demo_set_profiling"):
-		sim.demo_set_profiling(_profile)
-	if sim.has_method("demo_set_sim_threads"):
-		sim.demo_set_sim_threads(_threads)
+			sim.set_sector_employment(sector)
+	if sim.has_method("set_age_structure"):
+		var age_structure := _load_dict(AGE_STRUCTURE_PATH)
+		if not age_structure.is_empty():
+			sim.set_age_structure(age_structure)
+	# B7: informalidade (ILOSTAT) e cobertura de saúde (OMS/GHO) por nação, os
+	# MESMOS dados do autoload. Sem eles o harness roda o mundo sem informalidade
+	# e o serviço informal do interior nunca acontece — A0/S0 deixam de ser o jogo
+	# (e um drift de conservação pode passar despercebido).
+	if sim.has_method("set_informality"):
+		var informality := _load_dict(INFORMALITY_PATH)
+		if not informality.is_empty():
+			sim.set_informality(informality)
+	if sim.has_method("set_health_access"):
+		var health_access := _load_dict(HEALTH_ACCESS_PATH)
+		if not health_access.is_empty():
+			sim.set_health_access(health_access)
+	if sim.has_method("set_profiling"):
+		sim.set_profiling(_profile)
+	if sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(_threads)
 
 	var geo: Object = null
 	var ai: Object = null
 
 	if _mode == "demo":
 		# AGRIA/PORTUS (2 cidades), sem IA — mesmo setup do economy_integration_test.
-		sim.initialize_demo()
+		sim.initialize_scenario()
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		geo.apply_to_sim(sim, [
@@ -153,24 +177,33 @@ func _run() -> void:
 			_fail("cenario vazio (cidades=%d, construcoes=%d)" % [
 				cities.size(), buildings.size()])
 			return
+		# B3: região (estados inteiros) viaja no snapshot pelo bloco `region`.
+		RegionDataScript.attach(cities)
 		if _ai:
 			geo = GeographyServiceScript.new()
 			geo.load_data()
 			buildings = geo.resolve_initial_farms(buildings, cities)
-		sim.initialize_demo_world(cities, ports, buildings)
+		sim.initialize_world(cities, ports, buildings)
 		if geo != null:
 			geo.apply_to_sim(sim, _cities_with_center(cities))
 			ai = EconomicAIScript.new()
 			ai.setup(sim, geo)
 
+	# B5 (D-089): infra inicial do estado (dado real World Bank), como o autoload.
+	# No cenário sintético AGRIA/PORTUS não há bloco `region` — nada muda.
+	GeographyServiceScript.apply_initial_infra(sim)
+	# B6 (D-095): patrimônio da região (hectares + Gini fundiário). No cenário
+	# sintético não há região, então nada muda.
+	LandPropertyScript.apply(sim)
+
 	# Dia 0 já publicado; aquece os dois slots do status (o custo de alocação
 	# não entra no primeiro tick) — indiferente para o hash, mas deixa o perfil
 	# comparável entre execuções.
-	if sim.has_method("demo_warm_status"):
-		sim.demo_warm_status()
+	if sim.has_method("warm_status"):
+		sim.warm_status()
 
 	for day in _days:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		if ai != null:
 			ai.run(int(status.get("day", day + 1)), status)
 		var violations: Array = status.get("invariant_violations", [])
@@ -178,11 +211,11 @@ func _run() -> void:
 			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
 			return
 
-	var save_dict: Dictionary = sim.demo_to_dict()
-	var status_dict: Dictionary = sim.get_demo_status()
+	var save_dict: Dictionary = sim.to_dict()
+	var status_dict: Dictionary = sim.get_status()
 	var profile_dict: Dictionary = {}
-	if sim.has_method("demo_get_profile"):
-		profile_dict = sim.demo_get_profile()
+	if sim.has_method("get_profile"):
+		profile_dict = sim.get_profile()
 
 	var save_sha := _sha(JSON.stringify(save_dict, "", true, true))
 	var status_sha := _sha(JSON.stringify(status_dict, "", true, true))

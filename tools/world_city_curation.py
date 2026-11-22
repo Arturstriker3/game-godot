@@ -212,7 +212,83 @@ as cidades novas (`PORT_OF_OVERRIDES`). Os portos novos são George Town
 (Penang), Benguela, Antalya, Agadir, Málaga e Sevilha (`FORCED_PORTS`).
 Pádua é o caso do r3: o porto de Veneza ficava com Milão porque Pádua não
 estava no roster; agora a cidade existe e o porto passa a ela.
+
+Curadoria r9 (2026-11-17, recalibração de áreas)
+-----------------------------------------------
+Singapura (`SGP`) é ERRO DE DADO, não consequência da correção de área: a
+cidade-estado tem um dos maiores portos de contêineres do mundo (PSA) e o
+cenário não tinha nenhum porto com `nation = SGP`. No mundo de
+`sim/trade.cpp` a travessia entre massas de terra exige um porto nacional em
+CADA ponta; `SGP-SIN` é a única cidade da landmass `singapore`, então sem porto
+a nação não tinha rota marítima nenhuma e caía para a produção da própria
+fazenda (157,3 t/dia, com a área real de ~125 km²). ENTRA o porto `SGP-SIN`
+(`FORCED_PORTS`, `port_of = SGP-SIN`), no cais de Tanjong Pagar, costa sul da
+ilha voltada para o Estreito de Singapura (1,2626N 103,8544E): célula de ÁGUA
+do componente principal no `nav_mask` (o cais alcança o mar aberto pelo
+estreito) e 4,9 km da costa no `world_sdf.png` (dentro dos 10 km de tolerância
+do validador). Não entra cidade nova: `SGP-SIN` já existia.
+
+Auditoria da mesma lacuna (relatada, sem mudança nesta rodada): `HKG`, `MDV` e
+`MUS` não estão no roster do cenário (MUS foi removida na r2); `BHR`, `QAT` e
+`BRN` têm cidade costeira e NENHUM porto, mas não são ilhas isoladas — a cidade
+compartilha a landmass `asia` com os vizinhos, então a troca de massa de terra
+não é o que as isola. `MLT` já tem porto (`MLT-VAL`).
+
+Curadoria r10 (2026-11-17, recalibração 3 — portos e cidades)
+------------------------------------------------------------
+Duas frentes, ambas de dado real:
+
+1. **Nações-ilha/costeiras sem porto nenhum** (§13 do `recal_areas_pop.md`):
+   `PHL`, `CUB`, `NZL`, `MDG`, `JAM`, `LKA`, `BHS`, `FJI`, `TTO`, `BRB`, `SLB`,
+   `BHR`, `QAT` e `BRN` ganham UM porto principal, no cais da cidade do roster
+   mais adequada (`FORCED_PORTS`, seção r10). A regra do `sim/trade.cpp` exige
+   porto da nação em CADA ponta da travessia; sem porto, uma nação sozinha na
+   sua massa de terra não compra nem vende fora dela. Cada entrada traz a fonte
+   do cais e foi conferida contra `nav_mask.png` (célula de água do componente
+   principal, o mesmo teste do `nav_strait_test.gd`) e `world_sdf.png` (≤ 10 km
+   de terra, `COAST_TOLERANCE_KM` do validador).
+
+2. **Portos com `landmass` trocada** (`PORT_LANDMASS_FIX`): 13 portos legados
+   cujo rótulo veio do rótulo ANTIGO da cidade (Voronoi legado) e não casa com
+   a cidade que o porto serve — `sim/logistics.cpp::nearest_port` filtra por
+   `port.landmass == landmass` da cidade, então esses portos NUNCA eram
+   escolhidos. A causa não é ilha: é a troca de rótulo da normalização
+   (`continent` × `asia`, `java` × `indonesia`), que alcançou as cidades e não
+   os portos. Os outros 2 (Baku e Sumqayit) estão no **Cáspio**, mar fechado:
+   corrigir o rótulo os ativaria numa rota oceânica inexistente, então SAEM do
+   cenário (`EXCLUDED_PORTS`).
 """
+
+# id do porto -> (landmass correta, motivo). O porto só serve a cidade da
+# MESMA nação e MESMA landmass (`sim/logistics.cpp`); a correção é o rótulo da
+# cidade que o porto declara em `port_of`.
+PORT_LANDMASS_FIX = {
+    # --- IDN: o rótulo `java` do Voronoi antigo não existe em cidade nenhuma
+    # do cenário (as 19 cidades de IDN são `indonesia`, a massa única do
+    # arquipélago no modelo). 9 dos 10 portos ficaram em `java` e só IDN-MEDA
+    # (Sumatra) servia alguma cidade.
+    "IDN-BAND": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    "IDN-BAT": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    "IDN-JAK": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    "IDN-MAK": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    "IDN-MAL": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    "IDN-PAL": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    "IDN-SEM": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    "IDN-SUR": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    "IDN-YOG": ("indonesia", "legado `java`: nenhuma cidade tem essa landmass"),
+    # --- TUR: as cidades de TUR são `asia` (continente da fonte); os portos
+    # ficaram no rótulo `continent` de antes da normalização (o mesmo `europe →
+    # continent` do tools/normalize_landmass.py, que só passou pelas cidades).
+    "TUR-ADA": ("asia", "legado `continent` x cidade `asia`"),
+    "TUR-IST": ("asia", "legado `continent` x cidade `asia`"),
+    "TUR-IZM": ("asia", "legado `continent` x cidade `asia`"),
+    # --- GEO: mesma troca de rótulo (`continent` -> `asia`); Batumi é Mar
+    # Negro, que alcança o oceano pelo Bósforo (nav_strait_test).
+    "GEO-BAT": ("asia", "legado `continent` x cidade `asia`"),
+    # --- AZE: NÃO entra aqui. Os dois portos (Baku, Sumqayit) estão no Cáspio,
+    # mar fechado; ativá-los abriria comércio oceânico por uma rota inexistente.
+    # Saem do cenário em `EXCLUDED_PORTS`.
+}
 
 # id -> motivo (documentado no _meta.json e no relatório do importador)
 EXCLUDED_CITIES = {
@@ -288,6 +364,76 @@ CAPITAL_OVERRIDES = {
     "PSX": "PSX-RAM",
     "SSD": "SSD-JUB",
     "SOL": "SOL-HAR",
+}
+
+# Correções de POPULAÇÃO da fonte (Q-016, 2026-11-17). O GeoNames repete o valor
+# de outra cidade em alguns registros; o valor correto e a fonte estão aqui. O
+# importador aplica em `cities_source.csv` e o build_world_cities reaplica na
+# projeção, para a correção sobreviver a uma regeneração da fonte.
+# `method`/`confidence` declaram como o número foi obtido, não são decoração.
+POPULATION_OVERRIDES = {
+    "AFG-MAZ": {
+        "population": 484500,
+        "population_year": 2020,
+        "method": "official_projection",
+        "confidence": "high",
+        "source": ("CSO Afghanistan, projeção 2020-09-21, via "
+                   "citypopulation.de/en/afghanistan/cities/ (acesso 2026-11-17); "
+                   "GeoNames trazia 523.300, o valor de Kandahar"),
+        "note": ("Q-016: GeoNames duplicava a população de Kandahar (523.300); "
+                 "CSO projeta 484.500 para Mazār-e Sharīf"),
+    },
+    # recal3 (2026-11-17): `sim_population` com a população da UNIDADE
+    # ADMINISTRATIVA (prefeitura/distrito/província) no lugar da aglomeração.
+    # O valor de referência é `tools/agglomerations_2026.csv` — a mesma tabela
+    # que o pipeline já usa para `agglomeration_population` (snapshot de
+    # Thomas Brinkhoff / citypopulation.de, 2026-01-01).
+    "CHN-WEI": {
+        "population": 3375000,
+        "population_year": 2026,
+        "method": "agglomeration_table",
+        "confidence": "high",
+        "source": ("citypopulation.de (T. Brinkhoff), 2026-01-01: Wéifāng "
+                   "3.375.000 (Adm-Urb), via tools/agglomerations_2026.csv, "
+                   "rank 178; GeoNames trazia 9.386.705 = população da "
+                   "PREFEITURA (censo 2020)"),
+        "note": ("Q-016 §4.3 propôs; recal3 aplicou. 9.386.705 é a prefeitura "
+                 "inteira, não a cidade"),
+    },
+    "PAK-PES": {
+        "population": 2175000,
+        "population_year": 2026,
+        "method": "agglomeration_table",
+        "confidence": "high",
+        "source": ("citypopulation.de (T. Brinkhoff), 2026-01-01: Peshāwar "
+                   "2.175.000 (CUA), via tools/agglomerations_2026.csv, rank "
+                   "282; GeoNames trazia 4.758.762 = DISTRITO (censo 2023)"),
+        "note": ("Q-016 §4.3 propôs; recal3 aplicou. 4.758.762 é o distrito "
+                 "inteiro, não a cidade"),
+    },
+    "CHN-HAR": {
+        "population": 5600000,
+        "population_year": 2026,
+        "method": "agglomeration_table",
+        "confidence": "high",
+        "source": ("citypopulation.de (T. Brinkhoff), 2026-01-01: Hā'ĕrbīn "
+                   "5.600.000 (Adm-Urb), via tools/agglomerations_2026.csv, "
+                   "rank 100; o cenário trazia 10.009.854 = prefeitura "
+                   "(censo 2020)"),
+        "note": ("recal3: mesmo padrão de Weifang (unidade administrativa); "
+                 "razão sim/aglomeração 1,79"),
+    },
+    "TUR-DIYA": {
+        "population": 1120000,
+        "population_year": 2026,
+        "method": "agglomeration_table",
+        "confidence": "high",
+        "source": ("citypopulation.de (T. Brinkhoff), 2026-01-01: Diyarbakır "
+                   "1.120.000 (Aggl), via tools/agglomerations_2026.csv, rank "
+                   "585; o cenário trazia 1.833.684 = PROVÍNCIA"),
+        "note": ("recal3: mesmo padrão de Weifang (unidade administrativa); "
+                 "razão sim/aglomeração 1,64"),
+    },
 }
 
 # Cidades que entram sempre, mesmo fora da cota/da seleção automática.
@@ -1639,6 +1785,16 @@ EXCLUDED_PORTS = {
     # Extra do detector geral (<15 km do mesmo port_of): Caracas não é porto;
     # o porto real é La Guaira, que já é um dos 18 portos legados.
     "VEN-CCS": "duplicado de VEN-LAG (Caracas; o porto real é La Guaira)",
+    # r10 (recal3, 2026-11-17): o Cáspio é MAR FECHADO no modelo — no
+    # `nav_mask.png` a bacia é um componente de água próprio (2.183 células)
+    # separado do oceano (2.110.356), então um porto em Baku/Sumqayit não tem
+    # rota marítima nenhuma. Com o rótulo corrigido para `asia` (a massa da
+    # cidade) o sim passava a abrir comércio oceânico por uma rota que não
+    # existe: o Azerbaijão compra comida no mercado mundial e LBY/EGY pioram
+    # (medido: LBY 1,000 -> 0,878 na média de 30 dias; sem os dois portos,
+    # LBY 1,000). O Azerbaijão não tem porto oceânico; os dois saem do cenário.
+    "AZE-BAK": "porto no Cáspio (mar fechado; sem rota até o oceano)",
+    "AZE-SUM": "porto no Cáspio (mar fechado; sem rota até o oceano)",
 }
 
 # Portos cujo `port_of` não pode ser inferido (a cidade de mesmo nome não
@@ -1853,5 +2009,182 @@ FORCED_PORTS = [
         "port_of": "MAR-AGA",
         "source": ("Porto de Agadir, costa atlântica (30.420N 9.605W); "
                    "port_of = MAR-AGA"),
+    },
+    # ---------------------------------------------------------------- r9 (2026-11-17)
+    # Singapura: erro de dado (a nação não tinha porto nenhum). O ponto é o cais
+    # de Tanjong Pagar, na costa sul voltada para o Estreito de Singapura —
+    # água do componente principal no nav_mask, 4,9 km da costa no atlas.
+    {
+        "nation": "SGP",
+        "id": "SGP-SIN",
+        "name": "Singapore",
+        "lat": 1.2626,
+        "lon": 103.8544,
+        "landmass": "singapore",
+        "port_of": "SGP-SIN",
+        "source": ("PSA Singapore, Tanjong Pagar Terminal, Estreito de "
+                   "Singapura (1.2626N 103.8544E); port_of = SGP-SIN"),
+    },
+    # ---------------------------------------------------------------- r10 (2026-11-17)
+    # Nações-ilha/costeiras sem porto (§13 do recal_areas_pop.md). Um porto
+    # principal por nação, na cidade do roster mais adequada. Cada ponto é o
+    # cais/terminal da fonte; o par (célula de água no nav_mask, distância à
+    # terra no world_sdf) está no relatório da r10.
+    {
+        "nation": "PHL",
+        "id": "PHL-MAN",
+        "name": "Manila",
+        "lat": 14.5900,
+        "lon": 120.9600,
+        "landmass": "philippines",
+        "port_of": "PHL-MAN",
+        "source": ("Port of Manila (South Harbor), Baía de Manila "
+                   "(14.5967N 120.9544E, artigo do porto); ponto deslocado "
+                   "para a célula de água do nav_mask; port_of = PHL-MAN"),
+    },
+    {
+        "nation": "CUB",
+        "id": "CUB-HAV",
+        "name": "Havana",
+        "lat": 23.1450,
+        "lon": -82.3700,
+        "landmass": "cuba",
+        "port_of": "CUB-HAV",
+        "source": ("Havana Harbor, entrada da baía (23.1330N 82.3418W, artigo "
+                   "Havana Harbor); ponto na boca do porto (23.1450N "
+                   "82.3700W); port_of = CUB-HAV"),
+    },
+    {
+        "nation": "NZL",
+        "id": "NZL-AUC",
+        "name": "Auckland",
+        "lat": -36.8438,
+        "lon": 174.7769,
+        "landmass": "new_zealand",
+        "port_of": "NZL-AUC",
+        "source": ("Port of Auckland, Waitematā Harbour (-36.843774S "
+                   "174.776859E, artigo do porto); port_of = NZL-AUC"),
+    },
+    {
+        "nation": "MDG",
+        "id": "MDG-TOA",
+        "name": "Toamasina",
+        "lat": -18.1553,
+        "lon": 49.4267,
+        "landmass": "madagascar",
+        "port_of": "MDG-TOA",
+        "source": ("Port autonome de Toamasina, bacia portuária (-18.15525S "
+                   "49.426722E, artigo fr); port_of = MDG-TOA"),
+    },
+    {
+        "nation": "JAM",
+        "id": "JAM-KIN",
+        "name": "Kingston",
+        "lat": 17.9500,
+        "lon": -76.8000,
+        "landmass": "jamaica",
+        "port_of": "JAM-KIN",
+        "source": ("Kingston Harbour (17.95N 76.80W, artigo Kingston Harbour); "
+                   "port_of = JAM-KIN"),
+    },
+    {
+        "nation": "LKA",
+        "id": "LKA-COL",
+        "name": "Colombo",
+        "lat": 6.9528,
+        "lon": 79.8447,
+        "landmass": "sri_lanka",
+        "port_of": "LKA-COL",
+        "source": ("Port of Colombo (6.952778N 79.844722E, artigo do porto); "
+                   "port_of = LKA-COL"),
+    },
+    {
+        "nation": "BHS",
+        "id": "BHS-NAS",
+        "name": "Nassau",
+        "lat": 25.0791,
+        "lon": -77.3466,
+        "landmass": "bahamas",
+        "port_of": "BHS-NAS",
+        "source": ("Nassau Harbour, Prince George Wharf (25.08N 77.35W); "
+                   "port_of = BHS-NAS"),
+    },
+    {
+        "nation": "FJI",
+        "id": "FJI-SUV",
+        "name": "Suva",
+        "lat": -18.1350,
+        "lon": 178.4250,
+        "landmass": "fiji",
+        "port_of": "FJI-SUV",
+        "source": ("Port of Suva, King's Wharf, baía de Suva (-18.135S "
+                   "178.425E); port_of = FJI-SUV"),
+    },
+    {
+        "nation": "TTO",
+        "id": "TTO-POR",
+        "name": "Port of Spain",
+        "lat": 10.6600,
+        "lon": -61.5200,
+        "landmass": "trinidad",
+        "port_of": "TTO-POR",
+        "source": ("Port of Spain, Golfo de Paria (10.6667N 61.5167W, artigo "
+                   "da cidade); ponto no cais (10.6600N 61.5200W); port_of = "
+                   "TTO-POR"),
+    },
+    {
+        "nation": "BRB",
+        "id": "BRB-BRI",
+        "name": "Bridgetown",
+        "lat": 13.0969,
+        "lon": -59.6131,
+        "landmass": "barbados",
+        "port_of": "BRB-BRI",
+        "source": ("Bridgetown, Deep Water Harbour (13.096944N 59.613056W, "
+                   "artigo da cidade); port_of = BRB-BRI"),
+    },
+    {
+        "nation": "SLB",
+        "id": "SLB-HON",
+        "name": "Honiara",
+        "lat": -9.4319,
+        "lon": 159.9556,
+        "landmass": "solomon",
+        "port_of": "SLB-HON",
+        "source": ("Honiara, Point Cruz (-9.431944S 159.955556E, artigo da "
+                   "cidade); port_of = SLB-HON"),
+    },
+    {
+        "nation": "BHR",
+        "id": "BHR-MAN",
+        "name": "Khalifa Bin Salman",
+        "lat": 26.2000,
+        "lon": 50.6200,
+        "landmass": "asia",
+        "port_of": "BHR-MAN",
+        "source": ("Khalifa Bin Salman Port (BHKBS), Hidd — 26°12'N 050°37'E "
+                   "(APM Terminals, KBSP Port Information); port_of = BHR-MAN"),
+    },
+    {
+        "nation": "QAT",
+        "id": "QAT-DOH",
+        "name": "Hamad Port",
+        "lat": 25.0150,
+        "lon": 51.6020,
+        "landmass": "asia",
+        "port_of": "QAT-DOH",
+        "source": ("Hamad Port, Umm Al-Houl ao sul de Doha (25.015N 51.602E); "
+                   "port_of = QAT-DOH"),
+    },
+    {
+        "nation": "BRN",
+        "id": "BRN-BAN",
+        "name": "Muara",
+        "lat": 5.0242,
+        "lon": 115.0705,
+        "landmass": "asia",
+        "port_of": "BRN-BAN",
+        "source": ("Muara Port, baía de Brunei (5.0242489N 115.0704866E, "
+                   "artigo do porto); port_of = BRN-BAN"),
     },
 ]

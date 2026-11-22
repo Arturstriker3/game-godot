@@ -5,6 +5,7 @@
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_float64_array.hpp>
 
+#include <atomic>
 #include <cstddef>
 #include <map>
 #include <mutex>
@@ -13,13 +14,16 @@
 #include <unordered_map>
 #include <vector>
 
+#include "sim/ai/ai_phase.h"
+#include "sim/bank.h"
+#include "sim/commands.h"
 #include "sim/sim_types.h"
 #include "sim/sim_core.h"
 #include "sim/world_state.h"
 
 namespace godot {
 
-// S5a: os tipos POD (DemoCity, DemoBuilding, ...) agora vivem em `ogs`
+// S5a: os tipos POD (City, Building, ...) agora vivem em `ogs`
 // (sim/sim_types.h); este using os traz para o escopo da fachada sem renomear
 // nenhuma referência existente.
 using namespace ogs;
@@ -46,38 +50,38 @@ public:
 	~EconomySim() override;
 
 	/** Inicializa o cenário de validação de duas cidades com população agregada. */
-	void initialize_demo();
+	void initialize_scenario();
 
 	/**
 	 * Inicializa o modelo demo a partir dos dados reais do cenário (cidades,
 	 * portos e construções), em vez do cenário de validação AGRIA/PORTUS. Este é
 	 * o passo do contrato único: o ciclo completo roda sobre o mundo real.
 	 */
-	void initialize_demo_world(const Array& cities, const Array& ports, const Array& buildings);
+	void initialize_world(const Array& cities, const Array& ports, const Array& buildings);
 
 	/** Avança um dia do cenário de validação. */
-	Dictionary tick_demo();
+	Dictionary tick_day();
 
 	/**
 	 * Executa o dia do cenário de validação sem montar o resumo (nenhum Variant
 	 * é criado). É a metade "cara" do tick: o jogo roda em WorkerThreadPool e
-	 * chama get_demo_status() na main thread quando o trabalho termina.
+	 * chama get_status() na main thread quando o trabalho termina.
 	 */
-	void demo_tick_core();
+	void tick_core();
 
 	/**
-	 * Roda o dia E monta/publica o status, sem devolver nada.
+	 * Roda o dia (tick + IA). A4: NÃO monta/publica o Dictionary do mundo; no
+	 * fecho semanal captura o retrato de trabalho das nações (S17) e pronto.
+	 * O jogo chama `get_day_summary()` na main thread depois do join; o status
+	 * completo é consultado sob demanda (tools/testes/goldens).
 	 *
-	 * É o que a thread do WorkerThreadPool chama (ver tick_scheduler.gd): o
-	 * trabalho pesado e a montagem do status ficam fora da main thread e
-	 * NENHUM Variant cruza a fronteira da thread (nem o retorno). Depois do
-	 * join, a main thread chama get_demo_status(), que devolve o slot já
-	 * publicado em O(1).
+	 * É o que a thread do WorkerThreadPool chama (ver tick_scheduler.gd): nenhum
+	 * Variant cruza a fronteira da thread (nem o retorno).
 	 */
-	void demo_tick_and_publish();
+	void tick_and_publish();
 
 	/** Liga/desliga a medição por fase do tick (custo desprezível). */
-	void demo_set_profiling(bool enabled);
+	void set_profiling(bool enabled);
 
 	/**
 	 * S16: define o número de threads das fases por cidade do tick (<= 0 =
@@ -85,36 +89,76 @@ public:
 	 * serial). As fases globais seguem seriais. Determinístico: o resultado
 	 * não muda.
 	 */
-	void demo_set_sim_threads(int threads);
+	void set_sim_threads(int threads);
 
 	/**
 	 * Marca o status publicado como desatualizado. Qualquer método que muda o
 	 * estado fora do tick (investir, construir, choque de preço, aptidão) tem de
-	 * chamar isto: senão get_demo_status() devolve o snapshot do início do dia e
+	 * chamar isto: senão get_status() devolve o snapshot do início do dia e
 	 * a UI mostra caixa/capacidade antigos até o próximo tick.
 	 */
-	void demo_status_invalidate();
+	void status_invalidate();
 
-	/** Microssegundos por fase do último tick (vazio quando desligado). */
-	Dictionary demo_get_profile() const;
-	// Pré-aquece os dois slots do status: sem isso o primeiro dia que publica
-	// num slot frio paga a criação de todos os dicionários das cidades.
-	void demo_warm_status();
+	// ------------------------------------------------------------------
+	// A3 - fila de comandos (docs/economy/refactor/A3_commands.md).
+	//
+	// Toda mutação do jogador/IA vira um `ogs::Command` e entra na fila. A fila
+	// é aplicada no INÍCIO do dia (`tick_core`, antes do prólogo) na ordem de
+	// emissão. Os métodos que devolvem um resultado (invest, build, ...)
+	// aplicam na hora quando o dia NÃO está em andamento - senão o chamador
+	// leria um retorno vazio e os testes/IA quebram; esse é o único caminho
+	// síncrono e está documentado. Com um dia em andamento (thread do tick), a
+	// ação só entra na fila: nada toca o `ws_` fora do escritor único.
+	// ------------------------------------------------------------------
+
+	/** Aplica a fila pendente agora (início do dia ou barreira de leitura). */
+	void apply_commands();
+
+	/** Nº de comandos ainda não aplicados. */
+	int pending_command_count() const;
 
 	/**
-	 * Estado do cenário de validação (cidades, POPs, mercados, PIB).
-	 *
-	 * O dicionário é REAPROVEITADO entre ticks (ver DemoStatusCache): cada
-	 * chamada reescreve os valores nos mesmos contêineres, sem alocar 650 × 21
-	 * dicionários por dia. Contrato: o resultado é uma fotografia viva, válida
-	 * até a próxima chamada; quem precisa reter o valor entre dias deve copiar
-	 * (`duplicate(true)` no GDScript).
+	 * Log serializável (Array de Dictionary, pronto para JSON.stringify):
+	 * {type, day, apply_day, seq, s: [...], v: [...], i: [...], b} — as listas
+	 * `s`/`v`/`i` só aparecem quando têm algum slot não vazio. `day` é o dia da
+	 * emissão e `apply_day` o dia em que o comando foi aplicado (diferem em 1
+	 * quando o comando esperou na fila). Só o que já foi aplicado.
 	 */
-	Dictionary get_demo_status();
+	Array get_command_log() const;
+	void clear_command_log();
+	/** true quando o log parou de crescer (teto de 200 mil comandos). */
+	bool command_log_truncated() const;
+
+	/**
+	 * Replay: aplica um log (no formato de get_command_log()) sobre o mundo
+	 * carregado, replicando o relógio - antes de cada comando avança até o dia
+	 * em que ele foi APLICADO (`apply_day`); no fim avança até `target_day`.
+	 * @returns true quando o log inteiro foi aplicado.
+	 */
+	bool replay_commands(const Array& entries, int target_day);
+
+	/** Microssegundos por fase do último tick (vazio quando desligado). */
+	Dictionary get_profile() const;
+	// Pré-aquece os DOIS slots do status (só tools/testes: o jogo não monta o
+	// status no tick desde a A4). O primeiro dia publicado em um slot frio paga
+	// a criação de TODOS os dicionários por cidade (medido no cenário real:
+	// 60 ms contra 17 ms num dia quente). Aqui isso vira custo de carga.
+	void warm_status();
+
+	/**
+	 * Estado do mundo inteiro (cidades, nações, portos, pedidos).
+	 *
+	 * A4: consulta SOB DEMANDA — tools/testes/goldens. O tick não a monta mais.
+	 * O dicionário é REAPROVEITADO entre chamadas (ver StatusCache): cada
+	 * chamada reescreve os valores nos mesmos contêineres. Contrato: o
+	 * resultado é uma fotografia viva, válida até a próxima chamada; quem
+	 * precisa reter o valor entre dias deve copiar (`duplicate(true)`).
+	 */
+	Dictionary get_status();
 
 	/**
 	 * Detalhe completo de UMA cidade sob demanda (mesmo formato do bloco por
-	 * cidade publicado pelo `get_demo_status()`): id, nome, nação, escalares,
+	 * cidade publicado pelo `get_status()`): id, nome, nação, escalares,
 	 * `markets`, `pop`, `services`, `buildings`, `deposits`, fluxos de comércio
 	 * e emprego setorial. Devolve `{}` quando a cidade não existe.
 	 *
@@ -125,8 +169,82 @@ public:
 	 */
 	Dictionary get_city_status(const String& city_id);
 
+	// ------------------------------------------------------------------
+	// A4 - consultas sob demanda (docs/economy/refactor/A4_status_query.md).
+	//
+	// O tick não monta mais o Dictionary do mundo inteiro: ele publica um
+	// resumo leve (`get_day_summary`) e o resto chega por consulta, lida
+	// direto do `WorldState` no fecho do dia. `get_status()` continua
+	// existindo, mas só para tools/testes/goldens. Nenhuma consulta muda a
+	// simulação nem o save.
+	// ------------------------------------------------------------------
+
+	/**
+	 * Resumo leve do dia (sem cidades/nações/mercados):
+	 * day, calendar_day, money_total, caixas, contadores, violações de
+	 * invariante, catálogo de produtos e os TOTAIS do mundo (soma das
+	 * cidades, na ordem das cidades). É o que o jogo publica todo dia.
+	 */
+	Dictionary get_day_summary();
+
+	/**
+	 * Colunas por cidade (uma `PackedFloat64Array`/`PackedStringArray` por
+	 * campo, indexada pela posição em `ws_.cities`): id, nome, nação, moeda,
+	 * centro e os MESMOS doubles do bloco por cidade do `get_status()`.
+	 * Cacheada por dia; é a fonte dos modos de mapa, HUD e histórico.
+	 */
+	Dictionary get_city_columns();
+
+	/** Colunas por nação (179 posições), mesmos valores do `nations[]`. */
+	Dictionary get_nation_columns();
+
+	/**
+	 * Linhas leves de TODAS as cidades (Array de Dictionary, mesmo formato e
+	 * mesmos valores do bloco `cities[]` do status). Sob demanda: as telas de
+	 * dados usam quando estão abertas. Nunca no tick.
+	 */
+	Array get_city_rows();
+
+	/** Linhas agregadas de TODAS as nações (mesmo formato de `nations[]`). */
+	Array get_nation_rows();
+
+	/** Linha leve de UMA cidade (mesmo formato do `cities[]` do status). */
+	Dictionary get_city_info(const String& city_id);
+
+	/** Ficha de UMA nação (mesmo formato do bloco `nations[]` do status). */
+	Dictionary get_nation_status(const String& nation_tag);
+
+	/** Pedidos de comércio do último dia (mesmo formato de `trade_orders`). */
+	Array get_trade_orders();
+
+	/** Portos do mundo (mesmo formato de `ports` do status). */
+	Array get_ports();
+
+	/** Moedas carregadas, no MESMO formato de `currencies` do status. */
+	Array get_currency_rows();
+
+	/** Catálogo de produtos (mesmo Array de `products` do status). */
+	Array get_products();
+
+	/** Bloco `light` do status (tabelas planas usadas pelas telas). */
+	Dictionary get_light_columns();
+
+	/**
+	 * Ranking top-N de cidades por `field` (nome de coluna, ex.: "population",
+	 * "production", "gdp"). `count <= 0` devolve todas. Ordenado decrescente,
+	 * desempate por id; cada linha: {id, name, nation, value}.
+	 */
+	Array get_city_ranking(const String& field, int count);
+
+	/** Ranking top-N de nações por `field` (ex.: "population", "need"). */
+	Array get_nation_ranking(const String& field, int count);
+
+	/** Versão dos dados publicados (A4): sobe a cada dia e a cada mutação que
+	 * invalida o status. A UI usa para saber se o retrato em cache está velho. */
+	int get_data_version() const;
+
 	/** Choque de preço em um produto (id de goods.json, ex.: "wheat"). */
-	void demo_price_shock(const String& product, double multiplier);
+	void price_shock(const String& product, double multiplier);
 
 	/**
 	 * Define a aptidão territorial de um produto para uma cidade.
@@ -134,12 +252,317 @@ public:
 	 * @param product id de goods.json (ex.: "wheat", "iron").
 	 * @param value Aptidão entre 0 e 1 (0 impede a produção primária).
 	 */
-	void demo_set_suitability(const String& city_id, const String& product, double value);
+	void set_suitability(const String& city_id, const String& product, double value);
+
+	/**
+	 * Teto físico de capacidade agrícola (t/dia) de uma cidade para um
+	 * produto, derivado da geografia (área cultivável × produtividade FAO).
+	 *
+	 * Igual à aptidão, é DADO DE GEOGRAFIA e não entra no save: é declarado
+	 * pelo `GeographyService` (e viaja no bloco `definitions` do snapshot). Só
+	 * alimenta a decisão da IA — não muda preço, produção nem o status, por
+	 * isso não invalida o cache publicado. Produto desconhecido, cidade
+	 * ausente ou valor negativo não são erro: a chamada é ignorada/limitada.
+	 * @param city_id Identificador da cidade.
+	 * @param product id de goods.json (ex.: "wheat").
+	 * @param value Capacidade em t/dia (limitada a >= 0).
+	 */
+	void set_land_capacity(const String& city_id, const String& product,
+		double value);
+
+	/**
+	 * G (D-096) — declara o PLANO DE SAFRA de (cidade, produto): área colhida
+	 * (ha), rendimento (t/ha) e 1..4 janelas em DIA DO ANO (1..365/366, dia 0
+	 * = 2027-01-01) com a fração do orçamento anual de cada safra.
+	 *
+	 * `seasons` é um Array de Dictionary `{plant_start, plant_end,
+	 * harvest_start, harvest_end, share}`. Sem janela de colheita válida o
+	 * plano é recusado (a produção diária da fazenda continua) — nada de safra
+	 * vazia. Sobrescrever o plano preserva o ESTADO da safra já registrado (o
+	 * service redeclara o plano no load do jogo).
+	 * @param city_id Identificador da cidade.
+	 * @param product id de goods.json (os 5 primários de comida).
+	 * @param area_ha Área colhida (dado FAOSTAT, rateada entre as cidades).
+	 * @param yield_t_ha Rendimento do dado (FAOSTAT).
+	 * @param seasons Janelas de plantio/colheita + share.
+	 */
+	void set_crop_plan(const String& city_id, const String& product,
+		double area_ha, double yield_t_ha, const Array& seasons);
+
+	/**
+	 * G — estoque inicial (t) de (cidade, produto) no dia 1: ASSIGNA (não
+	 * soma), para a chamada ser idempotente. Vem do `ending_stocks_t`
+	 * observado (USDA PSD) ou da regra de 60 dias de consumo do próprio dado.
+	 */
+	void set_crop_initial_stock(const String& city_id, const String& product,
+		double tons);
+
+	/**
+	 * G — perda pós-colheita do produto (% do que entra) e a fatia de
+	 * armazenagem declarada (% do total; < 0 = sem dado, o núcleo usa a fração
+	 * declarada da perda total).
+	 */
+	void set_crop_loss(const String& product, double loss_pct,
+		double storage_share_pct);
+
+	/**
+	 * G — prazo de prateleira (dias) do bem: o estoque parado perde metade em
+	 * `days` dias (regra declarada no núcleo). `days <= 0` = sem dado (não
+	 * decai), mas o bem entra na lista da cadeia.
+	 */
+	void set_shelf_life(const String& product, int days);
+
+	/**
+	 * G — fertilizante nitrogenado (kg N/ha) da cultura na cidade. Só tem
+	 * efeito depois do `set_crop_plan` daquele (cidade, produto).
+	 */
+	void set_fertilizer_n(const String& city_id, const String& product,
+		double n_kg_ha);
+
+	/**
+	 * G — qualidade do armazém 0..1 (hook de infraestrutura; a Parte B5/E pode
+	 * declarar). Sem chamada, a qualidade é DERIVADA da infra do estado
+	 * (estrada/energia/água).
+	 */
+	void set_storage_quality(const String& city_id, double quality);
+
+	/**
+	 * G — ficha da agricultura sazonal, montada SOB DEMANDA (testes e UI):
+	 * por nação, o estoque por cultura, os dias de consumo, a próxima colheita,
+	 * a produção do ano e a perda do mês. `{}` quando não há plano declarado.
+	 */
+	Dictionary get_agriculture_status() const;
+
+	/**
+	 * G2 — declara a capacidade (t) de um armazém agregado (cidade, tipo,
+	 * dono). Idempotente: ASSIGNA, como os setters de geografia/agricultura.
+	 * @param type "silo", "cold", "fuel_tank", "gas", "bulk_yard", "general",
+	 *   "vault" ou "magazine".
+	 * @param owner "government"/"state" ou "private".
+	 */
+	void set_storage_capacity(const String& city_id, const String& type,
+		const String& owner, double tons);
+	/** G2 — override do tipo de armazém de um produto (JSON da G2). */
+	void set_storage_product_type(const String& product, const String& type);
+	/**
+	 * D-101 — ASSIGNA o estoque guardado (t) de um produto no armazem
+	 * (cidade, tipo, dono): semente do dia 1 da reserva estrategica do JSON.
+	 * So para tipo operacional que aceita o produto do mapeamento; o valor e
+	 * limitado a capacidade do site. Nao cria nem destroi toneladas.
+	 */
+	void set_storage_stock(const String& city_id, const String& type,
+		const String& owner, const String& product, double tons);
+	/** G2 — obra de armazém pela fila §15 (paga pelo dono). */
+	Dictionary storage_build(const String& city_id, const String& type,
+		const String& owner, double tons);
+	/** G2 — compra (`buy`) ou liberação (`relief` = socorro sem pagamento). */
+	Dictionary storage_trade(const String& city_id, const String& type,
+		const String& owner, const String& product, double tons, bool buy,
+		bool relief);
+	/**
+	 * G2 — camada NACIONAL de leitura (sem mercado nacional): por nação, a
+	 * reserva do governo e o estoque privado por produto, a capacidade, os
+	 * dias de consumo cobertos e o IPC/preço médio ponderados pela cesta dos
+	 * quintis. Montado sob demanda (testes/UI).
+	 */
+	Dictionary get_storage_status() const;
+	/**
+	 * C1 (D-102) — BALANÇO POR AGENTE (leitura). Devolve, sob demanda:
+	 *   * `world` — balanço agregado de famílias, firmas, governo e exterior;
+	 *   * `by_nation` — o mesmo por nação (país das cidades);
+	 *   * `invariant` — soma mundial das posições financeiras (0), resíduo de
+	 *     caixa contra o `money_total` e a base monetária (passivo do emissor);
+	 *   * `firms.solvency` — contagem de plantas líquidas/ilíquidas/insolventes.
+	 * Nada aqui move dinheiro; o status diário publica o bloco `balance` com o
+	 * resumo do mundo.
+	 */
+	Dictionary get_balance_status() const;
+	/**
+	 * C2a (D-103) — BANCO CENTRAL POR MOEDA (leitura, sob demanda / A4).
+	 * Devolve:
+	 *   * `monetary_policy` — padrão monetário do mundo e moeda de reserva;
+	 *   * `invariant` — a moeda do dia atribuída às moedas (M0) + os buckets
+	 *     sem nação = `money_total`; `ok` é a checagem cruzada;
+	 *   * `currencies` — por moeda: regime, independência, M0/M1/M2, ouro do
+	 *     cofre (t e valor), reservas em moeda de reserva (0), títulos (0) e o
+	 *     patrimônio financeiro do BC;
+	 *   * `cpi` — por nação: índice da cesta (o mesmo IPC do G2) e a inflação
+	 *     de 12 meses lida da série mensal (ausência declarada com `has_12m`
+	 *     falso quando ainda não há 12 meses);
+	 *   * `unallocated` — caixas sem nação atribuível, declarados.
+	 * Nada aqui emite, fixa juros ou intervém (C2b); o ouro é ativo REAL e não
+	 * entra na identidade financeira.
+	 */
+	Dictionary get_central_bank_status() const;
+	/**
+	 * C2a (D-103) — declara a RESERVA DE OURO do banco central por nação (t de
+	 * ouro fino), agregada por moeda. A fonte é o dado real da G2/D-101
+	 * (`strategic_reserves.json`, World Gold Council); o núcleo não lê arquivo.
+	 * Idempotente: reaplica o mesmo dicionário (load). Nação sem moeda na
+	 * tabela cai em `gold_unallocated_tonnes` (ausência declarada).
+	 * @param tonnes_por_nacao `{ISO3: toneladas}`.
+	 * @returns toneladas declaradas (0 = nada aplicado).
+	 */
+	double set_central_bank_gold(const Dictionary& tonnes_by_nation);
+	/**
+	 * C2b1 (D-104) — escolhe a POLÍTICA de uma moeda. `independence` é
+	 * `no_data` (ausência declarada; resolve no default do jogo),
+	 * `independent` (regra de Taylor própria) ou `controlled` (o governo fixa o
+	 * juro e a emissão monetiza o déficit medido do dia). Idempotente; aplica no
+	 * dia seguinte, no fecho da política monetária.
+	 * @returns true se a moeda existe e o nome é válido.
+	 */
+	bool set_central_bank_policy(const String& currency,
+		const String& independence);
+	/**
+	 * C2b2 (D-106) — escolhe o REGIME CAMBIAL de uma moeda, pela fila A3
+	 * (aplica no início do dia seguinte): `floating`, `peg` ou `band`.
+	 * `parity` = unidades locais por 1 unidade da moeda de reserva (0 = o
+	 * `base_rate` do dado do F5, nunca um número inventado); `band_width` =
+	 * ±fração da banda (negativo = default de jogo).
+	 * @returns true se a moeda existe e o nome é válido (o comando entrou na fila).
+	 */
+	bool set_exchange_regime(const String& currency, const String& regime,
+		double parity, double band_width, const String& nation = String());
+	/**
+	 * C2c (D-108) — carrega os REGIMES REAIS do IMF AREAER 2026
+	 * (`data/definitions/economy/fx_regimes_2026.json`): regime por moeda,
+	 * âncora (moeda ou cesta), fonte da âncora, emissor e a trava de moeda de
+	 * união. Chamado ANTES de `set_currencies`, como as demais definições.
+	 * @returns número de moedas com regime declarado.
+	 */
+	int set_fx_regimes(const Dictionary& data);
+	/**
+	 * D-108(e) — sucessão de moeda extinta (BGN -> EUR a 1,95583; ver a tabela
+	 * `kSuccessions` em economy_sim.cpp). Converte a paridade local, funde o
+	 * estado da moeda no destino e preserva a conservação (dinheiro é âncora:
+	 * não muda). Idempotente: sem a moeda no estado, devolve 0.
+	 * @returns quantidade convertida (unidades locais) ou 0.
+	 */
+	double migrate_currency(const String& from, const String& to,
+		double units_per_target);
+	/**
+	 * C2b2 (D-106) — escolhe o PADRÃO MONETÁRIO do mundo, pela fila A3:
+	 * `fiat` (default), `bretton_woods` ou `gold`. Nunca é automático.
+	 * @returns true se o nome é válido.
+	 */
+	bool set_monetary_standard(const String& standard);
+	/**
+	 * C2b2 (D-106) — declara as RESERVAS em moeda de reserva (unidades de
+	 * âncora) por moeda. É declaração explícita (lab/teste/cenário): o
+	 * repositório não tem fonte de reservas cambiais por país e o default é 0.
+	 * Marca a moeda como `funded` (a defesa medida passa a existir).
+	 * @returns total declarado (âncora).
+	 */
+	double set_central_bank_reserves(const Dictionary& anchor_by_currency);
+	/**
+	 * C2b2 (D-106) — reservas iniciais do CENÁRIO de estresse: N dias de
+	 * importação MEDIDA do próprio mundo (regra declarada, não dado de país).
+	 * O default do jogo não chama isto.
+	 * @returns total em âncora.
+	 */
+	double seed_central_bank_reserves(int days);
+	/** C2b2 (D-106) — parâmetros de regra (banda, fatia de defesa, cobertura). */
+	void set_exchange_policy(double band_width, double defence_share,
+		double gold_reserve_ratio);
+	/**
+	 * C2b2 (D-106) — compra/venda de OURO FÍSICO do cofre contra o mercado do
+	 * produto ouro (sem teto econômico de preço, D-091). `buy` = o cofre compra
+	 * do mercado; false = vende ao mercado. Ouro não é criado nem destruído.
+	 * @returns `{ok, tons, value, city, error}`.
+	 */
+	Dictionary central_bank_gold_trade(const String& currency, double tonnes,
+		bool buy);
+	/**
+	 * C2b2 (D-106) — conversão do padrão Bretton Woods/ouro: o cofre compra
+	 * ouro do mercado ao PREÇO FIXO do padrão e paga com as reservas.
+	 */
+	Dictionary central_bank_gold_convert(const String& currency, double tonnes);
+	// ------------------------------------------------------------------
+	// C3 (D-107) — CRÉDITO DE EMPRESA (banco agregado como credor).
+	// Desenho e contrato: docs/economy/C3_group_balance.md.
+	// ------------------------------------------------------------------
+	/** Liga/desliga a mecânica de crédito (default do jogo = desligado). */
+	Dictionary set_bank_credit(bool enabled);
+	/**
+	 * Regras do crédito (0 = default de `sim/bank.h` / JSON declarado):
+	 * spread anual sobre a taxa básica, teto de alavancagem, cobertura de
+	 * juros, dias de insolvência até o calote e fração do excedente
+	 * amortizada por dia.
+	 */
+	void set_bank_policy(double spread, double leverage_cap,
+		double interest_cover, int default_days, double repay_share);
+	/**
+	 * Capital pago pelo DONO do banco (C4/D-110). `role` = "public" (Tesouro,
+	 * default), "private" (poupança das famílias) ou "foreign" (posição do
+	 * exterior). Não cria dinheiro: sai do dono e vira capital do banco.
+	 * @returns `{ok, paid, nation, role, error}`.
+	 */
+	Dictionary set_bank_capital(const String& nation, double amount,
+		const String& role = String("public"));
+	/**
+	 * C4 (D-110) — definições de `banks.json`: nomes (fictícios/genéricos),
+	 * presença do banco estrangeiro e país de origem. Cria/renomeia os bancos
+	 * e renormaliza as participações; quando o dado não declara banco
+	 * estrangeiro, o papel é fundido no privado conservando valores.
+	 */
+	void set_bank_definitions(const Dictionary& definitions);
+	/**
+	 * Pede crédito para um grupo pela fila A3. Limitado pelo crédito
+	 * disponível (alavancagem e cobertura de juros).
+	 * @returns `{ok, granted, group, error}`.
+	 */
+	Dictionary group_borrow(const String& group_id, double amount);
+	/**
+	 * C3 (D-107) — status A4 do crédito: política, totais, uma linha por
+	 * banco/nação, os grupos endividados e o invariante dos dois lados.
+	 */
+	Dictionary get_bank_status() const;
+	/**
+	 * C6 (D-114) — regras da crise bancária (laboratório/teste):
+	 * `enabled`, `capital_min`, `capital_cut_floor`, `liquidity_min`
+	 * (RESERVADO: nenhuma regra o consome), `loss_scale`, `loss_ema_days`,
+	 * `smoothing`,
+	 * `run_threshold`, `run_share`, `flight_to_quality`, `lolr_spread`,
+	 * `lolr_haircut`, `lolr_max_assets`, `insured_share`, `premium_daily`,
+	 * `fund_target_ratio`, `capital_flight_share`, `treasury_debt_rescue`,
+	 * `takeover_public` e os pesos `w_solvency`/`w_liquidity`/`w_losses`/
+	 * `w_contagion`/`w_market`. `enabled` é estado (vai ao save); o resto é
+	 * regra (0 = default declarado em `sim/bank_crisis.h`).
+	 * @returns os valores efetivos.
+	 */
+	Dictionary set_bank_crisis(const Dictionary& config);
+	/**
+	 * C6 (D-114) — choque de perda de crédito no banco (teste/estresse):
+	 * baixa `loss` da carteira e da dívida dos tomadores na mesma proporção,
+	 * sem mover dinheiro. `loss_share` é a fração da carteira (0,30 = 30 %).
+	 * @returns `{ok, bank, written, share}`.
+	 */
+	Dictionary bank_shock(const String& bank_id, double loss,
+		double loss_share = 0.0);
+	/**
+	 * C5 (D-112) — alavancas de configuração da bolsa (laboratório): `enabled`,
+	 * `investment_channel`, `risk_premium`, `payout_ratio`, `step`,
+	 * `expectation_k`. `enabled` é estado (vai ao save); os parâmetros são regra
+	 * (0 = default declarado em `sim/stock.h`). Não é feature de jogador.
+	 * @returns `{enabled, investment_channel}`.
+	 */
+	Dictionary set_stock_exchange(const Dictionary& config);
+	/**
+	 * C5 (D-112) — status A4 da bolsa: política, totais, uma linha por praça
+	 * (índice, confiança e sinais medidos) e um papel por grupo listado
+	 * (preço, fundamental, q de Tobin, dividendos e carteiras).
+	 */
+	Dictionary get_stock_status() const;
+	/** G2 — mapeamento produto→tipo de armazém em vigor (tabela declarada +
+	 *  overrides do JSON). `{produto: tipo}`; usado pelo StorageService. */
+	Dictionary get_storage_product_types() const;
 
 	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
-	 * (extração com esgotamento). As minas da cidade que produzem o produto
-	 * consomem esta reserva compartilhada; reserva zerada para a produção.
+	 * (D-086: referência de profundidade, não um limite físico — o recurso nunca
+	 * acaba). As minas da cidade debitam `remaining_kt` como contabilidade, mas
+	 * a reserva zerada NÃO para a produção nem bloqueia obra.
 	 * Idempotente: se o produto já tem reserva, mantém o saldo restante (um
 	 * save carregado não é "reabastecido") e só atualiza qualidade/profundidade.
 	 * @param product id de goods.json (ex.: "iron", "gold").
@@ -148,7 +571,7 @@ public:
 	 * @param depth_m Profundidade média em metros (encarece o opex).
 	 * @returns true se a reserva foi criada agora.
 	 */
-	bool demo_set_deposit(const String& city_id, const String& product,
+	bool set_deposit(const String& city_id, const String& product,
 		double reserve_kt, double quality, double depth_m);
 
 	/**
@@ -159,7 +582,7 @@ public:
 	 * capita REAL: o `GeographyService` calcula, a partir de `nations.csv`
 	 * (gdp_ppp_bn/population), um índice normalizado para que a média mundial
 	 * ponderada por população fique em 1,0 — ou seja, a renda média continua
-	 * `kDemoExternalIncomePerCapita`. Nações ricas sem terra (SAU/QAT/ISL)
+	 * `kExternalIncomePerCapita`. Nações ricas sem terra (SAU/QAT/ISL)
 	 * importam mais; nações pobres recebem o piso (10% da média) e continuam
 	 * frágeis. O valor é pago pelo setor externo (`foreign_cash`), então
 	 * `money_total` continua conservado.
@@ -167,7 +590,7 @@ public:
 	 * @param index Multiplicador (0 = sem renda externa; 1 = média mundial).
 	 *              Limitado a [0, 8] para conter dados corrompidos.
 	 */
-	void demo_set_external_income_index(const String& city_id, double index);
+	void set_external_income_index(const String& city_id, double index);
 
 	/**
 	 * F7 calibração: produtividade nacional (TFP) de uma cidade, derivada do
@@ -190,7 +613,7 @@ public:
 	 * @param index Fator explícito (1 = média mundial; <= 0 = derivar).
 	 *              Limitado a [0,05, 8].
 	 */
-	void demo_set_productivity_index(const String& city_id, double index);
+	void set_productivity_index(const String& city_id, double index);
 
 	/**
 	 * F7: sobrescreve o perfil de trabalho/educação de uma cidade (hook de
@@ -201,19 +624,19 @@ public:
 	 * do índice de renda é mantido. Recalcula a força de trabalho por nível e
 	 * reinicializa os salários no âncora do país; não move a população.
 	 */
-	void demo_set_labor_profile(const String& city_id, const Dictionary& profile);
+	void set_labor_profile(const String& city_id, const Dictionary& profile);
 
 	/**
 	 * F7: salário mínimo por nação (piso diário, em XGS). `value <= 0` desliga
 	 * o piso (padrão do jogo). Gancho de política: a UI/governo pode definir.
 	 */
-	void demo_set_minimum_wage(const String& nation, double value);
+	void set_minimum_wage(const String& nation, double value);
 
 	/**
 	 * F7: rigidez salarial (fração máxima de ajuste por dia, 0..0,25).
 	 * Padrão 0,01 (1%/dia). Gancho de política/sindicatos.
 	 */
-	void demo_set_wage_rigidity(double value);
+	void set_wage_rigidity(double value);
 
 	/**
 	 * Define o teto de demanda externa (t/dia) de um produto para uma cidade.
@@ -226,26 +649,85 @@ public:
 	 * @param product id de goods.json (ex.: "coal", "soy").
 	 * @param ceiling_t_per_day Teto diário em toneladas (>= 0).
 	 */
-	void demo_set_external_demand(const String& city_id, const String& product,
+	void set_external_demand(const String& city_id, const String& product,
 		double ceiling_t_per_day);
 
 	/**
 	 * F8: carrega os setores de serviço (services.json → `sectors`). Pode ser
 	 * chamado antes ou depois do mundo: as definições são só catálogo; os
 	 * mercados por cidade existem sempre (preço-base default até o dado chegar).
-	 * Um arquivo com contagem diferente de kDemoMaxServiceSectors é recusado
+	 * Um arquivo com contagem diferente de kMaxServiceSectors é recusado
 	 * (a publicação é indexada por posição).
 	 */
-	void demo_set_services(const Variant& services);
+	void set_services(const Variant& services);
 
 	/**
 	 * F9: carrega a estrutura de emprego setorial (sector_employment.json).
 	 * Determinística: a mesma entrada gera a mesma fração por cidade. Chame
 	 * antes (ou depois) de criar o mundo — os valores são recalculados todo dia
-	 * em demo_update_sector_employment. Sem chamada, vale o espelho compilado
-	 * das cinco âncoras (testes/benchmark).
+	 * em update_sector_employment. Sem chamada, vale o espelho compilado
+	 * das cinco âncoras (testes).
 	 */
-	void demo_set_sector_employment(const Variant& data);
+	void set_sector_employment(const Variant& data);
+
+	/**
+	 * B1: carrega a estrutura etária por nação (age_structure_2026.json).
+	 * DEFINIÇÃO estática no WorldState: `SimCore::seed_demography` semeia as
+	 * coortes das cidades a partir dela, `apply_labor_profile` deriva idade
+	 * ativa/aposentados/children e o fluxo mensal (`phase_demography`) move
+	 * as coortes. Ela viaja no snapshot do CLI; o save de estado guarda só as
+	 * coortes resultantes. Aceita só DICTIONARY com {"nations": {tag: {...}}};
+	 * nação com faixas que não somam ~1 ([0,98, 1,02]) é ignorada. Sem nação
+	 * válida, o mapa atual não muda.
+	 */
+	void set_age_structure(const Variant& data);
+
+	/**
+	 * B7: carrega a taxa de emprego informal por nação (informality.json) e a
+	 * cobertura de saúde de referência (health_access.json). DEFINIÇÃO estática
+	 * no WorldState (como `age_structures`): a fração inicial é semeada no dia 0
+	 * (`SimCore::seed_informality`) e a referência de saúde é lida na semeadura
+	 * e na mortalidade mensal. Aceita só DICTIONARY com {"nations": {tag: v}},
+	 * onde `v` é um número (fração 0..1) ou {"value": número}. Nação sem entrada
+	 * cai na âncora de renda (informalidade) ou em kHealthAccessDefault.
+	 */
+	void set_informality(const Variant& data);
+	void set_health_access(const Variant& data);
+
+	/**
+	 * B5 (D-089): NÍVEL INICIAL de infraestrutura do estado (estrada/energia/
+	 * água, 0..kInfraMaxLevel) por id de estado de `state_regions.json`. O
+	 * GDScript aplica a regra %->nível do dado real
+	 * (`core/economy/initial_infra.gd`) e entrega
+	 * `{state_id: {road, power, water}}`. Chame DEPOIS de `initialize_world`
+	 * (as regiões precisam existir) e ANTES do primeiro dia; o save carrega os
+	 * níveis persistidos, então o setter é só do estado inicial.
+	 *
+	 * Região com mais de um estado usa o MENOR nível de cada tipo entre eles
+	 * (pior caso — a mesma lógica rural do dado). Estado sem entrada = 0
+	 * (ausência explícita, nunca cobertura zero). Cidade sem bloco `region`
+	 * ou sem `states` não é tocada. Arquivo ausente = `{}` = nada muda.
+	 */
+	void set_region_infra(const Variant& data);
+
+	/**
+	 * B6 (D-095) — PATRIMÔNIO DA REGIÃO a partir do dado (`land_property.json`
+	 * + a regra de rateio nacional→estado aplicada no GDScript). `data` =
+	 * `{city_id: {land_ha, land_gini, gini_observed}}` (ou por estado). Idempotente:
+	 * só age quando a região ainda não tem patrimônio (`property_ready` falso) —
+	 * um save v23 carrega o estado gravado, e um save v22 recebe o dado agora.
+	 * Cidade sem hectares > 0 não é tocada (ausência explícita). Arquivo ausente
+	 * = `{}` = nada muda.
+	 */
+	void set_region_property(const Variant& data);
+
+	/**
+	 * B6 — alíquota ANUAL do imposto sobre a propriedade (0,0 por padrão) de
+	 * todas as regiões da nação. Campo persistido e publicado como receita
+	 * potencial; nada é arrecadado enquanto for 0 (impostos são do macro
+	 * político). Fora de [0,1] é limitado.
+	 */
+	void set_property_tax_rate(const String& nation, double rate);
 
 	/**
 	 * §19 (W0): carrega solo urbano, moradia e finanças municipais dos quatro
@@ -255,7 +737,7 @@ public:
 	 * inicial (área por zona, densidade, estoque, posse, aluguel/preço e taxas
 	 * da prefeitura). Cidade sem entrada fica com defaults neutros.
 	 */
-	void demo_set_urban(const Dictionary& urban_land,
+	void set_urban(const Dictionary& urban_land,
 		const Dictionary& housing_city, const Dictionary& housing,
 		const Dictionary& municipal_finance);
 
@@ -265,7 +747,7 @@ public:
 	 * padrões [popular, medio, alto]; posse [própria, aluguel, informal];
 	 * donos [família, empresa, governo]. Vazio se a cidade ou o dado não existe.
 	 */
-	Dictionary demo_get_urban_city(const String& city_id) const;
+	Dictionary get_urban_city(const String& city_id) const;
 
 	/**
 	 * §19 (W1): abre obra §15 de EXPANSÃO de uma zona urbana
@@ -273,24 +755,24 @@ public:
 	 * do governo da cidade; o W2 passa a financiar pela prefeitura. Devolve
 	 * {ok, error, project_id, cost}; a área/capacidade só muda na conclusão.
 	 */
-	Dictionary demo_urban_expand(const String& city_id, int zone, double km2);
+	Dictionary urban_expand(const String& city_id, int zone, double km2);
 
 	/**
 	 * §19 (W1): abre obra §15 de ADENSAMENTO (sobe max_density da zona em um
 	 * passo). Exige infraestrutura que atenda a população da cidade. Devolve
 	 * {ok, error, project_id, cost}.
 	 */
-	Dictionary demo_urban_densify(const String& city_id, int zone);
+	Dictionary urban_densify(const String& city_id, int zone);
 
 	/**
 	 * §19 (integração) — moradia social da prefeitura: abre o projeto de
 	 * moradia do W3 (dono GOVERNMENT) pagando do caixa municipal. Devolve
 	 * {ok, units, cost} com o que efetivamente foi contratado/pago.
 	 */
-	Dictionary demo_urban_social_housing(const String& city_id, double units);
+	Dictionary urban_social_housing(const String& city_id, double units);
 
 	/** F8: catálogo carregado (id, nomes, ícone, educaçao, exportável). */
-	Array demo_get_service_sectors() const;
+	Array get_service_sectors() const;
 
 	/**
 	 * F8: detalhe de uma cidade para a tela de Serviços — mercados dos 20
@@ -298,7 +780,7 @@ public:
 	 * Fora do status diário de propósito: a lista completa de negócios não é
 	 * republicada a cada tick.
 	 */
-	Dictionary demo_get_services_detail(const String& city_id) const;
+	Dictionary get_services_detail(const String& city_id) const;
 
 	/**
 	 * F8: hook de teste/administração — fixa a capacidade AGREGADA de um setor
@@ -306,18 +788,26 @@ public:
 	 * se não houver). Serve para medir o efeito da educação/saúde privadas sem
 	 * depender da entrada endógena.
 	 */
-	void demo_set_service_capacity(const String& city_id, const String& sector,
+	void set_service_capacity(const String& city_id, const String& sector,
 		double units_per_day);
 
 	/** F8: hook de teste — força lucro/dias de prejuízo de um negócio. */
-	void demo_set_service_business_state(int business_id, int loss_days,
+	void set_service_business_state(int business_id, int loss_days,
 		double profit);
 
 	/** F8: número de negócios de serviço ativos (não falidos). */
-	int demo_get_service_business_count() const;
+	int get_service_business_count() const;
 
 	/** F8: falências de negócios de serviço acumuladas. */
-	int demo_get_service_bankruptcies() const;
+	int get_service_bankruptcies() const;
+
+	/**
+	 * D-099: composição das falências de CONSTRUÇÃO acumuladas (contadores de
+	 * runtime, zerados no load): `by_product` (por índice de bem, na ordem do
+	 * catálogo), `planned_primary` (primárias com plano de safra) e `total`.
+	 * Diagnóstico do aceite de 365 d; não entra em `get_status()`.
+	 */
+	Dictionary get_bankruptcy_diag() const;
 
 	/**
 	 * Investe capital da empresa na expansão de uma construção existente.
@@ -327,7 +817,7 @@ public:
 	 * @param amount Capital a investir.
 	 * @returns Resumo com "invested", "capacity_added" e "error".
 	 */
-	Dictionary demo_invest(const String& city_id, const String& building_id, double amount);
+	Dictionary invest(const String& city_id, const String& building_id, double amount);
 
 	/**
 	 * Cria uma construção nova. O custo sai do caixa da empresa (private) ou do
@@ -338,7 +828,7 @@ public:
 	 * a receita completa (1..6 insumos + subprodutos).
 	 * @returns Resumo com "created", "cost" e "error".
 	 */
-	Dictionary demo_build(const String& city_id, const String& building_id,
+	Dictionary build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const String& owner, double cost,
@@ -348,56 +838,116 @@ public:
 	 * Gasta orçamento público em serviços domésticos (ex.: prospecção).
 	 * @returns true quando havia orçamento suficiente.
 	 */
-	bool demo_spend_government(const String& city_id, double amount);
+	bool spend_government(const String& city_id, double amount);
 
 	/**
 	 * Expande a capacidade de um porto (obra pública): o custo sai do orçamento
 	 * da cidade-sede e é pago ao setor de construção; a capacidade entra em
-	 * operação depois de `kDemoPortBuildDays` dias.
+	 * operação depois de `kPortBuildDays` dias.
 	 * @param port_id Identificador do porto (ports.json).
 	 * @param t_per_day Capacidade a adicionar, em t/dia.
 	 * @returns {expanded, cost, days, capacity, error}.
 	 */
-	Dictionary demo_expand_port(const String& port_id, double t_per_day);
+	Dictionary expand_port(const String& port_id, double t_per_day);
 
 	/**
 	 * Hook de teste/administração: define a capacidade corrente de um porto,
 	 * mantendo a base (nível 1). Não cobra nem agenda obra.
 	 */
-	void demo_set_port_capacity(const String& port_id, double t_per_day);
+	void set_port_capacity(const String& port_id, double t_per_day);
 
 	/**
 	 * Hook de teste: liga/desliga a construção instantânea (§15). Desligado por
-	 * padrão, todo `demo_build`/`demo_group_invest`/`demo_invest` vira um
+	 * padrão, todo `build`/`group_invest`/`invest` vira um
 	 * PROJETO físico (materiais + prazo + pagamento incremental). Ligado
 	 * restaura o comportamento antigo (prédio pronto na hora, custo integral na
 	 * criação) — usado pelos testes que não medem cronograma de obra.
 	 */
-	void demo_set_instant_construction(bool instant);
+	void set_instant_construction(bool instant);
+
+	/**
+	 * A5: liga/desliga a FASE DA IA C++ no fim do dia (`AiPhase::run`).
+	 * DESLIGADO por padrão: os testes e o caminho GDScript existentes não
+	 * mudam. Com a IA ligada, `tick_and_publish` roda a fase já com o dia
+	 * fechado e ANTES da publicação do status único (D-076): `tick_day()`
+	 * devolve o status do dia **com** os efeitos da IA. Só grava a flag: NÃO
+	 * reseta o estado da IA (`reset` é do mundo novo —
+	 * initialize_scenario/initialize_world/from_snapshot*).
+	 */
+	void set_ai_enabled(bool enabled);
 
 	/** Serializa todo o estado do cenário (save). */
-	Dictionary demo_to_dict() const;
+	Dictionary to_dict() const;
 
-	/** Restaura o estado do cenário a partir de demo_to_dict() (load). */
-	void demo_from_dict(const Dictionary& data);
+	/** Restaura o estado do cenário a partir de to_dict() (load). */
+	void from_dict(const Dictionary& data);
+
+	/**
+	 * Superfície de ferramenta/teste (A1a): snapshot ATÔMICO do mundo no formato
+	 * que o CLI headless consome — {"definitions": bloco estático das
+	 * definições, "save": o mesmo dicionário de to_dict()}. Serve para
+	 * exportar o mundo do jogo e rodá-lo na biblioteca sem o Godot.
+	 */
+	Dictionary to_snapshot() const;
+
+	/**
+	 * Superfície de ferramenta/teste (A1a): restaura um snapshot de
+	 * to_snapshot(). Aplica `definitions` e depois `save` (o save depende
+	 * do bloco estático) e invalida o cache de status. Sem a chave
+	 * `definitions` ou `save`, registra erro e não toca no mundo.
+	 */
+	void from_snapshot(const Dictionary& snapshot);
+
+	/**
+	 * Superfície de ferramenta/teste (A1): a MESMA fotografia de
+	 * to_snapshot(), gravada em arquivo pelo serializador da BIBLIOTECA
+	 * (`ogs::save::dump_json`), sem passar pelo JSON do Godot.
+	 *
+	 * Motivo: o par `JSON.stringify`/`JSON.parse_string` do Godot NÃO é
+	 * round-trip IEEE-exato para |x| < 1 (0.0002886172890222971 sai como
+	 * 0.00028861728902229); o nlohmann da biblioteca, por onde já passa o CLI
+	 * headless, é exato. Um snapshot que atravessa o JSON do engine perde bits
+	 * e deixa de ser comparável campo a campo com o CLI.
+	 *
+	 * Grava UTF-8 sem BOM em modo binário (`std::ofstream`), com o mesmo
+	 * formato de `gdextension/bin/opengs_sim_cli.exe --snapshot=...`.
+	 * @returns false (com push_error) quando o arquivo não abre ou a escrita
+	 *          falha.
+	 */
+	bool to_snapshot_file(const String& path) const;
+
+	/**
+	 * Superfície de ferramenta/teste (A1): restaura um snapshot gravado por
+	 * to_snapshot_file(), lido com `ogs::save::parse_json_file` (exato,
+	 * sem o JSON do Godot). Exige as chaves `definitions` e `save`, invalida o
+	 * cache de status exatamente como from_snapshot e aplica as definições
+	 * ANTES do save.
+	 * @returns false (com push_error) em arquivo ilegível, JSON inválido ou
+	 *          chave ausente/inválida — nesse caso o mundo NÃO é tocado.
+	 */
+	bool from_snapshot_file(const String& path);
 
 	/**
 	 * Ajusta parâmetros de balanceamento usados pelo laboratório.
 	 * Chaves aceitas: natural_unemployment, service_wage_adjust,
-	 * service_wage_max, inventory_cover_days, inventory_recovery.
+	 * service_wage_max, inventory_cover_days, inventory_recovery,
+	 * trade_neighbors, trade_external, income_basket_margin,
+	 * infra_access_penalty (B5, penalidade máxima de acesso com estrada 0),
+	 * harvest_credit_rate (D-105: 1 liga o juro da taxa básica no envelope de
+	 * crédito da safra; padrão 0 = desligado até a C4).
 	 */
-	void demo_set_balance(const Dictionary& values);
+	void set_balance(const Dictionary& values);
 
 	/**
 	 * F4: define a frota nacional (hook de teste/administração). Marca a frota
 	 * como `derived: false` (valor declarado, não derivado). Libera os veículos
 	 * ocupados; o combustível e as peças passam a ser exatamente os informados.
 	 */
-	void demo_set_fleet(const String& nation, double trucks, double ships,
+	void set_fleet(const String& nation, double trucks, double ships,
 		double planes, double fuel, double spare_parts);
 
 	/** F4: fotografia da frota de uma nação (contagens, saúde, fila do dia). */
-	Dictionary demo_get_fleet(const String& nation) const;
+	Dictionary get_fleet(const String& nation) const;
 
 	/**
 	 * F4: compra `amount` toneladas do bem no mercado interno da nação e
@@ -406,7 +956,7 @@ public:
 	 * (maior população de simulação), até `budget_share` do caixa dela.
 	 * @returns {bought, spent, unfilled, error}.
 	 */
-	Dictionary demo_fleet_buy(const String& nation, const String& product,
+	Dictionary fleet_buy(const String& nation, const String& product,
 		double amount, double budget_share = 0.1);
 
 	/**
@@ -414,14 +964,14 @@ public:
 	 * uma cidade (não é usado pelo jogo; serve para exercitar a compra de frota
 	 * em cenários controlados).
 	 */
-	void demo_set_market_stock(const String& city_id, const String& product,
+	void set_market_stock(const String& city_id, const String& product,
 		double stock);
 
 	/**
 	 * Hook de teste/administracao: define o preco (na ANCORA XGS) de um produto
 	 * no mercado de uma cidade. A moeda local e so exibicao (`price_local`).
 	 */
-	void demo_set_market_price(const String& city_id, const String& product,
+	void set_market_price(const String& city_id, const String& product,
 		double price);
 
 	/**
@@ -433,20 +983,20 @@ public:
 	 * o cambio dinamico por balanca comercial. Pode ser chamado antes ou depois
 	 * do mundo: os precos ficam na ancora e NAO sao reescalados.
 	 */
-	void demo_set_currencies(const Variant& currencies);
+	void set_currencies(const Variant& currencies);
 
 	/** F5: taxa de cambio da moeda de uma nacao (ancora por unidade local). */
-	Dictionary demo_get_currency(const String& nation) const;
+	Dictionary get_currency(const String& nation) const;
 
 	/** F5: todas as moedas carregadas (status/UI e testes). */
-	Array demo_get_currencies() const;
+	Array get_currencies() const;
 
 	/**
 	 * F5: hook de teste/administracao para a taxa de uma moeda (por code).
 	 * Tambem fixa a base da banda (`base_rate`; sem ele, a propria taxa).
 	 * `floating` controla o drift diario e o fator de competitividade.
 	 */
-	void demo_set_currency_rate(const String& code, double rate,
+	void set_currency_rate(const String& code, double rate,
 		bool floating = true, double base_rate = -1.0);
 
 	/**
@@ -456,27 +1006,27 @@ public:
 	 * `product = "*"` vale para todos os bens. A tarifa e receita do governo
 	 * do comprador (dinheiro conservado).
 	 */
-	void demo_set_tariff(const String& buyer_nation, const String& seller_nation,
+	void set_tariff(const String& buyer_nation, const String& seller_nation,
 		const String& product, double rate);
 
 	/** F5: tarifa efetiva (buyer, seller, product) apos os coringas. */
-	double demo_get_tariff(const String& buyer_nation,
+	double get_tariff(const String& buyer_nation,
 		const String& seller_nation, const String& product) const;
 
 	/** F5: tarifas declaradas (status/UI). */
-	Array demo_get_tariffs() const;
+	Array get_tariffs() const;
 
 	// ------------------------------------------------------------------
 	// F9 — investimento e propriedade (produção_chains_impl_plan §14).
 	//
 	// Grupos/empresas com identidade: id determinístico, nome gerado no
 	// cliente (core/culture/business_name_generator.gd) e entregue por
-	// demo_set_group_names, nação de origem, setor principal, caixa e
+	// set_group_names, nação de origem, setor principal, caixa e
 	// carteira de ativos em qualquer país. O núcleo guarda o dinheiro e a
 	// propriedade; a decisão de investir é de cadência baixa e roda no
 	// GDScript (core/economy/ai/group_investor.gd), nunca por tick.
 	//
-	// Propriedade de uma construção (`DemoBuilding::owner`):
+	// Propriedade de uma construção (`Building::owner`):
 	//   "state"                 estatal (lucro -> orçamento do anfitrião)
 	//   "private"               privado agregado legado (sem grupo)
 	//   "national:<grupo>"      grupo privado nacional
@@ -489,31 +1039,31 @@ public:
 	 * com grupos já criados, não faz nada. O caixa nasce em 0 (nenhum dinheiro
 	 * é criado); os grupos se capitalizam com o lucro retido.
 	 */
-	void demo_seed_groups();
+	void seed_groups();
 
 	/** Nomes gerados pelo cliente (id -> nome). Devolve quantos aplicou. */
-	int demo_set_group_names(const Dictionary& names);
+	int set_group_names(const Dictionary& names);
 
 	/** Ranking de grupos (ativos, faturamento, países, caixa, setor). */
-	Array demo_get_groups() const;
+	Array get_groups() const;
 
 	/**
-	 * Ranking LEVE para a IA: mesma ordem de `demo_get_groups` (faturamento,
+	 * Ranking LEVE para a IA: mesma ordem de `get_groups` (faturamento,
 	 * caixa, id), mas sem varrer construções nem montar conjuntos por grupo.
 	 * Devolve só os campos de decisão (id, origem, setor, caixa, regime,
 	 * faturamento, distribuível). Custo O(grupos log grupos), nunca O(ativos).
 	 */
-	Array demo_get_group_ranking() const;
+	Array get_group_ranking() const;
 
 	/** Fotografia de um grupo (ou {} se não existe). */
-	Dictionary demo_get_group(const String& group_id) const;
+	Dictionary get_group(const String& group_id) const;
 
 	/**
 	 * Move `amount` do orçamento das cidades da nação de origem do grupo para
 	 * o caixa dele (capitalização explícita; dinheiro conservado). Usado por
 	 * testes e pela administração. Devolve {funded, moved, error}.
 	 */
-	Dictionary demo_fund_group(const String& group_id, double amount);
+	Dictionary fund_group(const String& group_id, double amount);
 
 	/**
 	 * Investimento de um grupo (FDI ou doméstico), com a política de abertura
@@ -526,21 +1076,41 @@ public:
 	 * O custo sai do caixa do grupo (e do parceiro, no JV) e é pago ao setor
 	 * de construção do anfitrião. Devolve {created, cost, error, ...}.
 	 */
-	Dictionary demo_group_invest(const String& group_id, const String& city_id,
+	Dictionary group_invest(const String& group_id, const String& city_id,
 		const String& building_id, const String& resource, int output_product,
 		double capacity, const String& recipe_id,
 		const String& partner_group = "");
+
+	/**
+	 * D-086 — APROFUNDAR/EXPANDIR mina: obra física §15 que abre o estágio
+	 * seguinte da mina, repõe a produção (curva de declínio do estágio) e sobe
+	 * a capacidade, reivindicando uma fatia da reserva de REFERÊNCIA da jazida
+	 * (o recurso nunca acaba — a reserva não é um limite físico). O custo sai
+	 * do caixa do DONO (Estado/grupo/firma) e vira demanda de construção.
+	 * Devolve {started, cost, capacity_added, stage, duration_days, project_id,
+	 * error}. Comando da fila A3 (`deepen_mine`).
+	 */
+	Dictionary deepen_mine(const String& city_id, const String& building_id);
+
+	/**
+	 * B5: obra de infraestrutura da região/estado (estrada/energia/água).
+	 * `infra_type`: 0 estrada, 1 energia (luz), 2 água. Sobe UM nível (até
+	 * kInfraMaxLevel) via projeto físico §15, pago pelo GOVERNO NACIONAL.
+	 * Devolve {started, cost, infra_type, next_level, duration_days, project_id,
+	 * error}. Comando da fila A3 (`infra_build`).
+	 */
+	Dictionary infra_build(const String& city_id, int infra_type);
 
 	/**
 	 * F9: abertura ao capital estrangeiro por (nação, setor).
 	 * `mode`: `open` (padrão), `restricted`, `joint_venture`, `closed`.
 	 * `min_local`: fração mínima do parceiro local em joint venture (0..1).
 	 */
-	Dictionary demo_set_fdi_policy(const String& nation, const String& sector,
+	Dictionary set_fdi_policy(const String& nation, const String& sector,
 		const String& mode, double min_local = 0.0);
 
 	/** F9: incentivo setorial (isenção de imposto e subsídio por unidade). */
-	Dictionary demo_set_sector_incentive(const String& nation,
+	Dictionary set_sector_incentive(const String& nation,
 		const String& sector, double tax_holiday, double subsidy);
 
 	/**
@@ -548,29 +1118,39 @@ public:
 	 * `capital` retirado do orçamento das cidades da nação (conserva o
 	 * dinheiro). Devolve {created, id, error}.
 	 */
-	Dictionary demo_create_state_company(const String& nation,
+	Dictionary create_state_company(const String& nation,
 		const String& name, double capital);
 
 	/**
 	 * Privatiza um ativo estatal: o comprador paga o valor contábil
 	 * (capacidade × capital por capacidade) ao governo do anfitrião.
 	 */
-	Dictionary demo_privatize(const String& city_id, const String& building_id,
+	Dictionary privatize(const String& city_id, const String& building_id,
 		const String& buyer_group);
 
 	/**
 	 * Nacionaliza um ativo privado/estrangeiro: vira estatal, o anfitrião paga
 	 * compensação de 50% do valor contábil (se houver orçamento) e a confiança
-	 * da nação cai por `kDemoNationalizationDays` dias — o que encarece o IDE.
+	 * da nação cai por `kNationalizationDays` dias — o que encarece o IDE.
 	 */
-	Dictionary demo_nationalize(const String& city_id, const String& building_id);
+	Dictionary nationalize(const String& city_id, const String& building_id);
+
+	/**
+	 * B5: concede uma mina/fazenda estatal a um grupo (nacional/estrangeiro)
+	 * com um royalty sobre a produção (`building.royalty`). Transferência de
+	 * dinheiro conservada (o concessionário paga o valor contábil ao governo).
+	 * `royalty_rate` (0..1; <= 0 usa o padrão kConcessionRoyaltyRate). Devolve
+	 * {ok, price, royalty, owner, error}. Comando da fila A3 (`concede`).
+	 */
+	Dictionary concede(const String& city_id, const String& building_id,
+		const String& group_id, double royalty_rate);
 
 	/**
 	 * Status de investimento (sob demanda, fora do tick): ranking de grupos,
 	 * participação estatal/nacional/estrangeira na produção e no emprego de
 	 * cada nação, fluxo de lucro repatriado e políticas/incentivos.
 	 */
-	Dictionary demo_get_investment_status() const;
+	Dictionary get_investment_status() const;
 
 	/**
 	 * Sinais de investimento BARATOS para a IA (sem varredura de ativos nem
@@ -578,15 +1158,108 @@ public:
 	 * É o que a decisão de grupo consome — o status completo (participação por
 	 * dono) fica para a UI e os relatórios.
 	 */
-	Dictionary demo_get_investment_signals() const;
+	Dictionary get_investment_signals() const;
 
 	/** F9: confirmação de que os grupos foram semeados neste mundo. */
-	bool demo_groups_seeded() const { return ws_.groups_seeded; }
+	bool groups_seeded() const { return ws_.groups_seeded; }
 
 protected:
 	static void _bind_methods();
 
 private:
+	// ------------------------------------------------------------------
+	// A3: aplicação dos comandos. Cada `apply_*` é o corpo antigo do método
+	// público, SEM o mutex (quem aplica já é o escritor único) e SEM
+	// `status_invalidate()` (a barreira que aplicou invalida uma vez).
+	// O método público só monta o Command, enfileira e chama `dispatch_command`.
+	// ------------------------------------------------------------------
+	Dictionary dispatch_command(const ogs::Command& cmd);
+	Dictionary apply_one_locked(const ogs::Command& cmd);
+	// Aplica a fila pendente; quando `wanted_seq` != 0, devolve no retorno o
+	// resultado daquele comando (é o contrato de retorno dos métodos públicos).
+	Dictionary apply_pending_locked(uint64_t wanted_seq);
+
+	Dictionary apply_invest(const String& city_id, const String& building_id,
+		double amount);
+	// D-086: aprofundar/expandir mina (obra física §15 → estágio seguinte).
+	Dictionary apply_deepen_mine(const String& city_id,
+		const String& building_id);
+	// B5: obra de infraestrutura da região (estrada/energia/água).
+	Dictionary apply_infra_build(const String& city_id, int infra_type);
+	Dictionary apply_storage_build(const String& city_id, int type, int scope,
+		double tons);
+	Dictionary apply_storage_trade(const String& city_id, int type, int scope,
+		int product, double tons, bool buy, bool relief);
+	Dictionary apply_build(const String& city_id, const String& building_id,
+		const String& resource, int input_product, int output_product,
+		double capacity, double jobs, double wage, double opex,
+		double input_per_output, const String& owner, double cost,
+		const String& recipe_id);
+	bool apply_spend_government(const String& city_id, double amount);
+	void apply_price_shock(const String& product, double multiplier);
+	void apply_set_suitability(const String& city_id, const String& product,
+		double value);
+	bool apply_set_deposit(const String& city_id, const String& product,
+		double reserve_kt, double quality, double depth_m);
+	void apply_set_external_demand(const String& city_id,
+		const String& product, double ceiling_t_per_day);
+	void apply_set_external_income_index(const String& city_id, double index);
+	void apply_set_productivity_index(const String& city_id, double index);
+	void apply_set_income_gini(const String& city_id, double gini);
+	// B2: quintis de renda observados da nação (5 frações, soma ~1) ou vazio
+	// para re-semear com a proxy do Gini declarado.
+	void apply_set_city_strata(const String& city_id,
+		const PackedFloat64Array& shares);
+	// B3: aplica o bloco de região (setup; ver set_city_region).
+	void apply_set_city_region(const String& city_id, const Dictionary& data);
+	void apply_set_minimum_wage(const String& nation, double value);
+	void apply_set_wage_rigidity(double value);
+	void apply_set_tariff(const String& buyer_nation, const String& seller_nation,
+		const String& product, double rate);
+	void apply_set_currency_rate(const String& code, double rate,
+		bool floating, double base_rate);
+	Dictionary apply_expand_port(const String& port_id, double t_per_day);
+	void apply_set_port_capacity(const String& port_id, double t_per_day);
+	void apply_set_market_stock(const String& city_id, const String& product,
+		double stock);
+	void apply_set_market_price(const String& city_id, const String& product,
+		double price);
+	Dictionary apply_fleet_buy(const String& nation, const String& product,
+		double amount, double budget_share);
+	Dictionary apply_fund_group(const String& group_id, double amount);
+	Dictionary apply_group_invest(const String& group_id, const String& city_id,
+		const String& building_id, const String& resource, int output_product,
+		double capacity, const String& recipe_id, const String& partner_group);
+	Dictionary apply_set_fdi_policy(const String& nation, const String& sector,
+		const String& mode, double min_local);
+	Dictionary apply_set_sector_incentive(const String& nation,
+		const String& sector, double tax_holiday, double subsidy);
+	Dictionary apply_create_state_company(const String& nation,
+		const String& name, double capital);
+	Dictionary apply_privatize(const String& city_id, const String& building_id,
+		const String& buyer_group);
+	Dictionary apply_nationalize(const String& city_id, const String& building_id);
+	// B5: concessão de mina/fazenda com royalty.
+	Dictionary apply_concede(const String& city_id, const String& building_id,
+		const String& group_id, double royalty_rate);
+	Dictionary apply_urban_expand(const String& city_id, int zone, double km2);
+	Dictionary apply_urban_densify(const String& city_id, int zone);
+	Dictionary apply_urban_social_housing(const String& city_id, double units);
+	void apply_set_service_capacity(const String& city_id, const String& sector,
+		double units_per_day);
+	void apply_set_service_business_state(int business_id, int loss_days,
+		double profit);
+
+	// Fila de comandos (A3). `tick_in_progress_` diz se um dia está rodando em
+	// outra thread: nesse caso o método público só enfileira. `tick_thread_`
+	// (hash da thread do dia) separa "outra thread" de "a própria thread do
+	// dia": as mutações que o tick faz por dentro (seed_industry → build)
+	// precisam aplicar na hora, como sempre fizeram.
+	ogs::CommandQueue commands_;
+	std::atomic<bool> tick_in_progress_{false};
+	std::atomic<std::size_t> tick_thread_{0};
+	std::atomic<int> current_day_{0};
+
 	// ------------------------------------------------------------------
 	// Cache do status: os mesmos Dictionary/Array são reescritos a cada dia.
 	//
@@ -596,12 +1269,12 @@ private:
 	// Campos imutáveis (id, nome, centro, aptidão) só são reescritos quando a
 	// origem muda, comparando contra a cópia em std::string (memcmp barato).
 	// ------------------------------------------------------------------
-	struct DemoStatusCitySlot {
-		// Quantidade de escalares publicados em demo_fill_city_status; o
+	struct StatusCitySlot {
+		// Quantidade de escalares publicados em fill_city_status; o
 		// espelho abaixo é indexado por ordem de chamada de sync_scalar.
 		// F9: eram 31 chamadas com espelho de 30 (escrita fora do limite desde a
 		// F7); agora 33 (service_jobs_filled e in_kind_food entraram).
-		static constexpr int kDemoStatusScalarCount = 33;
+		static constexpr int kStatusScalarCount = 33;
 		Dictionary dict;
 		// Strings estáveis: evitam realocar String a cada dia.
 		std::string id_src, name_src, nation_src, home_src, landmass_src, currency_src;
@@ -617,7 +1290,7 @@ private:
 		// reconstruído a cada dia (String + Dictionary aninhado por cidade).
 		std::vector<char> deposit_present;      // 1 por produto
 		std::vector<char> deposit_depleted;     // último `depleted` publicado
-		std::vector<DemoDeposit> deposit_written;  // último valor publicado
+		std::vector<Deposit> deposit_written;  // último valor publicado
 		std::vector<String> deposit_key;        // nome do produto (chave)
 		// Lista de produtos com jazida rastreada nesta cidade. Recalculada só
 		// quando uma jazida nova é descoberta: o laço diário percorre apenas as
@@ -633,6 +1306,17 @@ private:
 		double pop_written[33] = {};
 		bool pop_written_filled = false;
 		bool pop_published = false;
+		// B1: coortes etárias publicadas no bloco `pop` (5 faixas). Mudam uma
+		// vez por mês (fase de demografia): o Array só é republicado quando o
+		// conteúdo muda, como o grupo "raro".
+		std::vector<double> age_bands;
+		double age_bands_written[5] = {};
+		bool age_bands_filled = false;
+		// B2: bloco `pop.income_strata` (5 quintis). Republicado quando o
+		// conteúdo muda (fluxos diários; patrimônio no fechamento do mês).
+		Dictionary income_strata;
+		std::vector<double> income_strata_written;
+		bool income_strata_filled = false;
 		// F7: vetores de educação/trabalho reutilizados (3 posições cada). São
 		// mutados em lugar e compartilhados com o Dictionary publicado; só são
 		// reinseridos quando o bloco é criado.
@@ -665,15 +1349,15 @@ private:
 		bool stratum_written_filled = false;
 		// Espelho dos 25 escalares publicados por cidade (população, PIB,
 		// caixas, indicadores derivados): escrita só quando o double muda.
-		double scalar_written[kDemoStatusScalarCount] = {};
+		double scalar_written[kStatusScalarCount] = {};
 		bool scalar_written_filled = false;
-		// desejado/consumido por categoria alimentar (2 × kDemoMaxFoodProducts).
-		double pop_food_written[2 * kDemoMaxFoodProducts] = {};
+		// desejado/consumido por categoria alimentar (2 × kMaxFoodProducts).
+		double pop_food_written[2 * kMaxFoodProducts] = {};
 		Array desired_by_category;
 		Array consumed_by_category;
 		Array markets;
 		std::vector<Dictionary> market_entry;  // 1 por produto
-		// F8: bloco plano de serviços (20 setores × kDemoServiceFields). Array
+		// F8: bloco plano de serviços (20 setores × kServiceFields). Array
 		// de doubles em vez de 20 dicionários por cidade: a publicação custa uma
 		// escrita só e a UI indexa pela ordem de `service_sectors`.
 		PackedFloat64Array services;
@@ -710,6 +1394,10 @@ private:
 			double workers = -1.0, utilization = -1.0, revenue = -1.0;
 			double input_value = -1.0, costs = -1.0, profit = -1.0;
 			double loss_days = -1.0;
+			// D-086: estágio da mina (int) e produção relativa do estágio.
+			int stage = -1;
+			double stage_factor = -1.0, stage_reserve_kt = -1.0;
+			double stage_mined_kt = -1.0, next_deepen_cost = -1.0;
 		};
 		std::vector<BuildingCache> building_cache;
 		Array imported, exported, import_value, export_value;
@@ -717,13 +1405,13 @@ private:
 		// de comércio. A cidade típica movimenta 2–5 dos 21 produtos: escrever
 		// os outros 16 custava ~100 mil hashes de String por dia (650 cidades).
 		// Comparar double é ~20× mais barato que escrever em Dictionary.
-		std::vector<DemoMarket> market_written;
+		std::vector<Market> market_written;
 		// F5: preço local publicado (`price_anchor ÷ taxa`), por produto. A
 		// comparação evita reescrever o Dictionary quando nada mudou; com
 		// câmbio float a taxa muda e TODOS os locais são republicados no dia.
 		std::vector<double> market_local_written;
 		std::vector<char> market_written_filled;  // 1 por produto
-		std::vector<double> io_written;           // 4 × kDemoProducts
+		std::vector<double> io_written;           // 4 × kProducts
 		std::vector<char> io_filled;              // 4 flags (um por array)
 		bool static_filled = false;
 		int static_version = -1;
@@ -736,8 +1424,8 @@ private:
 	// o `String` recalculava o hash de todas elas (medido no cenário real de
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
-	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups;
+	struct StatusKeys {
+		StringName age_bands, amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, income_strata, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, migration, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups, stage, stage_factor, stage_reserve_kt, stage_mined_kt, next_deepen_cost;
 		StringName light, product_count, m_price, m_stock, m_supply, m_surplus,
 			m_sold, m_shortage, m_desired, p_need, p_consumed, p_satisfaction,
 			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group,
@@ -745,8 +1433,11 @@ private:
 		b_costs, b_site_suitability, d_offset, d_resource, d_product,
 		d_initial_kt, d_remaining_kt, d_quality, d_depth_m, d_efficiency,
 		d_opex_factor, d_extracted_kt, d_depleted,
-		c_offset, c_output_product, c_capacity, c_expand;
-		DemoStatusKeys();
+		c_offset, c_output_product, c_capacity, c_expand,
+		// B6: Gini de riqueza (poupança + imóvel + terra + participações) da
+		// cidade e da nação.
+		wealth_gini;
+		StatusKeys();
 	};
 
 	// Slot de status por nação: reaproveita o dicionário da nação, os
@@ -755,7 +1446,7 @@ private:
 	// Dictionary + ~10 Arrays novos por nação a cada tick (~2 mil alocações/dia
 	// em 179 nações). Os contêineres são reutilizados e os valores reescritos em
 	// lugar — byte-idêntico ao código anterior.
-	struct DemoStatusNationSlot {
+	struct StatusNationSlot {
 		Dictionary dict;
 		Dictionary fleet;
 		Dictionary labor;
@@ -771,7 +1462,7 @@ private:
 		bool fleet_built = false;
 		bool labor_built = false;
 	};
-	struct DemoStatusCache {
+	struct StatusCache {
 		Dictionary root;
 		Array cities;
 		Array ports;
@@ -789,14 +1480,14 @@ private:
 		// o núcleo publica aqui a mesma soma, calculada na thread do tick.
 		Dictionary market_totals;
 		PackedFloat64Array tot_surplus, tot_sold, tot_demand;
-		std::vector<DemoStatusCitySlot> city_slots;
+		std::vector<StatusCitySlot> city_slots;
 		std::vector<Dictionary> port_slots;
 		std::vector<Dictionary> order_slots;
 		std::vector<Array> order_leg_slots;
 		// Dicionários de perna reaproveitados (1 por perna de pedido): antes
 		// cada pedido alocava um Dictionary novo por perna a cada dia.
 		std::vector<std::vector<Dictionary>> order_leg_entry;
-		std::vector<DemoStatusNationSlot> nation_slots;
+		std::vector<StatusNationSlot> nation_slots;
 		// Caminho total em trânsito por cidade (evita varredura O(cidades ×
 		// cargas) dentro do laço de cidades).
 		std::vector<double> in_transit_by_city;
@@ -806,6 +1497,9 @@ private:
 		// da IA — recomputado uma vez por semana (dia % 7 == 0), cacheado nos
 		// outros dias. A primeira publicação sempre computa.
 		bool labor_cadence_built = false;
+		// A4: dia a que se referem os valores de `labor` guardados neste slot
+		// (permite semear um slot que ficou parado várias semanas).
+		int labor_values_day = -1;
 		// S7-c: sinais leves por cidade (os campos que a IA varre em TODAS as
 		// cidades todo dia), em arrays planos indexados por cidade — um
 		// PackedFloat64Array por campo em vez de ~113 dicionários de mercado +
@@ -853,23 +1547,23 @@ private:
 	}
 
 	/** Preenche um Dictionary de perna para o status, reutilizando as chaves. */
-	void demo_fill_leg_status(Dictionary& dict, const Leg& leg) const;
+	void fill_leg_status(Dictionary& dict, const Leg& leg) const;
 
 	// S5b: os helpers do núcleo migraram para ogs::SimCore; estes wrappers
 	// preservam as chamadas da fachada sem renomear nenhuma referência.
-	DemoCity* find_demo_city(const std::string& id) { return sim_core_.find_demo_city(id); }
-	const DemoCity* find_demo_city(const std::string& id) const { return sim_core_.find_demo_city(id); }
+	City* find_city(const std::string& id) { return sim_core_.find_city(id); }
+	const City* find_city(const std::string& id) const { return sim_core_.find_city(id); }
 	/**
 	 * Refaz os índices derivados do mundo (id da cidade -> posição e
 	 * construções por cidade). Chamado ao inicializar, ao carregar um save e no
 	 * início de cada tick: sem eles, as fases varrem TODAS as construções para
 	 * cada cidade (O(cidades × construções), que não escala para 650 cidades).
 	 */
-	void demo_rebuild_indexes() { sim_core_.demo_rebuild_indexes(); }
+	void rebuild_indexes() { sim_core_.rebuild_indexes(); }
 	/**
 	 * Preenche o slot de status de uma cidade (reaproveitando dicionários).
 	 * @param city_index Posição em ws_.cities.
-	 * @param slot Cache da cidade (mesma posição em demo_status_cache_).
+	 * @param slot Cache da cidade (mesma posição em status_cache_).
 	 * @param in_transit Carga em trânsito até a cidade (já somada em passada única).
 	 * @param heavy Publica o detalhe pesado (markets/pop/services/buildings/
 	 *   deposits). O status diário passa `false` (S7-c): esses blocos ficam sob
@@ -877,7 +1571,7 @@ private:
 	 *   (população, PIB, indicadores, emprego setorial, fluxos de comércio) e o
 	 *   bloco `light` são publicados sempre.
 	 */
-	void demo_fill_city_status(std::size_t city_index, DemoStatusCitySlot& slot,
+	void fill_city_status(std::size_t city_index, StatusCitySlot& slot,
 		double in_transit, bool heavy) const;
 	/**
 	 * Preenche os sinais leves por cidade (S7-c): mercados (7 campos), POP
@@ -886,50 +1580,129 @@ private:
 	 * para a varredura diária da IA não precisar de `markets`/`pop`/`buildings`
 	 * completos.
 	 */
-	void demo_fill_light_signals(DemoStatusCache& cache) const;
-	double demo_money_total() const { return sim_core_.demo_money_total(); }
+	void fill_light_signals(StatusCache& cache) const;
+
+	// A4: escalares por cidade (os MESMOS do bloco leve do status), num POD
+	// para a ficha/colunas não duplicarem a conta. A ordem dos campos é a
+	// ordem de `sync_scalar` em `fill_city_status` — o status continua
+	// byte-idêntico.
+	struct CityScalars {
+		double population = 0.0, simulation_population = 0.0, gdp = 0.0,
+			gdp_per_capita = 0.0, external_income_index = 0.0, firm_cash = 0.0,
+			service_cash = 0.0, government_budget = 0.0,
+			government_goods_spend = 0.0, service_revenue = 0.0,
+			service_jobs = 0.0, service_workers = 0.0,
+			service_jobs_filled = 0.0, in_kind_food = 0.0,
+			service_profit = 0.0, opex_revenue = 0.0, freight_revenue = 0.0,
+			construction_revenue = 0.0, service_wage = 0.0,
+			disposable_per_capita = 0.0, living_standard = 0.0,
+			production = 0.0, jobs = 0.0, income = 0.0, industrialization = 0.0,
+			stockpile = 0.0, need = 0.0, deficit = 0.0, consumed = 0.0,
+			in_transit = 0.0, fx_rate = 0.0, tariff_revenue = 0.0,
+			productivity_index = 0.0;
+	};
+	CityScalars city_scalars(std::size_t city_index, double in_transit) const;
+
+	// A4: soma das cargas em trânsito por cidade (uma passada só).
+	void compute_in_transit(std::vector<double>& out) const;
+
+	// A4: pedaços do `get_status()` extraídos para as consultas reusarem o
+	// MESMO código (mesmos valores e mesma ordem de chaves).
+	void build_ports(StatusCache& cache);
+	void build_orders(StatusCache& cache);
+	void build_nations(StatusCache& cache,
+		const std::vector<double>& in_transit_by_city);
+	void build_currencies(StatusCache& cache);
+	void build_tariffs(StatusCache& cache);
+
+	/**
+	 * A4: retrato SEMANAL do agregado `nations[].labor` (S17), capturado no
+	 * fecho do dia `day % 7 == 0` como doubles puros. O status sob demanda lê
+	 * o retrato mais recente, então um `get_status()` no dia 60 publica os
+	 * mesmos valores que a publicação diária antiga (dia 56) — o golden não
+	 * muda. Antes do 1º tick o retrato nasce do estado corrente (como o
+	 * `warm_status()` fazia no dia 0).
+	 */
+	struct NationLaborSnapshot {
+		std::string tag;
+		double working_age = 0.0, labor_force = 0.0, employed = 0.0,
+			unemployed = 0.0, students = 0.0, recruit_reserve = 0.0,
+			income_population = 0.0, productivity_weighted = 0.0,
+			minimum_wage = 0.0, wage_rigidity = 0.0;
+		double education[kEducationLevels] = {};
+		double labor_force_by_level[kEducationLevels] = {};
+		double employed_by_level[kEducationLevels] = {};
+		double unemployed_by_level[kEducationLevels] = {};
+		double vacancies_by_level[kEducationLevels] = {};
+		double wage_weighted[kEducationLevels] = {};
+		double wage_weight[kEducationLevels] = {};
+		double income_share[kIncomeLevels] = {};
+	};
+	void capture_nation_labor();
+	const NationLaborSnapshot* find_labor_snapshot(const std::string& tag) const;
+	int labor_snapshot_day_ = -1;
+	std::vector<NationLaborSnapshot> labor_snapshot_;
+	// A4: no caminho `tick_day()` (tools/testes/goldens) o primeiro build de um
+	// slot calcula o trabalho do dia corrente, como sempre; no caminho do jogo
+	// (sem status diário) ele é semeado pelo retrato semanal.
+	bool status_seed_labor_from_snapshot_ = true;
+
+	// A4: cache das linhas/colunas sob demanda. Não participa do caminho
+	// diário; o resumo do dia é sempre construído do zero (imutável).
+	Dictionary columns_cache_;
+	int columns_day_ = -1;
+	int columns_static_version_ = -1;
+	std::vector<StatusCitySlot> query_city_slots_;
+	Array query_city_rows_;
+	int query_rows_day_ = -1;
+	int query_rows_static_version_ = -1;
+	Dictionary query_light_cache_;
+	int query_light_day_ = -1;
+	Array query_orders_cache_;
+	int query_orders_day_ = -1;
+	double money_total() const { return sim_core_.money_total(); }
 	// Deriva a frota inicial de população/PIB (source: derived): veículos,
 	// estoque de combustível e de peças. Chamado ao inicializar e ao carregar
 	// um save sem o bloco `fleets`.
-	void demo_init_fleets() { sim_core_.demo_init_fleets(); }
-	Port* find_demo_port(const std::string& id) {
-		return sim_core_.find_demo_port(id);
+	void init_fleets() { sim_core_.init_fleets(); }
+	Port* find_port(const std::string& id) {
+		return sim_core_.find_port(id);
 	}
 	/**
 	 * Índice da cidade da nação/massa mais próxima do ponto (-1 se nenhuma).
 	 * Usado como cidade-sede/cobradora quando `port_of` não aponta para uma
 	 * cidade existente (cenário sintético, save antigo).
 	 */
-	int demo_city_index_near(const std::string& nation, const std::string& landmass,
+	int city_index_near(const std::string& nation, const std::string& landmass,
 	                         const MapPoint& from) const {
-		return sim_core_.demo_city_index_near(nation, landmass, from);
+		return sim_core_.city_index_near(nation, landmass, from);
 	}
 	/**
 	 * Capacidade inicial de cada porto (nível 1) pela população de simulação da
 	 * cidade-sede (`port_of`); sem sede conhecida, usa a cidade mais próxima da
 	 * mesma nação/massa e, por fim, o piso de referência. Chamado no fim de
-	 * initialize_demo_world e de demo_from_dict (save sem portos).
+	 * initialize_world e de from_dict (save sem portos).
 	 */
-	void demo_init_port_capacities() { sim_core_.demo_init_port_capacities(); }
-	int demo_product_index(const String& product) const;
+	void init_port_capacities() { sim_core_.init_port_capacities(); }
+	int product_index(const String& product) const;
 	// Slot da cesta alimentar (0..ws_.food_products.size()-1) -> id de produto.
-	int demo_food_product(int slot) const { return sim_core_.demo_food_product(slot); }
+	int food_product(int slot) const { return sim_core_.food_product(slot); }
 	// Id de produto -> fator calórico (0.0 se não for alimento da cesta).
-	double demo_food_calories(int product) const { return sim_core_.demo_food_calories(product); }
-	const char* demo_product_name(int product) const;
-	int demo_recipe_index(const String& recipe_id) const;
-	static double demo_extraction_efficiency(const DemoDeposit& deposit) {
-		return ogs::SimCore::demo_extraction_efficiency(deposit);
+	double food_calories(int product) const { return sim_core_.food_calories(product); }
+	const char* product_name(int product) const;
+	int recipe_index(const String& recipe_id) const;
+	static double extraction_efficiency(const Deposit& deposit) {
+		return ogs::SimCore::extraction_efficiency(deposit);
 	}
-	static double demo_depth_opex_factor(const DemoDeposit& deposit) {
-		return ogs::SimCore::demo_depth_opex_factor(deposit);
+	static double depth_opex_factor(const Deposit& deposit) {
+		return ogs::SimCore::depth_opex_factor(deposit);
 	}
-	double demo_base_price(int product) const { return sim_core_.demo_base_price(product); }
+	double base_price(int product) const { return sim_core_.base_price(product); }
 	// F5: câmbio, preço entregue e tarifa.
-	const DemoCurrency* demo_currency_for(const std::string& nation) const;
-	DemoCurrency* demo_currency_for(const std::string& nation);
-	double demo_fx_rate(const std::string& nation) const {
-		return sim_core_.demo_fx_rate(nation);
+	const Currency* currency_for(const std::string& nation) const;
+	Currency* currency_for(const std::string& nation);
+	double fx_rate(const std::string& nation) const {
+		return sim_core_.fx_rate(nation);
 	}
 	/**
 	 * F5: fator de competitividade da âncora (`1` com câmbio fixo; `taxa ÷
@@ -937,43 +1710,43 @@ private:
 	 * oferta/importação de uma nação float — é o efeito de preço rígido na
 	 * moeda local, sem alterar o preço interno (âncora).
 	 */
-	double demo_competitiveness(const std::string& nation) const;
-	const char* demo_currency_code(const std::string& nation) const {
-		return sim_core_.demo_currency_code(nation);
+	double competitiveness(const std::string& nation) const;
+	const char* currency_code(const std::string& nation) const {
+		return sim_core_.currency_code(nation);
 	}
 	// Tarifa ad valorem efetiva (coringas "*").
-	double demo_tariff_rate(const std::string& buyer_nation,
+	double tariff_rate(const std::string& buyer_nation,
 		const std::string& seller_nation, int product) const;
 	// Refaz os índices code->moeda e nação->moeda depois de carregar a lista
-	// (demo_set_currencies, demo_from_dict).
-	void demo_rebuild_currency_indexes() {
-		sim_core_.demo_rebuild_currency_indexes();
+	// (set_currencies, from_dict).
+	void rebuild_currency_indexes() {
+		sim_core_.rebuild_currency_indexes();
 	}
-	// Refaz a tabela `buyer|seller|product` -> taxa (demo_set_tariff,
-	// demo_from_dict).
-	void demo_rebuild_tariff_lookup();
+	// Refaz a tabela `buyer|seller|product` -> taxa (set_tariff,
+	// from_dict).
+	void rebuild_tariff_lookup();
 	/**
 	 * Define os bens e preços-base a partir de dados externos (goods.json).
 	 * Cada item deve ter "id" (wheat/iron/...), "base_price" e, opcionalmente,
-	 * "order" (0..kDemoMaxProducts-1). A ordem 0..20 dos primários é preservada
+	 * "order" (0..kMaxProducts-1). A ordem 0..20 dos primários é preservada
 	 * e os bens novos entram nas posições seguintes. Pode ser chamado antes ou
 	 * depois da inicialização: o estado existente é preservado por índice.
 	 */
-	void demo_set_goods(const Array& goods);
+	void set_goods(const Array& goods);
 	/**
 	 * Define as receitas industriais (recipes.json): produto, yield, insumos com
 	 * quantidade, subprodutos e engenharia (jobs/wage/opex/capital por t/dia).
 	 */
-	void demo_set_recipes(const Array& recipes);
+	void set_recipes(const Array& recipes);
 	/**
 	 * Define a cesta alimentar a partir de needs.json: usa
 	 * `levels.basic.categories.food.substitutes` e `equivalence.calories`.
 	 * Mantém a cesta de 5 culturas quando o dicionário não traz o dado.
 	 */
-	void demo_set_needs(const Dictionary& needs);
+	void set_needs(const Dictionary& needs);
 	// F3: zera/redimensiona o estado de necessidades de uma POP (duráveis por
 	// produto, vetores dos 3 níveis) sem apagar estoque já acumulado.
-	void demo_init_pop_needs(DemoPop& pop) const { sim_core_.demo_init_pop_needs(pop); }
+	void init_pop_needs(Pop& pop) const { sim_core_.init_pop_needs(pop); }
 	/**
 	 * F7: deriva e (re)inicializa o perfil de trabalho/educação de uma cidade a
 	 * partir do índice de renda externa (PIB PPP per capita já normalizado).
@@ -982,44 +1755,44 @@ private:
 	 * Barro-Lee/UNDP) e está documentada em economy_sim.cpp. Não mexe em
 	 * população nem em caixa.
 	 */
-	void demo_apply_labor_profile(DemoCity& city);
+	void apply_labor_profile(City& city);
 	/**
 	 * F7 calibração: recalcula a população de cada estrato de renda
 	 * (escolaridade/ocupação) a partir da distribuição de educação. Inclui os
 	 * dependentes: a escolaridade é medida na idade ativa, mas a renda do
 	 * estrato sustenta toda a sua população.
 	 */
-	void demo_refresh_strata(DemoPop& pop) const { sim_core_.demo_refresh_strata(pop); }
+	void refresh_strata(Pop& pop) const { sim_core_.refresh_strata(pop); }
 	/**
 	 * F7: escolaridade das vagas por setor industrial (fallback quando a receita
 	 * não declara `education_mix`). Tabela documentada; escreve 3 frações.
 	 */
-	static void demo_education_mix_for_sector(const std::string& sector,
+	static void education_mix_for_sector(const std::string& sector,
 		double* mix) {
-		ogs::SimCore::demo_education_mix_for_sector(sector, mix);
+		ogs::SimCore::education_mix_for_sector(sector, mix);
 	}
 
 	// F8: índices cidade→negócios e setor→negócios (como os de construção).
-	void demo_rebuild_service_indexes() { sim_core_.demo_rebuild_service_indexes(); }
+	void rebuild_service_indexes() { sim_core_.rebuild_service_indexes(); }
 	// F8: semeia os negócios iniciais de cada cidade (capital do caixa do
 	// próprio setor + poupança das famílias acima da reserva de comida).
 	// Roda no boot do mundo e ao carregar save anterior ao v10.
-	void demo_seed_services() { sim_core_.demo_seed_services(); }
+	void seed_services() { sim_core_.seed_services(); }
 	// F8: abre um negócio do setor com a capacidade pedida. O capital vem do
 	// caixa do próprio setor (service_cash) e, se faltar, da poupança das
 	// famílias ACIMA da reserva de comida (a parcela de poupança move
 	// savings→service_cash e é devolvida no fechamento — conservação).
-	bool demo_service_open(DemoCity& city, int sector, double capacity,
+	bool service_open(City& city, int sector, double capacity,
 		double capital) {
-		return sim_core_.demo_service_open(city, sector, capacity, capital);
+		return sim_core_.service_open(city, sector, capacity, capital);
 	}
 	// F8: fecha um negócio insolvente, devolvendo à POP só o capital que ela
 	// aportou (a parcela financiada pelo setor fica no setor).
-	void demo_service_close(DemoServiceBusiness& business) {
-		sim_core_.demo_service_close(business);
+	void service_close(ServiceBusiness& business) {
+		sim_core_.service_close(business);
 	}
-	int demo_service_sector_index(const std::string& sector) const {
-		return sim_core_.demo_service_sector_index(sector);
+	int service_sector_index(const std::string& sector) const {
+		return sim_core_.service_sector_index(sector);
 	}
 
 	/**
@@ -1035,9 +1808,9 @@ private:
 	 * `per_ge` = (local_cost + import_cost) / need, ou o preço mais barato por
 	 * caloria quando não há necessidade. Sem alocação: uma passada por produto.
 	 */
-	void demo_food_basket_cost(const DemoCity& city, double need,
+	void food_basket_cost(const City& city, double need,
 		double& local_cost, double& import_cost, double& per_ge) const {
-		sim_core_.demo_food_basket_cost(city, need, local_cost, import_cost,
+		sim_core_.food_basket_cost(city, need, local_cost, import_cost,
 			per_ge);
 	}
 	/**
@@ -1045,8 +1818,8 @@ private:
 	 * apertado/folgado, margem das firmas, âncora de renda do país, piso de
 	 * salário mínimo e rigidez). Chamado na fase de contabilidade.
 	 */
-	void demo_update_wages(DemoCity& city, double building_margin) {
-		sim_core_.demo_update_wages(city, building_margin);
+	void update_wages(City& city, double building_margin) {
+		sim_core_.update_wages(city, building_margin);
 	}
 	/**
 	 * F7 calibração: TFP efetiva da cidade — o fator explícito do laboratório
@@ -1054,25 +1827,48 @@ private:
 	 * real (`clamp(external_income_index, 0,25, 4,0)`, `derived:gdp_ppp`,
 	 * normalizado para a média mundial = 1,0). É o nível de produtividade do
 	 * país, não um prêmio: países abaixo da média recebem fator < 1. O piso de
-	 * subsistência da âncora salarial (demo_update_wages) impede que o fator
+	 * subsistência da âncora salarial (update_wages) impede que o fator
 	 * < 1 derrube o trabalhador abaixo da cesta alimentar.
 	 * EUA ~3,5, DEU ~2,9, BRA ~0,9, IND ~0,46, NGA ~0,37.
 	 */
-	double demo_effective_productivity(const DemoCity& city) const {
-		return sim_core_.demo_effective_productivity(city);
+	double effective_productivity(const City& city) const {
+		return sim_core_.effective_productivity(city);
 	}
 	/**
 	 * F7 calibração — declara o Gini de renda da nação (0..1). 0 desliga a
 	 * divisão por classes e mantém os estratos de escolaridade.
 	 */
-	void demo_set_income_gini(const String& city_id, double gini);
+	void set_income_gini(const String& city_id, double gini);
+	/**
+	 * B2 — declara os cinco quintis de RENDA observados da nação (frações da
+	 * renda total, soma ~1) e semeia os estratos da cidade. Vazio = re-semeia
+	 * com a proxy lognormal do Gini declarado. API de inicialização (antes do
+	 * dia 1), como set_urban.
+	 */
+	void set_city_strata(const String& city_id,
+		const PackedFloat64Array& shares);
+	/**
+	 * B3 — declara o bloco de REGIÃO de uma cidade (estados inteiros), já
+	 * resolvido pelo GDScript a partir de state_regions.json: `population_region`,
+	 * `urban_population`, `region_population`, `urban_share` (0..1 ou -1), `name`
+	 * e `states` ([{id, name, population, area_km2}]). Semeia demografia/quintis
+	 * do interior e reconcilia a população exibida. API de inicialização (antes
+	 * do dia 1), como set_city_strata.
+	 */
+	void set_city_region(const String& city_id, const Dictionary& data);
+	/**
+	 * B3 — ficha da região de uma cidade (nome, estados, população, urbanização,
+	 * emprego, renda, comida, satisfação). `{}` quando a cidade não existe ou não
+	 * tem dado de região.
+	 */
+	Dictionary get_region_status(const String& city_id) const;
 	/**
 	 * F7 calibração — recalcula as classes de consumo (população e teto) a
 	 * partir do Gini declarado e do custo da cesta básica do dia. Sem Gini,
 	 * espelha os estratos de escolaridade (`stratum_*`).
 	 */
-	void demo_refresh_income_classes(DemoCity& city) const {
-		sim_core_.demo_refresh_income_classes(city);
+	void refresh_income_classes(City& city) const {
+		sim_core_.refresh_income_classes(city);
 	}
 	/**
 	 * Bootstrap industrial (§12.3): no cenário real, semeia uma planta
@@ -1080,59 +1876,59 @@ private:
 	 * mundo ainda não tem nenhuma construção secundária. Nota: é uma
 	 * ESTIMATIVA de transição, não dado observado; run once, marcada no status.
 	 */
-	void demo_seed_industry();
-	DemoBuilding* find_demo_building(const std::string& city_id, const std::string& id);
+	void seed_industry();
+	Building* find_building(const std::string& city_id, const std::string& id);
 
 	// F9: propriedade e grupos.
-	int demo_group_index(const std::string& id) const {
-		return sim_core_.demo_group_index(id);
+	int group_index(const std::string& id) const {
+		return sim_core_.group_index(id);
 	}
-	DemoGroup* find_demo_group(const std::string& id) {
-		return sim_core_.find_demo_group(id);
+	Group* find_group(const std::string& id) {
+		return sim_core_.find_group(id);
 	}
-	const DemoGroup* find_demo_group(const std::string& id) const {
-		return sim_core_.find_demo_group(id);
+	const Group* find_group(const std::string& id) const {
+		return sim_core_.find_group(id);
 	}
 	// Decompõe o dono de uma construção: kind 0 state, 1 national, 2 foreign,
 	// 3 private (legado). Preenche grupo e nação de origem.
-	int demo_owner_kind(const std::string& owner, std::string* group_id,
+	int owner_kind(const std::string& owner, std::string* group_id,
 		std::string* origin_nation) const {
-		return sim_core_.demo_owner_kind(owner, group_id, origin_nation);
+		return sim_core_.owner_kind(owner, group_id, origin_nation);
 	}
-	int demo_fdi_mode(const std::string& nation, const std::string& sector) const {
-		return sim_core_.demo_fdi_mode(nation, sector);
+	int fdi_mode(const std::string& nation, const std::string& sector) const {
+		return sim_core_.fdi_mode(nation, sector);
 	}
-	double demo_sector_tax_holiday(const std::string& nation,
+	double sector_tax_holiday(const std::string& nation,
 		const std::string& sector) const {
-		return sim_core_.demo_sector_tax_holiday(nation, sector);
+		return sim_core_.sector_tax_holiday(nation, sector);
 	}
-	double demo_sector_subsidy(const std::string& nation,
+	double sector_subsidy(const std::string& nation,
 		const std::string& sector) const {
-		return sim_core_.demo_sector_subsidy(nation, sector);
+		return sim_core_.sector_subsidy(nation, sector);
 	}
-	double demo_nation_confidence(const std::string& nation) const {
-		return sim_core_.demo_nation_confidence(nation);
+	double nation_confidence(const std::string& nation) const {
+		return sim_core_.nation_confidence(nation);
 	}
 	// Credita `amount` no capital das famílias da nação, ponderado pelo estrato
 	// dono (topo), e devolve o total efetivamente creditado.
-	double demo_credit_nation_households(const std::string& nation,
+	double credit_nation_households(const std::string& nation,
 		double amount) {
-		return sim_core_.demo_credit_nation_households(nation, amount);
+		return sim_core_.credit_nation_households(nation, amount);
 	}
 	// Imposto corporativo + retenção: move o lucro do grupo da cidade para o
 	// caixa dele (ou para o orçamento, se estatal). Chamado na contabilidade.
-	void demo_route_group_profit(int group_index, const std::string& host_nation,
-		double profit, double revenue, DemoCity& city, double& firm_surplus) {
-		sim_core_.demo_route_group_profit(group_index, host_nation, profit,
+	void route_group_profit(int group_index, const std::string& host_nation,
+		double profit, double revenue, City& city, double& firm_surplus) {
+		sim_core_.route_group_profit(group_index, host_nation, profit,
 			revenue, city, firm_surplus);
 	}
 
-	// Medição por fase do tick (benchmark oficial; desligada no jogo). A
+	// Medição por fase do tick (bench canônico; desligada no jogo). A
 	// infraestrutura vive em sim/profiling.h (OGS_PROFILING, só no build debug).
-	bool demo_profile_ = false;
-	double demo_profile_us_[kDemoPhaseCount] = {};
-	// Subdivisão da fase `status` (benchmark): cidades, pedidos, nações, resto.
-	double demo_status_sub_us_[4] = {};
+	bool profile_ = false;
+	double profile_us_[kPhaseCount] = {};
+	// Subdivisão da fase `status` (medida por fase): cidades, pedidos, nações, resto.
+	double status_sub_us_[4] = {};
 
 	// Estado da simulação (cidades, construções, mercados, grupos, frota,
 	// moedas, ...). S5a-2: movido para ogs::WorldState (sim/world_state.h);
@@ -1147,36 +1943,49 @@ private:
 	// projeto físico (padrão); true = comportamento antigo (prédio na hora).
 	bool instant_construction_ = false;
 
-	// R1/Q-014: as plantas de REFERÊNCIA do bootstrap (demo_seed_industry) são
+	// R1/Q-014: as plantas de REFERÊNCIA do bootstrap (seed_industry) são
 	// estoque industrial pré-existente do cenário, não obra nova — nascem
-	// concluídas (custo debitado na criação, sem DemoConstructionProject). A
+	// concluídas (custo debitado na criação, sem ConstructionProject). A
 	// obra física continua valendo para investimento/expansão da IA e do jogo.
-	// Ligado só dentro de demo_seed_industry.
+	// Ligado só dentro de seed_industry.
 	bool bootstrap_construction_ = false;
 
-	// Status reaproveitado entre dias (ver DemoStatusCache). Dois slots
+	// A5: a fase da IA C++ (estado entre dias NÃO serializado) e o interruptor.
+	// A4: `tick_day_status_` saiu — o tick só publica o resumo leve e o status
+	// completo é montado sob demanda (não há status do dia guardado aqui).
+	ogs::AiPhase ai_phase_;
+	bool ai_enabled_ = false;
+	// C4 (D-110): definições de `banks.json` (nomes, estrangeiro e origem).
+	// Guardadas para reaplicar DEPOIS de um load (o save v31 migrado não tem
+	// nomes e o v32 pode vir de um mundo com outro dado).
+	std::vector<ogs::bank::NameData> bank_defs_;
+
+	// Status reaproveitado entre dias (ver StatusCache). Dois slots
 	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA
 	// continuam lendo o último status COMPLETO (double buffer).
-	DemoStatusCache demo_status_slots_[2];
-	int demo_status_live_ = -1;
-	int demo_status_built_day_ = -1;
+	StatusCache status_slots_[2];
+	int status_live_ = -1;
+	int status_built_day_ = -1;
 	// Chaves prontas do status (evitam converter const char* -> String a cada
-	// escrita; ver DemoStatusKeys).
-	DemoStatusKeys demo_status_keys_;
+	// escrita; ver StatusKeys).
+	StatusKeys status_keys_;
 	// Sobe quando um campo estático das cidades muda (aptidão, demanda externa,
 	// depósitos revelados): força a reescrita desses contêineres no status.
-	int demo_status_static_version_ = 0;
-	// Sobe quando uma jazida nova é revelada (demo_set_deposit/save). Separado
+	int status_static_version_ = 0;
+	// Sobe quando uma jazida nova é revelada (set_deposit/save). Separado
 	// da versão estática para uma descoberta não forçar a reescrita de
 	// aptidão/demanda externa de todas as cidades (~190 mil escritas/dia).
-	int demo_status_deposit_version_ = 0;
+	int status_deposit_version_ = 0;
+	// A4: contador monotônico de dados publicados (dia novo ou mutação que
+	// invalidou o status). A UI compara para saber se o retrato em cache velho.
+	int data_version_ = 0;
 	// Serializa o acesso ao estado demo entre a thread do tick e a main thread
 	// (UI, IA, ferramentas). O `sim` tem UM escritor por convenção
 	// (tick_scheduler); o mutex é a rede de segurança para quem chamar
-	// tick_demo/get_demo_status/investir enquanto um dia roda na thread — sem
+	// tick_day/get_status/investir enquanto um dia roda na thread — sem
 	// ele a disputa vira corrupção de estado e crash (signal 11).
-	// Recursivo: tick_demo() chama demo_tick_core() e get_demo_status().
-	mutable std::recursive_mutex demo_mutex_;
+	// Recursivo: tick_day() chama tick_core() e get_status().
+	mutable std::recursive_mutex mutex_;
 };
 
 } // namespace godot

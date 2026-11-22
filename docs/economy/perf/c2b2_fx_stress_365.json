@@ -1,0 +1,1058 @@
+{
+  "bankruptcies": 2,
+  "days": 365,
+  "drift": -0.00361781387244752,
+  "final_day": 365,
+  "food_gate": {
+    "below": [
+      "SLB",
+      "PSX",
+      "HTI",
+      "SOM",
+      "COD",
+      "COG",
+      "JPN",
+      "MLI",
+      "BFA",
+      "GMB",
+      "DJI",
+      "ITA",
+      "AUT",
+      "CAN",
+      "NED",
+      "USA",
+      "CHN",
+      "HRV",
+      "CHE",
+      "SEN",
+      "BEL",
+      "GRC",
+      "SVN",
+      "SRB",
+      "BRN",
+      "ESP",
+      "HUN",
+      "URY",
+      "SAU",
+      "CYP",
+      "YEM",
+      "KOR",
+      "FRA",
+      "BIH",
+      "SGP",
+      "MKD",
+      "DNK",
+      "QAT",
+      "ARG",
+      "ROU",
+      "THA",
+      "POL",
+      "ISR",
+      "COL",
+      "GEO",
+      "SVK",
+      "DOM",
+      "IRL",
+      "TUR",
+      "FIN",
+      "ARM",
+      "CMR",
+      "PRT",
+      "TKM",
+      "EGY",
+      "ALB",
+      "BLR",
+      "AZE",
+      "LCA",
+      "DEU",
+      "VEN",
+      "NGA",
+      "GRD",
+      "EST",
+      "DMA",
+      "OMN",
+      "PAN",
+      "UKR",
+      "PRY",
+      "GAB",
+      "MYS",
+      "BHR",
+      "BRA",
+      "BTN",
+      "PER",
+      "CRI",
+      "MEX",
+      "JOR",
+      "KWT",
+      "NOR",
+      "ARE",
+      "KAZ",
+      "LBR",
+      "GBR",
+      "BGR",
+      "BRB",
+      "PRK",
+      "IRN",
+      "RUS",
+      "CZE"
+    ],
+    "below_gate": 90,
+    "mean": 0.909651413570115,
+    "median": 0.974921314585185,
+    "nations": 179
+  },
+  "fx": {
+    "band_width": 0.005,
+    "coverage_mean": 0.00697393590973058,
+    "currencies_devalued": 47,
+    "currencies_total": 136,
+    "currencies_without_reserve_at_end": 136,
+    "defence_share": 0.9,
+    "devaluation_days": [
+      {
+        "day": 31,
+        "devaluations": 6
+      },
+      {
+        "day": 32,
+        "devaluations": 3
+      },
+      {
+        "day": 33,
+        "devaluations": 2
+      },
+      {
+        "day": 34,
+        "devaluations": 1
+      },
+      {
+        "day": 37,
+        "devaluations": 3
+      },
+      {
+        "day": 38,
+        "devaluations": 1
+      },
+      {
+        "day": 39,
+        "devaluations": 2
+      },
+      {
+        "day": 40,
+        "devaluations": 1
+      },
+      {
+        "day": 41,
+        "devaluations": 2
+      },
+      {
+        "day": 42,
+        "devaluations": 2
+      },
+      {
+        "day": 43,
+        "devaluations": 3
+      },
+      {
+        "day": 44,
+        "devaluations": 1
+      },
+      {
+        "day": 45,
+        "devaluations": 2
+      },
+      {
+        "day": 46,
+        "devaluations": 7
+      },
+      {
+        "day": 47,
+        "devaluations": 1
+      },
+      {
+        "day": 49,
+        "devaluations": 4
+      },
+      {
+        "day": 50,
+        "devaluations": 1
+      },
+      {
+        "day": 51,
+        "devaluations": 2
+      },
+      {
+        "day": 53,
+        "devaluations": 1
+      },
+      {
+        "day": 56,
+        "devaluations": 1
+      },
+      {
+        "day": 61,
+        "devaluations": 1
+      }
+    ],
+    "devaluations": 47,
+    "devalued": [
+      {
+        "currency": "LRD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 33,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "LSL",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 50,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "MAD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 42,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "MMK",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 56,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "NGN",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 41,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "PGK",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "PKR",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 49,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "QAR",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SBD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SDG",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 49,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SGD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 38,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SLS",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 45,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SOS",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 49,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SRD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 37,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SSP",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 43,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SZL",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "TWD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "TZS",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 46,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "VES",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 42,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "XAF",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 46,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "XCD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 39,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "XOF",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 45,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "YER",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 37,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "AOA",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 44,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "AUD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 32,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "BDT",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 51,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "BHD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 47,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "BIF",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 39,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "BND",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 46,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "BSD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 32,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "BTN",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 61,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "BWP",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 33,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "CDF",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 37,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "CLP",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 34,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "CUP",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 53,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "DJF",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "DKK",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 46,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "EGP",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 40,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "ERN",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 46,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "ETB",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 43,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "EUR",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 46,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "FJD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 49,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "HTG",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 32,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "IDR",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 46,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "ILS",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 41,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "JPY",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 43,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "KES",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 51,
+        "regime": "peg",
+        "reserves": 0.0
+      }
+    ],
+    "devalued_samples_log": [
+      {
+        "currency": "DJF",
+        "day": 31,
+        "deviation": 0.0,
+        "new_parity": 0.09381
+      },
+      {
+        "currency": "PGK",
+        "day": 31,
+        "deviation": 0.0,
+        "new_parity": 0.057898
+      },
+      {
+        "currency": "QAR",
+        "day": 31,
+        "deviation": 0.0,
+        "new_parity": 1.431731
+      },
+      {
+        "currency": "SBD",
+        "day": 31,
+        "deviation": 0.0,
+        "new_parity": 0.030463
+      },
+      {
+        "currency": "SZL",
+        "day": 31,
+        "deviation": 0.0,
+        "new_parity": 0.138829
+      },
+      {
+        "currency": "TWD",
+        "day": 31,
+        "deviation": 0.0,
+        "new_parity": 0.217505
+      },
+      {
+        "currency": "AUD",
+        "day": 32,
+        "deviation": 0.0,
+        "new_parity": 0.799025
+      },
+      {
+        "currency": "BSD",
+        "day": 32,
+        "deviation": 0.0,
+        "new_parity": 0.457506
+      },
+      {
+        "currency": "HTG",
+        "day": 32,
+        "deviation": 0.0,
+        "new_parity": 0.034799
+      },
+      {
+        "currency": "BWP",
+        "day": 33,
+        "deviation": 0.0,
+        "new_parity": 0.229777
+      },
+      {
+        "currency": "LRD",
+        "day": 33,
+        "deviation": 0.0,
+        "new_parity": 0.022095
+      },
+      {
+        "currency": "CLP",
+        "day": 34,
+        "deviation": 0.0,
+        "new_parity": 0.419594
+      },
+      {
+        "currency": "CDF",
+        "day": 37,
+        "deviation": 0.0,
+        "new_parity": 0.021323
+      },
+      {
+        "currency": "SRD",
+        "day": 37,
+        "deviation": 0.0,
+        "new_parity": 0.251721
+      },
+      {
+        "currency": "YER",
+        "day": 37,
+        "deviation": 0.0,
+        "new_parity": 0.217505
+      },
+      {
+        "currency": "SGD",
+        "day": 38,
+        "deviation": 0.0,
+        "new_parity": 1.814537
+      },
+      {
+        "currency": "BIF",
+        "day": 39,
+        "deviation": 0.0,
+        "new_parity": 0.013894
+      },
+      {
+        "currency": "XCD",
+        "day": 39,
+        "deviation": 0.0,
+        "new_parity": 0.288151
+      },
+      {
+        "currency": "EGP",
+        "day": 40,
+        "deviation": 0.0,
+        "new_parity": 0.224426
+      },
+      {
+        "currency": "ILS",
+        "day": 41,
+        "deviation": 0.0,
+        "new_parity": 0.359464
+      },
+      {
+        "currency": "NGN",
+        "day": 41,
+        "deviation": 0.0,
+        "new_parity": 0.105875
+      },
+      {
+        "currency": "MAD",
+        "day": 42,
+        "deviation": 0.0,
+        "new_parity": 0.125354
+      },
+      {
+        "currency": "VES",
+        "day": 42,
+        "deviation": 0.0,
+        "new_parity": 0.217505
+      },
+      {
+        "currency": "ETB",
+        "day": 43,
+        "deviation": 0.0,
+        "new_parity": 0.040226
+      },
+      {
+        "currency": "JPY",
+        "day": 43,
+        "deviation": 0.0,
+        "new_parity": 0.615616
+      },
+      {
+        "currency": "SSP",
+        "day": 43,
+        "deviation": 0.0,
+        "new_parity": 0.217505
+      },
+      {
+        "currency": "AOA",
+        "day": 44,
+        "deviation": 0.0,
+        "new_parity": 0.113867
+      },
+      {
+        "currency": "SLS",
+        "day": 45,
+        "deviation": 0.0,
+        "new_parity": 0.217505
+      },
+      {
+        "currency": "XOF",
+        "day": 45,
+        "deviation": 0.0,
+        "new_parity": 0.042087
+      },
+      {
+        "currency": "BND",
+        "day": 46,
+        "deviation": 0.0,
+        "new_parity": 1.026629
+      }
+    ],
+    "devalued_top": [
+      {
+        "currency": "LRD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 33,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "LSL",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 50,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "MAD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 42,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "MMK",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 56,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "NGN",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 41,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "PGK",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "PKR",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 49,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "QAR",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SBD",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 31,
+        "regime": "peg",
+        "reserves": 0.0
+      },
+      {
+        "currency": "SDG",
+        "devaluations": 1,
+        "deviation": 0.0,
+        "first_day": 49,
+        "regime": "peg",
+        "reserves": 0.0
+      }
+    ],
+    "events": [
+      {
+        "currency": "BTN",
+        "day": 61,
+        "new_parity": 0.217505,
+        "old_parity": 0.174004,
+        "reserves_used": 560.511219528874,
+        "type": "devaluation"
+      },
+      {
+        "currency": "MMK",
+        "day": 56,
+        "new_parity": 0.066768,
+        "old_parity": 0.0534144,
+        "reserves_used": 8957.05025303294,
+        "type": "devaluation"
+      },
+      {
+        "currency": "CUP",
+        "day": 53,
+        "new_parity": 0.217505,
+        "old_parity": 0.174004,
+        "reserves_used": 2816.91366693992,
+        "type": "devaluation"
+      },
+      {
+        "currency": "KES",
+        "day": 51,
+        "new_parity": 0.077923,
+        "old_parity": 0.0623384,
+        "reserves_used": 1342042.18817339,
+        "type": "devaluation"
+      },
+      {
+        "currency": "BDT",
+        "day": 51,
+        "new_parity": 0.112787,
+        "old_parity": 0.0902296,
+        "reserves_used": 240382.73043232,
+        "type": "devaluation"
+      },
+      {
+        "currency": "LSL",
+        "day": 50,
+        "new_parity": 0.035251,
+        "old_parity": 0.0282008,
+        "reserves_used": 36346.2975616412,
+        "type": "devaluation"
+      },
+      {
+        "currency": "SOS",
+        "day": 49,
+        "new_parity": 0.018254,
+        "old_parity": 0.0146032,
+        "reserves_used": 489831.104285194,
+        "type": "devaluation"
+      },
+      {
+        "currency": "SDG",
+        "day": 49,
+        "new_parity": 0.024361,
+        "old_parity": 0.0194888,
+        "reserves_used": 4318699.35051366,
+        "type": "devaluation"
+      },
+      {
+        "currency": "PKR",
+        "day": 49,
+        "new_parity": 0.073018,
+        "old_parity": 0.0584144,
+        "reserves_used": 950259.29688287,
+        "type": "devaluation"
+      },
+      {
+        "currency": "FJD",
+        "day": 49,
+        "new_parity": 0.180934,
+        "old_parity": 0.1447472,
+        "reserves_used": 1502.56081854867,
+        "type": "devaluation"
+      },
+      {
+        "currency": "BHD",
+        "day": 47,
+        "new_parity": 0.788476,
+        "old_parity": 0.6307808,
+        "reserves_used": 4669.96979396392,
+        "type": "devaluation"
+      },
+      {
+        "currency": "XAF",
+        "day": 46,
+        "new_parity": 0.072394,
+        "old_parity": 0.0579152,
+        "reserves_used": 2122692.54603897,
+        "type": "devaluation"
+      },
+      {
+        "currency": "TZS",
+        "day": 46,
+        "new_parity": 0.048118,
+        "old_parity": 0.0384944,
+        "reserves_used": 62443.7767958841,
+        "type": "devaluation"
+      },
+      {
+        "currency": "IDR",
+        "day": 46,
+        "new_parity": 0.196163,
+        "old_parity": 0.1569304,
+        "reserves_used": 175398.297468389,
+        "type": "devaluation"
+      },
+      {
+        "currency": "EUR",
+        "day": 46,
+        "new_parity": 0.661414,
+        "old_parity": 0.5291312,
+        "reserves_used": 58902.154294505,
+        "type": "devaluation"
+      },
+      {
+        "currency": "ERN",
+        "day": 46,
+        "new_parity": 0.217505,
+        "old_parity": 0.174004,
+        "reserves_used": 16753.8374773261,
+        "type": "devaluation"
+      },
+      {
+        "currency": "DKK",
+        "day": 46,
+        "new_parity": 0.924426,
+        "old_parity": 0.7395408,
+        "reserves_used": 3714.71772429766,
+        "type": "devaluation"
+      },
+      {
+        "currency": "BND",
+        "day": 46,
+        "new_parity": 1.026629,
+        "old_parity": 0.8213032,
+        "reserves_used": 0.0,
+        "type": "devaluation"
+      },
+      {
+        "currency": "XOF",
+        "day": 45,
+        "new_parity": 0.042087,
+        "old_parity": 0.0336696,
+        "reserves_used": 2015114.5687456,
+        "type": "devaluation"
+      },
+      {
+        "currency": "SLS",
+        "day": 45,
+        "new_parity": 0.217505,
+        "old_parity": 0.174004,
+        "reserves_used": 26007.3239360102,
+        "type": "devaluation"
+      }
+    ],
+    "events_total": 47,
+    "funded_currencies": 47,
+    "regimes": {
+      "peg": 136
+    },
+    "reserves": 0.0,
+    "seed_days": 3,
+    "unfunded_sample": [
+      "AED",
+      "AFN",
+      "ALL",
+      "AMD",
+      "ARS",
+      "AZN",
+      "BAM",
+      "BBD",
+      "BGN",
+      "BOB",
+      "BRL",
+      "BYN",
+      "BZD",
+      "CAD",
+      "CHF",
+      "CNY",
+      "COP",
+      "CRC",
+      "CZK",
+      "DOP"
+    ],
+    "vault_gold_tonnes": 32839.7073
+  },
+  "invariant_ok": true,
+  "invariant_violation_samples": [],
+  "invariant_violations": 0,
+  "max_daily_drift": 0.00361781387268728,
+  "money_end": 6499950986.03863,
+  "money_start": 6523551982.9,
+  "seeded_anchor": 674984600.662303,
+  "stalled_days": 0,
+  "threads": 1,
+  "trajectory_end": {
+    "credit_capacity": 178.375032689411,
+    "m0": 14449215416.5901,
+    "private_stock_t": 59542120.4968524
+  },
+  "trajectory_fields": [
+    "day",
+    "money_total(6)",
+    "bankruptcies",
+    "food_ratio_sum(9)",
+    "m0_total(6)",
+    "private_stock_t(6)",
+    "credit_capacity(9)"
+  ],
+  "trajectory_sha256": "af8f6939a0a201fe31765081111013f6d88fc99885a643dc49c3f0bd478fbb7b",
+  "wall_s": 195.787
+}

@@ -1199,21 +1199,24 @@ port.name.ARG-BUE,Buenos Aires,Buenos Aires,Buenos Aires
 port.name.AUS-BRI,Brisbane,Brisbane,Brisbane
 port.name.AUS-MEL,Melbourne,Melbourne,Melbourne
 port.name.AUS-SYD,Sydney,Sydney,Sydney
-port.name.AZE-BAK,Baku,Baku,Baku
-port.name.AZE-SUM,Sumqayıt,Sumqayıt,Sumqayıt
 port.name.BEL-ANT,Antwerp,Antwerp,Antwerp
 port.name.BGD-RAM,Rāmganj,Rāmganj,Rāmganj
+port.name.BHR-MAN,Khalifa Bin Salman,Khalifa Bin Salman,Khalifa Bin Salman
+port.name.BHS-NAS,Nassau,Nassau,Nassau
 port.name.BRA-FOR,Fortaleza,Fortaleza,Fortaleza
 port.name.BRA-POR,Porto Alegre,Porto Alegre,Porto Alegre
 port.name.BRA-REC,Recife,Recife,Recife
 port.name.BRA-RIO,Rio de Janeiro,Rio de Janeiro,Rio de Janeiro
 port.name.BRA-SAL,Salvador,Salvador,Salvador
+port.name.BRB-BRI,Bridgetown,Bridgetown,Bridgetown
+port.name.BRN-BAN,Muara,Muara,Muara
 port.name.CAN-MON,Montreal,Montreal,Montreal
 port.name.CAN-VAN,Vancouver,Vancouver,Vancouver
 port.name.CHN-DON,Dongguan,Dongguan,Dongguan
 port.name.CHN-GUAN,Guangzhou,Guangzhou,Guangzhou
 port.name.CHN-SHAN,Shanghai,Shanghai,Shanghai
 port.name.CHN-XIA,Xiamen,Xiamen,Xiamen
+port.name.CUB-HAV,Havana,Havana,Havana
 port.name.CYP-LIM,Limassol,Limassol,Limassol
 port.name.CYP-NIC,Nicosia,Nicosia,Nicosia
 port.name.DEU-HAM,Hamburg,Hamburg,Hamburg
@@ -1226,6 +1229,7 @@ port.name.ESP-SEV,Seville,Seville,Seville
 port.name.ESP-VAL,Valencia,Valencia,Valencia
 port.name.EST-TAL,Tallinn,Tallinn,Tallinn
 port.name.FIN-HEL,Helsinki,Helsinki,Helsinki
+port.name.FJI-SUV,Suva,Suva,Suva
 port.name.FRA-CAL,Calais,Calais,Calais
 port.name.FRA-CAY,Mana,Mana,Mana
 port.name.FRA-LEH,Le Havre,Le Havre,Le Havre
@@ -1266,6 +1270,7 @@ port.name.ITA-NAP,Naples,Naples,Naples
 port.name.ITA-PAD,Padua,Padua,Padua
 port.name.ITA-PAL,Palermo,Palermo,Palermo
 port.name.ITA-ROM,Rome,Rome,Rome
+port.name.JAM-KIN,Kingston,Kingston,Kingston
 port.name.JPN-FUK,Fukuoka,Fukuoka,Fukuoka
 port.name.JPN-HAM,Hamamatsu,Hamamatsu,Hamamatsu
 port.name.JPN-HIR,Hiroshima,Hiroshima,Hiroshima
@@ -1280,9 +1285,11 @@ port.name.JPN-TOK,Tokyo,Tokyo,Tokyo
 port.name.KAZ-ATY,Atyrau,Atyrau,Atyrau
 port.name.KOR-BUS,Busan,Busan,Busan
 port.name.KOR-SEO,Seoul,Seoul,Seoul
+port.name.LKA-COL,Colombo,Colombo,Colombo
 port.name.LVA-RIG,Riga,Riga,Riga
 port.name.MAR-AGA,Agadir,Agadir,Agadir
 port.name.MCO-MON,Monaco,Monaco,Monaco
+port.name.MDG-TOA,Toamasina,Toamasina,Toamasina
 port.name.MEX-TIJ,Tijuana,Tijuana,Tijuana
 port.name.MLT-VAL,Valletta,Valletta,Valletta
 port.name.MMR-YAN,Yangon,Yangon,Yangon
@@ -1295,9 +1302,12 @@ port.name.NED-GRO,Groningen,Groningen,Groningen
 port.name.NED-RTM,Rotterdam,Rotterdam,Rotterdam
 port.name.NOR-BER,Bergen,Bergen,Bergen
 port.name.NOR-OSL,Oslo,Oslo,Oslo
+port.name.NZL-AUC,Auckland,Auckland,Auckland
+port.name.PHL-MAN,Manila,Manila,Manila
 port.name.POL-GDA,Gdańsk,Gdańsk,Gdańsk
 port.name.PRT-LIS,Lisbon,Lisbon,Lisbon
 port.name.PRT-POR,Porto,Porto,Porto
+port.name.QAT-DOH,Hamad Port,Hamad Port,Hamad Port
 port.name.RUS-KGD,Kaliningrad,Kaliningrad,Kaliningrad
 port.name.RUS-MAR,Mariupol,Mariupol,Mariupol
 port.name.RUS-SAI,Saint Petersburg,Saint Petersburg,Saint Petersburg
@@ -1305,6 +1315,8 @@ port.name.RUS-SEV,Sevastopol,Sevastopol,Sevastopol
 port.name.RUS-YUZ,Yuzhno-Sakhalinsk,Yuzhno-Sakhalinsk,Yuzhno-Sakhalinsk
 port.name.SAU-DAM,Dammam,Dammam,Dammam
 port.name.SAU-JED,Jeddah,Jeddah,Jeddah
+port.name.SGP-SIN,Singapore,Singapore,Singapore
+port.name.SLB-HON,Honiara,Honiara,Honiara
 port.name.SLV-SAN,San Salvador,San Salvador,San Salvador
 port.name.SMR-SAN,San Marino,San Marino,San Marino
 port.name.SOL-BER,Berbera,Berbera,Berbera
@@ -1312,6 +1324,7 @@ port.name.SUR-PBM,Paramaribo,Paramaribo,Paramaribo
 port.name.SWE-GOT,Gothenburg,Gothenburg,Gothenburg
 port.name.SWE-STO,Stockholm,Stockholm,Stockholm
 port.name.THA-BAN,Bangkok,Bangkok,Bangkok
+port.name.TTO-POR,Port of Spain,Port of Spain,Port of Spain
 port.name.TUR-ADA,Adana,Adana,Adana
 port.name.TUR-ANT,Antalya,Antalya,Antalya
 port.name.TUR-BURS,Bursa,Bursa,Bursa

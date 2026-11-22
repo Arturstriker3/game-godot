@@ -16,6 +16,7 @@
 
 #include "housing.h"
 #include "sim_constants.h"
+#include "sim_core.h"
 #include "urban_land.h"
 
 #include <algorithm>
@@ -55,16 +56,16 @@ double housing_units(const CityHousing& house) {
 double infra_people_from_area(const CityLand& land, int zone, double km2) {
 	const int density = std::clamp(
 		static_cast<int>(land.max_density[zone]), 0, DENSITY_COUNT - 1);
-	const double unit_m2 = std::max(1.0, kDemoUrbanUnitM2[density][TIER_POPULAR]);
-	return 1.0e6 * kDemoUrbanFar[density] / unit_m2
+	const double unit_m2 = std::max(1.0, kUrbanUnitM2[density][TIER_POPULAR]);
+	return 1.0e6 * kUrbanFar[density] / unit_m2
 		* safe_nonneg(km2) * kPeoplePerDwelling;
 }
 
 // Unidades por km² que o gabarito permite (FAR ÷ m² da unidade popular).
 double units_per_km2(int density) {
 	const int d = std::clamp(density, 0, DENSITY_COUNT - 1);
-	const double unit_m2 = std::max(1.0, kDemoUrbanUnitM2[d][TIER_POPULAR]);
-	return 1.0e6 * kDemoUrbanFar[d] / unit_m2;
+	const double unit_m2 = std::max(1.0, kUrbanUnitM2[d][TIER_POPULAR]);
+	return 1.0e6 * kUrbanFar[d] / unit_m2;
 }
 
 // Fecha a obra: o fundo reservado vira pagamento ao setor de construção
@@ -214,7 +215,7 @@ void pay_transfers(WorldState& ws, std::size_t count,
 			if (take <= 1e-9) {
 				continue;
 			}
-			DemoCity& city = ws.cities[city_index];
+			City& city = ws.cities[city_index];
 			CityGov& gov = ws.city_gov[city_index];
 			const double paid = std::min(take,
 				safe_nonneg(city.government_budget));
@@ -244,7 +245,7 @@ void pay_transfers(WorldState& ws, std::size_t count,
 // start_project`), pagos pelo CAIXA da prefeitura; a moradia social é o projeto
 // de moradia do W3 (`housing::start_social_housing`) com dono GOVERNMENT.
 void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day) {
-	DemoCity& city = ws.cities[city_index];
+	City& city = ws.cities[city_index];
 	CityGov& gov = ws.city_gov[city_index];
 	const CityLand& land = ws.land[city_index];
 	const CityHousing& house = ws.housing[city_index];
@@ -262,7 +263,7 @@ void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day
 	}
 
 	bool project_active = false;
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (project.city == city.id && project.urban_action != urban_land::URBAN_NONE) {
 			project_active = true;
 			break;
@@ -347,9 +348,15 @@ void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day
 // Fechamento mensal: receita, repasse, manutenção e decisão.
 void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 		int day) {
+	const int period = ws.cadence.monthly_period;
 	std::vector<double> transfer_want(count, 0.0);
 	for (std::size_t city_index = 0; city_index < count; ++city_index) {
-		DemoCity& city = ws.cities[city_index];
+		// A6: a prefeitura de cada cidade fecha o mês no seu dia. O repasse do
+		// tesouro é pago no lote do dia (só as cidades com `want > 0`).
+		if (!cadence_due(day, city_index, period)) {
+			continue;
+		}
+		City& city = ws.cities[city_index];
 		CityGov& gov = ws.city_gov[city_index];
 		const CityHousing& house = ws.housing[city_index];
 		// O acumulado do mês anterior fica no save (a UI testemunha o último
@@ -367,12 +374,21 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 		gov.target_revenue_month =
 			safe_unit(gov.revenue_pct_gdp) * monthly_gdp;
 
+		// A6: a janela real desde o último fechamento desta cidade. A primeira é
+		// curta (a cidade fecha no dia do seu índice) e um save v14 no meio do
+		// mês carrega `month_marker` — a cobrança é sempre proporcional aos dias
+		// de PIB que existiram, nunca um mês cheio sobre poucos dias.
+		const int elapsed = std::clamp(
+			day - gov.month_marker, 1, kMonthDays);
+		const double month_fraction =
+			static_cast<double>(elapsed) / static_cast<double>(kMonthDays);
+
 		// IPTU: alíquota efetiva (peso do IPTU no total de tributos × carga
 		// tributária) × PIB do mês. É a mesma forma "alíquota × valor do
 		// estoque" da spec, com a alíquota calibrada pelo PIB — a alíquota crua
 		// do W0 (~5-10% ao ano do estoque) cobraria ~10× a real.
-		const double iptu_due =
-			safe_nonneg(gov.iptu_rate) * kTotalTaxPctOfGdp * monthly_gdp;
+		const double iptu_due = safe_nonneg(gov.iptu_rate)
+			* kTotalTaxPctOfGdp * monthly_gdp * month_fraction;
 		if (iptu_due > 0.0) {
 			const double non_gov = 1.0
 				- safe_unit(house.owner_share[OWNER_GOVERNMENT]);
@@ -389,7 +405,8 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 				safe_nonneg(city.pop.savings));
 			const double firm_paid = std::min(due * (1.0 - household_part),
 				safe_nonneg(city.firm_cash));
-			city.pop.savings = safe_nonneg(city.pop.savings) - hh_paid;
+			// B2: o IPTU da família sai da poupança rateada pelos quintis.
+			core.charge_households(city.pop, hh_paid);
 			city.firm_cash = safe_nonneg(city.firm_cash) - firm_paid;
 			gov.cash += hh_paid + firm_paid;
 			gov.month_revenue_iptu = hh_paid + firm_paid;
@@ -400,7 +417,7 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 		// o faturamento saiu.
 		const double fee_due = safe_nonneg(gov.fee_rate)
 			* safe_nonneg(city.service_revenue)
-			* static_cast<double>(kMonthDays);
+			* static_cast<double>(kMonthDays) * month_fraction;
 		const double fee_paid = std::min(fee_due,
 			safe_nonneg(city.service_cash));
 		if (fee_paid > 0.0) {
@@ -411,17 +428,23 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 
 		// Repasse desejado: fração observada da receita municipal alvo. O
 		// pagamento é por nação no passo seguinte (tesouro comum).
-		transfer_want[city_index] =
-			safe_unit(gov.transfer_share) * gov.target_revenue_month;
+		transfer_want[city_index] = safe_unit(gov.transfer_share)
+			* gov.target_revenue_month * month_fraction;
 	}
 	pay_transfers(ws, count, transfer_want);
 	for (std::size_t city_index = 0; city_index < count; ++city_index) {
-		DemoCity& city = ws.cities[city_index];
+		if (!cadence_due(day, city_index, period)) {
+			continue;  // fora do lote do dia (A6)
+		}
+		City& city = ws.cities[city_index];
 		CityGov& gov = ws.city_gov[city_index];
 		// Manutenção urbana paga ao setor de serviços da cidade (o serviço é
-		// real; o lucro segue a distribuição normal do setor).
+		// real; o lucro segue a distribuição normal do setor). A6: proporcional
+		// à janela real do fechamento (a primeira é curta).
+		const int elapsed = std::clamp(day - gov.month_marker, 1, kMonthDays);
 		const double maintenance_due =
-			gov.target_revenue_month * kMaintenanceShareOfTarget;
+			gov.target_revenue_month * kMaintenanceShareOfTarget
+			* static_cast<double>(elapsed) / static_cast<double>(kMonthDays);
 		const double maintenance_paid =
 			std::min(maintenance_due, safe_nonneg(gov.cash));
 		if (maintenance_paid > 0.0) {
@@ -432,6 +455,8 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 		if (!has_project(gov)) {
 			decide_works(ws, core, city_index, day);
 		}
+		// Fecha a janela: o próximo fechamento desta cidade mede a partir daqui.
+		gov.month_marker = day;
 	}
 }
 
@@ -524,9 +549,12 @@ void tick(WorldState& ws, int day, SimCore* core) {
 		return;  // cenário sintético/save antigo: sem estado urbano
 	}
 	advance_projects(ws, count);
-	if (day % kMonthDays != 0 || core == nullptr) {
+	if (core == nullptr) {
 		return;
 	}
+	// A6: o fluxo mensal (IPTU, taxas, repasse, manutenção, decisão de obra) roda
+	// no dia de cada cidade — `monthly_cash_flow` filtra pelo período. O avanço
+	// das obras continua diário.
 	monthly_cash_flow(ws, *core, count, day);
 }
 
@@ -541,12 +569,12 @@ double money_total(const WorldState& ws) {
 	return total;
 }
 
-void snapshot(const WorldState& ws, DemoSnapshot& out) {
+void snapshot(const WorldState& ws, Snapshot& out) {
 	out.land = ws.land;
 	out.city_gov = ws.city_gov;
 }
 
-void restore(WorldState& ws, const DemoSnapshot& in) {
+void restore(WorldState& ws, const Snapshot& in) {
 	ws.land = in.land;
 	ws.city_gov = in.city_gov;
 }

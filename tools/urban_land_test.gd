@@ -101,39 +101,39 @@ func _housing_data() -> Dictionary:
 
 func _new_sim(threads: int = 1) -> EconomySim:
 	var sim := EconomySim.new()
-	sim.demo_set_goods(_load(GOODS_PATH))
-	sim.demo_set_recipes(_load(RECIPES_PATH))
-	sim.demo_set_needs(_load(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load(SERVICES_PATH))
-	sim.demo_set_instant_construction(false)
-	if sim.has_method("demo_set_sim_threads"):
-		sim.demo_set_sim_threads(threads)
-	sim.initialize_demo()
-	sim.demo_set_urban(_land_data(), _housing_data(), {"nations": {}},
+	sim.set_goods(_load(GOODS_PATH))
+	sim.set_recipes(_load(RECIPES_PATH))
+	sim.set_needs(_load(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load(SERVICES_PATH))
+	sim.set_instant_construction(false)
+	if sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(threads)
+	sim.initialize_scenario()
+	sim.set_urban(_land_data(), _housing_data(), {"nations": {}},
 		{"nations": {}})
 	return sim
 
 
 func _urban(sim: EconomySim, city_id: String) -> Dictionary:
-	return sim.demo_get_urban_city(city_id)
+	return sim.get_urban_city(city_id)
 
 
 func _set_government_budget(sim: EconomySim, city_id: String, budget: float) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for city in snapshot["cities"]:
 		if String(city["id"]) == city_id:
 			city["government_budget"] = budget
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 
 
 func _seed_materials(sim: EconomySim, city_id: String, tons: float) -> void:
 	for good in ["construction_material", "steel_structure", "electrical_material"]:
-		sim.demo_set_market_stock(city_id, good, tons)
+		sim.set_market_stock(city_id, good, tons)
 
 
 func _projects(sim: EconomySim) -> Array:
-	return sim.demo_to_dict().get("construction_projects", [])
+	return sim.to_dict().get("construction_projects", [])
 
 
 ## 1. Ocupação -> preço da terra (mensal, convexo, maior na zona cheia).
@@ -156,14 +156,14 @@ func _test_land_price() -> void:
 		_fail("preco da terra deveria comecar em 0 (ausencia explicita)")
 
 	for day in 30:
-		sim.tick_demo()
+		sim.tick_day()
 	var month1: Dictionary = _urban(sim, "AGRIA")
 	var portus: Dictionary = _urban(sim, "PORTUS")
 	var price_m1 := float(month1["land_price"][ZONE_RES])
 	if price_m1 <= 0.0:
 		_fail("preco da terra nao se moveu no 1o mes")
 	for day in 30:
-		sim.tick_demo()
+		sim.tick_day()
 	var month2: Dictionary = _urban(sim, "AGRIA")
 	var price_m2 := float(month2["land_price"][ZONE_RES])
 	if price_m2 <= price_m1:
@@ -187,8 +187,8 @@ func _test_land_price() -> void:
 ## 2. Sem espaço COMERCIAL: a abertura fica pendente e sinaliza demanda.
 func _test_service_zone_gate() -> void:
 	var sim := _new_sim()
-	var sectors: Array = sim.demo_get_service_sectors()
-	var detail: Dictionary = sim.demo_get_services_detail("AGRIA")
+	var sectors: Array = sim.get_service_sectors()
+	var detail: Dictionary = sim.get_services_detail("AGRIA")
 	var used := {}
 	for business in detail.get("businesses", []):
 		used[String(business.get("sector", ""))] = true
@@ -201,11 +201,11 @@ func _test_service_zone_gate() -> void:
 	if sector_id == "":
 		_fail("nenhum setor de servico livre em AGRIA para o teste de zona")
 		return
-	var before_count := sim.demo_get_service_business_count()
+	var before_count := sim.get_service_business_count()
 	var before_demand := float(_urban(sim, "AGRIA")["zone_demand"][ZONE_COM])
 	# Capacidade minúscula: capital irrelevante; o que barra é a zona COM.
-	sim.demo_set_service_capacity("AGRIA", sector_id, 0.001)
-	var after_count := sim.demo_get_service_business_count()
+	sim.set_service_capacity("AGRIA", sector_id, 0.001)
+	var after_count := sim.get_service_business_count()
 	var after_demand := float(_urban(sim, "AGRIA")["zone_demand"][ZONE_COM])
 	if after_count != before_count:
 		_fail("zona COM cheia: negocio abriu mesmo assim (%d -> %d)" % [
@@ -223,7 +223,7 @@ func _test_factory_zone_gate() -> void:
 	var before_demand := float(_urban(sim, "AGRIA")["zone_demand"][ZONE_IND])
 	# 1.000 empregos declarados contra 132 trabalhadores de capacidade na zona
 	# IND de AGRIA: a planta não entra (a zona é medida em trabalhadores).
-	var result: Dictionary = sim.demo_build("AGRIA", "T-FACTORY-W1", "bread",
+	var result: Dictionary = sim.build("AGRIA", "T-FACTORY-W1", "bread",
 		21, 23, 1.0, 1000.0, 0.0, 0.0, 1.0, "private", 100.0)
 	if bool(result.get("created", false)):
 		_fail("zona IND cheia: fabrica criada mesmo assim")
@@ -252,7 +252,7 @@ func _test_expand_and_densify() -> void:
 	var capacity_before := float(before["zone_capacity"][ZONE_IND])
 	var reserve_before := float(before["reserve_km2"])
 	var cost_km2_before := float(before["expansion_cost_per_km2"])
-	var expanded: Dictionary = sim.demo_urban_expand("AGRIA", ZONE_IND, 0.002)
+	var expanded: Dictionary = sim.urban_expand("AGRIA", ZONE_IND, 0.002)
 	if not bool(expanded.get("ok", false)):
 		_fail("expansao: nao abriu (%s)" % String(expanded.get("error", "")))
 		return
@@ -263,7 +263,7 @@ func _test_expand_and_densify() -> void:
 			or int(project.get("urban_zone", -1)) != ZONE_IND:
 		_fail("expansao: projeto sem marcador de infra urbana (%s)" % str(project))
 	for day in 60:
-		sim.tick_demo()
+		sim.tick_day()
 		if _projects(sim).is_empty():
 			break
 	if not _projects(sim).is_empty():
@@ -271,7 +271,7 @@ func _test_expand_and_densify() -> void:
 			str(_projects(sim)[0].get("days_elapsed")),
 			String(_projects(sim)[0].get("pause_reason", ""))])
 		return
-	var violations: Array = sim.get_demo_status().get("invariant_violations", [])
+	var violations: Array = sim.get_status().get("invariant_violations", [])
 	if not violations.is_empty():
 		_fail("expansao: invariante violado (%s)" % String(violations[0]))
 	var after: Dictionary = _urban(sim, "AGRIA")
@@ -296,13 +296,13 @@ func _test_expand_and_densify() -> void:
 	# Adensamento: sobe LOW -> MID (custo menor que a expansão por km²) e a
 	# capacidade residencial cresce; no máximo o teto HIGH.
 	var capacity_before_densify := float(after["zone_capacity"][ZONE_RES])
-	var densified: Dictionary = sim.demo_urban_densify("AGRIA", ZONE_RES)
+	var densified: Dictionary = sim.urban_densify("AGRIA", ZONE_RES)
 	if not bool(densified.get("ok", false)):
 		_fail("adensamento: nao abriu (%s)" % String(densified.get("error", "")))
 		return
 	var cost_low_mid := float(densified.get("cost", 0.0))
 	for day in 60:
-		sim.tick_demo()
+		sim.tick_day()
 		if _projects(sim).is_empty():
 			break
 	if not _projects(sim).is_empty():
@@ -314,7 +314,7 @@ func _test_expand_and_densify() -> void:
 			dense["max_density"][ZONE_RES]))
 	if float(dense["zone_capacity"][ZONE_RES]) <= capacity_before_densify:
 		_fail("adensamento: capacidade RES nao cresceu")
-	var again: Dictionary = sim.demo_urban_densify("AGRIA", ZONE_RES)
+	var again: Dictionary = sim.urban_densify("AGRIA", ZONE_RES)
 	if not bool(again.get("ok", false)):
 		_fail("adensamento 2 (MID->HIGH): nao abriu (%s)" % String(
 			again.get("error", "")))
@@ -326,10 +326,10 @@ func _test_expand_and_densify() -> void:
 		_fail("adensamento por nivel: LOW->MID %.1f deveria ser menor que MID->HIGH %.1f" % [
 			cost_low_mid, cost_mid_high])
 	for day in 60:
-		sim.tick_demo()
+		sim.tick_day()
 		if _projects(sim).is_empty():
 			break
-	var third: Dictionary = sim.demo_urban_densify("AGRIA", ZONE_RES)
+	var third: Dictionary = sim.urban_densify("AGRIA", ZONE_RES)
 	if bool(third.get("ok", false)) or not String(third.get("error", "")).contains(
 			"densidade"):
 		_fail("adensamento no teto HIGH deveria ser recusado (%s)" % String(
@@ -344,19 +344,19 @@ func _test_determinism_and_roundtrip() -> void:
 	var one := _new_sim(1)
 	var eight := _new_sim(8)
 	for day in 60:
-		one.tick_demo()
-		eight.tick_demo()
-	var save_one: String = JSON.stringify(one.demo_to_dict(), "", true)
-	var save_eight: String = JSON.stringify(eight.demo_to_dict(), "", true)
+		one.tick_day()
+		eight.tick_day()
+	var save_one: String = JSON.stringify(one.to_dict(), "", true)
+	var save_eight: String = JSON.stringify(eight.to_dict(), "", true)
 	if save_one != save_eight:
 		_fail("threads 1 e 8 divergiram no save depois de 60 dias")
-	if save_one != JSON.stringify(one.demo_to_dict(), "", true):
-		_fail("demo_to_dict nao e estavel entre chamadas")
+	if save_one != JSON.stringify(one.to_dict(), "", true):
+		_fail("to_dict nao e estavel entre chamadas")
 
 	var before: Dictionary = _urban(one, "AGRIA")
-	var snapshot: Dictionary = one.demo_to_dict()
+	var snapshot: Dictionary = one.to_dict()
 	var restored := _new_sim(1)
-	restored.demo_from_dict(snapshot)
+	restored.from_dict(snapshot)
 	var after: Dictionary = _urban(restored, "AGRIA")
 	if JSON.stringify(before, "", true) != JSON.stringify(after, "", true):
 		_fail("save/load: estado urbano divergiu (AGRIA)")
@@ -364,6 +364,6 @@ func _test_determinism_and_roundtrip() -> void:
 	var after_portus: Dictionary = _urban(restored, "PORTUS")
 	if JSON.stringify(before_portus, "", true) != JSON.stringify(after_portus, "", true):
 		_fail("save/load: estado urbano divergiu (PORTUS)")
-	if int(one.demo_to_dict().get("version", 0)) != 14:
-		_fail("save version != 14")
-	print("[urban-w1] threads 1/8 identicos; save/load urbano identico (v14)")
+	if int(one.to_dict().get("version", 0)) != 34:
+		_fail("save version != 34")
+	print("[urban-w1] threads 1/8 identicos; save/load urbano identico (v21)")

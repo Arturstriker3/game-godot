@@ -1,0 +1,236 @@
+{
+  "cities": [
+    "BRA-SAO",
+    "JPN-TOK",
+    "NGA-LAG",
+    "IND-MUM",
+    "USA-NEW",
+    "AUS-WEI"
+  ],
+  "days": 365,
+  "end": {
+    "AUS-WEI": {
+      "decay_negative_delta": 10.957254852141,
+      "delivered_positive_delta": 1.28797871327833,
+      "densify_seen_days": 0,
+      "expand_seen_days": 0,
+      "gov": {
+        "cash": 0.0,
+        "month_expense_infrastructure": 0.0,
+        "month_expense_social_housing": 0.0,
+        "projects": []
+      },
+      "housing_queue_end": 4,
+      "informal_end": 0.4389,
+      "informal_km2": 0.000026334,
+      "informal_start": 0.4389,
+      "infra_expense_cum": 0.0,
+      "land_price": [
+        31.7557972905541,
+        19.1451842352995,
+        19.1410419427031
+      ],
+      "max_social_project_days": 0,
+      "paid_over_billed": 1.0,
+      "rent_bill_day": 151.202401476598,
+      "rent_burden": 0.333871177946595,
+      "rent_paid_day": 151.202401476598,
+      "social_expense_cum": 0.0,
+      "social_seen_days": 0,
+      "stock_end": 1100.33072386114,
+      "stock_start": 1110.0,
+      "units_built_month": 0.0,
+      "zone_occupancy": [
+        0.545207022059106,
+        0.0,
+        0.0
+      ]
+    },
+    "BRA-SAO": {
+      "decay_negative_delta": 67706.93773524,
+      "delivered_positive_delta": 7773.43768943567,
+      "densify_seen_days": 0,
+      "expand_seen_days": 0,
+      "gov": {
+        "cash": 3332652.6763714,
+        "month_expense_infrastructure": 0.0,
+        "month_expense_social_housing": 0.0,
+        "projects": []
+      },
+      "housing_queue_end": 2,
+      "informal_end": 1021915.167,
+      "informal_km2": 61.31491002,
+      "informal_start": 1021915.167,
+      "infra_expense_cum": 0.0,
+      "land_price": [
+        11.6092595465639,
+        1.29124672132665,
+        1.28991772739599
+      ],
+      "max_social_project_days": 0,
+      "paid_over_billed": 1.0,
+      "rent_bill_day": 77377.0510496041,
+      "rent_burden": 0.336148234496166,
+      "rent_paid_day": 77377.0510496041,
+      "social_expense_cum": 1532068.27543295,
+      "social_seen_days": 0,
+      "stock_end": 6798072.4999542,
+      "stock_start": 6858006.0,
+      "units_built_month": 0.0,
+      "zone_occupancy": [
+        0.84127095919226,
+        0.0344645862579652,
+        0.0
+      ]
+    },
+    "IND-MUM": {
+      "decay_negative_delta": 62505.622587353,
+      "delivered_positive_delta": 17857.6891436651,
+      "densify_seen_days": 0,
+      "expand_seen_days": 0,
+      "gov": {
+        "cash": 2820960.11171216,
+        "month_expense_infrastructure": 0.0,
+        "month_expense_social_housing": 0.0,
+        "projects": []
+      },
+      "housing_queue_end": 4,
+      "informal_end": 347103.448244824,
+      "informal_km2": 20.8262068946895,
+      "informal_start": 347103.448244824,
+      "infra_expense_cum": 0.0,
+      "land_price": [
+        8.70707069180772,
+        1.17256273221534,
+        1.01863432763345
+      ],
+      "max_social_project_days": 0,
+      "paid_over_billed": 1.0,
+      "rent_bill_day": 81141.5098221588,
+      "rent_burden": 0.38271719852118,
+      "rent_paid_day": 81141.5098221588,
+      "social_expense_cum": 2083969.7656126,
+      "social_seen_days": 0,
+      "stock_end": 6370877.06655631,
+      "stock_start": 6415525.0,
+      "units_built_month": 0.0,
+      "zone_occupancy": [
+        0.843746191970438,
+        0.302617668557392,
+        0.0
+      ]
+    },
+    "JPN-TOK": {
+      "decay_negative_delta": 173672.459463563,
+      "delivered_positive_delta": 76101.0936367735,
+      "densify_seen_days": 0,
+      "expand_seen_days": 0,
+      "gov": {
+        "cash": 2743861.63688849,
+        "month_expense_infrastructure": 0.0,
+        "month_expense_social_housing": 0.0,
+        "projects": []
+      },
+      "housing_queue_end": 4,
+      "informal_end": 354586.3467,
+      "informal_km2": 21.275180802,
+      "informal_start": 354586.3467,
+      "infra_expense_cum": 0.0,
+      "land_price": [
+        2.1387171913807,
+        0.331672405088487,
+        0.331668213216974
+      ],
+      "max_social_project_days": 0,
+      "paid_over_billed": 1.0,
+      "rent_bill_day": 50227.6413300125,
+      "rent_burden": 0.258331047452856,
+      "rent_paid_day": 50227.6413300125,
+      "social_expense_cum": 1559829.03968472,
+      "social_seen_days": 0,
+      "stock_end": 17627750.6341732,
+      "stock_start": 17725322.0,
+      "units_built_month": 0.0,
+      "zone_occupancy": [
+        0.84522555275677,
+        0.00357870146066236,
+        0.0
+      ]
+    },
+    "NGA-LAG": {
+      "decay_negative_delta": 46174.8385346746,
+      "delivered_positive_delta": 17263.0179370884,
+      "densify_seen_days": 0,
+      "expand_seen_days": 0,
+      "gov": {
+        "cash": 2163166.28528527,
+        "month_expense_infrastructure": 0.0,
+        "month_expense_social_housing": 0.0,
+        "projects": []
+      },
+      "housing_queue_end": 4,
+      "informal_end": 2279280.49795021,
+      "informal_km2": 136.756829877012,
+      "informal_start": 2279280.49795021,
+      "infra_expense_cum": 0.0,
+      "land_price": [
+        4.55261104302362,
+        0.520767698501435,
+        0.505845671447069
+      ],
+      "max_social_project_days": 0,
+      "paid_over_billed": 1.0,
+      "rent_bill_day": 13945.5377353871,
+      "rent_burden": 0.227809647871021,
+      "rent_paid_day": 13945.5377353871,
+      "social_expense_cum": 1254556.32860597,
+      "social_seen_days": 0,
+      "stock_end": 4670659.17940241,
+      "stock_start": 4699571.0,
+      "units_built_month": 0.0,
+      "zone_occupancy": [
+        0.839846240570239,
+        0.158308589632569,
+        0.0
+      ]
+    },
+    "USA-NEW": {
+      "decay_negative_delta": 89477.9212534036,
+      "delivered_positive_delta": 8847.84277925082,
+      "densify_seen_days": 0,
+      "expand_seen_days": 0,
+      "gov": {
+        "cash": 975593.117871325,
+        "month_expense_infrastructure": 0.0,
+        "month_expense_social_housing": 0.0,
+        "projects": []
+      },
+      "housing_queue_end": 4,
+      "informal_end": 8110.400040004,
+      "informal_km2": 0.48662400240024,
+      "informal_start": 8110.400040004,
+      "infra_expense_cum": 0.0,
+      "land_price": [
+        3.62337236209877,
+        0.645569071420399,
+        0.645567882992131
+      ],
+      "max_social_project_days": 0,
+      "paid_over_billed": 1.0,
+      "rent_bill_day": 42624.0959791375,
+      "rent_burden": 0.294677456989528,
+      "rent_paid_day": 42624.0959791375,
+      "social_expense_cum": 325565.476044667,
+      "social_seen_days": 0,
+      "stock_end": 8995674.92152585,
+      "stock_start": 9076305.0,
+      "units_built_month": 0.0,
+      "zone_occupancy": [
+        0.842442203798391,
+        0.00142078021946334,
+        0.0
+      ]
+    }
+  },
+  "threads": 1
+}

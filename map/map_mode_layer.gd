@@ -152,10 +152,13 @@ func set_geography(geo: RefCounted) -> void:
 ## camada. Modos de calor recalculam só a própria série; o mapa de recursos
 ## (marcadores) e o mapa político não têm custo por dia — as jazidas são
 ## estáticas e os centros das cidades não mudam.
-func refresh(cities: Array) -> void:
-	if cities.is_empty():
+## A4: recebe as COLUNAS por cidade (`Economy.city_columns()`), não mais uma
+## Array de Dictionary — o mapa não monta o mundo para pintar o calor. Um Array
+## de linhas (build/testes) continua aceito por compatibilidade.
+func refresh(source: Variant) -> void:
+	if source == null or source.is_empty():
 		return
-	_capture(cities)
+	_capture(source)
 	if _current == "resources" or not MODE_COLORS.has(_current):
 		return
 	_build_values(_current)
@@ -192,8 +195,27 @@ func set_mode(mode: String) -> void:
 	visible = true
 
 
-## Copia só os campos que os modos usam para colunas tipadas.
-func _capture(cities: Array) -> void:
+## Copia só os campos que os modos usam — colunas tipadas (A4) ou, por
+## compatibilidade com o build/testes, um Array de linhas de cidade.
+func _capture(source: Variant) -> void:
+	if source is Dictionary:
+		var columns: Dictionary = source
+		var ids: PackedStringArray = columns.get("id", PackedStringArray())
+		var xs: PackedFloat64Array = columns.get("x", PackedFloat64Array())
+		var ys: PackedFloat64Array = columns.get("y", PackedFloat64Array())
+		var count := ids.size()
+		_city_ids = ids
+		_city_centers.resize(count)
+		_city_population = columns.get("population", PackedFloat64Array())
+		_city_production = columns.get("production", PackedFloat64Array())
+		_city_industrialization = columns.get("industrialization",
+				PackedFloat64Array())
+		for index in count:
+			_city_centers[index] = Vector2(
+					xs[index] if index < xs.size() else 0.0,
+					ys[index] if index < ys.size() else 0.0)
+		return
+	var cities: Array = source
 	var count := cities.size()
 	_city_ids.resize(count)
 	_city_centers.resize(count)

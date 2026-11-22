@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "phase": "B6",
+    "tool": "tools/b6_world_ai_365.gd --days=60 --profile=1 (Godot headless 4.7.2, build debug)",
+    "days": 60,
+    "ai": true,
+    "cities": 849,
+    "host": "host compartilhado com a Parte G durante a medição — paredes indicativas; o perfil por fase é a medida principal",
+    "note": "A/B com e sem a semeadura da B6 (--control=1) no MESMO harness, 2 rodadas cada. property = fase mensal do núcleo (perfil em microssegundos)."
+  },
+  "runs": [
+    {"control": false, "round": 1, "wall_s": 15.109, "profile_total_us": 507227.5, "property_us": 454.1, "food_below_60d": 134},
+    {"control": false, "round": 2, "wall_s": 14.492, "profile_total_us": 402678.1, "property_us": 896.5, "food_below_60d": 134},
+    {"control": true, "round": 1, "wall_s": 15.684, "profile_total_us": 489461.4, "property_us": 443.2, "food_below_60d": 133},
+    {"control": true, "round": 2, "wall_s": 15.284, "profile_total_us": 444513.1, "property_us": 447.6, "food_below_60d": 133}
+  ],
+  "wall": {
+    "b6_mean_days_per_s": 4.06,
+    "control_mean_days_per_s": 3.88,
+    "delta_pct": 4.6,
+    "reading": "dentro do ruido do host compartilhado (a B6 nao e mais lenta)"
+  },
+  "property_phase": {
+    "b6_us_per_day": [7.57, 14.94],
+    "control_us_per_day": [7.39, 7.46],
+    "share_of_profiled_tick_pct": [0.09, 0.22],
+    "reading": "a fase roda nos dois braços (o laco por cidade e o custo, nao a semeadura); com a B6 fica em 0,09-0,22% do tick perfilado"
+  },
+  "food_gate_60d": {
+    "gate": 0.975,
+    "window_days": 30,
+    "b6_below": [134, 134],
+    "control_below": [133, 133],
+    "nations": 179
+  }
+}

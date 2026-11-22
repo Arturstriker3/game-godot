@@ -82,18 +82,18 @@ func _load_array(path: String) -> Array:
 ## corta a lista de cidades (teste rápido de determinismo).
 func _make_world(limit: int = 0) -> EconomySim:
 	var sim := EconomySim.new()
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	sim.demo_set_services(_load_dict(SERVICES_PATH))
-	sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	sim.demo_set_sector_employment(_load_dict(SECTOR_EMPLOYMENT_PATH))
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	sim.set_services(_load_dict(SERVICES_PATH))
+	sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	sim.set_sector_employment(_load_dict(SECTOR_EMPLOYMENT_PATH))
 	var cities := _load_array(CITIES_PATH)
 	if limit > 0 and cities.size() > limit:
 		cities = cities.slice(0, limit)
-	sim.initialize_demo_world(cities, _load_array(PORTS_PATH),
+	sim.initialize_world(cities, _load_array(PORTS_PATH),
 		_load_array(BUILDINGS_PATH))
-	sim.demo_set_urban(
+	sim.set_urban(
 		_load_dict(URBAN_LAND_PATH),
 		_load_dict(HOUSING_CITY_PATH),
 		_load_dict(HOUSING_PATH),
@@ -105,8 +105,8 @@ func _make_world(limit: int = 0) -> EconomySim:
 ## conservado, caixa negativo, preço fora da banda). Devolve false na falha.
 func _tick(sim: EconomySim, days: int, label: String) -> bool:
 	for day in days:
-		sim.tick_demo()
-		var violations: Array = sim.get_demo_status().get("invariant_violations", [])
+		sim.tick_day()
+		var violations: Array = sim.get_status().get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("%s: invariante violado no dia %d: %s" % [
 				label, day + 1, String(violations[0])])
@@ -115,13 +115,13 @@ func _tick(sim: EconomySim, days: int, label: String) -> bool:
 
 
 func _housing(sim: EconomySim, city_id: String) -> Dictionary:
-	return sim.demo_get_urban_city(city_id)
+	return sim.get_urban_city(city_id)
 
 
 ## Renda de capital da POP no dia corrente (consumida de `capital_income_next`
 ## no fechamento de ontem) — o status do dia não publica esse campo.
 func _city_capital_income(sim: EconomySim, city_id: String) -> float:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for city in snapshot.get("cities", []):
 		if String(city.get("id", "")) == city_id:
 			return float(city["pop"].get("capital_income", 0.0))
@@ -140,7 +140,7 @@ func _rent_values(sim: EconomySim, city_id: String) -> Array[float]:
 ## `tier` (a demanda/domicílios NÃO muda — é o choque de oferta do teste).
 func _scale_units(sim: EconomySim, city_id: String, factor: float,
 		tier_only: int = -1) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for entry in snapshot.get("urban", []):
 		if String(entry.get("city", "")) != city_id:
 			continue
@@ -151,7 +151,7 @@ func _scale_units(sim: EconomySim, city_id: String, factor: float,
 				if tier_only >= 0 and tier != tier_only:
 					continue
 				row[tier] = float(row[tier]) * factor
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 
 
 func _test_rent_and_owners() -> void:
@@ -163,7 +163,7 @@ func _test_rent_and_owners() -> void:
 		_fail("%s sem estado urbano" % CITY)
 		return
 	var rent_base := _rent_values(sim, CITY)
-	var money_before := float(sim.get_demo_status().get("money_total", 0.0))
+	var money_before := float(sim.get_status().get("money_total", 0.0))
 
 	# --- (1) FALTA: oferta cai a 40% dos domicílios, sem vaga em padrão algum.
 	_scale_units(sim, CITY, 0.4)
@@ -225,7 +225,7 @@ func _test_rent_and_owners() -> void:
 		_fail("sobra: vacância do padrão popular não ficou positiva")
 
 	# --- (4) dinheiro conservado: o status já checa por dia; confirma o total.
-	var money_after := float(sim.get_demo_status().get("money_total", 0.0))
+	var money_after := float(sim.get_status().get("money_total", 0.0))
 	if absf(money_after - money_before) > 0.01:
 		_fail("conservação: dinheiro total %.2f -> %.2f" % [
 			money_before, money_after])
@@ -273,9 +273,9 @@ func _test_save_roundtrip() -> void:
 	var sim := _make_world(40)
 	if not _tick(sim, 10, "roundtrip"):
 		return
-	var before: Dictionary = sim.demo_to_dict()
-	sim.demo_from_dict(before)
-	var after: Dictionary = sim.demo_to_dict()
+	var before: Dictionary = sim.to_dict()
+	sim.from_dict(before)
+	var after: Dictionary = sim.to_dict()
 	if JSON.stringify(before.get("housing", [])) != JSON.stringify(
 			after.get("housing", [])):
 		_fail("round-trip: bloco `housing` mudou na ida-e-volta")
@@ -290,14 +290,14 @@ func _test_save_roundtrip() -> void:
 func _test_thread_determinism() -> void:
 	var one := _make_world(12)
 	var eight := _make_world(12)
-	one.demo_set_sim_threads(1)
-	eight.demo_set_sim_threads(8)
+	one.set_sim_threads(1)
+	eight.set_sim_threads(8)
 	if not _tick(one, 12, "threads=1"):
 		return
 	if not _tick(eight, 12, "threads=8"):
 		return
-	var a: Dictionary = one.demo_to_dict()
-	var b: Dictionary = eight.demo_to_dict()
+	var a: Dictionary = one.to_dict()
+	var b: Dictionary = eight.to_dict()
 	if JSON.stringify(a) != JSON.stringify(b):
 		_fail("determinismo: estado final difere entre threads=1 e 8")
 	if JSON.stringify(a.get("housing", [])) != JSON.stringify(

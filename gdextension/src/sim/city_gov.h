@@ -15,7 +15,7 @@
 // PONTO DE INTEGRAÇÃO COM O W1 (sim/urban_land.cpp): a prefeitura NÃO executa a
 // obra física. Ela chama `start_expansion` / `start_densify` declaradas aqui;
 // quando o W1 chegar, o corpo dessas funções passa a empilhar um
-// DemoConstructionProject §15 do tipo "infra_urbana" (materiais + prazo do
+// ConstructionProject §15 do tipo "infra_urbana" (materiais + prazo do
 // setor de construção) e a conclusão soma área/capacidade em `CityLand` dentro
 // do urban_land.cpp. Até lá a versão local mantém o MESMO formato (orçamento
 // reservado + prazo + reserva de solo) e conclui somando área/capacidade, para
@@ -58,14 +58,14 @@ constexpr double kBusyOccupancy = 0.90;
 constexpr double kWorksCashShare = 0.5;
 // m² de piso por negócio (serviço ou fábrica urbana) na capacidade de zona.
 // SUBSTITUÍDO na integração: o W1 mede a zona por TRABALHADOR
-// (kDemoUrbanServiceM2PerWorker / kDemoUrbanFactoryM2PerWorker). A constante
+// (kUrbanServiceM2PerWorker / kUrbanFactoryM2PerWorker). A constante
 // fica só como registro do estado anterior do pacote W2.
 constexpr double kBusinessFloorM2 = 200.0;
 // Expansão padrão: km² abertos por obra (limitado pela reserva e pelo caixa).
 constexpr double kExpansionKm2 = 1.0;
 // Adensar custa esta fração do km² de infraestrutura (spec: custo menor).
 // SUBSTITUÍDO na integração pelo custo por NÍVEL do W1
-// (kDemoUrbanDensifyCostFactorLowMid/MidHigh) — registro do pacote W2.
+// (kUrbanDensifyCostFactorLowMid/MidHigh) — registro do pacote W2.
 constexpr double kDensifyCostShare = 0.35;
 // Pessoas por domicílio, para estimar o déficit habitacional. O W3 mede a
 // demanda por estrato; até lá é o tamanho médio declarado do domicílio.
@@ -87,14 +87,14 @@ constexpr int kProjectDaysSocialHousing = 30;
 void tick(WorldState& ws, int day, SimCore* core = nullptr);
 
 // Dinheiro do mundo guardado pela prefeitura: caixa + fundos de obra ainda não
-// pagos. Entra em `demo_money_total` para a conservação valer em qualquer ponto
+// pagos. Entra em `money_total` para a conservação valer em qualquer ponto
 // do tick.
 double money_total(const WorldState& ws);
 
 // Retrato/reversão do tick (invariantes rígidos): solo e prefeitura. A moradia
 // fica de fora porque o W2 não a muta (W3).
-void snapshot(const WorldState& ws, DemoSnapshot& out);
-void restore(WorldState& ws, const DemoSnapshot& in);
+void snapshot(const WorldState& ws, Snapshot& out);
+void restore(WorldState& ws, const Snapshot& in);
 
 // ---------------------------------------------------------------------------
 // PONTO DE INTEGRAÇÃO COM O W1/W3 — obras urbanas.

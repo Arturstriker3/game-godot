@@ -92,18 +92,18 @@ func _make_world(limit: int = 0) -> EconomySim:
 		if typeof(entry) == TYPE_DICTIONARY:
 			_goods_order[String(entry.get("id", ""))] = int(entry.get("order", -1))
 	var sim := EconomySim.new()
-	sim.demo_set_goods(goods)
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	sim.demo_set_services(_load_dict(SERVICES_PATH))
-	sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	sim.demo_set_sector_employment(_load_dict(SECTOR_EMPLOYMENT_PATH))
+	sim.set_goods(goods)
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	sim.set_services(_load_dict(SERVICES_PATH))
+	sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	sim.set_sector_employment(_load_dict(SECTOR_EMPLOYMENT_PATH))
 	var cities := _load_array(CITIES_PATH)
 	if limit > 0 and cities.size() > limit:
 		cities = cities.slice(0, limit)
-	sim.initialize_demo_world(cities, _load_array(PORTS_PATH),
+	sim.initialize_world(cities, _load_array(PORTS_PATH),
 		_load_array(BUILDINGS_PATH))
-	sim.demo_set_urban(
+	sim.set_urban(
 		_load_dict(URBAN_LAND_PATH),
 		_load_dict(HOUSING_CITY_PATH),
 		_load_dict(HOUSING_PATH),
@@ -113,8 +113,8 @@ func _make_world(limit: int = 0) -> EconomySim:
 
 func _tick(sim: EconomySim, days: int, label: String) -> bool:
 	for day in days:
-		sim.tick_demo()
-		var violations: Array = sim.get_demo_status().get("invariant_violations", [])
+		sim.tick_day()
+		var violations: Array = sim.get_status().get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("%s: invariante violado no dia %d: %s" % [
 				label, day + 1, String(violations[0])])
@@ -138,7 +138,7 @@ func _gov_entry(snapshot: Dictionary, city_id: String) -> Dictionary:
 
 func _projects(sim: EconomySim, city_id: String = CITY) -> Array:
 	var out: Array = []
-	for project in sim.demo_to_dict().get("construction_projects", []):
+	for project in sim.to_dict().get("construction_projects", []):
 		if String(project.get("city", "")) == city_id:
 			out.append(project)
 	return out
@@ -154,7 +154,7 @@ func _project_of_kind(sim: EconomySim, kind: int, city_id: String = CITY) -> Dic
 ## Deixa a cidade do teste com caixa folgado, fila VAZIA e material semeado:
 ## o experimento isola a disputa por capacidade, não a falta de insumo.
 func _prepare_city(sim: EconomySim) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	var kept: Array = []
 	for project in snapshot.get("construction_projects", []):
 		if String(project.get("city", "")) != CITY:
@@ -175,15 +175,15 @@ func _prepare_city(sim: EconomySim) -> void:
 			var gov: Dictionary = urban.get("gov", {})
 			gov["cash"] = 5.0e9
 			urban["gov"] = gov
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 	for good in ["construction_material", "steel_structure",
 			"electrical_material", "industrial_machinery", "wheat"]:
-		sim.demo_set_market_stock(CITY, good, 2.0e6)
+		sim.set_market_stock(CITY, good, 2.0e6)
 
 
 ## Ajusta a capacidade do setor de construção da cidade para `capacity` XGS/dia.
 func _set_construction_capacity(sim: EconomySim, capacity: float) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for city in snapshot.get("cities", []):
 		if String(city.get("id", "")) == CITY:
 			var workers: Array = city.get("sector_workers", [0.0, 0.0, 0.0, 0.0])
@@ -191,7 +191,7 @@ func _set_construction_capacity(sim: EconomySim, capacity: float) -> void:
 				workers.append(0.0)
 			workers[1] = maxf(0.0, capacity) / VALUE_PER_WORKER_DAY
 			city["sector_workers"] = workers
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 
 
 ## Custo diário contratado de um projeto: o fundo reservado (material + mão de
@@ -203,19 +203,19 @@ func _day_cost(project: Dictionary) -> float:
 
 func _open_factory(sim: EconomySim) -> Dictionary:
 	var flour := _product_index("flour")
-	var firm_before := float(_city_entry(sim.demo_to_dict(), CITY).get(
+	var firm_before := float(_city_entry(sim.to_dict(), CITY).get(
 		"firm_cash", 0.0))
-	var result: Dictionary = sim.demo_build(CITY, "T-QUEUE-FAC", "flour", -1,
+	var result: Dictionary = sim.build(CITY, "T-QUEUE-FAC", "flour", -1,
 		flour, 40.0, 40.0, 1.8, 6.0, 1.0, "private", FACTORY_COST, "flour")
-	result["firm_delta"] = firm_before - float(_city_entry(sim.demo_to_dict(),
+	result["firm_delta"] = firm_before - float(_city_entry(sim.to_dict(),
 		CITY).get("firm_cash", 0.0))
 	return result
 
 
 func _open_housing(sim: EconomySim, units: float) -> Dictionary:
-	var gov_before := float(_gov_entry(sim.demo_to_dict(), CITY).get("cash", 0.0))
-	var result: Dictionary = sim.demo_urban_social_housing(CITY, units)
-	result["gov_delta"] = gov_before - float(_gov_entry(sim.demo_to_dict(),
+	var gov_before := float(_gov_entry(sim.to_dict(), CITY).get("cash", 0.0))
+	var result: Dictionary = sim.urban_social_housing(CITY, units)
+	result["gov_delta"] = gov_before - float(_gov_entry(sim.to_dict(),
 		CITY).get("cash", 0.0))
 	return result
 
@@ -228,7 +228,7 @@ func _case_competition(housing_first: bool) -> void:
 	var sim := _make_world()
 	if not _tick(sim, WARM_DAYS, label + ":aquecimento"):
 		return
-	var urban: Dictionary = sim.demo_get_urban_city(CITY)
+	var urban: Dictionary = sim.get_urban_city(CITY)
 	if urban.is_empty():
 		_fail("%s: %s sem estado urbano" % [label, CITY])
 		return
@@ -311,8 +311,8 @@ func _case_competition(housing_first: bool) -> void:
 		return
 	_set_construction_capacity(sim, capacity)
 	var materials_before := _market_stock(sim, "construction_material")
-	var day_before := int(sim.demo_to_dict().get("day", 0))
-	sim.tick_demo()
+	var day_before := int(sim.to_dict().get("day", 0))
+	sim.tick_day()
 	var first_after := _project_of_kind(sim, first_kind)
 	var second_after := _project_of_kind(sim, second_kind)
 	if int(first_after.get("days_elapsed", -1)) != 1 \
@@ -336,7 +336,7 @@ func _case_competition(housing_first: bool) -> void:
 	if materials_after >= materials_before - TOL:
 		_fail("%s: mercado não consumiu construction_material (%.3f -> %.3f)" % [
 			label, materials_before, materials_after])
-	if int(sim.demo_to_dict().get("day", 0)) <= day_before:
+	if int(sim.to_dict().get("day", 0)) <= day_before:
 		_fail("%s: o dia não avançou" % label)
 
 	# Capacidade de sobra: as duas retomam (a pausa é de capacidade, não falha).
@@ -362,7 +362,7 @@ func _test_v13_migration() -> void:
 	# que virá-la projeto kind HOUSING na fila única, com o prazo RESTANTE e
 	# custo 0 (o capital já foi pago na versão antiga).
 	var sim := _make_world()
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	snapshot["version"] = 13
 	snapshot["construction_projects"] = []
 	var injected := false
@@ -376,7 +376,7 @@ func _test_v13_migration() -> void:
 	if not injected:
 		_fail("migracao: %s sem entrada no bloco housing" % CITY)
 		return
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 	var project := _project_of_kind(sim, 1)
 	if project.is_empty():
 		_fail("migracao v13: obra de moradia antiga não virou projeto da fila")
@@ -393,9 +393,10 @@ func _test_v13_migration() -> void:
 			or float(project.get("reserved", -1.0)) != 0.0:
 		_fail("migracao v13: obra migrada cobrou de novo (total=%.2f)" % float(
 			project.get("total_cost", -1.0)))
-	# O schema novo já sai em v14 e a obra antiga entrega as unidades.
-	if int(sim.demo_to_dict().get("version", 0)) != 14:
-		_fail("migracao v13: save regravado não saiu como v14")
+	# O schema novo sai em v34 (C6/D-114, crise bancária) e a obra antiga
+	# entrega as unidades.
+	if int(sim.to_dict().get("version", 0)) != 34:
+		_fail("migracao v13: save regravado não saiu como v34")
 	var share_before := _owner_share_of(sim, 1)
 	if not _tick(sim, 7, "migracao-v13"):
 		return
@@ -403,7 +404,7 @@ func _test_v13_migration() -> void:
 		_fail("migracao v13: obra migrada não terminou no prazo restante")
 	# A entrega é medida no contador do mês: a depreciação do estoque corre em
 	# paralelo (e some mais que 25 unidades em 7 dias numa metrópole).
-	var built := float(sim.demo_get_urban_city(CITY).get("units_built_month", 0.0))
+	var built := float(sim.get_urban_city(CITY).get("units_built_month", 0.0))
 	if built < 24.0:
 		_fail("migracao v13: unidades entregues do mês %.2f != ~25" % built)
 	if _owner_share_of(sim, 1) <= share_before:
@@ -413,12 +414,12 @@ func _test_v13_migration() -> void:
 
 
 func _owner_share_of(sim: EconomySim, owner: int) -> float:
-	var urban: Dictionary = sim.demo_get_urban_city(CITY)
+	var urban: Dictionary = sim.get_urban_city(CITY)
 	var share: Array = urban.get("owner_share", [])
 	return float(share[owner]) if share.size() > owner else 0.0
 
 func _units_of(sim: EconomySim, density: int, tier: int) -> float:
-	var urban: Dictionary = sim.demo_get_urban_city(CITY)
+	var urban: Dictionary = sim.get_urban_city(CITY)
 	var units: Array = urban.get("units", [])
 	if units.size() <= density:
 		return 0.0
@@ -446,10 +447,10 @@ func _test_roundtrip() -> void:
 	if not _tick(sim, 3, "roundtrip"):
 		return
 	# Uma obra de moradia em voo: o round-trip precisa carregar kind/campos.
-	sim.demo_urban_social_housing(CITY, 50.0)
-	var before: Dictionary = sim.demo_to_dict()
-	sim.demo_from_dict(before)
-	var after: Dictionary = sim.demo_to_dict()
+	sim.urban_social_housing(CITY, 50.0)
+	var before: Dictionary = sim.to_dict()
+	sim.from_dict(before)
+	var after: Dictionary = sim.to_dict()
 	if JSON.stringify(before.get("construction_projects", [])) != JSON.stringify(
 			after.get("construction_projects", [])):
 		_fail("round-trip: fila de obras mudou na ida-e-volta")
@@ -466,14 +467,14 @@ func _test_thread_determinism() -> void:
 	for sim in [one, eight]:
 		_prepare_city(sim)
 		var flour := _product_index("flour")
-		sim.demo_build(CITY, "T-QUEUE-FAC", "flour", -1, flour, 40.0, 40.0,
+		sim.build(CITY, "T-QUEUE-FAC", "flour", -1, flour, 40.0, 40.0,
 			1.8, 6.0, 1.0, "private", FACTORY_COST, "flour")
-		sim.demo_urban_social_housing(CITY, HOUSING_UNITS)
-	one.demo_set_sim_threads(1)
-	eight.demo_set_sim_threads(8)
+		sim.urban_social_housing(CITY, HOUSING_UNITS)
+	one.set_sim_threads(1)
+	eight.set_sim_threads(8)
 	if not _tick(one, 3, "threads=1"):
 		return
 	if not _tick(eight, 3, "threads=8"):
 		return
-	if JSON.stringify(one.demo_to_dict()) != JSON.stringify(eight.demo_to_dict()):
+	if JSON.stringify(one.to_dict()) != JSON.stringify(eight.to_dict()):
 		_fail("determinismo: estado final difere entre threads=1 e 8")

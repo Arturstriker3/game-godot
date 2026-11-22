@@ -1,6 +1,6 @@
 extends SceneTree
 
-## 60 dias no caminho SÍNCRONO (tick_demo direto, na main thread) contra 60 dias
+## 60 dias no caminho SÍNCRONO (tick_day direto, na main thread) contra 60 dias
 ## no caminho ASSÍNCRONO do jogo (WorkerThreadPool via tick_scheduler.gd) têm de
 ## terminar com os MESMOS números: o dia não pode depender de quem o calcula.
 ##
@@ -35,7 +35,7 @@ func _init() -> void:
 
 	var sync_start := Time.get_ticks_usec()
 	for _day in DAYS:
-		sync_sim.tick_demo()
+		sync_sim.tick_day()
 	var sync_ms := float(Time.get_ticks_usec() - sync_start) / 1000.0
 
 	var scheduler = TickScheduler.new()
@@ -47,7 +47,7 @@ func _init() -> void:
 	var snapshots: Array = []
 	for _day in DAYS:
 		# Snapshot do dia anterior: tem de continuar intacto depois do próximo.
-		snapshots.append(async_sim.get_demo_status().get("day", -1))
+		snapshots.append(async_sim.get_status().get("day", -1))
 		if not scheduler.start(async_sim):
 			_failures.append("start() recusou sem tick em andamento")
 			break
@@ -92,8 +92,8 @@ func _init() -> void:
 ## Mesmo mundo, mesmo resultado: dinheiro, falências, dia e o retrato das
 ## cidades/pedidos têm de bater exatamente (o tick é determinístico).
 func _test_same_numbers(sync_sim, async_sim) -> void:
-	var sync_status: Dictionary = sync_sim.get_demo_status()
-	var async_status: Dictionary = async_sim.get_demo_status()
+	var sync_status: Dictionary = sync_sim.get_status()
+	var async_status: Dictionary = async_sim.get_status()
 	for key in ["day", "money_total", "bankruptcies"]:
 		if sync_status.get(key) != async_status.get(key):
 			_failures.append("%s difere: síncrono %s, assíncrono %s" % [
@@ -122,10 +122,10 @@ func _test_snapshot_double_buffer(sim, days: Array) -> void:
 			_failures.append("dia do snapshot %d fora de ordem: %s -> %s" % [
 				index, str(days[index - 1]), str(days[index])])
 			return
-	var held: Dictionary = sim.get_demo_status()
+	var held: Dictionary = sim.get_status()
 	var held_day := int(held.get("day", -1))
 	var held_money := float(held.get("money_total", 0.0))
-	sim.tick_demo()
+	sim.tick_day()
 	if int(held.get("day", -1)) != held_day:
 		_failures.append("o status retido mudou de dia depois de um novo tick")
 	if absf(float(held.get("money_total", 0.0)) - held_money) > 0.001:
@@ -154,8 +154,8 @@ func _digest(status: Dictionary) -> String:
 
 func _build(world: Dictionary):
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(world["cities"], world["ports"], world["buildings"])
-	sim.demo_set_goods(world["goods"])
+	sim.initialize_world(world["cities"], world["ports"], world["buildings"])
+	sim.set_goods(world["goods"])
 	return sim
 
 

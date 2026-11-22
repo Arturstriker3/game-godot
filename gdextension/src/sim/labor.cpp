@@ -3,6 +3,8 @@
 // SimCore:: métodos movidos de sim_core.cpp — realocação byte-idêntica.
 #include "sim_core.h"
 
+#include "bank.h"
+#include "monetary.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
@@ -15,20 +17,51 @@ namespace ogs {
 void SimCore::phase_labor() {
 	// Minas mais fundas custam mais para operar: opex × fator de profundidade
 	// (1.0 para tudo que não é extração com jazida declarada).
-	auto opex_factor = [this](const DemoCity& owner_city, const DemoBuilding& building) {
+	auto opex_factor = [this](const City& owner_city, const Building& building) {
 		if (building.input_product >= 0 || building.output_product < 0
 				|| building.output_product >= ws_.products) {
 			return 1.0;
 		}
-		return demo_depth_opex_factor(owner_city.deposits[building.output_product]);
+		return depth_opex_factor(owner_city.deposits[building.output_product]);
+	};
+	// D-086: TAXA DE OPERAÇÃO da construção. Planta secundária ociosa opera
+	// pelo uso do dia anterior (piso de 5%); mina com estágio esgotado opera no
+	// piso do estágio (a equipe mínima do poço quase parado). Fazenda e
+	// indústria ativa seguem em 100%. Folha e opex acompanham a taxa — sem
+	// isso a mina parada pagaria salário cheio e faliria por definição.
+	//
+	// D-086b (correção): a mina também é limitada pela VENDA, não só pelo
+	// estágio. A produção é `min(estágio, uso)` porque o alvo de produção segue
+	// as vendas do dia anterior; pagar a folha cheia de uma mina operando a 15%
+	// da capacidade (semente com capacidade real maior que a demanda local)
+	// quebrava a firma sem que houvesse defeito de preço. O piso do estágio
+	// continua garantindo a equipe mínima do poço parado.
+	auto operating_of = [this](const City& owner_city, const Building& building) {
+		if (building.recipe >= 0 || building.input_product >= 0) {
+			return std::clamp(building.last_utilization, 0.05, 1.0);
+		}
+		if (is_mine_building(owner_city, building)) {
+			return std::clamp(std::min(
+				mine_stage_factor(owner_city, building),
+				building.last_utilization), kMineStageFloor, 1.0);
+		}
+		// D-096 (folha sazonal): fazenda COM plano de safra parada na
+		// entressafra opera a 0% — sem equipe e sem opex, porque não há safra
+		// para pagar a conta (era a causa das falências de primárias em 365 d).
+		const std::size_t city_index = static_cast<std::size_t>(
+			&owner_city - ws_.cities.data());
+		if (!crop_working_at(city_index, building.output_product)) {
+			return 0.0;
+		}
+		return 1.0;
 	};
 	// S16: o trabalho é independente por cidade (escreve só na própria cidade e
 	// nas suas construções; lê só dados globais imutáveis no dia) — paralelizável
 	// com resultado bit-idêntico ao serial. A redução não é necessária (não há
 	// acumulador global nesta fase).
-	auto process_city = [this, &opex_factor](std::size_t begin, std::size_t end) {
+	auto process_city = [this, &opex_factor, &operating_of](std::size_t begin, std::size_t end) {
 		for (std::size_t city_index = begin; city_index < end; ++city_index) {
-			DemoCity& city = ws_.cities[city_index];
+			City& city = ws_.cities[city_index];
 			const std::vector<int>& local_buildings =
 				ws_.buildings_by_city[city_index];
 			// F7: o dia do mercado de trabalho resolve qualificação, força de
@@ -37,15 +70,23 @@ void SimCore::phase_labor() {
 			// caixa da firma).
 			double opex_total = 0.0;
 			for (const int bi : local_buildings) {
-				DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
-				const bool secondary = building.recipe >= 0 || building.input_product >= 0;
+				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 				// Planta secundária ociosa não paga o opex cheio: o custo acompanha
-				// a operação do dia anterior (piso de 5% de stand-by).
-				const double operating = secondary
-					? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
-				opex_total += building.opex * opex_factor(city, building) * operating;
+				// a operação do dia anterior (piso de 5% de stand-by). Mina no
+				// último estágio idem (D-086).
+				const double operating = operating_of(city, building);
+				// D-099: a fazenda com plano paga o opex só até o que a safra
+				// cobre (mesmo fator da folha) — a decisão é a folha/opex
+				// REDUZIDOS, nunca dinheiro criado.
+				const double daily_cost = building.opex
+					* opex_factor(city, building) * operating
+					+ building.jobs * building.wage * operating;
+				const double liquidity = crop_liquidity_factor(city, building,
+					daily_cost);
+				opex_total += building.opex * opex_factor(city, building)
+					* operating * liquidity;
 			}
-			demo_labor_day(city);
+			labor_day(city);
 			// Opex é comprado de serviços domésticos (manutenção, energia), não é
 			// uma importação: mantém o dinheiro dentro da economia. A liquidez do
 			// opex é a que sobrou do caixa depois da folha.
@@ -53,12 +94,15 @@ void SimCore::phase_labor() {
 			const double opex_scale = opex_total > opex_available
 				? (opex_total > 0.0 ? opex_available / opex_total : 1.0) : 1.0;
 			for (const int bi : local_buildings) {
-				DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
-				const bool secondary = building.recipe >= 0 || building.input_product >= 0;
-				const double operating = secondary
-					? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
+				const double operating = operating_of(city, building);
+				const double daily_cost = building.opex
+					* opex_factor(city, building) * operating
+					+ building.jobs * building.wage * operating;
+				const double liquidity = crop_liquidity_factor(city, building,
+					daily_cost);
 				building.paid_opex = building.opex * opex_factor(city, building)
-					* operating * opex_scale;
+					* operating * opex_scale * liquidity;
 			}
 			const double paid_opex = opex_total * opex_scale;
 			city.firm_cash -= paid_opex;
@@ -68,28 +112,79 @@ void SimCore::phase_labor() {
 	};
 	pool().parallel_for(ws_.cities.size(), process_city);
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseLabor);
+	// C4 (D-110) + D-105 + D-111: com o juro da safra LIGADO (default do jogo
+	// desde a D-111), o valor que o envelope desconta da lavoura deixa de ser
+	// custo sem recebedor — é cobrado do tomador (caixa da cidade) e creditado
+	// no banco PÚBLICO da nação. Sem banco público NADA é cobrado (ausência
+	// declarada; comportamento da D-105).
+	if (ws_.harvest_credit_rate) {
+		const double span = double(kLossDaysBeforeClose) / 365.0;
+		for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+			City& city = ws_.cities[index];
+			if (index >= ws_.buildings_by_city.size()) {
+				continue;
+			}
+			const double rate = monetary::rate_for_nation(ws_, city.nation);
+			if (rate <= 0.0) {
+				continue;
+			}
+			for (const int bi : ws_.buildings_by_city[index]) {
+				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
+				if (building.bankrupt) {
+					continue;
+				}
+				const double paid = std::max(0.0, building.paid_wages)
+					+ std::max(0.0, building.paid_opex);
+				if (paid <= 1e-12) {
+					continue;
+				}
+				const double operating = operating_of(city, building);
+				const double daily_cost = building.opex
+					* opex_factor(city, building) * operating
+					+ building.jobs * building.wage * operating;
+				const double liquidity = crop_liquidity_factor(city, building,
+					daily_cost);
+				if (liquidity >= 1.0 - 1e-9) {
+					continue;
+				}
+				const double interest = paid * rate * span;
+				const double take = std::min(interest,
+					std::max(0.0, city.firm_cash));
+				if (take <= 1e-12) {
+					continue;
+				}
+				const double credited = bank::receive_harvest_interest(ws_,
+					city.nation, take);
+				if (credited <= 0.0) {
+					continue;
+				}
+				city.firm_cash -= credited;
+			}
+		}
+	}
+
+	OGS_SIM_PHASE_LAP(kPhaseLabor);
 }
 
 // ------------------------------------------------------------------
 // F7/F9 — trabalho, educação, renda e emprego setorial.
 // ------------------------------------------------------------------
 
-void SimCore::demo_refresh_strata(DemoPop& pop) const {
+void SimCore::refresh_strata(Pop& pop) const {
 	// Estrato = escolaridade/ocupação (básico, intermediário, superior). A
 	// população do estrato inclui os dependentes: a escolaridade é medida na
 	// idade ativa, mas a renda do estrato sustenta toda a sua população.
 	double education_total = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		education_total += std::max(0.0, pop.education[level]);
 	}
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		pop.stratum_population[level] = education_total > 1e-9
 			? pop.population * std::max(0.0, pop.education[level]) / education_total
-			: pop.population / double(kDemoEducationLevels);
+			: pop.population / double(kEducationLevels);
 	}
 }
-void SimCore::demo_education_mix_for_sector(const std::string& sector,
+void SimCore::education_mix_for_sector(const std::string& sector,
 		double* mix) {	// Escolaridade das vagas por setor (recipes.json `sector`). Semicondutores/
 	// eletrônicos e máquinas pedem mais superior; alimentos, têxteis, madeira e
 	// embalagem são intensivos em básico. Tabela de engenharia do modelo.
@@ -114,27 +209,27 @@ void SimCore::demo_education_mix_for_sector(const std::string& sector,
 	};
 	for (const Row& row : kRows) {
 		if (sector == row.sector) {
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				mix[level] = row.mix[level];
 			}
 			return;
 		}
 	}
 	const double fallback[3] = {0.60, 0.30, 0.10};
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		mix[level] = fallback[level];
 	}
 }
-void SimCore::demo_sector_anchor_values(double income, double* out) const {
+void SimCore::sector_anchor_values(double income, double* out) const {
 	// Interpolação linear no log da renda entre as âncoras observadas (ILO).
 	// Fora da faixa, vale o extremo (nação mais pobre/rica do conjunto).
-	double incomes[kDemoSectorAnchorCount];
-	double agri[kDemoSectorAnchorCount];
-	double industry[kDemoSectorAnchorCount];
-	double informal[kDemoSectorAnchorCount];
+	double incomes[kSectorAnchorCount];
+	double agri[kSectorAnchorCount];
+	double industry[kSectorAnchorCount];
+	double informal[kSectorAnchorCount];
 	int count = 0;
 	if (!ws_.sector_anchors.empty()) {
-		for (const DemoSectorAnchor& anchor : ws_.sector_anchors) {
+		for (const SectorAnchor& anchor : ws_.sector_anchors) {
 			incomes[count] = anchor.income;
 			agri[count] = anchor.agriculture;
 			industry[count] = anchor.industry;
@@ -142,13 +237,13 @@ void SimCore::demo_sector_anchor_values(double income, double* out) const {
 			++count;
 		}
 	} else {
-		for (int i = 0; i < kDemoSectorAnchorCount; ++i) {
-			incomes[i] = kDemoSectorAnchorDefaults[i].income;
-			agri[i] = kDemoSectorAnchorDefaults[i].agriculture;
-			industry[i] = kDemoSectorAnchorDefaults[i].industry;
-			informal[i] = kDemoSectorAnchorDefaults[i].informal;
+		for (int i = 0; i < kSectorAnchorCount; ++i) {
+			incomes[i] = kSectorAnchorDefaults[i].income;
+			agri[i] = kSectorAnchorDefaults[i].agriculture;
+			industry[i] = kSectorAnchorDefaults[i].industry;
+			informal[i] = kSectorAnchorDefaults[i].informal;
 		}
-		count = kDemoSectorAnchorCount;
+		count = kSectorAnchorCount;
 	}
 	const double x = std::log(std::clamp(income, 0.02, 10.0));
 	if (x <= std::log(incomes[0])) {
@@ -179,11 +274,11 @@ void SimCore::demo_sector_anchor_values(double income, double* out) const {
 	out[1] = industry[count - 1];
 	out[2] = informal[count - 1];
 }
-void SimCore::demo_update_sector_employment(DemoCity& city) {
-	DemoPop& pop = city.pop;
-	const double tfp = std::clamp(demo_effective_productivity(city), 0.25, 4.0);
+void SimCore::update_sector_employment(City& city) {
+	Pop& pop = city.pop;
+	const double tfp = std::clamp(effective_productivity(city), 0.25, 4.0);
 	double anchors[3] = {0.0, 0.0, 0.0};
-	demo_sector_anchor_values(tfp, anchors);
+	sector_anchor_values(tfp, anchors);
 	// 1. Produção agrícola local (t/dia): construções PRIMÁRIAS cujo produto
 	// está na cesta alimentar. É a capacidade declarada — a mesma que o status
 	// publica em `production` —, não o vendido do dia (preço/caixa não muda a
@@ -194,7 +289,7 @@ void SimCore::demo_update_sector_employment(DemoCity& city) {
 		static_cast<std::size_t>(&city - ws_.cities.data());
 	if (city_index < ws_.buildings_by_city.size()) {
 		for (const int bi : ws_.buildings_by_city[city_index]) {
-			const DemoBuilding& building =
+			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			if (building.output_product < 0) {
 				continue;
@@ -268,20 +363,20 @@ void SimCore::demo_update_sector_employment(DemoCity& city) {
 	// continuam em `service_jobs_filled` — salário e folha seguem por elas.
 	city.service_workers = services;
 }
-double SimCore::demo_labor_day(DemoCity& city) {
-	DemoPop& pop = city.pop;
+double SimCore::labor_day(City& city) {
+	Pop& pop = city.pop;
 	// 1. QUALIFICAÇÃO — conclusão. A coorte em formação conclui a uma taxa
 	// constante (coorte exponencial com duração média de 3/4 anos): quem
 	// conclui muda de nível de escolaridade e passa a disputar as vagas do
 	// nível acima. A população não muda; só a distribuição de educação.
-	for (int dst = 1; dst < kDemoEducationLevels; ++dst) {
+	for (int dst = 1; dst < kEducationLevels; ++dst) {
 		double& cohort = pop.studying[dst - 1];
 		const double duration = kLaborStudyDurationDays[dst - 1];
 		if (cohort <= 0.0 || duration <= 0.0) {
 			continue;
 		}
 		const double completed = cohort / duration
-			* (1.0 + kDemoServiceEducationRateBonus * city.private_education_cover);
+			* (1.0 + kServiceEducationRateBonus * city.private_education_cover);
 		const int src = dst - 1;
 		const double moved = std::min(completed, pop.education[src]);
 		cohort = std::max(0.0, cohort - moved);
@@ -292,7 +387,7 @@ double SimCore::demo_labor_day(DemoCity& city) {
 	// EMERGE do aperto de cada mercado) atrai jovens do nível de origem. Sem
 	// vagas no destino (desemprego alto), a escola não cresce: não se forma
 	// gente para ficar desempregada. Não há custo de escola nesta fase.
-	for (int dst = 1; dst < kDemoEducationLevels; ++dst) {
+	for (int dst = 1; dst < kEducationLevels; ++dst) {
 		const int src = dst - 1;
 		const double premium = pop.wage_by_level[dst]
 			/ std::max(pop.wage_by_level[src], 1e-9);
@@ -320,11 +415,12 @@ double SimCore::demo_labor_day(DemoCity& city) {
 		}
 	}
 	// 3. FORÇA DE TRABALHO por nível (estudantes ficam fora; educação de
-	// origem permanece até a conclusão).
+	// origem permanece até a conclusão). B1: crianças (coorte 0-14) também
+	// estão fora da força.
 	pop.labor_force = 0.0;
-	pop.students = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
-		const double studying = level < kDemoEducationLevels - 1
+	pop.students = pop.children;
+	for (int level = 0; level < kEducationLevels; ++level) {
+		const double studying = level < kEducationLevels - 1
 			? pop.studying[level] : 0.0;
 		pop.students += studying;
 		pop.labor_force_by_level[level] = std::max(0.0,
@@ -333,20 +429,27 @@ double SimCore::demo_labor_day(DemoCity& city) {
 	}
 	// 4. VAGAS por nível: serviços urbanos + cada construção (a mistura da
 	// receita/setor). É a DEMANDA que o mercado de trabalho precisa preencher.
-	double vacancy[kDemoEducationLevels] = {};
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	double vacancy[kEducationLevels] = {};
+	for (int level = 0; level < kEducationLevels; ++level) {
 		vacancy[level] += city.service_jobs * kLaborServiceMix[level];
 	}
 	const std::size_t city_index =
 		static_cast<std::size_t>(&city - ws_.cities.data());
 	if (city_index < ws_.buildings_by_city.size()) {
 		for (const int bi : ws_.buildings_by_city[city_index]) {
-			const DemoBuilding& building =
+			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			if (building.jobs <= 0.0) {
 				continue;
 			}
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			// D-096: a fazenda sazonal fora da janela não abre vaga — a cidade
+			// não pode contar emprego que não existe na entressafra.
+			const double seasonal = crop_working_at(city_index,
+				building.output_product) ? 1.0 : 0.0;
+			if (seasonal <= 0.0) {
+				continue;
+			}
+			for (int level = 0; level < kEducationLevels; ++level) {
 				vacancy[level] += building.jobs * building.education_mix[level];
 			}
 		}
@@ -354,14 +457,14 @@ double SimCore::demo_labor_day(DemoCity& city) {
 	// 5. ALOCAÇÃO: cada trabalhador procura a vaga do SEU nível e, se não
 	// houver, aceita uma vaga ABAIXO (sobrequalificado); nunca o contrário.
 	// `remaining` guarda as vagas não preenchidas por nível (escassez).
-	double remaining[kDemoEducationLevels];
-	double assigned[kDemoEducationLevels][kDemoEducationLevels] = {};
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	double remaining[kEducationLevels];
+	double assigned[kEducationLevels][kEducationLevels] = {};
+	for (int level = 0; level < kEducationLevels; ++level) {
 		remaining[level] = vacancy[level];
 		pop.vacancies_by_level[level] = vacancy[level];
 		pop.unfilled_by_level[level] = 0.0;
 	}
-	for (int edu = kDemoEducationLevels - 1; edu >= 0; --edu) {
+	for (int edu = kEducationLevels - 1; edu >= 0; --edu) {
 		double supply = pop.labor_force_by_level[edu];
 		for (int slot = edu; slot >= 0 && supply > 1e-12; --slot) {
 			const double take = std::min(supply, remaining[slot]);
@@ -373,18 +476,18 @@ double SimCore::demo_labor_day(DemoCity& city) {
 			supply -= take;
 		}
 		pop.employed_by_level[edu] = 0.0;
-		for (int slot = 0; slot < kDemoEducationLevels; ++slot) {
+		for (int slot = 0; slot < kEducationLevels; ++slot) {
 			pop.employed_by_level[edu] += assigned[edu][slot];
 		}
 		pop.unemployed_by_level[edu] =
 			std::max(0.0, pop.labor_force_by_level[edu]
 				- pop.employed_by_level[edu]);
 	}
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		pop.unfilled_by_level[level] = std::max(0.0, remaining[level]);
 	}
-	double fill[kDemoEducationLevels];
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	double fill[kEducationLevels];
+	for (int level = 0; level < kEducationLevels; ++level) {
 		fill[level] = vacancy[level] > 1e-12
 			? std::clamp((vacancy[level] - remaining[level]) / vacancy[level],
 				0.0, 1.0)
@@ -399,30 +502,49 @@ double SimCore::demo_labor_day(DemoCity& city) {
 	double buildings_payroll = 0.0;
 	if (city_index < ws_.buildings_by_city.size()) {
 		for (const int bi : ws_.buildings_by_city[city_index]) {
-			DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
+			Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 			double workers_fraction = 0.0;
 			double contract_wage = 0.0;
 			double plant_payroll = 0.0;
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				workers_fraction += building.education_mix[level] * fill[level];
 				contract_wage += building.education_mix[level]
 					* pop.wage_by_level[level];
 				plant_payroll += building.education_mix[level] * fill[level]
 					* pop.wage_by_level[level];
 			}
-			building.workers = building.jobs * workers_fraction;
+			// D-096: fora da janela de plantio/colheita a fazenda sazonal não
+			// emprega ninguém (equipe liberada). `building.jobs` continua sendo
+			// a CAPACIDADE publicada; `workers` é o emprego do dia.
+			const double seasonal = crop_working_at(city_index,
+				building.output_product) ? 1.0 : 0.0;
+			building.workers = building.jobs * workers_fraction * seasonal;
 			building.wage = contract_wage;
-			const bool secondary =
-				building.recipe >= 0 || building.input_product >= 0;
-			const double operating = secondary
-				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
-			buildings_payroll += building.jobs * plant_payroll * operating;
+			// D-086: mina no último estágio opera no piso — a folha acompanha a
+			// taxa de operação (mesma regra do opex em phase_labor).
+			// D-086b: e a venda limita a operação (`min(estágio, uso)`).
+			double operating = 1.0;
+			if (building.recipe >= 0 || building.input_product >= 0) {
+				operating = std::clamp(building.last_utilization, 0.05, 1.0);
+			} else if (is_mine_building(city, building)) {
+				operating = std::clamp(std::min(
+					mine_stage_factor(city, building),
+					building.last_utilization), kMineStageFloor, 1.0);
+			} else {
+				// D-096: a folha da fazenda sazonal segue o bit do calendário.
+				operating = seasonal;
+			}
+			const double crop_liquidity = crop_liquidity_factor(city, building,
+				building.jobs * plant_payroll * operating
+				+ building.opex * operating);
+			buildings_payroll += building.jobs * plant_payroll * operating
+				* crop_liquidity;
 		}
 	}
 	double service_fraction = 0.0;
 	double service_contract_wage = 0.0;
 	double service_payroll_per_job = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		service_fraction += kLaborServiceMix[level] * fill[level];
 		service_contract_wage += kLaborServiceMix[level]
 			* pop.wage_by_level[level];
@@ -435,21 +557,21 @@ double SimCore::demo_labor_day(DemoCity& city) {
 	city.service_workers = city.service_jobs_filled;
 	pop.employed = 0.0;
 	pop.unemployed = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		pop.employed += pop.employed_by_level[level];
 		pop.unemployed += pop.unemployed_by_level[level];
 		pop.wage_income_by_level[level] = 0.0;
-		for (int slot = 0; slot < kDemoEducationLevels; ++slot) {
+		for (int slot = 0; slot < kEducationLevels; ++slot) {
 			pop.wage_income_by_level[level] += assigned[level][slot]
 				* pop.wage_by_level[slot];
 		}
 	}
 	pop.dependents = std::max(0.0, pop.population - pop.labor_force);
 	// F9: decompõe o emprego do dia em agro/indústria/serviços + informalidade.
-	demo_update_sector_employment(city);
+	update_sector_employment(city);
 	// F7 calibração: estratos de renda = escolaridade/ocupação (ver
-	// demo_refresh_strata). A população do estrato inclui os dependentes.
-	demo_refresh_strata(pop);
+	// refresh_strata). A população do estrato inclui os dependentes.
+	refresh_strata(pop);
 	// 7. Caixa da firma e do setor de serviços: a folha total é paga só até o
 	// caixa disponível (restrição de liquidez do modelo, preservada). O setor de
 	// serviços também só paga até o próprio caixa.
@@ -458,25 +580,84 @@ double SimCore::demo_labor_day(DemoCity& city) {
 	const double committed = buildings_full_payroll;
 	const double pay_scale = committed > firm_available
 		? firm_available / committed : 1.0;
+	// B7: a renda informal sofre o dobro na crise (desconto de liquidez). A
+	// folha efetiva já descontada pelas firmas é a fonte; o que o informal
+	// deixa de receber permanece no caixa de quem pagou (conservação).
+	pop.informal_crisis_factor = std::clamp(
+		1.0 - (1.0 - pay_scale) * kInformalCrisisSensitivity, 0.0, 1.0);
 	if (city_index < ws_.buildings_by_city.size()) {
 		for (const int bi : ws_.buildings_by_city[city_index]) {
-			DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
-			const bool secondary =
-				building.recipe >= 0 || building.input_product >= 0;
-			const double operating = secondary
-				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+			Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
+			double operating = 1.0;
+			if (building.recipe >= 0 || building.input_product >= 0) {
+				operating = std::clamp(building.last_utilization, 0.05, 1.0);
+			} else if (is_mine_building(city, building)) {
+				operating = std::clamp(std::min(
+					mine_stage_factor(city, building),
+					building.last_utilization), kMineStageFloor, 1.0);
+			} else {
+				// D-096: fora da janela de plantio/colheita a fazenda sazonal
+				// não paga folha (equipe liberada).
+				operating = crop_working_at(city_index,
+					building.output_product) ? 1.0 : 0.0;
+			}
 			double plant_payroll = 0.0;
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				plant_payroll += building.education_mix[level] * fill[level]
 					* pop.wage_by_level[level];
 			}
 			building.paid_wages =
 				building.jobs * plant_payroll * operating * pay_scale;
+			// D-099: a fazenda com plano paga só o que a safra cobre (fator da
+			// lavoura em pé/estoque). Vale sobre a folha já limitada pelo
+			// caixa da cidade — dinheiro continua conservado.
+			const double crop_liquidity = crop_liquidity_factor(city, building,
+				building.jobs * plant_payroll * operating
+				+ building.opex * operating);
+			building.paid_wages *= crop_liquidity;
+			// C1: a folha DEVIDA do dia (já com a redução da safra da D-099) e
+			// o que o caixa não cobriu. Essa diferença é SALÁRIO ATRASADO —
+			// passivo da firma e ativo das famílias. A folha reduzida pela
+			// D-099 (liquidez da lavoura) NÃO é dívida: ela não é devida.
+			// O pagamento em si não muda (dinheiro conservado como antes).
+			//
+			// O estoque é o "a pagar" do PERÍODO CORRENTE (como toda folha em
+			// atraso): a folha não paga do dia substitui a anterior. Acumular e
+			// liquidar com juros é a C3 (balanço da empresa); fingir que a
+			// carência do dia 1 vira uma dívida eterna inflaria o patrimônio
+			// das famílias sem lastro. Nada de dinheiro se move aqui.
+			if (pay_scale < 1.0) {
+				const double due_wages = building.jobs * plant_payroll
+					* operating * crop_liquidity;
+				building.wage_arrears = std::max(0.0,
+					due_wages - building.paid_wages);
+			} else {
+				building.wage_arrears = 0.0;
+			}
 		}
 	}
 	const double full_service_bill = city.service_jobs * service_payroll_per_job;
 	const double paid_service_bill = std::min(full_service_bill,
 		std::max(0.0, city.service_cash));
+	// C1: atraso da folha do setor de serviços (caixa insuficiente) — passivo
+	// das firmas de serviço e ativo das famílias. Vale a mesma regra do
+	// período corrente (substitui o do dia anterior). O pagamento não muda.
+	{
+		const double service_arrears = full_service_bill - paid_service_bill;
+		city.service_wage_arrears = std::max(0.0, service_arrears);
+	}
+	// C1: o "a pagar" das famílias é a soma das folhas não pagas do período
+	// (plantas + serviços). Recalculado aqui — não é um segundo acumulador.
+	{
+		double households_arrears = city.service_wage_arrears;
+		if (city_index < ws_.buildings_by_city.size()) {
+			for (const int bi : ws_.buildings_by_city[city_index]) {
+				households_arrears += ws_.buildings[static_cast<std::size_t>(bi)]
+					.wage_arrears;
+			}
+		}
+		city.pop.arrears_receivable = households_arrears;
+	}
 	// Ganchos do laboratório mantidos: `service_wage_adjust` é a velocidade com
 	// que o salário pago do setor converge para a média do mercado de trabalho
 	// e `service_wage_max` limita o valor (parâmetros de balanceamento, não
@@ -498,7 +679,7 @@ double SimCore::demo_labor_day(DemoCity& city) {
 		+ pop.wage_income_by_level[1] + pop.wage_income_by_level[2];
 	const double paid_ratio = full_level_total > 1e-12
 		? std::clamp(paid_total / full_level_total, 0.0, 1.0) : 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		pop.wage_income_by_level[level] *= paid_ratio;
 	}
 	pop.wage_income = pop.wage_income_by_level[0]
@@ -507,19 +688,30 @@ double SimCore::demo_labor_day(DemoCity& city) {
 	city.service_cash -= paid_service_bill;
 	return pop.wage_income;
 }
-void SimCore::demo_refresh_income_classes(DemoCity& city) const {
-	DemoPop& pop = city.pop;
+void SimCore::refresh_income_classes(City& city) const {
+	Pop& pop = city.pop;
 	const double population = std::max(0.0, city.simulation_population);
+	// B2/F7 (correção): a classe de consumo PUBLICADA (basic/life/luxury) é o
+	// contrato legado que serviços (split da demanda das famílias) e a IA de
+	// investimento consomem. Ela NÃO pode ser derivada do `stratum_level` do
+	// dia: o nível é o teto que o quintil conseguiu pagar HOJE (flutua com o
+	// caixa do dia e pode zerar num mundo de renda realizada baixa), e a
+	// primeira versão da B2 publicava 100% basic (serviços liam a classe
+	// zerada pelo `phase_reset`). A leitura segue a âncora do F7 — índice de
+	// renda real da cidade (`external_income_index`, dado de PIB PPP) e Gini
+	// declarado —, enquanto o CONSUMO, a poupança e o patrimônio continuam
+	// por QUINTIL (B2). O Gini que o status publica como medido
+	// (`strata_gini`) continua sendo o dos estratos.
 	const double gini = std::clamp(city.income_gini, 0.0, 1.0);
 	double basic_cost = 0.0;
 	if (population > 1e-9) {
-		basic_cost = demo_level_basket_cost(city, 0) / population;
+		basic_cost = level_basket_cost(city, 0) / population;
 	}
 	// Sem Gini declarado (cidade sintética/save antigo) ou sem preço de cesta
 	// (mundo sem needs.json): espelha os estratos de escolaridade. É o
 	// comportamento anterior, preservado fora do cenário real.
 	if (gini <= 0.0 || basic_cost <= 1e-12) {
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			pop.class_population[level] = std::max(0.0, pop.stratum_population[level]);
 			pop.class_income_level[level] = pop.stratum_income_level[level];
 		}
@@ -546,15 +738,15 @@ void SimCore::demo_refresh_income_classes(DemoCity& city) const {
 	// basic compra só o nível 0; life, 0-1; luxury, todos (caps em 1-based).
 	pop.class_income_level[0] = 1;
 	pop.class_income_level[1] = 2;
-	pop.class_income_level[2] = kDemoMaxNeedsLevels;
+	pop.class_income_level[2] = kMaxNeedsLevels;
 }
 
 // ------------------------------------------------------------------
 // F7 — salários ao fechamento do dia.
 // ------------------------------------------------------------------
 
-void SimCore::demo_update_wages(DemoCity& city, double building_margin) {
-	DemoPop& pop = city.pop;
+void SimCore::update_wages(City& city, double building_margin) {
+	Pop& pop = city.pop;
 	const auto minimum = ws_.minimum_wages.find(city.nation);
 	double floor = minimum != ws_.minimum_wages.end()
 		? std::max(0.0, minimum->second) : 0.0;
@@ -567,10 +759,10 @@ void SimCore::demo_update_wages(DemoCity& city, double building_margin) {
 	const double t = std::clamp(
 		std::clamp(city.external_income_index, 0.0, 8.0) / kLaborIncomeSaturation,
 		0.0, 1.0);
-	const double labor_share = kDemoLaborShareLow
-		+ (kDemoLaborShareHigh - kDemoLaborShareLow) * t;
+	const double labor_share = kLaborShareLow
+		+ (kLaborShareHigh - kLaborShareLow) * t;
 	double filled_total = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		filled_total += std::max(0.0, pop.filled_by_slot[level]);
 	}
 	// F7 calibração — PISO DE SUBSISTÊNCIA. Com a TFP como FATOR COMPLETO
@@ -583,8 +775,8 @@ void SimCore::demo_update_wages(DemoCity& city, double building_margin) {
 		double cheapest_food = 0.0;
 		for (int slot = 0;
 				slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-			const int product = demo_food_product(slot);
-			const double factor = demo_food_calories(product);
+			const int product = food_product(slot);
+			const double factor = food_calories(product);
 			if (factor <= 0.0) {
 				continue;
 			}
@@ -596,11 +788,11 @@ void SimCore::demo_update_wages(DemoCity& city, double building_margin) {
 		}
 		if (cheapest_food > 0.0) {
 			floor = std::max(floor,
-				cheapest_food * kDemoNeedPerCapita
+				cheapest_food * kNeedPerCapita
 					* city.simulation_population / filled_total);
 		}
 	}
-	const double productivity = demo_effective_productivity(city);
+	const double productivity = effective_productivity(city);
 	const double value_added = std::max(0.0, city.gdp) * productivity;
 	// TFP nacional (`derived:gdp_ppp`): o valor adicionado POR TRABALHADOR
 	// usado na âncora é o do país relativo à média mundial. O pagamento
@@ -609,7 +801,7 @@ void SimCore::demo_update_wages(DemoCity& city, double building_margin) {
 	if (filled_total <= 1e-9 || value_added <= 1e-9) {
 		// Sem emprego ou sem valor adicionado no dia: não há âncora nova. Os
 		// salários ficam onde estavam (o piso continua valendo).
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			pop.wage_by_level[level] = std::max(
 				floor, pop.wage_by_level[level]);
 		}
@@ -621,9 +813,9 @@ void SimCore::demo_update_wages(DemoCity& city, double building_margin) {
 	// nível (escassez sobe, sobra derruba) × margem das firmas. A normalização
 	// por Σ(vagas × razão) mantém a folha total = parcela × VA: o aperto muda a
 	// distribuição entre os níveis, não o tamanho da folha.
-	double ratio[kDemoEducationLevels];
+	double ratio[kEducationLevels];
 	double ratio_weighted = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		const double supply = std::max(pop.labor_force_by_level[level], 1e-9);
 		const double demand = std::max(0.0, pop.vacancies_by_level[level]);
 		const double unfilled = std::max(0.0, pop.unfilled_by_level[level]);
@@ -650,7 +842,7 @@ void SimCore::demo_update_wages(DemoCity& city, double building_margin) {
 	// de uma cidade sem histórico (âncora inicial = palpite de criação do
 	// mundo) entra direto: não é um salário observado que precise de inércia.
 	const bool anchored = pop.wage_anchored;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		// Σ(vagas × salário) = parcela × VA: o salário do nível é o salário
 		// médio e a razão normalizada redistribui a folha entre os níveis.
 		const double target = std::max(floor,
@@ -665,18 +857,25 @@ void SimCore::demo_update_wages(DemoCity& city, double building_margin) {
 	}
 	pop.wage_anchored = true;
 }
-void SimCore::demo_apply_labor_profile(DemoCity& city) {
-	DemoPop& pop = city.pop;
+void SimCore::apply_labor_profile(City& city) {
+	Pop& pop = city.pop;
+	// B1: semeia/reaplica as coortes etárias ANTES de ler a população. Com dado
+	// nacional, idade ativa, aposentados, crianças e reserva recrutável vêm da
+	// demografia; sem dado, o perfil paramétrico abaixo segue valendo.
+	apply_demography(city);
 	const double population = std::max(0.0, city.simulation_population);
 	pop.population = population;
 	const double t = std::clamp(
 		std::clamp(city.external_income_index, 0.0, 8.0) / kLaborIncomeSaturation,
 		0.0, 1.0);
-	pop.working_age = population * (kLaborWorkingAgeLow
-		+ (kLaborWorkingAgeHigh - kLaborWorkingAgeLow) * t);
-	pop.retirees = population * (kLaborRetireeLow
-		+ (kLaborRetireeHigh - kLaborRetireeLow) * t);
-	pop.recruit_reserve = pop.working_age * kLaborRecruitShare;
+	if (!pop.demography_ready) {
+		pop.children = 0.0;
+		pop.working_age = population * (kLaborWorkingAgeLow
+			+ (kLaborWorkingAgeHigh - kLaborWorkingAgeLow) * t);
+		pop.retirees = population * (kLaborRetireeLow
+			+ (kLaborRetireeHigh - kLaborRetireeLow) * t);
+		pop.recruit_reserve = pop.working_age * kLaborRecruitShare;
+	}
 	const double basic = kLaborBasicEduLow
 		+ (kLaborBasicEduHigh - kLaborBasicEduLow) * t;
 	double higher = kLaborHigherEduLow
@@ -689,7 +888,7 @@ void SimCore::demo_apply_labor_profile(DemoCity& city) {
 	const double country_participation = kLaborParticipationLow
 		+ (kLaborParticipationHigh - kLaborParticipationLow) * t;
 	const double scale = country_participation / kLaborParticipationByLevel[0];
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		pop.participation[level] = std::clamp(
 			kLaborParticipationByLevel[level] * scale, 0.35, 0.92);
 	}
@@ -698,14 +897,14 @@ void SimCore::demo_apply_labor_profile(DemoCity& city) {
 	const double students = pop.working_age * student_share;
 	pop.studying[0] = students * 0.60;
 	pop.studying[1] = students * 0.40;
-	pop.students = pop.studying[0] + pop.studying[1];
+	pop.students = pop.children + pop.studying[0] + pop.studying[1];
 	const double factor = labor_income_factor(city.external_income_index);
 	const auto minimum = ws_.minimum_wages.find(city.nation);
 	const double floor = minimum != ws_.minimum_wages.end()
 		? std::max(0.0, minimum->second) : 0.0;
 	pop.labor_force = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
-		const double studying = level < kDemoEducationLevels - 1
+	for (int level = 0; level < kEducationLevels; ++level) {
+		const double studying = level < kEducationLevels - 1
 			? pop.studying[level] : 0.0;
 		pop.labor_force_by_level[level] = std::max(0.0,
 			pop.education[level] * pop.participation[level] - studying);
@@ -729,7 +928,12 @@ void SimCore::demo_apply_labor_profile(DemoCity& city) {
 	if (pop.level_spend.size() != ws_.needs_levels.size()) {
 		pop.level_spend.assign(ws_.needs_levels.size(), 0.0);
 	}
-	demo_refresh_strata(pop);
-	demo_refresh_income_classes(city);
+	refresh_strata(pop);
+	refresh_income_classes(city);
+	// B2: semeia os quintis sem dado de nação (proxy do Gini declarado ou
+	// quintis iguais). `set_city_strata` (dado observado) re-semeia depois.
+	if (!pop.strata_ready) {
+		seed_strata(city, nullptr);
+	}
 }
 } // namespace ogs

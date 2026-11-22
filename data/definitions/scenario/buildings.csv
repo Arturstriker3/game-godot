@@ -3,7 +3,7 @@ ABW-ORA,abw_ora_wheat,Oranjestad — trigo,9.0
 AFG-HER,afg_her_wheat,Herat — trigo,172.3
 AFG-KAB,afg_kab_wheat,Cabul — trigo,1330.4
 AFG-KAN,afg_kan_wheat,Kandahar — trigo,157.0
-AFG-MAZ,afg_maz_wheat,Mazar-e Sharif — trigo,157.0
+AFG-MAZ,afg_maz_wheat,Mazar-e Sharif — trigo,145.3
 AGO-BEN,ago_ben_wheat,Benguela — trigo,411.0
 AGO-HUA,ago_hua_wheat,Huambo — trigo,178.6
 AGO-LUA,ago_lua_wheat,Luanda — trigo,832.9
@@ -163,7 +163,7 @@ CHN-DON,chn_don_wheat,Dongguan — trigo,2893.5
 CHN-GAR,chn_gar_wheat,Lepisosteidae — trigo,7.5
 CHN-GUA,chn_gua_wheat,Cantão — trigo,5603.0
 CHN-HAN,chn_han_wheat,Hangzhou — trigo,3580.8
-CHN-HAR,chn_har_wheat,Harbin — trigo,3003.0
+CHN-HAR,chn_har_wheat,Harbin — trigo,1680.0
 CHN-HEF,chn_hef_wheat,Hefei — trigo,2839.8
 CHN-JIN,chn_jin_wheat,Jinan — trigo,2505.8
 CHN-JIU,chn_jiu_wheat,Jiuquan — trigo,128.5
@@ -175,7 +175,7 @@ CHN-SHA,chn_sha_wheat,Xangai — trigo,7462.3
 CHN-SHE,chn_she_wheat,Shenyang — trigo,2721.0
 CHN-TIA,chn_tia_wheat,Tianjin — trigo,4159.8
 CHN-URU,chn_uru_wheat,Ürümqi — trigo,1216.2
-CHN-WEI,chn_wei_wheat,Weifang — trigo,2816.0
+CHN-WEI,chn_wei_wheat,Weifang — trigo,1012.5
 CHN-WUH,chn_wuh_wheat,Wuhan — trigo,4121.7
 CHN-WUW,chn_wuw_wheat,Wuwei — trigo,303.1
 CHN-XIA,chn_xia_wheat,Xiamen — trigo,4740.0
@@ -577,7 +577,7 @@ PAK-ISL,pak_isl_wheat,Islamabad — trigo,180.5
 PAK-KAR,pak_kar_wheat,Carachi — trigo,3487.3
 PAK-LAH,pak_lah_wheat,Laore — trigo,3901.2
 PAK-MUL,pak_mul_wheat,Multan — trigo,651.0
-PAK-PES,pak_pes_wheat,Pexauar — trigo,1427.6
+PAK-PES,pak_pes_wheat,Pexauar — trigo,652.5
 PAK-QUE,pak_que_wheat,Quetta — trigo,469.7
 PAK-SAR,pak_sar_wheat,Sargodha — trigo,292.8
 PAN-DAV,pan_dav_wheat,Davi — trigo,24.9
@@ -743,7 +743,7 @@ TUR-ADA,tur_ada_wheat,Adana — trigo,545.0
 TUR-ANK,tur_ank_wheat,Ancara — trigo,1055.2
 TUR-ANT,tur_ant_wheat,Antália — trigo,429.0
 TUR-BUR,tur_bur_wheat,Bursa — trigo,930.5
-TUR-DIY,tur_diy_wheat,Diyarbakır — trigo,550.1
+TUR-DIY,tur_diy_wheat,Diyarbakır — trigo,336.0
 TUR-GAZ,tur_gaz_wheat,Gaziantepe — trigo,666.7
 TUR-IST,tur_ist_wheat,Istambul — trigo,4710.5
 TUR-IZM,tur_izm_wheat,Esmirna — trigo,881.5
@@ -833,3 +833,18 @@ ZMB-LUS,zmb_lus_wheat,Lusaca — trigo,663.7
 ZMB-NDO,zmb_ndo_wheat,Ndola — trigo,188.3
 ZWE-BUL,zwe_bul_wheat,Bulawayo — trigo,199.8
 ZWE-HAR,zwe_har_wheat,Harare — trigo,462.8
+CHN-ZHE,chn_zhe_wheat,Zhengzhou — trigo,0.0
+CHN-SHI,chn_shi_wheat,Shijiazhuang — trigo,0.0
+CHN-CHA,chn_cha_wheat,Changsha — trigo,0.0
+CHN-NANN,chn_nann_wheat,Nanning — trigo,0.0
+IND-BHU,ind_bhu_wheat,Bhubaneswar — trigo,0.0
+CHN-NANC,chn_nanc_wheat,Nanchang — trigo,0.0
+IND-RAN,ind_ran_wheat,Ranchi — trigo,0.0
+CHN-GUI,chn_gui_wheat,Guiyang — trigo,0.0
+IND-THI,ind_thi_wheat,Thiruvananthapuram — trigo,0.0
+IND-GUW,ind_guw_wheat,Guwahati — trigo,0.0
+CHN-TAI,chn_tai_wheat,Taiyuan — trigo,0.0
+IND-CHA,ind_cha_wheat,Chandigarh — trigo,0.0
+IND-RAI,ind_rai_wheat,Raipur — trigo,0.0
+CHN-HOH,chn_hoh_wheat,Hohhot — trigo,0.0
+CHN-CHAN,chn_chan_wheat,Changchun — trigo,0.0

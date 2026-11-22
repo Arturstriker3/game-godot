@@ -1,0 +1,494 @@
+// Implementação de ai_government.h (A5): porte fiel do governo da economia
+// (`core/economy/ai/government_ai.gd`, 350 linhas) sobre o retrato do dia.
+//
+// Regra de ouro (a mesma de ai_private.cpp): cada função é a TRANSCRIÇÃO de uma
+// função do GDScript — mesma ordem de leitura, mesmas condições, mesmas
+// constantes e mesmas operações em ponto flutuante. Não introduza critério novo
+// nem reordene os testes: o aceite é a equivalência com o GDScript.
+//
+// Os únicos desvios são de CONTEXTO:
+//   * os dados do dia vêm da `AiView` congelada (ai_view.h) em vez do
+//     dicionário `status`/`light`: o `run_city` do GDScript rebinda o `light` na
+//     cidade, aqui a view já é por cidade;
+//   * `capital_cost_per_capacity` do status é a constante do núcleo
+//     (`kCapitalPerCapacity` = 2000), como no investidor privado;
+//   * o teto de terra vem de `City::land_capacity` (o mesmo valor que o
+//     `GeographyService.city_land_capacity_t_day` declara ao núcleo) e
+//     `has_any_deposit` é `ai_d_begin < ai_d_end` (== `d_offset`);
+//   * o contador de id e o dia da última obra vivem em `AiState`
+//     (`government_id`, `last_build_day`), nunca em membros deste struct;
+//   * nenhum log de decisão: `_log("avoid"/"rejected"/"build_state")` não tem
+//     efeito no mundo nem entra no save. O bloco 4 do GDScript (diagnóstico de
+//     desemprego) existe SÓ para esse log e por isso não foi portado — a
+//     constante fica declarada para documentar o que falta.
+//
+// Ordem das ações por cidade (== `_run_city`): segurança alimentar e, se ela
+// não construiu, mineração estratégica por margem decrescente. Uma ação por
+// cidade.
+
+#include "ai_government.h"
+
+#include "ai_phase.h"
+#include "ai_view.h"
+#include "../sim_constants.h"
+
+#include <algorithm>
+#include <cstddef>
+#include <string>
+#include <vector>
+
+namespace ogs {
+namespace {
+
+// Constantes de `government_ai.gd` (mesmos valores, mesmo significado).
+constexpr double kBudgetShare = 0.25;
+constexpr double kMinShortageTons = 1.0;
+constexpr double kMinStateCapacity = 2.0;
+constexpr double kMaxStateCapacity = 20.0;
+// Capacidade da mina estatal: o estado cobre uma base da demanda externa e o
+// capital privado o resto (× kExportCapacityFactor). D-091: SEM teto fixo de
+// 10 t/d para mineral de nicho — todos os minerais são dimensionados por
+// demanda e retorno, com a mesma mecânica de estágios/custo (D-086).
+constexpr double kExportCapacityFactor = 1.2;
+// D-086: payback aceito para a OBRA DE MINA (abrir ou aprofundar). 730 dias é o
+// mesmo horizonte estendido que o investidor privado usa para o enxofre (B4):
+// obra de mina é investimento longo; abaixo disso o retorno não paga o capital.
+constexpr double kMinePaybackDays = 730.0;
+// Só alimentava o log de diagnóstico do bloco 4 (não portado).
+constexpr double kHighUnemployment = 0.65;
+// Anti-loop de construção (B5): cooldown por cidade, teto por tipo e piso de
+// utilização média efetiva.
+constexpr double kMinAvgUtilization = 0.60;
+constexpr int kMaxBuildingsPerType = 6;
+constexpr int kBuildCooldownDays = 30;
+
+// Maiúsculas ASCII (== `String.to_upper()` para os ids de bem, que são ASCII)
+// usadas no id `STATE-<RECURSO>-<n>`.
+std::string ascii_upper(const std::string& text) {
+	std::string out = text;
+	for (char& letter : out) {
+		if (letter >= 'a' && letter <= 'z') {
+			letter = static_cast<char>(letter - 'a' + 'A');
+		}
+	}
+	return out;
+}
+
+// Bloqueio anti-loop (== `_build_gate`): cooldown por cidade, teto por tipo e
+// utilização efetiva. `true` = pode construir. O GDScript devolve o motivo
+// (usado só no log `avoid`); aqui o motivo não tem leitor.
+bool build_gate(AiContext& ctx, const std::string& city_id, int city_index,
+		int product, const AiBuildingIndex& index) {
+	const auto found = ctx.state.last_build_day.find(city_id);
+	// Ausência = última obra em `-kBuildCooldownDays` (== `.get(id, -30)`).
+	const int last_build = found == ctx.state.last_build_day.end()
+		? -kBuildCooldownDays
+		: found->second;
+	if (ctx.day - last_build < kBuildCooldownDays) {
+		return false;
+	}
+	if (ai_buildings_of_type(ctx.view, city_index, product, index)
+			>= kMaxBuildingsPerType) {
+		return false;
+	}
+	return ai_avg_utilization(ctx.view, city_index, product, index)
+		>= kMinAvgUtilization;
+}
+
+// true se a cidade já tem QUALQUER produtor de alimento da cesta — construção
+// (== `Templates.has_producer`) ou obra NOVA em voo
+// (== `Templates.has_pending_build`, §15/D-060: obra de comida em andamento já
+// é produtor futuro). O governo só cobre onde o capital privado não chega.
+bool has_food_producer(const AiContext& ctx, int city_index) {
+	const AiView& view = ctx.view;
+	for (const int index : ctx.templates.food) {
+		const AiTemplate& tmpl =
+			ctx.templates.all[static_cast<std::size_t>(index)];
+		const int product = tmpl.product;
+		if (ai_local_has(view, city_index, product)) {
+			return true;
+		}
+		if (ai_has_pending_build(view, city_index, product)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Cultura escolhida por `best_food_crop` (== o dicionário `best` do GDScript):
+// índice em `AiTemplates::all` e a pontuação aptidão × preço.
+struct FoodCrop {
+	int index = -1;
+	double score = 0.0;
+};
+
+// Cultura alimentar com melhor aptidão × preço na cidade (== `_best_food_crop`).
+// `false` quando nenhuma cultura é viável (aptidão <= 0 ou margem <= 0).
+// Primeira vence o empate (comparação estrita, como o `score > best_score`).
+bool best_food_crop(const AiContext& ctx, int city_index, FoodCrop& out) {
+	const AiView& view = ctx.view;
+	const AiCityRow& city =
+		view.city_rows[static_cast<std::size_t>(city_index)];
+	const std::vector<double>& suitability = city.suitability;
+	double best_score = -1.0;
+	for (const int index : ctx.templates.food) {
+		const AiTemplate& tmpl =
+			ctx.templates.all[static_cast<std::size_t>(index)];
+		const int product = tmpl.product;
+		if (product < 0 || product >= static_cast<int>(suitability.size())
+				|| suitability[static_cast<std::size_t>(product)] <= 0.0) {
+			continue;
+		}
+		const double price = ai_market(view, city_index, product, kAiPrice);
+		// Viabilidade: uma fazenda cujo preço × aptidão não paga o próprio custo
+		// variável faliria em 60 dias e não alimenta ninguém.
+		if (suitability[static_cast<std::size_t>(product)] * price
+				- ai_variable_cost(view, ctx.templates, city_index, tmpl) <= 0.0) {
+			continue;
+		}
+		// Prefere expandir a cultura já estabelecida (fix do churn de milho, B4).
+		const bool established = ai_local_has(view, city_index, product);
+		const double score = suitability[static_cast<std::size_t>(product)]
+			* price * (established ? 2.0 : 1.0);
+		if (out.index < 0 || score > best_score) {
+			best_score = score;
+			out.index = index;
+			out.score = score;
+		}
+	}
+	return out.index >= 0;
+}
+
+// Candidato de mineração: índice em `AiTemplates::all` e a margem ao preço de
+// exportação (com a profundidade da jazida em `variable_cost_mined`).
+struct MineCandidate {
+	int index = -1;
+	double margin = 0.0;
+};
+
+// D-086 — candidato de APROFUNDAMENTO: mina do Estado existente cujo estágio
+// atual produz menos que o próximo. `extra` = t/dia adicionadas (capacidade
+// nova a 100% menos a produção relativa de hoje), `cost` = obra e
+// `daily_profit` = retorno esperado por dia (margem × t extra).
+struct DeepenCandidate {
+	int index = -1;
+	std::string building_id;
+	double margin = 0.0;
+	double extra = 0.0;
+	double cost = 0.0;
+	double daily_profit = 0.0;
+};
+
+// Cooldown por cidade (== o primeiro gate de `_build_gate`): uma ação de
+// mineração por cidade a cada kBuildCooldownDays.
+bool build_cooldown_ready(const AiContext& ctx, const std::string& city_id) {
+	const auto found = ctx.state.last_build_day.find(city_id);
+	const int last_build = found == ctx.state.last_build_day.end()
+		? -kBuildCooldownDays : found->second;
+	return ctx.day - last_build >= kBuildCooldownDays;
+}
+
+// Plano de UMA cidade (== `_run_city`), mesma ordem e mesmas constantes.
+void plan_city(AiContext& ctx, int city_index) {
+	const AiView& view = ctx.view;
+	const AiCityRow& city = view.city_rows[static_cast<std::size_t>(city_index)];
+	const std::string city_id = city.id;
+	const double budget = city.government_budget;
+	const double capital_cost = kCapitalPerCapacity;
+	const double available = budget * kBudgetShare;
+	if (available <= 0.0) {
+		return;
+	}
+
+	// Índice O(1) das construções locais por produto (== `building_index`): UMA
+	// varredura por cidade, embora o laço de minerais o consulte por produto.
+	const AiBuildingIndex bindex = ai_build_index(view, city_index);
+
+	// 1. Segurança alimentar (B3): fome REAL (necessidade − consumo, em t-eq de
+	// grão) e nenhum produtor de alimento na cidade. O consumo (não a produção
+	// local) é o gatilho: cidade atendida por comércio regional não constrói
+	// fazenda redundante.
+	const double food_deficit = std::max(0.0,
+		ai_pop(view, city_index, kAiNeed) - ai_pop(view, city_index, kAiConsumed));
+	if (food_deficit >= kMinShortageTons
+			&& !has_food_producer(ctx, city_index)) {
+		FoodCrop best;
+		if (best_food_crop(ctx, city_index, best)) {
+			const AiTemplate& tmpl =
+				ctx.templates.all[static_cast<std::size_t>(best.index)];
+			const std::string& resource = tmpl.resource;
+			const int product = tmpl.product;
+			// Fator calórico > 0 para toda a cesta: a divisão nunca é por zero.
+			double capacity = std::clamp(food_deficit / tmpl.caloric_factor,
+				kMinStateCapacity, kMaxStateCapacity);
+			// Terra limitada: teto pela área cultivável menos o já instalado
+			// (mesma regra do investidor privado). Só quando há dado de área
+			// (land_cap > 0): cidade sem bacia não tem teto de terra.
+			const double land_cap = ai_land_capacity(view, city_index, product);
+			if (land_cap > 0.0) {
+				const double used = ai_existing_capacity(view, city_index, product);
+				capacity = std::min(capacity, std::max(0.0, land_cap - used));
+			}
+			if (capacity * capital_cost >= available) {
+				capacity = available / capital_cost;
+			}
+			if (capacity >= kMinStateCapacity) {
+				if (build_gate(ctx, city_id, city_index, product, bindex)) {
+					const double cost = capacity * capital_cost;
+					const std::string target = "STATE-" + ascii_upper(resource)
+						+ "-" + std::to_string(ctx.state.government_id);
+					const AiActionResult result = ai_emit_build(ctx, city_id,
+						target, resource, tmpl.input, product, capacity,
+						capacity * tmpl.jobs_per_ton, tmpl.wage,
+						capacity * tmpl.opex_per_ton, tmpl.input_ratio, "state",
+						cost, std::string());
+					if (result.error.empty()) {
+						// Id e cooldown só avançam no SUCESSO (como o GDScript).
+						ctx.state.government_id += 1;
+						ctx.state.last_build_day[city_id] = ctx.day;
+						return;
+					}
+				}
+				// Recusa (rejeição do núcleo ou gate): segue para a mineração.
+			}
+		}
+	}
+
+	// 2. Mineração estratégica (B4). Duas decisões por mineral, nesta ordem:
+	//    (a) APROFUNDAR a mina do Estado que já existe (D-086) — se o retorno
+	//        (margem × t/dia adicionadas) paga a obra dentro de kMinePaybackDays;
+	//    (b) ABRIR mina nova, quando não há produtor — capacidade dimensionada
+	//        pela demanda externa e pelo orçamento (D-091: sem teto fixo de
+	//        nicho; todos os minerais seguem a mesma régua de estágios/custo).
+	// Sem jazida declarada a cidade não pode abrir mina nenhuma: pula o laço
+	// inteiro (== `has_any_deposit`).
+	std::vector<DeepenCandidate> deepens;
+	std::vector<MineCandidate> candidates;
+	if (ai_d_begin(view, city_index) < ai_d_end(view, city_index)) {
+		for (const int index : ctx.templates.minerals) {
+			const AiTemplate& tmpl =
+				ctx.templates.all[static_cast<std::size_t>(index)];
+			const int product = tmpl.product;
+			if (product < 0
+					|| product >= static_cast<int>(city.suitability.size())
+					|| city.suitability[static_cast<std::size_t>(product)]
+						<= 0.0) {
+				continue;
+			}
+			if (!ai_has_deposit(view, city_index, product)) {
+				continue;
+			}
+			const double margin =
+				ai_market(view, city_index, product, kAiPrice)
+				- ai_variable_cost_mined(view, ctx.templates, city_index, tmpl);
+			if (margin <= 0.0
+					|| ai_market(view, city_index, product, kAiSurplus) > 0.0) {
+				continue;
+			}
+			// (a) Mina do Estado existente: aprofundar quando o estágio atual
+			// produz menos que o próximo e o retorno paga a obra. **Comida
+			// primeiro:** cidade que não cobre a cesta não desvia orçamento para
+			// obra de mina (a mesma prioridade da frota/moradia).
+			const int mine_at = ai_mine_index(view, city_index, product, true);
+			if (mine_at >= 0) {
+				if (food_deficit >= kMinShortageTons) {
+					continue;
+				}
+				const std::size_t at = static_cast<std::size_t>(mine_at);
+				const double cap = view.b_capacity[at];
+				const double factor = view.b_stage_factor[at];
+				const double extra = cap * (kMineDeepenCapacityFactor - factor);
+				if (cap > 0.0 && extra > 0.0) {
+					// D-086: o custo do aprofundamento vem do retrato do dia
+					// (`AiView::b_deepen_cost`, calculado pelo núcleo) — a IA não
+					// duplica a fórmula.
+					const double cost = ai_mine_deepen_cost(view, city_index,
+						mine_at);
+					const double daily_profit = margin * extra;
+					if (daily_profit > 0.0
+							&& cost / daily_profit <= kMinePaybackDays
+							&& cost <= available) {
+						DeepenCandidate candidate;
+						candidate.index = index;
+						candidate.building_id = view.b_id[at];
+						candidate.margin = margin;
+						candidate.extra = extra;
+						candidate.cost = cost;
+						candidate.daily_profit = daily_profit;
+						deepens.push_back(candidate);
+					}
+				}
+				continue;  // já há mina estatal deste mineral na cidade
+			}
+			// §15/D-060: obra de mina em andamento conta como produtor futuro.
+			if (ai_has_pending_build(view, city_index, product)) {
+				continue;
+			}
+			// Qualquer produtor (Estado, grupo ou firma) já atende a cidade: o
+			// governo não abre uma segunda mina do mesmo mineral (regra B4
+			// preservada — o `deepen` acima é o caminho da mina existente).
+			if (ai_buildings_of_type(view, city_index, product, bindex) > 0) {
+				continue;
+			}
+			// Abrir mina nova exige o retorno do capital (mesmo payback da obra).
+			if (margin * 1.0 < capital_cost / kMinePaybackDays) {
+				continue;
+			}
+			MineCandidate candidate;
+			candidate.index = index;
+			candidate.margin = margin;
+			candidates.push_back(candidate);
+		}
+	}
+	// Aprofundamento primeiro (a mina existe e está parada): ranking por retorno
+	// DIÁRIO esperado, decrescente; empate = ordem dos minerais (determinístico).
+	std::sort(deepens.begin(), deepens.end(),
+		[](const DeepenCandidate& a, const DeepenCandidate& b) {
+			return a.daily_profit > b.daily_profit;
+		});
+	for (const DeepenCandidate& candidate : deepens) {
+		if (!build_cooldown_ready(ctx, city_id)) {
+			break;
+		}
+		const AiActionResult result = ai_emit_deepen(ctx, city_id,
+			candidate.building_id);
+		if (result.error.empty()) {
+			ctx.state.last_build_day[city_id] = ctx.day;
+			return;
+		}
+		// Rejeitado (ex.: obra já em voo): tenta o próximo candidato.
+	}
+	// Ranking por margem decrescente: `std::sort` com o MESMO comparador do
+	// `sort_custom` (não-estável, como o do Godot; o desempate é irrelevante
+	// porque as margens são distintas nos dados).
+	std::sort(candidates.begin(), candidates.end(),
+		[](const MineCandidate& a, const MineCandidate& b) {
+			return a.margin > b.margin;
+		});
+	for (const MineCandidate& candidate : candidates) {
+		const AiTemplate& tmpl =
+			ctx.templates.all[static_cast<std::size_t>(candidate.index)];
+		const std::string& resource = tmpl.resource;
+		const int product = tmpl.product;
+		if (!build_gate(ctx, city_id, city_index, product, bindex)) {
+			continue;
+		}
+		// Capacidade dimensionada pela demanda externa (× 1,2): mina de demanda
+		// pequena não nasce grande. D-091: SEM teto fixo de nicho — todos os
+		// minerais seguem o mercado e o orçamento.
+		const double external_demand =
+			product >= 0
+				&& product < static_cast<int>(city.external_demand.size())
+			? city.external_demand[static_cast<std::size_t>(product)]
+			: 0.0;
+		double capacity = std::max(kMinStateCapacity,
+			external_demand * kExportCapacityFactor);
+		if (capacity * capital_cost >= available) {
+			capacity = available / capital_cost;
+		}
+		if (capacity < kMinStateCapacity) {
+			continue;
+		}
+		const double cost = capacity * capital_cost;
+		const std::string target = "STATE-" + ascii_upper(resource) + "-"
+			+ std::to_string(ctx.state.government_id);
+		// Extração primária: input -1 e insumo/produto 0.0 (literal do GDScript).
+		const AiActionResult result = ai_emit_build(ctx, city_id, target,
+			resource, -1, product, capacity, capacity * tmpl.jobs_per_ton,
+			tmpl.wage, capacity * tmpl.opex_per_ton, 0.0, "state", cost,
+			std::string());
+		if (result.error.empty()) {
+			ctx.state.government_id += 1;
+			ctx.state.last_build_day[city_id] = ctx.day;
+			return;
+		}
+		// Rejeitado: tenta o próximo candidato (ordem de margem).
+	}
+
+	// 3. Infraestrutura da região (B5). Determinística — prioridade pelo nível
+	// MAIS BAIXO (cobertura pior primeiro), empate na ordem estrada → energia →
+	// água; gatilho = déficit alimentar da REGIÃO (comida/segurança alimentar)
+	// OU êxodo já observado (migração acumulada > 0). Uma obra por cidade por
+	// cooldown; custo limitado a `available` (fração do orçamento nacional).
+	if (build_cooldown_ready(ctx, city_id)) {
+		const int infra_levels[kInfraTypeCount] = {
+			city.infra_road, city.infra_power, city.infra_water};
+		const bool trigger = city.region_food_deficit >= kMinShortageTons
+			|| city.migration_rural_in_total > 0.0;
+		if (trigger) {
+			int best_type = -1;
+			int best_level = kInfraMaxLevel + 1;
+			for (int t = 0; t < kInfraTypeCount; ++t) {
+				if (infra_levels[t] < kInfraMaxLevel
+						&& infra_levels[t] < best_level) {
+					best_level = infra_levels[t];
+					best_type = t;
+				}
+			}
+			if (best_type >= 0) {
+				const double cost = kInfraCostPerCapitaPerLevel
+					* std::max(0.0, city.region_pop);
+				if (cost > 0.0 && cost <= available) {
+					const AiActionResult infra_result =
+						ai_emit_infra(ctx, city_id, best_type);
+					if (infra_result.error.empty()) {
+						ctx.state.last_build_day[city_id] = ctx.day;
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	// 4. Concessão de mina estatal ociosa (B5). Determinística:
+	//    - alvo: mina do ESTADO com stage_factor <= kConcessionFloorStageFactor
+	//      (esgotada/ociosa, produz ~o piso de 5% — mesma régua da D-086);
+	//    - comprador: grupo PRIVADO NACIONAL (origin == nação, não estatal);
+	//      NUNCA estrangeiro (a política de IDE nunca bloqueia a concessão);
+	//    - preço = valor contábil (action_concede valida o caixa do comprador —
+	//      nunca concede abaixo do valor contábil);
+	//    - uma concessão por cidade por cooldown (mesmo gate das obras).
+	if (build_cooldown_ready(ctx, city_id)) {
+		for (int bi = ai_b_begin(view, city_index);
+				bi < ai_b_end(view, city_index); ++bi) {
+			if (view.b_owner[static_cast<std::size_t>(bi)] != "state") {
+				continue;
+			}
+			if (view.b_stage_factor[static_cast<std::size_t>(bi)]
+					> kConcessionFloorStageFactor) {
+				continue;  // mina produtiva ou construção que não é mina
+			}
+			const std::string building_id =
+				view.b_id[static_cast<std::size_t>(bi)];
+			for (const AiGroupRow& candidate : view.groups) {
+				if (candidate.state_owned
+						|| candidate.origin_nation != city.nation) {
+					continue;  // só grupo privado NACIONAL
+				}
+				const AiActionResult concede_result = ai_emit_concede(
+					ctx, city_id, building_id, candidate.id, 0.0);
+				if (concede_result.error.empty()) {
+					ctx.state.last_build_day[city_id] = ctx.day;
+					return;
+				}
+				// Rejeitado por caixa: tenta o próximo grupo nacional; erro de
+				// outro tipo (ex.: não estatal) não adianta repetir nesta mina.
+				if (concede_result.error != "caixa insuficiente do concessionário") {
+					break;
+				}
+			}
+		}
+	}
+}
+
+} // namespace
+
+void AiGovernment::run_city(AiContext& ctx, int city_index) {
+	if (city_index < 0 || city_index >= ctx.view.cities) {
+		return;
+	}
+	// O GDScript rebinda o `light` na cidade aqui; a view já é por cidade.
+	plan_city(ctx, city_index);
+}
+
+} // namespace ogs

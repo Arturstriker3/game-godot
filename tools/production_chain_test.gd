@@ -11,7 +11,7 @@ extends SceneTree
 ##      contrata sem passar da própria folha e o emprego nunca excede a
 ##      força de trabalho (mercado de trabalho por escolaridade, F7).
 ##
-## Cenário: AGRIA/PORTUS (initialize_demo), o mesmo dos testes de população e
+## Cenário: AGRIA/PORTUS (initialize_scenario), o mesmo dos testes de população e
 ## de porto. Estoque/caixa de partida são um FIXTURE explícito do teste (não
 ## dado de simulação): sem insumo estocado nenhuma receita pode rodar no dia 1.
 ##
@@ -88,20 +88,20 @@ func _product(id: String) -> int:
 ## construções (mesma ordem do autoload Economy).
 func _new_sim():
 	var sim = EconomySim.new()
-	sim.demo_set_goods(_goods)
-	sim.demo_set_recipes(_recipes)
-	sim.demo_set_needs(_needs)
+	sim.set_goods(_goods)
+	sim.set_recipes(_recipes)
+	sim.set_needs(_needs)
 	# §15: o teste mede a CADEIA de produção, não o cronograma de obra — liga a
-	# construção instantânea para `demo_build` materializar o prédio na hora.
-	sim.demo_set_instant_construction(true)
-	sim.initialize_demo()
+	# construção instantânea para `build` materializar o prédio na hora.
+	sim.set_instant_construction(true)
+	sim.initialize_scenario()
 	return sim
 
 
 ## Fixture: estoque de mercado/caixa de AGRIA antes do primeiro tick. AGRIA é
 ## o cenário sintético do teste; os números não representam o mundo real.
 func _fixture(sim, stocks: Dictionary, population: float = -1.0) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for city: Dictionary in snapshot.get("cities", []):
 		if String(city.get("id", "")) != "AGRIA":
 			continue
@@ -123,7 +123,7 @@ func _fixture(sim, stocks: Dictionary, population: float = -1.0) -> void:
 			market["stock"] = float(stocks[good])
 			markets[index] = market
 		city["markets"] = markets
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 
 
 ## O status diário publica só os escalares leves; o bloco pesado da cidade
@@ -161,9 +161,9 @@ func _test_flour_bread_chain() -> void:
 	_fixture(sim, {"wheat": 300.0})
 	var flour := _product("flour")
 	var bread := _product("bread")
-	var mill: Dictionary = sim.demo_build("AGRIA", "T-MILL", "flour", -1, flour,
+	var mill: Dictionary = sim.build("AGRIA", "T-MILL", "flour", -1, flour,
 		10.0, 0.0, 0.0, 0.0, 1.0, "private", 40000.0, "flour")
-	var bakery: Dictionary = sim.demo_build("AGRIA", "T-BAKERY", "bread", -1, bread,
+	var bakery: Dictionary = sim.build("AGRIA", "T-BAKERY", "bread", -1, bread,
 		8.0, 0.0, 0.0, 0.0, 1.0, "private", 32000.0, "bread")
 	if not bool(mill.get("created", false)):
 		_fail("cadeia: moinho nao criado (%s)" % String(mill.get("error", "")))
@@ -173,10 +173,10 @@ func _test_flour_bread_chain() -> void:
 		return
 
 	var wheat_before := 0.0
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	wheat_before = _stock(_city(sim, "AGRIA"), "wheat")
 	for day in 4:
-		status = sim.tick_demo()
+		status = sim.tick_day()
 		var agria := _city(sim, "AGRIA")
 		for good in ["wheat", "flour", "bran", "bread"]:
 			if _stock(agria, good) < -EPSILON:
@@ -222,7 +222,7 @@ func _test_multi_input_recipe() -> void:
 		"cast_parts": 1000.0,
 	})
 	var engine := _product("engine")
-	var built: Dictionary = sim.demo_build("AGRIA", "T-ENGINE", "engine", -1,
+	var built: Dictionary = sim.build("AGRIA", "T-ENGINE", "engine", -1,
 		engine, 10.0, 0.0, 0.0, 0.0, 1.0, "private", 60000.0, "engine_a")
 	if not bool(built.get("created", false)):
 		_fail("multi: fabrica de motor nao criada (%s)" % String(built.get("error", "")))
@@ -230,11 +230,11 @@ func _test_multi_input_recipe() -> void:
 
 	var inputs := ["steel", "mechanical_parts", "wires", "cast_parts"]
 	var before: Dictionary = {}
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	for good in inputs:
 		before[good] = _stock(_city(sim, "AGRIA"), good)
 	for day in 2:
-		status = sim.tick_demo()
+		status = sim.tick_day()
 		var agria := _city(sim, "AGRIA")
 		for good in inputs:
 			if _stock(agria, good) < -EPSILON:
@@ -266,18 +266,18 @@ func _test_recipe_alternative() -> void:
 	var sim = _new_sim()
 	_fixture(sim, {"wheat": 300.0, "maize": 100.0})
 	var feed := _product("feed")
-	var built: Dictionary = sim.demo_build("AGRIA", "T-FEED", "feed", -1, feed,
+	var built: Dictionary = sim.build("AGRIA", "T-FEED", "feed", -1, feed,
 		10.0, 0.0, 0.0, 0.0, 1.0, "private", 40000.0, "feed_a")
 	if not bool(built.get("created", false)):
 		_fail("alternativa: fabrica de racao nao criada (%s)" % String(built.get(
 			"error", "")))
 		return
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	var chosen := String(_building(_city(sim, "AGRIA"), "T-FEED").get("recipe", ""))
 	if chosen != "feed_a":
 		_fail("alternativa: com milho 42 e trigo 66,7, esperado feed_a (obtido %s)" % chosen)
-	sim.demo_price_shock("maize", 2.0)
-	status = sim.tick_demo()
+	sim.price_shock("maize", 2.0)
+	status = sim.tick_day()
 	chosen = String(_building(_city(sim, "AGRIA"), "T-FEED").get("recipe", ""))
 	if chosen != "feed_f":
 		_fail("alternativa: com milho a 84, esperado feed_f (obtido %s)" % chosen)
@@ -293,7 +293,7 @@ func _test_recipe_alternative() -> void:
 func _test_labor_priority() -> void:
 	var sim = _new_sim()
 	_fixture(sim, {}, 2000.0)
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var agria := _city(sim, "AGRIA")
 	var farm_before := _building(agria, "FARM-A-1")
 	if farm_before.is_empty():
@@ -302,13 +302,13 @@ func _test_labor_priority() -> void:
 	var farm_jobs := float(farm_before.get("jobs", 0.0))
 
 	var engine := _product("engine")
-	var built: Dictionary = sim.demo_build("AGRIA", "T-ENGINE-LABOR", "engine", -1,
+	var built: Dictionary = sim.build("AGRIA", "T-ENGINE-LABOR", "engine", -1,
 		engine, 20.0, 0.0, 0.0, 0.0, 1.0, "private", 120000.0, "engine_a")
 	if not bool(built.get("created", false)):
 		_fail("trabalho: fabrica nao criada (%s)" % String(built.get("error", "")))
 		return
 
-	status = sim.tick_demo()
+	status = sim.tick_day()
 	agria = _city(sim, "AGRIA")
 	var farm := _building(agria, "FARM-A-1")
 	var factory := _building(agria, "T-ENGINE-LABOR")

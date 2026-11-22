@@ -1,0 +1,210 @@
+{
+	"_meta": {
+		"dataset": "product_shelf_life",
+		"version": "g1",
+		"generated_by": "tools/build_agri_livestock.py",
+		"retrieved": "2026-11-18",
+		"products": 12,
+		"condition": "declarada por produto em `ambient_or_cold` (é a condição da fonte citada)",
+		"range_rule": "quando a fonte publica faixa, usa-se o limite superior; meses/anos viram dias com 30,4 d/mês e 365 d/ano, arredondado ao dia",
+		"grain_condition": "grãos e farinhas: ambiente seco (umidade <= 13%), que é a condição descrita nas fontes; carne: refrigerada"
+	},
+	"sources": {
+		"FOODKEEPER": {
+			"title": "FSIS - FoodKeeper Data (FoodKeeper-Data / foodkeeper.json)",
+			"publisher": "USDA Food Safety and Inspection Service",
+			"url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+			"alt_url": "https://web.archive.org/web/20250702182320id_/https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+			"license": "CC0 1.0 (data.gov)",
+			"accessed": "2026-11-18",
+			"note": "dataset publicado em data.gov; o host da FSIS responde 403 sem navegador"
+		},
+		"FAO_INPHO_WHEAT": {
+			"title": "Wheat post-harvest operations (INPhO compendium)",
+			"publisher": "FAO",
+			"url": "https://www.fao.org/fileadmin/user_upload/inpho/docs/Post_Harvest_Compendium_-_WHEAT.pdf",
+			"section": "capítulo de armazenagem (Storage)",
+			"accessed": "2026-11-18",
+			"note": "PDF; página não numerada na extração — citação pela seção e pela frase transcrita"
+		},
+		"FAO_INPHO_RICE": {
+			"title": "Rice post-harvest operations (INPhO compendium)",
+			"publisher": "FAO",
+			"url": "https://www.fao.org/fileadmin/user_upload/inpho/docs/Post_Harvest_Compendium_-_RICE.pdf",
+			"section": "capítulo de armazenagem (Storage)",
+			"accessed": "2026-11-18",
+			"note": "PDF; página não numerada na extração — citação pela seção e pela frase transcrita"
+		},
+		"FAO_INPHO_MAIZE": {
+			"title": "Maize post-harvest operations (INPhO compendium)",
+			"publisher": "FAO",
+			"url": "https://www.fao.org/fileadmin/user_upload/inpho/docs/Post_Harvest_Compendium_-_MAIZE.pdf",
+			"section": "capítulo de armazenagem (Storage)",
+			"accessed": "2026-11-18",
+			"note": "PDF; página não numerada na extração — citação pela seção e pela frase transcrita"
+		},
+		"FAO_INPHO_SOYBEAN": {
+			"title": "Soybean post-harvest operations (INPhO compendium)",
+			"publisher": "FAO",
+			"url": "https://www.fao.org/fileadmin/user_upload/inpho/docs/Post_Harvest_Compendium_-_SOYBEAN.pdf",
+			"section": "capítulo de armazenagem (Storage)",
+			"accessed": "2026-11-18",
+			"note": "citado só em soy.reason: a fonte não publica vida de prateleira em dias"
+		}
+	},
+	"products": {
+		"wheat": {
+			"in_game": true,
+			"tier": "raw",
+			"storage_days": 365,
+			"ambient_or_cold": "ambient_dry",
+			"data_status": "observed",
+			"source": "FAO_INPHO_WHEAT",
+			"url": "https://www.fao.org/fileadmin/user_upload/inpho/docs/Post_Harvest_Compendium_-_WHEAT.pdf",
+			"notes": "'For longer periods of storage from 4-12 months, the moisture content must be reduced to 13 percentage or below' — limite superior (12 meses) da faixa publicada para grão a <= 13% de umidade; a mesma página diz que a 14% o grão se conserva 2-3 meses; 12 meses -> 365 dias"
+		},
+		"rice": {
+			"in_game": true,
+			"tier": "raw",
+			"storage_days": 365,
+			"ambient_or_cold": "ambient_dry",
+			"data_status": "observed",
+			"source": "FAO_INPHO_RICE",
+			"url": "https://www.fao.org/fileadmin/user_upload/inpho/docs/Post_Harvest_Compendium_-_RICE.pdf",
+			"notes": "'Paddy is stored until the next harvest season or for 6-12 months' — limite superior (12 meses) da faixa publicada para arroz em casca; 12 meses -> 365 dias"
+		},
+		"maize": {
+			"in_game": true,
+			"tier": "raw",
+			"storage_days": 274,
+			"ambient_or_cold": "ambient_dry",
+			"data_status": "observed",
+			"source": "FAO_INPHO_MAIZE",
+			"url": "https://www.fao.org/fileadmin/user_upload/inpho/docs/Post_Harvest_Compendium_-_MAIZE.pdf",
+			"notes": "'season- long storage (6-9 months)' — limite superior (9 meses) da faixa publicada para armazenagem de safra; 9 meses -> 274 dias"
+		},
+		"potato": {
+			"in_game": true,
+			"tier": "raw",
+			"storage_days": 61,
+			"ambient_or_cold": "ambient",
+			"data_status": "observed",
+			"source": "FOODKEEPER",
+			"url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+			"notes": "FoodKeeper id 297 'Potatoes': DOP_Pantry 1-2 Months; storage_days = limite superior em dias"
+		},
+		"soy": {
+			"in_game": true,
+			"tier": "raw",
+			"storage_days": null,
+			"ambient_or_cold": "ambient_dry",
+			"data_status": "no_data",
+			"source": null,
+			"url": null,
+			"notes": "Nenhuma fonte acessível publica vida de prateleira em dias para soja a granel. O compêndio FAO de soja (INPhO, ver sources.FAO_INPHO_SOYBEAN) relata apenas uma DURAÇÃO de armazenagem praticada (8 meses da colheita ao plantio seguinte, Costa Rica), que não é vida útil medida; por isso o campo fica null.",
+			"reason": "Nenhuma fonte acessível publica vida de prateleira em dias para soja a granel. O compêndio FAO de soja (INPhO, ver sources.FAO_INPHO_SOYBEAN) relata apenas uma DURAÇÃO de armazenagem praticada (8 meses da colheita ao plantio seguinte, Costa Rica), que não é vida útil medida; por isso o campo fica null."
+		},
+		"flour": {
+			"in_game": true,
+			"tier": "semi",
+			"storage_days": 365,
+			"ambient_or_cold": "ambient_dry",
+			"data_status": "observed",
+			"source": "FOODKEEPER",
+			"url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+			"notes": "FoodKeeper id 222 'Flour — white': DOP_Pantry 6-12 Months; storage_days = limite superior em dias"
+		},
+		"bran": {
+			"in_game": true,
+			"tier": "semi",
+			"storage_days": null,
+			"ambient_or_cold": "ambient_dry",
+			"data_status": "no_data",
+			"source": null,
+			"url": null,
+			"notes": "O FoodKeeper (USDA FSIS) não tem entrada para farelo e os manuais FAO consultados não publicam vida de prateleira em dias para farelo. Campo null.",
+			"reason": "O FoodKeeper (USDA FSIS) não tem entrada para farelo e os manuais FAO consultados não publicam vida de prateleira em dias para farelo. Campo null."
+		},
+		"bread": {
+			"in_game": true,
+			"tier": "final",
+			"storage_days": 18,
+			"ambient_or_cold": "ambient",
+			"data_status": "observed",
+			"source": "FOODKEEPER",
+			"url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+			"notes": "FoodKeeper id 195 'Commercial bread products — including pan breads, flat breads, rolls, and buns': DOP_Pantry 14-18 Days; storage_days = limite superior em dias"
+		},
+		"bagged_rice": {
+			"in_game": true,
+			"tier": "final",
+			"storage_days": 730,
+			"ambient_or_cold": "ambient_dry",
+			"data_status": "observed",
+			"source": "FOODKEEPER",
+			"url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+			"notes": "FoodKeeper id 338 'Rice — white or wild': DOP_Pantry 2 Years; storage_days = limite superior em dias"
+		},
+		"feed": {
+			"in_game": true,
+			"tier": "semi",
+			"storage_days": null,
+			"ambient_or_cold": "ambient_dry",
+			"data_status": "no_data",
+			"source": null,
+			"url": null,
+			"notes": "Ração composta não está no FoodKeeper nem nos compêndios FAO usados; sem fonte acessível para um número de dias. Campo null.",
+			"reason": "Ração composta não está no FoodKeeper nem nos compêndios FAO usados; sem fonte acessível para um número de dias. Campo null."
+		},
+		"meat": {
+			"in_game": true,
+			"tier": "final",
+			"storage_days": 5,
+			"ambient_or_cold": "refrigerated",
+			"data_status": "observed",
+			"source": "FOODKEEPER",
+			"url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+			"notes": "FoodKeeper id 40 'Beef — steaks': DOP_Refrigerate 3-5 Days; storage_days = limite superior em dias"
+		},
+		"canned_food": {
+			"in_game": true,
+			"tier": "final",
+			"storage_days": 1825,
+			"ambient_or_cold": "ambient",
+			"data_status": "observed",
+			"source": "FOODKEEPER",
+			"url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+			"notes": "FoodKeeper id 372 'Canned goods — low acid (such as meat, poultry, fish, gravy, stew, soups, beans, carrots, corn, pasta, peas, potatoes, spinach)': DOP_Pantry 2-5 Years; storage_days = limite superior em dias"
+		}
+	},
+	"chain_effect": {
+		"note": "primário -> processado: a razão vem dos dias medidas acima (pairs abaixo), não de constante inventada; onde falta valor a comparação não é publicada",
+		"pairs": {
+			"wheat->flour": {
+				"raw_days": 365,
+				"processed_days": 365,
+				"ratio": 1.0
+			},
+			"wheat->bread": {
+				"raw_days": 365,
+				"processed_days": 18,
+				"ratio": 0.0493
+			},
+			"rice->bagged_rice": {
+				"raw_days": 365,
+				"processed_days": 730,
+				"ratio": 2.0
+			},
+			"maize->flour": {
+				"raw_days": 274,
+				"processed_days": 365,
+				"ratio": 1.3321
+			},
+			"meat->canned_food": {
+				"raw_days": 5,
+				"processed_days": 1825,
+				"ratio": 365.0
+			}
+		}
+	}
+}

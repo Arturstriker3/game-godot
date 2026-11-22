@@ -3,7 +3,7 @@ extends SceneTree
 ## Q-015 / frente C — auditoria de CAPACIDADE DAS ZONAS URBANAS no dia 0.
 ##
 ## Carrega o mundo real (834 cidades) com a camada urbana §19 exatamente como o
-## autoload do jogo faz (`demo_set_urban`) e imprime, para todas as cidades:
+## autoload do jogo faz (`set_urban`) e imprime, para todas as cidades:
 ##   ocupação RES/COM/IND (zone_occupancy), uso e capacidade de cada zona,
 ##   a distribuição p10/p50/p90 por faixa de população urbana e as contagens
 ##   acima de 0,90 e acima de 1,00.
@@ -89,27 +89,27 @@ func _run() -> void:
 		_fail("cenario vazio")
 		return
 	var sim = EconomySim.new()
-	if not sim.has_method("demo_set_urban") or not sim.has_method("demo_get_urban_city"):
+	if not sim.has_method("set_urban") or not sim.has_method("get_urban_city"):
 		_fail("binario sem a camada urbana (§19) — rode o build")
 		return
-	sim.demo_set_goods(goods)
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
+	sim.set_goods(goods)
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
 	var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
-	if sim.has_method("demo_set_sector_employment") and not sector.is_empty():
-		sim.demo_set_sector_employment(sector)
-	sim.initialize_demo_world(cities, ports, buildings)
-	sim.demo_set_urban(_load_dict(URBAN_LAND_PATH), _load_dict(HOUSING_CITY_PATH),
+	if sim.has_method("set_sector_employment") and not sector.is_empty():
+		sim.set_sector_employment(sector)
+	sim.initialize_world(cities, ports, buildings)
+	sim.set_urban(_load_dict(URBAN_LAND_PATH), _load_dict(HOUSING_CITY_PATH),
 		_load_dict(HOUSING_PATH), _load_dict(MUNICIPAL_FINANCE_PATH))
 	# A indústria de referência (§12.3) é semeada no PRIMEIRO tick, não na carga.
 	# Sem chamá-la, a foto do dia 0 mostraria IND = 0 por ausência do estoque
 	# inicial — não por não caber. Semeia antes de ler para medir o que existe.
-	if sim.has_method("demo_seed_industry"):
-		sim.demo_seed_industry()
+	if sim.has_method("seed_industry"):
+		sim.seed_industry()
 
 	var land: Dictionary = _load_dict(URBAN_LAND_PATH).get("cities", {})
 	var rows: Array = []
@@ -119,7 +119,7 @@ func _run() -> void:
 			"over_1": 0, "over_09": 0}
 	for city in cities:
 		var cid := String(city["id"])
-		var data: Dictionary = sim.demo_get_urban_city(cid)
+		var data: Dictionary = sim.get_urban_city(cid)
 		if data.is_empty():
 			continue
 		var occ: Array = data.get("zone_occupancy", [])

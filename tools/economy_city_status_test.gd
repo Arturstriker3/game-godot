@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## Teste do `get_city_status(city_id)` (S7-c, fatia final): o bloco por cidade
-## do `get_demo_status()` agora é LEVE (sem markets/pop/services/buildings/
+## do `get_status()` agora é LEVE (sem markets/pop/services/buildings/
 ## deposits) e o detalhe pesado vive em `get_city_status(id)`. Este guarda
 ## confere que (1) o detalhe sob demanda tem as chaves pesadas, (2) o bloco
 ## diário NÃO as tem, e (3) os escalares leves coincidem entre os dois. Roda
@@ -63,17 +63,17 @@ func _run() -> void:
 	if not sim.has_method("get_city_status"):
 		_fail("binário sem get_city_status (DLL desatualizada?)")
 		return
-	sim.demo_set_goods(_load_json_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_json_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_json_dict(NEEDS_PATH))
-	sim.demo_set_services(_load_json_dict(SERVICES_PATH))
-	sim.initialize_demo()
+	sim.set_goods(_load_json_array(GOODS_PATH))
+	sim.set_recipes(_load_json_array(RECIPES_PATH))
+	sim.set_needs(_load_json_dict(NEEDS_PATH))
+	sim.set_services(_load_json_dict(SERVICES_PATH))
+	sim.initialize_scenario()
 
 	# Roda alguns dias para os campos diários (mercados, POP, fluxos) mudarem.
 	for day in 3:
-		sim.tick_demo()
+		sim.tick_day()
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var cities: Array = status.get("cities", [])
 	if cities.is_empty():
 		_fail("status sem cidades")

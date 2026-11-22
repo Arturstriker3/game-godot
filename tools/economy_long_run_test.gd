@@ -26,18 +26,18 @@ var _population_initial := 0.0
 func _init() -> void:
 	_tag = _read_tag()
 	var sim = EconomySim.new()
-	sim.initialize_demo()
+	sim.initialize_scenario()
 	GeographyServiceScript.new().apply_to_sim(sim, [
 		{"id": "AGRIA", "center": AGRIA_CENTER},
 		{"id": "PORTUS", "center": PORTUS_CENTER},
 	])
 
-	var initial: Dictionary = sim.get_demo_status()
+	var initial: Dictionary = sim.get_status()
 	_money_initial = float(initial["money_total"])
 	_population_initial = _population(initial)
 
 	for day in DAYS:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		_check_invariants(sim, status, day + 1)
 		_record(sim, status, day + 1)
 		if (day + 1) % 30 == 0:

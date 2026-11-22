@@ -23,6 +23,8 @@
 #include "sim_core.h"
 
 #include "housing.h"
+
+#include "profiling.h"
 #include "sim_constants.h"
 
 #include <algorithm>
@@ -93,17 +95,18 @@ void SimCore::phase_housing() {
 			|| ws_.city_gov.size() < ws_.cities.size()) {
 		return;
 	}
+	OGS_SIM_ZONE(kPhaseHousing);
 
 	for (std::size_t city_index = 0; city_index < ws_.cities.size();
 			++city_index) {
-		DemoCity& city = ws_.cities[city_index];
+		City& city = ws_.cities[city_index];
 		CityHousing& house = ws_.housing[city_index];
 		CityLand& land = ws_.land[city_index];
 		CityGov& gov = ws_.city_gov[city_index];
-		DemoPop& pop = city.pop;
+		Pop& pop = city.pop;
 
 		// --- 1a. Depreciação do estoque (demolição/substituição) ------------
-		const double decay = kDemoUrbanDepreciationPerYear / 365.0;
+		const double decay = kUrbanDepreciationPerYear / 365.0;
 		for (int density = 0; density < DENSITY_COUNT; ++density) {
 			for (int tier = 0; tier < TIER_COUNT; ++tier) {
 				house.units[density][tier] =
@@ -116,7 +119,7 @@ void SimCore::phase_housing() {
 		// --- 1b. Obras de moradia: sem avanço aqui --------------------------
 		// A obra de moradia vive na FILA ÚNICA da cidade
 		// (`ws_.construction_projects`, kind CONSTRUCTION_HOUSING). O avanço é o
-		// tick do §15 (SimCore::demo_tick_construction) e a entrega entra por
+		// tick do §15 (SimCore::tick_construction) e a entrega entra por
 		// housing::apply_completed_project — não há lista própria a percorrer.
 
 		// --- 2. Oferta, demanda e base de domicílios ------------------------
@@ -201,7 +204,7 @@ void SimCore::phase_housing() {
 		const double food_unit_cost = pop.need > 1e-9
 			? safe_nonneg(pop.food_spend) / pop.need : 0.0;
 		const double food_reserve = safe_nonneg(pop.need)
-			* kDemoHousingFoodReserveDays * food_unit_cost;
+			* kHousingFoodReserveDays * food_unit_cost;
 		const double spendable = std::max(0.0,
 			safe_nonneg(pop.savings) - food_reserve);
 		// Unidades efetivamente alugadas (inquilinos) - só elas pagam.
@@ -229,16 +232,26 @@ void SimCore::phase_housing() {
 				double rent = safe_nonneg(house.rent[tier]);
 				const double ratio = base > 0.0 ? rent / base : 1.0;
 				house.rent_cap_ratio[tier] = std::clamp(ratio, 1.0, 2.5);
-				rent = income_per_household_month * kDemoHousingInitialBurden
+				rent = income_per_household_month * kHousingInitialBurden
 					* house.rent_cap_ratio[tier];
 				house.rent[tier] = safe_nonneg(rent);
 				house.price[tier] = house.rent[tier] * 12.0
-					/ kDemoUrbanCapRate;
+					/ kUrbanCapRate;
 			}
 			house.rent_anchored = true;
 		}
 
-		const bool month_close = ws_.day - house.month_marker >= 30;
+		// A6: o fechamento do mês (nível de aluguel, incorporadora, favela) roda no
+		// dia da cidade (`(dia - índice) % 30 == 0`), não para todas no dia 30. A
+		// cobrança do aluguel e o sinal de aperto continuam DIÁRIOS: é o que
+		// conserva dinheiro todo dia e mantém a comida à frente do aluguel.
+		// `month_period <= 1` = todas as cidades todo dia (interruptor de teste,
+		// mesmo sentido dos outros sistemas). `month_marker` guarda a janela
+		// acumulada do ônus.
+		const int month_period = ws_.cadence.monthly_period;
+		const bool month_close = month_period <= 1
+			? true
+			: cadence_due(ws_.day, city_index, month_period);
 		// Favela (ÚLTIMO caso): só quando não há vaga em padrão algum E a falta
 		// é da própria POP pobre (> 5% dos domicílios populares) E os pobres
 		// estão sem renda para o aluguel (aluguel popular no teto de ônus) ou a
@@ -246,12 +259,12 @@ void SimCore::phase_housing() {
 		// padrão médio não entra nesta conta (Q-015/B5).
 		const bool poor_priced_out = income_per_household_month > 1e-9
 			&& house.rent[TIER_POPULAR] >= income_per_household_month
-				* kDemoHousingRentBurdenCap;
+				* kHousingRentBurdenCap;
 		const bool slum_conditions =
-			vacancy_units <= households * kDemoHousingSlumVacancyMax
-			&& poor_shortage > kDemoHousingSlumShortage
+			vacancy_units <= households * kHousingSlumVacancyMax
+			&& poor_shortage > kHousingSlumShortage
 			&& (poor_priced_out
-				|| poor_shortage >= kDemoHousingSlumSevereShortage);
+				|| poor_shortage >= kHousingSlumSevereShortage);
 		house.stress_days = slum_conditions ? house.stress_days + 1 : 0;
 		if (month_close) {
 			// Fecha o mês: publica o ônus do mês QUE TERMINOU (acumulado cheio)
@@ -295,8 +308,8 @@ void SimCore::phase_housing() {
 				const double imbalance = demand[tier] > 1e-9
 					? (demand[tier] - supply[tier]) / demand[tier] : 0.0;
 				const double step = std::clamp(
-					imbalance * kDemoHousingRentElasticity,
-					-kDemoHousingRentStepMax, kDemoHousingRentStepMax);
+					imbalance * kHousingRentElasticity,
+					-kHousingRentStepMax, kHousingRentStepMax);
 				double rent = safe_nonneg(house.rent[tier]) * (1.0 + step);
 				// Piso da faixa de ônus: se o ônus de MERCADO do mês fechado
 				// (fatura ÷ renda dos inquilinos, independente do que foi pago)
@@ -304,23 +317,23 @@ void SimCore::phase_housing() {
 				// É a conversão do nível da fonte (renda de hoje), não um passo
 				// de mercado — o passo de mercado é o `step` acima.
 				if (market_burden > 0.0
-						&& market_burden < kDemoHousingBurdenFloor) {
+						&& market_burden < kHousingBurdenFloor) {
 					const double floor_rent = income_per_household_month
-						* kDemoHousingBurdenFloor * house.rent_cap_ratio[tier];
+						* kHousingBurdenFloor * house.rent_cap_ratio[tier];
 					rent = std::max(rent, floor_rent);
 				}
 				// Âncora de renda: o aluguel de um domicílio não passa de
-				// kDemoHousingRentBurdenCap da renda mensal do domicílio,
+				// kHousingRentBurdenCap da renda mensal do domicílio,
 				// ponderado pelo gradiente de padrão da fonte.
 				const double anchor = income_per_household_month
-					* kDemoHousingRentBurdenCap * house.rent_cap_ratio[tier];
+					* kHousingRentBurdenCap * house.rent_cap_ratio[tier];
 				if (anchor > 0.0) {
 					rent = std::min(rent, anchor);
 				}
 				house.rent[tier] = safe_nonneg(rent);
 				// §19.6: valor do imóvel = aluguel anual ÷ cap rate.
 				house.price[tier] = house.rent[tier] * 12.0
-					/ kDemoUrbanCapRate;
+					/ kUrbanCapRate;
 			}
 		}
 
@@ -331,16 +344,56 @@ void SimCore::phase_housing() {
 		// pagamento nunca passa da poupança acima da reserva de comida (se a
 		// comida consumiu o orçamento, o aluguel do dia fica em falta — comida
 		// primeiro). O que falta não vira dívida inventada.
-		const double paid = safe_nonneg(std::min(
+		const double due = safe_nonneg(std::min(
 			housing::daily_rent_obligation(ws_, city_index), spendable));
+		// B2: o aluguel é pago pelos INQUILINOS de cada quintil (posse do §19
+		// por estrato), limitado à poupança de cada um. O que a soma não cobre
+		// fica em falta — comida e reserva primeiro (nunca dívida inventada).
+		double paid = due;
+		if (due > 0.0 && pop.strata_ready) {
+			double weight[kIncomeStrata] = {};
+			double weight_total = 0.0;
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				weight[s] = std::max(0.0, pop.stratum_people[s])
+					* safe_unit(pop.stratum_tenure[s][TENURE_RENT]);
+				weight_total += weight[s];
+			}
+			if (weight_total <= 1e-9) {
+				for (int s = 0; s < kIncomeStrata; ++s) {
+					weight[s] = safe_nonneg(pop.stratum_savings[s]);
+					weight_total += weight[s];
+				}
+			}
+			double capacity[kIncomeStrata] = {};
+			double capacity_total = 0.0;
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				const double share = weight_total > 1e-9
+					? due * weight[s] / weight_total : 0.0;
+				capacity[s] = std::min(share,
+					safe_nonneg(pop.stratum_savings[s]));
+				capacity_total += capacity[s];
+			}
+			paid = std::min(due, capacity_total);
+			const double scale = capacity_total > 1e-9 && paid < capacity_total
+				? paid / capacity_total : 1.0;
+			pop.savings = 0.0;
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				const double amount = capacity[s] * scale;
+				pop.stratum_savings[s] = std::max(0.0,
+					pop.stratum_savings[s] - amount);
+				pop.stratum_rent_paid[s] += amount;
+				pop.savings += pop.stratum_savings[s];
+			}
+		} else if (paid > 0.0) {
+			pop.savings = std::max(0.0, pop.savings - paid);
+		}
 		house.rent_paid_today = paid;
 		if (paid > 0.0) {
-			pop.savings -= paid;
 			// Manutenção: os donos pagam a conservação do estoque ao setor de
 			// serviços (reparos). Fração declarada do aluguel — o valor de
 			// reposição do estoque é ordens de grandeza maior que a moeda em
 			// circulação, então a manutenção só pode sair da renda dele.
-			const double maintenance = paid * kDemoHousingMaintenanceShare;
+			const double maintenance = paid * kHousingMaintenanceShare;
 			const double net = paid - maintenance;
 			city.service_cash += maintenance;
 			double share_house = safe_unit(house.owner_share[OWNER_HOUSEHOLD]);
@@ -363,7 +416,7 @@ void SimCore::phase_housing() {
 			const double to_households = net * share_house;
 			const double to_firms = net * share_firm;
 			const double to_government = net * share_gov;
-			city.capital_income_next += to_households;
+			city.rent_income_next += to_households;
 			city.firm_cash += to_firms;
 			gov.cash += to_government;
 			house.rent_households_month += to_households;
@@ -380,7 +433,7 @@ void SimCore::phase_housing() {
 			// mundo) mais a terra da zona residencial (W1 move o land_price).
 			for (int tier = TIER_MEDIO; tier <= TIER_ALTO; ++tier) {
 				if (housing::project_count(ws_, city_index)
-						>= kDemoHousingMaxProjects) {
+						>= kHousingMaxProjects) {
 					break;
 				}
 				const double shortage = std::max(0.0, demand[tier] - supply[tier]);
@@ -395,11 +448,11 @@ void SimCore::phase_housing() {
 					continue;
 				}
 				if (house.price[tier]
-						< cost_unit * (1.0 + kDemoHousingDeveloperMargin)) {
+						< cost_unit * (1.0 + kHousingDeveloperMargin)) {
 					continue;
 				}
 				const double short_batch = std::min(shortage,
-					demand[tier] * kDemoHousingBatchShare);
+					demand[tier] * kHousingBatchShare);
 				// O caixa das firmas limita o lote: a incorporadora não abre
 				// obra que não pode pagar (sem isso a falta de caixa viraria
 				// um no-op silencioso em start_project). Mínimo de 1 unidade.
@@ -417,11 +470,11 @@ void SimCore::phase_housing() {
 			// a poupança acima da reserva de comida (a comida vem primeiro).
 			if (popular_shortage > 0.02
 					&& housing::project_count(ws_, city_index)
-						< kDemoHousingMaxProjects) {
+						< kHousingMaxProjects) {
 				const double cost_unit = housing::build_cost_unit(
 					ws_, city_index, DENSITY_LOW, TIER_POPULAR);
 				const double units = std::min(popular_shortage_units,
-					supply[TIER_POPULAR] * kDemoHousingSelfBuildShare);
+					supply[TIER_POPULAR] * kHousingSelfBuildShare);
 				const double cost = units * cost_unit;
 				// Não compromete mais de um quarto da folga de poupança.
 				if (cost > 0.0 && cost * 4.0 <= spendable) {
@@ -433,17 +486,17 @@ void SimCore::phase_housing() {
 
 		// --- 7. Favela (ÚLTIMO caso) ---------------------------------------
 		// Só abre área informal quando a falta popular é grande, não há vaga em
-		// padrão algum e o aperto já dura kDemoHousingSlumDays dias seguidos.
-		if (month_close && house.stress_days >= kDemoHousingSlumDays
+		// padrão algum e o aperto já dura kHousingSlumDays dias seguidos.
+		if (month_close && house.stress_days >= kHousingSlumDays
 				&& slum_conditions) {
 			double added = std::min(popular_shortage_units,
-				demand[TIER_POPULAR] * kDemoHousingSlumShare);
+				demand[TIER_POPULAR] * kHousingSlumShare);
 			added = safe_nonneg(added);
 			if (added >= 1.0) {
 				house.units[DENSITY_LOW][TIER_POPULAR] += added;
 				house.informal_units = safe_nonneg(house.informal_units + added);
 				land.informal_km2 = safe_nonneg(land.informal_km2
-					+ added * kDemoUrbanUnitM2[DENSITY_LOW][TIER_POPULAR]
+					+ added * kUrbanUnitM2[DENSITY_LOW][TIER_POPULAR]
 						/ 1.0e6);
 				// Posse: a unidade informal sai do aluguel/da casa própria e a
 				// linha do padrão volta a somar 1.
@@ -464,7 +517,7 @@ void SimCore::phase_housing() {
 				// Penalidade declarada de satisfação/saúde (moradia precária),
 				// proporcional à fatia informal e limitada a 5 p.p.
 				pop.needs_satisfaction = safe_unit(pop.needs_satisfaction
-					- kDemoHousingSlumSatisfaction * informal);
+					- kHousingSlumSatisfaction * informal);
 			}
 		}
 
@@ -472,7 +525,7 @@ void SimCore::phase_housing() {
 		// 0..1: falta de unidade no padrão popular + ônus de aluguel acima do
 		// teto. É o insumo do W4 (migração) e da UI.
 		const double burden_excess = income_per_household_month > 0.0
-			? std::max(0.0, house.rent_burden - kDemoHousingRentBurdenCap) : 0.0;
+			? std::max(0.0, house.rent_burden - kHousingRentBurdenCap) : 0.0;
 		house.housing_stress = safe_unit(
 			popular_shortage + burden_excess * 2.0);
 	}
@@ -497,15 +550,15 @@ double build_cost_unit(const WorldState& ws, std::size_t city_index,
 	// (m² construído ÷ FAR da densidade), não a área construída. Sem o FAR o
 	// custo da terra em zona de torre (FAR 6) entrava 6× acima do lote real e
 	// o preço do solo calibrado (Q-015-C) re-quebrava o gate do incorporador.
-	const double far = std::max(1.0, kDemoUrbanFar[d]);
-	const double land_area_m2 = kDemoUrbanUnitM2[d][t] / far;
-	const double unit_value = rent * 12.0 / kDemoUrbanCapRate;
+	const double far = std::max(1.0, kUrbanFar[d]);
+	const double land_area_m2 = kUrbanUnitM2[d][t] / far;
+	const double unit_value = rent * 12.0 / kUrbanCapRate;
 	const double land_cost = std::min(land_area_m2 * std::max(0.0, land.land_price[ZONE_RES]),
-		kDemoHousingLandShareMax * unit_value);
+		kHousingLandShareMax * unit_value);
 	if (rent <= 0.0 && land_cost <= 0.0) {
 		return 0.0;  // sem preço nem terra: ausência explícita
 	}
-	return rent * 12.0 * kDemoHousingBuildCostYears + land_cost;
+	return rent * 12.0 * kHousingBuildCostYears + land_cost;
 }
 
 double daily_rent_obligation(const WorldState& ws, std::size_t city_index) {
@@ -513,7 +566,7 @@ double daily_rent_obligation(const WorldState& ws, std::size_t city_index) {
 		return 0.0;  // sem dado urbano: ausência explícita
 	}
 	const CityHousing& house = ws.housing[city_index];
-	const DemoCity& city = ws.cities[city_index];
+	const City& city = ws.cities[city_index];
 	const double stock_total = stock_units(house);
 	if (stock_total <= 0.0 || !house.rent_anchored) {
 		// Sem nível de aluguel em XGS (fonte ainda não reancorada) não há
@@ -545,7 +598,7 @@ double daily_rent_obligation(const WorldState& ws, std::size_t city_index) {
 	// dos inquilinos. É o valor que a fase de renda desconta do orçamento
 	// discricionário e que a fase de moradia transfere aos donos.
 	return safe_nonneg(std::min(bill_month / 30.0,
-		tenant_income_day * kDemoHousingRentBurdenCap));
+		tenant_income_day * kHousingRentBurdenCap));
 }
 
 int project_count(const WorldState& ws, std::size_t city_index) {
@@ -554,7 +607,7 @@ int project_count(const WorldState& ws, std::size_t city_index) {
 	}
 	const std::string& city_id = ws.cities[city_index].id;
 	int count = 0;
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (project.city == city_id && project.kind == CONSTRUCTION_HOUSING) {
 			++count;
 		}
@@ -577,7 +630,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 		return false;  // obra sem dono não existe
 	}
 	// Limite de obras de moradia SIMULTÂNEAS da cidade na fila única.
-	if (project_count(ws, city_index) >= kDemoHousingMaxProjects) {
+	if (project_count(ws, city_index) >= kHousingMaxProjects) {
 		return false;
 	}
 	const int d = std::clamp(density, 0, DENSITY_COUNT - 1);
@@ -586,14 +639,14 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 	if (cost_unit <= 0.0) {
 		return false;
 	}
-	DemoCity& city = ws.cities[city_index];
-	DemoConstructionProject project;
+	City& city = ws.cities[city_index];
+	ConstructionProject project;
 	// Id determinístico por cidade/dono/padrão/densidade/dia: o mesmo dia não
 	// abre duas obras iguais (o id duplicado é recusado abaixo).
 	project.id = "HSG-" + city.id + "-" + std::to_string(owner) + "-"
 		+ std::to_string(t) + "-" + std::to_string(d) + "-"
 		+ std::to_string(ws.day);
-	for (const DemoConstructionProject& existing : ws.construction_projects) {
+	for (const ConstructionProject& existing : ws.construction_projects) {
 		if (existing.id == project.id) {
 			return false;  // id duplicado: nada é pago
 		}
@@ -636,14 +689,16 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 	// O dono paga o custo inteiro na abertura; o add credita a parcela de
 	// TERRA à prefeitura e reserva o resto (material + mão de obra).
 	if (owner == HOUSING_PROJECT_SELF) {
-		city.pop.savings = safe_nonneg(city.pop.savings) - total_cost;
+		// B2: a autoconstrução sai da poupança das famílias rateada pelos
+		// quintis (a soma dos estratos acompanha o escalar).
+		core.charge_households(city.pop, total_cost);
 	} else if (owner == HOUSING_PROJECT_GOVERNMENT) {
 		ws.city_gov[city_index].cash =
 			safe_nonneg(ws.city_gov[city_index].cash) - total_cost;
 	} else {
 		city.firm_cash -= total_cost;
 	}
-	core.demo_add_construction_project(project);
+	core.add_construction_project(project);
 	return true;
 }
 
@@ -652,7 +707,7 @@ bool has_social_project(const WorldState& ws, std::size_t city_index) {
 		return false;
 	}
 	const std::string& city_id = ws.cities[city_index].id;
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (project.city == city_id && project.kind == CONSTRUCTION_HOUSING
 				&& project.housing_owner == HOUSING_PROJECT_GOVERNMENT) {
 			return true;
@@ -688,7 +743,7 @@ bool start_social_housing(WorldState& ws, SimCore& core,
 }
 
 void apply_completed_project(WorldState& ws,
-		const DemoConstructionProject& project) {
+		const ConstructionProject& project) {
 	const auto found = ws.city_lookup.find(project.city);
 	if (found == ws.city_lookup.end() || found->second < 0
 			|| static_cast<std::size_t>(found->second) >= ws.housing.size()) {

@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## Diagnóstico de falências e fome (só leitura). Roda o MESMO pipeline do jogo
-## (initialize_demo_world + goods + GeographyService + EconomicAI) e registra,
+## (initialize_world + goods + GeographyService + EconomicAI) e registra,
 ## dia a dia, que construções desapareceram (falência) com o último estado
 ## conhecido; no fim, tabela por nação/cidade do alimento atendido e do caixa.
 ##
@@ -49,8 +49,8 @@ func _run() -> void:
 	var sim = EconomySim.new()
 	var geo = GeographyServiceScript.new()
 	geo.load_data()
-	sim.initialize_demo_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
-	sim.demo_set_goods(goods)
+	sim.initialize_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
+	sim.set_goods(goods)
 	geo.apply_to_sim(sim, _cities_with_center(cities))
 	var ai = EconomicAIScript.new()
 	ai.setup(sim, geo)
@@ -59,7 +59,7 @@ func _run() -> void:
 	var closures: Array = []
 	var first_seen: Dictionary = {}
 	for day in _days:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		ai.run(int(status.get("day", 0)), status)
 		var current := {}
 		for city in status.get("cities", []):
@@ -88,7 +88,7 @@ func _run() -> void:
 					gone["product"] = product_name.call(int(gone["output"]))
 					closures.append(gone)
 		previous = current
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var final := _snapshot_by_nation(sim, status)
 	var summary := _summarize(closures, final)
 	_write_json(OUT_PATH, {"meta": {"days": _days,

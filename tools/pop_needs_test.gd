@@ -7,7 +7,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/pop_needs_test.gd
 ##
 ## Cenário controlado: uma cidade sem construções. Os estoques de mercado e a
-## poupança/governo são injetados por `demo_to_dict()`/`demo_from_dict()` (o save
+## poupança/governo são injetados por `to_dict()`/`from_dict()` (o save
 ## é o contrato público do estado), então o teste mede exatamente a regra da
 ## fase 5 — sem depender de produção, frete ou IA.
 
@@ -90,13 +90,13 @@ func _product(id: String) -> int:
 ## Cria um mundo de uma cidade com os dados reais das cadeias/necessidades.
 func _new_sim() -> Object:
 	var sim := EconomySim.new()
-	sim.demo_set_goods(_goods)
-	sim.demo_set_recipes(_recipes)
-	sim.demo_set_needs(_needs)
+	sim.set_goods(_goods)
+	sim.set_recipes(_recipes)
+	sim.set_needs(_needs)
 	# O teste mede a REGRA do nível de consumo, não a calibração da folga de
 	# custo de vida do jogo: com folga 1,0 a renda injetada define o nível
-	# diretamente (a folga calibrada vive em demo_income_basket_margin_).
-	sim.demo_set_balance({"income_basket_margin": 1.0})
+	# diretamente (a folga calibrada vive em income_basket_margin_).
+	sim.set_balance({"income_basket_margin": 1.0})
 	var city := {
 		"id": CITY_ID,
 		"name": "Need City",
@@ -108,7 +108,7 @@ func _new_sim() -> Object:
 		"x": 100.0,
 		"y": 100.0,
 	}
-	sim.initialize_demo_world([city], [], [])
+	sim.initialize_world([city], [], [])
 	return sim
 
 
@@ -123,7 +123,7 @@ func _new_sim() -> Object:
 func _inject(sim: Object, stocks: Dictionary, savings: float,
 		government: float, durable: Dictionary = {},
 		service_share: float = 0.0, wage_levels: Array = []) -> void:
-	var save: Dictionary = sim.demo_to_dict()
+	var save: Dictionary = sim.to_dict()
 	var city: Dictionary = save["cities"][0]
 	city["external_income_index"] = 0.0
 	city["government_budget"] = government
@@ -153,7 +153,7 @@ func _inject(sim: Object, stocks: Dictionary, savings: float,
 	if not city["pop"].has("needs"):
 		city["pop"]["needs"] = {}
 	city["pop"]["needs"]["durable_stock"] = durable.duplicate(true)
-	sim.demo_from_dict(save)
+	sim.from_dict(save)
 
 
 ## Mercado e POP são detalhe pesado: o status diário publica só os escalares
@@ -197,9 +197,9 @@ func _test_substitution(only: String) -> void:
 	var stocks := {only: 1000.0}
 	# Orçamento próprio folgado: o teste mede substituição, não renda.
 	_inject(sim, stocks, 100000.0, 1000000.0)
-	var before: Dictionary = sim.get_demo_status()
+	var before: Dictionary = sim.get_status()
 	var money := float(before["money_total"])
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	_check_conservation(sim, status, money, "substituição " + only)
 	var pop := _pop(sim)
 	var need := float(pop["need"])
@@ -226,31 +226,49 @@ func _test_levels_by_income() -> void:
 		"premium_spirits": 100.0,
 	}
 	var low := _new_sim()
-	# Governo cobre só a cesta alimentar (o alimento mais barato por caloria
-	# declarado nos dados é a carne): a POP não tem orçamento para life.
+	# Governo com 1M (provisão pública de serviços) e POP sem emprego nem
+	# poupança injetada: resta à POP o que o governo/serviços cobrem. A cesta
+	# alimentar vem do estoque de carne (o alimento mais barato por caloria).
 	_inject(low, {"meat": 1000.0}, 0.0, 1000000.0)
 	# O nível de renda calculado no dia vale para o dia SEGUINTE (contrato do
 	# núcleo), então o teste roda dois dias: o primeiro ancora a renda, o
 	# segundo consome conforme ela.
-	low.tick_demo()
-	var low_status: Dictionary = low.tick_demo()
+	low.tick_day()
+	var low_status: Dictionary = low.tick_day()
 	var low_pop := _pop(low)
 	if int(low_pop["needs_level"]) != 1:
 		_fail("renda baixa: nível %d (esperado 1 — só basic)" % int(
 			low_pop["needs_level"]))
-	if float(low_pop["life_satisfaction"]) > 0.001:
-		_fail("renda baixa: satisfação life %.3f sem orçamento" % float(
+	# B2 (D-083): o consumo é por QUINTIL e limitado pelo orçamento de cada um.
+	# `income_strata.level` é o TETO que o estrato pode pagar, não o que ele
+	# consumiu; o teste confere que as cinco faixas existem no status e mede a
+	# satisfação EFETIVA: sem bens de life/luxury no estoque, o agregado fica
+	# perto da parcela coberta por provisão pública/serviços (medido 0,20 da
+	# B7), nunca no padrão de renda alta (1,0 com estoque e renda).
+	var low_levels: Array = (low_pop.get("income_strata", {}) as Dictionary).get(
+			"level", [])
+	if low_levels.size() != 5:
+		_fail("renda baixa: status sem income_strata.level[5]")
+	if float(low_pop["life_satisfaction"]) > 0.25:
+		_fail("renda baixa: satisfação life %.3f (esperado <= 0.25, só o topo)" % float(
 			low_pop["life_satisfaction"]))
+	if float(low_pop["luxury_satisfaction"]) > 0.01:
+		_fail("renda baixa: satisfação luxury %.3f sem orçamento" % float(
+			low_pop["luxury_satisfaction"]))
 
 	var high := _new_sim()
 	_inject(high, stocks, 100000000.0, 1000000.0, {}, 0.30,
 		[0.30, 0.35, 0.40])
-	high.tick_demo()
-	var high_status: Dictionary = high.tick_demo()
+	high.tick_day()
+	var high_status: Dictionary = high.tick_day()
 	var high_pop := _pop(high)
 	if int(high_pop["needs_level"]) < 2:
 		_fail("renda alta: nível %d (esperado >= 2)" % int(
 			high_pop["needs_level"]))
+	var high_levels: Array = (high_pop.get("income_strata", {}) as Dictionary).get(
+			"level", [])
+	if high_levels.size() != 5:
+		_fail("renda alta: status sem income_strata.level[5]")
 	if float(high_pop["life_satisfaction"]) <= 0.5:
 		_fail("renda alta: satisfação life %.3f baixa com estoque e renda" % float(
 			high_pop["life_satisfaction"]))
@@ -265,6 +283,10 @@ func _test_levels_by_income() -> void:
 		float(low_pop["disposable"]), float(low_pop["savings"]),
 		float(low_pop["food_spend"]), float(low_pop["needs_spend"]),
 		float(low_pop["basic_satisfaction"]), float(low_pop["life_satisfaction"])])
+	print("[pop_needs] teto por quintil: baixa=%s alta=%s | luxury baixa=%.2f alta=%.2f" % [
+		str(low_levels), str(high_levels),
+		float(low_pop["luxury_satisfaction"]),
+		float(high_pop["luxury_satisfaction"])])
 
 
 ## 365 dias sem compras: o estoque durável perde exatamente 10%.
@@ -272,16 +294,16 @@ func _test_durable_decay() -> void:
 	var sim := _new_sim()
 	var durable := {"furniture": 100.0}
 	_inject(sim, {}, 0.0, 0.0, durable)
-	var before: Dictionary = sim.get_demo_status()
+	var before: Dictionary = sim.get_status()
 	var money := float(before["money_total"])
 	var initial := float(_pop(sim)["durable_stock"])
 	if absf(initial - 100.0) > 0.01:
 		_fail("duráveis: estoque inicial %.3f (esperado 100)" % initial)
 	for day in 365:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		if day % 90 == 0:
 			_check_conservation(sim, status, money, "duráveis dia %d" % (day + 1))
-	var after: Dictionary = sim.get_demo_status()
+	var after: Dictionary = sim.get_status()
 	_check_conservation(sim, after, money, "duráveis 365 d")
 	var remaining := float(_pop(sim)["durable_stock"])
 	if absf(remaining - 90.0) > 0.01:
@@ -294,11 +316,11 @@ func _test_durable_decay() -> void:
 func _test_government_consumption() -> void:
 	var sim := _new_sim()
 	_inject(sim, {"paper": 1000.0, "computer": 1000.0}, 0.0, 1000000.0)
-	var before: Dictionary = sim.get_demo_status()
+	var before: Dictionary = sim.get_status()
 	var money := float(before["money_total"])
 	var gov_before := float((before["cities"][0] as Dictionary)["government_budget"])
 	var firm_before := float((before["cities"][0] as Dictionary)["firm_cash"])
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	_check_conservation(sim, status, money, "governo")
 	var city: Dictionary = status["cities"][0]
 	var gov_spend := float(city.get("government_goods_spend", 0.0))
@@ -325,7 +347,7 @@ func _test_demand_signal() -> void:
 	# Poupança acima do colchão alimentar (10 anos de cesta) para a POP ter
 	# orçamento discricionário e registrar a demanda desejada.
 	_inject(sim, {"bread": 1000.0}, 100000000.0, 1000000.0)
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	for id in ["clothes", "medicine", "phone", "car"]:
 		var market := _market(sim, id)
 		if float(market.get("desired", 0.0)) <= 0.0:

@@ -14,7 +14,6 @@ extends SceneTree
 ## Uso: godot --headless --path . --script res://tools/economy_deposit_ownership_test.gd
 
 const GeoScript := preload("res://core/economy/geography_service.gd")
-const AIScript := preload("res://core/economy/ai/economic_ai.gd")
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
@@ -245,19 +244,22 @@ func _check_conservation(geo, city_list: Array) -> void:
 
 func _check_extractors(geo, city_list: Array, cities_raw: Array) -> void:
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(cities_raw, _read_json_array(PORTS_PATH),
-			geo.resolve_initial_farms(_read_json_array(BUILDINGS_PATH), cities_raw))
-	sim.demo_set_goods(_read_json_array(GOODS_PATH))
+	# Mesmo caminho do jogo (`core/economy/economy.gd`): fazenda inicial +
+	# minas semeadas pela produção real (D-086/D-087), então a IA.
+	var buildings: Array = geo.resolve_initial_farms(
+			_read_json_array(BUILDINGS_PATH), cities_raw)
+	if geo.has_method("resolve_initial_mines"):
+		buildings = geo.resolve_initial_mines(buildings, cities_raw)
+	sim.initialize_world(cities_raw, _read_json_array(PORTS_PATH), buildings)
+	sim.set_goods(_read_json_array(GOODS_PATH))
 	geo.apply_to_sim(sim, city_list)
-	var ai = AIScript.new()
-	if not ai.setup(sim, geo):
-		_fail("IA: geografia não carregou")
-		return
+	# A5/D-075: a IA de investimento roda dentro do núcleo, no fim do dia. As
+	# minas semeadas (D-086/D-087) e as construídas entram pelo mesmo caminho.
+	sim.set_ai_enabled(true)
 	for _day in DAYS:
-		var status: Dictionary = sim.tick_demo()
-		ai.run(int(status["calendar_day"]))
+		sim.tick_day()
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var mines := 0
 	for city in status.get("cities", []):
 		var city_id := String(city.get("id", ""))

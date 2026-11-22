@@ -1,7 +1,13 @@
 #pragma once
-// Serialização save/load (S6 do docs/economy/core_refactor_plan.md). Vive em
-// edge/ (não sim/) porque mexe com Dictionary/Array/String do Godot, que
-// violam o gate §2.2 de sim/. A fachada EconomySim delega demo_to_dict para cá.
+// Adaptador save/load da fachada Godot (A1a: núcleo C++ puro).
+//
+// A serialização NÃO mora mais aqui: o formato do save é o de
+// `sim/save_state.cpp` (to_value/from_value, porte do save v14 sobre o shim
+// `sim/save_value.h`) e o bloco estático das definições é o de
+// `sim/save_definitions.cpp`. Este arquivo é só a PONTE Dictionary Godot <->
+// `ogs::save::Value` (edge/value_bridge.*), com as mesmas assinaturas que a
+// fachada EconomySim sempre usou. Vive em edge/ (não em sim/) porque toca
+// tipos do Godot, que violam o gate §2.2 de sim/.
 
 #include <godot_cpp/variant/dictionary.hpp>
 

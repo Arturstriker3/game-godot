@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Medição de rebalanceio após a subdivisão de províncias (Fase B).
 ##
-## Roda o MESMO pipeline do jogo ao vivo (initialize_demo_world + goods +
+## Roda o MESMO pipeline do jogo ao vivo (initialize_world + goods +
 ## GeographyService + EconomicAI) por N dias e grava, num JSON:
 ##   - fome por nação (média e pior cidade) no fim;
 ##   - geografia por cidade (províncias da bacia, área cultivável, aptidão do
@@ -108,19 +108,19 @@ func _run() -> void:
 	var sim = EconomySim.new()
 	# F2/F3: bens, receitas e necessidades ANTES do mundo — os ids de insumo e
 	# as categorias das POPs são resolvidos na carga.
-	sim.demo_set_goods(goods)
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	sim.initialize_demo_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
+	sim.set_goods(goods)
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	sim.initialize_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
 	geo.apply_to_sim(sim, _cities_with_center(cities))
 	var ai = EconomicAIScript.new()
 	ai.setup(sim, geo)
 
 	for day in _days:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		ai.run(int(status.get("day", 0)), status)
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var nation_cities := {}
 	var city_rows := {}
 	var nation_rows := {}

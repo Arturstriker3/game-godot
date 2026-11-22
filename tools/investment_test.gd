@@ -56,12 +56,12 @@ func _load_json(path: String) -> Variant:
 
 func _make_world() -> Dictionary:
 	var sim = EconomySim.new()
-	sim.demo_set_goods(_load_json(GoodsPath))
-	sim.demo_set_recipes(_load_json(RecipesPath))
-	sim.demo_set_needs(_load_json(NeedsPath))
+	sim.set_goods(_load_json(GoodsPath))
+	sim.set_recipes(_load_json(RecipesPath))
+	sim.set_needs(_load_json(NeedsPath))
 	# §15: o teste mede propriedade/IDE, não cronograma de obra — construção
 	# instantânea para o ativo nascer na hora.
-	sim.demo_set_instant_construction(true)
+	sim.set_instant_construction(true)
 	var cities := [
 		{"id": "A1", "name": "Alfa", "nation": "AAA", "home_nation": "AAA",
 			"population": 900000.0, "sim_population": 500000.0, "x": 1200.0,
@@ -76,10 +76,10 @@ func _make_world() -> Dictionary:
 		{"id": "FB", "city_id": "B1", "resource": "wheat",
 			"output_tons_per_day": 50.0, "aptitude": 1.0},
 	]
-	sim.initialize_demo_world(cities, [], buildings)
-	sim.demo_set_suitability("A1", "wheat", 1.0)
-	sim.demo_set_suitability("B1", "wheat", 1.0)
-	var groups: Array = sim.demo_get_groups()
+	sim.initialize_world(cities, [], buildings)
+	sim.set_suitability("A1", "wheat", 1.0)
+	sim.set_suitability("B1", "wheat", 1.0)
+	var groups: Array = sim.get_groups()
 	var group_of := {}
 	for group: Dictionary in groups:
 		group_of[String(group["origin_nation"])] = String(group["id"])
@@ -89,7 +89,7 @@ func _make_world() -> Dictionary:
 
 
 func _group(sim: Object, origin: String) -> Dictionary:
-	for group: Dictionary in sim.demo_get_groups():
+	for group: Dictionary in sim.get_groups():
 		if String(group.get("origin_nation", "")) == origin:
 			return group
 	return {}
@@ -102,7 +102,7 @@ func _fund(sim: Object, origin: String, amount: float) -> String:
 	if group_id.is_empty():
 		_fail("financiamento: sem grupo de origem %s" % origin)
 		return ""
-	var result: Dictionary = sim.demo_fund_group(group_id, amount)
+	var result: Dictionary = sim.fund_group(group_id, amount)
 	if not bool(result.get("funded", false)):
 		_fail("financiamento: %s não recebeu %.0f (%s)" % [
 			group_id, amount, String(result.get("error", ""))])
@@ -115,12 +115,12 @@ func _fund(sim: Object, origin: String, amount: float) -> String:
 ## chama `run_day` num dia que caia na vez dele; sem tick entre a leitura e a
 ## decisão, o índice é o mesmo que a IA enxerga.
 func _decide_group(investor: Object, sim: Object, group_id: String) -> bool:
-	var groups: Array = sim.demo_get_groups()
+	var groups: Array = sim.get_groups()
 	for index in groups.size():
 		if String((groups[index] as Dictionary).get("id", "")) != group_id:
 			continue
 		investor.run_day(GroupInvestorScript.INTERVAL_DAYS
-			+ index % GroupInvestorScript.INTERVAL_DAYS, sim.get_demo_status())
+			+ index % GroupInvestorScript.INTERVAL_DAYS, sim.get_status())
 		return true
 	_fail("decisão: grupo %s não aparece no ranking" % group_id)
 	return false
@@ -140,7 +140,7 @@ func _buildings(sim: Object, city_id: String) -> Array:
 
 
 func _money(sim: Object) -> float:
-	return float(sim.get_demo_status().get("money_total", 0.0))
+	return float(sim.get_status().get("money_total", 0.0))
 
 
 func _test_invest_where_return_pays() -> void:
@@ -148,11 +148,11 @@ func _test_invest_where_return_pays() -> void:
 	var sim = world["sim"]
 	var aaa: String = _fund(sim, "AAA", 200000.0)
 	# A1 escasso e caro; B1 com estoque e barato (não deve atrair comida).
-	sim.demo_set_market_stock("A1", "wheat", 0.0)
-	sim.demo_set_market_stock("B1", "wheat", 4000.0)
-	sim.demo_set_market_price("A1", "wheat", 90.0)
-	sim.demo_set_market_price("B1", "wheat", 25.0)
-	var status: Dictionary = sim.tick_demo()
+	sim.set_market_stock("A1", "wheat", 0.0)
+	sim.set_market_stock("B1", "wheat", 4000.0)
+	sim.set_market_price("A1", "wheat", 90.0)
+	sim.set_market_price("B1", "wheat", 25.0)
+	var status: Dictionary = sim.tick_day()
 	var investor = GroupInvestorScript.new()
 	investor.setup(sim, null)
 	var group := _group(sim, "AAA")
@@ -186,28 +186,28 @@ func _test_fdi_avoids_tariff() -> void:
 	var sim = world["sim"]
 	var aaa: String = _fund(sim, "AAA", 300000.0)
 	# BBB tarifa 40% sobre AAA. A1 abundante; B1 escasso e caro.
-	sim.demo_set_tariff("BBB", "AAA", "*", 0.40)
-	sim.demo_set_market_stock("A1", "wheat", 5000.0)
-	sim.demo_set_market_price("A1", "wheat", 22.0)
-	sim.demo_set_market_stock("B1", "wheat", 0.0)
-	sim.demo_set_market_price("B1", "wheat", 100.0)
+	sim.set_tariff("BBB", "AAA", "*", 0.40)
+	sim.set_market_stock("A1", "wheat", 5000.0)
+	sim.set_market_price("A1", "wheat", 22.0)
+	sim.set_market_stock("B1", "wheat", 0.0)
+	sim.set_market_price("B1", "wheat", 100.0)
 	# Caixa do anfitrião: BBB importa comida, mas paga a conta com exportação
 	# não alimentar (mercado externo declarado). Sem isso a cidade-firma fica
 	# abaixo do capital de giro e o lucro do ativo estrangeiro não sai do
 	# anfitrião — o núcleo só paga dividendo do excedente de caixa (nunca
 	# cria dinheiro). Cenário análogo a um exportador de commodity que atrai IDE.
-	sim.demo_set_external_demand("B1", "clothes", 400.0)
-	sim.demo_set_market_stock("B1", "clothes", 6000.0)
-	sim.tick_demo()
+	sim.set_external_demand("B1", "clothes", 400.0)
+	sim.set_market_stock("B1", "clothes", 6000.0)
+	sim.tick_day()
 	var investor = GroupInvestorScript.new()
 	investor.setup(sim, null)
 	var group := _group(sim, "AAA")
 	var opportunity: Dictionary = investor.best_opportunity(
-		group, sim.get_demo_status().get("cities", []), sim.get_demo_status(), true)
+		group, sim.get_status().get("cities", []), sim.get_status(), true)
 	if opportunity.is_empty() or not bool(opportunity.get("foreign", false)):
 		_fail("IDE: tarifa alta não levou o grupo a investir no anfitrião")
 		return
-	var result: Dictionary = sim.demo_group_invest(aaa, "B1", "FDI-A-1", "wheat",
+	var result: Dictionary = sim.group_invest(aaa, "B1", "FDI-A-1", "wheat",
 		int(opportunity["product"]), float(opportunity["capacity"]), "", "")
 	if not bool(result.get("created", false)):
 		_fail("IDE: núcleo recusou o investimento estrangeiro: %s" % [
@@ -222,8 +222,8 @@ func _test_fdi_avoids_tariff() -> void:
 	var money_before := _money(sim)
 	# Roda dias para o lucro repatriar.
 	for day in 12:
-		sim.tick_demo()
-	var investment: Dictionary = sim.demo_get_investment_status()
+		sim.tick_day()
+	var investment: Dictionary = sim.get_investment_status()
 	var flows: Array = investment.get("flows", [])
 	var repatriated := 0.0
 	for row: Dictionary in flows:
@@ -241,8 +241,8 @@ func _test_closed_policy_blocks() -> void:
 	var world := _make_world()
 	var sim = world["sim"]
 	var aaa: String = _fund(sim, "AAA", 200000.0)
-	sim.demo_set_fdi_policy("BBB", "food", "closed")
-	var result: Dictionary = sim.demo_group_invest(aaa, "B1", "FDI-CLOSED",
+	sim.set_fdi_policy("BBB", "food", "closed")
+	var result: Dictionary = sim.group_invest(aaa, "B1", "FDI-CLOSED",
 		"wheat", 0, 5.0, "", "")
 	if bool(result.get("created", false)):
 		_fail("política: setor fechado aceitou investimento estrangeiro")
@@ -258,13 +258,13 @@ func _test_joint_venture_share() -> void:
 	var sim = world["sim"]
 	var aaa: String = _fund(sim, "AAA", 200000.0)
 	var bbb: String = _fund(sim, "BBB", 100000.0)
-	sim.demo_set_fdi_policy("BBB", "food", "joint_venture", 0.30)
-	var without_partner: Dictionary = sim.demo_group_invest(aaa, "B1",
+	sim.set_fdi_policy("BBB", "food", "joint_venture", 0.30)
+	var without_partner: Dictionary = sim.group_invest(aaa, "B1",
 		"JV-NO-PARTNER", "wheat", 0, 5.0, "", "")
 	if bool(without_partner.get("created", false)):
 		_fail("JV: investimento sem parceiro local foi aceito")
 	var partner_before := float(_group(sim, "BBB").get("cash", 0.0))
-	var result: Dictionary = sim.demo_group_invest(aaa, "B1", "JV-OK", "wheat", 0,
+	var result: Dictionary = sim.group_invest(aaa, "B1", "JV-OK", "wheat", 0,
 		5.0, "", bbb)
 	if not bool(result.get("created", false)):
 		_fail("JV: investimento com parceiro local recusado (%s)" % [
@@ -289,12 +289,12 @@ func _test_privatization_transfers_cash() -> void:
 	var world := _make_world()
 	var sim = world["sim"]
 	var aaa: String = _fund(sim, "AAA", 200000.0)
-	var state: Dictionary = sim.demo_create_state_company("AAA", "Estatal Alfa",
+	var state: Dictionary = sim.create_state_company("AAA", "Estatal Alfa",
 		50000.0)
 	if not bool(state.get("created", false)):
 		_fail("privatização: estatal não foi criada")
 		return
-	var built: Dictionary = sim.demo_build("A1", "STATE-A1", "wheat", -1, 0,
+	var built: Dictionary = sim.build("A1", "STATE-A1", "wheat", -1, 0,
 		10.0, 60.0, 2.0, 25.0, 0.0, "state", 20000.0)
 	if not bool(built.get("created", false)):
 		_fail("privatização: ativo estatal não foi criado (%s)" % [
@@ -302,14 +302,14 @@ func _test_privatization_transfers_cash() -> void:
 		return
 	var money_before := _money(sim)
 	var cash_before := float(_group(sim, "AAA").get("cash", 0.0))
-	var budget_before := float(_city_status(sim.get_demo_status(), "A1").get(
+	var budget_before := float(_city_status(sim.get_status(), "A1").get(
 		"government_budget", 0.0))
-	var result: Dictionary = sim.demo_privatize("A1", "STATE-A1", aaa)
+	var result: Dictionary = sim.privatize("A1", "STATE-A1", aaa)
 	if not bool(result.get("ok", false)):
 		_fail("privatização: recusada (%s)" % String(result.get("error", "")))
 		return
 	var cash_after := float(_group(sim, "AAA").get("cash", 0.0))
-	var budget_after := float(_city_status(sim.get_demo_status(), "A1").get(
+	var budget_after := float(_city_status(sim.get_status(), "A1").get(
 		"government_budget", 0.0))
 	var price := float(result.get("price", 0.0))
 	if cash_before - cash_after < price - 1.0:
@@ -333,15 +333,15 @@ func _test_nationalization_drops_fdi() -> void:
 	var world := _make_world()
 	var sim = world["sim"]
 	var aaa: String = _fund(sim, "AAA", 200000.0)
-	sim.demo_set_fdi_policy("BBB", "food", "open")
-	var built: Dictionary = sim.demo_group_invest(aaa, "B1", "FDI-NAT", "wheat",
+	sim.set_fdi_policy("BBB", "food", "open")
+	var built: Dictionary = sim.group_invest(aaa, "B1", "FDI-NAT", "wheat",
 		0, 6.0, "", "")
 	if not bool(built.get("created", false)):
 		_fail("nacionalização: não foi possível criar o ativo estrangeiro (%s)" % [
 			String(built.get("error", ""))])
 		return
 	var money_before := _money(sim)
-	var result: Dictionary = sim.demo_nationalize("B1", "FDI-NAT")
+	var result: Dictionary = sim.nationalize("B1", "FDI-NAT")
 	if not bool(result.get("ok", false)):
 		_fail("nacionalização: recusada (%s)" % String(result.get("error", "")))
 		return
@@ -354,11 +354,11 @@ func _test_nationalization_drops_fdi() -> void:
 	if owner_kind != "state":
 		_fail("nacionalização: dono publicado '%s' (esperado state)" % owner_kind)
 	var confidence := 1.0
-	var second: Dictionary = sim.demo_group_invest(aaa, "B1", "FDI-AFTER", "wheat",
+	var second: Dictionary = sim.group_invest(aaa, "B1", "FDI-AFTER", "wheat",
 		0, 5.0, "", "")
 	if bool(second.get("created", false)):
 		_fail("nacionalização: IDE novo foi aceito apesar da confiança derrubada")
-	var investment: Dictionary = sim.demo_get_investment_status()
+	var investment: Dictionary = sim.get_investment_status()
 	var nations: Dictionary = investment.get("nations", {})
 	confidence = float((nations.get("BBB", {}) as Dictionary).get(
 		"confidence", 1.0))
@@ -373,12 +373,12 @@ func _test_money_conserved_over_days() -> void:
 	var sim = world["sim"]
 	var aaa: String = _fund(sim, "AAA", 200000.0)
 	var bbb: String = _fund(sim, "BBB", 100000.0)
-	sim.demo_set_tariff("BBB", "AAA", "*", 0.25)
-	sim.demo_set_market_stock("B1", "wheat", 0.0)
-	sim.demo_set_market_price("B1", "wheat", 85.0)
+	sim.set_tariff("BBB", "AAA", "*", 0.25)
+	sim.set_market_stock("B1", "wheat", 0.0)
+	sim.set_market_price("B1", "wheat", 85.0)
 	var start := _money(sim)
 	for day in 40:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		if not (status.get("invariant_violations", []) as Array).is_empty():
 			_fail("conservação: invariante violado no dia %d: %s" % [
 				day + 1, String(status["invariant_violations"][0])])
@@ -393,7 +393,7 @@ func _test_money_conserved_over_days() -> void:
 	if applied <= 0:
 		_fail("nomes: nenhum nome de grupo aplicado")
 	var names: Dictionary = {}
-	for group: Dictionary in sim.demo_get_groups():
+	for group: Dictionary in sim.get_groups():
 		var name := String(group.get("name", ""))
 		if name.is_empty():
 			_fail("nomes: grupo %s sem nome" % String(group.get("id", "")))

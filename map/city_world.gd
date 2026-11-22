@@ -415,6 +415,8 @@ var _capital_by_id := {}
 ## Filtro de recursos da legenda: {} = todos; senão kind -> bool.
 var _resource_filter: Dictionary = {}
 var _last_cities: Array = []
+## A4: última coluna `nation` vista (o território só recalcula quando muda).
+var _last_nations := PackedStringArray()
 var _minimap_texture: ImageTexture
 ## Layout de rótulos: métricas de tela do último frame (relatório do teste).
 var _label_rects: Array[Dictionary] = []
@@ -720,31 +722,39 @@ func current_mode() -> String:
 
 
 ## Reaplica os valores dos modos quando a economia avança; sem reconstruir nada.
-func refresh_modes(cities: Array) -> void:
+func refresh_modes(columns: Dictionary) -> void:
+	if columns.is_empty():
+		return
 	if _mode_layer != null:
-		_mode_layer.refresh(cities)
-	_refresh_city_indicators(cities)
-	_refresh_territory(cities)
+		_mode_layer.refresh(columns)
+	_refresh_city_indicators(columns)
+	_sync_territory(columns)
 
 
-## Atualiza o dicionário da cidade (industrialização, população etc.) e troca o
-## glifo de prédio/fábrica quando o status cruza o limiar. O MultiMesh já nasce
-## dimensionado para o roster inteiro, então nada é recriado.
-func _refresh_city_indicators(cities: Array) -> void:
+## A4: industrialização/nação por cidade vêm das colunas do núcleo; o registro
+## do mapa guarda o dicionário de build e só tem estes campos atualizados.
+func _refresh_city_indicators(columns: Dictionary) -> void:
+	var ids: PackedStringArray = columns.get("id", PackedStringArray())
+	var industrialization: PackedFloat64Array = columns.get("industrialization",
+			PackedFloat64Array())
+	var nations: PackedStringArray = columns.get("nation", PackedStringArray())
 	var by_id := {}
-	for city in cities:
-		if city is Dictionary:
-			by_id[String(city.get("id", ""))] = city
+	for index in ids.size():
+		by_id[ids[index]] = index
 	var changed := false
 	for record in _city_nodes:
-		var city: Dictionary = by_id.get(String(record.get("id", "")), {})
-		if city.is_empty():
+		var index: int = int(by_id.get(String(record.get("id", "")), -1))
+		if index < 0:
 			continue
-		record["city"] = city
+		var city: Dictionary = record.get("city", {})
+		var value := industrialization[index] \
+				if index < industrialization.size() else 0.0
+		city["industrialization"] = value
+		if index < nations.size():
+			city["nation"] = nations[index]
 		if bool(record.get("capital", false)):
 			continue
-		var industrial := float(city.get("industrialization", 0.0)) \
-				>= INDUSTRY_ICON_THRESHOLD
+		var industrial := value >= INDUSTRY_ICON_THRESHOLD
 		if industrial == bool(record.get("industrial", false)):
 			continue
 		record["industrial"] = industrial
@@ -754,6 +764,38 @@ func _refresh_city_indicators(cities: Array) -> void:
 		changed = true
 	if changed:
 		_icons_dirty = true
+
+
+## A4: o território só muda quando o dono da cidade muda. Compara a coluna
+## `nation` com a última vista e atualiza os registros estáticos do build —
+## sem reconstruir 834 Dictionary por dia.
+func _sync_territory(columns: Dictionary) -> void:
+	if _territory == null:
+		return
+	var nations: PackedStringArray = columns.get("nation", PackedStringArray())
+	if nations == _last_nations and _last_cities.size() == nations.size():
+		return
+	_last_nations = nations
+	if _last_cities.size() != nations.size():
+		# Roster mudou: reconstrói as linhas mínimas que o território lê
+		# (nunca `null` no lugar de um Dictionary).
+		var ids: PackedStringArray = columns.get("id", PackedStringArray())
+		var xs: PackedFloat64Array = columns.get("x", PackedFloat64Array())
+		var ys: PackedFloat64Array = columns.get("y", PackedFloat64Array())
+		_last_cities.clear()
+		for index in nations.size():
+			_last_cities.append({
+				"id": ids[index] if index < ids.size() else "",
+				"nation": nations[index],
+				"home_nation": nations[index],
+				"x": xs[index] if index < xs.size() else 0.0,
+				"y": ys[index] if index < ys.size() else 0.0,
+			})
+	else:
+		for index in nations.size():
+			if _last_cities[index] is Dictionary:
+				_last_cities[index]["nation"] = nations[index]
+	_refresh_territory(_last_cities)
 
 
 ## Ponto (px do mapa) onde a câmera começa: MEDIANA das cidades, não a média —
@@ -1838,6 +1880,10 @@ func set_nation_highlight(tag: String) -> void:
 
 func _init_territory(cities: Array) -> void:
 	_last_cities = cities.duplicate()
+	_last_nations = PackedStringArray()
+	for city in _last_cities:
+		if city is Dictionary:
+			_last_nations.append(String(city.get("nation", "")))
 	_territory = TerritoryMapScript.new()
 	_territory.load_data()
 	_territory.assign(cities)

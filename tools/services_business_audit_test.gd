@@ -125,24 +125,24 @@ func _run_audit() -> void:
 		return
 
 	var sim = EconomySim.new()
-	sim.demo_set_goods(goods)
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	sim.demo_set_services(_load_dict(SERVICES_PATH))
-	sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
+	sim.set_goods(goods)
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	sim.set_services(_load_dict(SERVICES_PATH))
+	sim.set_currencies(_load_dict(CURRENCIES_PATH))
 	_sector_data = _load_dict(SECTOR_EMPLOYMENT_PATH)
 	if not _sector_data.is_empty():
-		sim.demo_set_sector_employment(_sector_data)
+		sim.set_sector_employment(_sector_data)
 
 	var geo := GeographyServiceScript.new()
 	geo.load_data()
 	buildings = geo.resolve_initial_farms(buildings, cities)
-	sim.initialize_demo_world(cities, ports, buildings)
+	sim.initialize_world(cities, ports, buildings)
 	geo.apply_to_sim(sim, _cities_with_center(cities))
 	var ai := EconomicAIScript.new()
 	ai.setup(sim, geo)
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var money_initial := float(status.get("money_total", 0.0))
 
 	# Retrato do DIA 0 (semente, antes de qualquer tick): é aqui que a captura
@@ -151,7 +151,7 @@ func _run_audit() -> void:
 
 	# Loop de 90 dias com IA (mesmo pipeline do jogo ao vivo).
 	for day in _days:
-		status = sim.tick_demo()
+		status = sim.tick_day()
 		ai.run(int(status.get("day", day + 1)), status)
 		_collect_day(sim, status, day)
 
@@ -163,8 +163,8 @@ func _run_audit() -> void:
 		_fail("dinheiro não conservado em %d dias: %.2f -> %.2f (drift %.4f)" % [
 			_days, money_initial, money_final, drift])
 
-	var bankruptcies := int(sim.demo_get_service_bankruptcies())
-	var business_count := int(sim.demo_get_service_business_count())
+	var bankruptcies := int(sim.get_service_bankruptcies())
+	var business_count := int(sim.get_service_business_count())
 	if business_count <= 0:
 		_fail("nenhum negócio de serviço no mundo após %d dias" % _days)
 
@@ -187,7 +187,7 @@ func _snapshot_seed(sim: Object, status: Dictionary) -> void:
 		var tag := String(city.get("nation", ""))
 		if tag not in FOCUS_TAGS:
 			continue
-		var detail: Dictionary = sim.demo_get_services_detail(String(city.get("id", "")))
+		var detail: Dictionary = sim.get_services_detail(String(city.get("id", "")))
 		for business in detail.get("businesses", []):
 			var id := int(business["id"])
 			var sector := String(business["sector"])
@@ -208,7 +208,7 @@ func _collect_day(sim: Object, status: Dictionary, day: int) -> void:
 		var tag := String(city.get("nation", ""))
 		if tag not in FOCUS_TAGS:
 			continue
-		var detail: Dictionary = sim.demo_get_services_detail(String(city.get("id", "")))
+		var detail: Dictionary = sim.get_services_detail(String(city.get("id", "")))
 		for business in detail.get("businesses", []):
 			var id := int(business["id"])
 			var sector := String(business["sector"])
@@ -276,7 +276,7 @@ func _collect_day(sim: Object, status: Dictionary, day: int) -> void:
 	_prev_ids = today
 
 	# Falências (cumulativo -> delta do mês).
-	var bankruptcies := int(sim.demo_get_service_bankruptcies())
+	var bankruptcies := int(sim.get_service_bankruptcies())
 	var delta := bankruptcies - _bankruptcies_prev
 	_bankruptcies_prev = bankruptcies
 	_bankruptcies_by_month[month] = int(_bankruptcies_by_month[month]) + delta
@@ -334,7 +334,7 @@ func _finish_report(meta: Dictionary) -> void:
 		_findings.append({
 			"id": "employees_stuck_at_40",
 			"severity": "bug",
-			"text": "%.1f%% dos negócios têm exatamente %d postos (min=%.1f mediana=%.1f max=%.1f) — a distribuição de empregados não varia; o teto rígido vem de `40.0/jobs_per_unit` no núcleo (demo_seed_services e entrada por demanda). Trabalhadores efetivos (workers) variam com a utilização: min=%.1f mediana=%.1f max=%.1f." % [
+			"text": "%.1f%% dos negócios têm exatamente %d postos (min=%.1f mediana=%.1f max=%.1f) — a distribuição de empregados não varia; o teto rígido vem de `40.0/jobs_per_unit` no núcleo (seed_services e entrada por demanda). Trabalhadores efetivos (workers) variam com a utilização: min=%.1f mediana=%.1f max=%.1f." % [
 				equal_40_share * 100.0, int(SUSPECT_JOBS),
 				float(employees["min"]), float(employees["median"]), float(employees["max"]),
 				float(workers["min"]), float(workers["median"]), float(workers["max"])],
@@ -346,7 +346,7 @@ func _finish_report(meta: Dictionary) -> void:
 		_findings.append({
 			"id": "seed_profit_zero",
 			"severity": "info",
-			"text": "no dia 0 (semente) o lucro de todos os %d negócios é 0,0 — artefato de captura: o lucro só é calculado no 1º tick (demo_services_day)." % int(seed_profit["count"]),
+			"text": "no dia 0 (semente) o lucro de todos os %d negócios é 0,0 — artefato de captura: o lucro só é calculado no 1º tick (services_day)." % int(seed_profit["count"]),
 		})
 	# Achado 3: lucro deve variar (positivo e negativo) ao longo do tempo.
 	if _profit_pos == 0 and _profit_neg == 0:

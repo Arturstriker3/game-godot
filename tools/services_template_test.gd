@@ -323,7 +323,8 @@ func _summary() -> Dictionary:
 	var economy := _autoload("Economy")
 	if economy == null:
 		return {}
-	var summary: Dictionary = economy.get("last_summary")
+	# A4: retrato sob demanda das telas (o resumo do dia é leve).
+	var summary: Dictionary = economy.call("ui_snapshot")
 	return summary
 
 

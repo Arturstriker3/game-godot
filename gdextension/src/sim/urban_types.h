@@ -73,7 +73,7 @@ struct CityLand {
 	// limite do lote; na escala da cidade só parte dele está construída
 	// (ruas, pátios, construção antiga). Preenchido no loader para a MORADIA
 	// de modo que a ocupação formal do dia 0 nasça no alvo da faixa de
-	// população urbana (kDemoUrbanBandOccupancy); COM/IND ficam em 1,0.
+	// população urbana (kUrbanBandOccupancy); COM/IND ficam em 1,0.
 	// 1,0 = sem calibração (save antigo, cenário sintético): comportamento
 	// anterior preservado.
 	double zone_fill[ZONE_COUNT] = {1.0, 1.0, 1.0};
@@ -214,6 +214,12 @@ struct CityGov {
 	// Parte do repasse que ESTA cidade pagou do tesouro nacional (para o teste
 	// conferir que repasse recebido = repasse pago dentro da nação).
 	double month_transfer_paid = 0.0;
+	// A6: dia do último fechamento mensal DESTA cidade. O escalonamento roda a
+	// prefeitura no dia `(dia - índice) % 30 == 0`; o marcador mede a janela
+	// real (a primeira é curta: a cidade começa no dia `índice`) para
+	// IPTU/taxas/manutenção/repasse serem proporcionais, e não um mês cheio
+	// cobrado sobre poucos dias de PIB.
+	int month_marker = 0;
 	CityGovProject projects[kCityGovMaxProjects] = {};
 	int project_count = 0;
 };
