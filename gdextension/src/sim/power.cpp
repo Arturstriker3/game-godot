@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -28,6 +29,17 @@ const char* const kFuelNames[kPowerFuelCount] = {
 // racionamento na produção e no emprego.
 bool is_industrial(const Building& building) {
 	return building.recipe >= 0 || building.input_product >= 0;
+}
+
+// Guarda de faixa do índice de cidade da usina antes de indexar `cities`.
+// `assert` em debug (estado impossível, denuncia o produtor do dado) e skip
+// determinístico em release: um índice inválido não pode ler memória fora do
+// vetor nem mudar a ordem do fecho.
+bool plant_city_in_range(const WorldState& ws, const PowerPlant& plant) {
+	const bool ok = plant.city_index >= 0
+		&& plant.city_index < static_cast<int>(ws.cities.size());
+	assert(ok);
+	return ok;
 }
 
 int month_of_day(int day) {
@@ -1506,8 +1518,10 @@ void SimCore::phase_power() {
 	// custo marginal do exportador (última usina despachada para a exportação)
 	// dividido por (1 - perda): a perda é o piso técnico de transmissão que já
 	// existe em `loss_floor_pct` (não se inventa coeficiente novo). O importador
-	// paga esse preço; a conta entra no caixa do setor (`power_cash`), o canal
-	// que já existia — soma zero mantida, nada é criado nem perdido. Cidade
+	// paga esse preço pela TARIFA de varejo (E7): o valor importado entra no
+	// ledger da rede (`import_value`), forma o custo médio do dia e só vira
+	// dinheiro na cobrança da tarifa (`phase_power_settle`, caixa global) —
+	// nada é debitado direto do `power_cash`; a soma zero se mantém. Cidade
 	// isolada / rede local NÃO comercia (D-116).
 	//
 	// TODO(relações): guerra/sanção/hostilidade NÃO corta a linha. O mundo não
@@ -1641,8 +1655,10 @@ void SimCore::phase_power() {
 	// custo marginal do exportador (última usina despachada para a exportação)
 	// dividido por (1 - perda): a perda é o piso técnico de transmissão que já
 	// existe em `loss_floor_pct` (não se inventa coeficiente novo). O importador
-	// paga esse preço; a conta entra no caixa do setor (`power_cash`), o canal
-	// que já existia — soma zero mantida, nada é criado nem perdido. Cidade
+	// paga esse preço pela TARIFA de varejo (E7): o valor importado entra no
+	// ledger da rede (`import_value`), forma o custo médio do dia e só vira
+	// dinheiro na cobrança da tarifa (`phase_power_settle`, caixa global) —
+	// nada é debitado direto do `power_cash`; a soma zero se mantém. Cidade
 	// isolada / rede local NÃO comercia (D-116).
 	//
 	// TODO(relações): guerra/sanção/hostilidade NÃO corta a linha. O mundo não
@@ -2183,8 +2199,7 @@ void SimCore::phase_power_settle() {
 	for (std::size_t p = 0; p < plant_count; ++p) {
 		PowerPlant& plant = ws.power_plants[p];
 		const double gen = plant.generated_mwh;
-		if (gen <= 0.0 || plant.city_index < 0
-				|| plant.city_index >= static_cast<int>(ws.cities.size())) {
+		if (gen <= 0.0 || !plant_city_in_range(ws, plant)) {
 			continue;
 		}
 		City& city = ws.cities[static_cast<std::size_t>(plant.city_index)];
@@ -2238,6 +2253,10 @@ void SimCore::phase_power_settle() {
 		if (plant.generated_mwh <= 0.0) {
 			continue;
 		}
+		// Guarda de faixa: `assert` em debug e skip determinístico em release.
+		if (!plant_city_in_range(ws, plant)) {
+			continue;
+		}
 		City& city = ws.cities[static_cast<std::size_t>(plant.city_index)];
 		const double fuel_paid = (fuel_local[p] + fuel_import[p]) * pay_ratio;
 		if (fuel_paid > 0.0 && fuel_product[p] >= 0
@@ -2278,6 +2297,10 @@ void SimCore::phase_power_settle() {
 		const PowerPlant& plant = ws.power_plants[p];
 		if (plant.generated_mwh <= 0.0 || generated_total <= 1e-9
 				|| profit_total <= 0.0) {
+			continue;
+		}
+		// Guarda de faixa: `assert` em debug e skip determinístico em release.
+		if (!plant_city_in_range(ws, plant)) {
 			continue;
 		}
 		City& city = ws.cities[static_cast<std::size_t>(plant.city_index)];
