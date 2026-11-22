@@ -244,6 +244,40 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
   tanque portuário) e no **aeroporto**, transbordo entre modos, custos de manuseio por tonelada, níveis de
   volume — ver Parte F.
 
+## PARTE G1 — Semicondutores, microchips e drone FPV (antes das telas; pedido do dono, 2026-11-22)
+
+Entra **antes das telas** e depois da Fase H. É conteúdo de dado + receita na cadeia existente
+(`data/definitions/economy/goods.json` + `recipes.json`), sem sistema novo e sem tocar o núcleo.
+
+- **`chips` passa a se chamar Semicondutores.** Muda só o nome exibido (pt-BR/en/es); o id continua `chips`,
+  **sem migração de save**, e as receitas/`use`/status existentes seguem válidas. Renomear o id para
+  `semiconductors` exigiria migração de save e não traz ganho — se um dia for feito, entra como migração
+  declarada.
+- **Novo bem `microchips` — semicondutor avançado** (`sector: electronics`, `kind: intermediate`,
+  `tier: semi`): insumos **Semicondutores (`chips`) + terras raras processadas (`processed_rare_earths`) +
+  ferramentas de precisão (`precision_tools`)**. Usado por **computador (`computer`)** e **celular
+  (`phone`)** — o bem representa o aparelho avançado, não se cria um `phone` novo —, **robôs (`robots`)**,
+  **drone militar (`military_drone`)** e **sensores (`sensors`)**. Computador, celular, robôs e sensores
+  trocam o insumo `chips` por `microchips`; o `military_drone` **ganha** `microchips` (hoje usa `drone` +
+  munição + fibra de carbono). O `drone` civil continua com `chips` (a decisão do dono cita "drones
+  militares").
+- **Novo bem `fpv_drone` — drone FPV de ataque com ogiva tipo RPG** (`sector: military`, `kind: final`,
+  `tier: final`, `use: ["army"]` como os demais bens militares): insumos **micromotor (`micromotor`) +
+  baterias (`batteries`) + componentes eletrônicos (`electronic_components`) + peças plásticas
+  (`plastic_parts`) + projétil (`projectile`) e explosivos (`explosives`)**. Categoria militar, distinto do
+  `drone` civil e do `military_drone` (reconhecimento/UAV).
+- **Parâmetros são default de jogo declarado, não dado real:** preço-base e coeficientes de receita entram em
+  `data/definitions` com `params_source`/`price_source` do mesmo tipo dos vizinhos
+  (`estimated:order_of_magnitude`/`derived`) e o doc registra que é calibração inicial ajustável — nada é
+  apresentado como estatística.
+- **Arte:** `microchips` e `old_rifles` já têm PNG em `assets/icons/illustrated/` (+ `64/`); falta o PNG do
+  `fpv_drone`, a gerar em `tools/icon_gen` antes da tela que o mostra.
+- **Fuzil antigo (`old_rifles`) — adiado sem data:** bem militar de infantaria de era anterior; a arte já
+  está salva, mas **não entra na G1** e não tem prazo. Não criar id, receita nem tela até decisão do dono.
+- Aceite: os dois bens novos e o rename em `goods.json`/`recipes.json`, i18n pt-BR/en/es, validador de dados
+  verde e mercado/produção/cadeia exibindo os novos — sem mudar nenhum número de simulação fora da cadeia
+  nova.
+
 ## Formação de preço (diretriz do dono, 2026-11-18)
 - **Livre mercado com base heterodoxa realista**, sem teto fixo de preço:
   - **Custo (piso):** trabalho + insumos + capital/energia por unidade — valor do trabalho e da cadeia.
@@ -267,10 +301,12 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
      perto da meta da Parte A (≤15 ms/dia), sem mudar resultado.
    - **H3 Bateria de testes:** consolidar a suíte (sem teste defasado, runner único com timeout por teste,
      cenas × scripts), cobertura das fases B–G/C, CI local de um comando.
-3. **Telas:** desenhadas uma a uma com o dono (o que cada tela precisa mostrar), depois da Fase H; só então segue o macro político.
-4. **Macro político (próxima grande parte):** impostos e orçamento, subsídios e controle de preços,
+3. **G1 — Semicondutores, microchips e drone FPV (antes das telas; pedido do dono, 2026-11-22):** ver
+   PARTE G1. Dado + receita na cadeia existente; entra **depois da Fase H e antes das telas**.
+4. **Telas:** desenhadas uma a uma com o dono (o que cada tela precisa mostrar), depois da Fase H e da G1; só então segue o macro político.
+5. **Macro político (próxima grande parte):** impostos e orçamento, subsídios e controle de preços,
    balança de pagamentos e dívida externa refinadas, previdência, salário mínimo/leis.
-5. **Órgãos internacionais (com a diplomacia):** FMI (socorro com condições), agências de **rating de
+6. **Órgãos internacionais (com a diplomacia):** FMI (socorro com condições), agências de **rating de
    crédito** (risco soberano → juro dos títulos), ONU, troca de hegemonia da moeda global, sanções,
    blocos, geopolítica de bancos estrangeiros, remessas/migração internacional.
 - **Nomes:** bancos e empresas com **nomes genéricos/fictícios** (sem marcas reais, por direitos);
@@ -515,6 +551,33 @@ núcleo, sem painel). A ideia é generalizar o mesmo mecanismo do porto.
   - **Cuidado de escala:** volumes do jogo ainda não estão na escala real (ex.: ferro ~17,8 mil t/d no
     jogo); capacidade em toneladas fica relativa ao volume do jogo até a calibração e passa a números reais
     quando a produção estiver calibrada.
+- **Decidido com o dono (2026-11-22) — combustível, estoque e desgaste da frota:**
+  - **Todo veículo consome combustível ao se mover** — caminhão, navio e avião. O consumo acompanha o
+    movimento da rota (t·km), não o dia parado; a F4 já debita `fuel` por trecho e a F mantém a regra nos
+    três modos, inclusive no aéreo religado.
+  - **Para criar transporte, o veículo precisa existir em estoque.** Não existe "alugar capacidade
+    abstrata": o pedido reserva `truck`/`cargo_ship`/`cargo_plane` do vendedor (1 t do bem = 1 veículo) e,
+    sem veículo, a carga fica na fila com o motivo (`missed_no_fleet`), como hoje.
+  - **Veículos se desgastam com uso e com o tempo, e o desgaste consome a frota.** A saúde por modal cai
+    (atrito + uso) e a perda sai do estoque físico, gerando **demanda de reposição** de veículos: a frota
+    vira mercado consumidor de bens duráveis e a produção de `truck`/`cargo_ship`/`cargo_plane` passa a ter
+    demanda endógena (hoje só a compra mensal do governo repõe até o alvo).
+  - **Religar aviões na F.** O modo aéreo está modelado (velocidade, lote de 20 t, custo por t·km e frota
+    com saúde própria), mas **nenhuma rota o escolhe hoje** — o comércio monta pernas de caminhão e navio. A
+    F religa a escolha do modo aéreo para carga urgente/de alto valor por tonelada (remédio, vacina, peça de
+    precisão, eletrônicos, ouro, perecível caro), com o aeroporto como gargalo (itens acima).
+
+---
+
+## Protótipo — Weapon Lab (futuro, NÃO mergeado)
+
+- Branch `proto/weapon-lab` (worktree `opengs-wt-weaponlab`): emulador C++17 **isolado** do sistema modular
+  de armas (`tools/weapon_lab/` + `docs/design/weapon_lab.md`) — CLI que lê os JSONs de
+  `data/prototypes/weapon_lab/`, valida compatibilidade, calcula estatísticas/custo/receita de materiais e
+  desenha silhuetas 2D. Não depende do Godot, do godot-cpp nem da simulação.
+- **Não está mergeado** e não entra na G1 nem nas telas atuais; é protótipo de bancada para a economia de
+  guerra. Quando o exército/órgãos militares entrarem, decide-se se ele vira ferramenta de projeto,
+  ligação com insumos (`fpv_drone`, munição, explosivos) ou nada — decisão futura do dono.
 
 ---
 

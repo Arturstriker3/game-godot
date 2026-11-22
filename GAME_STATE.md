@@ -1507,6 +1507,22 @@ bauxita 4,90x, trigo 1,12x, arroz 1,09x, ouro 1,65x; comida 0,988.
 
 **Em desenvolvimento / parcial:** integração do modo demo ao loop principal; save/load de partida; cadeias de refino (aço, munição, fertilizante, alumínio, eletrônica) — só matérias-primas hoje.
 
+**Decidido pelo dono (2026-11-22) — registrado no plano, ainda sem código** (ver `docs/plans/perf_pop_financas_plano.md`):
+- **G1 — Semicondutores, microchips e drone FPV (antes das telas, depois da Fase H):** `chips` passa a ser
+  exibido como **Semicondutores** (mesmo id, sem migração de save); novo bem **`microchips`** (semicondutor
+  avançado: `chips` + terras raras processadas + ferramentas de precisão) usado por computador, celular
+  avançado, robôs, drone militar e sensores; novo bem **`fpv_drone`** (drone FPV de ataque com ogiva tipo RPG:
+  micromotor, baterias, componentes eletrônicos, peças plásticas + projétil/explosivos; categoria militar).
+  Parâmetros entram como **default de jogo declarado** (`estimated`/`derived`), não dado real. Fuzil antigo
+  (`old_rifles`) fica **adiado sem data** (a arte já está salva em `assets/icons/illustrated/`).
+- **Parte F — combustível e frota:** todo veículo (caminhão, navio, avião) consome combustível **ao se
+  mover**; para criar transporte o **veículo precisa existir em estoque** (1 t do bem = 1 veículo); veículos
+  **se desgastam com uso e tempo** e o desgaste **consome a frota**, gerando demanda de reposição; **religar
+  aviões na F** (o modo aéreo está modelado e a frota existe, mas nenhuma rota escolhe avião hoje).
+- **Weapon Lab — protótipo futuro, NÃO mergeado:** branch `proto/weapon-lab` (emulador C++17 isolado de armas
+  modulares, `tools/weapon_lab/`); serve de bancada para a economia de guerra, sem ligação com a simulação
+  hoje.
+
 **Próximas prioridades (recomendadas pela auditoria):**
 1. Corrigir o BOM de `core/ui/city_economy_panel.gd`.
 2. Decidir a consolidação dos dois sistemas de mapa e dos três painéis de cidade.
