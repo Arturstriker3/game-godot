@@ -1513,6 +1513,9 @@ struct Region {
 		// Fator de capacidade SOLAR por mês (PVOUT mensal do Global Solar
 		// Atlas ÷ 24 h). Vazio/0 = usa o fator anual declarado.
 		double solar_month[kPowerMonthCount] = {};
+		// D-122: vento médio anual a 100 m do sítio (GWA, E6), persistido para
+		// a obra NOVA render pelo potencial local. 0 = sem amostra de vento.
+		double wind_ms = 0.0;
 		// Ancoragem nacional (E2/E3, D-116): demanda-base da cidade em MWh/dia
 		// (Ember do ano-base × fração simulada, rateada pelo peso de demanda da
 		// cidade), o índice de renda e a perda T&D do ano-base. Base 0 = sem
@@ -1560,6 +1563,10 @@ struct Region {
 		double wage = 0.0;
 		int built_day = 0;
 		bool initial = false;
+		// D-122: CF de SÍTIO da usina NOVA (potencial local com teto/penalidade,
+		// ver `power_local_cf`). 0 = usina do ano-base (usa o `cf_scale`
+		// calibrado pela Ember). Campo de save (v38).
+		double cf_base = 0.0;
 		// Geração do dia (derivada do despacho; NÃO persistida).
 		double generated_mwh = 0.0;
 	};
@@ -1592,6 +1599,9 @@ struct Region {
 		double import_value = 0.0;
 		double export_value = 0.0;
 		int interconnect_count = 0;
+		// D-122: energia renovável DISPONÍVEL e não despachada no dia (MWh):
+		// sem armazenamento, o excedente é desperdiçado (curtailment).
+		double curtailment_mwh = 0.0;
 	};
 
 	// E5 (D-117) — INTERCONEXÃO entre duas redes NACIONAIS. O estado guarda o

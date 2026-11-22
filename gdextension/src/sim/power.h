@@ -127,6 +127,37 @@ struct PowerParams {
 	double capex_per_mw_line_sd = 150.0;
 	double line_build_share_demand = 0.25;
 
+	// --- D-122: balanceamento das renováveis (decisão de design do dono) ----
+	// Renovável (hídrica/solar/eólica) é CARA de construir e produz menos que
+	// a térmica: multiplicador de capex por fonte (aplicado só à obra NOVA; o
+	// parque do ano-base mantém a calibração Ember), prazo de obra maior para
+	// a hídrica, teto de CF da usina nova (potencial do sítio), penalidade de
+	// balanceamento (inversor/curtailment sem armazenamento) e crédito de
+	// capacidade no pico. TODO valor aqui é DEFAULT DE BALANCEAMENTO
+	// DECLARADO, não dado observado (ver D-122 e
+	// docs/economy/E2E3_power_grid.md §renováveis).
+	// Ordem: hydro, solar, wind, coal, gas, oil, nuclear, biomass, other.
+	double capex_mult[kPowerFuelCount] = {2.4, 2.2, 2.2, 1.0, 1.0, 1.0, 1.0,
+		1.0, 1.0};
+	int build_days_hydro = 420;
+	double cf_cap[kPowerFuelCount] = {0.55, 0.25, 0.45, 1.0, 1.0, 1.0, 1.0,
+		1.0, 1.0};
+	double balance_penalty[kPowerFuelCount] = {0.95, 0.95, 0.90, 1.0, 1.0,
+		1.0, 1.0, 1.0, 1.0};
+	double capacity_credit[kPowerFuelCount] = {0.55, 0.35, 0.20, 1.0, 1.0,
+		1.0, 1.0, 1.0, 1.0};
+	// Amplitude da variação DIÁRIA determinística (média exata 1 em qualquer
+	// janela de 365 dias, então o ano-base não se move) e a sazonalidade
+	// hídrica (cheia/seca; hemisfério pelo centro do mapa).
+	double weather_amp[kPowerFuelCount] = {0.0, 0.18, 0.30, 0.0, 0.0, 0.0,
+		0.0, 0.0, 0.0};
+	double hydro_season_amp = 0.25;
+	// Curva declarada do vento: CF = ref × (v/ref_ms)^expoente, com teto em
+	// `cf_cap[POWER_WIND]`. v é a média anual do GWA a 100 m (dado E6).
+	double wind_cf_ref_ms = 6.0;
+	double wind_cf_ref = 0.30;
+	double wind_cf_exponent = 3.0;
+
 	// --- D-118: unidade monetária da energia -------------------------------
 	// `salary_day_xgs` = XGS por SALÁRIO-DIA, derivado do próprio sim no seed
 	// (média ponderada pela população simulada do salário diário semeado do
@@ -184,6 +215,9 @@ struct PowerCityDef {
 	double cap[kPowerFuelCount] = {};
 	// PVOUT mensal (kWh/kWp/dia) ÷ 24 h = fator de capacidade solar do mês.
 	double solar_month[kPowerMonthCount] = {};
+	// D-122: vento médio anual a 100 m (GWA, E6). 0 = sem amostra: a usina
+	// nova usa o CF declarado (`cf_wind`) sem potencial local.
+	double wind_ms = 0.0;
 };
 
 // E5 (D-117) — interconexão entre redes NACIONAIS, derivada do dado
@@ -208,6 +242,34 @@ const char* power_fuel_name(int fuel);
 int power_fuel_from_name(const std::string& name);
 // Fontes térmicas (compram combustível): carvão, gás, óleo, nuclear, biomassa.
 bool power_fuel_is_thermal(int fuel);
+
+// --- D-122: regras declaradas do balanceamento das renováveis ---------------
+// Fonte renovável intermitente (hídrica/solar/eólica).
+bool power_fuel_is_renewable(int fuel);
+// CF de sítio da usina NOVA: solar usa o PVOUT médio, eólica a curva do vento
+// (`wind_ms`) e hídrica o CF declarado; teto `cf_cap` e penalidade de
+// balanceamento já aplicados. É o que a obra nova rende — o parque do ano-base
+// continua calibrado pela Ember (`cf_scale`), não por esta função.
+double power_local_cf(const PowerParams& params, int fuel,
+	double solar_month_mean, double wind_ms);
+// Fator diário determinístico da fonte renovável (média exata 1 em qualquer
+// janela de 365 dias): "clima"/sazonalidade com fase derivada da nação e, na
+// hídrica, cheia/seca pelo hemisfério (centro do mapa). Térmica = 1.
+double power_day_factor(const PowerParams& params, int fuel, int day,
+	const std::string& nation, bool southern);
+// Crédito de capacidade no pico (fração da potência que conta como firme).
+double power_capacity_credit(const PowerParams& params, int fuel);
+// Capex da obra NOVA (SALÁRIO-DIA/MW já resolvido em XGS/MW) com o
+// multiplicador declarado da fonte.
+double power_new_capex_per_mw(const PowerParams& params, int fuel);
+// Prazo da obra nova em dias (hídrica tem prazo próprio, maior).
+int power_build_days(const PowerParams& params, int fuel);
+
+// D-122: materializa a usina de uma obra concluída (ou obra instantânea de
+// teste). Única implementação usada por `complete_project` e pelo hook de
+// construção instantânea — os campos da usina nova não podem divergir.
+void apply_power_plant_project(WorldState& ws,
+	const ConstructionProject& project);
 
 // Aplica as DEFINIÇÕES e semeia o parque inicial. `only_missing` (default
 // true) não sobrescreve o estado de um save.

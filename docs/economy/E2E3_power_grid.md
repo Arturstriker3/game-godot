@@ -948,8 +948,133 @@ Equivalência CLI × Godot (snapshot do dia 0, 10 d, IA, `threads=1`):
   A E7 acrescentou o **contrato bruto** do ano-base (§9.2) por cima da sobra; em
   ano-base em que todos os vizinhos importam (Kosovo), a linha sem contrato continua
   existindo e sem venda spot — mudar isso é regra de núcleo, não dado.
-- Vento sem série mensal (GWA não publica) — fator anual, declarado.
+- Vento sem série mensal (GWA não publica) — fator anual, declarado. A D-122
+  acrescenta variação diária **declarada** para a capacidade NOVA (não é série
+  medida); o parque do ano-base continua na âncora Ember (ver §11).
 - `oil: null` na matriz Ember — capacidade de óleo não publicada por país (D-115(d)).
 - Conexão parcial é um limite de troca por cidade (não se modela fluxo físico entre
   subestações); interligação internacional (E5) e obra de redução de perdas ainda não.
 - E4 detalhada (estratos/indústria por bem) e E6 (mapa) fora desta fase.
+
+## 11. Renováveis — balanceamento de jogabilidade (D-122)
+
+**Decisão do dono (22/11/2026):** renovável (hídrica/solar/eólica) deve ser **mais
+cara de construir e produzir menos**; a térmica (carvão/gás/óleo) é **barata de
+construir**, compra combustível caro/importado e é despachável. Nuclear é
+despachável e estável. O balanceamento vale para a **jogabilidade** — obra nova
+(jogador e IA) e comportamento operacional — e **não** toca a calibração do
+ano-base: as usinas existentes continuam reproduzindo a geração Ember
+(D-116/D-119/D-120), verificado em ±1 % (teste 365 d da suíte).
+
+Todo número abaixo é **DEFAULT DE BALANCEAMENTO DECLARADO** em
+`data/definitions/energy/power_params.json` (`meta.renewables_balance`), **não**
+dado observado: a fonte pública cobre acesso/perdas, parque, PVOUT/vento e
+potencial hídrico; o preço/CF da usina NOVA é regra de jogo.
+
+### 11.1 Custo declarado (obra nova)
+
+Multiplicador de capex por fonte (aplicado só à obra NOVA; o parque semeado
+mantém o capex do ano-base): **hídrica 2,4; solar 2,2; eólica 2,2**; térmicas e
+nuclear 1,0. Prazo: hídrica **420 d** (antes 180 d); demais fontes seguem 180 d.
+
+Capital por MWh esperado = `capex/MW ÷ (8760 h × CF)` (o jogo não amortiza
+capital: o capex é pago na obra) + O&M. CF da usina nova = `min(potencial do
+sítio, cf_cap) × balance_penalty`. Unidade: salário-dia (D-118).
+
+| fonte | capex/MW antes | capex/MW depois | CF antes | CF novo (teto × penalidade) | capital/MWh-ano antes | capital/MWh-ano depois | O&M/MWh | custo/MWh esperado antes | depois |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| solar | 700 | **1 540** | 0,22 | ≤ 0,2375 (0,25 × 0,95) | 0,363 | **0,740** | 0,10 | 0,463 | **0,840** |
+| eólica | 750 | **1 650** | 0,35 | ≤ 0,405 (0,45 × 0,90) | 0,245 | **0,465** | 0,12 | 0,365 | **0,585** |
+| hídrica | 900 | **2 160** | 0,50 | 0,475 (0,50 × 0,95) | 0,205 | **0,519** | 0,15 | 0,355 | **0,669** |
+| carvão | 1 200 | 1 200 | 0,60 | 0,60 | 0,228 | 0,228 | 0,25 | 0,478 | 0,478 |
+| gás | 1 000 | 1 000 | 0,55 | 0,55 | 0,208 | 0,208 | 0,22 | 0,428 | 0,428 |
+| óleo | 900 | 900 | 0,40 | 0,40 | 0,257 | 0,257 | 0,30 | 0,557 | 0,557 |
+| nuclear | 2 600 | 2 600 | 0,85 | 0,85 | 0,349 | 0,349 | 0,35 | 0,699 | 0,699 |
+| biomassa | 800 | 800 | 0,55 | 0,55 | 0,166 | 0,166 | 0,30 | 0,466 | 0,466 |
+| outras | 900 | 900 | 0,45 | 0,45 | 0,228 | 0,228 | 0,30 | 0,528 | 0,528 |
+
+Leitura: depois da D-122, solar/eólica/hídrica ficam **acima de carvão/gás/óleo**
+tanto no capex/MW quanto no custo por MWh esperado. O **O&M segue menor** (a
+renovável é barata de operar) e o combustível da térmica não está na coluna —
+é o custo operacional que a térmica paga e a renovável não. A tabela do status
+(`build_costs`, XGS já resolvidos pela âncora) é a fonte do jogador/IA; o teste
+`tools/renewables_balance_test.gd` confere os mesmos números.
+
+### 11.2 Produção: potencial do sítio, teto e penalidade
+
+- **Solar:** CF = PVOUT médio do Global Solar Atlas (kWh/kWp/dia ÷ 24 h),
+  teto **0,25**, penalidade **0,95**; a forma mensal do PVOUT continua valendo
+  mês a mês.
+- **Eólica:** CF = `0,30 × (v / 6 m/s)^3` com `v` = vento médio anual do GWA a
+  100 m (E6), teto **0,45**, penalidade **0,90**. Sem amostra de vento, usa o
+  CF declarado `cf_wind` (não se inventa sítio).
+- **Hídrica:** CF declarado 0,50, teto 0,55, penalidade 0,95; o potencial
+  hídrico (`hydro_potential.json`) limita a capacidade em MW, como antes.
+- **Térmica/nuclear:** CF declarado da fonte, sem teto novo — despacháveis e
+  estáveis (o resíduo sazonal das térmicas da E2 continua).
+- **Variação diária determinística** (solar/eólica/hídrica) da usina NOVA:
+  fase derivada da nação por FNV-1a (nunca `std::hash`); as harmônicas têm
+  período que divide 365 dias, então a média em **qualquer janela de 365 dias é
+  exatamente 1** — o ano-base não se move. Amplitudes: solar 0,18, eólica 0,30,
+  hídrica 0,25 (cheia no fim do inverno/início da primavera do hemisfério, dia
+  75 no norte e 255 no sul, ±30 d pela nação).
+- **Parque do ano-base:** fica na âncora Ember (`cf_scale`), sem a variação
+  declarada — não há série diária pública de vento/vazão para ele; o dado
+  disponível para essas usinas é anual (GWA sem série mensal; hídrico sem vazão
+  mensal). A calibração do ano-base, portanto, não muda (0 % de desvio; o teste
+  exige ≤ 1 %).
+- **Curtailment:** sem armazenamento, a renovável disponível e não despachada é
+  desperdiçada. O núcleo publica `curtailment_mwh` por rede e no mundo; ela não
+  entra em `served_mwh` nem em geração.
+
+### 11.3 Crédito de capacidade e a IA
+
+Crédito de capacidade no pico (fração da potência que conta como firme): solar
+**0,35**, eólica **0,20**, hídrica **0,55**, térmica/nuclear **1,0**. A IA de
+obra (§5) compara o **custo do primeiro ano por MW firme**:
+`(capex da obra + combustível declarado × 8760 h × CF) ÷ crédito`, com o
+combustível ao preço do mercado local (prêmio de importação quando falta
+estoque). Onde a falta persiste, a térmica é a escolha mais barata por MW firme,
+embora pague combustível; a renovável tem capex alto e crédito baixo. O jogador
+vê a mesma troca em `build_costs` e `new_plants` no status (capex,
+multiplicador, O&M, CF, teto, penalidade, crédito, prazo), sem precisar de UI
+nova.
+
+### 11.4 Save v38 e testes
+
+Aditivo: `power.plants[].cf_base` (CF de sítio da usina nova; 0 = parque
+calibrado), `power.cities[].wind_ms` (vento do sítio) e
+`power.grids[].curtailment_mwh`. Save v37 carrega com as chaves ausentes = 0 —
+a usina antiga continua calibrada e a cidade sem vento não inventa potencial.
+
+Testes: `tools/renewables_balance_test.gd` (capex/MW e custo por MWh esperado
+contra as térmicas; CF de sítio com teto e penalidade; variação diária presente
+e determinística; térmica estável; curtailment; ano-base Ember ±1 % para
+solar/eólica/hídrica em 365 d; média anual 1 da hídrica nova; save do `cf_base`),
+`e2e3_power_test`, `e5_interconnect_test`, `e7_tariff_test` e
+`economy_save_load_roundtrip_test` verdes.
+
+### 11.5 Rodada 365 (mesmo controle da D-119/D-120)
+
+`godot --headless --path . --script res://tools/c1_world_ai_365.gd --
+--days=365 --out=res://docs/economy/perf/c1_world_ai_365_renew.json
+--control=res://docs/economy/perf/c6_gate_base.json` (366 d de relógio, 306,7 s,
+`threads=1`, `trajectory_sha256 d548cb17…`).
+
+| métrica | D-120 (controle/prévio) | D-122 |
+|---|---:|---:|
+| falências | 2 | **2** |
+| portão de comida (abaixo de 0,975) | 95/179 | **95/179** |
+| extras vs `c6_gate_base` (93) | CIV, PRK, AUS | CIV, ATG, PRK, AUS |
+| conta/PIB agregada | 1,248 % | **1,235 %** |
+| conta/PIB p50 | 0,658 % | **0,641 %** |
+| energia servida | 0,99610 | **0,99674** |
+| violações de invariante / travados | 0 / 0 | **0 / 0** |
+
+A troca declarada aparece no parque CONSTRUÍDO pela IA no ano: menos solar e
+hidro nova, mais térmica despachável (a capacidade existente do ano-base é a
+mesma nos dois mundos; o que muda é a obra nova). Com o combustível dentro do
+critério da IA, o ano fecha dentro do portão do dono (falências ≤ 2, comida ≤ 95).
+O preço da energia em PRT, o caso da falência extra da primeira medição sem o
+combustível no critério, não mudou entre os mundos: aquela rodada ficou fora por
+efeito de cadeia de mercados, e foi substituída por esta.

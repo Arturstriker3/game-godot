@@ -3,7 +3,7 @@ extends RefCounted
 ## Versão atual do schema de save — leitura somente.
 ##
 ## O número mora no núcleo C++ (`ogs::kSaveVersion`, sim_constants.h) e sobe a
-## cada bloco novo do save (v37 hoje, D-120). Testes NÃO devem fixar o literal:
+## cada bloco novo do save (v38 hoje, D-122). Testes NÃO devem fixar o literal:
 ## comparar com [method current] mantém a asserção forte (o save gravado tem de
 ## sair exatamente na versão do núcleo) sem apodrecer quando o schema sobe.
 ##

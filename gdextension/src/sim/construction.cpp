@@ -8,6 +8,7 @@
 
 #include "construction.h"
 #include "housing.h"
+#include "power.h"
 #include "storage.h"
 #include "profiling.h"
 #include "sim_constants.h"
@@ -338,23 +339,13 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 			PowerCityState& state = ws.power_cities[index];
 			state.has_data = true;
 			if (p.kind == CONSTRUCTION_POWER_PLANT) {
-				PowerPlant plant;
-				plant.id = p.id;
-				plant.city_index = static_cast<int>(index);
-				plant.fuel = std::clamp(p.power_fuel, 0, kPowerFuelCount - 1);
-				plant.mw = std::max(0.0, p.power_mw);
-				plant.owner_group = p.group_id;
-				plant.owner_nation = ws.cities[index].nation;
-				plant.capex = p.total_cost;
-				plant.opex_per_mwh = ws.power_params.opex_per_mwh[plant.fuel];
-				plant.jobs = plant.mw * 0.4;
-				plant.wage = 20.0;
-				plant.built_day = ws.day;
-				ws.power_plants.push_back(plant);
-			} else {
-				state.connection = POWER_CONNECTED;
-				state.line_mw = std::max(state.line_mw, p.power_mw);
+				// D-122: a usina nova nasce com o CF de sítio (potencial local
+				// com teto e penalidade) — mesma função do hook instantâneo.
+				apply_power_plant_project(ws, p);
+				return;
 			}
+			state.connection = POWER_CONNECTED;
+			state.line_mw = std::max(state.line_mw, p.power_mw);
 			break;
 		}
 		after_load(ws);

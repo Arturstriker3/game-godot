@@ -157,6 +157,7 @@ func apply_to_sim(sim: Object, cities: Array, options: Dictionary = {}) -> Dicti
 			"park": park,
 			"cap": caps,
 			"solar_month": solar_month,
+			"wind_ms": _wind_speed(renewable),
 		}
 		city_defs[city_id] = def
 		var park_total := 0.0
@@ -300,6 +301,18 @@ func _solar_month_cf(renewable: Dictionary) -> Array:
 	for value: Variant in values:
 		result.append(clampf(float(value) / HOURS_PER_DAY, 0.0, 1.0))
 	return result
+
+
+## Vento médio anual do sítio (m/s a 100 m, Global Wind Atlas). Sem a amostra,
+## 0: a usina nova usa o CF declarado e não inventa potencial local (D-122).
+func _wind_speed(renewable: Dictionary) -> float:
+	var wind: Variant = renewable.get("wind")
+	if typeof(wind) != TYPE_DICTIONARY:
+		return 0.0
+	var value: Variant = (wind as Dictionary).get("m_s_mean")
+	if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+		return 0.0
+	return maxf(0.0, float(value))
 
 
 func _operator_nations(status: Dictionary) -> Array:
