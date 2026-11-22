@@ -1663,8 +1663,10 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	}
 	// PARTE E (v35/D-116) - ENERGIA: caixa do setor, regra, estado por cidade,
 	// usinas e a rede por nação. ADITIVO: v34 e anteriores chegam sem o bloco
-	// (ver a carga) e o PowerService semeia o parque do dado público.
-	{
+	// (ver a carga) e o PowerService semeia o parque do dado público. Um mundo
+	// SEM energia semeada não grava o bloco: salvar→carregar→salvar tem de dar
+	// o mesmo hash (sem estado "isolado" inventado no load).
+	if (ws.power_ready) {
 		Dictionary block = make_object();
 		block["cash"] = ws.power_cash;
 		block["ready"] = ws.power_ready;
@@ -4039,7 +4041,16 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	// PowerService aplica o dado público depois do load e semeia o parque.
 	// O `power_cities` é paralelo a `cities`: o save guarda o id e a carga
 	// remapeia para o índice atual (cidade que sumiu fica sem estado).
-	ws.power_cities.assign(ws.cities.size(), PowerCityState());
+	// O `power_cities` é paralelo a `cities` SÓ quando o save tem o bloco
+	// (v35+); sem o bloco o vetor fica VAZIO, como num mundo novo — senão
+	// salvar→carregar→salvar mudaria o hash do save (estado que nunca foi
+	// semeado apareceria como rede "isolada"). v34 e anteriores seguem o
+	// caminho: o PowerService semeia o parque depois do load.
+	if (data.has("power")) {
+		ws.power_cities.assign(ws.cities.size(), PowerCityState());
+	} else {
+		ws.power_cities.clear();
+	}
 	ws.power_plants.clear();
 	ws.power_grids.clear();
 	ws.power_cash = 0.0;

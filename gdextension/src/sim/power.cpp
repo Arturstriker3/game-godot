@@ -346,7 +346,11 @@ void seed(WorldState& ws, const PowerParams& params,
 }
 
 void after_load(WorldState& ws) {
-	if (ws.power_cities.size() != ws.cities.size()) {
+	// Sem estado de energia semeado (`power_cities` vazio) nada é criado aqui:
+	// a ausência é declarada e o PowerService decide o que aplicar. O vetor
+	// só é realinhado quando já existe estado (save v35/semeado).
+	if (!ws.power_cities.empty()
+			&& ws.power_cities.size() != ws.cities.size()) {
 		ws.power_cities.resize(ws.cities.size());
 	}
 	for (PowerPlant& plant : ws.power_plants) {

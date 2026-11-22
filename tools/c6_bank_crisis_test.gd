@@ -629,7 +629,7 @@ func _test_save_v34() -> void:
 	for day in 6:
 		sim.tick_day()
 	var saved: Dictionary = sim.to_dict()
-	_check("E save é v34", int(saved.get("version", 0)) == 34,
+	_check("E save é v35", int(saved.get("version", 0)) == 35,
 		"version=%s" % str(saved.get("version")))
 	var block: Dictionary = saved.get("bank_crisis", {})
 	_check("E save publica o bloco bank_crisis",

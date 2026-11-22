@@ -326,8 +326,8 @@ func _test_migration_v32() -> void:
 	_check("C6 carteira inicial soma 100 % das ações", bad_holdings == 0,
 		"papeis_fora=%d" % bad_holdings)
 	var resaved: Dictionary = loaded.to_dict()
-	_check("C6 re-save é v34 e tem o bloco da bolsa",
-		int(resaved.get("version", 0)) == 34 and resaved.has("stock"),
+	_check("C6 re-save é v35 e tem o bloco da bolsa",
+		int(resaved.get("version", 0)) == 35 and resaved.has("stock"),
 		"version=%s" % resaved.get("version"))
 
 
