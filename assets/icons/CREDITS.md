@@ -22,3 +22,29 @@ Licença: domínio próprio do OpenGS Game, sem restrição de reuso.
   Ver `products/CREDITS.txt` para os autores individuais. Recoloridos em branco.
 - `places/` — ícones de lugar (city, port, badge): Material Design Icons
   (Apache 2.0) + arte própria. Ver `places/CREDITS.txt`.
+
+## Ícones ilustrados (illustrated/) — arte gerada para o projeto
+
+Arte **gerada para o OpenGS Game** com o backend OpenAI em `tools/icon_gen`
+(folha 4×4 por chamada, estilo v3 semi-realista). Não usa arte de terceiros e
+não reproduz logotipos, cédulas ou marcas reais. Licença: domínio próprio do
+OpenGS Game, sem restrição de reuso.
+
+| Conjunto | Caminho | Qtde | Uso |
+|---|---|---|---|
+| Bens | `illustrated/<id>.png` + `illustrated/64/<id>.png` | 113 | os 113 ids de `data/definitions/economy/goods.json` |
+| Bens futuros | `illustrated/microchips.png`, `illustrated/old_rifles.png` (+ `64/`) | 2 | ainda sem id em `goods.json`; ver notas abaixo |
+| Construções, infraestrutura e finanças | `illustrated/places/<id>.png` + `places/64/` | 58 | telas/mapa via `ProductIcons.place_*` |
+
+Notas de nomenclatura:
+
+- `chips` (bem existente) é o ícone de **semicondutores**; a arte antiga de
+  `advanced_chips` foi renomeada para `microchips` (bem futuro da G1, ainda sem
+  id em `goods.json`).
+- `old_rifles` (bem futuro, sem uso hoje) fica salvo em `illustrated/` para não
+  se perder; nenhum screen o resolve enquanto não houver id.
+
+Cada PNG existe em 128 px (exibição acima de 32 px) e 64 px (exibição até
+32 px). Os arquivos foram aprovados pela pessoa dona do projeto em 2026-11 e
+integrados em `feat/icons-illustrated`. Os brutos de geração
+(`illustrated_source/gen_api/`) não são versionados.

@@ -12,6 +12,7 @@ multimodal. **Nenhuma imagem foi inspecionada visualmente por este agente**:
 |---|---|---|---|
 | Antes | `captures/antes/head/` | 1920×1080, 1366×768 | 7 (sem busca e sem menu) |
 | Depois | `captures/f4/final/` | 1920×1080, 1600×900, 1366×768, 2560×1440 | 9 |
+| Ícones ilustrados v3 | `icons_illustrated/` (anexos) + `captures/icons/v3/` | 1920×1080, 1600×900, 1366×768, 2560×1440 | 4 (mercado, mercado química, cadeia, legenda) |
 
 Estados: `00_hud`, `01_economy_nations`, `02_economy_cities`,
 `03_economy_empty`, `04_trade`, `05_production`, `06_politics`, `07_city`,

@@ -452,27 +452,45 @@ Nenhuma tela usa o antigo painel modal escuro (removido em `hud.gd` junto com
 `_window`, `_backdrop`, `_window_body`, cabeçalho/rodapé próprios,
 `_apply_window_size`, `_render_crumb`, `_screen_subtitle` e `SCREEN_HINTS`).
 
-### Ícones de bem — um conjunto, um tratamento
+### Ícones de bem — um conjunto ativo, um fallback, um tratamento
 
-- **Conjunto único:** todo bem resolve para os SVGs do Icon Forge
-  (`assets/icons/resources/`, 24×24, silhueta branca, gerados por
-  `tools/icon_forge` a partir de `resource_icons.json`). `assets/icons/products/`
-  (game-icons herdado) fica só para glifos de **navegação** — caixa, moeda,
-  fábrica, espada, navio, avião; um id de bem nunca resolve para lá, mesmo
-  quando o nome coincide (`truck`).
-- **Tratamento:** glifo em `TINTA` (16 px) dentro de um selo quadrado de 20 px,
-  raio 3, borda de 1 px `TINTA` a 50% e fundo com a cor do **setor** a 35% —
-  a geometria de `LegendResourceIcon`, o selo da legenda de recursos
-  (cidade/depósito). `ProductIcons.seal()` é o único construtor de célula.
+- **Conjunto ativo:** todo bem resolve primeiro para o PNG **ilustrado**
+  aprovado em `assets/icons/illustrated/` (128 px) e `illustrated/64/` (64 px),
+  arte gerada para o projeto por `tools/icon_gen` (backend OpenAI). É colorido:
+  desenha-se com `modulate` **branco**, nunca tingido de `TINTA`.
+- **Variante por tamanho:** ícone exibido com **até 32 px** usa o PNG de 64 px
+  (`ProductIcons.illustrated_path` / `texture(id, size)`); acima disso, o de
+  128 px. As telas passam o tamanho real para `ProductIcons` (`seal(id, setor,
+  size)`, `make(id, size)`), e é ele que escolhe a variante.
+- **Fallback:** o SVG branco do Icon Forge (`assets/icons/resources/`, 24×24,
+  gerado por `tools/icon_forge`) continua respondendo enquanto um id não tiver
+  PNG. Nesse caso vale o tratamento antigo: glifo em `TINTA` (16 px) dentro do
+  selo quadrado de 20 px com a cor do **setor** a 35%.
+  `assets/icons/products/` (game-icons herdado) fica só para glifos de
+  **navegação** — caixa, moeda, fábrica, espada, navio, avião; um id de bem
+  nunca resolve para lá, mesmo quando o nome coincide (`truck`).
+- **Tratamento do ilustrado — selo discreto de papel:** o PNG já tem contorno e
+  sombra próprios, então **não** recebe o tint do setor nem glifo de tinta. O
+  selo vira uma placa de papel discreta (`ProductIcons.COLORED_PLATE` = 0,55 de
+  `PAPEL_CLARO`, borda `TINTA` a 25%, raio 3) atrás da arte, que ocupa o quadro
+  inteiro. Sobre papel a placa é quase invisível; sobre carvão garante a
+  leitura. A decisão foi feita comparando 16/24/32 px com e sem placa e com o
+  selo tintado antigo (ver `docs/ui/icons_illustrated/`).
+- **Legenda do mapa:** `LegendResourceIcon` mantém o quadrado na cor do
+  **recurso** (é o swatch da cor no mapa) e desenha o PNG colorido em cores
+  naturais; só o fallback SVG continua tingido de `TINTA`.
+- **Construções e finanças:** 58 ids em `illustrated/places/` (+ `places/64/`),
+  expostos por `ProductIcons.place_path/place_texture/place()` para as telas.
 - **Cor por setor, não por bem:** `ProductIcons.SECTOR_TINTS` tem as 15 tintas
-  dessaturadas de `goods.json` (food, agro, mining, energy, metal, chemical,
-  machinery, construction, wood, packaging, textile, transport, electronics,
-  military, luxury); setor desconhecido cai na tinta suave. O `icon_color` de
-  `goods.json` continua sendo a cor do **recurso no mapa**, não a do ícone.
-- **Leitura:** o glifo de tinta sobre o fundo do selo mantém ≥ 3:1 (WCAG) sobre
-  `PAPEL_CLARO`; o glifo ocupa ~70% do selo e continua reconhecível em 20 px.
-  `market_template_test` verifica textura, conjunto único, setor com cor e
-  contraste em todos os bens publicados.
+  dessaturadas de `goods.json`; setor desconhecido cai na tinta suave. O
+  `icon_color` de `goods.json` continua sendo a cor do **recurso no mapa**, não
+  a do ícone.
+- **Leitura:** no fallback, o glifo de tinta sobre o fundo do selo mantém ≥ 3:1
+  (WCAG) sobre `PAPEL_CLARO`. O ilustrado dispensa o teste de contraste do
+  glifo, mas precisa continuar reconhecível em 16 px (conferido em
+  `tools/icon_scale_preview`). `market_template_test` verifica textura, que
+  nenhum bem ficou no fallback SVG e o conjunto de ids.
+
 
 ## Movimento
 
@@ -605,7 +623,8 @@ Barra superior (64 px de altura):
   `wheat.svg` e `truck.svg` são reaproveitados de `assets/icons/products/` e
   rasterizados com `svg/scale=0.09375` (≈48 px) para ficarem nítidos a 24 px
   (ver `assets/icons/CREDITS.md`). Esses são glifos de **barra/atalho**; o
-  ícone de um **bem** dentro das telas vem do Icon Forge (ver “Ícones de bem”).
+  ícone de um **bem** dentro das telas vem do PNG ilustrado (ver “Ícones de
+  bem”).
 
 Painel Configurações (sobre o menu Esc):
 
