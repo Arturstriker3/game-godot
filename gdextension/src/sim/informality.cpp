@@ -559,17 +559,20 @@ void SimCore::compute_dissatisfaction(City& city) {
 	// gancho B6 (peso 0) e não entra em nenhum dos dois blocos hoje.
 	const double urban_weight_sum = kDissatisfactionUnemployment
 		+ kDissatisfactionRent + kDissatisfactionFood
-		+ kDissatisfactionInflation + kDissatisfactionInformality;
+		+ kDissatisfactionInflation + kDissatisfactionInformality
+		+ kDissatisfactionPower;
 	const double urban_weight_div = urban_weight_sum > kB7Eps
 		? urban_weight_sum : 1.0;
 	const double region_weight_sum = kDissatisfactionFood
-		+ kDissatisfactionInflation + kDissatisfactionInformality;
+		+ kDissatisfactionInflation + kDissatisfactionInformality
+		+ kDissatisfactionPower;
 	const double region_weight_div = region_weight_sum > kB7Eps
 		? region_weight_sum : 1.0;
 
 	// Urbano.
 	{
 		Pop& pop = city.pop;
+		const double power_stress = std::clamp(city.power_stress, 0.0, 1.0);
 		double people_total = 0.0;
 		for (int s = 0; s < kIncomeStrata; ++s) {
 			people_total += std::max(0.0, pop.stratum_people[s]);
@@ -602,7 +605,8 @@ void SimCore::compute_dissatisfaction(City& city) {
 					+ kDissatisfactionRent * rent
 					+ kDissatisfactionFood * food
 					+ kDissatisfactionInflation * infl
-					+ kDissatisfactionInformality * inf) / urban_weight_div,
+					+ kDissatisfactionInformality * inf
+					+ kDissatisfactionPower * power_stress) / urban_weight_div,
 				0.0, 1.0);
 			pop.dissatisfaction_by_stratum[s] = idx;
 			const double people = std::max(0.0, pop.stratum_people[s]);
@@ -633,6 +637,7 @@ void SimCore::compute_dissatisfaction(City& city) {
 	// Interior.
 	{
 		Region& region = city.region;
+		const double power_stress = std::clamp(city.power_stress, 0.0, 1.0);
 		if (!region.ready || !region.strata_ready) {
 			return;
 		}
@@ -653,7 +658,8 @@ void SimCore::compute_dissatisfaction(City& city) {
 			const double idx = std::clamp(
 				(kDissatisfactionFood * food
 					+ kDissatisfactionInflation * infl
-					+ kDissatisfactionInformality * inf) / region_weight_div,
+					+ kDissatisfactionInformality * inf
+					+ kDissatisfactionPower * power_stress) / region_weight_div,
 				0.0, 1.0);
 			region.dissatisfaction_by_stratum[s] = idx;
 			const double people = std::max(0.0, region.stratum_people[s]);

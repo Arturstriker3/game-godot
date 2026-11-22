@@ -56,6 +56,12 @@ double SimCore::project_land_cost(
 			|| project.urban_action != urban_land::URBAN_NONE) {
 		return 0.0;
 	}
+	// PARTE E (D-116): usina e linha ficam no interior/rede, não ocupam lote
+	// urbano — sem parcela de terra municipal.
+	if (project.kind == CONSTRUCTION_POWER_PLANT
+			|| project.kind == CONSTRUCTION_POWER_LINE) {
+		return 0.0;
+	}
 	const City* city = find_city(project.city);
 	if (city == nullptr) {
 		return 0.0;
@@ -182,6 +188,11 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 		// G2: armazém tem prazo declarado (kStorageBuildDays), independente do
 		// tamanho do lote de capacidade.
 		project.duration_days = std::max(1, kStorageBuildDays);
+	} else if (project.kind == CONSTRUCTION_POWER_PLANT
+			|| project.kind == CONSTRUCTION_POWER_LINE) {
+		// PARTE E (D-116): prazo declarado do parâmetro de energia (o valor
+		// já veio do construtor da obra; guarda de sanidade só).
+		project.duration_days = std::max(1, project.duration_days);
 	} else {
 		// Duração por tipo + escala pelo tamanho (§15). Comida (fazenda da cesta) é
 		// rápida para não travar a oferta alimentar; mina (primária com jazida) é
@@ -309,6 +320,42 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 				break;
 			}
 		}
+		return;
+	}
+	// PARTE E (D-116): obra de energia — a usina entra no parque da cidade ou
+	// a linha MUDA o estado de conexão para conectada (capacidade nova).
+	if (p.kind == CONSTRUCTION_POWER_PLANT
+			|| p.kind == CONSTRUCTION_POWER_LINE) {
+		if (ws.power_cities.size() != ws.cities.size()) {
+			ws.power_cities.resize(ws.cities.size());
+		}
+		for (std::size_t index = 0; index < ws.cities.size(); ++index) {
+			if (ws.cities[index].id != p.city) {
+				continue;
+			}
+			PowerCityState& state = ws.power_cities[index];
+			state.has_data = true;
+			if (p.kind == CONSTRUCTION_POWER_PLANT) {
+				PowerPlant plant;
+				plant.id = p.id;
+				plant.city_index = static_cast<int>(index);
+				plant.fuel = std::clamp(p.power_fuel, 0, kPowerFuelCount - 1);
+				plant.mw = std::max(0.0, p.power_mw);
+				plant.owner_group = p.group_id;
+				plant.owner_nation = ws.cities[index].nation;
+				plant.capex = p.total_cost;
+				plant.opex_per_mwh = ws.power_params.opex_per_mwh[plant.fuel];
+				plant.jobs = plant.mw * 0.4;
+				plant.wage = 20.0;
+				plant.built_day = ws.day;
+				ws.power_plants.push_back(plant);
+			} else {
+				state.connection = POWER_CONNECTED;
+				state.line_mw = std::max(state.line_mw, p.power_mw);
+			}
+			break;
+		}
+		after_load(ws);
 		return;
 	}
 	if (p.expand_existing) {

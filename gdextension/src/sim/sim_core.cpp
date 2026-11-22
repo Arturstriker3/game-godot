@@ -189,7 +189,8 @@ void SimCore::rebuild_indexes(bool full) {
 }
 
 double SimCore::money_total() const {
-	double total = ws_.transport_cash + ws_.foreign_cash + ws_.construction_cash;
+	double total = ws_.transport_cash + ws_.foreign_cash + ws_.construction_cash
+		+ ws_.power_cash;
 	for (const City& city : ws_.cities) {
 		// capital_income_next é um crédito pendente às famílias: entra no total
 		// para a conservação valer em qualquer ponto do tick. O caixa da região
@@ -270,6 +271,10 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	// C5 (D-112): preço, confiança e dividendo da bolsa são estado do dia.
 	out.stock_exchanges = ws_.stock_exchanges;
 	out.stock_tickers = ws_.stock_tickers;
+	out.power_cities = ws_.power_cities;
+	out.power_plants = ws_.power_plants;
+	out.power_grids = ws_.power_grids;
+	out.power_cash = ws_.power_cash;
 	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
@@ -914,6 +919,11 @@ void SimCore::restore_state(const Snapshot& in) {
 	// C5 (D-112): desfazer o tick desfaz preço, confiança e dividendo pago.
 	ws_.stock_exchanges = in.stock_exchanges;
 	ws_.stock_tickers = in.stock_tickers;
+	// PARTE E (D-116): parque, rede, racionamento e caixa do setor.
+	ws_.power_cities = in.power_cities;
+	ws_.power_plants = in.power_plants;
+	ws_.power_grids = in.power_grids;
+	ws_.power_cash = in.power_cash;
 	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;

@@ -463,6 +463,11 @@ namespace ogs {
 		// G2: obra de ARMAZÉM agregado (silo/tanque/câmara fria/...). Não cria
 		// prédio: ao concluir soma capacidade ao `StorageSite` do dono.
 		CONSTRUCTION_STORAGE = 4,
+		// PARTE E (D-116): usina nova e linha de conexão à rede. A usina vira
+		// `PowerPlant` ao concluir; a linha muda o estado da cidade
+		// (isolada/parcial → conectada) com a capacidade `power_mw`.
+		CONSTRUCTION_POWER_PLANT = 5,
+		CONSTRUCTION_POWER_LINE = 6,
 	};
 
 	struct ConstructionProject {
@@ -542,6 +547,10 @@ namespace ogs {
 		// de `owner` ("state" = governo, "private" = firma/cooperativa).
 		int storage_type = -1;
 		double storage_capacity_t = 0.0;
+		// PARTE E (D-116): obra de energia — fonte (PowerFuel), potência em MW
+		// da usina nova ou capacidade da linha. -1 = não se aplica.
+		int power_fuel = -1;
+		double power_mw = 0.0;
 	};
 
 	struct Pop {
@@ -1439,6 +1448,110 @@ struct Region {
 };
 
 
+	// ------------------------------------------------------------------
+	// PARTE E / D-116 — ENERGIA ELÉTRICA (save v35). Ver sim/power.{h,cpp}
+	// e docs/economy/E2E3_power_grid.md.
+	//
+	// A rede NÃO nasce nacional para todos: cada nação só tem OPERADOR
+	// NACIONAL quando o dado público declara acesso à eletricidade suficiente
+	// (regra declarada em power_params.json), e o operador só inclui as
+	// cidades CONECTADAS. Cidade tem três estados: conectada (compartilha a
+	// rede nacional), parcial (troca até `line_mw`) e isolada (só as usinas
+	// da própria cidade/arredor, com preço e racionamento próprios).
+	//
+	// Dinheiro: `WorldState::power_cash` é o caixa agregado do setor elétrico;
+	// consumidor paga ao gerador, combustível sai do mercado, O&M/salários e
+	// lucro vão ao dono. Tudo soma zero (conservação intocada).
+	// ------------------------------------------------------------------
+	enum PowerFuel : int {
+		POWER_HYDRO = 0,
+		POWER_SOLAR = 1,
+		POWER_WIND = 2,
+		POWER_COAL = 3,
+		POWER_GAS = 4,
+		POWER_OIL = 5,
+		POWER_NUCLEAR = 6,
+		POWER_BIOMASS = 7,
+		POWER_OTHER = 8,
+		kPowerFuelCount = 9,
+	};
+	// `solar_month` usa 12 posições (janeiro..dezembro).
+	constexpr int kPowerMonthCount = 12;
+
+	enum PowerConnection : int {
+		POWER_ISOLATED = 0,
+		POWER_PARTIAL = 1,
+		POWER_CONNECTED = 2,
+	};
+
+	struct PowerCityState {
+		// Estado da conexão (persistido): isolada/parcial/conectada e a
+		// capacidade da linha em MW (parcial = teto de troca; conectada =
+		// capacidade da subestação, 0 = sem limite declarado).
+		int connection = POWER_ISOLATED;
+		double line_mw = 0.0;
+		// `has_data` = a cidade tem parque/potencial declarado no dado. Cidade
+		// fora do dado não é simulada como falta (ausência explícita), e sim
+		// isenta de racionamento — nunca se inventa um blecaute.
+		bool has_data = false;
+		// Acesso à eletricidade (%) do dado público aplicado à cidade e a perda
+		// T&D inicial da nação (%). A perda EFETIVA do dia = base × infra B5,
+		// com piso técnico > 0 (kPowerLossFloorPct).
+		double access_pct = 100.0;
+		double loss_pct = 10.0;
+		// Teto (potencial) por fonte em MW — dado do mapa; 0 = sem potencial
+		// declarado (nenhuma usina nova daquela fonte).
+		double cap_mw[kPowerFuelCount] = {};
+		// Fator de capacidade SOLAR por mês (PVOUT mensal do Global Solar
+		// Atlas ÷ 24 h). Vazio/0 = usa o fator anual declarado.
+		double solar_month[kPowerMonthCount] = {};
+		// Indicadores do dia/rede (persistidos para o status e a duração do
+		// blecaute): demanda/servido em MWh, preço da rede (XGS/MWh), dias
+		// seguidos de racionamento e PIB perdido ESTIMADO (VOLL declarado).
+		double demand_mwh = 0.0;
+		double served_mwh = 0.0;
+		double price = 0.0;
+		int ration_days = 0;
+		double lost_gdp = 0.0;
+	};
+
+	struct PowerPlant {
+		std::string id;
+		int city_index = -1;
+		int fuel = POWER_OTHER;
+		double mw = 0.0;
+		// Dono: vazio = Estado (nação do controlador da cidade); senão id de
+		// grupo da F9. `owner_nation` é a nação que recebe o lucro estatal.
+		std::string owner_group;
+		std::string owner_nation;
+		// Economia da usina (XGS): capital de obra, O&M por MWh, empregos e
+		// salário por emprego/dia.
+		double capex = 0.0;
+		double opex_per_mwh = 0.0;
+		double jobs = 0.0;
+		double wage = 0.0;
+		int built_day = 0;
+		bool initial = false;
+		// Geração do dia (derivada do despacho; NÃO persistida).
+		double generated_mwh = 0.0;
+	};
+
+	struct PowerGridState {
+		std::string nation;
+		bool exists = false;
+		double price = 0.0;
+		double demand_mwh = 0.0;
+		double served_mwh = 0.0;
+		int ration_days = 0;
+		double lost_gdp = 0.0;
+		int connected = 0;
+		int partial = 0;
+		int isolated = 0;
+		// Cooldown da decisão de obra da IA (dia do último projeto aberto).
+		int last_build_day = -1000000;
+		double generation_by_fuel[kPowerFuelCount] = {};
+	};
+
 	struct City {
 		std::string id;
 		std::string name;
@@ -1593,6 +1706,19 @@ struct Region {
 		double private_education_cover = 0.0;
 		// Tonelagem movimentada no dia anterior (base do B2B de logística).
 		double service_tonnage_prev = 0.0;
+		// PARTE E / D-116 — derivados do dia (NÃO persistidos; recalculados a
+		// cada `phase_power`). `power_industry_factor` limita a produção e o
+		// emprego industriais; `power_service_factor`, os serviços;
+		// `power_stress` (0..1) entra na insatisfação B7 com peso declarado;
+		// `power_cost_industry` é a conta de energia da indústria do dia
+		// (XGS), usada no piso de custo da formação de preço.
+		double power_price = 0.0;
+		double power_served_ratio = 1.0;
+		double power_industry_factor = 1.0;
+		double power_service_factor = 1.0;
+		double power_cost_industry = 0.0;
+		double power_cost_per_value = 0.0;
+		double power_stress = 0.0;
 	};
 
 	// Fases medidas por set_profiling (ordem = ordem do tick).
@@ -1648,6 +1774,12 @@ struct Region {
 		// C6 (D-114): crise bancaria (confianca, corrida, redesconto,
 		// aperto e resolucao). Roda depois da bolsa e antes dos invariantes.
 		kPhaseBankCrisis,
+		// PARTE E (D-116): despacho por merito, preco da rede e racionamento.
+		// Roda ANTES do trabalho/producao (o fator de servico limita o emprego
+		// e a producao do dia). A liquidacao financeira roda depois da
+		// contabilidade, quando as firmas ja receberam a receita do dia.
+		kPhasePower,
+		kPhasePowerSettle,
 		kPhaseCount
 	};
 
@@ -1785,6 +1917,13 @@ struct Region {
 		// de desfazer preço, confiança e dividendo.
 		std::map<std::string, StockExchange> stock_exchanges;
 		std::map<std::string, StockTicker> stock_tickers;
+		// PARTE E (D-116): parque, rede, racionamento e caixa do setor elétrico.
+		// A liquidação move caixa de consumidores, geradores e governo; reverter
+		// um tick tem de desfazer tudo isso junto com o estado da rede.
+		std::vector<PowerCityState> power_cities;
+		std::vector<PowerPlant> power_plants;
+		std::map<std::string, PowerGridState> power_grids;
+		double power_cash = 0.0;
 		double emission_today = 0.0;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;

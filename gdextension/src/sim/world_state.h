@@ -7,6 +7,7 @@
 #include "sim_constants.h"
 #include "sim_types.h"
 #include "urban_types.h"
+#include "power.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -451,6 +452,20 @@ struct WorldState {
 	std::map<std::string, double> gov_cash_open;
 	// Setor de cada produto (goods.json → sector). Vazio = "primary".
 	std::vector<std::string> product_sectors;
+	// ------------------------------------------------------------------
+	// PARTE E / D-116 — ENERGIA (save v35). Ver sim/power.{h,cpp}.
+	// `power_cities` é paralelo a `cities`; `power_plants` guarda o parque
+	// inicial (semeado do dado) e as usinas construídas; `power_grids` é a
+	// rede por nação (só existe onde há operador nacional). `power_cash` é o
+	// caixa agregado do setor elétrico (dinheiro do mundo, soma zero).
+	// ------------------------------------------------------------------
+	std::vector<PowerCityState> power_cities;
+	std::vector<PowerPlant> power_plants;
+	std::map<std::string, PowerGridState> power_grids;
+	bool power_ready = false;
+	double power_cash = 0.0;
+	// REGRA (não persistida): espelho de data/definitions/energy/power_params.json.
+	PowerParams power_params;
 	// Preços-base dos bens (data-driven: set_goods/initialize_world).
 	double base_prices[kMaxProducts] = {
 		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,

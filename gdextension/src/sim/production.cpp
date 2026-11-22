@@ -148,6 +148,12 @@ void SimCore::phase_production() {
 				const double labor = building.jobs > 0.0
 					? building.workers / building.jobs : 1.0;
 				const bool primary = building.recipe < 0 && building.input_product < 0;
+				// PARTE E (D-116): energia servida limita a indústria do dia.
+				// Sem energia a planta para (piso declarado); a produção cai
+				// quase proporcionalmente ao racionamento.
+				const bool industrial = !primary;
+				const double power_factor = industrial
+					? std::clamp(city.power_industry_factor, 0.0, 1.0) : 1.0;
 				// D-092: custo unitário de trabalho/opex por unidade de
 				// capacidade (mesma proxy de energia/capital da fase de preço) e
 				// preço do produto, para a firma cortar produção quando a margem
@@ -189,7 +195,8 @@ void SimCore::phase_production() {
 						+ (desired_stock - stock_before) * ws_.inventory_recovery;
 				}
 				target = std::clamp(target, 0.0, effective_capacity);
-				const double desired_output = target * capacity_share * labor;
+				const double desired_output = target * capacity_share * labor
+					* power_factor;
 				double input_used = 0.0;
 				double output = desired_output;
 				if (building.recipe >= 0) {
@@ -219,7 +226,9 @@ void SimCore::phase_production() {
 								* city.markets[input].price;
 						}
 					}
-					const double unit_cost = unit_input_cost + unit_labor_opex;
+					const double unit_cost = unit_input_cost + unit_labor_opex
+						+ (industrial ? city.power_cost_per_value
+							* base_price(building.output_product) : 0.0);
 					const double margin = output_price - unit_cost;
 					double margin_scale = 1.0;
 					if (unit_cost > 0.0 && margin < 0.0) {
