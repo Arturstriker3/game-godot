@@ -41,7 +41,7 @@ const POWER_PARAMS_PATH := "res://data/definitions/energy/power_params.json"
 
 const EPS := 1e-6
 const MONEY_EPSILON := 1e-3
-const SAVE_VERSION := 35
+const SAVE_VERSION := 36
 const DAYS_CONSEQUENCE := 12
 const DAYS_SAVE := 6
 const DAYS_DETERMINISM := 15
@@ -88,13 +88,26 @@ func _test_merit_order_and_marginal_price() -> void:
 	sim.set_external_income_index("PORTUS", 0.2)
 	sim.tick_day()
 	var low_price := float(sim.get_power_status().get("average_price", 0.0))
+	# D-118: a regra do JSON está em SALÁRIO-DIA; o núcleo deriva a âncora
+	# (XGS por salário-dia) do próprio mundo no seed e publica no status.
+	var anchor := float(sim.get_power_status().get("salary_day_xgs", 0.0))
+	_check("(1) D-118: âncora salário-dia derivada do mundo", anchor > 0.0,
+		"salary_day_xgs=%.9f" % anchor)
+	_check("(1) D-118: piso e teto convertidos pela mesma âncora",
+		absf(float(sim.get_power_status().get("price_floor", 0.0))
+			- _param(params, "price_floor") * anchor) <= 1e-9
+			and absf(float(sim.get_power_status().get("price_ceiling", 0.0))
+				- _param(params, "price_ceiling") * anchor) <= 1e-9,
+		"piso=%.9f teto=%.9f âncora=%.9f" % [
+			float(sim.get_power_status().get("price_floor", 0.0)),
+			float(sim.get_power_status().get("price_ceiling", 0.0)), anchor])
 	_check("(1) mérito: só a hidro despacha na demanda baixa",
 		_fuel(sim, "hydro") > 0.0 and _fuel(sim, "coal") <= EPS,
 		"hydro=%.3f coal=%.3f" % [_fuel(sim, "hydro"), _fuel(sim, "coal")])
-	var hydro_cost := _param(params, "opex_per_mwh_hydro")
+	var hydro_cost := _param(params, "opex_per_mwh_hydro") * anchor
 	_check("(1) preço marginal = custo da hidro (última usina ligada)",
 		absf(low_price - hydro_cost) <= 1e-6,
-		"preço=%.6f custo_hidro=%.6f" % [low_price, hydro_cost])
+		"preço=%.9f custo_hidro=%.9f" % [low_price, hydro_cost])
 
 	# Demanda de renda 1,0: o carvão vira a última usina e define o preço.
 	var coal_price := _market_price(sim, "AGRIA", "coal")
@@ -105,8 +118,12 @@ func _test_merit_order_and_marginal_price() -> void:
 	var high_price := float(sim.get_power_status().get("average_price", 0.0))
 	var premium := _param(params, "fuel_import_premium")
 	var multiplier := 1.0 if coal_stock > 1e-9 else premium
-	var coal_cost := _param(params, "fuel_t_per_mwh_coal") * coal_price \
-		* multiplier + _param(params, "opex_per_mwh_coal")
+	# D-118: o combustível é COMPRADO no mercado de bens (preço de mercado,
+	# sem prêmio quando local); para formar o preço, o custo marginal inteiro
+	# (combustível + O&M em salário-dia) é convertido pela mesma âncora —
+	# a ordem de mérito não muda.
+	var coal_cost := anchor * (_param(params, "fuel_t_per_mwh_coal")
+		* coal_price * multiplier + _param(params, "opex_per_mwh_coal"))
 	_check("(1) mérito: o carvão entra quando a hidro não cobre a demanda",
 		_fuel(sim, "coal") > 0.0,
 		"coal=%.3f MWh" % _fuel(sim, "coal"))
@@ -379,7 +396,7 @@ func _test_save_v35_roundtrip() -> void:
 	}
 	var sim = _world(_nation(), cities, DAYS_SAVE)
 	var data: Dictionary = sim.to_dict()
-	_check("(9) save grava a versão v35",
+	_check("(9) save grava a versão corrente (v36, D-118)",
 		int(data.get("version", 0)) == SAVE_VERSION,
 		"version=%s" % data.get("version"))
 	var block: Variant = data.get("power")

@@ -130,8 +130,12 @@ func _test_trade_energy_and_price() -> void:
 			float(aaa.get("import_mwh", 0.0)),
 			float(bbb.get("export_mwh", 0.0))])
 	# Preço: a hidro do BBB é a última usina do despacho de exportação; o preço
-	# de fronteira é o O&M dela dividido por (1 - perda).
-	var opex_hydro := _param(params, "opex_per_mwh_hydro")
+	# de fronteira é o O&M dela dividido por (1 - perda). D-118: o O&M do JSON
+	# está em SALÁRIO-DIA; a âncora do mundo (publicada no status) converte.
+	var anchor := float(power.get("salary_day_xgs", 0.0))
+	_check("(3) D-118: âncora salário-dia derivada do mundo", anchor > 0.0,
+		"salary_day_xgs=%.9f" % anchor)
+	var opex_hydro := _param(params, "opex_per_mwh_hydro") * anchor
 	var expected := opex_hydro / (1.0 - loss)
 	_check("(3) preço de fronteira = marginal do exportador ÷ (1 - perda)",
 		absf(border - expected) <= 1e-6,
@@ -182,12 +186,14 @@ func _test_capacity_limits_flow() -> void:
 # --- (5) o importado tira a escassez ---------------------------------------
 func _test_import_removes_scarcity() -> void:
 	var params := _params()
-	var ceiling := _param(params, "price_ceiling")
 	var sim = _world(_parks())
 	sim.set_power_interconnects([
 		{"a": "AAA", "b": "BBB", "importer": "AAA", "capacity_mw": 500.0},
 	], true)
 	sim.tick_day()
+	var power: Dictionary = sim.get_power_status()
+	var ceiling := _param(params, "price_ceiling") \
+		* float(power.get("salary_day_xgs", 0.0))
 	var aaa: Dictionary = _grid(sim, "AAA")
 	_check("(5) com a linha folgada o importador é servido",
 		float(aaa.get("served_ratio", 0.0)) >= 0.995,

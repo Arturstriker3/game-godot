@@ -7015,6 +7015,12 @@ Dictionary EconomySim::get_power_status() const {
 	out["ready"] = ws_.power_ready;
 	out["cash"] = ws_.power_cash;
 	const ogs::PowerParams& params = ws_.power_params;
+	// D-118: âncora salarial derivada do sim (XGS por salário-dia) e os
+	// limites EFETIVOS em XGS/MWh — diagnóstico do relatório de escala
+	// monetária; a regra continua em salário-dia no JSON.
+	out["salary_day_xgs"] = params.salary_day_xgs;
+	out["price_floor"] = params.price_floor;
+	out["price_ceiling"] = params.price_ceiling;
 	// Parque instalado (MW) e geraÃ§Ã£o do dia (MWh) por fonte, no mundo.
 	double park_total[ogs::kPowerFuelCount] = {};
 	double generation_total[ogs::kPowerFuelCount] = {};

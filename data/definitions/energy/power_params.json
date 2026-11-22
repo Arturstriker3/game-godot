@@ -4,6 +4,14 @@
     "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E (E2/E3/E4/E5)",
     "kind": "model",
     "note": "Espelho declarado dos defaults de sim/power.h (PowerParams). Nenhum valor aqui e dado observado: sao PARAMETROS DE MODELO, calibraveis no laboratorio. Os DADOS (acesso a eletricidade, perdas T&D, parque instalado, potencial e PVOUT mensal) vem de access_losses.json, power_plants_2026_scaled.json, renewable_potential.json e hydro_potential.json, com a fonte publica de cada um no proprio arquivo.",
+    "money_unit": {
+      "unit": "salary-day",
+      "decision": "D-118 (docs/economy/E2E3_power_grid.md, secao 8.2)",
+      "fields": "price_floor, price_ceiling, opex_per_mwh_*, capex_per_mw_* e capex_per_mw_line",
+      "conversion": "XGS = valor_salario_dia * salary_day_xgs; a ancora salary_day_xgs e DERIVADA do proprio sim no seed (media ponderada pela populacao simulada do salario diario semeado do trabalhador nao qualificado, Pop::wage_by_level[0]) e vai ao save (mapa 'policy' do bloco 'power'). Sem ancora, o nucleo usa o salario inicial declarado (kLaborWageInitial = 0.055 XGS/dia).",
+      "not_converted": "fuel_t_per_mwh_* e o preco de MERCADO do combustivel continuam como estao: a usina COMPRA o combustivel no mercado local pelo preco do bem (XGS de bens, com premio de importacao quando falta estoque) e esse pagamento sai do estoque/caixa como antes. Para FORMAR o preco, o custo marginal inteiro (combustivel + O&M) e convertido pela mesma ancora, entao a ordem de merito e os custos relativos ficam identicos aos da regra declarada; a diferenca entre o preco cobrado e o combustivel pago fica no resultado do setor (soma zero preservada). VOLL continua MULTIPLO do preco da rede (voll_multiple); a forma do preco de escassez, o racionamento, a insatisfacao e as perdas nao mudaram.",
+      "why": "A energia estava no nivel de preco dos BENS (1 XGS ~ US$ 6) e era paga com renda no nivel do SALARIO (1 XGS ~ US$ 4.900): conta de energia/PIB de 68% nos EUA (real 1,3%). A unidade salario-dia ancora a regra ao nivel salarial do sim."
+    },
     "verified_by": "tools/e2e3_power_test.gd (confere o espelho contra o binario)",
     "seasonal_dispatch": {
       "method": "a disponibilidade das fontes termicas despachaveis (coal, gas, oil, biomass, other) segue o residuo mensal da solar (PVOUT): fator = 1 + (solar_ano/termica_ano) * (1 - 12*share_solar_mes), com media anual 1. A geracao anual continua ancorada na Ember; o inverno de PVOUT baixo e coberto pelas termicas, como no despacho real.",

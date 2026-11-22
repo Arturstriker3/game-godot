@@ -63,10 +63,16 @@ struct PowerParams {
 	// local (MW) — modelo declarado; a obra (§15) troca o estado.
 	double partial_line_share = 0.25;
 	double partial_line_min_mw = 10.0;
-	// Preço (XGS/MWh): escala do jogo, piso e teto de escassez declarados.
+	// Preço: escala do jogo, piso e teto de escassez declarados. D-118 — os
+	// parâmetros MONETÁRIOS da energia (piso, teto, O&M, capex e capex de
+	// linha) são declarados em SALÁRIO-DIA (unidade do nível salarial do sim)
+	// e convertidos para XGS por `resolve_money`, com a âncora derivada do
+	// próprio mundo (`salary_day_xgs`). A FORMA do preço não muda: a última
+	// usina despachada continua definindo o preço, o teto continua sendo o
+	// preço de escassez e o VOLL continua múltiplo do preço da rede.
 	double price_scale = 1.0;
-	double price_floor = 0.05;
-	double price_ceiling = 30.0;
+	double price_floor_sd = 0.05;
+	double price_ceiling_sd = 30.0;
 	// Combustível por MWh de térmica (t/MWh) e prêmio do combustível
 	// importado quando o mercado local não cobre a compra (declarado).
 	double fuel_t_per_mwh[kPowerFuelCount] = {0.0, 0.0, 0.0, 0.00035,
@@ -96,16 +102,38 @@ struct PowerParams {
 	// rede, e a fração do parque atual usada como teto térmico (potencial).
 	double build_share_demand = 0.08;
 	double thermal_cap_multiple = 2.0;
-	// Custo de obra declarado (XGS/MW) e prazo (dias) por fonte.
+	// Custo de obra declarado (SALÁRIO-DIA/MW) e prazo (dias) por fonte.
+	double capex_per_mw_sd[kPowerFuelCount] = {900.0, 700.0, 750.0, 1200.0,
+		1000.0, 900.0, 2600.0, 800.0, 900.0};
+	double opex_per_mwh_sd[kPowerFuelCount] = {0.15, 0.10, 0.12, 0.25, 0.22,
+		0.30, 0.35, 0.30, 0.30};
+	int build_days_plant = 180;
+	int build_days_line = 120;
+	// Linha nova: capacidade em MW por custo (SALÁRIO-DIA/MW) e fração da
+	// demanda.
+	double capex_per_mw_line_sd = 150.0;
+	double line_build_share_demand = 0.25;
+
+	// --- D-118: unidade monetária da energia -------------------------------
+	// `salary_day_xgs` = XGS por SALÁRIO-DIA, derivado do próprio sim no seed
+	// (média ponderada pela população simulada do salário diário semeado do
+	// trabalhador não qualificado). 0 = ainda não derivado; a conversão usa o
+	// salário inicial declarado do núcleo (kLaborWageInitial). O valor vai ao
+	// save no mapa de parâmetros: o load não re-deriva com o salário do dia.
+	double salary_day_xgs = 0.0;
+	// Valores EFETIVOS em XGS/MWh e XGS/MW, calculados por `resolve_money`
+	// (não vão ao save; as usinas guardam o próprio custo resolvido).
+	double price_floor = 0.05;
+	double price_ceiling = 30.0;
 	double capex_per_mw[kPowerFuelCount] = {900.0, 700.0, 750.0, 1200.0,
 		1000.0, 900.0, 2600.0, 800.0, 900.0};
 	double opex_per_mwh[kPowerFuelCount] = {0.15, 0.10, 0.12, 0.25, 0.22,
 		0.30, 0.35, 0.30, 0.30};
-	int build_days_plant = 180;
-	int build_days_line = 120;
-	// Linha nova: capacidade em MW por custo (XGS/MW) e fração da demanda.
 	double capex_per_mw_line = 150.0;
-	double line_build_share_demand = 0.25;
+
+	// Converte os parâmetros em SALÁRIO-DIA para XGS com a âncora do mundo.
+	// Idempotente (sempre parte dos valores declarados `*_sd`).
+	void resolve_money();
 
 	// Preenche os campos presentes no mapa (nomes = campos do JSON).
 	void apply(const std::map<std::string, double>& values);
@@ -180,9 +208,11 @@ void seed_interconnects(WorldState& ws,
 // continua `power_ready = false` (ausência declarada).
 void after_load(WorldState& ws);
 
-// Mapa nome→valor dos parâmetros de REGRA (os mesmos nomes do
-// data/definitions/energy/power_params.json). O save v35 guarda o mapa para o
-// round-trip não perder a regra declarada; `PowerParams::apply` relê.
+// Mapa nome→valor dos parâmetros de REGRA (os mesmos nomes e as mesmas
+// unidades do data/definitions/energy/power_params.json: MONETÁRIOS em
+// SALÁRIO-DIA, ver D-118). O save v35+ guarda o mapa para o round-trip não
+// perder a regra declarada, e desde D-118 inclui `salary_day_xgs` (a âncora
+// XGS por salário-dia derivada do mundo) — `PowerParams::apply` relê.
 void power_params_to_map(const PowerParams& params,
 	std::map<std::string, double>& out);
 

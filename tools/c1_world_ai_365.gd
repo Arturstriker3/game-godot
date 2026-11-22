@@ -351,6 +351,11 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 	return {
 		"ready": true,
 		"days": samples.size(),
+		# D-118: âncora salário-dia -> XGS derivada do mundo no seed e os
+		# limites efetivos da regra (o JSON continua em salário-dia).
+		"salary_day_xgs": float(final.get("salary_day_xgs", 0.0)),
+		"price_floor": float(final.get("price_floor", 0.0)),
+		"price_ceiling": float(final.get("price_ceiling", 0.0)),
 		"average_price": bill / served if served > 0.0 else 0.0,
 		"served_ratio": served / demand if demand > 0.0 else 1.0,
 		"min_served_ratio": min_ratio,

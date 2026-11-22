@@ -104,8 +104,12 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 	get("partial_line_share", partial_line_share);
 	get("partial_line_min_mw", partial_line_min_mw);
 	get("price_scale", price_scale);
-	get("price_floor", price_floor);
-	get("price_ceiling", price_ceiling);
+	get("price_floor", price_floor_sd);
+	get("price_ceiling", price_ceiling_sd);
+	// D-118: âncora salário-dia -> XGS (derivada do mundo no seed; no save
+	// ela vem no mesmo mapa). Ausente = 0 -> `resolve_money` usa o salário
+	// inicial declarado até o seed derivar do sim.
+	get("salary_day_xgs", salary_day_xgs);
 	get("fuel_import_premium", fuel_import_premium);
 	get("industry_floor", industry_floor);
 	get("self_generation_floor", self_generation_floor);
@@ -117,14 +121,14 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 	get("voll_multiple", voll_multiple);
 	get("build_share_demand", build_share_demand);
 	get("thermal_cap_multiple", thermal_cap_multiple);
-	get("capex_per_mw_line", capex_per_mw_line);
+	get("capex_per_mw_line", capex_per_mw_line_sd);
 	get("line_build_share_demand", line_build_share_demand);
 	for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
 		const std::string name = kFuelNames[fuel];
 		get("cf_" + name, cf[fuel]);
 		get("fuel_t_per_mwh_" + name, fuel_t_per_mwh[fuel]);
-		get("capex_per_mw_" + name, capex_per_mw[fuel]);
-		get("opex_per_mwh_" + name, opex_per_mwh[fuel]);
+		get("capex_per_mw_" + name, capex_per_mw_sd[fuel]);
+		get("opex_per_mwh_" + name, opex_per_mwh_sd[fuel]);
 	}
 	const auto get_int = [&v](const std::string& key, int& out) {
 		const auto found = v.find(key);
@@ -151,8 +155,8 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 		share_other /= share_sum;
 	}
 	price_scale = std::max(0.0, price_scale);
-	price_floor = std::max(0.0, price_floor);
-	price_ceiling = std::max(price_floor, price_ceiling);
+	price_floor_sd = std::max(0.0, price_floor_sd);
+	price_ceiling_sd = std::max(price_floor_sd, price_ceiling_sd);
 	loss_floor_pct = std::clamp(loss_floor_pct, 0.0, 50.0);
 	loss_max_pct = std::clamp(loss_max_pct, loss_floor_pct, 80.0);
 	kwh_per_capita_day = std::max(0.0, kwh_per_capita_day);
@@ -161,8 +165,25 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 	for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
 		cf[fuel] = std::clamp(cf[fuel], 0.0, 1.0);
 		fuel_t_per_mwh[fuel] = std::max(0.0, fuel_t_per_mwh[fuel]);
-		opex_per_mwh[fuel] = std::max(0.0, opex_per_mwh[fuel]);
-		capex_per_mw[fuel] = std::max(0.0, capex_per_mw[fuel]);
+		opex_per_mwh_sd[fuel] = std::max(0.0, opex_per_mwh_sd[fuel]);
+		capex_per_mw_sd[fuel] = std::max(0.0, capex_per_mw_sd[fuel]);
+	}
+	capex_per_mw_line_sd = std::max(0.0, capex_per_mw_line_sd);
+	salary_day_xgs = std::max(0.0, salary_day_xgs);
+	resolve_money();
+}
+
+void PowerParams::resolve_money() {
+	// Âncora do mundo (XGS por salário-dia). Sem a âncora derivada, usa o
+	// salário inicial declarado do núcleo — nunca 0 (preço não colapsa).
+	const double anchor = salary_day_xgs > 0.0
+		? salary_day_xgs : kLaborWageInitial;
+	price_floor = std::max(0.0, price_floor_sd) * anchor;
+	price_ceiling = std::max(price_floor_sd, price_ceiling_sd) * anchor;
+	capex_per_mw_line = std::max(0.0, capex_per_mw_line_sd) * anchor;
+	for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+		opex_per_mwh[fuel] = std::max(0.0, opex_per_mwh_sd[fuel]) * anchor;
+		capex_per_mw[fuel] = std::max(0.0, capex_per_mw_sd[fuel]) * anchor;
 	}
 }
 
@@ -192,8 +213,8 @@ void power_params_to_map(const PowerParams& p,
 	put("partial_line_share", p.partial_line_share);
 	put("partial_line_min_mw", p.partial_line_min_mw);
 	put("price_scale", p.price_scale);
-	put("price_floor", p.price_floor);
-	put("price_ceiling", p.price_ceiling);
+	put("price_floor", p.price_floor_sd);
+	put("price_ceiling", p.price_ceiling_sd);
 	put("fuel_import_premium", p.fuel_import_premium);
 	put("industry_floor", p.industry_floor);
 	put("self_generation_floor", p.self_generation_floor);
@@ -209,26 +230,64 @@ void power_params_to_map(const PowerParams& p,
 	put("thermal_cap_multiple", p.thermal_cap_multiple);
 	put("build_days_plant", static_cast<double>(p.build_days_plant));
 	put("build_days_line", static_cast<double>(p.build_days_line));
-	put("capex_per_mw_line", p.capex_per_mw_line);
+	put("capex_per_mw_line", p.capex_per_mw_line_sd);
 	put("line_build_share_demand", p.line_build_share_demand);
+	// D-118: a âncora salário-dia -> XGS vai no mapa (save v36) para o load
+	// converter a regra com o MESMO fator do dia do seed, não com o salário
+	// de hoje.
+	put("salary_day_xgs", p.salary_day_xgs);
 	for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
 		const std::string name = kFuelNames[fuel];
 		put("cf_" + name, p.cf[fuel]);
 		put("fuel_t_per_mwh_" + name, p.fuel_t_per_mwh[fuel]);
-		put("capex_per_mw_" + name, p.capex_per_mw[fuel]);
-		put("opex_per_mwh_" + name, p.opex_per_mwh[fuel]);
+		put("capex_per_mw_" + name, p.capex_per_mw_sd[fuel]);
+		put("opex_per_mwh_" + name, p.opex_per_mwh_sd[fuel]);
 	}
+}
+
+// D-118 — âncora salarial do sim: XGS por SALÁRIO-DIA. Média ponderada pela
+// população simulada do salário diário semeado do trabalhador não qualificado
+// (`Pop::wage_by_level[0]` — o mesmo nível da comparação real do §8.2 do doc
+// da E2/E3). Derivada do estado do mundo no seed: determinística, não muda
+// com o salário do dia e não é um número escolhido à mão. Sem população ou
+// sem salário, usa o salário inicial declarado do núcleo (kLaborWageInitial).
+double power_salary_day_xgs(const WorldState& ws) {
+	double weighted = 0.0;
+	double people = 0.0;
+	for (const City& city : ws.cities) {
+		const double pop = city.simulation_population > 0.0
+			? city.simulation_population : city.population;
+		const double wage = city.pop.wage_by_level[0];
+		if (pop <= 0.0 || wage <= 0.0) {
+			continue;
+		}
+		weighted += pop * wage;
+		people += pop;
+	}
+	if (people <= 1e-9) {
+		return kLaborWageInitial;
+	}
+	return std::clamp(weighted / people, 1e-4, 10.0);
 }
 
 void seed(WorldState& ws, const PowerParams& params,
 		const std::map<std::string, PowerNationDef>& nations,
 		const std::map<std::string, PowerCityDef>& cities,
 		bool only_missing) {
-	ws.power_params = params;
+	// D-118: a âncora salarial é derivada do mundo UMA vez (no seed) e vai ao
+	// save; um save com o estado de energia manda, inclusive a regra já
+	// convertida. Save anterior à âncora (sem a chave) é migrado aqui, uma vez.
+	const bool has_save = only_missing && ws.power_ready;
+	if (!has_save || ws.power_params.salary_day_xgs <= 0.0) {
+		ws.power_params = params;
+		ws.power_params.salary_day_xgs = power_salary_day_xgs(ws);
+		ws.power_params.resolve_money();
+	}
 	// Save já tem estado de energia: as definições NÃO sobrescrevem o mundo.
-	if (only_missing && ws.power_ready) {
+	if (has_save) {
 		return;
 	}
+	const PowerParams& money = ws.power_params;
 	const std::size_t count = ws.cities.size();
 	ws.power_cities.assign(count, PowerCityState());
 	ws.power_plants.clear();
@@ -441,8 +500,8 @@ void seed(WorldState& ws, const PowerParams& params,
 			plant.fuel = fuel;
 			plant.mw = mw;
 			plant.owner_nation = city.nation;
-			plant.capex = mw * params.capex_per_mw[fuel];
-			plant.opex_per_mwh = params.opex_per_mwh[fuel];
+			plant.capex = mw * money.capex_per_mw[fuel];
+			plant.opex_per_mwh = money.opex_per_mwh[fuel];
 			plant.jobs = mw * 0.4;
 			plant.wage = 20.0;
 			plant.built_day = ws.day;
@@ -1010,7 +1069,15 @@ void SimCore::phase_power() {
 			fuel_cost = params.fuel_t_per_mwh[plant.fuel] * price
 				* (local ? 1.0 : params.fuel_import_premium);
 		}
-		day.cost = std::max(0.0, fuel_cost + plant.opex_per_mwh);
+		// D-118: o custo marginal é um PREÇO, e o preço da energia vive na
+		// unidade salário-dia. O termo de combustível (declarado como custo no
+		// mercado de BENS, em XGS) entra convertido pela MESMA âncora, então a
+		// ordem de mérito e os custos relativos ficam idênticos aos da regra
+		// declarada; a compra do combustível continua paga ao preço de mercado
+		// do bem (ver `settle`), e a diferença fica no resultado do setor.
+		const double anchor = params.salary_day_xgs > 0.0
+			? params.salary_day_xgs : kLaborWageInitial;
+		day.cost = anchor * fuel_cost + plant.opex_per_mwh;
 		plants_by_city[index].push_back(static_cast<int>(p));
 	}
 
