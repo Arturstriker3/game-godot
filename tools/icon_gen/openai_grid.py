@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Backend OpenAI para a grade de 16 ícones pintados (opengs-icons).
+"""Backend OpenAI para a grade de 16 ícones de recurso (opengs-icons).
 
-Gera UMA folha 4×4 com 16 ícones de jogo no estilo pintado à mão das
-referências, recorta as 16 células, apara, remove o fundo e salva 128 px e
-64 px em ``assets/icons/illustrated_source/gen_api/<id>/<id>_v<n>.png``
-(+ ``_64.png`` e metadados em ``.json``).
+Gera UMA folha 4×4 com 16 ícones de jogo no estilo cartoon de ícone de jogo
+da referência: contorno escuro grosso e uniforme, cel shading chapado em 2–3
+tons, paleta sóbria oliva/cáqui/aço, vista 3/4 e objeto isolado. Recorta as 16
+células, apara, remove o fundo e salva 128 px e 64 px em
+``assets/icons/illustrated_source/gen_api/<id>/<id>_v<n>.png`` (+ ``_64.png``
+e metadados em ``.json``).
 
-Ferramenta MCP: ``generate_grid(ids, descriptions, quality, dry_run)``.
+A referência padrão é ``ref_sheet_military_pack.png``. ``refs`` / ``--refs``
+aceita uma ou mais imagens (caminho absoluto ou nome dentro de ref_style).
+``variant`` / ``--tag`` (ex.: ``v2``) fixa o número da variação para não
+sobrescrever um lote anterior.
+
+Ferramenta MCP: ``generate_grid(ids, descriptions, quality, dry_run, refs, variant)``.
 
 Uso direto (CLI, mesma máquina):
 
     python tools/icon_gen/openai_grid.py --dry-run --quality medium
     python tools/icon_gen/openai_grid.py --quality medium          # chamada real
+    python tools/icon_gen/openai_grid.py --tag v2                  # lote 2 (novo estilo)
+    python tools/icon_gen/openai_grid.py --refs a.png|b.png       # referências extras
     python tools/icon_gen/openai_grid.py --spend                   # só o gasto
     python tools/icon_gen/openai_grid.py --rebuild-sheet           # refaz a folha
     python tools/icon_gen/openai_grid.py --serve                   # servidor MCP
@@ -67,7 +76,10 @@ DEFAULT_KEY_FILE = Path(
     r"G:\projetos\Fooocus_win64_2-5-0\treino_icones\secrets\openai_api_key.txt"
 )
 DEFAULT_REF_DIR = Path(r"G:\projetos\Fooocus_win64_2-5-0\treino_icones\ref_style")
-REF_FILES = ("ref_sheet_goods_transparent.png", "ref_sheet_minerals.png")
+# Lote 1 (v1) usou ref_sheet_goods_transparent.png + ref_sheet_minerals.png
+# (estilo pintado à mão). O lote 2 segue a folha do pack militar do dono
+# (estilo cartoon de ícone com contorno grosso), por isso a referência única.
+REF_FILES = ("ref_sheet_military_pack.png",)
 REF_TARGET_WIDTH = 512  # menor tamanho ainda útil para o estilo (menos tokens)
 
 DEFAULT_MODEL = "gpt-image-2.6-sunburst"
@@ -105,7 +117,7 @@ DEFAULT_DESCRIPTIONS: dict[str, str] = {
     "iron": "a stack of three grey iron ingots, slightly worn cast metal",
     "oil": "one fat teardrop of dark crude oil, glossy black-brown, with a small light glint",
     "bauxite": "a cluster of rough reddish-orange bauxite ore rocks with earthy bands",
-    "lead": "two dull grey lead ingots stacked, heavy and slightly scratched",
+    "lead": "rounded dull blue-gray lead ingots, different shape from iron",
     "gold": "a neat pyramid of three shiny gold bullion bars with warm highlights",
     "phosphate": "a heap of pale lilac-grey phosphate rock chunks in a small burlap mound",
     "tungsten": "a stout tungsten light-bulb-shaped metal lump with a glowing coiled filament",
@@ -126,19 +138,31 @@ TEST_IDS = (
 
 STYLE_PROMPT = """\
 Create ONE square sprite sheet: a strict 4x4 grid of sixteen separate game
-resource icons, one single object per cell, in the hand-painted game-icon style
-of the two reference images.
+resource icons, one single object per cell, following the art style of the
+reference image exactly (the reference is a 4x4 sheet of game item icons).
 
-STYLE (match the references):
-- hand-painted digital gouache game icons, visible brush strokes and a light
-  canvas texture, rich saturated colors, warm highlights;
-- soft dark outline around each object, main light from the upper left, gentle
-  cool bounce light from the lower right;
-- three-quarter view, slightly chunky readable silhouette, small soft contact
-  shadow directly under the object;
+STYLE — copy the reference with high fidelity:
+- stylized cartoon game-icon illustration, flat and vector-like, NOT a
+  painting: cel shading with only two or three solid flat tones per material
+  (base, one darker shadow tone, one small highlight), hard color steps, no
+  blended gradients, no brush strokes, no canvas texture;
+- THICK, UNIFORM, DARK outline (near-black) of the same width around every
+  silhouette and around every inner detail, clean and slightly rounded, as in
+  the reference;
+- muted, sober palette: olive drab, khaki, sand, steel grey, gunmetal and dark
+  brown dominate; only small accents (brass, dull red, dim blue) are allowed;
+  no neon and no oversaturated colors;
+- light flat texture only where the reference has it: a few thin hatching
+  lines, stitched seams or worn scratches, never photo-real noise;
+- three-quarter view of a single isolated object, chunky readable silhouette,
+  a small flat contact shadow hugging the object (no soft blurred drop
+  shadow);
 - every icon centered inside its cell with a clear empty margin (about 10% of
   the cell), all sixteen objects drawn at the same visual weight and scale;
 - nothing touches or crosses a cell border.
+
+Match the reference's outline thickness, flat shading and palette; do not
+invent a different rendering style.
 
 BACKGROUND: fully transparent PNG (background=transparent, output_format=png).
 If transparency is impossible, use one flat light neutral grey (#D9D9D9), no
@@ -205,6 +229,42 @@ def _validate_ids(ids: list[str]) -> list[str]:
             raise ValueError(f"id repetido: {value!r}")
         out.append(value)
     return out
+
+
+def _split_refs(refs: str | list[str] | None) -> list[str]:
+    """Aceita lista ou string com caminhos separados por '|', ';' ou quebra."""
+    if not refs:
+        return []
+    if isinstance(refs, str):
+        parts = re.split(r"[|;\n]+", refs)
+    else:
+        parts = [str(x) for x in refs]
+    return [p for p in (x.strip() for x in parts) if p]
+
+
+def _parse_variant(tag: int | str | None) -> int | None:
+    """Converte `tag`/`variant` (2, "2" ou "v2") no número da variação."""
+    if tag is None or (isinstance(tag, str) and not tag.strip()):
+        return None
+    if isinstance(tag, int):
+        value = tag
+    else:
+        match = re.fullmatch(r"v?(\d+)", str(tag).strip().lower())
+        if not match:
+            raise ValueError(f"tag inválida: {tag!r} (use 2, '2' ou 'v2')")
+        value = int(match.group(1))
+    if value < 1:
+        raise ValueError(f"tag inválida: {tag!r} (a variação começa em 1)")
+    return value
+
+
+def _variant_files(icon_id: str, variation: int) -> list[Path]:
+    id_dir = GEN_API_DIR / icon_id
+    return [
+        id_dir / f"{icon_id}_v{variation}.png",
+        id_dir / f"{icon_id}_v{variation}_64.png",
+        id_dir / f"{icon_id}_v{variation}.json",
+    ]
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -388,22 +448,34 @@ def _ref_dir() -> Path:
     return Path(os.environ.get("OGS_ICONAPI_REF_DIR", str(DEFAULT_REF_DIR)))
 
 
-def prepare_refs(target_width: int = REF_TARGET_WIDTH) -> tuple[list[tuple[str, bytes, str]], list[tuple[int, int]]]:
-    """Reduz as referências de estilo para JPEG/PNG pequeno (menos tokens)."""
+def _resolve_ref(ref: str) -> Path:
+    """Caminho absoluto passa direto; nome simples resolve dentro de ref_style."""
+    path = Path(ref)
+    return path if path.is_absolute() else _ref_dir() / path
+
+
+def prepare_refs(
+    refs: str | list[str] | None = None,
+    target_width: int = REF_TARGET_WIDTH,
+) -> tuple[list[tuple[str, bytes, str]], list[tuple[int, int]]]:
+    """Reduz as referências de estilo para JPEG pequeno (menos tokens)."""
     from PIL import Image
 
-    ref_dir = _ref_dir()
-    missing = [name for name in REF_FILES if not (ref_dir / name).is_file()]
+    names = _split_refs(refs) or list(REF_FILES)
+    paths = [_resolve_ref(name) for name in names]
+    missing = [str(path) for path in paths if not path.is_file()]
     if missing:
-        raise FileNotFoundError(f"referências de estilo ausentes em {ref_dir}: {', '.join(missing)}")
+        raise FileNotFoundError(
+            f"referência(s) de estilo ausente(s) em {_ref_dir()}: {', '.join(missing)}"
+        )
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     files: list[tuple[str, bytes, str]] = []
     sizes: list[tuple[int, int]] = []
     from io import BytesIO
 
-    for name in REF_FILES:
-        with Image.open(ref_dir / name) as im:
+    for path in paths:
+        with Image.open(path) as im:
             im = im.convert("RGB")
             if im.width > target_width:
                 height = max(1, round(im.height * target_width / im.width))
@@ -412,8 +484,8 @@ def prepare_refs(target_width: int = REF_TARGET_WIDTH) -> tuple[list[tuple[str, 
             im.save(buf, format="JPEG", quality=88, optimize=True)
             data = buf.getvalue()
             sizes.append(im.size)
-            files.append((f"{Path(name).stem}_{im.width}.jpg", data, "image/jpeg"))
-            log(f"referência {name} → {im.width}x{im.height} ({len(data) // 1024} KB)")
+            files.append((f"{path.stem}_{im.width}.jpg", data, "image/jpeg"))
+            log(f"referência {path.name} → {im.width}x{im.height} ({len(data) // 1024} KB)")
     return files, sizes
 
 
@@ -525,7 +597,49 @@ def _next_variation(icon_id: str) -> int:
 # Folha de revisão
 # ---------------------------------------------------------------------------
 
+VARIATION_NOTES = {
+    1: "pintado à mão (lote 1)",
+    2: "cartoon da referência (contorno grosso)",
+}
+
+
+def collect_entries() -> list[dict]:
+    """Lê todos os metadados de gen_api (todas as variações)."""
+    entries: list[dict] = []
+    if not GEN_API_DIR.is_dir():
+        return entries
+    for id_dir in sorted(p for p in GEN_API_DIR.iterdir() if p.is_dir()):
+        for meta_path in sorted(id_dir.glob(f"{id_dir.name}_v*.json")):
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            variation = meta.get("variation")
+            if not isinstance(variation, int):
+                continue
+            entries.append(
+                {
+                    "id": id_dir.name,
+                    "label": meta.get("label") or "",
+                    "description": meta.get("description") or "",
+                    "variation": variation,
+                    "cell": meta.get("cell"),
+                    "empty": meta.get("empty"),
+                    "cost_usd": meta.get("cost_usd"),
+                    "png": str(id_dir / f"{id_dir.name}_v{variation}.png"),
+                    "png_64": str(id_dir / f"{id_dir.name}_v{variation}_64.png"),
+                }
+            )
+    return entries
+
+
+def _ordered_ids(entries: list[dict]) -> list[str]:
+    known = {icon_id: idx for idx, icon_id in enumerate(TEST_IDS)}
+    return sorted({e["id"] for e in entries}, key=lambda v: (known.get(v, len(known)), v))
+
+
 def render_sheet(entries: list[dict], call_meta: dict, spend: dict) -> Path:
+    """Folha comparativa: cada matéria-prima com as variações lado a lado."""
     import html as _html
 
     def esc(value: object) -> str:
@@ -535,17 +649,37 @@ def render_sheet(entries: list[dict], call_meta: dict, spend: dict) -> Path:
         return Path(os.path.relpath(path, SHEET_PATH.parent)).as_posix()
 
     SHEET_PATH.parent.mkdir(parents=True, exist_ok=True)
-    rows = []
+    grouped: dict[str, list[dict]] = {}
     for entry in entries:
-        rows.append(
-            f'<div class="card{" empty" if entry.get("empty") else ""}">'
-            f'<div class="pics">'
-            f'<img class="big" src="{esc(rel(entry["png"]))}" alt="{esc(entry["id"])} 128">'
-            f'<img class="small" src="{esc(rel(entry["png_64"]))}" alt="{esc(entry["id"])} 64"></div>'
-            f'<div class="id">{esc(entry["id"])} <span class="tag">{esc(entry.get("label") or "")}</span></div>'
-            f'<div class="desc">{esc(entry.get("description") or "")}</div>'
-            f'<div class="meta">v{esc(entry.get("variation"))} • célula {esc(entry.get("cell", "?"))}'
-            f"{' • vazia' if entry.get('empty') else ''}</div>"
+        grouped.setdefault(entry["id"], []).append(entry)
+
+    cards = []
+    for icon_id in _ordered_ids(entries):
+        variants = sorted(grouped[icon_id], key=lambda e: int(e.get("variation") or 0))
+        label = next((v.get("label") for v in variants if v.get("label")), "")
+        blocks = []
+        for entry in variants:
+            variation = entry.get("variation", "?")
+            note = VARIATION_NOTES.get(int(variation) if str(variation).isdigit() else 0, "")
+            blocks.append(
+                f'<div class="variant{" empty" if entry.get("empty") else ""}">'
+                f'<div class="vlabel">v{esc(variation)}'
+                f'{"" if not note else " · " + esc(note)}</div>'
+                f'<div class="pics">'
+                f'<img class="big" src="{esc(rel(entry["png"]))}" '
+                f'alt="{esc(icon_id)} v{esc(variation)} 128">'
+                f'<img class="small" src="{esc(rel(entry["png_64"]))}" '
+                f'alt="{esc(icon_id)} v{esc(variation)} 64"></div>'
+                f'<div class="desc">{esc(entry.get("description") or "")}</div>'
+                f'<div class="meta">célula {esc(entry.get("cell", "?"))}'
+                f"{' · vazia' if entry.get('empty') else ''}"
+                f' · US$ {esc(entry.get("cost_usd", "?"))} (1/16)</div>'
+                "</div>"
+            )
+        cards.append(
+            f'<div class="card">'
+            f'<div class="id">{esc(icon_id)} <span class="tag">{esc(label)}</span></div>'
+            f'<div class="variants">{"".join(blocks)}</div>'
             "</div>"
         )
     raw = call_meta.get("sheet_image")
@@ -560,7 +694,7 @@ def render_sheet(entries: list[dict], call_meta: dict, spend: dict) -> Path:
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<title>OpenGS — ícones pintados (OpenAI, grade 4×4)</title>
+<title>OpenGS — ícones de recurso (OpenAI, grade 4×4)</title>
 <style>
 :root{{--paper:#ece5d3;--ink:#2b2a26;--muted:#6b675c;--brass:#8a6d3b;--line:#c9c0aa;}}
 *{{box-sizing:border-box}}
@@ -568,9 +702,13 @@ body{{margin:0;padding:32px;background:var(--paper);color:var(--ink);
 font:14px/1.45 system-ui,Segoe UI,Roboto,sans-serif}}
 h1{{font-size:22px;margin:0 0 4px}}
 .meta{{color:var(--muted);margin:0 0 8px}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:20px}}
-.card{{background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px}}
-.card.empty{{border-color:#c49a63;background:#fdf6ec}}
+.note{{max-width:70ch}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:14px;margin-top:20px}}
+.card{{background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:10px}}
+.variants{{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}}
+.variant{{display:flex;flex-direction:column;gap:6px;max-width:200px}}
+.variant.empty{{background:#fdf6ec;border:1px dashed #c49a63;border-radius:4px;padding:6px}}
+.vlabel{{font-size:12px;font-weight:600;color:var(--brass)}}
 .pics{{display:flex;align-items:flex-end;gap:10px}}
 .pics img{{image-rendering:auto;background:repeating-conic-gradient(#f4f0e6 0 25%,#e7e1d2 0 50%) 0 0/16px 16px;border:1px solid var(--line);border-radius:4px}}
 .pics .big{{width:128px;height:128px}}
@@ -582,14 +720,19 @@ a{{color:var(--brass)}}
 </style>
 </head>
 <body>
-<h1>OpenGS — ícones pintados gerados pela API da OpenAI</h1>
+<h1>OpenGS — ícones de recurso gerados pela API da OpenAI</h1>
 {raw_block}
-<p class="meta">{esc(len(entries))} ícones • gasto real desta chamada US$ {esc(call_meta.get('cost_usd'))} •
+<p class="meta note">v2 segue <code>ref_sheet_military_pack.png</code> com fidelidade:
+contorno escuro grosso e uniforme, cel shading chapado em 2–3 tons, paleta sóbria
+oliva/cáqui/aço, vista 3/4 e objeto isolado. v1 é o lote anterior, pintado à mão.
+Lead pede formato diferente do ferro.</p>
+<p class="meta">{esc(len(grouped))} matérias-primas • variações {esc(sorted({e.get("variation") for e in entries}))} •
+gasto real desta chamada US$ {esc(call_meta.get('cost_usd'))} •
 gasto acumulado US$ {esc(spend.get('total_usd'))} de US$ {esc(spend.get('budget_usd'))} (orçamento) •
 {esc(call_meta.get('created_at'))}</p>
 <p class="meta">Custo é estimado por tokens do <code>usage</code>; a conta oficial sai no painel da OpenAI.</p>
 <div class="grid">
-{''.join(rows)}
+{''.join(cards)}
 </div>
 </body>
 </html>
@@ -599,39 +742,16 @@ gasto acumulado US$ {esc(spend.get('total_usd'))} de US$ {esc(spend.get('budget_
 
 
 def rebuild_sheet() -> dict:
-    """Recria a folha a partir dos JSONs já salvos (sem chamar a API)."""
-    entries: list[dict] = []
-    if not GEN_API_DIR.is_dir():
-        return {"ok": False, "error": "missing", "message": f"nada em {GEN_API_DIR}"}
-    for id_dir in sorted(p for p in GEN_API_DIR.iterdir() if p.is_dir()):
-        for meta_path in sorted(id_dir.glob(f"{id_dir.name}_v*.json")):
-            try:
-                meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                continue
-            png = id_dir / f"{id_dir.name}_v{meta.get('variation')}.png"
-            entries.append(
-                {
-                    "id": id_dir.name,
-                    "label": meta.get("label") or "",
-                    "description": meta.get("description") or "",
-                    "variation": meta.get("variation"),
-                    "cell": meta.get("cell"),
-                    "empty": meta.get("empty"),
-                    "png": str(png),
-                    "png_64": str(id_dir / f"{id_dir.name}_v{meta.get('variation')}_64.png"),
-                }
-            )
+    """Recria a folha comparativa a partir dos JSONs salvos (sem API)."""
+    entries = collect_entries()
     if not entries:
-        return {"ok": False, "error": "missing", "message": "nenhum ícone em gen_api"}
-    meta_path = GEN_API_DIR / entries[-1]["id"]
-    last_meta = next(
-        (p for p in sorted(meta_path.glob(f"{entries[-1]['id']}_v*.json"), reverse=True)), None
-    )
+        return {"ok": False, "error": "missing", "message": f"nenhum ícone em {GEN_API_DIR}"}
+    latest = max(entries, key=lambda e: str(e.get("variation")))
     last = {}
-    if last_meta:
+    last_path = GEN_API_DIR / latest["id"] / f"{latest['id']}_v{latest['variation']}.json"
+    if last_path.is_file():
         try:
-            last = json.loads(last_meta.read_text(encoding="utf-8"))
+            last = json.loads(last_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             last = {}
     call_meta = {
@@ -665,6 +785,8 @@ def generate_grid(
     dry_run: bool = False,
     model: str = DEFAULT_MODEL,
     size: str = DEFAULT_SIZE,
+    refs: str | list[str] | None = None,
+    variant: int | str | None = None,
 ) -> str:
     """Gera uma folha 4×4 (16 ícones) com a API de imagens da OpenAI.
 
@@ -676,6 +798,10 @@ def generate_grid(
         dry_run: mostra prompt, referências e custo estimado sem chamar a API.
         model: gpt-image-2.6-sunburst (padrão), -flare, 2.5 ou gpt-image-2.
         size: 1024x1024 (padrão) ou outro tamanho múltiplo de 16.
+        refs: uma ou mais imagens de referência (caminho absoluto ou nome em
+            ref_style), separadas por '|', ';' ou lista; vazio usa a padrão.
+        variant: número da variação (2, "2" ou "v2"); vazio usa a próxima livre.
+            Se os arquivos da variação já existirem, nada é chamado.
 
     Devolve JSON com os caminhos dos 16 PNGs (128 e 64), a folha HTML, o custo
     real (usage) e o gasto acumulado. Recusa se o orçamento de US$ 4,00 estourar.
@@ -699,13 +825,33 @@ def generate_grid(
         if model not in MODEL_CHOICES:
             return _error("input", f"model inválido: {model!r} (use {', '.join(MODEL_CHOICES)})")
         size = (size or DEFAULT_SIZE).strip().lower()
+        variant_no = _parse_variant(variant)
+        ref_names = _split_refs(refs) or list(REF_FILES)
     except (ValueError, TypeError, FileNotFoundError) as exc:
         return _error("input", str(exc))
+
+    if variant_no is not None:
+        clashes = sorted(
+            str(path)
+            for icon_id in icon_ids
+            for path in _variant_files(icon_id, variant_no)
+            if path.exists()
+        )
+        if clashes:
+            return _error(
+                "input",
+                f"a variação v{variant_no} já existe; nada foi chamado (evita sobrescrever). "
+                f"Primeiro conflito: {clashes[0]}",
+                variant=variant_no,
+            )
 
     specs = _resource_specs()
     items = list(zip(icon_ids, descs))
     prompt = build_prompt(items)
-    ref_files, ref_sizes = prepare_refs()
+    try:
+        ref_files, ref_sizes = prepare_refs(ref_names)
+    except (OSError, FileNotFoundError) as exc:
+        return _error("input", str(exc))
     estimate = estimate_cost(prompt, quality, size, ref_sizes)
     spend = load_spend()
     spent = float(spend.get("total_usd") or 0.0)
@@ -717,6 +863,8 @@ def generate_grid(
         "model": model,
         "quality": quality,
         "size": size,
+        "variant": variant_no,
+        "refs": ref_names,
         "icons": [
             {"id": icon_id, "label": (specs.get(icon_id) or {}).get("label", ""),
              "description": desc, "cell": idx + 1}
@@ -826,7 +974,7 @@ def generate_grid(
 
         entries: list[dict] = []
         for idx, ((icon_id, desc), cell) in enumerate(zip(items, cells)):
-            variation = _next_variation(icon_id)
+            variation = variant_no if variant_no is not None else _next_variation(icon_id)
             tile = _trim(_flatten_bg_to_alpha(cell))
             empty = tile.getchannel("A").getbbox() is None
             paths = _save_sizes(tile, GEN_API_DIR / icon_id, icon_id, variation)
@@ -835,6 +983,7 @@ def generate_grid(
                 "label": (specs.get(icon_id) or {}).get("label", ""),
                 "description": desc,
                 "variation": variation,
+                "tag": f"v{variation}",
                 "cell": idx + 1,
                 "empty": empty,
                 "png": paths["png"],
@@ -843,6 +992,7 @@ def generate_grid(
                 "quality": quality,
                 "size": size,
                 "background": background_used,
+                "refs": ref_names,
                 "seed": None,
                 "prompt": prompt,
                 "created_at": _now(),
@@ -883,6 +1033,8 @@ def generate_grid(
             "quality": quality,
             "size": size,
             "background": background_used,
+            "variant": variant_no,
+            "refs": ref_names,
             "icons": icon_ids,
             "usage": usage,
             "cost_usd": cost,
@@ -893,7 +1045,7 @@ def generate_grid(
     )
     save_spend(spend)
     sheet_path = render_sheet(
-        entries,
+        collect_entries(),
         {
             "sheet_image": str(raw_path),
             "model": model,
@@ -934,6 +1086,9 @@ def generate_grid(
 
 def register_grid_tools(mcp) -> None:
     """Registra `generate_grid` num FastMCP já existente (server.py do MCP)."""
+    # O nome local da tool sombreia o da função do módulo; pega a global para
+    # não recursar (a tool apenas delega para a implementação de verdade).
+    generate_grid_impl = globals()["generate_grid"]
 
     @mcp.tool()
     def generate_grid(
@@ -943,8 +1098,10 @@ def register_grid_tools(mcp) -> None:
         dry_run: bool = False,
         model: str = DEFAULT_MODEL,
         size: str = DEFAULT_SIZE,
+        refs: str = "",
+        variant: str = "",
     ) -> str:
-        """Gera uma folha 4×4 (16 ícones pintados) com a API de imagens da OpenAI.
+        """Gera uma folha 4×4 (16 ícones de recurso) com a API de imagens da OpenAI.
 
         Args:
             ids: 16 ids separados por vírgula, na ordem linha a linha.
@@ -953,6 +1110,8 @@ def register_grid_tools(mcp) -> None:
             dry_run: mostra prompt e custo estimado sem chamar a API (comece aqui).
             model: gpt-image-2.6-sunburst (padrão) ou outro modelo GPT Image atual.
             size: 1024x1024 (padrão) ou outro tamanho múltiplo de 16.
+            refs: imagens de estilo separadas por '|' (vazio = ref_sheet_military_pack.png).
+            variant: número/tag da variação ("v2"); vazio = próxima livre, sem sobrescrever.
 
         Recorta as 16 células, apara, remove o fundo chapado e salva 128 e 64 px
         em assets/icons/illustrated_source/gen_api/<id>/<id>_v<n>.png (+ _64).
@@ -960,13 +1119,15 @@ def register_grid_tools(mcp) -> None:
         recusa a chamada se o acumulado passar de US$ 4,00. A chave nunca é
         impressa nem copiada para o repositório.
         """
-        return generate_grid(
+        return generate_grid_impl(
             ids=ids,
             descriptions=descriptions,
             quality=quality,
             dry_run=dry_run,
             model=model,
             size=size,
+            refs=refs,
+            variant=variant,
         )
 
 
@@ -985,12 +1146,22 @@ def _serve() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Grade 4x4 de ícones pintados via OpenAI")
+    parser = argparse.ArgumentParser(description="Grade 4x4 de ícones de recurso via OpenAI")
     parser.add_argument("--ids", default=",".join(TEST_IDS), help="16 ids separados por vírgula")
     parser.add_argument("--descriptions", default="", help="16 descrições separadas por '|'")
     parser.add_argument("--quality", default=DEFAULT_QUALITY, choices=QUALITY_CHOICES)
     parser.add_argument("--model", default=DEFAULT_MODEL, choices=MODEL_CHOICES)
     parser.add_argument("--size", default=DEFAULT_SIZE)
+    parser.add_argument(
+        "--refs",
+        default="",
+        help="imagens de estilo (caminho absoluto ou nome em ref_style), separadas por '|'",
+    )
+    parser.add_argument(
+        "--tag",
+        default="",
+        help="variação do lote (ex.: v2); não sobrescreve um lote já existente",
+    )
     parser.add_argument("--dry-run", action="store_true", help="só prompt + custo estimado")
     parser.add_argument("--spend", action="store_true", help="mostra o gasto acumulado")
     parser.add_argument("--rebuild-sheet", action="store_true", help="refaz a folha HTML")
@@ -1024,6 +1195,8 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=args.dry_run,
         model=args.model,
         size=args.size,
+        refs=args.refs,
+        variant=args.tag,
     )
     print(payload)
     try:
