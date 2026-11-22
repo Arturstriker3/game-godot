@@ -377,8 +377,116 @@ sem canal de energia; **(c) bug** — só o do runner (7.1) e a ausência das
 ligações GB/DK/BGD (7.3), ambos corrigidos. VOLL, preço de escassez,
 racionamento, insatisfação e perdas **não** foram tocados.
 
-## 8. Dívidas declaradas
+## 8. Proposta (rascunho, 22/11/2026) — t82: as 4 nações, a escala PIB × físico e o SAH
 
+Sem alterar o sim. Evidência: `docs/economy/perf/c1_world_ai_365_e2e3.json` (canônico, E5),
+`e2e3_anchor_365.json` (sem E5), `e2e3_diag_365_before.json` (dado antigo) e
+`c6_gate_base.json` (controle sem energia). O runner passa a publicar, por nação,
+`model_scale`, `demand_vs_ember_demand` e `served_vs_ember_generation` (mesma razão de
+`sim/power.cpp`), para o próximo QA não confundir fração simulada com déficit.
+
+### 8.1 (1) ATG, AUS, KWT, VCT: **não** há déficit de 32–35 % — não há bug a corrigir
+
+| Nação | Servido (3 rodadas) | Fração simulada | Parque no modelo (MW) | FC do parque | Preço (XGS/MWh) |
+|---|---:|---:|---:|---:|---:|
+| AUS | 1,000 | 0,7301 | 84.684 (de 115.980) | 28,1 % | 0,3225 |
+| KWT | 1,000 | 0,8717 | 18.522 (de 21.248) | 48,5 % | 0,3497 |
+| ATG | 1,000 | 0,5492 | 64,3 (de 117,0) | 34,8 % | 0,3155 |
+| VCT | 1,000 | 0,2454 | 17,2 (de 70,0) | 25,7 % | 0,3155 |
+| KNA | 1,000 | 0,2754 | 22,0 (de 80,0) | 31,4 % | 0,3155 |
+
+- `served_ratio` = **1,000** nas três rodadas de energia, e `demand_vs_ember_demand` =
+  0,973–0,998 (sonda de 3 d: `c1_world_ai_365.gd --days=3`, sem rodada longa nova): a
+  âncora D-116 é aplicada exatamente como declarada.
+- **Parque não é subatribuído**: a soma de `by_city` é igual a `by_nation` em **176/176**
+  nações (100 %), e acesso a eletricidade é 100 % nas quatro (operador nacional ≥ 60 %,
+  rede nacional, sem cidade isolada).
+- A rede é nacional nas quatro (NEM/AEMO cobre 18 cidades no modelo; WA não está no
+  cenário, então “WA separada” não entra na conta). Nenhuma das quatro raciona (0 dias).
+- O único 28–35 % existente nos dados é o **fator de capacidade do parque**
+  (geração ÷ MW × 8.760), que reproduz a Ember (AUS 28,1 % real × 28,1 % modelo) — é
+  física correta, não falta de energia. O “0,32–0,35” que aparece no §7.5 é o **preço**
+  (0,3155–0,3497 XGS/MWh), não uma fração servida: a leitura do t82 confluiu os dois.
+- **Conclusão**: erro de dado/regra **não há**; nada a corrigir nesta frente (o commit
+  desta rodada é este §8 + os campos de diagnóstico do runner).
+
+### 8.2 (2) A escala: o lado fora é o **dinheiro** (PIB), não a demanda física
+
+Demanda física: `demand_vs_ember_demand` tem mediana **0,978** em 147 redes (mín. 0,857) —
+a energia do modelo é a Ember × fração simulada, com a renda do ano movendo só ~2 %.
+
+Lado monetário (`energy_economy`, amostra de 21 nações; PIB real PPP de `nations.json`):
+
+| Nação | PIB sim (XGS/pessoa/ano) | PIB real PPP (US$/pessoa/ano) | Razão | MWh/pessoa/ano (sim × Ember) | Conta/PIB (sim) | Conta/PIB (real, US$ 90/MWh) |
+|---|---:|---:|---:|---:|---:|---:|
+| USA | 6,72 | 90.027 | 1/13.400 | 13,1 × 13,3 | 68,1 % | 1,33 % |
+| CHN | 5,82 | 29.333 | 1/5.000 | 7,5 × 7,5 | 44,8 % | 2,29 % |
+| DEU | 15,10 | 75.407 | 1/5.000 | 6,1 × 6,2 | 13,1 % | 0,74 % |
+| BRA | 12,21 | 23.433 | 1/1.900 | 3,5 × 3,6 | 9,2 % | 1,40 % |
+| IND | 10,21 | 11.748 | 1/1.150 | 1,4 × 1,4 | 4,3 % | 1,10 % |
+| amostra | 8,40 | 38.094 | 1/4.500 | — | p50 11,7 % · agregado 57,0 % | 1,5–4 % (referência) |
+
+- **Diagnóstico**: as quantidades físicas estão certas; o que está fora é o **nível de
+  preços em XGS**. Há dois níveis incompatíveis na mesma unidade: 1 XGS ≈ **US$ 6**
+  em bens (trigo 40 XGS/t × US$ 250/t) e ≈ **US$ 4.900** em trabalho (salário 0,05
+  XGS/dia × US$ 247/dia de PIB PPP). A energia foi convertida no nível dos **bens**
+  (0,32 XGS/MWh ≈ US$ 2 a US$ 10-20 de custo marginal real) e é paga no nível do
+  **trabalho** — daí a conta de 68 % do PIB nos EUA. A afirmação “energia 5× mais barata
+  que a real relativa ao trigo” está correta e **não** explica a conta: o trigo do modelo
+  também está 6× abaixo do real, mas o salário está ~800× abaixo dele.
+- **O que NÃO resolve**: (i) incluir serviços no PIB — `city.gdp` já é
+  `value_added + service_revenue` (o setor de serviços está lá; falta nível, não setor);
+  (ii) separar demanda industrial de residencial — muda o rateio da conta
+  (`share_households` 0,30 / indústria 0,42 / serviços 0,21 / governo 0,07), não a razão
+  conta/PIB; (iii) multiplicar XGS por constante — os dois lados da razão escalam juntos.
+- **Correção mínima (proposta)**: declarar os parâmetros de energia em **unidades de
+  salário** (`10 %` das linhas de custo atuais): custo marginal ≈ 0,05 salário-dia/MWh,
+  tarifa ≈ 0,4 salário-dia/MWh (real: US$ 110 ÷ US$ 247 = 0,45) e VOLL ≈ 45 salário-dia
+  (real US$ 10.000/MWh). Isso é ÷17 no O&M/piso e ÷13,6 no teto. Efeito estimado:
+  EUA 68,1 % → **4,0 %**, CHN 44,8 % → **2,6 %**, agregado 57,0 % → **3,35 %**,
+  p50 11,7 % → 0,69 %, p90 394,8 % → 23,2 %. O p50 abaixo da faixa é o que falta de
+  **capex + T&D + tributo** (E7: a tarifa regulada devolve a faixa a 1,5–4 %); o p90
+  acima é o **preço de escassez** cobrado sobre toda a carga servida (simplificação
+  declarada, consequência — não escala).
+- **Efeito nos portões** (estimativa, não medido): o canal da conta é 30 % no orçamento
+  das famílias (`charge_households`), 42 % nas firmas e 21 % nos serviços; ÷17 devolve o
+  dreno doméstico a ~1 % do PIB. Esperado: portão de comida 109 → **93–97** (os fatores
+  físicos de racionamento permanecem) e falências 5 → **3** (as 2 minas PRI-PON existem
+  no controle; as 3 fazendas SAH são crédito, §8.3). Racionalização: o portão com energia
+  hoje mede **calibração de preço**, não falta de energia.
+
+### 8.3 (3) SAH: banco de fio de faca, não o canal de energia
+
+- SAH não tem dado de energia: `has_data=false`, `power_price=0`, `served=1,000`,
+  0 dias racionando, parque zero → **canal direto de energia é nulo**.
+- A resolução `SAH/public` (`cause: equity_negative`) aparece nas **três** rodadas de
+  energia — dia **309** (dado antigo), **315** (canônico), **321** (sem E5), gap de
+  **12,7–16,4 mil XGS** — e **não** aparece no controle sem energia. É sistemática em
+  “energia ligada”, não um artefato do E5 (muda de dia a cada variante de dado).
+- As 3 fazendas fecham no dia seguinte **com lucro** (6,8 / 94,3 / 1,8 XGS): é execução
+  do banco (C6), não insolvência operacional. O gap do banco é **40× o PIB anual de SAH**
+  (314 XGS/ano para 21 mil pessoas): é um banco marginal, de PL ~0.
+- **Veredito**: consequência de **cascata determinística** (C6) amplificada por um banco
+  no fio da navalha; o gatilho é o desvio de preços/renda do mundo inteiro (o setor
+  elétrico compra combustível no mercado e move renda em 148 redes), não a conta de
+  energia de SAH. Não deve ser contada como custo da E2/E3. Dívida de medição para
+  fechar: trajetória diária de PL/dívida de `G-SAH-food-205` e do banco nos dois mundos.
+
+### 8.4 (4) Três opções para o dono decidir
+
+| Opção | Prós | Contras | Portões estimados |
+|---|---|---|---|
+| **A — corrigir a escala monetária** (energia em unidades de salário, §8.2) **e reabrir os portões** (D-118 + nova rodada 365) | Única opção coerente com o dado físico e com a realidade; conta/PIB volta a 1,5–4 %; mantém VOLL, fatores, racionamento e insatisfação | Muda consequência por calibração (padrão de vida sobe); exige rodada nova de 365 d e registro D-118; risco de “passar por decreto” se não for documentado | comida **93–97**/179; falências **3** |
+| **B — aceitar portões recalibrados com energia** (registrar D-117/D-118 como estão) | Nenhuma mudança de núcleo; o portão mede honestamente o preço atual | Sela um mundo em que a conta de luz vale 57 % do PIB agregado (até 4.900 % por nação); p50/p90 seguem fora da faixa de referência e serão contestados de novo | comida **109**/179; falências **5** |
+| **C — manter E2/E3/E5 atrás de flag desligada até G/H** (E7 tarifa regulada) | Protege o mundo estável; nenhuma rodada nova agora; a energia física fica pronta | Energia não comprovada no mundo real; o trabalho da E2/E3 fica sem validação de 365 d; o D-116 não fecha | mundo atual: comida **93**/179; falências **2** |
+
+Recomendação do GSD: **A**, no mesmo pacote da **E7** (capex + T&D + tributo devolvem o
+p50 à faixa de 1,5–4 %), depois de G/H; **B** como fecho de fase se o dono quiser encerrar
+agora; **C** se a fase precisar fechar antes da decisão de escala.
+
+## 9. Dívidas declaradas
+
+- Escala monetária da energia (XGS/MWh × salário-dia) não resolvida — §8.2, decisão D-118.
 - Vento sem série mensal (GWA não publica) — fator anual, declarado.
 - `oil: null` na matriz Ember — capacidade de óleo não publicada por país (D-115(d)).
 - Conexão parcial é um limite de troca por cidade (não se modela fluxo físico entre
