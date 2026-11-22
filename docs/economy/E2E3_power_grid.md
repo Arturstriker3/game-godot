@@ -816,6 +816,68 @@ não é medida (mesma limitação do §8.6).
   intacto e contrato (entrega, queda proporcional, save v37).
 - `e2e3_power_test.gd` e `e5_interconnect_test.gd` em save v37.
 
+### 9.8 Fechamento — goldens A0/S0 e equivalência CLI × Godot
+
+Os harnesses dos goldens (`tools/world_equivalence.gd` e
+`tools/economy_refactor_equiv.gd`) **não** chamam `set_power_definitions`, então
+rodam com `power_ready = false`: não entram parque, rede, tarifa nem contrato.
+Ainda assim o save mudou de v34 para v37, e os goldens foram **regerados** com a
+DLL debug `C193A493…` (registro exigido pelo `A0_README` §5), 2 rodadas
+idênticas em cada um:
+
+| Golden | status (antes = depois) | save antes → depois |
+|---|---|---|
+| `A0_60_urban` (60 d, IA, urbano) | `f6ec0427…` (idêntico) | `5fadba28…` → `ee07fd9c…` |
+| `real_60_ai` (60 d, IA) | `1c2a85fa…` (idêntico) | `edc686ee…` → `f0e4fbed…` |
+| `real_60_noai` (60 d, sem IA) | `8ae9f20b…` (idêntico) | `6d657f25…` → `1e36319e…` |
+| `demo_365_noai` (365 d, AGRIA/PORTUS) | `10583589…` (idêntico) | `dc67ad5c…` → `d507e0db…` |
+
+**Campos que mudaram no save** (medido; o `status_sha256` idêntico prova que a
+trajetória de 60/365 d não mudou):
+
+1. `version` **34 → 37** (D-116/D-117/D-120);
+2. `construction_projects[].power_fuel = -1`, `power_mw = 0`,
+   `power_nation_a = ""`, `power_nation_b = ""` — chaves aditivas da obra de
+   energia escritas para **todas** as 2.413 obras do A0 (o bloco `power` em si
+   **não** é gravado sem energia semeada);
+3. `pop.dissatisfaction*` e `region.dissatisfaction*` — o divisor da
+   normalização passou a incluir o peso novo `kDissatisfactionPower = 0,20`,
+   somado mesmo com estresse de energia zero (`sim_constants.h`/
+   `informality.cpp`): **interior 0,50 → 0,70** (índice = 71,4 % do anterior) e
+   **urbano 1,00 → 1,20** (83,3 %). É efeito medido do bloco de energia na
+   insatisfação a estresse 0. O status publicado não carrega as componentes de
+   insatisfação, por isso o `status_sha256` não muda; o `b7_informality_test`
+   pina o divisor antigo (0,50) e fica vermelho — ver §9.9.
+
+**Equivalência CLI × Godot:** snapshot do dia 0 (`export_world_snapshot.gd`,
+`--ai=1 --urban=0`, 67.773.105 B) → 10 d com IA, `threads=1`, no Godot
+(`snapshot_replay.gd`) e no `opengs_sim_cli.exe`: arquivos **byte-idênticos**,
+79.618.805 B, SHA-256 `56AA9E8E…`, 0 violações de invariante.
+
+### 9.9 Bateria de testes do fechamento (96 testes)
+
+`tools/run_tests.ps1 -All -MinFreeDiskGB 6` no HEAD `ddd50d77` + esta rodada:
+**72 verdes / 24 vermelhos**. Nenhum vermelho é do E7
+(`e2e3_power_test`, `e5_interconnect_test`, `e7_tariff_test` e
+`economy_save_load_roundtrip_test` verdes). Classificação dos 24:
+
+- **23 por pino de versão do save defasado** (testes esperam v34/v35/27/28/25/32
+  e o save é v37 desde a D-120): `agriculture_seasonal`, `b3_region`,
+  `b4_migration`, `b5_state_levers`, `b6_property`, `c1_balance`, `c2_central_bank`,
+  `c2b1_monetary`, `c2b2_fx_gold`, `c2c_real_fx`, `c3_bank_credit`, `c4_banks`,
+  `c5_stock_exchange`, `c6_bank_crisis`, `city_gov`, `construction_queue`,
+  `economy_integration`, `economy_save_load_v11_compat`, `mine_stage`, `services`,
+  `storage_g2`, `urban_land`, `urban_load`. A falha é só a versão (ex.:
+  "save version 37 != 34"); os valores medidos e o round-trip passam.
+- **2 por divisor da insatisfação** (`b7_informality_test`): espera
+  informalidade 0,10/0,50 = 0,20 e inflação 0,15/0,50 = 0,30; com o peso de
+  energia o divisor é 0,70 e mede **0,143 e 0,214** (§9.8 item 3). É expectativa
+  defasada do teste, não regressão do E7.
+
+O runner terminou com `OutOfMemoryException` ao gravar o `summary.json` (os 96
+exit codes foram capturados no log e são a base da contagem); a suite já estava
+vermelha antes desta rodada de docs (só docs/JSON foram commitados aqui).
+
 ## 10. Dívidas declaradas
 
 - Escala monetária da energia: **resolvida na unidade** (D-118, §8.5) — parâmetros em
