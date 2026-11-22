@@ -183,6 +183,22 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 	rationing.sort()
 	by_nation.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a["served_mwh"]) > float(b["served_mwh"]))
+	# Âncora nacional (D-116): o dado Ember do ano-base ao lado do modelo, para
+	# cada nação com rede. Sem isso o JSON não permite separar importador real
+	# de déficit de capacidade/dado.
+	var anchors: Dictionary = _ember_demand()
+	for row5: Dictionary in by_nation:
+		var anchor: Variant = anchors.get(String(row5["nation"]), null)
+		if typeof(anchor) != TYPE_DICTIONARY:
+			continue
+		var ember_row: Dictionary = anchor
+		row5["ember_year"] = int(ember_row.get("year", 0))
+		row5["ember_demand_twh"] = ember_row.get("demand_twh")
+		row5["ember_generation_twh"] = ember_row.get("total_generation_twh")
+		row5["ember_net_imports_twh"] = ember_row.get("net_imports_twh")
+		row5["ember_low_coverage"] = bool(ember_row.get("low_coverage", false))
+		row5["ember_has_national_capacity"] = bool(
+			ember_row.get("has_national_capacity", false))
 	var top: Array = by_nation.slice(0, 5)
 	var ember: Dictionary = _ember_capacity()
 	for row3: Dictionary in top:
@@ -220,6 +236,7 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 		"days_with_rationing": days_rationing,
 		"max_rationing_cities": max_ration,
 		"rationing_nations": rationing,
+		"nations_detail": by_nation,
 		"grids": grids,
 		"connected_cities": connected,
 		"partial_cities": partial,
@@ -244,6 +261,15 @@ func _ember_capacity() -> Dictionary:
 	if typeof(data) != TYPE_DICTIONARY:
 		return {}
 	var nations: Variant = (data as Dictionary).get("nations", {})
+	return nations if typeof(nations) == TYPE_DICTIONARY else {}
+
+
+func _ember_demand() -> Dictionary:
+	const PATH := "res://data/definitions/energy/national_demand.json"
+	var data: Variant = _load(PATH)
+	if typeof(data) != TYPE_DICTIONARY:
+		return {}
+	var nations: Variant = (data as Dictionary).get("by_nation", {})
 	return nations if typeof(nations) == TYPE_DICTIONARY else {}
 
 
