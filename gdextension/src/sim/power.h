@@ -95,6 +95,19 @@ struct PowerParams {
 	double ration_threshold = 0.995;
 	// VOLL declarado (múltiplo do preço da rede) para o "PIB perdido".
 	double voll_multiple = 100.0;
+	// E7 (D-120) — TARIFA DE VAREJO por rede. O consumidor paga a tarifa
+	// (= custo médio de geração do período ÷ (1 - parcela de rede/tributos) +
+	// repasse de escassez suavizado); o gerador recebe o custo médio do
+	// atacado e a diferença fica com a distribuidora/Estado pelo caixa que já
+	// existe (`phase_power_settle`). A parcela de rede/varejo é DECLARADA a
+	// partir do dado público da composição da tarifa (Eurostat nrg_pc_204 e
+	// IEA Energy Prices and Taxes: rede + tributos ≈ 45-60% da tarifa
+	// residencial da UE; ver docs/economy/E2E3_power_grid.md §E7). Não é um
+	// número por país: o DADO por rede é o custo médio de geração da própria
+	// rede, que varia com o parque. `retail_scarcity_days` é a janela da média
+	// móvel do repasse de escassez (0 = repasse no mesmo dia).
+	double retail_network_share = 0.55;
+	double retail_scarcity_days = 30.0;
 	// Obra da IA: dias de racionamento que disparam a decisão e o cooldown.
 	int build_ration_days = 20;
 	int build_cooldown_days = 60;
@@ -182,6 +195,11 @@ struct InterconnectDef {
 	std::string b;
 	std::string importer;
 	double capacity_mw = 0.0;
+	// E7 — CONTRATO DE SUPRIMENTO do ano-base: fluxo BRUTO bilateral médio
+	// (MWh/dia ÷ 24 = MW na escala do dado) que o exportador entrega antes de
+	// atender a própria demanda marginal, até a capacidade da linha. 0 = sem
+	// contrato (a linha só participa do mercado de sobra da E5).
+	double contract_mw = 0.0;
 };
 
 // Nomes canônicos das fontes (ordem de `PowerFuel`): usado no status/save.

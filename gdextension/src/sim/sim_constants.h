@@ -159,7 +159,7 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // `kind = CONSTRUCTION_INTERCONNECT` e `power_nation_a`/`power_nation_b`. Save
 // v35 carrega sem a chave: `ready = false` e o PowerService semeia as linhas do
 // ano-base depois do load (nada inventado para trás).
-constexpr int kSaveVersion = 36;
+constexpr int kSaveVersion = 37;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

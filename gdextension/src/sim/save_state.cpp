@@ -1716,6 +1716,10 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["demand_mwh"] = state.demand_mwh;
 			entry["served_mwh"] = state.served_mwh;
 			entry["price"] = state.price;
+			// E7 (v37): atacado médio, tarifa de varejo e repasse de escassez.
+			entry["average_cost"] = state.average_cost;
+			entry["tariff"] = state.tariff;
+			entry["scarcity_pass"] = state.scarcity_pass;
 			entry["ration_days"] = state.ration_days;
 			entry["lost_gdp"] = state.lost_gdp;
 			// Efeitos do dia publicados pela cidade (fator industrial/serviço,
@@ -1763,6 +1767,11 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["nation"] = sim_str(grid.nation.c_str());
 			entry["exists"] = grid.exists;
 			entry["price"] = grid.price;
+			// E7 (v37): atacado médio, tarifa, repasse e margem do dia.
+			entry["average_cost"] = grid.average_cost;
+			entry["tariff"] = grid.tariff;
+			entry["scarcity_pass"] = grid.scarcity_pass;
+			entry["retail_margin"] = grid.retail_margin;
 			entry["demand_mwh"] = grid.demand_mwh;
 			entry["served_mwh"] = grid.served_mwh;
 			entry["ration_days"] = grid.ration_days;
@@ -1793,6 +1802,16 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["capacity_mw"] = line.capacity_mw;
 			entry["built_day"] = line.built_day;
 			entry["initial"] = line.initial;
+			// E7 (v37): contrato de suprimento do ano-base.
+			entry["contract_importer"] = sim_str(
+				line.contract_importer.c_str());
+			entry["contract_exporter"] = sim_str(
+				line.contract_exporter.c_str());
+			entry["contract_mw"] = line.contract_mw;
+			entry["contract_flow_mwh"] = line.contract_flow_mwh;
+			entry["contract_sent_mwh"] = line.contract_sent_mwh;
+			entry["contract_price"] = line.contract_price;
+			entry["contract_value"] = line.contract_value;
 			entry["importer_today"] = sim_str(line.importer_today.c_str());
 			entry["exporter_today"] = sim_str(line.exporter_today.c_str());
 			entry["flow_mwh"] = line.flow_mwh;
@@ -4172,6 +4191,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			state.served_mwh = std::max(0.0,
 				double(entry.get("served_mwh", 0.0)));
 			state.price = std::max(0.0, double(entry.get("price", 0.0)));
+			// E7 (v37): save v36 chega sem as chaves; 0 = a tarifa do próximo
+			// tick usa o atacado médio derivado, nada inventado para trás.
+			state.average_cost = std::max(0.0,
+				double(entry.get("average_cost", 0.0)));
+			state.tariff = std::max(0.0,
+				double(entry.get("tariff", 0.0)));
+			state.scarcity_pass = std::max(0.0,
+				double(entry.get("scarcity_pass", 0.0)));
 			state.ration_days = std::max(0,
 				int(entry.get("ration_days", 0)));
 			state.lost_gdp = std::max(0.0,
@@ -4237,6 +4264,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				grid.exists = bool(entry.get("exists", false));
 				grid.price = std::max(0.0,
 					double(entry.get("price", 0.0)));
+				grid.average_cost = std::max(0.0,
+					double(entry.get("average_cost", 0.0)));
+				grid.tariff = std::max(0.0,
+					double(entry.get("tariff", 0.0)));
+				grid.scarcity_pass = std::max(0.0,
+					double(entry.get("scarcity_pass", 0.0)));
+				grid.retail_margin = double(
+					entry.get("retail_margin", 0.0));
 				grid.demand_mwh = std::max(0.0,
 					double(entry.get("demand_mwh", 0.0)));
 				grid.served_mwh = std::max(0.0,
@@ -4292,6 +4327,20 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				double(entry.get("capacity_mw", 0.0)));
 			line.built_day = int(entry.get("built_day", 0));
 			line.initial = bool(entry.get("initial", false));
+			line.contract_importer = std::string(
+				String(entry.get("contract_importer", "")).utf8().get_data());
+			line.contract_exporter = std::string(
+				String(entry.get("contract_exporter", "")).utf8().get_data());
+			line.contract_mw = std::max(0.0,
+				double(entry.get("contract_mw", 0.0)));
+			line.contract_flow_mwh = std::max(0.0,
+				double(entry.get("contract_flow_mwh", 0.0)));
+			line.contract_sent_mwh = std::max(0.0,
+				double(entry.get("contract_sent_mwh", 0.0)));
+			line.contract_price = std::max(0.0,
+				double(entry.get("contract_price", 0.0)));
+			line.contract_value = std::max(0.0,
+				double(entry.get("contract_value", 0.0)));
 			line.importer_today = std::string(
 				String(entry.get("importer_today", "")).utf8().get_data());
 			line.exporter_today = std::string(

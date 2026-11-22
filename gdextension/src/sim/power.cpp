@@ -119,6 +119,8 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 	get("stress_duration_days", stress_duration_days);
 	get("ration_threshold", ration_threshold);
 	get("voll_multiple", voll_multiple);
+	get("retail_network_share", retail_network_share);
+	get("retail_scarcity_days", retail_scarcity_days);
 	get("build_share_demand", build_share_demand);
 	get("thermal_cap_multiple", thermal_cap_multiple);
 	get("capex_per_mw_line", capex_per_mw_line_sd);
@@ -157,6 +159,8 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 	price_scale = std::max(0.0, price_scale);
 	price_floor_sd = std::max(0.0, price_floor_sd);
 	price_ceiling_sd = std::max(price_floor_sd, price_ceiling_sd);
+	retail_network_share = std::clamp(retail_network_share, 0.0, 0.9);
+	retail_scarcity_days = std::max(0.0, retail_scarcity_days);
 	loss_floor_pct = std::clamp(loss_floor_pct, 0.0, 50.0);
 	loss_max_pct = std::clamp(loss_max_pct, loss_floor_pct, 80.0);
 	kwh_per_capita_day = std::max(0.0, kwh_per_capita_day);
@@ -224,6 +228,8 @@ void power_params_to_map(const PowerParams& p,
 	put("stress_duration_days", p.stress_duration_days);
 	put("ration_threshold", p.ration_threshold);
 	put("voll_multiple", p.voll_multiple);
+	put("retail_network_share", p.retail_network_share);
+	put("retail_scarcity_days", p.retail_scarcity_days);
 	put("build_ration_days", static_cast<double>(p.build_ration_days));
 	put("build_cooldown_days", static_cast<double>(p.build_cooldown_days));
 	put("build_share_demand", p.build_share_demand);
@@ -638,6 +644,19 @@ void seed_interconnects(WorldState& ws,
 		line.capacity_mw = def.capacity_mw * nation_scale(deficit_nation);
 		line.built_day = ws.day;
 		line.initial = true;
+		// E7 (D-120): contrato de suprimento do ano-base. A direção é a do
+		// dado (`importer`); a quantidade média (MW) é escalada pela fração
+		// simulada do importador — a mesma escala da capacidade e do parque —
+		// e nunca passa da capacidade da linha. Sem `importer` (par só de
+		// capacidade), o contrato fica 0: a linha segue só no mercado de sobra.
+		if (!def.importer.empty()
+				&& (def.importer == def.a || def.importer == def.b)) {
+			line.contract_importer = def.importer;
+			line.contract_exporter = def.importer == def.a ? def.b : def.a;
+			line.contract_mw = std::min(line.capacity_mw,
+				std::max(0.0, def.contract_mw)
+				* nation_scale(line.contract_importer));
+		}
 		ws.interconnects.push_back(line);
 	}
 	std::stable_sort(ws.interconnects.begin(), ws.interconnects.end(),
@@ -1202,8 +1221,32 @@ void SimCore::phase_power() {
 		double connected_served = 0.0;
 		double domestic_price = 0.0;
 		double marginal_price = 0.0;
+		// E7 (D-120): meta do contrato de suprimento do dia e o que o
+		// exportador realmente gerou para ele (antes da própria demanda).
+		double contract_target = 0.0;
+		double contract_done = 0.0;
 	};
 	std::map<std::string, GridTrade> trade_states;
+
+	// E7 (D-120): contratos de suprimento do ano-base por exportador. Só
+	// valem entre duas REDES NACIONAIS (mesma regra da E5) e até a
+	// capacidade da linha; a quantidade já vem escalada do seed.
+	std::map<std::string, double> contract_targets;
+	for (const InterconnectState& line : ws.interconnects) {
+		if (!(line.contract_mw > 0.0)
+				|| line.contract_importer.empty()
+				|| line.contract_exporter.empty()) {
+			continue;
+		}
+		const auto imp = ws.power_grids.find(line.contract_importer);
+		const auto exp = ws.power_grids.find(line.contract_exporter);
+		if (imp == ws.power_grids.end() || exp == ws.power_grids.end()
+				|| !imp->second.exists || !exp->second.exists
+				|| imp->second.connected <= 0 || exp->second.connected <= 0) {
+			continue;
+		}
+		contract_targets[line.contract_exporter] += line.contract_mw * 24.0;
+	}
 
 	// Zera os agregados da rede do dia.
 	for (auto& row : ws.power_grids) {
@@ -1211,6 +1254,7 @@ void SimCore::phase_power() {
 		grid.demand_mwh = 0.0;
 		grid.served_mwh = 0.0;
 		grid.price = 0.0;
+		grid.retail_margin = 0.0;
 		for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
 			grid.generation_by_fuel[fuel] = 0.0;
 		}
@@ -1286,21 +1330,39 @@ void SimCore::phase_power() {
 				grid_demand += demand_mwh[static_cast<std::size_t>(index)];
 			}
 			Dispatch out;
-			dispatch_pool(pool, grid_demand, out);
-			const double price = out.served + 1e-9 < grid_demand
+			// E7 (D-120): o contrato de suprimento é despachado ANTES da
+			// demanda marginal do exportador; a carga do mérito é demanda +
+			// contratos. Se a disponibilidade não cobre as duas, o contrato cai
+			// proporcionalmente (regra declarada) e a própria demanda divide a
+			// escassez na mesma proporção.
+			const auto target = contract_targets.find(nation);
+			const double contract_target = target == contract_targets.end()
+				? 0.0 : target->second;
+			dispatch_pool(pool, grid_demand + contract_target, out);
+			const double contract_done = contract_target > 0.0
+				? std::min(contract_target,
+					out.served * contract_target
+						/ std::max(1e-9, grid_demand + contract_target))
+				: 0.0;
+			const double own_served = std::max(0.0, out.served - contract_done);
+			const double price = own_served + 1e-9 < grid_demand
 				? params.price_ceiling
 				: std::clamp(out.price * params.price_scale,
 					out.served > 0.0 ? params.price_floor : 0.0,
 					params.price_ceiling);
 			grid.price = price;
-			// Geração por cidade (para o limite da linha parcial).
+			// Geração por cidade (para o limite da linha parcial). A parcela
+			// exportada no contrato não abastece a cidade: rateio declarado
+			// pela fração servida doméstica.
+			const double own_ratio = out.served > 1e-9
+				? own_served / out.served : 0.0;
 			std::vector<double> generation(city_count, 0.0);
 			for (std::size_t p = 0; p < ws.power_plants.size(); ++p) {
 				const PowerPlant& plant = ws.power_plants[p];
 				if (plant.city_index >= 0
 						&& plant.city_index < static_cast<int>(city_count)) {
 					generation[static_cast<std::size_t>(plant.city_index)]
-						+= plant.generated_mwh;
+						+= plant.generated_mwh * own_ratio;
 				}
 			}
 			// Parciais: servido = geração local + importação até a linha.
@@ -1322,7 +1384,8 @@ void SimCore::phase_power() {
 			for (const int index : connected) {
 				connected_demand += demand_mwh[static_cast<std::size_t>(index)];
 			}
-			const double remaining = std::max(0.0, out.served - partial_served_total);
+			const double remaining = std::max(0.0,
+				own_served - partial_served_total);
 			for (const int index : connected) {
 				PowerCityState& state =
 					ws.power_cities[static_cast<std::size_t>(index)];
@@ -1374,6 +1437,8 @@ void SimCore::phase_power() {
 				? std::clamp(out.price * params.price_scale,
 					params.price_floor, params.price_ceiling)
 				: params.price_floor;
+			trade.contract_target = contract_target;
+			trade.contract_done = contract_done;
 		} else {
 			for (const int index : isolated) {
 				const PowerCityState& state =
@@ -1415,6 +1480,139 @@ void SimCore::phase_power() {
 	// simulada"); quando houver a API de relações, o gancho entra aqui.
 	const double line_loss = std::clamp(
 		params.loss_floor_pct / 100.0, 0.0, 0.5);
+
+	// ------------------------------------------------------------------
+	// E7 (D-120) — CONTRATO DE SUPRIMENTO do ano-base (fluxo BRUTO
+	// bilateral). O exportador já despachou o contrato junto da própria
+	// demanda (bloco nacional acima); aqui a energia é entregue ao importador
+	// e o preço do contrato é o CUSTO MÉDIO de atacado do exportador (não o
+	// spot marginal do dia), dividido por (1 - perda da linha). O contrato cai
+	// proporcionalmente quando o exportador está curto (regra declarada no
+	// despacho); o importador recebe só até o próprio déficit.
+	//
+	// O preço de escassez do atacado, o VOLL, o racionamento e as perdas NÃO
+	// mudam: o contrato é uma camada de entrega, não um novo preço de falta.
+	for (InterconnectState& line : ws.interconnects) {
+		line.contract_flow_mwh = 0.0;
+		line.contract_sent_mwh = 0.0;
+		line.contract_price = 0.0;
+		line.contract_value = 0.0;
+		if (!(line.contract_mw > 0.0)
+				|| line.contract_importer.empty()
+				|| line.contract_exporter.empty()) {
+			continue;
+		}
+		auto imp_it = trade_states.find(line.contract_importer);
+		auto exp_it = trade_states.find(line.contract_exporter);
+		if (imp_it == trade_states.end() || exp_it == trade_states.end()
+				|| !imp_it->second.national || !exp_it->second.national
+				|| exp_it->second.contract_target <= 1e-9) {
+			continue;
+		}
+		GridTrade& importer = imp_it->second;
+		GridTrade& exporter = exp_it->second;
+		const double target_share = line.contract_mw * 24.0
+			/ exporter.contract_target;
+		double sent = exporter.contract_done * target_share;
+		if (sent <= 1e-9) {
+			continue;
+		}
+		double delivered = sent * (1.0 - line_loss);
+		double unmet_total = 0.0;
+		for (const int index : importer.connected) {
+			const PowerCityState& state = ws.power_cities[index];
+			unmet_total += std::max(0.0,
+				state.demand_mwh - state.served_mwh);
+		}
+		if (delivered > unmet_total) {
+			delivered = unmet_total;
+			sent = line_loss < 1.0 ? delivered / (1.0 - line_loss) : 0.0;
+		}
+		if (sent <= 1e-9 || delivered <= 1e-9) {
+			continue;
+		}
+		const double served_before = importer.connected_served;
+		double remaining = delivered;
+		for (std::size_t slot = 0; slot < importer.connected.size();
+				++slot) {
+			const int index = importer.connected[slot];
+			PowerCityState& state = ws.power_cities[index];
+			const double unmet = std::max(0.0,
+				state.demand_mwh - state.served_mwh);
+			double give = unmet_total > 0.0
+				? delivered * unmet / unmet_total : 0.0;
+			if (slot + 1 == importer.connected.size()) {
+				give = remaining;
+			}
+			const double cap = std::max(0.0, std::min(unmet, remaining));
+			give = std::clamp(give, 0.0, cap);
+			state.served_mwh += give;
+			remaining -= give;
+		}
+		importer.connected_served = 0.0;
+		for (const int index : importer.connected) {
+			importer.connected_served +=
+				ws.power_cities[index].served_mwh;
+		}
+		const double received = importer.connected_served - served_before;
+		if (received <= 1e-9) {
+			continue;
+		}
+		const double received_ratio = delivered > 1e-9
+			? received / delivered : 0.0;
+		const double sent_actual = sent * received_ratio;
+		// Custo médio do atacado do exportador no dia (pondera geração e
+		// custo de cada usina; inclui o próprio contrato).
+		double gen = 0.0;
+		double cost_value = 0.0;
+		for (std::size_t p = 0; p < ws.power_plants.size(); ++p) {
+			const PowerPlant& plant = ws.power_plants[p];
+			if (plant.city_index < 0
+					|| plant.city_index >= static_cast<int>(city_count)
+					|| plant.generated_mwh <= 0.0) {
+				continue;
+			}
+			if (ws.cities[static_cast<std::size_t>(plant.city_index)].nation
+					!= line.contract_exporter) {
+				continue;
+			}
+			gen += plant.generated_mwh;
+			cost_value += plant.generated_mwh
+				* days[p].cost;
+		}
+		const double wholesale = gen > 1e-9
+			? cost_value / gen : params.price_floor;
+		const double border_price = std::clamp(
+			wholesale * params.price_scale / (1.0 - line_loss),
+			params.price_floor, params.price_ceiling);
+		const double value = received * border_price;
+		line.contract_flow_mwh = received;
+		line.contract_sent_mwh = sent_actual;
+		line.contract_price = border_price;
+		line.contract_value = value;
+		PowerGridState& imp_grid = ws.power_grids[line.contract_importer];
+		PowerGridState& exp_grid = ws.power_grids[line.contract_exporter];
+		imp_grid.import_mwh += received;
+		imp_grid.import_value += value;
+		exp_grid.export_mwh += sent_actual;
+		exp_grid.export_value += value;
+	}
+
+	// ------------------------------------------------------------------
+	// E5 (D-117) — comércio diário entre redes NACIONAIS vizinhas.
+	//
+	// Regra: depois do balanço de cada rede, a nação com excedente vende para
+	// a vizinha em déficit até a capacidade da linha. O preço de fronteira é o
+	// custo marginal do exportador (última usina despachada para a exportação)
+	// dividido por (1 - perda): a perda é o piso técnico de transmissão que já
+	// existe em `loss_floor_pct` (não se inventa coeficiente novo). O importador
+	// paga esse preço; a conta entra no caixa do setor (`power_cash`), o canal
+	// que já existia — soma zero mantida, nada é criado nem perdido. Cidade
+	// isolada / rede local NÃO comercia (D-116).
+	//
+	// TODO(relações): guerra/sanção/hostilidade NÃO corta a linha. O mundo não
+	// modela diplomacia (`tpl.dossie.relations.note`: "a diplomacia não é
+	// simulada"); quando houver a API de relações, o gancho entra aqui.
 	for (InterconnectState& line : ws.interconnects) {
 		line.importer_today.clear();
 		line.exporter_today.clear();
@@ -1573,6 +1771,122 @@ void SimCore::phase_power() {
 		line.value = value;
 	}
 
+	// ------------------------------------------------------------------
+	// E7 (D-120) — TARIFA DE VAREJO por rede, depois do comércio.
+	//
+	// Atacado médio = custo ponderado da energia entregue à rede no dia
+	// (geração doméstica a custo de mérito + importado ao preço de fronteira),
+	// suavizado por média móvel declarada (`retail_scarcity_days`). A tarifa
+	// paga pelo consumidor = atacado médio ÷ (1 - parcela de rede/tributos) +
+	// repasse de escassez suavizado. O repasse de escassez só incide sobre a
+	// fração NÃO servida (déficit pequeno não multiplica a conta inteira) e é
+	// suavizado; o spot de escassez continua intacto para VOLL/racionamento.
+	const double retail_divisor = std::max(0.1,
+		1.0 - std::clamp(params.retail_network_share, 0.0, 0.9));
+	const double window = std::max(0.0, params.retail_scarcity_days);
+	const auto ema = [window](double previous, double sample) {
+		if (window <= 1e-9 || previous <= 0.0) {
+			return sample;
+		}
+		return previous + (sample - previous) / window;
+	};
+	std::vector<bool> in_national_grid(city_count, false);
+	for (const auto& row : trade_states) {
+		const GridTrade& trade = row.second;
+		if (!trade.national) {
+			continue;
+		}
+		for (const int index : trade.connected) {
+			in_national_grid[static_cast<std::size_t>(index)] = true;
+		}
+		for (const int index : trade.partial) {
+			in_national_grid[static_cast<std::size_t>(index)] = true;
+		}
+	}
+	for (auto& row : ws.power_grids) {
+		PowerGridState& grid = row.second;
+		const std::string& nation = row.first;
+		// O importado do dia já está nas cidades; o agregado da rede ainda é o
+		// de antes do comércio (o laço de indicadores abaixo o refaz). A tarifa
+		// usa a fração servida FINAL, então recalcula aqui.
+		grid.demand_mwh = 0.0;
+		grid.served_mwh = 0.0;
+		for (std::size_t index = 0; index < city_count; ++index) {
+			if (ws.cities[index].nation != nation
+					|| !ws.power_cities[index].has_data) {
+				continue;
+			}
+			grid.demand_mwh += ws.power_cities[index].demand_mwh;
+			grid.served_mwh += ws.power_cities[index].served_mwh;
+		}
+		double gen = 0.0;
+		double cost_value = 0.0;
+		for (std::size_t p = 0; p < ws.power_plants.size(); ++p) {
+			const PowerPlant& plant = ws.power_plants[p];
+			if (plant.city_index < 0
+					|| plant.city_index >= static_cast<int>(city_count)
+					|| plant.generated_mwh <= 0.0
+					|| ws.cities[static_cast<std::size_t>(plant.city_index)]
+						.nation != nation) {
+				continue;
+			}
+			gen += plant.generated_mwh;
+			cost_value += plant.generated_mwh * days[p].cost;
+		}
+		const double import_mwh = std::max(0.0, grid.import_mwh);
+		const double import_value = std::max(0.0, grid.import_value);
+		const double supply = gen + import_mwh;
+		const double daily = supply > 1e-9
+			? (cost_value + import_value) / supply
+			: std::max(params.price_floor, grid.price);
+		grid.average_cost = ema(grid.average_cost, daily);
+		const double shortfall = grid.demand_mwh > 1e-9
+			? std::clamp((grid.demand_mwh - grid.served_mwh)
+				/ grid.demand_mwh, 0.0, 1.0) : 0.0;
+		const double premium = std::max(0.0,
+			grid.price - grid.average_cost) * shortfall;
+		grid.scarcity_pass = ema(grid.scarcity_pass, premium);
+		grid.tariff = std::max(0.0,
+			grid.average_cost / retail_divisor + grid.scarcity_pass);
+	}
+	for (std::size_t index = 0; index < city_count; ++index) {
+		PowerCityState& state = ws.power_cities[index];
+		if (!state.has_data) {
+			continue;
+		}
+		if (in_national_grid[index]) {
+			const PowerGridState& grid =
+				ws.power_grids[ws.cities[index].nation];
+			state.average_cost = grid.average_cost;
+			state.tariff = grid.tariff;
+			state.scarcity_pass = grid.scarcity_pass;
+			continue;
+		}
+		// Cidade isolada (sem rede nacional): atacado médio do próprio pool.
+		double gen = 0.0;
+		double cost_value = 0.0;
+		for (const int p : plants_by_city[index]) {
+			const double generated =
+				ws.power_plants[static_cast<std::size_t>(p)].generated_mwh;
+			if (generated <= 0.0) {
+				continue;
+			}
+			gen += generated;
+			cost_value += generated * days[static_cast<std::size_t>(p)].cost;
+		}
+		const double daily = gen > 1e-9 ? cost_value / gen
+			: std::max(params.price_floor, state.price);
+		state.average_cost = ema(state.average_cost, daily);
+		const double shortfall = state.demand_mwh > 1e-9
+			? std::clamp((state.demand_mwh - state.served_mwh)
+				/ state.demand_mwh, 0.0, 1.0) : 0.0;
+		const double premium = std::max(0.0,
+			state.price - state.average_cost) * shortfall;
+		state.scarcity_pass = ema(state.scarcity_pass, premium);
+		state.tariff = std::max(0.0,
+			state.average_cost / retail_divisor + state.scarcity_pass);
+	}
+
 	// Agregados e indicadores da rede DEPOIS do comércio: a fração servida
 	// inclui o importado; o racionamento e o VOLL são os mesmos do E3.
 	for (auto& row : ws.power_grids) {
@@ -1617,7 +1931,9 @@ void SimCore::phase_power() {
 			? std::clamp(state.served_mwh / demand, 0.0, 1.0) : 1.0;
 		state.served_mwh = std::min(state.served_mwh, demand);
 		city.power_served_ratio = ratio;
-		city.power_price = state.price;
+		// E7 (D-120): a economia paga a TARIFA de varejo; o spot (`state.price`)
+		// continua publicado como preço de atacado/escassez.
+		city.power_price = state.tariff > 0.0 ? state.tariff : state.price;
 		// Piso declarado: geração própria/fóssil na cidade segura uma fração
 		// da indústria (gerador a diesel) — não é atalho, é a planta local.
 		double local_fossil_mw = 0.0;
@@ -1642,7 +1958,8 @@ void SimCore::phase_power() {
 		// Conta da indústria do dia e custo por unidade de valor (piso de
 		// custo da formação de preço — Parte E, E3/7).
 		const double industry_mwh = state.served_mwh * params.share_industry;
-		city.power_cost_industry = industry_mwh * state.price;
+		city.power_cost_industry = industry_mwh
+			* (state.tariff > 0.0 ? state.tariff : state.price);
 		double value = 0.0;
 		for (const int bi : ws.buildings_by_city[index]) {
 			const Building& building = ws.buildings[static_cast<std::size_t>(bi)];
@@ -1746,22 +2063,32 @@ void SimCore::phase_power_settle() {
 	WorldState& ws = ws_;
 	const PowerParams& params = ws.power_params;
 	double pool = ws.power_cash;
-	// 1. Consumidor paga: famílias, firmas, serviços e governo. Só o servido
-	// é cobrado; o que o caixa não cobre NÃO vira dívida (perda do setor).
+	// 1. Consumidor paga a TARIFA de varejo: famílias, firmas, serviços e
+	// governo (E7/D-120). O gerador recebe o custo médio de atacado; a
+	// diferença (rede + tributos + repasse de escassez) fica com a
+	// distribuidora/Estado pelo caixa que já existe. Só o servido é cobrado; o
+	// que o caixa não cobre NÃO vira dívida (perda do setor). Soma zero: o
+	// dinheiro que sai do consumidor entra no caixa do setor ou no orçamento
+	// do Estado, nunca some nem é criado.
 	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
 		City& city = ws.cities[index];
 		const PowerCityState& state = ws.power_cities[index];
-		if (!state.has_data || state.served_mwh <= 0.0 || state.price <= 0.0) {
+		if (!state.has_data || state.served_mwh <= 0.0) {
+			continue;
+		}
+		const double tariff = state.tariff > 0.0 ? state.tariff : state.price;
+		if (tariff <= 0.0) {
 			continue;
 		}
 		const double served = state.served_mwh;
-		const double bill_h = served * params.share_households * state.price;
-		const double bill_i = served * params.share_industry * state.price;
-		const double bill_s = served * params.share_services * state.price;
-		const double bill_g = served * params.share_other * state.price;
+		const double bill_h = served * params.share_households * tariff;
+		const double bill_i = served * params.share_industry * tariff;
+		const double bill_s = served * params.share_services * tariff;
+		const double bill_g = served * params.share_other * tariff;
 		const double before = city.pop.savings;
 		charge_households(city.pop, bill_h);
-		pool += std::max(0.0, before - city.pop.savings);
+		const double paid_h = std::max(0.0, before - city.pop.savings);
+		pool += paid_h;
 		const double paid_i = std::min(bill_i, std::max(0.0, city.firm_cash));
 		city.firm_cash -= paid_i;
 		pool += paid_i;
@@ -1772,6 +2099,33 @@ void SimCore::phase_power_settle() {
 			std::max(0.0, city.government_budget));
 		city.government_budget -= paid_g;
 		pool += paid_g;
+		// Remuneração do atacado (custo médio do período). A tarifa é
+		// normalmente maior; a margem vai ao Estado/distribuidora. Se a tarifa
+		// ficar abaixo do atacado, o Estado cobre até o próprio orçamento; o
+		// resto é perda do setor (não se cria dinheiro).
+		const double wholesale = state.average_cost > 0.0
+			? state.average_cost : state.price;
+		const double paid_total = paid_h + paid_i + paid_s + paid_g;
+		const double margin = paid_total - served * wholesale;
+		double to_state = 0.0;
+		if (margin > 0.0) {
+			to_state = margin;
+		} else if (margin < 0.0) {
+			to_state = -std::min(-margin,
+				std::max(0.0, city.government_budget));
+		}
+		if (to_state > 0.0) {
+			pool -= to_state;
+			city.government_budget += to_state;
+		} else if (to_state < 0.0) {
+			const double subsidy = -to_state;
+			city.government_budget -= subsidy;
+			pool += subsidy;
+		}
+		const auto grid_found = ws.power_grids.find(city.nation);
+		if (grid_found != ws.power_grids.end()) {
+			grid_found->second.retail_margin += to_state;
+		}
 	}
 	// 2. Custo das usinas do dia: combustível (mercado) + O&M + salários.
 	const std::size_t plant_count = ws.power_plants.size();

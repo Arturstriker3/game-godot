@@ -147,6 +147,7 @@ func _power_sample(day: int, power: Dictionary) -> Dictionary:
 	return {
 		"day": day,
 		"price": float(power.get("average_price", 0.0)),
+		"tariff": float(power.get("average_tariff", 0.0)),
 		"served_ratio": float(power.get("served_ratio", 0.0)),
 		"demand_mwh": float(power.get("demand_mwh", 0.0)),
 		"served_mwh": float(power.get("served_mwh", 0.0)),
@@ -369,6 +370,7 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 		"price_floor": float(final.get("price_floor", 0.0)),
 		"price_ceiling": float(final.get("price_ceiling", 0.0)),
 		"average_price": bill / served if served > 0.0 else 0.0,
+		"average_tariff": float(final.get("average_tariff", 0.0)),
 		"served_ratio": served / demand if demand > 0.0 else 1.0,
 		"min_served_ratio": min_ratio,
 		"days_with_rationing": days_rationing,
@@ -1437,7 +1439,8 @@ func _accumulate_energy(acc: Dictionary, status: Dictionary,
 		if not grid_row.is_empty():
 			var served := float(grid_row.get("served_mwh", 0.0))
 			entry["bill"] = float(entry["bill"]) \
-				+ served * float(grid_row.get("price", 0.0))
+				+ served * float(grid_row.get("tariff",
+					grid_row.get("price", 0.0)))
 			entry["demand_mwh"] = float(entry["demand_mwh"]) \
 				+ float(grid_row.get("demand_mwh", 0.0))
 			entry["served_mwh"] = float(entry["served_mwh"]) + served

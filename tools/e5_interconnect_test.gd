@@ -44,7 +44,7 @@ const POWER_PARAMS_PATH := "res://data/definitions/energy/power_params.json"
 
 const EPS := 1e-6
 const MONEY_EPSILON := 1e-3
-const SAVE_VERSION := 36
+const SAVE_VERSION := 37
 const POPULATION := 50000.0
 
 var _failures: Array[String] = []

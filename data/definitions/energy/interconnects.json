@@ -78,7 +78,15 @@
    "importers_with_link": 66,
    "unserved_importers": 12,
    "total_avg_flow_mw": 31963.354844,
-   "total_capacity_mw": 57831.193555
+   "total_capacity_mw": 57831.193555,
+   "total_contract_mw": 35036.986301
+  },
+  "supply_contract": {
+   "decision": "D-120 (E7, docs/economy/E2E3_power_grid.md)",
+   "field": "links[].contract_mw",
+   "method": "fluxo bruto bilateral do ano-base = net_imports_twh Ember do importador x 1e6/8760 MW, rateado entre as linhas do importador PROPORCIONAL A CAPACIDADE (unico repartidor publico por par disponivel); nunca passa da capacidade. Pares em que os dois lados importam (MDA-ROU, XKX-ALB/MKD) usam a direcao declarada no documento regulatorio do par",
+   "source": "ember_yearly (net_imports_twh); capacidade por par em meta.public_capacity_links/_sources",
+   "not_changed": "a E5 (venda de sobra spot) continua por cima do contrato; preco de escassez, VOLL, racionamento, insatisfacao e perdas nao mudam"
   },
   "known_limits": "a reparticao proporcional ignora limites internos de cada exportador (o dado Ember e anual e nacional); ilhas e importadores sem vizinho exportador continuam sem compra - a ausencia e declarada em unserved_importers"
  },
@@ -710,7 +718,8 @@
    "avg_flow_mw": 359.440425,
    "capacity_mw": 449.300531,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 359.440425
   },
   {
    "a": "AFG",
@@ -726,7 +735,8 @@
    "avg_flow_mw": 44.309262,
    "capacity_mw": 55.386577,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 44.309262
   },
   {
    "a": "AFG",
@@ -742,7 +752,8 @@
    "avg_flow_mw": 95.615695,
    "capacity_mw": 119.519619,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 95.615695
   },
   {
    "a": "AFG",
@@ -758,7 +769,8 @@
    "avg_flow_mw": 166.159732,
    "capacity_mw": 207.699665,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 166.159732
   },
   {
    "a": "ALB",
@@ -774,17 +786,18 @@
    "avg_flow_mw": 37.671233,
    "capacity_mw": 47.089041,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 37.671233
   },
   {
    "a": "ALB",
    "b": "XKX",
-   "importer": "",
-   "exporter": "",
+   "importer": "XKX",
+   "exporter": "ALB",
    "border_km": 0.0,
-   "importer_net_imports_twh": 0.0,
+   "importer_net_imports_twh": 1.587,
    "importer_avg_import_mw": 0.0,
-   "exporter_net_export_twh": -0.0,
+   "exporter_net_export_twh": -0.33,
    "neighbor_export_sum_twh": 0.0,
    "share": 0.0,
    "avg_flow_mw": 0.0,
@@ -793,7 +806,8 @@
    "method": "public_capacity",
    "source": "osts_al_ntc",
    "capacity_reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
-   "capacity_note": "NTC 400 MW Albania-Kosovo (OST, tabela de NTC): linhas 400 kV Kosovo B-Koman e 220 kV Prizren-Fierza"
+   "capacity_note": "NTC 400 MW Albania-Kosovo (OST, tabela de NTC): linhas 400 kV Kosovo B-Koman e 220 kV Prizren-Fierza",
+   "contract_mw": 99.268155
   },
   {
    "a": "ARG",
@@ -809,7 +823,8 @@
    "avg_flow_mw": 1059.246575,
    "capacity_mw": 1324.058219,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 1059.246575
   },
   {
    "a": "ARM",
@@ -825,7 +840,8 @@
    "avg_flow_mw": 10.010763,
    "capacity_mw": 12.513453,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 10.010762
   },
   {
    "a": "AUT",
@@ -841,7 +857,8 @@
    "avg_flow_mw": 339.434581,
    "capacity_mw": 424.293227,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 339.434581
   },
   {
    "a": "AUT",
@@ -857,7 +874,8 @@
    "avg_flow_mw": 107.358178,
    "capacity_mw": 134.197723,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 107.358178
   },
   {
    "a": "AUT",
@@ -873,7 +891,8 @@
    "avg_flow_mw": 22.385322,
    "capacity_mw": 27.981653,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 22.385322
   },
   {
    "a": "AZE",
@@ -889,7 +908,8 @@
    "avg_flow_mw": 8.241619,
    "capacity_mw": 10.302024,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 8.241619
   },
   {
    "a": "BEL",
@@ -905,7 +925,8 @@
    "avg_flow_mw": 1463.823896,
    "capacity_mw": 1829.77987,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 1463.823896
   },
   {
    "a": "BEL",
@@ -924,7 +945,8 @@
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
    "capacity_reason": "",
-   "capacity_note": "Nemo Link 1.000 MW"
+   "capacity_note": "Nemo Link 1.000 MW",
+   "contract_mw": 0.0
   },
   {
    "a": "BEL",
@@ -940,7 +962,8 @@
    "avg_flow_mw": 65.85647,
    "capacity_mw": 82.320587,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 65.85647
   },
   {
    "a": "BEN",
@@ -956,7 +979,8 @@
    "avg_flow_mw": 148.401826,
    "capacity_mw": 185.502283,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 148.401826
   },
   {
    "a": "BFA",
@@ -972,7 +996,8 @@
    "avg_flow_mw": 34.059946,
    "capacity_mw": 42.574932,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 34.059946
   },
   {
    "a": "BFA",
@@ -988,7 +1013,8 @@
    "avg_flow_mw": 113.844201,
    "capacity_mw": 142.305252,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 113.844202
   },
   {
    "a": "BFA",
@@ -1004,7 +1030,8 @@
    "avg_flow_mw": 23.32873,
    "capacity_mw": 29.160912,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 23.32873
   },
   {
    "a": "BGD",
@@ -1023,7 +1050,8 @@
    "method": "public_capacity",
    "source": "adb_bgd_ind",
    "capacity_reason": "",
-   "capacity_note": "Baharampur-Bheramara 400 kV 2xD/c + 2x500 MW HVDC B2B"
+   "capacity_note": "Baharampur-Bheramara 400 kV 2xD/c + 2x500 MW HVDC B2B",
+   "contract_mw": 0.0
   },
   {
    "a": "BGR",
@@ -1039,7 +1067,8 @@
    "avg_flow_mw": 32.016198,
    "capacity_mw": 40.020247,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 32.016198
   },
   {
    "a": "BGR",
@@ -1055,7 +1084,8 @@
    "avg_flow_mw": 254.20011,
    "capacity_mw": 317.750137,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 254.20011
   },
   {
    "a": "BGR",
@@ -1071,7 +1101,8 @@
    "avg_flow_mw": 84.922379,
    "capacity_mw": 106.152974,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 84.922379
   },
   {
    "a": "BIH",
@@ -1087,7 +1118,8 @@
    "avg_flow_mw": 499.953877,
    "capacity_mw": 624.942346,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 499.953877
   },
   {
    "a": "BIH",
@@ -1103,7 +1135,8 @@
    "avg_flow_mw": 117.579909,
    "capacity_mw": 146.974886,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 117.579909
   },
   {
    "a": "BIH",
@@ -1119,7 +1152,8 @@
    "avg_flow_mw": 146.81278,
    "capacity_mw": 183.515975,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 146.81278
   },
   {
    "a": "BLR",
@@ -1135,7 +1169,8 @@
    "avg_flow_mw": 13.959428,
    "capacity_mw": 17.449285,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 13.959428
   },
   {
    "a": "BLR",
@@ -1151,7 +1186,8 @@
    "avg_flow_mw": 5.428666,
    "capacity_mw": 6.785833,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 5.428666
   },
   {
    "a": "BLR",
@@ -1167,7 +1203,8 @@
    "avg_flow_mw": 2.27694,
    "capacity_mw": 2.846174,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 2.276939
   },
   {
    "a": "BLZ",
@@ -1183,7 +1220,8 @@
    "avg_flow_mw": 43.378995,
    "capacity_mw": 54.223744,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 43.378995
   },
   {
    "a": "BRA",
@@ -1199,7 +1237,8 @@
    "avg_flow_mw": 1322.83105,
    "capacity_mw": 1653.538813,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 1322.83105
   },
   {
    "a": "BTN",
@@ -1215,7 +1254,8 @@
    "avg_flow_mw": 166.666667,
    "capacity_mw": 208.333333,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 166.666667
   },
   {
    "a": "BWA",
@@ -1231,7 +1271,8 @@
    "avg_flow_mw": 141.552511,
    "capacity_mw": 176.940639,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 141.552511
   },
   {
    "a": "CAN",
@@ -1247,7 +1288,8 @@
    "avg_flow_mw": 1347.571421,
    "capacity_mw": 1684.464276,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 1347.571421
   },
   {
    "a": "CHE",
@@ -1263,7 +1305,8 @@
    "avg_flow_mw": 17.237443,
    "capacity_mw": 21.546804,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 17.237443
   },
   {
    "a": "CHN",
@@ -1279,7 +1322,8 @@
    "avg_flow_mw": 139.01201,
    "capacity_mw": 173.765013,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 139.01201
   },
   {
    "a": "CHN",
@@ -1295,7 +1339,8 @@
    "avg_flow_mw": 118.646236,
    "capacity_mw": 148.307796,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 118.646236
   },
   {
    "a": "CHN",
@@ -1311,7 +1356,8 @@
    "avg_flow_mw": 313.788554,
    "capacity_mw": 392.235692,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 313.788554
   },
   {
    "a": "CHN",
@@ -1327,7 +1373,8 @@
    "avg_flow_mw": 8.309256,
    "capacity_mw": 10.38657,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 8.309256
   },
   {
    "a": "CHN",
@@ -1343,7 +1390,8 @@
    "avg_flow_mw": 167.164476,
    "capacity_mw": 208.955595,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 167.164476
   },
   {
    "a": "CHN",
@@ -1359,7 +1407,8 @@
    "avg_flow_mw": 46.748582,
    "capacity_mw": 58.435728,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 46.748583
   },
   {
    "a": "CHN",
@@ -1375,7 +1424,8 @@
    "avg_flow_mw": 142.444389,
    "capacity_mw": 178.055487,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 142.44439
   },
   {
    "a": "CMR",
@@ -1391,7 +1441,8 @@
    "avg_flow_mw": 6.619086,
    "capacity_mw": 8.273857,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 6.849315
   },
   {
    "a": "COD",
@@ -1407,7 +1458,8 @@
    "avg_flow_mw": 3.612826,
    "capacity_mw": 4.516032,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 3.612826
   },
   {
    "a": "COD",
@@ -1423,7 +1475,8 @@
    "avg_flow_mw": 19.87054,
    "capacity_mw": 24.838176,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 19.870541
   },
   {
    "a": "COD",
@@ -1439,7 +1492,8 @@
    "avg_flow_mw": 140.900196,
    "capacity_mw": 176.125245,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 140.900195
   },
   {
    "a": "COG",
@@ -1455,7 +1509,8 @@
    "avg_flow_mw": 66.210046,
    "capacity_mw": 82.762557,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 66.210046
   },
   {
    "a": "COL",
@@ -1471,7 +1526,8 @@
    "avg_flow_mw": 34.474886,
    "capacity_mw": 43.093607,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 34.474886
   },
   {
    "a": "CRI",
@@ -1487,7 +1543,8 @@
    "avg_flow_mw": 102.739726,
    "capacity_mw": 128.424658,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 102.739726
   },
   {
    "a": "CZE",
@@ -1503,7 +1560,8 @@
    "avg_flow_mw": 156.765309,
    "capacity_mw": 195.956636,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 156.765309
   },
   {
    "a": "CZE",
@@ -1519,7 +1577,8 @@
    "avg_flow_mw": 28.820547,
    "capacity_mw": 36.025683,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 28.820547
   },
   {
    "a": "DEU",
@@ -1538,7 +1597,8 @@
    "method": "public_capacity",
    "source": "energinet_dk_interconnectors",
    "capacity_reason": "",
-   "capacity_note": "Endrup-Alemanha 2.500 + Kontek 600 + Kriegers Flak 400 MW"
+   "capacity_note": "Endrup-Alemanha 2.500 + Kontek 600 + Kriegers Flak 400 MW",
+   "contract_mw": 0.0
   },
   {
    "a": "DEU",
@@ -1554,7 +1614,8 @@
    "avg_flow_mw": 1979.082904,
    "capacity_mw": 2473.85363,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 1979.082904
   },
   {
    "a": "DEU",
@@ -1570,7 +1631,8 @@
    "avg_flow_mw": 89.037632,
    "capacity_mw": 111.29704,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 89.037632
   },
   {
    "a": "DJI",
@@ -1586,7 +1648,8 @@
    "avg_flow_mw": 68.493151,
    "capacity_mw": 85.616438,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 68.493151
   },
   {
    "a": "DNK",
@@ -1605,7 +1668,8 @@
    "method": "public_capacity",
    "source": "energinet_dk_interconnectors",
    "capacity_reason": "",
-   "capacity_note": "Skagerrak 1-4 (DK1-NO2) 1.632 MW"
+   "capacity_note": "Skagerrak 1-4 (DK1-NO2) 1.632 MW",
+   "contract_mw": 378.528421
   },
   {
    "a": "DNK",
@@ -1624,7 +1688,8 @@
    "method": "public_capacity",
    "source": "energinet_dk_interconnectors",
    "capacity_reason": "",
-   "capacity_note": "Konti-Skan 715 (DK1-SE3) + Oresund 1.300 (DK2-SE4) MW"
+   "capacity_note": "Konti-Skan 715 (DK1-SE3) + Oresund 1.300 (DK2-SE4) MW",
+   "contract_mw": 467.36199
   },
   {
    "a": "DZA",
@@ -1640,7 +1705,8 @@
    "avg_flow_mw": 428.082192,
    "capacity_mw": 535.10274,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 428.082192
   },
   {
    "a": "DZA",
@@ -1656,7 +1722,8 @@
    "avg_flow_mw": 28.576613,
    "capacity_mw": 35.720766,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 28.576612
   },
   {
    "a": "DZA",
@@ -1672,7 +1739,8 @@
    "avg_flow_mw": 64.888248,
    "capacity_mw": 81.11031,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 64.888248
   },
   {
    "a": "DZA",
@@ -1688,7 +1756,8 @@
    "avg_flow_mw": 295.6621,
    "capacity_mw": 369.577626,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 295.6621
   },
   {
    "a": "EGY",
@@ -1704,7 +1773,8 @@
    "avg_flow_mw": 34.094368,
    "capacity_mw": 42.61796,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 34.094368
   },
   {
    "a": "ESP",
@@ -1720,7 +1790,8 @@
    "avg_flow_mw": 1060.502283,
    "capacity_mw": 1325.627854,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 1060.502283
   },
   {
    "a": "EST",
@@ -1736,7 +1807,8 @@
    "avg_flow_mw": 309.360731,
    "capacity_mw": 386.700913,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 309.360731
   },
   {
    "a": "ETH",
@@ -1752,7 +1824,8 @@
    "avg_flow_mw": 146.536063,
    "capacity_mw": 183.170079,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 146.536063
   },
   {
    "a": "ETH",
@@ -1768,7 +1841,8 @@
    "avg_flow_mw": 57.229833,
    "capacity_mw": 71.537291,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 57.229833
   },
   {
    "a": "FIN",
@@ -1784,7 +1858,8 @@
    "avg_flow_mw": 197.710644,
    "capacity_mw": 247.138305,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 197.710644
   },
   {
    "a": "FIN",
@@ -1800,7 +1875,8 @@
    "avg_flow_mw": 144.762346,
    "capacity_mw": 180.952933,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 144.762346
   },
   {
    "a": "FIN",
@@ -1816,7 +1892,8 @@
    "avg_flow_mw": 292.230206,
    "capacity_mw": 365.287758,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 292.230206
   },
   {
    "a": "FRA",
@@ -1835,7 +1912,8 @@
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
    "capacity_reason": "",
-   "capacity_note": "IFA 2.000 + IFA2 1.000 + ElecLink 1.000 MW"
+   "capacity_note": "IFA 2.000 + IFA2 1.000 + ElecLink 1.000 MW",
+   "contract_mw": 1278.895548
   },
   {
    "a": "FRA",
@@ -1851,7 +1929,8 @@
    "avg_flow_mw": 5324.922964,
    "capacity_mw": 6656.153705,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 5324.922964
   },
   {
    "a": "FRA",
@@ -1867,7 +1946,8 @@
    "avg_flow_mw": 562.785388,
    "capacity_mw": 703.481735,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 562.785388
   },
   {
    "a": "GBR",
@@ -1886,7 +1966,8 @@
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
    "capacity_reason": "",
-   "capacity_note": "East-West 500 + Greenlink 504 MW (arredondado a 1 GW pelo Ofgem)"
+   "capacity_note": "East-West 500 + Greenlink 504 MW (arredondado a 1 GW pelo Ofgem)",
+   "contract_mw": 0.0
   },
   {
    "a": "GBR",
@@ -1905,7 +1986,8 @@
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
    "capacity_reason": "",
-   "capacity_note": "BritNed 1.000 MW"
+   "capacity_note": "BritNed 1.000 MW",
+   "contract_mw": 319.723887
   },
   {
    "a": "GBR",
@@ -1924,7 +2006,8 @@
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
    "capacity_reason": "",
-   "capacity_note": "North Sea Link 1.400 MW"
+   "capacity_note": "North Sea Link 1.400 MW",
+   "contract_mw": 447.613442
   },
   {
    "a": "GEO",
@@ -1940,7 +2023,8 @@
    "avg_flow_mw": 90.042927,
    "capacity_mw": 112.553659,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 90.042927
   },
   {
    "a": "GEO",
@@ -1956,7 +2040,8 @@
    "avg_flow_mw": 11.111084,
    "capacity_mw": 13.888855,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 11.111084
   },
   {
    "a": "GHA",
@@ -1972,7 +2057,8 @@
    "avg_flow_mw": 171.232877,
    "capacity_mw": 214.041096,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 171.232877
   },
   {
    "a": "GRC",
@@ -1988,7 +2074,8 @@
    "avg_flow_mw": 73.006633,
    "capacity_mw": 91.258291,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 73.006633
   },
   {
    "a": "GTM",
@@ -2004,7 +2091,8 @@
    "avg_flow_mw": 30.809373,
    "capacity_mw": 38.511717,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 30.809374
   },
   {
    "a": "GTM",
@@ -2020,7 +2108,8 @@
    "avg_flow_mw": 33.117567,
    "capacity_mw": 41.396959,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 33.117567
   },
   {
    "a": "HND",
@@ -2036,7 +2125,8 @@
    "avg_flow_mw": 17.123288,
    "capacity_mw": 21.40411,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 17.123288
   },
   {
    "a": "HRV",
@@ -2052,7 +2142,8 @@
    "avg_flow_mw": 107.352059,
    "capacity_mw": 134.190074,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 107.352059
   },
   {
    "a": "HUN",
@@ -2068,7 +2159,8 @@
    "avg_flow_mw": 743.573625,
    "capacity_mw": 929.467032,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 743.573625
   },
   {
    "a": "HUN",
@@ -2084,7 +2176,8 @@
    "avg_flow_mw": 283.823635,
    "capacity_mw": 354.779544,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 283.823635
   },
   {
    "a": "IDN",
@@ -2100,7 +2193,8 @@
    "avg_flow_mw": 109.360731,
    "capacity_mw": 136.700913,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 109.360731
   },
   {
    "a": "IND",
@@ -2116,7 +2210,8 @@
    "avg_flow_mw": 0.714017,
    "capacity_mw": 0.892522,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 0.714018
   },
   {
    "a": "IRN",
@@ -2132,7 +2227,8 @@
    "avg_flow_mw": 380.517504,
    "capacity_mw": 475.64688,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 380.517504
   },
   {
    "a": "IRN",
@@ -2148,7 +2244,8 @@
    "avg_flow_mw": 5.762833,
    "capacity_mw": 7.203541,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 5.762833
   },
   {
    "a": "IRQ",
@@ -2164,7 +2261,8 @@
    "avg_flow_mw": 8.244546,
    "capacity_mw": 10.305682,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 8.244546
   },
   {
    "a": "IRQ",
@@ -2180,7 +2278,8 @@
    "avg_flow_mw": 95.129376,
    "capacity_mw": 118.91172,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 95.129376
   },
   {
    "a": "IRQ",
@@ -2196,7 +2295,8 @@
    "avg_flow_mw": 326.610857,
    "capacity_mw": 408.263572,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 326.610858
   },
   {
    "a": "ISR",
@@ -2212,7 +2312,8 @@
    "avg_flow_mw": 6.216055,
    "capacity_mw": 7.770068,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 6.262231
   },
   {
    "a": "ISR",
@@ -2228,7 +2329,8 @@
    "avg_flow_mw": 799.086758,
    "capacity_mw": 998.858447,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 799.086758
   },
   {
    "a": "ITA",
@@ -2244,7 +2346,8 @@
    "avg_flow_mw": 27.816762,
    "capacity_mw": 34.770952,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 27.816762
   },
   {
    "a": "JOR",
@@ -2260,7 +2363,8 @@
    "avg_flow_mw": 0.582755,
    "capacity_mw": 0.728444,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 0.587084
   },
   {
    "a": "KAZ",
@@ -2276,7 +2380,8 @@
    "avg_flow_mw": 101.73508,
    "capacity_mw": 127.16885,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 101.73508
   },
   {
    "a": "KAZ",
@@ -2292,7 +2397,8 @@
    "avg_flow_mw": 54.846994,
    "capacity_mw": 68.558743,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 54.846994
   },
   {
    "a": "KEN",
@@ -2308,7 +2414,8 @@
    "avg_flow_mw": 27.43654,
    "capacity_mw": 34.295674,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 27.436539
   },
   {
    "a": "KGZ",
@@ -2324,7 +2431,8 @@
    "avg_flow_mw": 83.47172,
    "capacity_mw": 104.33965,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 83.47172
   },
   {
    "a": "KHM",
@@ -2340,7 +2448,8 @@
    "avg_flow_mw": 528.538813,
    "capacity_mw": 660.673516,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 528.538813
   },
   {
    "a": "LAO",
@@ -2356,7 +2465,8 @@
    "avg_flow_mw": 15.663347,
    "capacity_mw": 19.579183,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 15.663347
   },
   {
    "a": "LAO",
@@ -2372,7 +2482,8 @@
    "avg_flow_mw": 4080.109332,
    "capacity_mw": 5100.136665,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 4080.109332
   },
   {
    "a": "LAO",
@@ -2388,7 +2499,8 @@
    "avg_flow_mw": 268.514515,
    "capacity_mw": 335.643143,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 268.514514
   },
   {
    "a": "LSO",
@@ -2404,7 +2516,8 @@
    "avg_flow_mw": 66.210046,
    "capacity_mw": 82.762557,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 66.210046
   },
   {
    "a": "LTU",
@@ -2420,7 +2533,8 @@
    "avg_flow_mw": 396.999476,
    "capacity_mw": 496.249345,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 396.999476
   },
   {
    "a": "LVA",
@@ -2436,17 +2550,18 @@
    "avg_flow_mw": 154.388685,
    "capacity_mw": 192.985856,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 154.388685
   },
   {
    "a": "MDA",
    "b": "ROU",
-   "importer": "",
-   "exporter": "",
+   "importer": "MDA",
+   "exporter": "ROU",
    "border_km": 0.0,
-   "importer_net_imports_twh": 0.0,
+   "importer_net_imports_twh": 2.608,
    "importer_avg_import_mw": 0.0,
-   "exporter_net_export_twh": -0.0,
+   "exporter_net_export_twh": -3.74,
    "neighbor_export_sum_twh": 0.0,
    "share": 0.0,
    "avg_flow_mw": 0.0,
@@ -2455,7 +2570,8 @@
    "method": "public_capacity",
    "source": "ebrd_mda_rou_600mw",
    "capacity_reason": "vizinho importador liquido no ano-base Ember",
-   "capacity_note": "B2B 600 MW em Vulcanesti (Isaccea-Vulcanesti-Chisinau); linha 400 kV + conversor assincrono"
+   "capacity_note": "B2B 600 MW em Vulcanesti (Isaccea-Vulcanesti-Chisinau); linha 400 kV + conversor assincrono",
+   "contract_mw": 183.748239
   },
   {
    "a": "MDA",
@@ -2471,7 +2587,8 @@
    "avg_flow_mw": 297.716895,
    "capacity_mw": 372.146119,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 113.968656
   },
   {
    "a": "MEX",
@@ -2487,17 +2604,18 @@
    "avg_flow_mw": 62.474241,
    "capacity_mw": 78.092802,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 62.474242
   },
   {
    "a": "MKD",
    "b": "XKX",
-   "importer": "",
-   "exporter": "",
+   "importer": "XKX",
+   "exporter": "MKD",
    "border_km": 0.0,
-   "importer_net_imports_twh": 0.0,
+   "importer_net_imports_twh": 1.587,
    "importer_avg_import_mw": 0.0,
-   "exporter_net_export_twh": -0.0,
+   "exporter_net_export_twh": -0.92,
    "neighbor_export_sum_twh": 0.0,
    "share": 0.0,
    "avg_flow_mw": 0.0,
@@ -2506,7 +2624,8 @@
    "method": "public_capacity",
    "source": "seecao_ntc",
    "capacity_reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
-   "capacity_note": "400 kV Ferizaj 2-Shkupi 5; NTC de 330 MW divulgado pelo SEE CAO na alocacao de 1-5 jan/2021"
+   "capacity_note": "400 kV Ferizaj 2-Shkupi 5; NTC de 330 MW divulgado pelo SEE CAO na alocacao de 1-5 jan/2021",
+   "contract_mw": 81.896228
   },
   {
    "a": "MLI",
@@ -2522,7 +2641,8 @@
    "avg_flow_mw": 5.669963,
    "capacity_mw": 7.087454,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 5.669963
   },
   {
    "a": "MLI",
@@ -2538,7 +2658,8 @@
    "avg_flow_mw": 12.874652,
    "capacity_mw": 16.093315,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 12.874652
   },
   {
    "a": "MLI",
@@ -2554,7 +2675,8 @@
    "avg_flow_mw": 57.077626,
    "capacity_mw": 71.347032,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 57.077626
   },
   {
    "a": "MNG",
@@ -2570,7 +2692,8 @@
    "avg_flow_mw": 143.337807,
    "capacity_mw": 179.172259,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 143.337807
   },
   {
    "a": "MOZ",
@@ -2586,7 +2709,8 @@
    "avg_flow_mw": 42.423478,
    "capacity_mw": 53.029348,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 42.423478
   },
   {
    "a": "MOZ",
@@ -2602,7 +2726,8 @@
    "avg_flow_mw": 10.403393,
    "capacity_mw": 13.004241,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 10.433723
   },
   {
    "a": "MOZ",
@@ -2618,7 +2743,8 @@
    "avg_flow_mw": 56.102848,
    "capacity_mw": 70.12856,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 56.102848
   },
   {
    "a": "MYS",
@@ -2634,7 +2760,8 @@
    "avg_flow_mw": 130.963727,
    "capacity_mw": 163.704659,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 130.963727
   },
   {
    "a": "NAM",
@@ -2650,7 +2777,8 @@
    "avg_flow_mw": 179.572324,
    "capacity_mw": 224.465405,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 179.572324
   },
   {
    "a": "NAM",
@@ -2666,7 +2794,8 @@
    "avg_flow_mw": 94.400278,
    "capacity_mw": 118.000348,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 94.400279
   },
   {
    "a": "NER",
@@ -2682,7 +2811,8 @@
    "avg_flow_mw": 59.223401,
    "capacity_mw": 74.029251,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 59.223401
   },
   {
    "a": "POL",
@@ -2698,7 +2828,8 @@
    "avg_flow_mw": 64.755075,
    "capacity_mw": 80.943843,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 64.755075
   },
   {
    "a": "POL",
@@ -2714,7 +2845,8 @@
    "avg_flow_mw": 9.115516,
    "capacity_mw": 11.394395,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 9.115516
   },
   {
    "a": "POL",
@@ -2730,7 +2862,8 @@
    "avg_flow_mw": 3.479412,
    "capacity_mw": 4.349265,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 3.479412
   },
   {
    "a": "ROU",
@@ -2746,7 +2879,8 @@
    "avg_flow_mw": 172.740529,
    "capacity_mw": 215.925662,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 172.74053
   },
   {
    "a": "RWA",
@@ -2762,7 +2896,8 @@
    "avg_flow_mw": 10.273973,
    "capacity_mw": 12.842466,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 10.273973
   },
   {
    "a": "SWZ",
@@ -2778,7 +2913,8 @@
    "avg_flow_mw": 76.297983,
    "capacity_mw": 95.372479,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 76.297983
   },
   {
    "a": "TJK",
@@ -2794,7 +2930,8 @@
    "avg_flow_mw": 122.169789,
    "capacity_mw": 152.712236,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 122.169789
   },
   {
    "a": "TKM",
@@ -2810,7 +2947,8 @@
    "avg_flow_mw": 212.305097,
    "capacity_mw": 265.381371,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 212.305097
   },
   {
    "a": "TZA",
@@ -2826,7 +2964,8 @@
    "avg_flow_mw": 1.387119,
    "capacity_mw": 1.733899,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 1.391163
   },
   {
    "a": "TZA",
@@ -2842,7 +2981,8 @@
    "avg_flow_mw": 9.835935,
    "capacity_mw": 12.294919,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 9.864611
   },
   {
    "a": "ZAF",
@@ -2858,7 +2998,8 @@
    "avg_flow_mw": 100.900122,
    "capacity_mw": 126.125152,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 100.900121
   },
   {
    "a": "ZMB",
@@ -2874,7 +3015,8 @@
    "avg_flow_mw": 53.042692,
    "capacity_mw": 66.303366,
    "headroom": 1.25,
-   "method": "ember_net_imports_x_land_borders"
+   "method": "ember_net_imports_x_land_borders",
+   "contract_mw": 53.042693
   }
  ]
 }

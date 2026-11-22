@@ -156,6 +156,7 @@ PUBLIC_LINKS = [
         # regra so aceita vizinho exportador); a linha existe e a capacidade
         # nominal e publicada (EBRD/EIB/IEA).
         "a": "MDA", "b": "ROU", "capacity_mw": 600.0,
+        "importer": "MDA",
         "source": "ebrd_mda_rou_600mw",
         "reason": "vizinho importador liquido no ano-base Ember",
         "note": ("B2B 600 MW em Vulcanesti (Isaccea-Vulcanesti-Chisinau); "
@@ -167,6 +168,7 @@ PUBLIC_LINKS = [
         # fronteira para XKX, entao a derivacao Ember x fronteira terrestre
         # nunca cria o par: as capacidades abaixo sao as publicadas por par.
         "a": "XKX", "b": "ALB", "capacity_mw": 400.0,
+        "importer": "XKX",
         "source": "osts_al_ntc",
         "reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
         "note": ("NTC 400 MW Albania-Kosovo (OST, tabela de NTC): linhas "
@@ -174,6 +176,7 @@ PUBLIC_LINKS = [
     },
     {
         "a": "XKX", "b": "MKD", "capacity_mw": 330.0,
+        "importer": "XKX",
         "source": "seecao_ntc",
         "reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
         "note": ("400 kV Ferizaj 2-Shkupi 5; NTC de 330 MW divulgado pelo "
@@ -472,6 +475,13 @@ def build() -> dict:
         source = item["source"]
         row = by_pair.get((a, b))
         if row is not None:
+            if not row.get("importer") and item.get("importer"):
+                # Direcao DECLARADA do contrato quando os dois lados sao
+                # importadores liquidos no ano-base (MDA-ROU, XKX-ALB/MKD):
+                # a linha existe e o lado que importa e o da nacao que a
+                # estrategia/regulador documenta; a direcao do fluxo de SOBRA
+                # da E5 continua sendo a do deficit do dia.
+                row["importer"] = str(item["importer"])
             if capacity > float(row["capacity_mw"]):
                 row["capacity_mw"] = round(capacity, 6)
                 row["method"] = "public_capacity"
@@ -495,6 +505,9 @@ def build() -> dict:
             importer, exporter = a, b
         elif net_imports.get(b, 0.0) > 0.0 and net_imports.get(a, 0.0) <= 0.0:
             importer, exporter = b, a
+        elif item.get("importer"):
+            importer = str(item["importer"])
+            exporter = b if importer == a else a
         row = {
             "a": a,
             "b": b,
@@ -527,6 +540,37 @@ def build() -> dict:
             }
         )
     links.sort(key=lambda row: (row["a"], row["b"]))
+    # --- E7 (D-120): CONTRATO de suprimento do ano-base -------------------
+    # O fluxo BRUTO bilateral medio do importador (Ember, MW) e rateado entre
+    # as linhas dele PROPORCIONAL A CAPACIDADE (o dado publico por par de que
+    # dispomos). Assim o total contratado de cada importador e o proprio
+    # net_imports Ember do ano-base, sem inventar um repartidor por par que a
+    # fonte nao publica; pares com um unico vizinho recebem o total. Quando os
+    # dois lados importam (MDA-ROU, XKX-ALB/MKD), a direcao e DECLARADA no
+    # PUBLIC_LINKS pelo documento regulatorio do par. O contrato e uma camada
+    # de entrega: a E5 (sobra spot) continua por cima e nao muda.
+    importer_avg_mw = {
+        tag: value * TWH_TO_MW for tag, value in importers.items()
+    }
+    capacity_by_importer: dict[str, float] = defaultdict(float)
+    for row in links:
+        tag = str(row.get("importer", ""))
+        if tag and float(row.get("capacity_mw") or 0.0) > 0.0:
+            capacity_by_importer[tag] += float(row["capacity_mw"])
+    contract_total_mw = 0.0
+    for row in links:
+        tag = str(row.get("importer", ""))
+        capacity = float(row.get("capacity_mw") or 0.0)
+        contract = 0.0
+        if tag and capacity > 0.0 and capacity_by_importer.get(tag, 0.0) > 0.0:
+            contract = min(
+                capacity,
+                importer_avg_mw.get(tag, 0.0)
+                * capacity
+                / capacity_by_importer[tag],
+            )
+        row["contract_mw"] = round(contract, 6)
+        contract_total_mw += contract
     total_capacity = sum(row["capacity_mw"] for row in links)
     total_flow = sum(row["avg_flow_mw"] for row in links)
     out = {
@@ -605,6 +649,25 @@ def build() -> dict:
                 "unserved_importers": len(unserved),
                 "total_avg_flow_mw": round(total_flow, 6),
                 "total_capacity_mw": round(total_capacity, 6),
+                "total_contract_mw": round(contract_total_mw, 6),
+            },
+            "supply_contract": {
+                "decision": "D-120 (E7, docs/economy/E2E3_power_grid.md)",
+                "field": "links[].contract_mw",
+                "method": (
+                    "fluxo bruto bilateral do ano-base = net_imports_twh Ember "
+                    "do importador x 1e6/8760 MW, rateado entre as linhas do "
+                    "importador PROPORCIONAL A CAPACIDADE (unico repartidor "
+                    "publico por par disponivel); nunca passa da capacidade. "
+                    "Pares em que os dois lados importam (MDA-ROU, XKX-ALB/MKD) "
+                    "usam a direcao declarada no documento regulatorio do par"
+                ),
+                "source": "ember_yearly (net_imports_twh); capacidade por par em meta.public_capacity_links/_sources",
+                "not_changed": (
+                    "a E5 (venda de sobra spot) continua por cima do contrato; "
+                    "preco de escassez, VOLL, racionamento, insatisfacao e "
+                    "perdas nao mudam"
+                ),
             },
             "known_limits": (
                 "a reparticao proporcional ignora limites internos de cada "

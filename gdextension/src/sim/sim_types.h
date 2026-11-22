@@ -1531,6 +1531,14 @@ struct Region {
 		double demand_mwh = 0.0;
 		double served_mwh = 0.0;
 		double price = 0.0;
+		// E7 (D-120): preço de ATACADO médio do período (média móvel do custo
+		// ponderado da energia entregue à rede, XGS/MWh), a TARIFA de varejo
+		// paga pelo consumidor e o repasse de escassez suavizado embutido nela.
+		// `price` continua sendo o spot marginal (preço de escassez quando
+		// falta) — forma intacta (D-116/D-119).
+		double average_cost = 0.0;
+		double tariff = 0.0;
+		double scarcity_pass = 0.0;
 		int ration_days = 0;
 		double lost_gdp = 0.0;
 	};
@@ -1560,6 +1568,12 @@ struct Region {
 		std::string nation;
 		bool exists = false;
 		double price = 0.0;
+		// E7 (D-120): atacado médio, tarifa de varejo, repasse de escassez
+		// suavizado e a margem de rede/estado do dia (ledger de conservação).
+		double average_cost = 0.0;
+		double tariff = 0.0;
+		double scarcity_pass = 0.0;
+		double retail_margin = 0.0;
 		double demand_mwh = 0.0;
 		double served_mwh = 0.0;
 		int ration_days = 0;
@@ -1594,6 +1608,17 @@ struct Region {
 		double capacity_mw = 0.0;
 		int built_day = 0;
 		bool initial = false;
+		// E7 (D-120): CONTRATO de suprimento do ano-base. A direção vem do
+		// dado (`importer`), não do déficit do dia; o contrato é entregue antes
+		// da demanda marginal do exportador, até a capacidade, e cai
+		// proporcionalmente quando o exportador fica curto.
+		std::string contract_importer;
+		std::string contract_exporter;
+		double contract_mw = 0.0;
+		double contract_flow_mwh = 0.0;  // entregue ao importador (lado da carga)
+		double contract_sent_mwh = 0.0;  // gerado pelo exportador (inclui a perda)
+		double contract_price = 0.0;     // custo médio de atacado do exportador
+		double contract_value = 0.0;     // contract_flow_mwh × contract_price
 		// Fluxos do dia (persistidos para o status e o round-trip).
 		double flow_mwh = 0.0;   // entregue ao importador (lado da carga)
 		double sent_mwh = 0.0;   // gerado pelo exportador (inclui a perda)

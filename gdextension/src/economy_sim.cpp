@@ -6973,6 +6973,9 @@ int EconomySim::set_power_interconnects(const Array& links,
 			String(entry.get("importer", "")).utf8().get_data());
 		def.capacity_mw = std::max(0.0,
 			double(entry.get("capacity_mw", 0.0)));
+		// E7 (D-120): fluxo BRUTO do ano-base como contrato de suprimento.
+		def.contract_mw = std::max(0.0,
+			double(entry.get("contract_mw", 0.0)));
 		if (def.a.empty() || def.b.empty() || def.a == def.b) {
 			continue;
 		}
@@ -7047,6 +7050,7 @@ Dictionary EconomySim::get_power_status() const {
 	double world_served = 0.0;
 	double world_lost_gdp = 0.0;
 	double world_bill = 0.0;
+	double world_tariff_bill = 0.0;
 	int rationing_cities = 0;
 	int max_ration_days = 0;
 	double world_loss_weighted = 0.0;
@@ -7086,6 +7090,9 @@ Dictionary EconomySim::get_power_status() const {
 			? std::clamp(state.served_mwh / state.demand_mwh, 0.0, 1.0) : 1.0;
 		row["served_ratio"] = ratio;
 		row["price"] = state.price;
+		row["tariff"] = state.tariff;
+		row["average_cost"] = state.average_cost;
+		row["scarcity_pass"] = state.scarcity_pass;
 		row["ration_days"] = state.ration_days;
 		row["lost_gdp"] = state.lost_gdp;
 		row["stress"] = city.power_stress;
@@ -7101,6 +7108,8 @@ Dictionary EconomySim::get_power_status() const {
 		world_served += state.served_mwh;
 		world_lost_gdp += state.lost_gdp;
 		world_bill += state.served_mwh * state.price;
+		world_tariff_bill += state.served_mwh
+			* (state.tariff > 0.0 ? state.tariff : state.price);
 		world_loss_weighted += loss_pct * state.demand_mwh;
 		if (state.ration_days > 0) {
 			rationing_cities += 1;
@@ -7114,6 +7123,8 @@ Dictionary EconomySim::get_power_status() const {
 		? world_served / world_demand : 1.0;
 	out["average_price"] = world_served > 0.0
 		? world_bill / world_served : 0.0;
+	out["average_tariff"] = world_served > 0.0
+		? world_tariff_bill / world_served : 0.0;
 	out["rationing_cities"] = rationing_cities;
 	out["max_ration_days"] = max_ration_days;
 	out["lost_gdp"] = world_lost_gdp;
@@ -7134,6 +7145,14 @@ Dictionary EconomySim::get_power_status() const {
 		entry["capacity_mw"] = line.capacity_mw;
 		entry["built_day"] = line.built_day;
 		entry["initial"] = line.initial;
+		// E7 (D-120): contrato de suprimento do ano-base.
+		entry["contract_importer"] = String(line.contract_importer.c_str());
+		entry["contract_exporter"] = String(line.contract_exporter.c_str());
+		entry["contract_mw"] = line.contract_mw;
+		entry["contract_flow_mwh"] = line.contract_flow_mwh;
+		entry["contract_sent_mwh"] = line.contract_sent_mwh;
+		entry["contract_price"] = line.contract_price;
+		entry["contract_value"] = line.contract_value;
 		entry["importer"] = String(line.importer_today.c_str());
 		entry["exporter"] = String(line.exporter_today.c_str());
 		entry["flow_mwh"] = line.flow_mwh;
@@ -7158,6 +7177,10 @@ Dictionary EconomySim::get_power_status() const {
 		entry["nation"] = String(grid.nation.c_str());
 		entry["exists"] = grid.exists;
 		entry["price"] = grid.price;
+		entry["tariff"] = grid.tariff;
+		entry["average_cost"] = grid.average_cost;
+		entry["scarcity_pass"] = grid.scarcity_pass;
+		entry["retail_margin"] = grid.retail_margin;
 		entry["demand_mwh"] = grid.demand_mwh;
 		entry["served_mwh"] = grid.served_mwh;
 		entry["served_ratio"] = grid.demand_mwh > 0.0

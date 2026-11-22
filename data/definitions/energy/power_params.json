@@ -67,6 +67,8 @@
     "stress_duration_days": 10.0,
     "ration_threshold": 0.995,
     "voll_multiple": 100.0,
+    "retail_network_share": 0.55,
+    "retail_scarcity_days": 30.0,
     "build_ration_days": 20,
     "build_cooldown_days": 60,
     "build_share_demand": 0.08,
