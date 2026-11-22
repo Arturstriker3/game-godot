@@ -87,13 +87,43 @@ function Test-MemoryAccessCrash([int]$code) {
     return ((Convert-ToUInt32 -code $code) -eq [uint32]3221225477)
 }
 
-function Get-LogTail([string]$Path, [int]$Lines = 15) {
+function Get-LogTail([string]$Path, [int]$Lines = 15, [int]$MaxCharsPerLine = 300, [int]$MaxTotalChars = 4000) {
+    # Le SO os ultimos 64 KB do arquivo: um teste que imprime uma unica linha
+    # gigante (dump de JSON) nao pode ser carregado inteiro para a memoria do
+    # runner -- era isso que estourava o summary com OutOfMemoryException.
     if (-not (Test-Path -LiteralPath $Path)) { return @() }
+    $fs = $null
     try {
-        return @(Get-Content -LiteralPath $Path -Tail $Lines -ErrorAction Stop)
+        $fs = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $length = $fs.Length
+        if ($length -le 0) { return @() }
+        $take = [int][math]::Min([int64]65536, $length)
+        $fs.Seek(-[int64]$take, [System.IO.SeekOrigin]::End) | Out-Null
+        $buffer = New-Object byte[] $take
+        $read = $fs.Read($buffer, 0, $take)
+        if ($read -le 0) { return @() }
+        $text = [System.Text.Encoding]::UTF8.GetString($buffer, 0, $read)
     } catch {
         return @()
+    } finally {
+        if ($null -ne $fs) { try { $fs.Dispose() } catch { } }
     }
+
+    $all = @($text -split "`r?`n")
+    $start = [math]::Max(0, $all.Count - $Lines)
+    $out = New-Object System.Collections.Generic.List[string]
+    $used = 0
+    for ($i = $start; $i -lt $all.Count; $i++) {
+        $line = [string]$all[$i]
+        if ($line.Length -gt $MaxCharsPerLine) {
+            $line = $line.Substring(0, $MaxCharsPerLine) + "...[truncado]"
+        }
+        if (($used + $line.Length) -gt $MaxTotalChars) { break }
+        $out.Add($line)
+        $used += $line.Length
+    }
+    return $out.ToArray()
 }
 
 # ---------------------------------------------------------------------------
@@ -649,37 +679,55 @@ function Write-Summary {
         [bool]$LogsDeleted
     )
     $totals = Get-Totals -Results $script:Results
-    $summary = [ordered]@{
-        run_id = $RunId
-        project = $script:Root
-        godot = $script:GodotExe
-        started_at = $StartedAt
-        finished_at = (Get-Date).ToString("o")
-        aborted = $Aborted
-        logs_deleted = $LogsDeleted
-        totals = $totals
-        tests = @($script:Results)
-    }
-
     $jsonPath = Join-Path $script:OutDir "summary.json"
     $txtPath = Join-Path $script:OutDir "summary.txt"
-    Write-Utf8NoBom -Path $jsonPath -Text ($summary | ConvertTo-Json -Depth 8)
 
-    $lines = @()
-    $lines += "OpenGS test run $RunId"
-    $lines += "project: $($script:Root)"
-    $lines += "godot:   $($script:GodotExe)"
-    $lines += "total=$($totals['total']) ok=$($totals['ok']) fail=$($totals['fail']) crash=$($totals['crash']) timeout=$($totals['timeout']) skipped=$($totals['skipped'])"
-    if ($Aborted) { $lines += "ABORTED: $Aborted" }
-    foreach ($r in $script:Results) {
-        $suffix = ""
-        if ($r.exit_hex) { $suffix = " exit=$($r.exit_hex)" }
-        $lines += ("[{0}] {1} ({2}){3} {4}s" -f $r.status, $r.name, $r.mode, $suffix, $r.duration_s)
-        if ($r.status -eq "SKIP" -and $r.tail_err.Count -gt 0) {
-            $lines += "        " + ($r.tail_err -join " ")
+    # Streaming: o summary e escrito registro a registro num StreamWriter. Antes
+    # um ConvertTo-Json do array inteiro + uma string unica (-join) duplicava o
+    # summary na memoria e estourava (OutOfMemoryException) quando algum log
+    # trazia linha gigante. O contrato de saida (campos/totais/testes) e o mesmo.
+    $utf8 = New-Object System.Text.UTF8Encoding($false)
+    $writer = New-Object System.IO.StreamWriter($jsonPath, $false, $utf8)
+    try {
+        $writer.Write("{")
+        $writer.Write('"run_id":' + (ConvertTo-Json -InputObject $RunId -Compress))
+        $writer.Write(',"project":' + (ConvertTo-Json -InputObject $script:Root -Compress))
+        $writer.Write(',"godot":' + (ConvertTo-Json -InputObject $script:GodotExe -Compress))
+        $writer.Write(',"started_at":' + (ConvertTo-Json -InputObject $StartedAt -Compress))
+        $writer.Write(',"finished_at":' + (ConvertTo-Json -InputObject ((Get-Date).ToString("o")) -Compress))
+        $writer.Write(',"aborted":' + (ConvertTo-Json -InputObject $Aborted -Compress))
+        $writer.Write(',"logs_deleted":' + (ConvertTo-Json -InputObject $LogsDeleted -Compress))
+        $writer.Write(',"totals":' + (ConvertTo-Json -InputObject $totals -Compress -Depth 4))
+        $writer.Write(',"tests":[')
+        $first = $true
+        foreach ($r in $script:Results) {
+            if (-not $first) { $writer.Write(",") }
+            $first = $false
+            $writer.Write((ConvertTo-Json -InputObject $r -Compress -Depth 4))
         }
+        $writer.Write("]}")
+    } finally {
+        $writer.Dispose()
     }
-    Write-Utf8NoBom -Path $txtPath -Text ($lines -join "`r`n")
+
+    $txt = New-Object System.IO.StreamWriter($txtPath, $false, $utf8)
+    try {
+        $txt.WriteLine("OpenGS test run $RunId")
+        $txt.WriteLine("project: $($script:Root)")
+        $txt.WriteLine("godot:   $($script:GodotExe)")
+        $txt.WriteLine("total=$($totals['total']) ok=$($totals['ok']) fail=$($totals['fail']) crash=$($totals['crash']) timeout=$($totals['timeout']) skipped=$($totals['skipped'])")
+        if ($Aborted) { $txt.WriteLine("ABORTED: $Aborted") }
+        foreach ($r in $script:Results) {
+            $suffix = ""
+            if ($r.exit_hex) { $suffix = " exit=$($r.exit_hex)" }
+            $txt.WriteLine(("[{0}] {1} ({2}){3} {4}s" -f $r.status, $r.name, $r.mode, $suffix, $r.duration_s))
+            if ($r.status -eq "SKIP" -and $r.tail_err.Count -gt 0) {
+                $txt.WriteLine("        " + ($r.tail_err -join " "))
+            }
+        }
+    } finally {
+        $txt.Dispose()
+    }
 
     return [pscustomobject]@{ Totals = $totals; JsonPath = $jsonPath; TxtPath = $txtPath }
 }
