@@ -9,7 +9,7 @@ extends Node3D
 ##     da capacidade e na cor do fluxo do dia;
 ##   - calor: preenchimento das regiões por fonte (solar/eólico/hídrico),
 ##     rasterizado de `renewable_potential.json` / `hydro_potential.json` com a
-##     MESMA métrica dos marcadores, intensidade relativa ao máximo do mundo.
+##     MESMA métrica dos marcadores e a MESMA escala de classe (p25/p75).
 ##
 ## Tudo desligado por padrão: o mapa de energia paga só os marcadores. Ligada, a
 ## camada custa 2 draw calls (redes) + 1 por fonte de calor.
@@ -41,11 +41,16 @@ const LINE_HEIGHT := 0.19
 ## Potencial: textura de calor de 500×250 px sobre o plano de 1000×500 u.
 const HEAT_WIDTH := 500
 const HEAT_HEIGHT := 250
-const HEAT_RADIUS := 7
-const HEAT_ALPHA := 0.62
+## Raio do halo em texels da textura de calor (1 texel = 10 px de mapa = 2 u):
+## 18 texels ≈ 36 u de mundo, para o campo aparecer entre cidades no zoom
+## afastado sem virar uma mancha uniforme no zoom perto.
+const HEAT_RADIUS := 18
+## Pico do halo (alfa do texel mais quente). O calor é pano de fundo: fica
+## ABAIXO dos marcadores e some sob eles quando o sítio é fraco.
+const HEAT_ALPHA := 0.68
 ## Fator do calor quando ele entra SOZINHO porque só uma fonte está filtrada:
 ## o mapa continua legível (o calor é pano de fundo, não assunto).
-const HEAT_AUTO_FACTOR := 0.55
+const HEAT_AUTO_FACTOR := 0.65
 const HEAT_COLORS := {
 	"solar": Color("#E8B028"),
 	"wind": Color("#6F8F8C"),
@@ -381,6 +386,8 @@ func _ensure_potential(kind: String) -> void:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.albedo_texture = texture
+	# A textura não tem mipmaps: filtro linear puro evita borrar/afinar o halo.
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.no_depth_test = true
 	material.render_priority = 1
@@ -441,16 +448,24 @@ func _load_potential_data() -> void:
 
 
 ## Rasteriza os valores num halo gaussiano de 500×250 e devolve a imagem RGBA
-## (alfa = intensidade relativa ao máximo do mundo). Sem valor = sem halo.
+## (alfa = intensidade do sítio entre o p25 e o p75 da PRÓPRIA fonte, em escala
+## logarítmica). p25/p75 são os mesmos limiares de classe da legenda: um sítio
+## "fraco" não pinta, um "excelente" chega ao pico do halo.
+##
+## Por que não o máximo do mundo: o potencial técnico hídrico varia 3 ordens de
+## grandeza (um sítio gigante define o máximo) e 95% das cidades ficavam com
+## alfa ~0,02 — o calor de fonte única simplesmente não aparecia na carta.
 func _rasterize_heat(values: Dictionary, color: Color) -> Image:
 	var width := HEAT_WIDTH
 	var height := HEAT_HEIGHT
 	var accumulator := PackedFloat32Array()
 	accumulator.resize(width * height)
-	var maximum := 0.0
-	for value: Variant in values.values():
-		maximum = maxf(maximum, float(value))
-	if maximum <= 0.0:
+	var sorted: Array = values.values()
+	sorted.sort()
+	var low := log(1.0 + maxf(_percentile(sorted, 0.25), 0.0))
+	var high := log(1.0 + maxf(_percentile(sorted, 0.75), 0.0))
+	var span := high - low
+	if _percentile(sorted, 0.75) <= 0.0:
 		return null
 	var kernel: Array = []
 	var radius := HEAT_RADIUS
@@ -462,10 +477,15 @@ func _rasterize_heat(values: Dictionary, color: Color) -> Image:
 			var falloff := 1.0 - distance / float(radius + 1)
 			kernel.append([dx, dy, falloff * falloff])
 	for city_id: Variant in values:
+		var weight := 1.0
+		if span > 0.0001:
+			weight = clampf((log(1.0 + float(values[city_id])) - low) / span,
+					0.0, 1.0)
+		if weight <= 0.0:
+			continue
 		var point: Vector2 = _city_px[city_id]
 		var cx := int(point.x / MAP_PX.x * float(width))
 		var cy := int(point.y / MAP_PX.y * float(height))
-		var weight := float(values[city_id]) / maximum
 		for cell: Array in kernel:
 			var px: int = cx + int(cell[0])
 			var py: int = cy + int(cell[1])
@@ -481,6 +501,15 @@ func _rasterize_heat(values: Dictionary, color: Color) -> Image:
 			image.set_pixel(x, y, Color(color.r, color.g, color.b,
 					value * HEAT_ALPHA))
 	return image
+
+
+## Valor no quantil `q` de uma lista JÁ ordenada — a mesma fórmula dos limiares
+## de classe do `map_mode_layer.gd` (sorted[floor(q × n)], clampado ao último).
+static func _percentile(sorted: Array, q: float) -> float:
+	if sorted.is_empty():
+		return 0.0
+	var index := mini(sorted.size() - 1, int(floor(q * float(sorted.size()))))
+	return float(sorted[index])
 
 
 ## JSON traz `null` onde o dado falta; `float(null)` estoura no GDScript.
