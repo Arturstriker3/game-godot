@@ -35,6 +35,9 @@ int month_of_day(int day) {
 	return std::min(11, (doy * 12) / 365);
 }
 
+// Horas do ano para o fator de capacidade anual (calibração nacional).
+constexpr double kPowerHoursPerYear = 8760.0;
+
 // Produto de combustível de cada fonte térmica (-1 = sem compra de mercado).
 int fuel_product_of(const WorldState& ws, int fuel) {
 	const char* good = nullptr;
@@ -252,6 +255,81 @@ void seed(WorldState& ws, const PowerParams& params,
 		}
 		return std::clamp(sim->second / shown->second, 0.0, 1.0);
 	};
+	// Ancoragem nacional (D-116): a demanda-base Ember do ano-base e a geração
+	// real por fonte são rateadas entre as cidades e viram fator de capacidade
+	// por nação × fonte. O rateio usa o MESMO peso da curva global (população
+	// simulada × renda^e × acesso / (1 - perda)) medido no seed; a calibração
+	// divide a geração real pela geração do modelo com o parque REAL (antes da
+	// escala simulada, que se cancela na razão).
+	struct NationAnchor {
+		double park[kPowerFuelCount] = {};
+		double model_gen_mwh[kPowerFuelCount] = {};
+		double demand_weight = 0.0;
+	};
+	std::map<std::string, NationAnchor> anchors;
+	std::vector<double> city_weight(count, 0.0);
+	std::vector<double> city_income0(count, 0.0);
+	std::vector<double> city_loss0(count, 0.0);
+	const auto annual_cf = [&params](const PowerCityDef& def, int fuel) {
+		double cf = std::clamp(params.cf[fuel], 0.0, 1.0);
+		if (fuel == POWER_SOLAR) {
+			double sum = 0.0;
+			int months = 0;
+			for (int month = 0; month < kPowerMonthCount; ++month) {
+				if (def.solar_month[month] > 0.0) {
+					sum += def.solar_month[month];
+					months += 1;
+				}
+			}
+			if (months > 0) {
+				cf = sum / static_cast<double>(months);
+			}
+		}
+		return std::clamp(cf, 0.0, 1.0);
+	};
+	for (std::size_t index = 0; index < count; ++index) {
+		const City& city = ws.cities[index];
+		const auto city_found = cities.find(city.id);
+		const auto nation_found = nations.find(city.nation);
+		if (city_found == cities.end() && nation_found == nations.end()) {
+			continue;
+		}
+		PowerCityDef def;
+		double access_pct = 100.0;
+		double loss_pct = 10.0;
+		if (nation_found != nations.end()) {
+			access_pct = nation_found->second.access_pct;
+			loss_pct = nation_found->second.loss_pct;
+		}
+		if (city_found != cities.end()) {
+			def = city_found->second;
+			access_pct = def.access_pct;
+			loss_pct = def.loss_pct;
+		}
+		const double loss0 = std::clamp(loss_pct, params.loss_floor_pct,
+			params.loss_max_pct);
+		const double people = city.simulation_population > 0.0
+			? city.simulation_population : city.population;
+		const double income0 = std::clamp(
+			std::max(0.0, city.external_income_index), 0.05,
+			params.income_index_cap);
+		const double access = std::clamp(access_pct / 100.0,
+			params.access_floor, 1.0);
+		const double loss = std::clamp(loss0 / 100.0, 0.0, 0.8);
+		city_weight[index] = std::max(0.0, people)
+			* std::pow(income0, params.income_elasticity) * access
+			/ std::max(1e-9, 1.0 - loss);
+		city_income0[index] = income0;
+		city_loss0[index] = loss0;
+		NationAnchor& anchor = anchors[city.nation];
+		anchor.demand_weight += city_weight[index];
+		for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+			const double park = std::max(0.0, def.park[fuel]);
+			anchor.park[fuel] += park;
+			anchor.model_gen_mwh[fuel] += park * annual_cf(def, fuel)
+				* kPowerHoursPerYear;
+		}
+	}
 	for (std::size_t index = 0; index < count; ++index) {
 		City& city = ws.cities[index];
 		PowerCityState& state = ws.power_cities[index];
@@ -292,6 +370,31 @@ void seed(WorldState& ws, const PowerParams& params,
 		state.loss_pct = std::clamp(
 			city_found != cities.end() ? def.loss_pct : nation_loss,
 			params.loss_floor_pct, params.loss_max_pct);
+		// Âncora nacional (D-116): demanda-base × fração simulada, rateada pelo
+		// peso de demanda da cidade no seed, e calibração do CF por fonte.
+		const auto anchor_found = anchors.find(city.nation);
+		for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+			state.cf_scale[fuel] = 1.0;
+			if (nation_found == nations.end() || anchor_found == anchors.end()) {
+				continue;
+			}
+			const double real = nation_found->second.generation_mwh_year[fuel];
+			const double model = anchor_found->second.model_gen_mwh[fuel];
+			if (real >= 0.0 && model > 0.0) {
+				// Dado, não chute: a fonte reproduz a geração Ember do ano-base.
+				state.cf_scale[fuel] = std::clamp(real / model, 0.0, 5.0);
+			}
+		}
+		if (nation_found != nations.end() && nation_found->second.has_demand
+				&& nation_found->second.demand_base_mwh_day > 0.0
+				&& anchor_found != anchors.end()
+				&& anchor_found->second.demand_weight > 0.0) {
+			state.demand_base_mwh = nation_found->second.demand_base_mwh_day
+				* scale
+				* (city_weight[index] / anchor_found->second.demand_weight);
+			state.demand_income0 = city_income0[index];
+			state.demand_loss0 = city_loss0[index];
+		}
 		double park_total = 0.0;
 		for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
 			const double park = std::max(0.0, def.park[fuel]);
@@ -628,7 +731,12 @@ void SimCore::phase_power() {
 		if (plant.fuel == POWER_SOLAR && state.solar_month[month] > 0.0) {
 			cf = std::clamp(state.solar_month[month], 0.0, 1.0);
 		}
-		day.avail_mw = std::max(0.0, plant.mw) * cf;
+		// Calibração nacional (D-116): a geração Ember do ano-base define o
+		// fator efetivo da fonte naquela nação. O teto 1,0 mantém a física
+		// (CF ≤ 1); 0 = a fonte não gerou no ano-base (dado).
+		const double cf_scale = std::clamp(state.cf_scale[plant.fuel], 0.0, 5.0);
+		day.avail_mw = std::max(0.0, plant.mw)
+			* std::clamp(cf * cf_scale, 0.0, 1.0);
 		double fuel_cost = 0.0;
 		if (power_fuel_is_thermal(plant.fuel)
 				&& params.fuel_t_per_mwh[plant.fuel] > 0.0) {
@@ -649,7 +757,9 @@ void SimCore::phase_power() {
 		plants_by_city[index].push_back(static_cast<int>(p));
 	}
 
-	// Demanda por cidade: renda (dado), acesso (dado) e perdas T&D.
+	// Demanda por cidade: âncora Ember do ano-base quando a nação tem o dado
+	// (só a curva de renda relativa move a base) ou a curva global declarada;
+	// acesso (dado) e perdas T&D entram no rateio e na perda efetiva.
 	std::vector<double> demand_mwh(city_count, 0.0);
 	for (std::size_t index = 0; index < city_count; ++index) {
 		City& city = ws.cities[index];
@@ -688,7 +798,23 @@ void SimCore::phase_power() {
 			state.loss_pct * (1.0 - params.loss_infra_reduction * infra),
 			params.loss_floor_pct, params.loss_max_pct);
 		const double loss = std::clamp(loss_pct / 100.0, 0.0, 0.8);
-		const double mwh = people * per_capita_kwh / 1000.0 / (1.0 - loss);
+		double mwh = 0.0;
+		if (state.demand_base_mwh > 0.0 && state.demand_income0 > 0.0) {
+			// Âncora nacional (D-116): a base Ember do ano-base só se move pela
+			// razão de renda (renda_t / renda_0)^e. A perda T&D entra RELATIVA
+			// à do ano-base (a Ember mede no lado da geração, já com perdas),
+			// então obra de infraestrutura continua reduzindo a necessidade.
+			const double growth = income / state.demand_income0;
+			const double loss0 = std::clamp(
+				state.demand_loss0 / 100.0, 0.0, 0.8);
+			mwh = state.demand_base_mwh
+				* std::pow(std::max(0.0, growth), params.income_elasticity)
+				* (1.0 - loss0) / (1.0 - loss);
+		} else {
+			// Sem Ember para a nação: curva global declarada (a mesma do
+			// power_params.json, calibrada no §6.1 do doc da E2/E3).
+			mwh = people * per_capita_kwh / 1000.0 / (1.0 - loss);
+		}
 		state.demand_mwh = std::max(0.0, mwh);
 		demand_mwh[index] = state.demand_mwh;
 	}

@@ -12,6 +12,11 @@ class_name PowerService
 ##     (regra declarada `operator_access_pct`) e a perda base de cada cidade.
 ##   * PARQUE INSTALADO por cidade e fonte (GPPD 2021 escalonado à matriz
 ##     Ember 2024–2025, D-115(b)): `power_plants_2026_scaled.json`.
+##   * ÂNCORA NACIONAL do ano-base (D-116): demanda Ember por nação (MWh/dia) e
+##     geração real por fonte (MWh/ano) de `national_demand.json`. A demanda
+##     modelada passa a ser base × (renda_t/renda_0)^e (só relativa ao ano-base)
+##     e o fator de capacidade por nação × fonte é calibrado para reproduzir a
+##     geração real. Nação sem Ember fica na curva global declarada.
 ##   * POTENCIAL RENOVÁVEL: hídrico (`hydro_potential.json`, potencial técnico
 ##     rateado; `null` = sem âncora nacional, sem expansão) e solar/eólico
 ##     (`renewable_potential.json`, Global Solar/Wind Atlas, CC BY 4.0). O
@@ -32,14 +37,17 @@ const PLANTS_PATH := "res://data/definitions/energy/power_plants_2026_scaled.jso
 const RENEWABLE_PATH := "res://data/definitions/energy/renewable_potential.json"
 const HYDRO_PATH := "res://data/definitions/energy/hydro_potential.json"
 const PARAMS_PATH := "res://data/definitions/energy/power_params.json"
+const DEMAND_PATH := "res://data/definitions/energy/national_demand.json"
 
 const HOURS_PER_DAY := 24.0
+const DAYS_PER_YEAR := 365.0
 
 var _access: Dictionary = {}
 var _plants: Dictionary = {}
 var _renewable: Dictionary = {}
 var _hydro: Dictionary = {}
 var _params: Dictionary = {}
+var _demand: Dictionary = {}
 var _loaded := false
 
 
@@ -51,6 +59,7 @@ func load_data() -> bool:
 	_renewable = _read_dict(RENEWABLE_PATH).get("by_city", {})
 	_hydro = _read_dict(HYDRO_PATH).get("by_city", {})
 	_params = _read_dict(PARAMS_PATH)
+	_demand = _read_dict(DEMAND_PATH).get("by_nation", {})
 	_loaded = true
 	return not _access.is_empty() or not _plants.is_empty()
 
@@ -83,6 +92,8 @@ func apply_to_sim(sim: Object, cities: Array, options: Dictionary = {}) -> Dicti
 
 	# --- Nações: acesso e perdas T&D (dado real) -----------------------------
 	var nations: Dictionary = {}
+	var anchor_count := 0
+	var generation_count := 0
 	for iso3: Variant in _access:
 		var row: Dictionary = _access[iso3]
 		var tag := _text(row.get("nation"))
@@ -94,12 +105,22 @@ func apply_to_sim(sim: Object, cities: Array, options: Dictionary = {}) -> Dicti
 		var urban := _indicator(row, "electricity_access_urban_pct")
 		var rural := _indicator(row, "electricity_access_rural_pct")
 		var loss := _indicator(row, "tnd_losses_pct")
-		nations[tag] = {
+		var def := {
 			"access_pct": access,
 			"access_urban_pct": access if urban < 0.0 else urban,
 			"access_rural_pct": access if rural < 0.0 else rural,
 			"loss_pct": 10.0 if loss < 0.0 else loss,
 		}
+		# Ancoragem por nação (D-116): demanda Ember do ano-base e geração real
+		# por fonte. Sem Ember, o núcleo usa a curva/fatores globais declarados.
+		var anchor := _nation_anchor(tag)
+		if anchor.has("demand_base_mwh_day"):
+			def["demand_base_mwh_day"] = anchor["demand_base_mwh_day"]
+			anchor_count += 1
+		if anchor.has("generation_mwh_year"):
+			def["generation_mwh_year"] = anchor["generation_mwh_year"]
+			generation_count += 1
+		nations[tag] = def
 
 	# --- Cidades: parque, acesso local e potencial ---------------------------
 	var city_defs: Dictionary = {}
@@ -152,6 +173,8 @@ func apply_to_sim(sim: Object, cities: Array, options: Dictionary = {}) -> Dicti
 		"cities_with_def": city_defs.size(),
 		"cities_with_park": with_park,
 		"nations": nations.size(),
+		"nations_with_demand_anchor": anchor_count,
+		"nations_with_generation_calibration": generation_count,
 		"park_mw": total_mw,
 		"park_mw_by_fuel": park_by_fuel,
 		"cap_mw_by_fuel": cap_by_fuel,
@@ -177,6 +200,32 @@ func _indicator(row: Dictionary, key: String) -> float:
 	if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
 		return -1.0
 	return float(value)
+
+
+## Âncora nacional do ano-base (Ember): demanda em MWh/dia e geração real por
+## fonte em MWh/ano. Nação sem linha fica fora do dicionário (curva global).
+func _nation_anchor(tag: String) -> Dictionary:
+	var row: Dictionary = _demand.get(tag, {})
+	var out: Dictionary = {}
+	if row.is_empty():
+		return out
+	var demand: Variant = row.get("demand_twh")
+	if typeof(demand) == TYPE_FLOAT or typeof(demand) == TYPE_INT:
+		var base := maxf(0.0, float(demand)) * 1000000.0 / DAYS_PER_YEAR
+		if base > 0.0:
+			out["demand_base_mwh_day"] = base
+	var by_source: Variant = row.get("generation_twh")
+	if typeof(by_source) == TYPE_DICTIONARY:
+		var generation: Dictionary = {}
+		var sources: Dictionary = by_source
+		for fuel: Variant in sources:
+			var value: Variant = sources[fuel]
+			if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+				continue
+			generation[String(fuel)] = maxf(0.0, float(value)) * 1000000.0
+		if not generation.is_empty():
+			out["generation_mwh_year"] = generation
+	return out
 
 
 ## Texto tolerante a `null` do JSON (nunca converte null em "<null>").

@@ -331,11 +331,14 @@ func _make_world() -> Object:
 	if sim.has_method("set_power_definitions"):
 		var power := PowerScript.new()
 		var power_report := power.apply_to_sim(sim, cities, {"only_missing": true})
-		print("[c1] energia: parque=%.0f MW cidades=%d nações=%d operador=%d" % [
+		print(("[c1] energia: parque=%.0f MW cidades=%d nações=%d operador=%d "
+			+ "âncora=%d geração_real=%d") % [
 			float(power_report.get("park_mw", 0.0)),
 			int(power_report.get("cities_with_park", 0)),
 			int(power_report.get("nations", 0)),
-			(power_report.get("operator_nations", []) as Array).size()])
+			(power_report.get("operator_nations", []) as Array).size(),
+			int(power_report.get("nations_with_demand_anchor", 0)),
+			int(power_report.get("nations_with_generation_calibration", 0))])
 	sim.set_ai_enabled(true)
 	# D-111: sem flag vale o default do jogo (LIGADO). Com flag, ela MANDA --
 	# inclusive `--credit=0`/`--harvest-rate=0` (braço "off" do A/B).

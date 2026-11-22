@@ -1505,6 +1505,18 @@ struct Region {
 		// Fator de capacidade SOLAR por mês (PVOUT mensal do Global Solar
 		// Atlas ÷ 24 h). Vazio/0 = usa o fator anual declarado.
 		double solar_month[kPowerMonthCount] = {};
+		// Ancoragem nacional (E2/E3, D-116): demanda-base da cidade em MWh/dia
+		// (Ember do ano-base × fração simulada, rateada pelo peso de demanda da
+		// cidade), o índice de renda e a perda T&D do ano-base. Base 0 = sem
+		// âncora nacional: usa a curva global declarada.
+		double demand_base_mwh = 0.0;
+		double demand_income0 = 0.0;
+		double demand_loss0 = 0.0;
+		// Calibração do fator de capacidade por fonte: geração Ember real do
+		// ano-base ÷ geração do modelo (parque × CF anual). 1 = fator global
+		// declarado; 0 = a fonte não gerou no ano-base (dado).
+		double cf_scale[kPowerFuelCount] = {1.0, 1.0, 1.0, 1.0, 1.0,
+			1.0, 1.0, 1.0, 1.0};
 		// Indicadores do dia/rede (persistidos para o status e a duração do
 		// blecaute): demanda/servido em MWh, preço da rede (XGS/MWh), dias
 		// seguidos de racionamento e PIB perdido ESTIMADO (VOLL declarado).

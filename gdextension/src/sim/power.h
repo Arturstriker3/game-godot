@@ -117,6 +117,21 @@ struct PowerNationDef {
 	double access_rural_pct = 100.0;
 	double loss_pct = 10.0;
 	bool has_data = false;
+	// Ancoragem nacional (D-116): demanda Ember do ano-base em MWh/dia, na
+	// escala do mundo real (o núcleo multiplica pela fração simulada) e a
+	// geração Ember do MESMO ano por fonte em MWh/ano. -1 = fonte não
+	// publicada (sem calibração; fator global declarado); 0 = publicada como
+	// zero (a fonte não gera naquele ano). Sem `has_demand`, a demanda usa a
+	// curva global declarada (não há dado Ember para a nação).
+	double demand_base_mwh_day = 0.0;
+	double generation_mwh_year[kPowerFuelCount] = {};
+	bool has_demand = false;
+
+	PowerNationDef() {
+		for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+			generation_mwh_year[fuel] = -1.0;
+		}
+	}
 };
 
 struct PowerCityDef {

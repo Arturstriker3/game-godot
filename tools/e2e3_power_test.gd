@@ -61,11 +61,12 @@ func _init() -> void:
 	_test_save_v35_roundtrip()
 	_test_determinism()
 	_test_absence_declared()
+	_test_national_anchor()
 	if _failures.is_empty():
 		print("[power] OK: mérito/preço marginal, racionamento (indústria, "
 			+ "emprego, satisfação, PIB), combustível, conservação, "
 			+ "conexão (isolada/parcial/conectada), obra de linha, save v35, "
-			+ "determinismo e ausência declarada.")
+			+ "determinismo, ausência declarada e âncora nacional Ember.")
 		quit(0)
 	else:
 		print("[power] FALHAS (%d):" % _failures.size())
@@ -445,8 +446,70 @@ func _test_absence_declared() -> void:
 			row.get("served_ratio")])
 
 
+# --- (12) âncora nacional Ember (D-116) ------------------------------------
+func _test_national_anchor() -> void:
+	var params := _params()
+	var elasticity := _param(params, "income_elasticity")
+	# 200 MW a gás; a geração Ember do ano-base vale CF 0,40, NÃO o 0,55 global.
+	var park := 200.0
+	var real_cf := 0.40
+	var generation_year := park * real_cf * 8760.0
+	var nation := _nation(100.0, 100.0, 100.0, 4.0)
+	nation["DEMO"]["demand_base_mwh_day"] = 5000.0
+	nation["DEMO"]["generation_mwh_year"] = {"gas": generation_year}
+	var cities := {"AGRIA": _city({"gas": park}, {"gas": 400.0})}
+	# A regra do fixture (elasticidade) precisa ser a do JSON para o teste medir
+	# a âncora com o parâmetro declarado, e não o default do núcleo.
+	var sim = _world(nation, cities, 0, {"income_elasticity": elasticity})
+	sim.set_external_income_index("AGRIA", 1.0)
+	sim.set_external_income_index("PORTUS", 1.0)
+	sim.tick_day()
+	var demand1 := _nation_demand(sim)
+	_check("(12) demanda ancorada = demanda Ember do ano-base",
+		absf(demand1 - 5000.0) <= 1e-3,
+		"demanda=%.6f base=5000" % demand1)
+	var expected_avail := park * real_cf * 24.0
+	_check("(12) oferta calibrada reproduz a geração real por fonte/nação",
+		absf(_fuel(sim, "gas") - expected_avail) <= 1e-3,
+		"geração=%.6f esperada=%.6f (CF global daria %.6f)" % [
+			_fuel(sim, "gas"), expected_avail,
+			park * _param(params, "cf_gas") * 24.0])
+	# A curva de renda só move a demanda RELATIVA ao ano-base.
+	sim.set_external_income_index("AGRIA", 2.0)
+	sim.set_external_income_index("PORTUS", 2.0)
+	sim.tick_day()
+	var demand2 := _nation_demand(sim)
+	var expected_ratio := pow(2.0, elasticity)
+	_check("(12) a renda só move a demanda relativa ao ano-base",
+		absf(demand2 / demand1 - expected_ratio) <= 1e-6,
+		"razão=%.6f esperada=%.6f" % [demand2 / demand1, expected_ratio])
+	# A âncora e a calibração sobrevivem ao save/load.
+	var before := _canon_power(sim)
+	var loaded = _load(sim.to_dict())
+	_check("(12) âncora nacional sobrevive ao save/load",
+		before == _canon_power(loaded), "status divergiu após o load")
+	loaded.tick_day()
+	sim.tick_day()
+	_check("(12) continuação ancorada idêntica ao caminho direto",
+		_canon_power(sim) == _canon_power(loaded),
+		"dia=%s/%s" % [_canon_power(sim).hash(), _canon_power(loaded).hash()])
+
+
+## Demanda total da nação do fixture (soma das cidades com dado).
+func _nation_demand(sim: Object) -> float:
+	var total := 0.0
+	var rows: Dictionary = sim.get_power_status().get("cities", {})
+	for city: Variant in rows:
+		var row: Dictionary = rows[city]
+		if String(row.get("nation", "")) != "DEMO":
+			continue
+		total += float(row.get("demand_mwh", 0.0))
+	return total
+
+
 # --- helpers ---------------------------------------------------------------
-func _world(nations: Dictionary, cities: Dictionary, days := 0):
+func _world(nations: Dictionary, cities: Dictionary, days := 0,
+		power_params: Dictionary = {}):
 	var sim = EconomySim.new()
 	sim.set_sim_threads(1)
 	sim.set_goods(_json(GOODS_PATH))
@@ -464,7 +527,7 @@ func _world(nations: Dictionary, cities: Dictionary, days := 0):
 		}],
 	})
 	sim.initialize_scenario()
-	sim.set_power_definitions(nations, cities, {}, true)
+	sim.set_power_definitions(nations, cities, power_params, true)
 	for day in days:
 		sim.tick_day()
 	return sim

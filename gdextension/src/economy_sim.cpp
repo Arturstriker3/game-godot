@@ -6835,6 +6835,29 @@ int EconomySim::set_power_definitions(const Dictionary& nations,
 		def.access_rural_pct = double(entry.get("access_rural_pct",
 			def.access_pct));
 		def.loss_pct = double(entry.get("loss_pct", 10.0));
+		// Ancoragem nacional (D-116): demanda-base Ember do ano-base e geração
+		// real por fonte (MWh/ano). Ausentes = curva global e fator global.
+		def.demand_base_mwh_day = std::max(0.0,
+			double(entry.get("demand_base_mwh_day", 0.0)));
+		def.has_demand = def.demand_base_mwh_day > 0.0;
+		const Variant generation = entry.get("generation_mwh_year", Variant());
+		if (generation.get_type() == Variant::DICTIONARY) {
+			const Dictionary generation_row = generation;
+			for (const Variant& fuel_key : generation_row.keys()) {
+				const int fuel = ogs::power_fuel_from_name(
+					std::string(String(fuel_key).utf8().get_data()));
+				if (fuel < 0) {
+					continue;
+				}
+				const Variant raw_value = generation_row[fuel_key];
+				if (raw_value.get_type() != Variant::FLOAT
+						&& raw_value.get_type() != Variant::INT) {
+					continue;
+				}
+				def.generation_mwh_year[fuel] = std::max(0.0,
+					double(raw_value));
+			}
+		}
 		def.has_data = true;
 		nation_defs[std::string(tag.utf8().get_data())] = def;
 	}

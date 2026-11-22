@@ -1699,6 +1699,17 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			}
 			entry["cap_mw"] = cap;
 			entry["solar_month"] = solar;
+			// Ancoragem nacional (D-116): a base Ember, a renda/perda do ano-base
+			// e a calibração do CF por fonte precisam sobreviver ao load; sem
+			// eles a demanda voltaria à curva global no dia seguinte.
+			entry["demand_base_mwh"] = state.demand_base_mwh;
+			entry["demand_income0"] = state.demand_income0;
+			entry["demand_loss0"] = state.demand_loss0;
+			Array cf_scale = make_array();
+			for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+				cf_scale.append(state.cf_scale[fuel]);
+			}
+			entry["cf_scale"] = cf_scale;
 			entry["demand_mwh"] = state.demand_mwh;
 			entry["served_mwh"] = state.served_mwh;
 			entry["price"] = state.price;
@@ -4104,6 +4115,20 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					&& month < solar.size(); ++month) {
 				state.solar_month[month] = std::clamp(
 					double(solar[month]), 0.0, 1.0);
+			}
+			// Save v35 antigo (sem âncora): base 0 mantém a curva global e
+			// cf_scale fica 1,0 (default do struct). Saves novos preservam.
+			state.demand_base_mwh = std::max(0.0,
+				double(entry.get("demand_base_mwh", 0.0)));
+			state.demand_income0 = std::max(0.0,
+				double(entry.get("demand_income0", 0.0)));
+			state.demand_loss0 = std::clamp(
+				double(entry.get("demand_loss0", 0.0)), 0.0, 100.0);
+			const Array cf_scale = entry.get("cf_scale", Array());
+			for (int fuel = 0; fuel < kPowerFuelCount
+					&& fuel < cf_scale.size(); ++fuel) {
+				state.cf_scale[fuel] = std::clamp(
+					double(cf_scale[fuel]), 0.0, 5.0);
 			}
 			state.demand_mwh = std::max(0.0,
 				double(entry.get("demand_mwh", 0.0)));
