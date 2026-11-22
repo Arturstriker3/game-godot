@@ -37,7 +37,7 @@ import build_energy_common as ec  # noqa: E402
 CACHE = os.path.join(ROOT, "tools", "data", "energy", "cache")
 EMBER_CSV = os.path.join(CACHE, "ember_yearly_global.csv")
 EMBER_MANIFEST = os.path.join(CACHE, "ember_yearly_global.manifest.json")
-PLANTS_PATH = os.path.join(ec.DEFS, "energy", "power_plants_2026.json")
+PLANTS_PATH = os.path.join(ec.DEFS, "energy", "power_plants_base_2021_gppd.json")
 OUT_PATH = os.path.join(ec.DEFS, "energy", "national_capacity.json")
 
 YEARS = (2024, 2025)
@@ -252,10 +252,12 @@ def main() -> int:
                 "oil": None,
             },
             "gaps": {
-                "oil": ("a Ember nao separa oleo: ele esta dentro de 'Other fossil', que "
+                "oil": ("a Ember não separa óleo: ele está dentro de 'Other fossil', que "
                         "entra em `other` (other_breakdown.other_fossil_mw). `oil` fica "
-                        "null — a IRENA separa, mas os termos dela restringem uso "
-                        "comercial, entao nao foi usada."),
+                        "null. Tentativa D-115d: OWID (CC BY 4.0) só tem geração de óleo "
+                        "(oil_electricity_twh), não capacidade; EIA International (domínio "
+                        "público) só tem capacidade fóssil agregada e geração de petróleo. "
+                        "Nenhuma das duas permite separar MW de óleo — lacuna declarada."),
                 "other_renewables": ("geotermia, mare, etc. nao existem como coluna propria "
                                      "na Ember; entram em 'Other renewables' e daí em `other`."),
                 "nations_without_ember": missing,

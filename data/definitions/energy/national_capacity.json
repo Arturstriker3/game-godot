@@ -39,7 +39,7 @@
    "oil": null
   },
   "gaps": {
-   "oil": "a Ember nao separa oleo: ele esta dentro de 'Other fossil', que entra em `other` (other_breakdown.other_fossil_mw). `oil` fica null — a IRENA separa, mas os termos dela restringem uso comercial, entao nao foi usada.",
+   "oil": "a Ember não separa óleo: ele está dentro de 'Other fossil', que entra em `other` (other_breakdown.other_fossil_mw). `oil` fica null. Tentativa D-115d: OWID (CC BY 4.0) só tem geração de óleo (oil_electricity_twh), não capacidade; EIA International (domínio público) só tem capacidade fóssil agregada e geração de petróleo. Nenhuma das duas permite separar MW de óleo — lacuna declarada.",
    "other_renewables": "geotermia, mare, etc. nao existem como coluna propria na Ember; entram em 'Other renewables' e daí em `other`.",
    "nations_without_ember": [
     "CAF",
@@ -57,7 +57,7 @@
    "nations_with_national_capacity": 171,
    "nations_missing": 8,
    "nations_year_2024": 92,
-   "nations_with_plant_comparison": 158,
+   "nations_with_plant_comparison": 161,
    "nations_sum_mismatch": 0,
    "world_total_mw": 10033370.0
   },
@@ -7920,14 +7920,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 1071.18,
+   "plant_total_mw": 1311.18,
    "national_total_mw": 6500.0,
-   "deviation_pct": -83.5,
+   "deviation_pct": -79.8,
    "by_source": {
     "hydro": {
-     "plant_mw": 770.6,
+     "plant_mw": 1010.6,
      "national_mw": 3730.0,
-     "deviation_pct": -79.3
+     "deviation_pct": -72.9
     },
     "solar": {
      "plant_mw": 0.0,
@@ -8081,14 +8081,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 32913.079,
+   "plant_total_mw": 32308.783,
    "national_total_mw": 46500.0,
-   "deviation_pct": -29.2,
+   "deviation_pct": -30.5,
    "by_source": {
     "hydro": {
-     "plant_mw": 9999.71,
+     "plant_mw": 9394.71,
      "national_mw": 9190.0,
-     "deviation_pct": 8.8
+     "deviation_pct": 2.2
     },
     "solar": {
      "plant_mw": 515.7,
@@ -8116,9 +8116,9 @@
      "deviation_pct": 0.7
     },
     "biomass": {
-     "plant_mw": 0.0,
+     "plant_mw": 10.0,
      "national_mw": 430.0,
-     "deviation_pct": -100.0
+     "deviation_pct": -97.7
     },
     "other": {
      "plant_mw": 1324.46,
@@ -8167,6 +8167,60 @@
      "plant_mw": 375.0,
      "national_mw": 450.0,
      "deviation_pct": -16.7
+    },
+    "biomass": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "other": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    }
+   }
+  },
+  "ATG": {
+   "nation": "ATG",
+   "year": {
+    "plants": "gppd_2021",
+    "national": 2024
+   },
+   "plant_total_mw": 27.817,
+   "national_total_mw": 20.0,
+   "deviation_pct": 39.1,
+   "by_source": {
+    "hydro": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "solar": {
+     "plant_mw": 15.277,
+     "national_mw": 20.0,
+     "deviation_pct": -23.6
+    },
+    "wind": {
+     "plant_mw": 12.54,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "coal": {
+     "plant_mw": 0.0,
+     "national_mw": null,
+     "deviation_pct": null,
+     "note": "fonte ausente no agregado nacional"
+    },
+    "gas": {
+     "plant_mw": 0.0,
+     "national_mw": null,
+     "deviation_pct": null,
+     "note": "fonte ausente no agregado nacional"
+    },
+    "nuclear": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
     },
     "biomass": {
      "plant_mw": 0.0,
@@ -8239,19 +8293,19 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 11227.1,
+   "plant_total_mw": 11562.1,
    "national_total_mw": 37050.0,
-   "deviation_pct": -69.7,
+   "deviation_pct": -68.8,
    "by_source": {
     "hydro": {
-     "plant_mw": 9072.1,
+     "plant_mw": 9220.9,
      "national_mw": 15750.0,
-     "deviation_pct": -42.4
+     "deviation_pct": -41.5
     },
     "solar": {
-     "plant_mw": 0.0,
+     "plant_mw": 8.2,
      "national_mw": 10300.0,
-     "deviation_pct": -100.0
+     "deviation_pct": -99.9
     },
     "wind": {
      "plant_mw": 88.0,
@@ -8264,9 +8318,9 @@
      "deviation_pct": null
     },
     "gas": {
-     "plant_mw": 2067.0,
+     "plant_mw": 2245.0,
      "national_mw": 4990.0,
-     "deviation_pct": -58.6
+     "deviation_pct": -55.0
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -8557,7 +8611,7 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 11840.0,
+   "plant_total_mw": 11835.0,
    "national_total_mw": 29730.0,
    "deviation_pct": -60.2,
    "by_source": {
@@ -8567,9 +8621,9 @@
      "deviation_pct": 0.0
     },
     "solar": {
-     "plant_mw": 33.0,
+     "plant_mw": 28.0,
      "national_mw": 1150.0,
-     "deviation_pct": -97.1
+     "deviation_pct": -97.6
     },
     "wind": {
      "plant_mw": 0.0,
@@ -8609,9 +8663,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 9252.2,
+   "plant_total_mw": 9072.2,
    "national_total_mw": 17110.0,
-   "deviation_pct": -45.9,
+   "deviation_pct": -47.0,
    "by_source": {
     "hydro": {
      "plant_mw": 1958.0,
@@ -8629,9 +8683,9 @@
      "deviation_pct": -78.0
     },
     "coal": {
-     "plant_mw": 4859.0,
+     "plant_mw": 4679.0,
      "national_mw": 4660.0,
-     "deviation_pct": 4.3
+     "deviation_pct": 0.4
     },
     "gas": {
      "plant_mw": 0.0,
@@ -8714,14 +8768,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 3985.5,
+   "plant_total_mw": 4803.5,
    "national_total_mw": 4890.0,
-   "deviation_pct": -18.5,
+   "deviation_pct": -1.8,
    "by_source": {
     "hydro": {
-     "plant_mw": 2205.5,
+     "plant_mw": 3023.5,
      "national_mw": 1880.0,
-     "deviation_pct": 17.3
+     "deviation_pct": 60.8
     },
     "solar": {
      "plant_mw": 0.0,
@@ -8873,14 +8927,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 147589.264,
+   "plant_total_mw": 140545.36,
    "national_total_mw": 260640.0,
-   "deviation_pct": -43.4,
+   "deviation_pct": -46.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 98039.382,
+     "plant_mw": 91039.382,
      "national_mw": 110270.0,
-     "deviation_pct": -11.1
+     "deviation_pct": -17.4
     },
     "solar": {
      "plant_mw": 1807.368,
@@ -8888,9 +8942,9 @@
      "deviation_pct": -97.2
     },
     "wind": {
-     "plant_mw": 10294.954,
+     "plant_mw": 10248.954,
      "national_mw": 34870.0,
-     "deviation_pct": -70.5
+     "deviation_pct": -70.6
     },
     "coal": {
      "plant_mw": 2792.881,
@@ -8977,14 +9031,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 1482.2,
+   "plant_total_mw": 1518.2,
    "national_total_mw": 2460.0,
-   "deviation_pct": -39.7,
+   "deviation_pct": -38.3,
    "by_source": {
     "hydro": {
-     "plant_mw": 1482.2,
+     "plant_mw": 1518.2,
      "national_mw": 2450.0,
-     "deviation_pct": -39.5
+     "deviation_pct": -38.0
     },
     "solar": {
      "plant_mw": 0.0,
@@ -9084,24 +9138,24 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 143578.7,
+   "plant_total_mw": 141648.9,
    "national_total_mw": 155990.0,
-   "deviation_pct": -8.0,
+   "deviation_pct": -9.2,
    "by_source": {
     "hydro": {
-     "plant_mw": 80683.0,
+     "plant_mw": 80726.8,
      "national_mw": 84130.0,
-     "deviation_pct": -4.1
+     "deviation_pct": -4.0
     },
     "solar": {
-     "plant_mw": 1826.6,
+     "plant_mw": 1817.3,
      "national_mw": 5930.0,
-     "deviation_pct": -69.2
+     "deviation_pct": -69.4
     },
     "wind": {
-     "plant_mw": 12133.8,
+     "plant_mw": 12284.8,
      "national_mw": 17740.0,
-     "deviation_pct": -31.6
+     "deviation_pct": -30.8
     },
     "coal": {
      "plant_mw": 9772.0,
@@ -9109,9 +9163,9 @@
      "deviation_pct": 189.1
     },
     "gas": {
-     "plant_mw": 19786.4,
+     "plant_mw": 17596.8,
      "national_mw": 27190.0,
-     "deviation_pct": -27.2
+     "deviation_pct": -35.3
     },
     "nuclear": {
      "plant_mw": 14254.0,
@@ -9119,14 +9173,14 @@
      "deviation_pct": 12.5
     },
     "biomass": {
-     "plant_mw": 2741.9,
+     "plant_mw": 2794.2,
      "national_mw": 2670.0,
-     "deviation_pct": 2.7
+     "deviation_pct": 4.7
     },
     "other": {
-     "plant_mw": 37.0,
+     "plant_mw": 59.0,
      "national_mw": 2280.0,
-     "deviation_pct": -98.4
+     "deviation_pct": -97.4
     }
    }
   },
@@ -9136,14 +9190,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 13118.0,
+   "plant_total_mw": 14180.4,
    "national_total_mw": 29010.0,
-   "deviation_pct": -54.8,
+   "deviation_pct": -51.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 9667.8,
+     "plant_mw": 10690.2,
      "national_mw": 16050.0,
-     "deviation_pct": -39.8
+     "deviation_pct": -33.4
     },
     "solar": {
      "plant_mw": 20.2,
@@ -9162,9 +9216,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 0.0,
+     "plant_mw": 40.0,
      "national_mw": 220.0,
-     "deviation_pct": -100.0
+     "deviation_pct": -81.8
     },
     "nuclear": {
      "plant_mw": 3430.0,
@@ -9241,14 +9295,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 1415067.38,
+   "plant_total_mw": 1414411.38,
    "national_total_mw": 3726510.0,
    "deviation_pct": -62.0,
    "by_source": {
     "hydro": {
-     "plant_mw": 259025.6,
+     "plant_mw": 258516.6,
      "national_mw": 382080.0,
-     "deviation_pct": -32.2
+     "deviation_pct": -32.3
     },
     "solar": {
      "plant_mw": 54801.82,
@@ -9256,9 +9310,9 @@
      "deviation_pct": -95.4
     },
     "wind": {
-     "plant_mw": 50990.36,
+     "plant_mw": 50843.36,
      "national_mw": 640630.0,
-     "deviation_pct": -92.0
+     "deviation_pct": -92.1
     },
     "coal": {
      "plant_mw": 955718.0,
@@ -9346,9 +9400,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 881.58,
+   "plant_total_mw": 912.08,
    "national_total_mw": 1870.0,
-   "deviation_pct": -52.9,
+   "deviation_pct": -51.2,
    "by_source": {
     "hydro": {
      "plant_mw": 630.2,
@@ -9372,9 +9426,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 200.0,
+     "plant_mw": 230.5,
      "national_mw": 220.0,
-     "deviation_pct": -9.1
+     "deviation_pct": 4.8
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -9399,14 +9453,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 3057.04,
+   "plant_total_mw": 2868.6,
    "national_total_mw": 3700.0,
-   "deviation_pct": -17.4,
+   "deviation_pct": -22.5,
    "by_source": {
     "hydro": {
-     "plant_mw": 3018.8,
+     "plant_mw": 2868.6,
      "national_mw": 3250.0,
-     "deviation_pct": -7.1
+     "deviation_pct": -11.7
     },
     "solar": {
      "plant_mw": 0.0,
@@ -9425,7 +9479,7 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 25.0,
+     "plant_mw": 0.0,
      "national_mw": null,
      "deviation_pct": null,
      "note": "fonte ausente no agregado nacional"
@@ -9453,14 +9507,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 625.9,
+   "plant_total_mw": 858.14,
    "national_total_mw": 810.0,
-   "deviation_pct": -22.7,
+   "deviation_pct": 5.9,
    "by_source": {
     "hydro": {
-     "plant_mw": 219.0,
+     "plant_mw": 413.0,
      "national_mw": 210.0,
-     "deviation_pct": 4.3
+     "deviation_pct": 96.7
     },
     "solar": {
      "plant_mw": 0.0,
@@ -9479,9 +9533,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 336.0,
+     "plant_mw": 361.0,
      "national_mw": 530.0,
-     "deviation_pct": -36.6
+     "deviation_pct": -31.9
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -9612,7 +9666,7 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 3796.8,
+   "plant_total_mw": 3801.8,
    "national_total_mw": 6820.0,
    "deviation_pct": -44.3,
    "by_source": {
@@ -9622,9 +9676,9 @@
      "deviation_pct": -100.0
     },
     "solar": {
-     "plant_mw": 9.0,
+     "plant_mw": 14.0,
      "national_mw": 390.0,
-     "deviation_pct": -97.7
+     "deviation_pct": -96.4
     },
     "wind": {
      "plant_mw": 10.2,
@@ -9719,9 +9773,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 16871.7,
+   "plant_total_mw": 16058.1,
    "national_total_mw": 20000.0,
-   "deviation_pct": -15.6,
+   "deviation_pct": -19.7,
    "by_source": {
     "hydro": {
      "plant_mw": 1827.0,
@@ -9729,9 +9783,9 @@
      "deviation_pct": 63.1
     },
     "solar": {
-     "plant_mw": 1188.7,
+     "plant_mw": 1175.1,
      "national_mw": 4540.0,
-     "deviation_pct": -73.8
+     "deviation_pct": -74.1
     },
     "wind": {
      "plant_mw": 0.0,
@@ -9739,9 +9793,9 @@
      "deviation_pct": -100.0
     },
     "coal": {
-     "plant_mw": 8363.0,
+     "plant_mw": 7563.0,
      "national_mw": 6860.0,
-     "deviation_pct": 21.9
+     "deviation_pct": 10.2
     },
     "gas": {
      "plant_mw": 1320.0,
@@ -9771,34 +9825,34 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 112040.374,
+   "plant_total_mw": 108296.922,
    "national_total_mw": 248180.0,
-   "deviation_pct": -54.9,
+   "deviation_pct": -56.4,
    "by_source": {
     "hydro": {
-     "plant_mw": 9984.1,
+     "plant_mw": 8447.8,
      "national_mw": 5500.0,
-     "deviation_pct": 81.5
+     "deviation_pct": 53.6
     },
     "solar": {
-     "plant_mw": 6770.562,
+     "plant_mw": 6723.01,
      "national_mw": 91200.0,
      "deviation_pct": -92.6
     },
     "wind": {
-     "plant_mw": 5059.362,
+     "plant_mw": 3373.562,
      "national_mw": 72740.0,
-     "deviation_pct": -93.0
+     "deviation_pct": -95.4
     },
     "coal": {
-     "plant_mw": 47772.9,
+     "plant_mw": 47532.9,
      "national_mw": 32340.0,
-     "deviation_pct": 47.7
+     "deviation_pct": 47.0
     },
     "gas": {
-     "plant_mw": 24430.25,
+     "plant_mw": 24212.25,
      "national_mw": 32330.0,
-     "deviation_pct": -24.4
+     "deviation_pct": -25.1
     },
     "nuclear": {
      "plant_mw": 11171.0,
@@ -9806,9 +9860,9 @@
      "deviation_pct": null
     },
     "biomass": {
-     "plant_mw": 3244.1,
+     "plant_mw": 3228.3,
      "national_mw": 8880.0,
-     "deviation_pct": -63.5
+     "deviation_pct": -63.6
     },
     "other": {
      "plant_mw": 756.9,
@@ -9877,9 +9931,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 8085.2,
+   "plant_total_mw": 8659.2,
    "national_total_mw": 16710.0,
-   "deviation_pct": -51.6,
+   "deviation_pct": -48.2,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -9887,19 +9941,19 @@
      "deviation_pct": -100.0
     },
     "solar": {
-     "plant_mw": 251.1,
+     "plant_mw": 235.7,
      "national_mw": 5050.0,
-     "deviation_pct": -95.0
+     "deviation_pct": -95.3
     },
     "wind": {
-     "plant_mw": 1408.1,
+     "plant_mw": 1802.5,
      "national_mw": 7550.0,
-     "deviation_pct": -81.3
+     "deviation_pct": -76.1
     },
     "coal": {
-     "plant_mw": 5089.0,
+     "plant_mw": 5284.0,
      "national_mw": 410.0,
-     "deviation_pct": 1141.2
+     "deviation_pct": 1188.8
     },
     "gas": {
      "plant_mw": 571.0,
@@ -10195,24 +10249,24 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 79035.068,
+   "plant_total_mw": 77044.198,
    "national_total_mw": 137730.0,
-   "deviation_pct": -42.6,
+   "deviation_pct": -44.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 15659.136,
+     "plant_mw": 14052.146,
      "national_mw": 16790.0,
-     "deviation_pct": -6.7
+     "deviation_pct": -16.3
     },
     "solar": {
-     "plant_mw": 4901.313,
+     "plant_mw": 4919.113,
      "national_mw": 47210.0,
      "deviation_pct": -89.6
     },
     "wind": {
-     "plant_mw": 11337.38,
+     "plant_mw": 11278.0,
      "national_mw": 33300.0,
-     "deviation_pct": -66.0
+     "deviation_pct": -66.1
     },
     "coal": {
      "plant_mw": 8783.31,
@@ -10220,9 +10274,9 @@
      "deviation_pct": 1339.9
     },
     "gas": {
-     "plant_mw": 26159.144,
+     "plant_mw": 26144.194,
      "national_mw": 27890.0,
-     "deviation_pct": -6.2
+     "deviation_pct": -6.3
     },
     "nuclear": {
      "plant_mw": 7120.06,
@@ -10230,14 +10284,14 @@
      "deviation_pct": 0.0
     },
     "biomass": {
-     "plant_mw": 408.054,
+     "plant_mw": 418.854,
      "national_mw": 1160.0,
-     "deviation_pct": -64.8
+     "deviation_pct": -63.9
     },
     "other": {
-     "plant_mw": 0.0,
+     "plant_mw": 28.8,
      "national_mw": 3650.0,
-     "deviation_pct": -100.0
+     "deviation_pct": -99.2
     }
    }
   },
@@ -10247,14 +10301,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 2541.9,
+   "plant_total_mw": 2666.7,
    "national_total_mw": 3650.0,
-   "deviation_pct": -30.4,
+   "deviation_pct": -26.9,
    "by_source": {
     "hydro": {
-     "plant_mw": 0.0,
+     "plant_mw": 124.8,
      "national_mw": 10.0,
-     "deviation_pct": -100.0
+     "deviation_pct": 1148.0
     },
     "solar": {
      "plant_mw": 0.0,
@@ -10354,14 +10408,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 11796.76,
+   "plant_total_mw": 11960.46,
    "national_total_mw": 26110.0,
-   "deviation_pct": -54.8,
+   "deviation_pct": -54.2,
    "by_source": {
     "hydro": {
-     "plant_mw": 2382.32,
+     "plant_mw": 2546.02,
      "national_mw": 3220.0,
-     "deviation_pct": -26.0
+     "deviation_pct": -20.9
     },
     "solar": {
      "plant_mw": 0.0,
@@ -10460,24 +10514,24 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 110615.925,
+   "plant_total_mw": 110723.015,
    "national_total_mw": 167600.0,
-   "deviation_pct": -34.0,
+   "deviation_pct": -33.9,
    "by_source": {
     "hydro": {
-     "plant_mw": 19505.78,
+     "plant_mw": 19819.38,
      "national_mw": 24310.0,
-     "deviation_pct": -19.8
+     "deviation_pct": -18.5
     },
     "solar": {
-     "plant_mw": 4910.413,
+     "plant_mw": 4620.617,
      "national_mw": 31230.0,
-     "deviation_pct": -84.3
+     "deviation_pct": -85.2
     },
     "wind": {
-     "plant_mw": 9062.632,
+     "plant_mw": 9022.446,
      "national_mw": 25650.0,
-     "deviation_pct": -64.7
+     "deviation_pct": -64.8
     },
     "coal": {
      "plant_mw": 3575.0,
@@ -10485,9 +10539,9 @@
      "deviation_pct": 87.2
     },
     "gas": {
-     "plant_mw": 5007.0,
+     "plant_mw": 5099.0,
      "national_mw": 17520.0,
-     "deviation_pct": -71.4
+     "deviation_pct": -70.9
     },
     "nuclear": {
      "plant_mw": 63130.0,
@@ -10495,14 +10549,14 @@
      "deviation_pct": 2.8
     },
     "biomass": {
-     "plant_mw": 792.6,
+     "plant_mw": 788.572,
      "national_mw": 1670.0,
-     "deviation_pct": -52.5
+     "deviation_pct": -52.8
     },
     "other": {
-     "plant_mw": 244.5,
+     "plant_mw": 240.0,
      "national_mw": 3910.0,
-     "deviation_pct": -93.7
+     "deviation_pct": -93.9
     }
    }
   },
@@ -10565,7 +10619,7 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 97155.282,
+   "plant_total_mw": 97150.282,
    "national_total_mw": 110740.0,
    "deviation_pct": -12.3,
    "by_source": {
@@ -10575,9 +10629,9 @@
      "deviation_pct": 190.6
     },
     "solar": {
-     "plant_mw": 8674.997,
+     "plant_mw": 8669.997,
      "national_mw": 21660.0,
-     "deviation_pct": -59.9
+     "deviation_pct": -60.0
     },
     "wind": {
      "plant_mw": 23202.48,
@@ -10617,14 +10671,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 3831.4,
+   "plant_total_mw": 3946.4,
    "national_total_mw": 5900.0,
-   "deviation_pct": -35.1,
+   "deviation_pct": -33.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 2581.4,
+     "plant_mw": 2696.4,
      "national_mw": 3520.0,
-     "deviation_pct": -26.7
+     "deviation_pct": -23.4
     },
     "solar": {
      "plant_mw": 0.0,
@@ -10885,9 +10939,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 150.5,
+   "plant_total_mw": 120.0,
    "national_total_mw": 410.0,
-   "deviation_pct": -63.3,
+   "deviation_pct": -70.7,
    "by_source": {
     "hydro": {
      "plant_mw": 120.0,
@@ -10911,9 +10965,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 30.5,
+     "plant_mw": 0.0,
      "national_mw": 160.0,
-     "deviation_pct": -80.9
+     "deviation_pct": -100.0
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -10938,9 +10992,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 14658.65,
+   "plant_total_mw": 14452.65,
    "national_total_mw": 30520.0,
-   "deviation_pct": -52.0,
+   "deviation_pct": -52.6,
    "by_source": {
     "hydro": {
      "plant_mw": 3501.0,
@@ -11149,14 +11203,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 3274.5,
+   "plant_total_mw": 3490.5,
    "national_total_mw": 7000.0,
-   "deviation_pct": -53.2,
+   "deviation_pct": -50.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 1622.7,
+     "plant_mw": 1838.7,
      "national_mw": 2190.0,
-     "deviation_pct": -25.9
+     "deviation_pct": -16.0
     },
     "solar": {
      "plant_mw": 0.0,
@@ -11201,9 +11255,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 6290.7,
+   "plant_total_mw": 5864.1,
    "national_total_mw": 16870.0,
-   "deviation_pct": -62.7,
+   "deviation_pct": -65.2,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -11226,9 +11280,9 @@
      "deviation_pct": 18.2
     },
     "gas": {
-     "plant_mw": 2955.3,
+     "plant_mw": 2528.7,
      "national_mw": 4180.0,
-     "deviation_pct": -29.3
+     "deviation_pct": -39.5
     },
     "nuclear": {
      "plant_mw": 1886.8,
@@ -11306,17 +11360,17 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 316088.546,
+   "plant_total_mw": 315891.546,
    "national_total_mw": 555460.0,
    "deviation_pct": -43.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 45561.47,
+     "plant_mw": 45257.47,
      "national_mw": 49120.0,
-     "deviation_pct": -7.2
+     "deviation_pct": -7.9
     },
     "solar": {
-     "plant_mw": 25549.1,
+     "plant_mw": 25554.1,
      "national_mw": 135500.0,
      "deviation_pct": -81.1
     },
@@ -11331,9 +11385,9 @@
      "deviation_pct": -18.2
     },
     "gas": {
-     "plant_mw": 24947.506,
+     "plant_mw": 25049.506,
      "national_mw": 26620.0,
-     "deviation_pct": -6.3
+     "deviation_pct": -5.9
     },
     "nuclear": {
      "plant_mw": 8780.0,
@@ -11570,9 +11624,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 14665.8,
+   "plant_total_mw": 14595.9,
    "national_total_mw": 25830.0,
-   "deviation_pct": -43.2,
+   "deviation_pct": -43.5,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -11580,9 +11634,9 @@
      "deviation_pct": -100.0
     },
     "solar": {
-     "plant_mw": 570.8,
+     "plant_mw": 535.9,
      "national_mw": 7360.0,
-     "deviation_pct": -92.2
+     "deviation_pct": -92.7
     },
     "wind": {
      "plant_mw": 42.0,
@@ -11595,9 +11649,9 @@
      "deviation_pct": 12.0
     },
     "gas": {
-     "plant_mw": 9213.0,
+     "plant_mw": 9178.0,
      "national_mw": 13740.0,
-     "deviation_pct": -32.9
+     "deviation_pct": -33.2
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -11622,14 +11676,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 73095.06,
+   "plant_total_mw": 72141.06,
    "national_total_mw": 144750.0,
-   "deviation_pct": -49.5,
+   "deviation_pct": -50.2,
    "by_source": {
     "hydro": {
-     "plant_mw": 13384.18,
+     "plant_mw": 12430.18,
      "national_mw": 19350.0,
-     "deviation_pct": -30.8
+     "deviation_pct": -35.8
     },
     "solar": {
      "plant_mw": 1952.69,
@@ -11727,9 +11781,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 4703.5,
+   "plant_total_mw": 4112.4,
    "national_total_mw": 7360.0,
-   "deviation_pct": -36.1,
+   "deviation_pct": -44.1,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -11737,9 +11791,9 @@
      "deviation_pct": null
     },
     "solar": {
-     "plant_mw": 567.5,
+     "plant_mw": 591.4,
      "national_mw": 2200.0,
-     "deviation_pct": -74.2
+     "deviation_pct": -73.1
     },
     "wind": {
      "plant_mw": 0.0,
@@ -11753,9 +11807,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 3754.0,
+     "plant_mw": 3139.0,
      "national_mw": 4000.0,
-     "deviation_pct": -6.2
+     "deviation_pct": -21.5
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -11832,9 +11886,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 18628.0,
+   "plant_total_mw": 18726.0,
    "national_total_mw": 24260.0,
-   "deviation_pct": -23.2,
+   "deviation_pct": -22.8,
    "by_source": {
     "hydro": {
      "plant_mw": 2090.0,
@@ -11847,9 +11901,9 @@
      "deviation_pct": -79.7
     },
     "wind": {
-     "plant_mw": 0.0,
+     "plant_mw": 98.0,
      "national_mw": 1910.0,
-     "deviation_pct": -100.0
+     "deviation_pct": -94.9
     },
     "coal": {
      "plant_mw": 15868.0,
@@ -12038,6 +12092,60 @@
     "other": {
      "plant_mw": 0.0,
      "national_mw": 820.0,
+     "deviation_pct": -100.0
+    }
+   }
+  },
+  "KNA": {
+   "nation": "KNA",
+   "year": {
+    "plants": "gppd_2021",
+    "national": 2024
+   },
+   "plant_total_mw": 4.1,
+   "national_total_mw": 80.0,
+   "deviation_pct": -94.9,
+   "by_source": {
+    "hydro": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "solar": {
+     "plant_mw": 4.1,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "wind": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "coal": {
+     "plant_mw": 0.0,
+     "national_mw": null,
+     "deviation_pct": null,
+     "note": "fonte ausente no agregado nacional"
+    },
+    "gas": {
+     "plant_mw": 0.0,
+     "national_mw": null,
+     "deviation_pct": null,
+     "note": "fonte ausente no agregado nacional"
+    },
+    "nuclear": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "biomass": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "other": {
+     "plant_mw": 0.0,
+     "national_mw": 80.0,
      "deviation_pct": -100.0
     }
    }
@@ -12366,9 +12474,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 3.0,
+   "plant_total_mw": 48.341,
    "national_total_mw": 90.0,
-   "deviation_pct": -96.7,
+   "deviation_pct": -46.3,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -12376,12 +12484,12 @@
      "deviation_pct": null
     },
     "solar": {
-     "plant_mw": 3.0,
+     "plant_mw": 40.641,
      "national_mw": 0.0,
      "deviation_pct": null
     },
     "wind": {
-     "plant_mw": 0.0,
+     "plant_mw": 1.1,
      "national_mw": 0.0,
      "deviation_pct": null
     },
@@ -12403,7 +12511,7 @@
      "deviation_pct": null
     },
     "biomass": {
-     "plant_mw": 0.0,
+     "plant_mw": 6.6,
      "national_mw": 0.0,
      "deviation_pct": null
     },
@@ -12473,9 +12581,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 3490.8,
+   "plant_total_mw": 3330.8,
    "national_total_mw": 7810.0,
-   "deviation_pct": -55.3,
+   "deviation_pct": -57.4,
    "by_source": {
     "hydro": {
      "plant_mw": 1000.8,
@@ -12499,9 +12607,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 2490.0,
+     "plant_mw": 2330.0,
      "national_mw": 1680.0,
-     "deviation_pct": 48.2
+     "deviation_pct": 38.7
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -12526,14 +12634,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 1681.0,
+   "plant_total_mw": 2779.2,
    "national_total_mw": 1130.0,
-   "deviation_pct": 48.8,
+   "deviation_pct": 145.9,
    "by_source": {
     "hydro": {
-     "plant_mw": 1296.0,
+     "plant_mw": 2392.0,
      "national_mw": 30.0,
-     "deviation_pct": 4220.0
+     "deviation_pct": 7873.3
     },
     "solar": {
      "plant_mw": 0.0,
@@ -12541,9 +12649,9 @@
      "deviation_pct": -100.0
     },
     "wind": {
-     "plant_mw": 0.0,
+     "plant_mw": 2.2,
      "national_mw": 230.0,
-     "deviation_pct": -100.0
+     "deviation_pct": -99.0
     },
     "coal": {
      "plant_mw": 0.0,
@@ -12579,9 +12687,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 2537.0,
+   "plant_total_mw": 2697.0,
    "national_total_mw": 3820.0,
-   "deviation_pct": -33.6,
+   "deviation_pct": -29.4,
    "by_source": {
     "hydro": {
      "plant_mw": 1536.0,
@@ -12605,9 +12713,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 1001.0,
+     "plant_mw": 1161.0,
      "national_mw": 1070.0,
-     "deviation_pct": -6.4
+     "deviation_pct": 8.5
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -12632,14 +12740,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 8697.56,
+   "plant_total_mw": 9140.0,
    "national_total_mw": 10850.0,
-   "deviation_pct": -19.8,
+   "deviation_pct": -15.8,
    "by_source": {
     "hydro": {
-     "plant_mw": 1676.5,
+     "plant_mw": 1728.59,
      "national_mw": 1310.0,
-     "deviation_pct": 28.0
+     "deviation_pct": 32.0
     },
     "solar": {
      "plant_mw": 533.0,
@@ -12684,9 +12792,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 2914.0,
+   "plant_total_mw": 2952.6,
    "national_total_mw": 3810.0,
-   "deviation_pct": -23.5,
+   "deviation_pct": -22.5,
    "by_source": {
     "hydro": {
      "plant_mw": 64.0,
@@ -12694,9 +12802,9 @@
      "deviation_pct": 6.7
     },
     "solar": {
-     "plant_mw": 0.0,
+     "plant_mw": 38.6,
      "national_mw": 710.0,
-     "deviation_pct": -100.0
+     "deviation_pct": -94.6
     },
     "wind": {
      "plant_mw": 0.0,
@@ -12736,29 +12844,29 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 359.93,
+   "plant_total_mw": 1565.537,
    "national_total_mw": 870.0,
-   "deviation_pct": -58.6,
+   "deviation_pct": 79.9,
    "by_source": {
     "hydro": {
-     "plant_mw": 112.65,
+     "plant_mw": 164.033,
      "national_mw": 190.0,
-     "deviation_pct": -40.7
+     "deviation_pct": -13.7
     },
     "solar": {
-     "plant_mw": 25.0,
+     "plant_mw": 321.579,
      "national_mw": 60.0,
-     "deviation_pct": -58.3
+     "deviation_pct": 436.0
     },
     "wind": {
-     "plant_mw": 0.0,
+     "plant_mw": 16.431,
      "national_mw": 0.0,
      "deviation_pct": null
     },
     "coal": {
-     "plant_mw": 120.0,
+     "plant_mw": 344.7,
      "national_mw": 120.0,
-     "deviation_pct": 0.0
+     "deviation_pct": 187.2
     },
     "gas": {
      "plant_mw": 29.57,
@@ -12772,7 +12880,7 @@
      "deviation_pct": null
     },
     "biomass": {
-     "plant_mw": 0.0,
+     "plant_mw": 117.078,
      "national_mw": 0.0,
      "deviation_pct": null
     },
@@ -12789,14 +12897,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 62365.9,
+   "plant_total_mw": 62880.4,
    "national_total_mw": 128330.0,
-   "deviation_pct": -51.4,
+   "deviation_pct": -51.0,
    "by_source": {
     "hydro": {
-     "plant_mw": 12442.9,
+     "plant_mw": 12550.0,
      "national_mw": 12840.0,
-     "deviation_pct": -3.1
+     "deviation_pct": -2.3
     },
     "solar": {
      "plant_mw": 2671.2,
@@ -12814,9 +12922,9 @@
      "deviation_pct": -0.0
     },
     "gas": {
-     "plant_mw": 25674.2,
+     "plant_mw": 26081.6,
      "national_mw": 47240.0,
-     "deviation_pct": -45.7
+     "deviation_pct": -44.8
     },
     "nuclear": {
      "plant_mw": 1510.0,
@@ -12947,14 +13055,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 3987.1,
+   "plant_total_mw": 3945.1,
    "national_total_mw": 6180.0,
-   "deviation_pct": -35.5,
+   "deviation_pct": -36.2,
    "by_source": {
     "hydro": {
-     "plant_mw": 2725.2,
+     "plant_mw": 2785.2,
      "national_mw": 3270.0,
-     "deviation_pct": -16.7
+     "deviation_pct": -14.8
     },
     "solar": {
      "plant_mw": 50.0,
@@ -12972,9 +13080,9 @@
      "deviation_pct": -13.2
     },
     "gas": {
-     "plant_mw": 1046.9,
+     "plant_mw": 944.9,
      "national_mw": 2440.0,
-     "deviation_pct": -57.1
+     "deviation_pct": -61.3
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -13158,9 +13266,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 315.804,
+   "plant_total_mw": 653.304,
    "national_total_mw": 720.0,
-   "deviation_pct": -56.1,
+   "deviation_pct": -9.3,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -13265,9 +13373,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 28794.5,
+   "plant_total_mw": 32253.5,
    "national_total_mw": 42030.0,
-   "deviation_pct": -31.5,
+   "deviation_pct": -23.3,
    "by_source": {
     "hydro": {
      "plant_mw": 1989.0,
@@ -13275,9 +13383,9 @@
      "deviation_pct": -68.3
     },
     "solar": {
-     "plant_mw": 281.5,
+     "plant_mw": 275.5,
      "national_mw": 3070.0,
-     "deviation_pct": -90.8
+     "deviation_pct": -91.0
     },
     "wind": {
      "plant_mw": 0.0,
@@ -13290,9 +13398,9 @@
      "deviation_pct": -2.1
     },
     "gas": {
-     "plant_mw": 13330.0,
+     "plant_mw": 16137.0,
      "national_mw": 17990.0,
-     "deviation_pct": -25.9
+     "deviation_pct": -10.3
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -13301,9 +13409,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "biomass": {
-     "plant_mw": 12.0,
+     "plant_mw": 170.0,
      "national_mw": 930.0,
-     "deviation_pct": -98.7
+     "deviation_pct": -81.7
     },
     "other": {
      "plant_mw": 0.0,
@@ -13318,14 +13426,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 502.5,
+   "plant_total_mw": 262.5,
    "national_total_mw": 790.0,
-   "deviation_pct": -36.4,
+   "deviation_pct": -66.8,
    "by_source": {
     "hydro": {
-     "plant_mw": 240.0,
+     "plant_mw": 0.0,
      "national_mw": 350.0,
-     "deviation_pct": -31.4
+     "deviation_pct": -100.0
     },
     "solar": {
      "plant_mw": 82.6,
@@ -13371,9 +13479,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 16993.69,
+   "plant_total_mw": 17963.99,
    "national_total_mw": 57400.0,
-   "deviation_pct": -70.4,
+   "deviation_pct": -68.7,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -13381,14 +13489,14 @@
      "deviation_pct": -100.0
     },
     "solar": {
-     "plant_mw": 245.1,
+     "plant_mw": 246.0,
      "national_mw": 24770.0,
      "deviation_pct": -99.0
     },
     "wind": {
-     "plant_mw": 1936.59,
+     "plant_mw": 2905.99,
      "national_mw": 11700.0,
-     "deviation_pct": -83.4
+     "deviation_pct": -75.2
     },
     "coal": {
      "plant_mw": 5015.0,
@@ -13634,14 +13742,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 587.95,
+   "plant_total_mw": 867.95,
    "national_total_mw": 3520.0,
-   "deviation_pct": -83.3,
+   "deviation_pct": -75.3,
    "by_source": {
     "hydro": {
-     "plant_mw": 557.95,
+     "plant_mw": 837.95,
      "national_mw": 3290.0,
-     "deviation_pct": -83.0
+     "deviation_pct": -74.5
     },
     "solar": {
      "plant_mw": 30.0,
@@ -14054,19 +14162,19 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 37902.0,
+   "plant_total_mw": 38781.0,
    "national_total_mw": 70680.0,
-   "deviation_pct": -46.4,
+   "deviation_pct": -45.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 2078.0,
+     "plant_mw": 2075.0,
      "national_mw": 990.0,
-     "deviation_pct": 109.9
+     "deviation_pct": 109.6
     },
     "solar": {
-     "plant_mw": 17.0,
+     "plant_mw": 54.0,
      "national_mw": 25420.0,
-     "deviation_pct": -99.9
+     "deviation_pct": -99.8
     },
     "wind": {
      "plant_mw": 2174.0,
@@ -14074,9 +14182,9 @@
      "deviation_pct": -79.5
     },
     "coal": {
-     "plant_mw": 30959.0,
+     "plant_mw": 31804.0,
      "national_mw": 27260.0,
-     "deviation_pct": 13.6
+     "deviation_pct": 16.7
     },
     "gas": {
      "plant_mw": 1804.0,
@@ -14106,14 +14214,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 9208.0,
+   "plant_total_mw": 9773.0,
    "national_total_mw": 8510.0,
-   "deviation_pct": 8.2,
+   "deviation_pct": 14.8,
    "by_source": {
     "hydro": {
-     "plant_mw": 3805.0,
+     "plant_mw": 4370.0,
      "national_mw": 4970.0,
-     "deviation_pct": -23.4
+     "deviation_pct": -12.1
     },
     "solar": {
      "plant_mw": 0.0,
@@ -14159,24 +14267,24 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 14744.864,
+   "plant_total_mw": 16213.844,
    "national_total_mw": 26290.0,
-   "deviation_pct": -43.9,
+   "deviation_pct": -38.3,
    "by_source": {
     "hydro": {
-     "plant_mw": 2760.45,
+     "plant_mw": 4341.45,
      "national_mw": 8370.0,
-     "deviation_pct": -67.0
+     "deviation_pct": -48.1
     },
     "solar": {
-     "plant_mw": 621.584,
+     "plant_mw": 603.784,
      "national_mw": 6950.0,
-     "deviation_pct": -91.1
+     "deviation_pct": -91.3
     },
     "wind": {
-     "plant_mw": 4942.33,
+     "plant_mw": 4887.71,
      "national_mw": 5610.0,
-     "deviation_pct": -11.9
+     "deviation_pct": -12.9
     },
     "coal": {
      "plant_mw": 1978.0,
@@ -14194,14 +14302,14 @@
      "deviation_pct": null
     },
     "biomass": {
-     "plant_mw": 584.7,
+     "plant_mw": 573.9,
      "national_mw": 660.0,
-     "deviation_pct": -11.4
+     "deviation_pct": -13.0
     },
     "other": {
-     "plant_mw": 28.8,
+     "plant_mw": 0.0,
      "national_mw": 510.0,
-     "deviation_pct": -94.4
+     "deviation_pct": -100.0
     }
    }
   },
@@ -14211,14 +14319,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 8760.0,
+   "plant_total_mw": 17317.2,
    "national_total_mw": 8870.0,
-   "deviation_pct": -1.2,
+   "deviation_pct": 95.2,
    "by_source": {
     "hydro": {
-     "plant_mw": 8760.0,
+     "plant_mw": 17310.0,
      "national_mw": 8820.0,
-     "deviation_pct": -0.7
+     "deviation_pct": 96.3
     },
     "solar": {
      "plant_mw": 0.0,
@@ -14318,14 +14426,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 14646.9,
+   "plant_total_mw": 13420.9,
    "national_total_mw": 24900.0,
-   "deviation_pct": -41.2,
+   "deviation_pct": -46.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 3332.0,
+     "plant_mw": 1926.0,
      "national_mw": 6620.0,
-     "deviation_pct": -49.7
+     "deviation_pct": -70.9
     },
     "solar": {
      "plant_mw": 471.9,
@@ -14338,9 +14446,9 @@
      "deviation_pct": -88.2
     },
     "coal": {
-     "plant_mw": 5807.0,
+     "plant_mw": 5987.0,
      "national_mw": 2520.0,
-     "deviation_pct": 130.4
+     "deviation_pct": 137.6
     },
     "gas": {
      "plant_mw": 3352.0,
@@ -14370,29 +14478,29 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 228220.05,
+   "plant_total_mw": 247625.25,
    "national_total_mw": 237470.0,
-   "deviation_pct": -3.9,
+   "deviation_pct": 4.3,
    "by_source": {
     "hydro": {
-     "plant_mw": 45591.44,
+     "plant_mw": 45302.94,
      "national_mw": 51830.0,
-     "deviation_pct": -12.0
+     "deviation_pct": -12.6
     },
     "solar": {
-     "plant_mw": 840.7,
+     "plant_mw": 1243.4,
      "national_mw": 2430.0,
-     "deviation_pct": -65.4
+     "deviation_pct": -48.8
     },
     "wind": {
-     "plant_mw": 42.3,
+     "plant_mw": 91.3,
      "national_mw": 2880.0,
-     "deviation_pct": -98.5
+     "deviation_pct": -96.8
     },
     "coal": {
-     "plant_mw": 46072.22,
+     "plant_mw": 59314.22,
      "national_mw": 37190.0,
-     "deviation_pct": 23.9
+     "deviation_pct": 59.5
     },
     "gas": {
      "plant_mw": 106722.62,
@@ -14400,9 +14508,9 @@
      "deviation_pct": -5.6
     },
     "nuclear": {
-     "plant_mw": 28168.0,
+     "plant_mw": 34168.0,
      "national_mw": 28650.0,
-     "deviation_pct": -1.7
+     "deviation_pct": 19.3
     },
     "biomass": {
      "plant_mw": 580.0,
@@ -14422,14 +14530,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 193.68,
+   "plant_total_mw": 149.88,
    "national_total_mw": 390.0,
-   "deviation_pct": -50.3,
+   "deviation_pct": -61.6,
    "by_source": {
     "hydro": {
-     "plant_mw": 127.6,
+     "plant_mw": 83.8,
      "national_mw": 150.0,
-     "deviation_pct": -14.9
+     "deviation_pct": -44.1
     },
     "solar": {
      "plant_mw": 8.5,
@@ -14474,9 +14582,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 84341.55,
+   "plant_total_mw": 84991.55,
    "national_total_mw": 104350.0,
-   "deviation_pct": -19.2,
+   "deviation_pct": -18.6,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -14501,9 +14609,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 34502.12,
+     "plant_mw": 35152.12,
      "national_mw": 69420.0,
-     "deviation_pct": -50.3
+     "deviation_pct": -49.4
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -14529,9 +14637,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 2798.11,
+   "plant_total_mw": 2749.11,
    "national_total_mw": 4020.0,
-   "deviation_pct": -30.4,
+   "deviation_pct": -31.6,
    "by_source": {
     "hydro": {
      "plant_mw": 1540.01,
@@ -14565,9 +14673,9 @@
      "deviation_pct": null
     },
     "biomass": {
-     "plant_mw": 126.0,
+     "plant_mw": 100.0,
      "national_mw": 200.0,
-     "deviation_pct": -37.0
+     "deviation_pct": -50.0
     },
     "other": {
      "plant_mw": 0.0,
@@ -14582,9 +14690,9 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 696.16,
+   "plant_total_mw": 451.465,
    "national_total_mw": 1930.0,
-   "deviation_pct": -63.9,
+   "deviation_pct": -76.6,
    "by_source": {
     "hydro": {
      "plant_mw": 120.0,
@@ -14592,9 +14700,9 @@
      "deviation_pct": null
     },
     "solar": {
-     "plant_mw": 105.7,
+     "plant_mw": 110.7,
      "national_mw": 270.0,
-     "deviation_pct": -60.9
+     "deviation_pct": -59.0
     },
     "wind": {
      "plant_mw": 0.0,
@@ -14634,9 +14742,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 13660.0,
+   "plant_total_mw": 10195.0,
    "national_total_mw": 13480.0,
-   "deviation_pct": 1.3,
+   "deviation_pct": -24.4,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -14662,9 +14770,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "gas": {
-     "plant_mw": 9552.0,
+     "plant_mw": 6745.0,
      "national_mw": 11700.0,
-     "deviation_pct": -18.4
+     "deviation_pct": -42.4
     },
     "nuclear": {
      "plant_mw": 0.0,
@@ -14673,9 +14781,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "biomass": {
-     "plant_mw": 158.0,
+     "plant_mw": 0.0,
      "national_mw": 50.0,
-     "deviation_pct": 216.0
+     "deviation_pct": -100.0
     },
     "other": {
      "plant_mw": 0.0,
@@ -14799,14 +14907,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 7958.0,
+   "plant_total_mw": 7095.0,
    "national_total_mw": 9220.0,
-   "deviation_pct": -13.7,
+   "deviation_pct": -23.0,
    "by_source": {
     "hydro": {
-     "plant_mw": 2390.0,
+     "plant_mw": 2762.0,
      "national_mw": 2510.0,
-     "deviation_pct": -4.8
+     "deviation_pct": 10.0
     },
     "solar": {
      "plant_mw": 0.0,
@@ -14819,9 +14927,9 @@
      "deviation_pct": -100.0
     },
     "coal": {
-     "plant_mw": 5568.0,
+     "plant_mw": 4333.0,
      "national_mw": 4820.0,
-     "deviation_pct": 15.5
+     "deviation_pct": -10.1
     },
     "gas": {
      "plant_mw": 0.0,
@@ -14841,6 +14949,60 @@
     "other": {
      "plant_mw": 0.0,
      "national_mw": 20.0,
+     "deviation_pct": -100.0
+    }
+   }
+  },
+  "SSD": {
+   "nation": "SSD",
+   "year": {
+    "plants": "gppd_2021",
+    "national": 2024
+   },
+   "plant_total_mw": 49.0,
+   "national_total_mw": 230.0,
+   "deviation_pct": -78.7,
+   "by_source": {
+    "hydro": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "solar": {
+     "plant_mw": 0.0,
+     "national_mw": 30.0,
+     "deviation_pct": -100.0
+    },
+    "wind": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "coal": {
+     "plant_mw": 0.0,
+     "national_mw": null,
+     "deviation_pct": null,
+     "note": "fonte ausente no agregado nacional"
+    },
+    "gas": {
+     "plant_mw": 0.0,
+     "national_mw": null,
+     "deviation_pct": null,
+     "note": "fonte ausente no agregado nacional"
+    },
+    "nuclear": {
+     "plant_mw": 0.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "biomass": {
+     "plant_mw": 26.0,
+     "national_mw": 0.0,
+     "deviation_pct": null
+    },
+    "other": {
+     "plant_mw": 0.0,
+     "national_mw": 200.0,
      "deviation_pct": -100.0
     }
    }
@@ -14905,9 +15067,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 6230.86,
+   "plant_total_mw": 6657.46,
    "national_total_mw": 7720.0,
-   "deviation_pct": -19.3,
+   "deviation_pct": -13.8,
    "by_source": {
     "hydro": {
      "plant_mw": 2320.86,
@@ -14930,9 +15092,9 @@
      "deviation_pct": 417.8
     },
     "gas": {
-     "plant_mw": 728.0,
+     "plant_mw": 1154.6,
      "national_mw": 1990.0,
-     "deviation_pct": -63.4
+     "deviation_pct": -42.0
     },
     "nuclear": {
      "plant_mw": 1760.0,
@@ -15010,9 +15172,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 26418.7,
+   "plant_total_mw": 26616.7,
    "national_total_mw": 54890.0,
-   "deviation_pct": -51.9,
+   "deviation_pct": -51.5,
    "by_source": {
     "hydro": {
      "plant_mw": 12822.9,
@@ -15020,14 +15182,14 @@
      "deviation_pct": -21.4
     },
     "solar": {
-     "plant_mw": 0.0,
+     "plant_mw": 20.0,
      "national_mw": 5500.0,
-     "deviation_pct": -100.0
+     "deviation_pct": -99.6
     },
     "wind": {
-     "plant_mw": 697.1,
+     "plant_mw": 875.1,
      "national_mw": 17380.0,
-     "deviation_pct": -96.0
+     "deviation_pct": -95.0
     },
     "coal": {
      "plant_mw": 80.0,
@@ -15221,7 +15383,7 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 39654.3,
+   "plant_total_mw": 39660.3,
    "national_total_mw": 60490.0,
    "deviation_pct": -34.4,
    "by_source": {
@@ -15231,9 +15393,9 @@
      "deviation_pct": 21.0
     },
     "solar": {
-     "plant_mw": 1348.7,
+     "plant_mw": 1354.7,
      "national_mw": 6840.0,
-     "deviation_pct": -80.3
+     "deviation_pct": -80.2
     },
     "wind": {
      "plant_mw": 210.0,
@@ -15275,14 +15437,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 5296.4,
+   "plant_total_mw": 5422.4,
    "national_total_mw": 6450.0,
-   "deviation_pct": -17.9,
+   "deviation_pct": -15.9,
    "by_source": {
     "hydro": {
-     "plant_mw": 4686.4,
+     "plant_mw": 4812.4,
      "national_mw": 5840.0,
-     "deviation_pct": -19.8
+     "deviation_pct": -17.6
     },
     "solar": {
      "plant_mw": 0.0,
@@ -15492,14 +15654,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 51444.7,
+   "plant_total_mw": 51535.7,
    "national_total_mw": 123070.0,
-   "deviation_pct": -58.2,
+   "deviation_pct": -58.1,
    "by_source": {
     "hydro": {
-     "plant_mw": 13839.0,
+     "plant_mw": 13724.0,
      "national_mw": 32290.0,
-     "deviation_pct": -57.1
+     "deviation_pct": -57.5
     },
     "solar": {
      "plant_mw": 694.6,
@@ -15704,14 +15866,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 4209.12,
+   "plant_total_mw": 3300.12,
    "national_total_mw": 5320.0,
-   "deviation_pct": -20.9,
+   "deviation_pct": -38.0,
    "by_source": {
     "hydro": {
-     "plant_mw": 1538.0,
+     "plant_mw": 593.0,
      "national_mw": 1540.0,
-     "deviation_pct": -0.1
+     "deviation_pct": -61.5
     },
     "solar": {
      "plant_mw": 225.01,
@@ -15719,9 +15881,9 @@
      "deviation_pct": -33.8
     },
     "wind": {
-     "plant_mw": 1381.95,
+     "plant_mw": 1427.95,
      "national_mw": 1520.0,
-     "deviation_pct": -9.1
+     "deviation_pct": -6.1
     },
     "coal": {
      "plant_mw": 0.0,
@@ -15740,9 +15902,9 @@
      "deviation_pct": null
     },
     "biomass": {
-     "plant_mw": 412.7,
+     "plant_mw": 402.7,
      "national_mw": 740.0,
-     "deviation_pct": -44.2
+     "deviation_pct": -45.6
     },
     "other": {
      "plant_mw": 0.0,
@@ -15757,24 +15919,24 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 1204638.05,
+   "plant_total_mw": 1206053.35,
    "national_total_mw": 1333250.0,
-   "deviation_pct": -9.6,
+   "deviation_pct": -9.5,
    "by_source": {
     "hydro": {
-     "plant_mw": 101656.9,
+     "plant_mw": 101506.0,
      "national_mw": 84150.0,
-     "deviation_pct": 20.8
+     "deviation_pct": 20.6
     },
     "solar": {
-     "plant_mw": 37970.35,
+     "plant_mw": 37979.65,
      "national_mw": 211610.0,
      "deviation_pct": -82.1
     },
     "wind": {
-     "plant_mw": 104476.9,
+     "plant_mw": 104325.9,
      "national_mw": 158830.0,
-     "deviation_pct": -34.2
+     "deviation_pct": -34.3
     },
     "coal": {
      "plant_mw": 251510.7,
@@ -15782,9 +15944,9 @@
      "deviation_pct": 33.2
     },
     "gas": {
-     "plant_mw": 546435.8,
+     "plant_mw": 548218.0,
      "national_mw": 549790.0,
-     "deviation_pct": -0.6
+     "deviation_pct": -0.3
     },
     "nuclear": {
      "plant_mw": 104233.1,
@@ -15792,12 +15954,12 @@
      "deviation_pct": 7.6
     },
     "biomass": {
-     "plant_mw": 14891.7,
+     "plant_mw": 14839.4,
      "national_mw": 9720.0,
-     "deviation_pct": 53.2
+     "deviation_pct": 52.7
     },
     "other": {
-     "plant_mw": 6319.2,
+     "plant_mw": 6297.2,
      "national_mw": 33400.0,
      "deviation_pct": -81.1
     }
@@ -15809,14 +15971,14 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 12640.0,
+   "plant_total_mw": 12514.0,
    "national_total_mw": 26900.0,
-   "deviation_pct": -53.0,
+   "deviation_pct": -53.5,
    "by_source": {
     "hydro": {
-     "plant_mw": 1140.0,
+     "plant_mw": 1014.0,
      "national_mw": 2440.0,
-     "deviation_pct": -53.3
+     "deviation_pct": -58.4
     },
     "solar": {
      "plant_mw": 100.0,
@@ -15914,14 +16076,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 41350.49,
+   "plant_total_mw": 41222.49,
    "national_total_mw": 84190.0,
-   "deviation_pct": -50.9,
+   "deviation_pct": -51.0,
    "by_source": {
     "hydro": {
-     "plant_mw": 16750.09,
+     "plant_mw": 16622.09,
      "national_mw": 23710.0,
-     "deviation_pct": -29.4
+     "deviation_pct": -29.9
     },
     "solar": {
      "plant_mw": 1616.4,
@@ -15966,9 +16128,9 @@
     "plants": "gppd_2021",
     "national": 2025
    },
-   "plant_total_mw": 1478.0,
+   "plant_total_mw": 2713.0,
    "national_total_mw": 1330.0,
-   "deviation_pct": 11.1,
+   "deviation_pct": 104.0,
    "by_source": {
     "hydro": {
      "plant_mw": 0.0,
@@ -15989,9 +16151,9 @@
      "note": "fonte ausente no agregado nacional"
     },
     "coal": {
-     "plant_mw": 1478.0,
+     "plant_mw": 2713.0,
      "national_mw": 1330.0,
-     "deviation_pct": 11.1
+     "deviation_pct": 104.0
     },
     "gas": {
      "plant_mw": 0.0,
@@ -16130,14 +16292,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 2689.337,
+   "plant_total_mw": 3439.337,
    "national_total_mw": 3940.0,
-   "deviation_pct": -31.7,
+   "deviation_pct": -12.7,
    "by_source": {
     "hydro": {
-     "plant_mw": 2160.0,
+     "plant_mw": 2910.0,
      "national_mw": 3170.0,
-     "deviation_pct": -31.9
+     "deviation_pct": -8.2
     },
     "solar": {
      "plant_mw": 47.5,
@@ -16183,14 +16345,14 @@
     "plants": "gppd_2021",
     "national": 2024
    },
-   "plant_total_mw": 1670.0,
+   "plant_total_mw": 920.0,
    "national_total_mw": 2960.0,
-   "deviation_pct": -43.6,
+   "deviation_pct": -68.9,
    "by_source": {
     "hydro": {
-     "plant_mw": 750.0,
+     "plant_mw": 0.0,
      "national_mw": 1080.0,
-     "deviation_pct": -30.6
+     "deviation_pct": -100.0
     },
     "solar": {
      "plant_mw": 0.0,

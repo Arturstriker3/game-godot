@@ -100,6 +100,8 @@ def check_sources(report: Report, require_commercial: bool) -> None:
         report.check(bool(license_info.get("evidence") or license_info.get("quote")),
                      "%s: sem evidencia da licenca" % source["id"])
         if source["status"] in ("used", "used_restricted"):
+            report.check(bool(source.get("accessed_at_utc")),
+                         "%s: fonte usada sem accessed_at_utc" % source["id"])
             used_files.update(source.get("used_in", []))
             if not license_info.get("commercial_ok"):
                 restricted.append(source["id"])
@@ -113,6 +115,11 @@ def check_sources(report: Report, require_commercial: bool) -> None:
             report.check(False, message)
         else:
             report.warn(message)
+    # A decisão D-115(c) tirou o WorldClim do E1; ele não pode voltar como fonte usada.
+    used_ids = {source["id"] for source in registry["sources"]
+                if source["status"] in ("used", "used_restricted")}
+    report.check("worldclim_21" not in used_ids,
+                 "WorldClim ainda consta como fonte usada no E1 (D-115c)")
 
 
 def check_national_capacity(report: Report) -> None:
@@ -155,57 +162,103 @@ def check_national_capacity(report: Report) -> None:
 
 
 def check_plants(report: Report) -> None:
-    payload = load("power_plants_2026.json")
+    payload = load("power_plants_base_2021_gppd.json")
     plants = payload["plants"]
     by_nation = payload["by_nation"]
-    tag_by_code = {ec.nation_code(tag): tag for tag in ec.load_registry()[0]}
+    by_city = payload["by_city"]
     atlas_to_tag = {ec.province_tag(tag): tag for tag in ec.load_registry()[0]}
     province_tag = {p["id"]: atlas_to_tag.get(p["nation"], "")
                     for p in ec.load_provinces()}
     city_tag = {c["id"]: c["tag"] for c in ec.load_cities()}
+    causes = {"gppd_coord_error", "deleted_territory", "border_pixel", "occupied"}
+    discarded_ids = {item["id"] for item in
+                     (payload["meta"].get("discarded") or {}).get("items", [])}
 
     total = 0.0
     per_nation: dict[str, float] = {}
+    city_totals: dict[str, float] = {}
     outside = 0
     conflicts = 0
+    by_cause: dict[str, int] = {}
     undeclared = []
     wrong_city = 0
+    zero_or_negative = []
     for plant in plants:
         lat, lon = plant["lat"], plant["lon"]
         mw = float(plant["capacity_mw"])
         report.check(mw > 0, "%s: capacity_mw <= 0" % plant["id"])
+        if mw <= 0:
+            zero_or_negative.append(plant["id"])
         total += mw
-        if plant.get("nation"):
-            per_nation[plant["nation"]] = per_nation.get(plant["nation"], 0.0) + mw
+        tag = plant.get("nation")
+        if tag:
+            per_nation[tag] = per_nation.get(tag, 0.0) + mw
+        if plant.get("city_id"):
+            cid = plant["city_id"]
+            city_totals[cid] = city_totals.get(cid, 0.0) + mw
+            report.check(city_tag.get(cid, "") == (tag or ""),
+                         "%s: nation %s != cidade %s" % (plant["id"], tag, cid))
         if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
             outside += 1
             continue
-        expected = tag_by_code.get(plant.get("country_iso3") or "", "")
+        report.check(bool(plant.get("gppd_country")),
+                     "%s: sem gppd_country (rastreio do GPPD)" % plant["id"])
+        report.check(plant["id"] not in discarded_ids,
+                     "%s: usina descartada ainda está no parque" % plant["id"])
         province_nation = ""
         if plant.get("province_id"):
             province_nation = province_tag.get(int(plant["province_id"]), "")
+        report.check(not plant.get("province_nation") or
+                     plant["province_nation"] == province_nation,
+                     "%s: province_nation != província do atlas" % plant["id"])
         declared = plant.get("location_conflict")
+        cause = plant.get("location_cause")
         if declared:
             conflicts += 1
+            report.check(cause in causes,
+                         "%s: location_conflict sem causa válida (%s)" % (plant["id"], cause))
+            if cause:
+                by_cause[cause] = by_cause.get(cause, 0) + 1
             report.check(declared == province_nation,
                          "%s: location_conflict declarado %s != província %s"
                          % (plant["id"], declared, province_nation))
-        if province_nation and expected and province_nation != expected:
-            if not declared:
-                undeclared.append((plant["id"], expected, province_nation))
-            if plant.get("city_id") and city_tag.get(plant["city_id"], "") != expected:
-                wrong_city += 1
+            report.check(not tag or tag == province_nation,
+                         "%s: nation %s != controlador do atlas %s"
+                         % (plant["id"], tag, province_nation))
+        elif cause:
+            # Só é aceitável em usina sem cidade (território sem nação jogável).
+            report.check(not plant.get("city_id"),
+                         "%s: location_cause sem location_conflict" % plant["id"])
+        if province_nation and plant.get("gppd_country_game") and \
+                province_nation != plant["gppd_country_game"] and not declared:
+            undeclared.append((plant["id"], plant["gppd_country_game"], province_nation))
+        if plant.get("city_id") and tag and city_tag.get(plant["city_id"], "") != tag:
+            wrong_city += 1
     report.check(outside == 0, "%d usinas fora do mundo (-90..90 / -180..180)" % outside)
     report.check(not undeclared,
                  "%d usinas com província de outra nação SEM location_conflict: %s"
                  % (len(undeclared), undeclared[:5]))
+    report.check(not zero_or_negative, "%d usinas com MW <= 0: %s"
+                 % (len(zero_or_negative), zero_or_negative[:5]))
     meta_conflicts = payload["meta"].get("location_conflicts") or {}
     report.check(meta_conflicts.get("count") == conflicts,
                  "meta.location_conflicts.count (%s) != conflitos reais (%d)"
                  % (meta_conflicts.get("count"), conflicts))
-    report.check(wrong_city <= conflicts,
-                 "%d usinas em cidade de outra nação (conflitos declarados: %d)"
-                 % (wrong_city, conflicts))
+    reported = meta_conflicts.get("by_cause") or {}
+    for cause in causes:
+        if cause == "gppd_coord_error":
+            continue
+        report.check((reported.get(cause) or {}).get("plants", 0) == by_cause.get(cause, 0),
+                     "meta.location_conflicts.by_cause.%s (%s) != real (%d)"
+                     % (cause, (reported.get(cause) or {}).get("plants"), by_cause.get(cause, 0)))
+    coord = meta_conflicts.get("coord_error") or {}
+    report.check(coord.get("cause") == "gppd_coord_error",
+                 "meta.location_conflicts.coord_error ausente")
+    report.check(coord.get("discarded") == len(discarded_ids),
+                 "coord_error.discarded != lista de descartadas")
+    report.check(wrong_city == 0,
+                 "%d usinas em cidade de nação diferente de `nation`" % wrong_city)
+
     mw_without_nation = sum(float(p["capacity_mw"]) for p in plants if not p.get("nation"))
     sum_nation = round(sum(v for v in per_nation.values()) + mw_without_nation, 3)
     report.check(abs(sum_nation - total) < 0.01,
@@ -216,35 +269,204 @@ def check_plants(report: Report) -> None:
                      "%s: by_nation.total_mw != soma das usinas" % tag)
     report.check(abs(payload["meta"]["counts"]["total_mw"] - round(total, 3)) <= 0.01,
                  "meta.counts.total_mw != soma das usinas")
+    # Invariante QA: Σ by_city[nacao] == by_nation[nacao] (<= 0.01 MW).
+    for tag, entry in by_nation.items():
+        city_sum = round(sum(c["total_mw"] for c in by_city.values()
+                             if c["nation"] == tag), 3)
+        report.check(abs(city_sum - entry["total_mw"]) <= 0.01,
+                     "%s: Σ by_city %.3f != by_nation %.3f"
+                     % (tag, city_sum, entry["total_mw"]))
+    inv = payload["meta"].get("invariant") or {}
+    report.check(inv.get("ok") is True and abs(float(inv.get("difference_mw", 1.0))) <= 0.01,
+                 "meta.invariant do parque base não fecha")
+    report.check(abs(float(inv.get("total_mw", 0.0)) - total) <= 0.01,
+                 "meta.invariant.total_mw != soma das usinas")
     if conflicts:
-        report.warn("%d usinas com nação do GPPD != nação da província do atlas "
-                    "(declaradas em location_conflict, ver meta.top_pairs)" % conflicts)
+        report.warn("%d usinas com nação do GPPD != nação do atlas "
+                    "(declaradas em location_conflict, por causa)" % conflicts)
+
+
+def check_scaled_plants(report: Report) -> None:
+    payload = load("power_plants_2026_scaled.json")
+    plants = payload["plants"]
+    meta = payload["meta"]
+    capacity = load("national_capacity.json")["nations"]
+    city_by_id = {c["id"]: c for c in ec.load_cities()}
+    report.check(meta.get("data_year") == 2026, "scaled: data_year != 2026")
+    report.check(meta.get("capacity_target_years") == [2024, 2025],
+                 "scaled: capacity_target_years != [2024, 2025]")
+    report.check(meta.get("base_reference_year") == 2021,
+                 "scaled: base_reference_year != 2021")
+
+    by_city: dict[str, float] = {}
+    by_nation: dict[str, float] = {}
+    by_nation_source: dict[tuple[str, str], float] = {}
+    synthetic = 0
+    zero = 0
+    for plant in plants:
+        mw = float(plant["capacity_mw"])
+        report.check(mw >= 0, "%s: capacity_mw negativo" % plant["id"])
+        if mw == 0:
+            zero += 1
+            report.check(plant.get("scaling_note") in ("retired_by_ember_target_zero",
+                                                        "scaled_to_zero"),
+                         "%s: MW 0 sem nota de fonte desativada" % plant["id"])
+        tag = plant.get("nation")
+        source = plant.get("fuel_group")
+        if tag is not None:
+            report.check(tag in capacity or tag in meta["gaps"]["nations_without_ember"],
+                         "%s: nation %s sem matriz Ember nem lacuna" % (plant["id"], tag))
+        report.check(source in ("hydro", "solar", "wind", "coal", "gas", "oil",
+                                "nuclear", "biomass", "other"),
+                     "%s: fuel_group inválido" % plant["id"])
+        if tag:
+            by_nation[tag] = by_nation.get(tag, 0.0) + mw
+            by_nation_source[(tag, source)] = by_nation_source.get(
+                (tag, source), 0.0) + mw
+        cid = plant.get("city_id")
+        if cid:
+            report.check(cid in city_by_id, "%s: city_id inexistente" % plant["id"])
+            report.check(city_by_id.get(cid, {}).get("tag") == tag,
+                         "%s: cidade %s não é da nação %s" % (plant["id"], cid, tag))
+            by_city[tag] = by_city.get(tag, 0.0) + mw
+        if plant.get("synthetic"):
+            synthetic += 1
+            report.check(tag is not None, "%s: sintética sem nação" % plant["id"])
+            report.check(plant.get("scaling_method") == "ember_city_allocation",
+                         "%s: sintética sem método de rateio" % plant["id"])
+            report.check(bool(cid), "%s: sintética sem cidade" % plant["id"])
+            report.check(bool(plant.get("scaling_note")),
+                         "%s: sintética sem base de peso declarada" % plant["id"])
+        else:
+            report.check(plant.get("scaling_method") in
+                         ("scaled_to_ember", "unscaled"),
+                         "%s: scaling_method inválido" % plant["id"])
+            report.check("capacity_mw_gppd" in plant,
+                         "%s: sem capacity_mw_gppd" % plant["id"])
+    report.check(synthetic > 0, "scaled: nenhuma usina sintética (esperado > 0)")
+    report.check(zero >= 0, "scaled: contador de zeros inválido")
+
+    # Invariante QA: Σ by_city[nacao] == by_nation[nacao] (<= 0.01 MW).
+    for tag in sorted(set(by_city) | set(by_nation)):
+        report.check(abs(by_city.get(tag, 0.0) - by_nation.get(tag, 0.0)) <= 0.01,
+                     "%s: by_city %.3f != by_nation %.3f"
+                     % (tag, by_city.get(tag, 0.0), by_nation.get(tag, 0.0)))
+    inv = meta.get("invariant") or {}
+    report.check(inv.get("ok") is True and abs(float(inv.get("difference_mw", 1.0))) <= 0.01,
+                 "scaled: meta.invariant não fecha")
+    total_scaled = round(sum(float(p["capacity_mw"]) for p in plants), 3)
+    mw_without_nation = round(sum(float(p["capacity_mw"]) for p in plants
+                                  if not p.get("nation")), 3)
+    report.check(abs(total_scaled - sum(by_nation.values()) - mw_without_nation) <= 0.05,
+                 "scaled: total (%.3f) != by_nation (%.3f) + sem nação (%.3f)"
+                 % (total_scaled, sum(by_nation.values()), mw_without_nation))
+    report.check(abs(float(meta["counts"]["total_mw"]) - total_scaled) <= 0.01,
+                 "scaled: meta.counts.total_mw != soma das usinas")
+    report.check(abs(float(meta["counts"]["mw_without_city"]) - mw_without_nation) <= 0.01,
+                 "scaled: meta.counts.mw_without_city != soma sem nação")
+
+    # Desvio por nação x fonte vs Ember (declarado no próprio arquivo e
+    # recalculado das usinas).
+    check = meta.get("nation_source_check") or {}
+    failures = []
+    for tag, entry in capacity.items():
+        for source, target in (entry.get("by_source") or {}).items():
+            key = "%s/%s" % (tag, source)
+            row = check.get(key)
+            report.check(row is not None,
+                         "scaled: falta nation_source_check %s" % key)
+            if row is None:
+                continue
+            if target is None:
+                report.check(row.get("target_mw") is None,
+                             "%s: alvo null mas target_mw preenchido" % key)
+                continue
+            scaled = round(by_nation_source.get((tag, source), 0.0), 3)
+            report.check(abs(scaled - float(target)) <= 0.01,
+                         "%s: usinas somam %.3f MW vs Ember %.3f MW"
+                         % (key, scaled, target))
+            report.check(row.get("ok") is True,
+                         "%s: nation_source_check.ok falso" % key)
+            if not row.get("ok"):
+                failures.append(key)
+    report.check(not failures, "scaled: %d falhas em nation_source_check: %s"
+                 % (len(failures), failures[:8]))
+    report.check(not meta.get("gaps", {}).get("nation_source_failures"),
+                 "scaled: meta.gaps.nation_source_failures não está vazio")
+
+    # Óleo: não escalonado, porque a Ember não separa.
+    base = load("power_plants_base_2021_gppd.json")["by_nation"]
+    for tag, entry in base.items():
+        base_oil = float((entry.get("by_fuel") or {}).get("oil") or 0.0)
+        row = check.get("%s/oil" % tag)
+        if row is not None and row.get("target_mw") is None:
+            report.check(abs(float(row.get("scaled_mw", 0.0)) - base_oil) <= 0.01,
+                         "%s: óleo escalonado sem alvo Ember" % tag)
 
 
 def check_renewables(report: Report) -> None:
     payload = load("renewable_potential.json")
+    meta = payload["meta"]
+    solar_wind = meta.get("solar_wind") or {}
+    report.check((solar_wind.get("license") or {}).get("commercial_ok") is True,
+                 "renewable_potential: licença solar/eólica não comercial")
+    source_text = " ".join(str(solar_wind.get(key, "")) for key in
+                           ("solar_source", "wind_source"))
+    report.check("WorldClim" not in source_text,
+                 "renewable_potential: solar/eólico ainda cita WorldClim (D-115c)")
+    hydro_meta = meta.get("hydro") or {}
+    hydro_text = " ".join(str(hydro_meta.get(key, "")) for key in
+                          ("precip", "pet", "relief"))
+    report.check("WorldClim" not in hydro_text,
+                 "renewable_potential: hídrico ainda cita WorldClim (D-115c)")
+    report.check("CHIRPS" in str(hydro_meta.get("precip", "")),
+                 "renewable_potential: hídrico sem CHIRPS")
+    report.check("CGIAR" in str(hydro_meta.get("pet", "")),
+                 "renewable_potential: hídrico sem PET CGIAR")
     provinces = payload["by_province"]
     report.check(len(provinces) > 15000, "renewable_potential: poucas províncias")
     bad_solar = bad_wind = 0
     for entry in provinces:
         solar = entry.get("solar") or {}
         wind = entry.get("wind") or {}
+        for label, block in (("solar", solar), ("wind", wind)):
+            if not block:
+                continue
+            method = block.get("sample_method")
+            report.check(method in ("api_point", "nearest_cached_province"),
+                         "província %s/%s: sample_method inválido (%s)"
+                         % (entry.get("province_id"), label, method))
+            if method == "nearest_cached_province":
+                report.check(block.get("sample_source_pid") is not None and
+                             block.get("sample_distance_km") is not None,
+                             "província %s/%s: fallback sem origem/distância declarada"
+                             % (entry.get("province_id"), label))
         solar_value = solar.get("kwh_m2_day_mean")
         wind_value = wind.get("m_s_mean")
         if solar_value is not None and not (0.0 < solar_value < 9.0):
             bad_solar += 1
-        if wind_value is not None and not (0.0 <= wind_value < 20.0):
+        if wind_value is not None and not (0.0 < wind_value < 20.0):
             bad_wind += 1
         hydro = entry.get("hydro") or {}
         raw = hydro.get("raw_index")
         report.check(raw is None or raw >= 0.0,
                      "província %s: raw_index negativo" % entry.get("province_id"))
+        if hydro.get("confidence") == "no_data":
+            report.check(hydro.get("raw_index") == 0.0,
+                         "província %s: no_data com raw_index != 0" % entry.get("province_id"))
     report.check(bad_solar == 0, "%d províncias com solar fora da faixa física" % bad_solar)
     report.check(bad_wind == 0, "%d províncias com vento fora da faixa física" % bad_wind)
     cities = payload["by_city"]
     for city_id, entry in list(cities.items())[:50]:
-        months = (entry.get("solar") or {}).get("monthly_kwh_m2_day") or []
+        solar = entry.get("solar") or {}
+        months = solar.get("monthly_kwh_m2_day") or []
         report.check(len(months) == 12, "%s: série solar mensal != 12" % city_id)
+        wind = entry.get("wind") or {}
+        if wind and wind.get("monthly_available") is False:
+            report.check(wind.get("monthly_m_s") is None,
+                         "%s: vento sem série mensal mas com monthly_m_s" % city_id)
+    report.check((meta.get("counts") or {}).get("provinces_outside_chirps", 0) > 0,
+                 "renewable_potential: lacuna CHIRPS (>60N) não declarada")
 
 
 def check_hydro(report: Report) -> None:
@@ -333,6 +555,7 @@ def main() -> int:
     check_sources(report, args.require_commercial)
     check_national_capacity(report)
     check_plants(report)
+    check_scaled_plants(report)
     check_renewables(report)
     check_hydro(report)
     check_access(report)
