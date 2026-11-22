@@ -50,7 +50,12 @@ OUT_PATH = os.path.join(ec.DEFS, "energy", "national_demand.json")
 
 GAME_SOURCES = ("hydro", "solar", "wind", "coal", "gas", "oil", "nuclear",
                 "biomass", "other")
-# Mesmo mapa do E1 (`build_national_capacity.py`): o oleo nao e separado.
+# Correcao D-115: a Ember nao publica "Oil" separado, mas separa
+# "Other fossil" de "Other renewables". O nucleo TEM grupo oleo proprio, entao
+# `Other fossil` ancora o oleo e `Other renewables` (geotermia/mare) ancora
+# `other`. Sem isso a geracao fossil ficava no grupo `other` e o parque de oleo
+# do GPPD gerava POR CIMA do alvo, contando duas vezes (IRN, GBR, EGY...).
+# A quebra crua fica preservada em `other_generation_twh` de cada nacao.
 EMBER_TO_GAME = {
     "Hydro": "hydro",
     "Solar": "solar",
@@ -59,7 +64,7 @@ EMBER_TO_GAME = {
     "Gas": "gas",
     "Nuclear": "nuclear",
     "Bioenergy": "biomass",
-    "Other fossil": "other",
+    "Other fossil": "oil",
     "Other renewables": "other",
 }
 LOW_COVERAGE_KWH_DAY = 1.37
@@ -158,6 +163,8 @@ def build_nation(tag: str, iso3: str, years: dict, capacity: dict | None,
     sum_sources = round(sum(value for value in generation.values()
                             if value is not None), 4)
     total_value = round(total, 4) if total is not None else None
+    other_fossil = row.get("Other fossil")
+    other_renewables = row.get("Other renewables")
     net_imports = row.get("Net imports")
     per_capita = None
     if demand is not None and population > 0.0:
@@ -176,6 +183,12 @@ def build_nation(tag: str, iso3: str, years: dict, capacity: dict | None,
                                     else ("sum_sources" if year is not None
                                           else None)),
         "generation_twh": generation,
+        "other_generation_twh": {
+            "fossil": (round(other_fossil, 4)
+                       if other_fossil is not None else None),
+            "renewables": (round(other_renewables, 4)
+                           if other_renewables is not None else None),
+        },
         "generation_sum_twh": sum_sources if year is not None else None,
         "generation_check_delta_twh": (
             round(sum_sources - total_value, 4)
@@ -286,8 +299,9 @@ def main() -> int:
                 "'Demand' e 'Total generation'; senao o ultimo ano com as duas "
                 "series (sem interpolacao/extrapolacao). demand_twh = serie "
                 "'Demand'; generation_twh = 'Generation (TWh)' por fonte no "
-                "mesmo ano (Oil nao existe separado: 'other fossil' entra em "
-                "other, como no E1); net_imports_twh = 'Net imports' "
+                "mesmo ano (correcao D-115: 'Other fossil' ancora oil, "
+                "'Other renewables' ancora other; a quebra crua fica em "
+                "other_generation_twh); net_imports_twh = 'Net imports' "
                 "(positivo = importador). O nucleo usa demanda_base = "
                 "demand_twh x 1e6 / 365 MWh/dia x fracao simulada, e calibra o "
                 "fator de capacidade por nacao x fonte para gerar "
@@ -335,9 +349,11 @@ def main() -> int:
                     zero_park_sources[:20],
             },
             "gaps": {
-                "oil": ("a Ember nao separa geracao de oleo; o parque de oleo "
-                        "do GPPD fica sem ancora propria e mantem o fator de "
-                        "capacidade global declarado (D-115d)."),
+                "oil": ("a Ember nao publica 'Oil' separado; 'Other fossil' "
+                        "(oleo e outros fosseis) ancora o grupo oil e "
+                        "'Other renewables' ancora other (correcao D-115). O "
+                        "oleo nao e dado medido: e o bucket fossil da Ember, "
+                        "declarado em other_generation_twh.fossil."),
                 "zero_generation": ("geracao publicada = 0,0 com parque > 0 "
                                     "zera a disponibilidade daquela fonte "
                                     "(dado, nao ausencia)."),
