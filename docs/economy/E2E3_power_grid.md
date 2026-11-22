@@ -686,29 +686,165 @@ só quando há fluxo) — declarado, não corrigido (é do C++, fora desta rodad
 **O que NÃO foi tocado:** VOLL, preço de escassez, racionamento, insatisfação,
 perdas, limite do portão (0,975), a regra de comércio da E5 e o núcleo C++.
 
-## 9. Dívidas declaradas
+**Atualização D-120 (§9):** a tarifa de varejo (E7) e o contrato de suprimento do
+ano-base levam o mesmo mundo a **95/179** com **3 extras** (CIV, PRK, AUS) — a
+classificação e a dívida do p50 estão em §9.5/§9.6.
+
+## 9. E7 (D-120) — tarifa de varejo e contrato de suprimento do ano-base
+
+Evidência: `docs/economy/perf/e2e3_food_e7_365.json`; a repetição
+`e2e3_food_e7_365c.json` é a mesma rodada (mesmo `trajectory_sha256`
+`057ebb80…`, único campo diferente `wall_s` 298,83 → 299,802).
+
+### 9.1 Tarifa de varejo por rede
+
+O consumidor passa a pagar a **tarifa**, não o spot do dia:
+
+    tarifa = atacado_médio ÷ (1 − retail_network_share) + repasse_de_escassez
+
+- **Atacado médio**: custo ponderado da energia entregue à rede no dia (geração
+  doméstica ao custo de mérito + importado ao preço de fronteira), suavizado por
+  média móvel de `retail_scarcity_days` = **30 d**.
+- **Repasse de escassez**: `max(0, spot − atacado) × fração NÃO servida`, também
+  suavizado. Só incide sobre o déficit (um vão de 0,05 % não multiplica a conta
+  inteira, o defeito do §8.6) e **parte de zero** — a média móvel não cobra o pico
+  do primeiro dia.
+- **Parcela de rede/tributos**: `retail_network_share` = **0,55**, declarado pela
+  composição pública da tarifa (Eurostat `nrg_pc_204` e IEA *Energy Prices and
+  Taxes*: rede + tributos ≈ 45–60 % da tarifa residencial da UE). Não é um número
+  por país: o dado por rede é o custo médio de geração da própria rede, que varia
+  com o parque.
+- **Circulação do dinheiro** (`phase_power_settle`): famílias, firmas, serviços e
+  governo pagam a tarifa; o gerador recebe o **atacado médio**; a diferença (rede
+  + tributos + repasse) vai ao caixa do Estado **pelo caixa que já existe**.
+  Conta que o caixa não cobre **não vira dívida**: é perda do setor. Soma zero,
+  `power_cash` dentro de `money_total`, invariantes da C1 fecham.
+- **Intocados**: o spot de escassez, o VOLL, o racionamento, a insatisfação e as
+  perdas. O spot continua publicado e é o que alimenta VOLL/diagnóstico; a tarifa
+  é só a conta do consumidor.
+
+### 9.2 Contrato de suprimento do ano-base (comércio bruto)
+
+- Dado novo `links[].contract_mw` (`tools/data/energy/build_interconnects.py`):
+  fluxo **bruto** do importador no ano-base Ember (`net_imports_twh × 1e6/8760`
+  MW), rateado entre as linhas dele **proporcional à capacidade** (único
+  repartidor público por par) e limitado pela capacidade. Pares em que os dois
+  lados importam usam a direção **declarada** no documento do par (MDA–ROU:
+  EBRD/EIB/IEA; XKX–ALB: OST/JSDEWES; XKX–MKD: SEE CAO).
+- No despacho, o contrato é entregue **antes** da demanda marginal do exportador
+  (carga = demanda + contratos), até a capacidade. O alvo do dia é limitado ao
+  **déficit esperado do importador** (demanda − disponibilidade local do próprio
+  parque), então não se gera energia ociosa; se o exportador está curto, o
+  contrato cai **proporcionalmente** e a própria demanda divide a escassez na
+  mesma proporção.
+- Preço do contrato: **custo médio de atacado** do exportador ÷ (1 − perda da
+  linha) — não o spot marginal do dia. A **E5 continua por cima**: a sobra spot é
+  vendida depois do contrato.
+- Resultado no ano: 100 ligações aplicadas, **20 com fluxo spot** e importado
+  total de **62,84 TWh** (0,615 % da demanda; +8,0 TWh vs a D-119 — o contrato).
+
+### 9.3 Fontes
+
+| Item | Fonte | Uso |
+|---|---|---|
+| Parcela de rede + tributos | Eurostat `nrg_pc_204`; IEA *Energy Prices and Taxes* | 45–60 % → `retail_network_share` 0,55 |
+| Fluxo bruto do contrato | Ember yearly (`net_imports_twh`) | MW do importador rateado por capacidade |
+| Capacidade por par | Ember × fronteira terrestre; `meta.public_capacity_links` (EBRD/EIB/IEA, OST/JSDEWES, SEE CAO) | teto do contrato |
+| Custo de geração e combustível | mercado do próprio sim (D-116/D-118) | atacado médio |
+| Perda da linha | piso técnico de T&D já existente (`loss_floor_pct`) | preço de fronteira do contrato |
+
+### 9.4 Medição 365 d (mesmo controle da D-119)
+
+| Métrica | Controle (sem energia) | D-119 | **D-120 (E7)** |
+|---|---:|---:|---:|
+| Falências por entidade | 2 | 2 | **2** (as duas minas PRI-PON) |
+| Portão de comida (<0,975) | 93/179 | 102 | **95** |
+| Extras vs controle | — | 9 | **3** (CIV, PRK, AUS) |
+| Conta de energia / PIB (agregado) | — | 2,65 % | **1,248 %** |
+| p50 / p90 / máx. da conta/PIB | — | 0,633 / 10,01 / — | **0,658 / 3,52 / 24,35 % (URY)** |
+| % servida (mínima) | — | 0,9962 | **0,99610** |
+| Ligações aplicadas (com fluxo spot) | — | 100 (58) | **100 (20)** |
+| Importado no ano | — | 54,84 TWh | **62,84 TWh (0,615 %)** |
+| Spot médio ponderado / tarifa (dia 365) | — | 0,0178–0,0194 | **0,1509 / 0,0304 XGS/MWh** |
+| Violações / travados / drift | 0 / 0 / — | 0 / 0 / 0,0055 | **0 / 0 / 0,005545** |
+
+O `average_price` do JSON (0,1509 XGS/MWh) é o spot médio ponderado do ano
+(campo legado; a conta do consumidor passou a ser `tariff`, 0,0304 no dia 365).
+O importado sobe 8,0 TWh porque o contrato é uma camada de **entrega** acima da
+E5; a fração servida e o racionamento não mudaram (a mesma rede física).
+
+### 9.5 Classificação das três nações extras do portão
+
+| Nação | comida (30 d) | servida | dias racionando | preço/tarifa | Classe |
+|---|---:|---:|---:|---:|---|
+| CIV | 0,9722 | 0,9125 | 365 | 0,0330 | **(a) consequência real** — racionamento físico (D-116) |
+| PRK | 0,8409 | 0,8328 | 365 | 1,3733 | **(a) consequência real** — déficit documentado (EIA/RFA/AsiaPress), modelo mais brando |
+| AUS | 0,9344 | 1,000 | 0 | 0,0178 | **(b) margem pré-existente** — energia 100 % servida, preço normal; o valor é o mesmo da D-119 (0,934) |
+
+As **seis nações que deixaram o portão em relação à D-119** — ISL, MDA, XKX,
+LBY, ATG e KNA — têm em comum a conta cobrada pela **tarifa** (e, em MDA/XKX, o
+contrato). O caso extremo era ISL: o spot no teto sobre 100 % da carga dava
+884 % do PIB (§8.6); com a tarifa, o consumidor paga o custo médio e o prêmio só
+sobre o déficit, e ISL sai do portão. Limite de medição declarado: o runner só
+publica o valor de quem está **abaixo** de 0,975, então a separação fina das seis
+não é medida (mesma limitação do §8.6).
+
+### 9.6 Dívida declarada e portão pendente
+
+- **Portão de comida 95/179 contra teto 93: REPROVA por 2 nações.** Duas têm causa
+  declarada (a) — CIV e PRK, racionamento físico 365 d — e a terceira (AUS) é
+  margem (b) já presente sem energia. **A aceitação do portão 95/179 está
+  PENDENTE DE DECISÃO DO DONO.** Nenhum limite, consequência ou preço foi
+  amolecido; a margem de ±3 nações do §8.6 continua valendo.
+- **p50 da conta/PIB 0,658 % (agregado 1,248 %, p90 3,52 %) abaixo da faixa de
+  referência 1,5–4,0 %.** É **dívida de calibração da escala de preços da D-118**
+  (conversão XGS/MWh ↔ PIB simulado), não do E7: a tarifa só levou a conta para o
+  custo médio e o agregado caiu de 2,65 % para 1,25 %. **Não se mexe agora**
+  (decisão do dono). O §8.5 já mostra por que um fator uniforme não fecha
+  mediana e agregado ao mesmo tempo (agregado/p50 = 1,90 < 4/1,5 = 2,67).
+
+### 9.7 Save v37 e testes
+
+- Save **v37 aditivo**: por cidade `average_cost`, `tariff`, `scarcity_pass`; por
+  rede `average_cost`, `tariff`, `scarcity_pass`, `retail_margin`; por ligação
+  `contract_importer/exporter/mw/flow_mwh/sent_mwh/price/value`. Save v36 carrega
+  com as chaves ausentes = 0 (a tarifa do próximo tick nasce do atacado derivado
+  — nada inventado para trás); round-trip v37 bit-exato coberto pelo
+  `e2e3_power_test`.
+- `tools/e7_tariff_test.gd`: conservação/soma zero com a tarifa, caso ISL (déficit
+  0,05 %, spot no teto, tarifa perto do custo médio), racionamento da D-116
+  intacto e contrato (entrega, queda proporcional, save v37).
+- `e2e3_power_test.gd` e `e5_interconnect_test.gd` em save v37.
+
+## 10. Dívidas declaradas
 
 - Escala monetária da energia: **resolvida na unidade** (D-118, §8.5) — parâmetros em
-  salário-dia, âncora derivada do sim no seed e gravada no save. Segue aberto o **p50
-  abaixo de 1,5 %** (margem de varejo/T&D/tributo — E7) e o portão de comida
-  **102/179** (9 extras; classificação em §8.6 — nenhum bug de dado: são canais (a)
-  racionamento físico e (b) regra/margem).
-- **Portão de comida tem margem de ±3 nações** (§8.6): as três linhas novas
+  salário-dia, âncora derivada do sim no seed e gravada no save. A **margem de varejo
+  (E7, §9)** entrou e a conta passou a ser cobrada pela tarifa; segue aberto o **p50
+  0,658 % e o agregado 1,248 % abaixo da faixa 1,5–4,0 %** — **dívida de calibração
+  da escala de preços da D-118**, declarada e não mexida nesta rodada. O portão de
+  comida está em **95/179 (3 extras, §9.5)** e a **aceitação está pendente de decisão
+  do dono**.
+- **Portão de comida tem margem de ±3 nações** (§8.6/§9.4): as três linhas novas
   entregam só 36 GWh (0,04 % do importado) e ainda assim moveram CIV/KNA/SUR,
-  porque o mundo diverge na 6ª decimal. Comparar 102 com 93 não separa energia de
+  porque o mundo diverge na 6ª decimal. Comparar 95 com 93 não separa energia de
   ruído; o aceite precisa de banda, não de número exato.
 - `importer_short_days` do runner conta só dias com fluxo (o núcleo publica o
   importador só quando há fluxo): a coluna não mede o déficit do importador. Correção
-  exige o núcleo publicar o déficit nacional do dia — fora desta rodada.
-- Canal de ATG/AUS (comida 0,533/0,934 com energia 100 % servida): o A/B `--power=0`
-  isola o bloco de energia, mas não separa renda de disponibilidade de comida; falta
-  um diagnóstico de comida por nação (importação, estoque, transporte) no runner.
+  exige o núcleo publicar o déficit nacional do dia — fora desta rodada. Vale também
+  para o contrato: o alvo do dia já é limitado ao déficit, mas o runner não publica a
+  queda por par.
+- Canal de AUS (comida 0,934 com energia 100 % servida e preço normal): o A/B
+  `--power=0` isola o bloco de energia, mas não separa renda de disponibilidade de
+  comida; falta um diagnóstico de comida por nação (importação, estoque, transporte)
+  no runner. ATG/KNA/LBY deixaram o portão na D-120 pela conta da tarifa, mas o valor
+  deles acima de 0,975 não é publicado (limite de medição).
 - Comércio da E5: só compra de vizinho com **capacidade disponível não despachada**.
-  Em ano-base em que todos os vizinhos importam (Kosovo), a linha existe e não vende
-  (§8.6); mudar isso é regra de núcleo, não dado.
+  A E7 acrescentou o **contrato bruto** do ano-base (§9.2) por cima da sobra; em
+  ano-base em que todos os vizinhos importam (Kosovo), a linha sem contrato continua
+  existindo e sem venda spot — mudar isso é regra de núcleo, não dado.
 - Vento sem série mensal (GWA não publica) — fator anual, declarado.
 - `oil: null` na matriz Ember — capacidade de óleo não publicada por país (D-115(d)).
 - Conexão parcial é um limite de troca por cidade (não se modela fluxo físico entre
   subestações); interligação internacional (E5) e obra de redução de perdas ainda não.
-- E4 detalhada (estratos/indústria por bem), E6 (mapa) e E7 (distribuidora) fora desta
-  fase.
+- E4 detalhada (estratos/indústria por bem) e E6 (mapa) fora desta fase.
