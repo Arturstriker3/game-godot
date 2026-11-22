@@ -150,6 +150,30 @@ func _power_sample(day: int, power: Dictionary) -> Dictionary:
 	}
 
 
+## Fração simulada por nação (D-116): população simulada ÷ população exibida da
+## região modelada, com o mesmo clamp [0,1] de `sim/power.cpp`. Parque, demanda
+## e capacidade de linha são multiplicados por ela; publicá-la ao lado do
+## servido deixa o diagnóstico auditável (déficit × fração simulada).
+func _nation_scale(sim: Object) -> Dictionary:
+	var sim_pop: Dictionary = {}
+	var shown_pop: Dictionary = {}
+	var status: Dictionary = sim.get_status()
+	for city_row: Dictionary in (status.get("cities", []) as Array):
+		var tag := String(city_row.get("nation", ""))
+		var pop := float(city_row.get("population", 0.0))
+		var sim_p := float(city_row.get("simulation_population", 0.0))
+		if tag.is_empty() or pop <= 0.0 or sim_p <= 0.0:
+			continue
+		sim_pop[tag] = float(sim_pop.get(tag, 0.0)) + sim_p
+		shown_pop[tag] = float(shown_pop.get(tag, 0.0)) + pop
+	var out: Dictionary = {}
+	for tag: Variant in sim_pop:
+		var shown := float(shown_pop.get(tag, 0.0))
+		out[tag] = clampf(float(sim_pop[tag]) / shown, 0.0, 1.0) \
+			if shown > 0.0 else 1.0
+	return out
+
+
 ## PARTE E (D-116) — digest do ano: preço médio ponderado pelo servido, % de
 ## demanda servida, racionamento (pico e nações no fecho), conexão por cidade e
 ## geração por fonte. O top 5 por demanda vem com a capacidade da matriz Ember
@@ -214,6 +238,12 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 	# de déficit de capacidade/dado.
 	var anchors: Dictionary = _ember_demand()
 	var ember: Dictionary = _ember_capacity()
+	# Fração simulada por nação (D-116): a MESMA razão que `sim/power.cpp` usa
+	# para escalar parque, demanda e linhas (população simulada ÷ população
+	# exibida da região modelada). Publicada para o diagnóstico ser auditável:
+	# sem ela não se separa "déficit" de "fração simulada".
+	var scale_rows: Dictionary = _nation_scale(sim)
+	var span_days := float(maxi(1, samples.size()))
 	for row5: Dictionary in by_nation:
 		var tag5 := String(row5["nation"])
 		var anchor: Variant = anchors.get(tag5, null)
@@ -233,6 +263,26 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 			row5["ember_capacity_year"] = int(cap_row.get("year", 0))
 			row5["ember_total_mw"] = float(cap_row.get("total_mw", 0.0))
 			row5["ember_by_source"] = cap_row.get("by_source", {})
+		# Escala e comparação na unidade do modelo (D-116): a Ember do ano-base
+		# entra multiplicada pela fração simulada, a mesma do parque e da
+		# demanda. Sem isso, "servido baixo" e "fração simulada baixa" se
+		# confundem — foi o que aconteceu no QA t82 (32-35% era o fator de
+		# capacidade do parque, não a fração servida).
+		var row_scale := float(scale_rows.get(tag5, 1.0))
+		row5["model_scale"] = row_scale
+		var gen5: Variant = row5.get("ember_generation_twh")
+		if typeof(gen5) == TYPE_FLOAT or typeof(gen5) == TYPE_INT:
+			var gen_model := float(gen5) * 1000000.0 * row_scale
+			row5["ember_generation_mwh_model"] = gen_model
+			row5["served_vs_ember_generation"] = (
+				float(row5["served_mwh"]) * span_days / gen_model) \
+				if gen_model > 0.0 else 0.0
+		var dem5: Variant = row5.get("ember_demand_twh")
+		if typeof(dem5) == TYPE_FLOAT or typeof(dem5) == TYPE_INT:
+			var dem_model := float(dem5) * 1000000.0 * row_scale / 365.0
+			row5["demand_vs_ember_demand"] = (
+				float(row5["demand_mwh"]) / dem_model) \
+				if dem_model > 0.0 else 0.0
 	var top: Array = by_nation.slice(0, 5)
 	var city_total := connected + partial + isolated
 	# Custo de energia da indústria por unidade de valor: as cidades com
