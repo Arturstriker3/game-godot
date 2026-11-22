@@ -708,6 +708,78 @@ void SimCore::phase_power() {
 		return;
 	}
 	const int month = month_of_day(ws.day);
+	// Sazonalidade (E2/E3): a geracao ANUAL de cada fonte e ancorada na Ember,
+	// mas a solar usa o PVOUT mensal. Sem deslocar as fontes despachaveis, o
+	// inverno (PVOUT baixo) vira blecaute mesmo com o ano fechando. O fator
+	// abaixo mantem a media anual = 1 e cobre o residuo mensal da solar; nao
+	// muda VOLL, preco de escassez, racionamento, insatisfacao nem perdas.
+	// Nuclear, hidro e vento ficam de fora (baseload/sem serie mensal).
+	struct SeasonShape {
+		double solar_year = 0.0;
+		double dispatch_year = 0.0;
+		std::array<double, kPowerMonthCount> solar_month{};
+		std::array<double, kPowerMonthCount> factor{};
+		bool has_factor = false;
+	};
+	std::map<std::string, SeasonShape> season;
+	for (const PowerPlant& plant : ws.power_plants) {
+		if (plant.city_index < 0
+				|| plant.city_index >= static_cast<int>(city_count)) {
+			continue;
+		}
+		const std::size_t index = static_cast<std::size_t>(plant.city_index);
+		const City& city = ws.cities[index];
+		const PowerCityState& state = ws.power_cities[index];
+		double cf = std::clamp(params.cf[plant.fuel], 0.0, 1.0);
+		if (plant.fuel == POWER_SOLAR) {
+			double sum = 0.0;
+			int months = 0;
+			for (int m = 0; m < kPowerMonthCount; ++m) {
+				if (state.solar_month[m] > 0.0) {
+					sum += state.solar_month[m];
+					months += 1;
+				}
+			}
+			if (months > 0) {
+				cf = sum / static_cast<double>(months);
+			}
+		}
+		const double scale = std::clamp(state.cf_scale[plant.fuel], 0.0, 5.0);
+		const double annual = std::max(0.0, plant.mw)
+			* std::clamp(cf * scale, 0.0, 1.0) * kPowerHoursPerYear;
+		SeasonShape& shape = season[city.nation];
+		if (plant.fuel == POWER_SOLAR) {
+			shape.solar_year += annual;
+			for (int m = 0; m < kPowerMonthCount; ++m) {
+				shape.solar_month[m] += std::max(0.0, plant.mw)
+					* std::clamp(state.solar_month[m], 0.0, 1.0);
+			}
+		} else if (plant.fuel != POWER_NUCLEAR
+				&& power_fuel_is_thermal(plant.fuel)) {
+			shape.dispatch_year += annual;
+		}
+	}
+	for (auto& entry : season) {
+		SeasonShape& shape = entry.second;
+		double solar_sum = 0.0;
+		for (int m = 0; m < kPowerMonthCount; ++m) {
+			solar_sum += shape.solar_month[m];
+		}
+		if (shape.dispatch_year <= 0.0 || shape.solar_year <= 0.0
+				|| solar_sum <= 0.0) {
+			for (int m = 0; m < kPowerMonthCount; ++m) {
+				shape.factor[m] = 1.0;
+			}
+			continue;
+		}
+		const double ratio = shape.solar_year / shape.dispatch_year;
+		for (int m = 0; m < kPowerMonthCount; ++m) {
+			const double share = shape.solar_month[m] / solar_sum;
+			shape.factor[m] = std::clamp(
+				1.0 + ratio * (1.0 - 12.0 * share), 0.0, 5.0);
+		}
+		shape.has_factor = true;
+	}
 	struct PlantDay {
 		double avail_mw = 0.0;
 		double cost = 0.0;
@@ -737,6 +809,15 @@ void SimCore::phase_power() {
 		const double cf_scale = std::clamp(state.cf_scale[plant.fuel], 0.0, 5.0);
 		day.avail_mw = std::max(0.0, plant.mw)
 			* std::clamp(cf * cf_scale, 0.0, 1.0);
+		if (plant.fuel != POWER_SOLAR && plant.fuel != POWER_NUCLEAR
+				&& power_fuel_is_thermal(plant.fuel)) {
+			const auto found = season.find(city.nation);
+			if (found != season.end() && found->second.has_factor) {
+				day.avail_mw = std::min(
+					day.avail_mw * found->second.factor[month],
+					std::max(0.0, plant.mw));
+			}
+		}
 		double fuel_cost = 0.0;
 		if (power_fuel_is_thermal(plant.fuel)
 				&& params.fuel_t_per_mwh[plant.fuel] > 0.0) {

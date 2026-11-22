@@ -5,6 +5,11 @@
     "kind": "model",
     "note": "Espelho declarado dos defaults de sim/power.h (PowerParams). Nenhum valor aqui e dado observado: sao PARAMETROS DE MODELO, calibraveis no laboratorio. Os DADOS (acesso a eletricidade, perdas T&D, parque instalado, potencial e PVOUT mensal) vem de access_losses.json, power_plants_2026_scaled.json, renewable_potential.json e hydro_potential.json, com a fonte publica de cada um no proprio arquivo.",
     "verified_by": "tools/e2e3_power_test.gd (confere o espelho contra o binario)",
+    "seasonal_dispatch": {
+      "method": "a disponibilidade das fontes termicas despachaveis (coal, gas, oil, biomass, other) segue o residuo mensal da solar (PVOUT): fator = 1 + (solar_ano/termica_ano) * (1 - 12*share_solar_mes), com media anual 1. A geracao anual continua ancorada na Ember; o inverno de PVOUT baixo e coberto pelas termicas, como no despacho real.",
+      "excluded": "nuclear (baseload), hidro e vento (sem serie mensal publica no dado).",
+      "not_changed": "VOLL, preco de escassez, racionamento, insatisfacao e perdas NAO mudaram (E2/E3)."
+    },
     "demand_calibration": {
       "method": "OLS log-log da demanda Ember por pessoa/dia contra o indice de renda (PIB PPP pc relativo a media ponderada pela populacao), com o acesso e as perdas T&D do proprio dado descontados - sao os termos que a formula do nucleo (sim/power.cpp) aplica: demanda = ancora * indice^expoente * acesso / (1 - perdas).",
       "source_id": "ember_yearly",
