@@ -43,6 +43,9 @@ const HEAT_WIDTH := 500
 const HEAT_HEIGHT := 250
 const HEAT_RADIUS := 7
 const HEAT_ALPHA := 0.62
+## Fator do calor quando ele entra SOZINHO porque só uma fonte está filtrada:
+## o mapa continua legível (o calor é pano de fundo, não assunto).
+const HEAT_AUTO_FACTOR := 0.55
 const HEAT_COLORS := {
 	"solar": Color("#E8B028"),
 	"wind": Color("#6F8F8C"),
@@ -51,6 +54,8 @@ const HEAT_COLORS := {
 
 var _active := false
 var _overlays: Dictionary = {"grid": false, "solar": false, "wind": false, "hydro": false}
+## Fonte cujo calor foi ligado pelo filtro de fonte única (entra discreto).
+var _auto_heat := ""
 var _status: Dictionary = {}
 var _city_px: Dictionary = {}
 var _city_nation: Dictionary = {}
@@ -123,15 +128,23 @@ func set_active(active: bool) -> void:
 
 
 ## Toggles da legenda. `grid` = cidades + interconexões; solar/wind/hydro =
-## camada de calor do potencial. Qualquer chave ausente fica desligada.
+## camada de calor do potencial. Qualquer chave ausente fica desligada. `auto`
+## (opcional) nomeia a fonte cujo calor foi ligado pelo filtro de fonte única:
+## ela desenha em opacidade baixa para não tapar os marcadores.
 func set_overlays(overlays: Dictionary) -> void:
 	for kind in ["grid", "solar", "wind", "hydro"]:
 		_overlays[kind] = bool(overlays.get(kind, false))
+	_auto_heat = String(overlays.get("auto", ""))
 	_refresh_visibility()
 
 
 func overlays() -> Dictionary:
 	return _overlays.duplicate()
+
+
+## Fonte com calor automático ("" = nenhum). O teste confere este estado.
+func auto_heat() -> String:
+	return _auto_heat
 
 
 ## Status de energia do dia: pinta o estado das cidades e o fluxo das linhas.
@@ -155,6 +168,11 @@ func _refresh_visibility() -> void:
 		var mesh: MeshInstance3D = _potential_meshes.get(kind)
 		if mesh != null:
 			mesh.visible = enabled
+			var material := mesh.material_override as StandardMaterial3D
+			if material != null:
+				# Calor automático de fonte única: mesma textura, opacidade baixa.
+				var alpha := HEAT_AUTO_FACTOR if String(kind) == _auto_heat else 1.0
+				material.albedo_color = Color(1.0, 1.0, 1.0, alpha)
 
 
 # --- Redes -------------------------------------------------------------------

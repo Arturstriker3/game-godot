@@ -213,6 +213,51 @@ func _run() -> void:
 			visible += 1
 	_check(visible == 3, "calor visível nos toggles ligados")
 
+	# 9. Legibilidade: cor por classe, piso de px e calor automático de fonte
+	#    única (revisão do chefe das capturas e6_capture_*).
+	var colors := {}
+	for class_key in ["excellent", "good", "medium", "weak"]:
+		var info := _class_visual(layer, class_key)
+		_check(not info.is_empty(), "classe %s tem marcador para medir" % class_key)
+		if info.is_empty():
+			continue
+		var color: Color = info.get("color", Color.WHITE)
+		_check(not colors.has(color), "cor da classe %s é distinta" % class_key)
+		colors[color] = class_key
+		_check(float(info.get("min_px", 0.0)) >= 22.0,
+				"classe %s: piso >= 22 px (%.0f)"
+				% [class_key, float(info.get("min_px", 0.0))])
+	var excellent := _class_visual(layer, "excellent")
+	var weak := _class_visual(layer, "weak")
+	_check(float(excellent.get("min_px", 0.0)) > float(weak.get("min_px", 0.0)),
+			"excelente lê maior que fraco (%.0f > %.0f)"
+			% [float(excellent.get("min_px", 0.0)),
+					float(weak.get("min_px", 0.0))])
+	layer.set_energy_zoom_band(0)
+	var aggregate_min := 0.0
+	for index in layer.energy_marker_count():
+		var visual: Dictionary = layer.energy_marker_visual(index)
+		if bool(visual.get("aggregate", false)):
+			aggregate_min = float(visual.get("min_px", 0.0))
+			break
+	_check(aggregate_min > float(weak.get("min_px", 0.0)),
+			"agregado de nação >= sítio fraco (%.0f > %.0f)"
+			% [aggregate_min, float(weak.get("min_px", 0.0))])
+	layer.set_energy_zoom_band(2)
+
+	grid.set_overlays({"solar": true, "auto": "solar"})
+	_check(grid.auto_heat() == "solar", "calor automático registra a fonte")
+	var solar_mesh: MeshInstance3D = potential.get("solar")
+	var solar_material := solar_mesh.material_override as StandardMaterial3D
+	_check(solar_material != null
+			and solar_material.albedo_color.a < 0.99,
+			"calor automático entra em opacidade baixa (%.2f)"
+			% (solar_material.albedo_color.a if solar_material != null else 1.0))
+	grid.set_overlays({"solar": true})
+	_check(grid.auto_heat().is_empty() and solar_material != null
+			and solar_material.albedo_color.a > 0.99,
+			"calor manual volta à opacidade cheia")
+
 	print("")
 	if _failures.is_empty():
 		print("E6 OK: todos os checks passaram")
@@ -222,6 +267,17 @@ func _run() -> void:
 		for failure in _failures:
 			print("  - " + failure)
 		quit(1)
+
+
+## Primeiro marcador de uma CLASSE na faixa atual (cor/piso do desenho). O
+## agregado de nação fica de fora: ele tem piso próprio (+4 px).
+func _class_visual(layer: Node3D, class_key: String) -> Dictionary:
+	for index in layer.energy_marker_count():
+		var visual: Dictionary = layer.energy_marker_visual(index)
+		if String(visual.get("class", "")) == class_key \
+				and not bool(visual.get("aggregate", false)):
+			return visual
+	return {}
 
 
 ## Valores esperados direto dos arquivos, com a MESMA regra do mapa: cidade com

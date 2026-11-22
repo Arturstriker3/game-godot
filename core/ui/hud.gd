@@ -163,8 +163,15 @@ const ENERGY_LEGEND := [
 ]
 ## Classes do potencial (limiares p25/p50/p75 declarados em map_mode_layer.gd).
 const ENERGY_CLASSES := ["excellent", "good", "medium", "weak"]
-const ENERGY_CLASS_SWATCH := {
-	"excellent": 1.0, "good": 0.82, "medium": 0.64, "weak": 0.46,
+## Cor e piso de px de TELA por classe: a MESMA tabela de
+## map/map_mode_layer.gd (ENERGY_CLASS_COLORS / ENERGY_CLASS_MIN_PX). A legenda
+## desenha a amostra com esta cor e esta proporção de tamanho.
+const ENERGY_CLASS_COLORS := {
+	"excellent": Color("#3F8F43"), "good": Color("#A9C24B"),
+	"medium": Color("#D99A2B"), "weak": Color("#8C8C8C"),
+}
+const ENERGY_CLASS_MIN_PX := {
+	"excellent": 36, "good": 31, "medium": 26, "weak": 22,
 }
 const ENERGY_SWATCH_COLORS := {
 	"solar": Color("#E8B028"), "wind": Color("#6F8F8C"),
@@ -274,6 +281,9 @@ var _energy_checks := {}
 var _energy_rows := {}
 var _energy_overlay_checks := {}
 var _energy_overlay := {"grid": false, "solar": false, "wind": false, "hydro": false}
+## Fonte cujo calor foi ligado AUTOMATICAMENTE pelo filtro de fonte única. Não
+## sobrevive à troca do filtro nem por cima de uma escolha manual do jogador.
+var _energy_auto_heat := ""
 var _mode := "political"
 
 ## Legenda do modo rotas: filtro por modal, amostras e números reais do mapa
@@ -719,9 +729,7 @@ func _render_energy_legend() -> void:
 
 	body_box.add_child(_legend_section_title(I18n.t("map.legend.energy.classes")))
 	for class_key in ENERGY_CLASSES:
-		var tint := Color(UiKit.TINTA, float(ENERGY_CLASS_SWATCH[class_key]))
-		body_box.add_child(_legend_row(tint,
-				I18n.t("energy.class." + class_key), "", false))
+		body_box.add_child(_energy_class_row(class_key))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.energy.thresholds"), "", false))
 
@@ -745,6 +753,33 @@ func _energy_subtitle() -> String:
 		"sites": sites,
 		"sources": ENERGY_LEGEND.size(),
 	})
+
+
+## Linha de CLASSE com amostra do mapa: disco na cor da classe e diâmetro
+## proporcional ao piso em px de tela; o valor à direita repete o piso.
+func _energy_class_row(class_key: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6.0)
+	var min_px := int(ENERGY_CLASS_MIN_PX.get(class_key, 22))
+	row.add_child(EnergyClassSample.new(
+			ENERGY_CLASS_COLORS.get(class_key, Color("#8C8C8C")),
+			float(min_px)))
+	var label := UiKit.label(I18n.t("energy.class." + class_key),
+			UiKit.FS_SMALL, UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(label)
+	row.add_child(DottedLeader.new())
+	var value := UiKit.label(I18n.t("map.legend.energy.class_min_px",
+			{"px": min_px}), UiKit.FS_SMALL, UiKit.TINTA_SUAVE)
+	value.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(value)
+	return row
 
 
 ## Textura power_* da fonte (arte própria do projeto).
@@ -886,14 +921,49 @@ func _make_energy_overlay_row(kind: String) -> Button:
 
 func _toggle_energy(key: String) -> void:
 	_energy_enabled[key] = not bool(_energy_enabled.get(key, true))
+	_sync_energy_auto_heat()
 	_refresh_energy_rows()
 	energy_filter_changed.emit(_energy_enabled.duplicate())
 
 
 func _toggle_energy_overlay(kind: String) -> void:
 	_energy_overlay[kind] = not bool(_energy_overlay.get(kind, false))
+	# Escolha manual do jogador manda: o automático não religa depois.
+	if kind == _energy_auto_heat:
+		_energy_auto_heat = ""
 	_refresh_energy_rows()
-	energy_overlay_changed.emit(_energy_overlay.duplicate())
+	_emit_energy_overlay()
+
+
+## Com UMA fonte filtrada o calor dela entra sozinho (opacidade baixa, pedida
+## na camada). Ao voltar a duas ou mais fontes, desliga só o que foi automático.
+func _sync_energy_auto_heat() -> void:
+	var only := ""
+	var count := 0
+	for key: String in ENERGY_SOURCES:
+		if bool(_energy_enabled.get(key, true)):
+			count += 1
+			only = key
+	if count != 1:
+		only = ""
+	if not _energy_auto_heat.is_empty() and _energy_auto_heat != only:
+		if _energy_auto_heat != "" \
+				and bool(_energy_overlay.get(_energy_auto_heat, false)):
+			_energy_overlay[_energy_auto_heat] = false
+		_energy_auto_heat = ""
+	if only.is_empty() or bool(_energy_overlay.get(only, false)):
+		return
+	_energy_overlay[only] = true
+	_energy_auto_heat = only
+	_emit_energy_overlay()
+
+
+## Estado enviado ao mapa: os toggles + a fonte cujo calor é automático
+## (`auto`), para a camada desenhar esse calor em opacidade baixa.
+func _emit_energy_overlay() -> void:
+	var state := _energy_overlay.duplicate()
+	state["auto"] = _energy_auto_heat
+	energy_overlay_changed.emit(state)
 
 
 func _select_all_energy() -> void:
@@ -904,6 +974,7 @@ func _select_all_energy() -> void:
 			break
 	for key in _energy_enabled:
 		_energy_enabled[key] = not all_on
+	_sync_energy_auto_heat()
 	_refresh_energy_rows()
 	energy_filter_changed.emit(_energy_enabled.duplicate())
 	legend_reset_requested.emit()
@@ -3824,6 +3895,32 @@ class LegendFlowSample extends Control:
 			Vector2(tip_x - 5.0, y + 3.5),
 		])
 		draw_colored_polygon(head, _color)
+
+
+## Amostra de CLASSE do mapa de energia: disco na cor da classe com aro de
+## tinta e um miolo claro (o mesmo desenho do disco aceso sob o power_* no mapa).
+## O diâmetro é proporcional ao piso de tela da classe, reduzido para caber na
+## caixa da legenda (22 px -> 14, 36 px -> ~23): lê-se a diferença de tamanho e
+## a cor sem abrir a ficha.
+class EnergyClassSample extends Control:
+	const BOX := 24.0
+	var _color: Color
+	var _diameter: float
+
+	func _init(color: Color, min_px: float) -> void:
+		_color = color
+		_diameter = clampf(min_px * 0.64, 12.0, BOX - 1.0)
+		custom_minimum_size = Vector2(BOX, BOX)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var center := size * 0.5
+		var radius := _diameter * 0.5
+		draw_circle(center, radius, _color)
+		draw_arc(center, radius, 0.0, TAU, 32, UiKit.TINTA, 1.0, true)
+		draw_arc(center, radius * 0.5, 0.0, TAU, 24,
+				Color(UiKit.PAPEL, 0.9), 1.1, true)
 
 
 ## Amostra de cor (círculo para mineral, losango para renovável) — espelha o

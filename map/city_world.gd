@@ -706,6 +706,12 @@ func set_mode(mode: String) -> void:
 		_hide_region_labels()
 		set_nation_highlight("")
 	_nation_labels_dirty = true
+	# Modo energia esconde ícones/selos de cidade e bandeiras (ver
+	# `_place_icons_muted`): invalida o passo do LOD e refaz os buffers.
+	_icons_dirty = true
+	_flags_dirty = true
+	for record in _city_nodes:
+		record["lod_step"] = -1
 
 
 ## Filtro da legenda de recursos: esconde marcadores do mapa.
@@ -3306,6 +3312,10 @@ func _apply_flag_transforms(camera: Camera3D) -> void:
 	if _flag_mm == null or _flag_mm.multimesh == null:
 		return
 	var buffer := _flag_mm.multimesh
+	# Modo energia: as bandeiras cedem ao potencial (só o nome pequeno fica).
+	if _place_icons_muted():
+		buffer.visible_instance_count = 0
+		return
 	var index := 0
 	for record in _flag_records:
 		var alpha := float(record.get("label_alpha", 0.0))
@@ -3802,6 +3812,13 @@ func _is_player_city(record: Dictionary) -> bool:
 			and String(record.get("nation", "")) == _player_nation
 
 
+## No modo ENERGIA os marcadores de potencial são o assunto do mapa: ícones de
+## cidade/capital, selos e bandeiras cedem (o nome pequeno continua). O mapa de
+## recursos mantém tudo como antes — a regra vale só aqui.
+func _place_icons_muted() -> bool:
+	return _mode == "energy"
+
+
 ## Avança o fade de 150 ms de todos os registros na fila. Devolve `true` se
 ## ainda há alpha animando neste frame.
 func _advance_level_fade(delta: float) -> bool:
@@ -3840,7 +3857,7 @@ func _apply_fade_visual(record: Dictionary) -> void:
 		label.modulate.a = alpha
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
-		icon.visible = _city_marker_wanted(record)
+		icon.visible = _city_marker_wanted(record) and not _place_icons_muted()
 		icon.modulate.a = 1.0 if bool(record.get("capital", false)) else alpha
 
 
@@ -4437,8 +4454,12 @@ func _city_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 		return {}
 	var em := float(record["font_size"]) * float(record["pixel_size"])
 	var icon_h := em * PLACE_ICON_HEIGHT
-	var icon_rect := _world_rect_to_screen(camera, anchor_world,
-			icon_h * 0.5, icon_h * 0.5)
+	# Modo energia: o ícone está oculto, então não ocupa área no layout (o nome
+	# fica livre). O resto do mapa segue com o ícone bloqueando como antes.
+	var icon_rect := Rect2()
+	if not _place_icons_muted():
+		icon_rect = _world_rect_to_screen(camera, anchor_world,
+				icon_h * 0.5, icon_h * 0.5)
 	var text_world: Vector3 = to_global(record["text_center"])
 	if camera.is_position_behind(text_world):
 		return {}
@@ -4469,6 +4490,9 @@ static func _metrics_rect(metrics: Dictionary, key: String = "rect") -> Rect2:
 ## MultiMesh (`_flag_world_center`). Sem bandeira carregada ou com alfa apagado
 ## devolve `Rect2` vazio — o layout trata isso como "não ocupa tela".
 func _flag_rect(record: Dictionary, camera: Camera3D) -> Rect2:
+	# Bandeira oculta (modo energia) não ocupa espaço no layout dos nomes.
+	if _place_icons_muted():
+		return Rect2()
 	var flag: Variant = record.get("flag")
 	var flag_dict: Dictionary = flag if flag is Dictionary else {}
 	if flag_dict.is_empty() or flag_dict.get("texture") == null:
@@ -4623,7 +4647,7 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 		return
 	record["lod_step"] = step
 	var alpha := float(record.get("label_alpha", 1.0))
-	var marker := _city_marker_wanted(record)
+	var marker := _city_marker_wanted(record) and not _place_icons_muted()
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
 		icon.visible = marker
@@ -4947,7 +4971,12 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 	var industry_index := 0
 	var star_index := 0
 	var ring_index := 0
+	var mute_city := _place_icons_muted()
 	for record in _visible_city_records:
+		# Modo energia: nenhum ícone/selo de cidade entra no buffer (o nome é
+		# outro caminho e continua). Os portos seguem.
+		if mute_city:
+			continue
 		if bool(record.get("detailed", false)):
 			continue
 		# Troca de nível: a lista visível pode ser do nível anterior; no
