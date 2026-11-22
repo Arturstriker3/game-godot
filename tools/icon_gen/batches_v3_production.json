@@ -111,7 +111,7 @@
         "tractor": "an olive-green farm tractor with large rear wheels and no branding",
         "projectile": "a large unpainted steel artillery shell body with a pointed ogive and no markings",
         "ammunition": "a handful of brass rifle cartridges, some standing and some scattered",
-        "artillery_ammo": "a large artillery shell seated in a tall brass casing, standing upright",
+        "artillery_ammo": "an open military wooden ammunition crate for heavy artillery seen from a higher three-quarter angle, the lid leaning against the right side of the box, THREE 155 mm artillery shells lying in wooden rack slots inside the crate with their fuzes pointing to the LEFT, one slot empty, green painted steel bodies with brass driving bands, dull olive drab crate with iron corner straps and a small blank stencil rectangle that carries no text, wood grain and dust visible",
         "artillery": "a towed field howitzer with split trails and a long barrel"
       }
     },
@@ -223,5 +223,21 @@
         "train_station": "a miniature railway station: a station building with a platform canopy and a track, whole structure, no ground plane"
       }
     }
-  ]
+  ],
+  "approved_variants": {
+    "artillery_ammo": {
+      "title": "caixote de munição de 155 mm visto de cima, três granadas deitadas (variante B)",
+      "approved_at": "2026-11-22",
+      "supersedes": "lote 5, item artillery_ammo (granada única em pé)",
+      "description": "an open military wooden ammunition crate for heavy artillery seen from a higher three-quarter angle, the lid leaning against the right side of the box, THREE 155 mm artillery shells lying in wooden rack slots inside the crate with their fuzes pointing to the LEFT, one slot empty, green painted steel bodies with brass driving bands, dull olive drab crate with iron corner straps and a small blank stencil rectangle that carries no text, wood grain and dust visible",
+      "source_png": "G:/projetos/opengs-icons-private/gen_api_raw/v3_extra/artillery_ammo_b/artillery_ammo_b_v3.png",
+      "source_png_64": "G:/projetos/opengs-icons-private/gen_api_raw/v3_extra/artillery_ammo_b/artillery_ammo_b_v3_64.png",
+      "model": "gpt-image-2.6-sunburst",
+      "quality": "medium",
+      "size": "1024x1024",
+      "created_at": "2026-11-22T16:12:01-03:00",
+      "cost_usd_share": 0.003587,
+      "installed_at": "assets/icons/illustrated/artillery_ammo.png"
+    }
+  }
 }
