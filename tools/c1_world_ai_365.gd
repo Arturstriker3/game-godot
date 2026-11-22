@@ -49,6 +49,11 @@ const BANKS_PATH := "res://data/definitions/economy/banks.json"
 
 const GATE := 0.975
 const WINDOW := 30
+# E2/E3/E5 (D-117) — diagnóstico fino: a lista de edifícios é fotografada a
+# cada N dias e sempre no dia em que o contador de falências muda, para nomear
+# a firma que fechou (o núcleo apaga o edifício no tick, então só um retrato
+# anterior permite o registro por entidade).
+const BANKRUPTCY_SNAPSHOT_DAYS := 5
 # Calibração pré-C6 (D-113): a política monetária é amostrada ao longo do ano
 # (trajetória MENSAL da mediana da taxa e da inflação), não só no fecho. Sem
 # isso o colapso da taxa no 1º ano só aparecia como um número final.
@@ -56,6 +61,11 @@ const MONETARY_SAMPLE_DAYS := [7, 15, 30, 45, 60, 63, 90, 120, 150, 180, 210,
 	240, 270, 300, 330, 365]
 const SAMPLE_NATIONS: Array[String] = ["USA", "CHN", "IND", "BRA", "DEU", "NGA",
 	"RUS", "IDN", "MEX", "ZAF"]
+# E2/E3 (D-117): nações do diagnóstico fino de energia (QA t80) — sempre no
+# bloco `energy_economy.sample`, além do topo/base por conta/PIB.
+const ENERGY_SAMPLE_NATIONS: Array[String] = ["USA", "CHN", "IND", "BRA", "DEU",
+	"GBR", "DNK", "BGD", "THA", "ITA", "FRA", "NGA", "JPN", "CAN", "MEX",
+	"NLD", "BEL", "NOR", "SWE", "IRL", "LAO", "MYS"]
 
 var _days := 365
 var _property := false
@@ -70,6 +80,13 @@ var _credit_set := false
 # (D-105). Desde a D-111 o default do jogo é LIGADO; --harvest-rate=0 desliga.
 var _harvest_rate := false
 var _harvest_rate_set := false
+# E2/E3 (D-117): controle do portão de comida (JSON de uma rodada SEM energia)
+# para separar as nações que a energia leva ao limiar das que já estavam lá.
+var _control_path := ""
+# Metadados de goods.json: setor, se é comida e o tipo (raw/processed).
+var _goods_sector: Dictionary = {}
+var _goods_food: Dictionary = {}
+var _goods_kind: Dictionary = {}
 
 
 func _init() -> void:
@@ -95,6 +112,8 @@ func _init() -> void:
 			# moeda com N dias de importação MEDIDA do mundo e o peg passa a ser
 			# defendido (reserva esgotada = desvalorização forçada).
 			_fx_seed_days = maxi(0, int(arg.split("=", true, 1)[1]))
+		elif arg.begins_with("--control="):
+			_control_path = arg.split("=", true, 1)[1]
 	_run()
 
 
@@ -299,6 +318,10 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 		"loss_pct": float(final.get("loss_pct", 0.0)),
 		"installed_mw_by_fuel": final.get("installed_mw_by_fuel", {}),
 		"generation_mwh_by_fuel": final.get("generation_mwh_by_fuel", {}),
+		# Caixa agregado do setor elétrico: se o preço recupera o custo marginal,
+		# ele não drena; se a escala do preço fosse cortada, este caixa/razão de
+		# pagamento cairia (evidência de que preço ≠ amortecedor).
+		"power_cash": float(final.get("cash", 0.0)),
 		"demand_mwh": float(final.get("demand_mwh", 0.0)),
 		"served_mwh": float(final.get("served_mwh", 0.0)),
 		"interconnect_links": int(final.get("interconnect_links", 0)),
@@ -768,6 +791,16 @@ func _run() -> void:
 	var monetary_timeline: Array = []
 	var power_samples: Array = []
 	var power_timeline: Array = []
+	# E2/E3/E5 (D-117) — diagnóstico por entidade e escala econômica.
+	var bankruptcies_detail: Array = []
+	var buildings_prev: Dictionary = {}
+	var buildings_prev_day := 0
+	var bankrupt_counter := 0
+	var energy_by_nation: Dictionary = {}
+	var gate_first: Dictionary = {}
+	var link_flow: Dictionary = {}
+	var food_price_base: Dictionary = {}
+	_load_goods_meta()
 
 	for day in _days:
 		if _fx_seed_days > 0 and day == 30:
@@ -793,6 +826,49 @@ func _run() -> void:
 		history.append(ratio)
 		if history.size() > WINDOW:
 			history.pop_front()
+		# E2/E3/E5 (D-117): energia do dia — uma leitura por dia serve à
+		# amostra do ano, ao ledger por ligação e ao diagnóstico por nação.
+		var power_day: Dictionary = {}
+		if sim.has_method("get_power_status"):
+			power_day = sim.get_power_status()
+		if bool(power_day.get("ready", false)):
+			var power_row := _power_sample(day_now, power_day)
+			power_samples.append(power_row)
+			if int(day_now) % 30 == 0 or day == _days - 1:
+				power_timeline.append(power_row)
+			_accumulate_energy(energy_by_nation, status, power_day)
+			_accumulate_links(link_flow, power_day)
+		# Cadeia do portão: primeiro dia em que a média de 30 d cruza o limiar.
+		_track_gate_first(history, gate_first, day_now)
+		# Falências por entidade: o núcleo apaga o edifício no tick, então o
+		# retrato anterior (a cada N dias e no dia da mudança) é o que nomeia a
+		# firma que fechou. `get_city_status` é consulta de leitura.
+		var bankrupt_now := int(status.get("bankruptcies", 0))
+		if bankrupt_now != bankrupt_counter \
+				or day_now % BANKRUPTCY_SNAPSHOT_DAYS == 0:
+			var snapshot := _buildings_snapshot(sim,
+				status.get("cities", []) as Array, power_day)
+			if bankrupt_now != bankrupt_counter and not buildings_prev.is_empty():
+				var vanished: Array = []
+				for building_id: Variant in buildings_prev:
+					if snapshot.has(building_id):
+						continue
+					var record: Dictionary = \
+						(buildings_prev[building_id] as Dictionary).duplicate()
+					record["day"] = day_now
+					record["last_seen_day"] = buildings_prev_day
+					record["counter_delta"] = bankrupt_now - bankrupt_counter
+					vanished.append(record)
+				vanished.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+					return String(a["building_id"]) < String(b["building_id"]))
+				bankruptcies_detail.append_array(vanished)
+			buildings_prev = snapshot
+			buildings_prev_day = day_now
+			bankrupt_counter = bankrupt_now
+		if day_now == 1:
+			# Preço-base da comida para medir o repasse no ano (uma passada
+			# pesada no começo; o resto lê só mercados das nações do portão).
+			food_price_base = _food_price_by_nation(sim, status)
 		var balance_block: Dictionary = status.get("balance", {})
 		# C2b1-fix (D-105): linha canônica única (dinheiro 6 casas, falências,
 		# comida, M0, estoque privado, crédito). Ver
@@ -811,16 +887,6 @@ func _run() -> void:
 		# Calibração pré-C6 (D-113): trajetória monetária mensal (mediana/p10/p90).
 		if MONETARY_SAMPLE_DAYS.has(day_now):
 			monetary_timeline.append(_monetary_timeline_row(sim, day_now))
-		# PARTE E (D-116): energia do dia (preço médio, demanda servida,
-		# racionamento e conexão). Amostra diária para a média do ano; a
-		# trajetória publica a cada 30 dias.
-		if sim.has_method("get_power_status"):
-			var power_day: Dictionary = sim.get_power_status()
-			if bool(power_day.get("ready", false)):
-				var power_row := _power_sample(day_now, power_day)
-				power_samples.append(power_row)
-				if int(day_now) % 30 == 0 or day == _days - 1:
-					power_timeline.append(power_row)
 		if int(day_now) % 30 == 0 or day == _days - 1:
 			print("[c1] progresso dia %d/%d t=%.1fs"
 				% [int(day_now), _days,
@@ -831,6 +897,20 @@ func _run() -> void:
 	var food := _food_gate(history)
 	var balance := _balance_report(sim, status_final)
 	var trajectory := TrajectoryDigest.sha256(hash_lines)
+	# E2/E3/E5 (D-117) — diagnóstico fino do portão e da escala econômica.
+	var gate_below: Array = food.get("below", [])
+	var control_below := _control_below()
+	var gate_extras: Array = []
+	for tag: Variant in gate_below:
+		if not control_below.has(String(tag)):
+			gate_extras.append(String(tag))
+	var power_final: Dictionary = sim.get_power_status() \
+		if sim.has_method("get_power_status") else {}
+	var food_chain := _food_chain(sim, status_final, power_final, gate_below,
+		control_below, gate_first, food_price_base)
+	var service_failed := 0
+	if sim.has_method("get_service_bankruptcies"):
+		service_failed = int(sim.get_service_bankruptcies())
 	var out := {
 		"days": _days,
 		"threads": 1,
@@ -865,6 +945,16 @@ func _run() -> void:
 		# conexão das cidades e geração por fonte. Só medição.
 		"power": _power_digest(sim, power_samples),
 		"power_timeline": power_timeline,
+		# E2/E3/E5 (D-117) — diagnóstico por entidade e escala econômica.
+		# Falência = edifício da firma apagado pelo núcleo; `bank_events` cobre
+		# banco (crise C6) e `service_bankruptcies` cobre firma de serviço.
+		"bankruptcies_detail": bankruptcies_detail,
+		"service_bankruptcies": service_failed,
+		"food_chain": food_chain,
+		"food_gate_extras": gate_extras,
+		"food_gate_control": _control_path,
+		"energy_economy": _energy_economy(energy_by_nation, power_final),
+		"interconnect_links": _link_report(link_flow, power_final),
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	if _fx_seed_days > 0:
@@ -886,6 +976,15 @@ func _run() -> void:
 		+ "portão=%d/%d mediana=%.4f trajectory=%s"
 		% [int(food["below_gate"]), int(food["nations"]),
 			float(food["median"]), String(out["trajectory_sha256"]).substr(0, 8)])
+	print("[c1] D-117: extras vs controle=%d %s | falências por entidade=%d"
+		% [gate_extras.size(), str(gate_extras), bankruptcies_detail.size()])
+	if not bankruptcies_detail.is_empty():
+		var lines := PackedStringArray()
+		for record: Dictionary in bankruptcies_detail:
+			lines.append("%s/%s/%s dia %d" % [String(record.get("nation", "")),
+				String(record.get("sector", "")), String(record.get("building_id", "")),
+				int(record.get("day", 0))])
+		print("[c1] D-117 falências: " + " | ".join(lines))
 	var crisis_report: Dictionary = out.get("bank_crisis", {})
 	print("[c1] C6: corridas=%d resoluções=%d eventos=%d fundo=%.2f prêmios=%.2f "
 		% [int(crisis_report.get("runs", 0)),
@@ -1185,3 +1284,489 @@ func _confidence_of(status: Dictionary, nation: String) -> float:
 		if String(row.get("nation", "")) == nation:
 			return float(row.get("confidence", 1.0))
 	return 1.0
+
+
+# ---------------------------------------------------------------------------
+# E2/E3/E5 (D-117) — diagnóstico fino (só medição; nada move dinheiro).
+# ---------------------------------------------------------------------------
+
+## Metadados de goods.json: setor (agricultura/indústria alimentícia), se é
+## comida e o tipo (raw/intermediate/final). Uma leitura por rodada.
+func _load_goods_meta() -> void:
+	_goods_sector.clear()
+	_goods_food.clear()
+	_goods_kind.clear()
+	var goods: Variant = _load(GOODS_PATH)
+	if typeof(goods) != TYPE_ARRAY:
+		return
+	for item: Variant in goods:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = item
+		var good_id := String(row.get("id", ""))
+		_goods_sector[good_id] = String(row.get("sector", ""))
+		_goods_food[good_id] = bool(row.get("food", false))
+		_goods_kind[good_id] = String(row.get("kind", ""))
+
+
+## Retrato dos edifícios (id → última operação conhecida) + energia da cidade.
+## Consulta de leitura (`get_city_status`); não altera o mundo nem o status
+## leve que alimenta o hash de trajetória.
+func _buildings_snapshot(sim: Object, cities: Array, power: Dictionary) -> Dictionary:
+	var products: PackedStringArray = sim.get_products()
+	var power_cities: Dictionary = power.get("cities", {})
+	var out: Dictionary = {}
+	for city_row: Dictionary in cities:
+		var cid := String(city_row.get("id", ""))
+		var city_status: Dictionary = sim.get_city_status(cid)
+		var grid_row: Dictionary = power_cities.get(cid, {})
+		for building_row: Dictionary in (city_status.get("buildings", []) as Array):
+			var output_index := int(building_row.get("output_product", -1))
+			var output_name := ""
+			if output_index >= 0 and output_index < products.size():
+				output_name = products[output_index]
+			var building_id := String(building_row.get("id", ""))
+			out[building_id] = {
+				"building_id": building_id,
+				"city": cid,
+				"nation": String(city_status.get("nation", "")),
+				"sector": output_name,
+				"owner": String(building_row.get("owner", "")),
+				"revenue": float(building_row.get("revenue", 0.0)),
+				"costs": float(building_row.get("costs", 0.0)),
+				"profit": float(building_row.get("profit", 0.0)),
+				"loss_days": int(building_row.get("loss_days", 0)),
+				"capacity": float(building_row.get("capacity", 0.0)),
+				"utilization": float(building_row.get("utilization", 0.0)),
+				"power_price": float(grid_row.get("price", 0.0)),
+				"power_cost_industry": float(
+					grid_row.get("power_cost_industry", 0.0)),
+				"power_served_ratio": float(
+					grid_row.get("served_ratio", 1.0)),
+				"power_ration_days": int(grid_row.get("ration_days", 0)),
+			}
+	return out
+
+
+## Acumula, por nação, a conta de energia e o PIB do dia (mesma unidade XGS:
+## as duas grandezas saem do status do mesmo mundo). A razão anual é o teste de
+## escala econômica do preço.
+func _accumulate_energy(acc: Dictionary, status: Dictionary,
+		power: Dictionary) -> void:
+	var power_cities: Dictionary = power.get("cities", {})
+	for city_row: Dictionary in (status.get("cities", []) as Array):
+		var tag := String(city_row.get("nation", ""))
+		if tag.is_empty():
+			continue
+		var entry: Dictionary = acc.get(tag, {
+			"bill": 0.0, "gdp": 0.0, "demand_mwh": 0.0, "served_mwh": 0.0})
+		entry["gdp"] = float(entry["gdp"]) \
+			+ float(city_row.get("gdp", 0.0))
+		var cid := String(city_row.get("id", ""))
+		var grid_row: Dictionary = power_cities.get(cid, {})
+		if not grid_row.is_empty():
+			var served := float(grid_row.get("served_mwh", 0.0))
+			entry["bill"] = float(entry["bill"]) \
+				+ served * float(grid_row.get("price", 0.0))
+			entry["demand_mwh"] = float(entry["demand_mwh"]) \
+				+ float(grid_row.get("demand_mwh", 0.0))
+			entry["served_mwh"] = float(entry["served_mwh"]) + served
+		acc[tag] = entry
+
+
+## Acumula o fluxo anual de cada ligação (o status por ligação é do dia).
+func _accumulate_links(acc: Dictionary, power: Dictionary) -> void:
+	var nations: Dictionary = power.get("nations", {})
+	for row: Dictionary in (power.get("interconnects", []) as Array):
+		var a := String(row.get("a", ""))
+		var b := String(row.get("b", ""))
+		if a.is_empty() or b.is_empty():
+			continue
+		var key := a + "-" + b
+		var entry: Dictionary = acc.get(key, {
+			"a": a, "b": b,
+			"capacity_mw": float(row.get("capacity_mw", 0.0)),
+			"flow_mwh": 0.0,
+			"sent_mwh": 0.0,
+			"value": 0.0,
+			"flow_days": 0,
+			"importer_days": 0,
+			"importer_short_days": 0,
+			"importers": {},
+		})
+		var flow := float(row.get("flow_mwh", 0.0))
+		entry["flow_mwh"] = float(entry["flow_mwh"]) + flow
+		entry["sent_mwh"] = float(entry["sent_mwh"]) \
+			+ float(row.get("sent_mwh", 0.0))
+		entry["value"] = float(entry["value"]) + float(row.get("value", 0.0))
+		if flow > 0.0:
+			entry["flow_days"] = int(entry["flow_days"]) + 1
+		var importer := String(row.get("importer", ""))
+		if not importer.is_empty():
+			entry["importer_days"] = int(entry["importer_days"]) + 1
+			var seen: Dictionary = entry["importers"]
+			seen[importer] = int(seen.get(importer, 0)) + 1
+			if nations.has(importer) and float((nations[importer] as Dictionary)
+					.get("served_ratio", 1.0)) < 0.995:
+				entry["importer_short_days"] = \
+					int(entry["importer_short_days"]) + 1
+		acc[key] = entry
+
+
+## Primeiro dia em que a média de 30 d por nação cruza o portão de comida.
+func _track_gate_first(history: Array, gate_first: Dictionary,
+		day: int) -> void:
+	var sums: Dictionary = {}
+	for day_ratio: Dictionary in history:
+		for tag: Variant in day_ratio:
+			var tag_text := String(tag)
+			var entry: Dictionary = sums.get(tag_text, {"sum": 0.0, "days": 0})
+			entry["sum"] = float(entry["sum"]) + float(day_ratio[tag])
+			entry["days"] = int(entry["days"]) + 1
+			sums[tag_text] = entry
+	for tag: Variant in sums:
+		var tag_text := String(tag)
+		if gate_first.has(tag_text):
+			continue
+		var entry: Dictionary = sums[tag]
+		var average := float(entry["sum"]) / float(maxi(1, int(entry["days"])))
+		if average < GATE:
+			gate_first[tag_text] = {"day": day, "food_avg30": average}
+
+
+## Nações que já cruzavam o portão no controle sem energia (rodada anterior).
+func _control_below() -> Array:
+	if _control_path.is_empty():
+		return []
+	var data: Variant = _load(_control_path)
+	if typeof(data) != TYPE_DICTIONARY:
+		return []
+	var gate: Variant = (data as Dictionary).get("food_gate", {})
+	if typeof(gate) != TYPE_DICTIONARY:
+		return []
+	var below: Variant = (gate as Dictionary).get("below", [])
+	return below if typeof(below) == TYPE_ARRAY else []
+
+
+## Preço médio da comida por nação (ponderado por estoque) — base do ano e
+## fecho. Mercados só existem no `get_city_status` (passada pesada).
+func _food_price_by_nation(sim: Object, status: Dictionary) -> Dictionary:
+	var products: PackedStringArray = sim.get_products()
+	var raw: Dictionary = {}
+	for city_row: Dictionary in (status.get("cities", []) as Array):
+		var tag := String(city_row.get("nation", ""))
+		if tag.is_empty():
+			continue
+		var cid := String(city_row.get("id", ""))
+		var city_status: Dictionary = sim.get_city_status(cid)
+		var entry: Dictionary = raw.get(tag, {"sum": 0.0, "weight": 0.0})
+		for market_row: Dictionary in (city_status.get("markets", []) as Array):
+			var product_index := int(market_row.get("product", -1))
+			if product_index < 0 or product_index >= products.size():
+				continue
+			var good_id := products[product_index]
+			if not bool(_goods_food.get(good_id, false)):
+				continue
+			var weight := maxf(1.0, float(market_row.get("stock", 0.0)))
+			entry["sum"] = float(entry["sum"]) \
+				+ float(market_row.get("price", 0.0)) * weight
+			entry["weight"] = float(entry["weight"]) + weight
+		raw[tag] = entry
+	var out: Dictionary = {}
+	for tag: Variant in raw:
+		var entry: Dictionary = raw[tag]
+		var weight := float(entry["weight"])
+		out[String(tag)] = float(entry["sum"]) / weight if weight > 0.0 \
+			else 0.0
+	return out
+
+
+func _empty_food_entry() -> Dictionary:
+	return {
+		"population": 0.0,
+		"labor_force": 0.0,
+		"unemployed": 0.0,
+		"satisfaction_weighted": 0.0,
+		"food_spend": 0.0,
+		"gdp": 0.0,
+		"agro_output_t": 0.0,
+		"food_output_t": 0.0,
+		"food_revenue": 0.0,
+		"food_buildings": 0,
+		"price_sum": 0.0,
+		"price_weight": 0.0,
+		"power_demand": 0.0,
+		"power_served": 0.0,
+		"power_bill": 0.0,
+		"max_ration_days": 0,
+		"isolated_cities": 0,
+	}
+
+
+## Cadeia do portão: agro, indústria alimentícia, renda/desemprego, preço e
+## energia no fecho, para as nações do portão e do controle. Passada pesada
+## única (mercados exigem `get_city_status`).
+func _food_chain(sim: Object, status: Dictionary, power: Dictionary,
+		gate_below: Array, control_below: Array, gate_first: Dictionary,
+		price_base: Dictionary) -> Array:
+	var wanted: Dictionary = {}
+	for tag: Variant in gate_below:
+		wanted[String(tag)] = true
+	for tag: Variant in control_below:
+		wanted[String(tag)] = true
+	if wanted.is_empty():
+		return []
+	var products: PackedStringArray = sim.get_products()
+	var power_cities: Dictionary = power.get("cities", {})
+	var acc: Dictionary = {}
+	for city_row: Dictionary in (status.get("cities", []) as Array):
+		var tag := String(city_row.get("nation", ""))
+		if not wanted.has(tag):
+			continue
+		var cid := String(city_row.get("id", ""))
+		var city_status: Dictionary = sim.get_city_status(cid)
+		var entry: Dictionary = acc.get(tag, _empty_food_entry())
+		var pop: Dictionary = city_status.get("pop", {})
+		var people := float(pop.get("population", 0.0))
+		entry["population"] = float(entry["population"]) + people
+		entry["labor_force"] = float(entry["labor_force"]) \
+			+ float(pop.get("labor_force", 0.0))
+		entry["unemployed"] = float(entry["unemployed"]) \
+			+ float(pop.get("unemployed", 0.0))
+		entry["satisfaction_weighted"] = \
+			float(entry["satisfaction_weighted"]) \
+			+ float(pop.get("satisfaction", 0.0)) * people
+		entry["food_spend"] = float(entry["food_spend"]) \
+			+ float(pop.get("food_spend", 0.0))
+		entry["gdp"] = float(entry["gdp"]) \
+			+ float(city_status.get("gdp", 0.0))
+		for building_row: Dictionary in (city_status.get("buildings", []) as Array):
+			var output_index := int(building_row.get("output_product", -1))
+			if output_index < 0 or output_index >= products.size():
+				continue
+			var good_id := products[output_index]
+			if not bool(_goods_food.get(good_id, false)):
+				continue
+			var produced := float(building_row.get("capacity", 0.0)) \
+				* float(building_row.get("utilization", 0.0)) \
+				* float(building_row.get("output_scale", 0.0))
+			if String(_goods_kind.get(good_id, "")) == "raw":
+				entry["agro_output_t"] = float(entry["agro_output_t"]) \
+					+ produced
+			else:
+				entry["food_output_t"] = float(entry["food_output_t"]) \
+					+ produced
+			entry["food_revenue"] = float(entry["food_revenue"]) \
+				+ float(building_row.get("revenue", 0.0))
+			entry["food_buildings"] = int(entry["food_buildings"]) + 1
+		for market_row: Dictionary in (city_status.get("markets", []) as Array):
+			var product_index := int(market_row.get("product", -1))
+			if product_index < 0 or product_index >= products.size():
+				continue
+			var good_id := products[product_index]
+			if not bool(_goods_food.get(good_id, false)):
+				continue
+			var weight := maxf(1.0, float(market_row.get("stock", 0.0)))
+			entry["price_sum"] = float(entry["price_sum"]) \
+				+ float(market_row.get("price", 0.0)) * weight
+			entry["price_weight"] = float(entry["price_weight"]) + weight
+		var grid_row: Dictionary = power_cities.get(cid, {})
+		if not grid_row.is_empty():
+			var demand := float(grid_row.get("demand_mwh", 0.0))
+			var served := float(grid_row.get("served_mwh", 0.0))
+			entry["power_demand"] = float(entry["power_demand"]) + demand
+			entry["power_served"] = float(entry["power_served"]) + served
+			entry["power_bill"] = float(entry["power_bill"]) \
+				+ served * float(grid_row.get("price", 0.0))
+			entry["max_ration_days"] = maxi(int(entry["max_ration_days"]),
+				int(grid_row.get("ration_days", 0)))
+			if String(grid_row.get("connection", "")) == "isolated":
+				entry["isolated_cities"] = \
+					int(entry["isolated_cities"]) + 1
+		acc[tag] = entry
+	var rows: Array = []
+	for tag: Variant in acc:
+		var tag_text := String(tag)
+		var entry: Dictionary = acc[tag]
+		var people := float(entry["population"])
+		var labor := float(entry["labor_force"])
+		var weight := float(entry["price_weight"])
+		var price := float(entry["price_sum"]) / weight if weight > 0.0 \
+			else 0.0
+		var base := float(price_base.get(tag_text, 0.0))
+		var demand := float(entry["power_demand"])
+		var served := float(entry["power_served"])
+		var gate_row: Dictionary = {}
+		if gate_first.has(tag_text):
+			gate_row = gate_first[tag_text]
+		rows.append({
+			"nation": tag_text,
+			"in_gate": gate_below.has(tag_text),
+			"in_control": control_below.has(tag_text),
+			"gate_day": int(gate_row.get("day", -1)),
+			"food_avg30": float(gate_row.get("food_avg30", -1.0)),
+			"population": people,
+			"gdp": float(entry["gdp"]),
+			"gdp_per_capita": float(entry["gdp"]) / people if people > 0.0 \
+				else 0.0,
+			"unemployment": float(entry["unemployed"]) / labor if labor > 0.0 \
+				else 0.0,
+			"satisfaction": float(entry["satisfaction_weighted"]) / people \
+				if people > 0.0 else 0.0,
+			"food_spend_per_capita": float(entry["food_spend"]) / people \
+				if people > 0.0 else 0.0,
+			"agro_output_t": float(entry["agro_output_t"]),
+			"food_output_t": float(entry["food_output_t"]),
+			"food_buildings": int(entry["food_buildings"]),
+			"food_revenue": float(entry["food_revenue"]),
+			"food_price": price,
+			"food_price_ratio": price / base if base > 0.0 else 0.0,
+			"power_served": served / demand if demand > 0.0 else 1.0,
+			"power_price": float(entry["power_bill"]) / served if served > 0.0 \
+				else 0.0,
+			"power_ration_days": int(entry["max_ration_days"]),
+			"isolated_cities": int(entry["isolated_cities"]),
+		})
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["food_avg30"]) < float(b["food_avg30"]))
+	return rows
+
+
+## Escala econômica do preço: conta de energia / PIB por nação, e a parcela da
+## energia no valor industrial (`power_cost_per_value`, já limitado por
+## `industry_cost_share_max`). Referência pública no bloco `reference`.
+func _energy_economy(acc: Dictionary, power: Dictionary) -> Dictionary:
+	var rows: Array = []
+	var percents: Array = []
+	var total_bill := 0.0
+	var total_gdp := 0.0
+	for tag: Variant in acc:
+		var entry: Dictionary = acc[tag]
+		var gdp := float(entry.get("gdp", 0.0))
+		if gdp <= 0.0:
+			continue
+		var bill := float(entry.get("bill", 0.0))
+		total_bill += bill
+		total_gdp += gdp
+		var percent := bill / gdp * 100.0
+		percents.append(percent)
+		rows.append({
+			"nation": String(tag),
+			"bill": bill,
+			"gdp": gdp,
+			"bill_pct_gdp": percent,
+			"demand_mwh": float(entry.get("demand_mwh", 0.0)),
+			"served_mwh": float(entry.get("served_mwh", 0.0)),
+		})
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["bill_pct_gdp"]) > float(b["bill_pct_gdp"]))
+	percents.sort()
+	var industry: Array = []
+	var power_cities: Dictionary = power.get("cities", {})
+	for cid: Variant in power_cities:
+		var value := float((power_cities[cid] as Dictionary)
+			.get("power_cost_per_value", 0.0)) * 100.0
+		if value > 0.0:
+			industry.append(value)
+	industry.sort()
+	var low_start := maxi(0, rows.size() - 10)
+	var sample: Array = []
+	for row: Dictionary in rows:
+		var tag := String(row["nation"])
+		if ENERGY_SAMPLE_NATIONS.has(tag):
+			sample.append(row)
+	return {
+		"countries": rows.size(),
+		"bill_pct_gdp": {
+			"p10": _pct(percents, 0.10),
+			"p50": _pct(percents, 0.50),
+			"p90": _pct(percents, 0.90),
+			"max": _pct(percents, 1.0),
+		},
+		"bill_pct_gdp_top": rows.slice(0, mini(10, rows.size())),
+		"bill_pct_gdp_low": rows.slice(low_start, rows.size()),
+		"aggregate_bill_pct_gdp": total_bill / total_gdp * 100.0 \
+			if total_gdp > 0.0 else 0.0,
+		"sample": sample,
+		"industry_cost_pct_value": {
+			"cities": industry.size(),
+			"p10": _pct(industry, 0.10),
+			"p50": _pct(industry, 0.50),
+			"p90": _pct(industry, 0.90),
+			"max": _pct(industry, 1.0),
+			"cap_pct": 5.0,
+		},
+		"reference": {
+			"bill_pct_gdp_band": [1.5, 4.0],
+			"bill_pct_gdp_source": "IEA World Energy Outlook/World Energy "
+				+ "Investment; Eurostat electricity prices; Banco Mundial "
+				+ "(gasto de eletricidade ~1,5-4% do PIB na maioria dos paises)",
+			"industry_cost_pct_value_band": [1.0, 4.0],
+			"industry_cost_pct_value_source": "IEA/World Bank: intensidade "
+				+ "eletrica industrial ~0,2-0,4 kWh por US$ de valor agregado "
+				+ "a preco de ~0,08-0,12 US$/kWh (faixa de custo 1,5-4%)",
+		},
+	}
+
+
+## Fluxo anual por ligação e as ligações com capacidade e fluxo zero (a
+## pergunta do QA: o exportador vizinho tinha excedente no modelo?).
+func _link_report(acc: Dictionary, power: Dictionary) -> Dictionary:
+	var static_links: Dictionary = {}
+	var data: Variant = _load("res://data/definitions/energy/interconnects.json")
+	if typeof(data) == TYPE_DICTIONARY:
+		for row: Dictionary in ((data as Dictionary).get("links", []) as Array):
+			var key := "%s-%s" % [String(row.get("a", "")),
+				String(row.get("b", ""))]
+			static_links[key] = row
+	var nations: Dictionary = power.get("nations", {})
+	var rows: Array = []
+	var zero: Array = []
+	for key: Variant in acc:
+		var key_text := String(key)
+		var entry: Dictionary = acc[key]
+		var capacity := float(entry.get("capacity_mw", 0.0))
+		var flow := float(entry.get("flow_mwh", 0.0))
+		var base: Dictionary = static_links.get(key_text, {})
+		var importer := String(base.get("importer", ""))
+		var importer_row: Dictionary = nations.get(importer, {})
+		var exporter := String(base.get("exporter", ""))
+		var exporter_row: Dictionary = nations.get(exporter, {})
+		var row := {
+			"a": String(entry.get("a", "")),
+			"b": String(entry.get("b", "")),
+			"capacity_mw": capacity,
+			"flow_mwh": flow,
+			"flow_mw_avg": flow / (24.0 * float(maxi(1, _days))),
+			"flow_days": int(entry.get("flow_days", 0)),
+			"utilization": flow / (24.0 * capacity * float(maxi(1, _days))) \
+				if capacity > 0.0 else 0.0,
+			"data_importer": importer,
+			"data_exporter": exporter,
+			"importer_served_ratio": float(
+				importer_row.get("served_ratio", 1.0)),
+			"exporter_served_ratio": float(
+				exporter_row.get("served_ratio", 1.0)),
+			"importer_short_days": int(entry.get("importer_short_days", 0)),
+			"importers_seen": entry.get("importers", {}),
+		}
+		rows.append(row)
+		if capacity > 0.0 and flow <= 0.0:
+			zero.append(row)
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["flow_mwh"]) > float(b["flow_mwh"]))
+	zero.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["importer_served_ratio"]) < float(
+			b["importer_served_ratio"]))
+	var with_flow := 0
+	for row: Dictionary in rows:
+		if float(row["flow_mwh"]) > 0.0:
+			with_flow += 1
+	return {
+		"links": rows.size(),
+		"links_with_flow": with_flow,
+		"links_zero_flow": zero.size(),
+		"top_by_flow": rows.slice(0, mini(15, rows.size())),
+		"zero_flow": zero.slice(0, mini(30, zero.size())),
+	}
+
