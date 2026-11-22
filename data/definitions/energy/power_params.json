@@ -4,11 +4,30 @@
     "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E (E2/E3/E4/E5)",
     "kind": "model",
     "note": "Espelho declarado dos defaults de sim/power.h (PowerParams). Nenhum valor aqui e dado observado: sao PARAMETROS DE MODELO, calibraveis no laboratorio. Os DADOS (acesso a eletricidade, perdas T&D, parque instalado, potencial e PVOUT mensal) vem de access_losses.json, power_plants_2026_scaled.json, renewable_potential.json e hydro_potential.json, com a fonte publica de cada um no proprio arquivo.",
-    "verified_by": "tools/e2e3_power_test.gd (confere o espelho contra o binario)"
+    "verified_by": "tools/e2e3_power_test.gd (confere o espelho contra o binario)",
+    "demand_calibration": {
+      "method": "OLS log-log da demanda Ember por pessoa/dia contra o indice de renda (PIB PPP pc relativo a media ponderada pela populacao), com o acesso e as perdas T&D do proprio dado descontados - sao os termos que a formula do nucleo (sim/power.cpp) aplica: demanda = ancora * indice^expoente * acesso / (1 - perdas).",
+      "source_id": "ember_yearly",
+      "source": "Ember (2026). Yearly Electricity Data, serie 'Demand', ultimo ano disponivel por pais (2024 ou 2025).",
+      "sources_file": "data/definitions/energy/_sources.json",
+      "accessed_at_utc": "2026-11-22T01:10:07Z",
+      "fitted_on": "2026-11-22",
+      "n": 135,
+      "r2": 0.681,
+      "income_elasticity": 0.912238,
+      "kwh_per_capita_day": 7.93828,
+      "excluded": {
+        "n": 40,
+        "rule": "Ember por pessoa < 1,37 kWh/dia (500 kWh/ano): cobertura fraca/off-grid, o registro nao mede o consumo da populacao.",
+        "nations": "AFG,AGO,BDI,BEN,BFA,CAF,CIV,CMR,COD,ERI,ETH,GIN,GMB,GNB,HTI,KEN,LBR,LSO,MDG,MLI,MMR,MOZ,MRT,MWI,NER,NGA,NPL,PNG,RWA,SDN,SEN,SLB,SLE,SOM,SSD,TCD,TGO,TZA,UGA,YEM"
+      },
+      "known_limits": "YEM nao tem PIB PPP em nations.json e herda a mediana da regiao (indice 1,65) - a demanda modelada fica muito acima da Ember; declarado, nao corrigido aqui. GBR/SGP/DEU consomem menos por pessoa do que a renda PPP sugere (clima, industria e preco fora do modelo).",
+      "unchanged": "Preco de escassez, VOLL, fatores de producao, insatisfacao, perdas e racionamento NAO mudaram (D-116)."
+    }
   },
   "params": {
-    "kwh_per_capita_day": 9.0,
-    "income_elasticity": 1.0,
+    "kwh_per_capita_day": 7.93828,
+    "income_elasticity": 0.912238,
     "income_index_cap": 5.0,
     "share_households": 0.30,
     "share_industry": 0.42,
