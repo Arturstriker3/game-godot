@@ -142,6 +142,10 @@ Regressão coberta: `economy_save_load_roundtrip_test`, `economy_integration_tes
 ## 6. Rodada 365 dias (evidência)
 
 <!-- RODADA_365 -->
+**Nota (QA t80):** os números desta seção são a rodada **sem E5** (âncora),
+preservada em `docs/economy/perf/e2e3_anchor_365.json`; o arquivo canônico
+`c1_world_ai_365_e2e3.json` foi regerado com o E5 e o dado de interconexões do
+§7 (109/179 e 5 falências) — a seção 7 é a leitura corrente.
 Rodada canônica: `godot --headless --path . --script res://tools/c1_world_ai_365.gd --
 --days=365 --out=res://docs/economy/perf/c1_world_ai_365_e2e3.json`
 (365 d, threads=1, ~240 s, saída `docs/economy/perf/c1_world_ai_365_e2e3.json`).
@@ -257,7 +261,123 @@ de demanda por nação (E4).
 
 
 
-## 7. Dívidas declaradas
+## 7. Diagnóstico fino do QA t80 (D-117): entidade, escala e interconexões
+
+Rodada canônica com o runner instrumentado (365 d, threads=1, 292 s):
+`godot --headless --path . --script res://tools/c1_world_ai_365.gd --
+--days=365 --out=res://docs/economy/perf/c1_world_ai_365_e2e3.json
+--control=res://docs/economy/perf/c6_gate_base.json`. As duas rodadas de
+comparação estão em `docs/economy/perf/e2e3_diag_365_before.json` (dado antigo,
+122 ligações) e no arquivo canônico (dado novo, 131 ligações). O runner agora
+lista cada falência (firma, cidade, nação, setor, dia, último custo/receita e
+racionamento da cidade), o primeiro dia de cada nação no portão de comida e a
+cadeia do portão no fecho (`food_chain`), além da conta de energia / PIB por
+nação (`energy_economy`) e do fluxo anual por ligação (`interconnect_links`).
+Nada disso move dinheiro: o hash de trajetória do mesmo mundo não muda.
+
+### 7.1 Bug do runner (corrigido)
+
+`import_mwh`/`export_mwh` da rede são **acumulados no ano** em `sim/power.cpp`
+e não são resetados no laço diário; o runner dividia por 24 como se fossem do
+dia, inflando a média em MW **365×** (ITA aparecia com 536.667 MW em vez de
+1.470). A média correta é `mwh / (dias × 24)`, e a participação é
+`importado no ano / demanda do ano`. Corrigido e coberto no `top10_importers`.
+
+### 7.2 Falências por entidade (5)
+
+| Dia | Nação/cidade | Firma | Setor | Última receita / custo | Energia da cidade | Causa |
+|---:|---|---|---|---|---|---|
+| 126 | USA/PRI-PON | `pri_pon_copper_mine` | cobre | 0,000 / 1,119 | 0,35 XGS/MWh, 100 % servida, 0 d racionando | receita zero, 60 d de prejuízo — **não é energia** (presente no controle) |
+| 126 | USA/PRI-PON | `pri_pon_iron_mine` | ferro | 0,000 / 1,663 | idem | idem |
+| 316 | SAH/MEH, TIC, TIF | 3 fazendas `sah_*_wheat` | trigo | +6,8 / 0,0 (lucro) | SAH sem rede (conta 0,00) | execução do banco: `SAH/public` com PL negativo no dia 315 e as construções do grupo fecham (C6) |
+
+O controle sem energia tem 2 falências; as duas minas dos EUA têm receita zero
+e nenhum racionamento (perfil de fechamento não-energético), mas o JSON antigo
+não traz o registro por entidade. As 3 extras
+**não** vêm do preço/serviço de energia na firma: SAH não tem rede elétrica e as
+fazendas fecham no dia seguinte à resolução bancária, com lucro no último dia.
+É o canal de crédito (C6), não o canal E2/E3. O grupo SAH não tem histórico de
+perdas no runner — dívida em aberto para separar gatilho de cascata.
+
+### 7.3 Interconexões (dado público por par)
+
+A derivação Ember × fronteira terrestre deixa GB e Dinamarca em **zero** (ilhas,
+sem par terrestre) e BGD–IND em zero (a Índia é importadora líquida no ano-base,
+não entra como exportadora). Entraram 9 pares com capacidade nominal publicada
+(Ofgem, Energinet/Danish Energy Agency, ADB): FRA 4.000, NLD 1.000, BEL 1.000,
+NOR 1.400, IRL 1.000 para GB; NOR 1.632, SWE 2.015, DEU 3.500 para DNK; BGD–IND
+1.000. O núcleo escala a capacidade pela fração simulada da mesma forma que o
+parque; 97 das 131 ligações viram rede (as demais têm ponta sem operador
+nacional). Fontes e método em `data/definitions/energy/interconnects.json`
+(`meta.submarine_links` e `_sources`).
+
+Importação do ano contra a Ember (a Ember também escalada pela demanda do
+modelo, porque o modelo é a fração simulada):
+
+| Métrica | Antes (122 ligações) | Depois (131) | Ember escalada |
+|---|---:|---:|---:|
+| Importado no ano | 45,9 TWh | **54,8 TWh** | 98,9 TWh |
+| Importado / demanda | 0,449 % | **0,536 %** | 0,967 % |
+| GBR | 0 | 5,03 TWh (3,36 %) | 5,75 % |
+| DNK | 0 | 2,34 TWh (15,63 %) | 17,22 % |
+| BGD | 0 | 1,50 TWh (7,23 %) | 12,31 % |
+| THA | 3,95 TWh (4,95 %) | 3,95 TWh (4,95 %) | 15,54 % |
+| USA | 0 | 0 | 0,27 % |
+
+O restante da lacuna é **excedente do exportador**, não linha: FRA–GBR usa 29 %
+da capacidade, LAO–THA 23 %, e 40 ligações ficam com fluxo zero porque o
+importador já está 100 % servido (USA–CAN: o modelo dos EUA não tem déficit —
+0,27 % é ruído) ou porque o exportador está no limite (IRL–GBR: GBR 100 %
+servida mas sem sobra; MDA–UKR, BIH–MNE). Não é subdimensionamento de linha.
+
+### 7.4 Sanidade econômica do preço e da escala
+
+Conta de energia / PIB no modelo, no ano (mesma unidade XGS, `energy_economy`):
+
+| Métrica | Modelo | Real (referência) |
+|---|---:|---|
+| Conta / PIB — p10 / p50 / p90 | 1,59 % / **11,72 %** / 394,8 % | 1,5–4 % (IEA WEO/WEI; Eurostat; Banco Mundial) |
+| Conta / PIB — agregado do mundo | **56,99 %** | ~2 % |
+| Energia no valor industrial (6 cidades com planta) | **5,0 % (teto)** em todas | 1–4 % (IEA/Banco Mundial: ~0,2–0,4 kWh por US$ de valor agregado) |
+| Preço normal da energia (fora da escassez) | 0,32 XGS/MWh | — |
+| Energia em kg de trigo por MWh | ~8 kg (0,32 ÷ 40 XGS/t) | ~40 kg (US$ 10/MWh ÷ US$ 250/t) |
+
+O preço **não** é a escala errada: ele é o custo marginal (O&M 0,10–0,35
+XGS/MWh; combustível é centavos), o caixa do setor fecha em **0** (toda a receita
+é paga como combustível/O&M/salário, `power.cash`), e em relação aos bens a
+energia do modelo é **5× mais barata** que a real. O denominador é que está
+subdimensionado: o PIB simulado dos EUA é 18 XGS/pessoa/ano ≈ 0,45 t de
+trigo-equivalente por pessoa, contra ~300 t no real — enquanto a demanda elétrica
+é ancorada na Ember real. A mediana de 11,7 % e o agregado de 57 % são, portanto,
+**calibração do PIB simulado (ou da escala da demanda)**, não preço de energia.
+Cortar `price_scale` não fecharia a conta (a mediana é dominada pelo teto de
+escassez, que não se toca) e deixaria custo marginal sem pagamento (o caixa do
+setor já fecha em 0). Recomendação ao Game Systems Designer:
+ancorar o PIB simulado (ou escalar a demanda energética pela fração de PIB
+modelado), decisão de núcleo, não de dado de energia.
+
+### 7.5 Portão de comida e classificação
+
+Resultado: 109/179 abaixo de 0,975 (controle sem energia: 93; âncora sem E5:
+124; dado antigo: 107). 19 nações cruzam por causa da energia e 3 saem do
+portão (BHR, DMA, SUR). Cadeia das 19 (`food_chain`): **nenhuma tem agro ou
+indústria alimentícia no modelo** e o preço da comida fica em 0,89–1,30× o dia
+1 — o canal é renda/serviço, não preço.
+
+| Grupo | Nações | Leitura |
+|---|---|---|
+| Racionamento de energia (365 d ou cidades isoladas) | AGO, BDI, BGD, ETH, KEN, LBY, MDA, MOZ, PRK, SWZ, TZA, XKX | consequência declarada do racionamento físico: indústria/serviço/emprego caem (desemprego 0,09–0,41) e a renda não paga comida importada |
+| Energia servida, mas sem rede/ligação (ilha ou sem dado) | ISL (preço no teto o ano todo, comida 0,000), SAH (sem rede, comida 0,000) | (b) dado/calibração: ISL é ilha sem interligação na lista; SAH não tem parque |
+| Energia plenamente servida a 0,32–0,35 XGS/MWh | ATG, AUS, KWT, VCT, KNA | fora do canal de energia: cruzam por efeito geral/food 0,000 (KNA sem agricultura no modelo) |
+
+Classificação final: **(a) consequência esperada** — 12 nações acima, mais o
+racionamento persistente de NGA/CIV/GNQ etc.; **(b) calibração** — PIB simulado
+vs demanda ancorada (7.4), preço da ISL no teto sem interligação, e as 5 nações
+sem canal de energia; **(c) bug** — só o do runner (7.1) e a ausência das
+ligações GB/DK/BGD (7.3), ambos corrigidos. VOLL, preço de escassez,
+racionamento, insatisfação e perdas **não** foram tocados.
+
+## 8. Dívidas declaradas
 
 - Vento sem série mensal (GWA não publica) — fator anual, declarado.
 - `oil: null` na matriz Ember — capacidade de óleo não publicada por país (D-115(d)).
