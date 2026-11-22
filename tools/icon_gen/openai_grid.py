@@ -32,7 +32,9 @@ Uso direto (CLI, mesma máquina):
 Custo e segredo:
 
 - A chave vem de ``OPENAI_API_KEY`` ou do arquivo em ``OGS_ICONAPI_KEY_FILE``
-  (padrão: G:/projetos/Fooocus_win64_2-5-0/treino_icones/secrets/openai_api_key.txt).
+  (padrão: G:/projetos/opengs-icons-private/secrets/openai_api_key.txt) e as
+  imagens de estilo de ``OGS_ICONAPI_REF_DIR``
+  (padrão: G:/projetos/opengs-icons-private/ref_style).
   A chave NUNCA é impressa, logada, commitada ou copiada: qualquer texto de
   erro passa por ``_mask_secrets`` e o relatório mostra no máximo os 4 últimos
   caracteres.
@@ -75,10 +77,13 @@ RAW_DIR = CACHE_DIR / "raw"
 STATUS_PATH = ICON_GEN_DIR / "status_grid.json"
 SPEC_PATH = REPO_ROOT / "tools" / "icon_forge" / "resource_icons.json"
 
+# Segredo e referências ficam fora do repositório e fora do Fooocus (removido
+# em t31, fim da produção pela API). Overrides: OPENAI_API_KEY /
+# OGS_ICONAPI_KEY_FILE e OGS_ICONAPI_REF_DIR.
 DEFAULT_KEY_FILE = Path(
-    r"G:\projetos\Fooocus_win64_2-5-0\treino_icones\secrets\openai_api_key.txt"
+    r"G:\projetos\opengs-icons-private\secrets\openai_api_key.txt"
 )
-DEFAULT_REF_DIR = Path(r"G:\projetos\Fooocus_win64_2-5-0\treino_icones\ref_style")
+DEFAULT_REF_DIR = Path(r"G:\projetos\opengs-icons-private\ref_style")
 # Lote 1 (v1) usou ref_sheet_goods_transparent.png + ref_sheet_minerals.png
 # (estilo pintado à mão). O lote 2 (v2) seguiu a folha do pack militar do dono
 # como estilo (cartoon com contorno grosso). O lote 3 (v3) mantém a mesma folha
