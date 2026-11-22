@@ -339,38 +339,13 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 			PowerCityState& state = ws.power_cities[index];
 			state.has_data = true;
 			if (p.kind == CONSTRUCTION_POWER_PLANT) {
-				PowerPlant plant;
-				plant.id = p.id;
-				plant.city_index = static_cast<int>(index);
-				plant.fuel = std::clamp(p.power_fuel, 0, kPowerFuelCount - 1);
-				plant.mw = std::max(0.0, p.power_mw);
-				plant.owner_group = p.group_id;
-				plant.owner_nation = ws.cities[index].nation;
-				plant.capex = p.total_cost;
-				plant.opex_per_mwh = ws.power_params.opex_per_mwh[plant.fuel];
-				// D-122: CF de sítio da usina nova (potencial local com teto e
-				// penalidade). Térmica recebe o CF declarado da fonte.
-				double solar_mean = 0.0;
-				int solar_months = 0;
-				for (int month = 0; month < kPowerMonthCount; ++month) {
-					if (state.solar_month[month] > 0.0) {
-						solar_mean += state.solar_month[month];
-						solar_months += 1;
-					}
-				}
-				if (solar_months > 0) {
-					solar_mean /= static_cast<double>(solar_months);
-				}
-				plant.cf_base = power_local_cf(ws.power_params, plant.fuel,
-					solar_mean, state.wind_ms);
-				plant.jobs = plant.mw * 0.4;
-				plant.wage = 20.0;
-				plant.built_day = ws.day;
-				ws.power_plants.push_back(plant);
-			} else {
-				state.connection = POWER_CONNECTED;
-				state.line_mw = std::max(state.line_mw, p.power_mw);
+				// D-122: a usina nova nasce com o CF de sítio (potencial local
+				// com teto e penalidade) — mesma função do hook instantâneo.
+				apply_power_plant_project(ws, p);
+				return;
 			}
+			state.connection = POWER_CONNECTED;
+			state.line_mw = std::max(state.line_mw, p.power_mw);
 			break;
 		}
 		after_load(ws);

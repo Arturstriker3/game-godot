@@ -188,6 +188,50 @@ int power_build_days(const PowerParams& params, int fuel) {
 	return std::max(0, params.build_days_plant);
 }
 
+void apply_power_plant_project(WorldState& ws,
+		const ConstructionProject& project) {
+	if (ws.power_cities.size() != ws.cities.size()) {
+		ws.power_cities.resize(ws.cities.size());
+	}
+	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
+		if (ws.cities[index].id != project.city) {
+			continue;
+		}
+		PowerCityState& state = ws.power_cities[index];
+		state.has_data = true;
+		PowerPlant plant;
+		plant.id = project.id;
+		plant.city_index = static_cast<int>(index);
+		plant.fuel = std::clamp(project.power_fuel, 0, kPowerFuelCount - 1);
+		plant.mw = std::max(0.0, project.power_mw);
+		plant.owner_group = project.group_id;
+		plant.owner_nation = ws.cities[index].nation;
+		plant.capex = project.total_cost;
+		plant.opex_per_mwh = ws.power_params.opex_per_mwh[plant.fuel];
+		// D-122: CF de sítio da usina nova (potencial local com teto e
+		// penalidade). Térmica recebe o CF declarado da fonte.
+		double solar_mean = 0.0;
+		int solar_months = 0;
+		for (int month = 0; month < kPowerMonthCount; ++month) {
+			if (state.solar_month[month] > 0.0) {
+				solar_mean += state.solar_month[month];
+				solar_months += 1;
+			}
+		}
+		if (solar_months > 0) {
+			solar_mean /= static_cast<double>(solar_months);
+		}
+		plant.cf_base = power_local_cf(ws.power_params, plant.fuel,
+			solar_mean, state.wind_ms);
+		plant.jobs = plant.mw * 0.4;
+		plant.wage = 20.0;
+		plant.built_day = ws.day;
+		ws.power_plants.push_back(plant);
+		after_load(ws);
+		return;
+	}
+}
+
 void PowerParams::apply(const std::map<std::string, double>& v) {
 	const auto get = [&v](const std::string& key, double& out) {
 		const auto found = v.find(key);
@@ -849,7 +893,7 @@ void SimCore::set_power_city(const std::string& city_id, int connection,
 
 bool SimCore::build_power_plant(const std::string& city_id,
 		const std::string& fuel_name, double mw, const std::string& group_id,
-		std::string* err) {
+		std::string* err, bool instant) {
 	const auto fail = [&err](const char* message) {
 		if (err != nullptr) {
 			*err = message;
@@ -925,6 +969,11 @@ bool SimCore::build_power_plant(const std::string& city_id,
 	project.total_cost = cost;
 	project.duration_days = power_build_days(params, fuel);
 	*cash -= cost;
+	if (instant) {
+		// Hook de teste/depuração (D-122): a usina entra em operação na hora.
+		apply_power_plant_project(ws_, project);
+		return true;
+	}
 	add_construction_project(project);
 	return true;
 }

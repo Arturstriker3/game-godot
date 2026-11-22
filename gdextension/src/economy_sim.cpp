@@ -6936,7 +6936,8 @@ Dictionary EconomySim::build_power_plant(const String& city_id,
 	const bool started = sim_core_.build_power_plant(
 		std::string(city_id.utf8().get_data()),
 		std::string(fuel.utf8().get_data()), mw,
-		std::string(group_id.utf8().get_data()), &error);
+		std::string(group_id.utf8().get_data()), &error,
+		instant_construction_);
 	Dictionary result;
 	result["started"] = started;
 	result["error"] = String(error.c_str());

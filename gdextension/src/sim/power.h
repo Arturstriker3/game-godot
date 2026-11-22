@@ -265,6 +265,12 @@ double power_new_capex_per_mw(const PowerParams& params, int fuel);
 // Prazo da obra nova em dias (hídrica tem prazo próprio, maior).
 int power_build_days(const PowerParams& params, int fuel);
 
+// D-122: materializa a usina de uma obra concluída (ou obra instantânea de
+// teste). Única implementação usada por `complete_project` e pelo hook de
+// construção instantânea — os campos da usina nova não podem divergir.
+void apply_power_plant_project(WorldState& ws,
+	const ConstructionProject& project);
+
 // Aplica as DEFINIÇÕES e semeia o parque inicial. `only_missing` (default
 // true) não sobrescreve o estado de um save.
 void seed(WorldState& ws, const PowerParams& params,

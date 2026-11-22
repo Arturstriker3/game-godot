@@ -153,8 +153,11 @@ public:
 		double line_mw, double access_pct);
 	// Obra de usina/linha na fila §15 (paga pelo dono conforme avança). Devolve
 	// false com `err` quando a fonte/cidade não existe ou o potencial acabou.
+	// `instant` = hook de teste/depuração (mesmo `set_instant_construction`):
+	// a usina entra em operação na hora, com o custo integral já debitado.
 	bool build_power_plant(const std::string& city_id, const std::string& fuel,
-		double mw, const std::string& group_id, std::string* err);
+		double mw, const std::string& group_id, std::string* err,
+		bool instant = false);
 	bool build_power_line(const std::string& city_id, double mw,
 		const std::string& group_id, std::string* err);
 	// E5 (D-117): declara as interconexões do ano-base (dado derivado) e a obra
