@@ -3,7 +3,12 @@ extends SceneTree
 ## C1 — mundo real com IA por N dias, com a contabilidade por balanço ligada.
 ##
 ##   godot --headless --path . --script res://tools/c1_world_ai_365.gd -- \
-##     [--days=365] [--out=docs/economy/perf/c1_world_ai_365.json]
+##     [--days=365] [--out=docs/economy/perf/c1_world_ai_365.json] [--power=0]
+##
+## `--power=0` é o braço "sem energia" do A/B (só medição): não aplica o dado
+## de energia, então o mundo roda como antes da E2/E3. O controle versionado
+## (`c6_gate_base.json`) é uma rodada antiga sem energia; esta flag reproduz o
+## mesmo braço no código de hoje.
 ##
 ## Monta o mundo pelo caminho do AUTOLOAD (cidades + geografia real + infra B5
 ## inicial + camada urbana + B7 + agricultura sazonal + armazenagem G2 + IA do
@@ -69,6 +74,11 @@ const ENERGY_SAMPLE_NATIONS: Array[String] = ["USA", "CHN", "IND", "BRA", "DEU",
 
 var _days := 365
 var _property := false
+# E2/E3 (D-119): braço "sem energia" do A/B, só medição (`--power=0`). Reproduz
+# o mundo do controle (c6_gate_base) no código de hoje: sem o dado de energia
+# aplicado não há parque, preço, racionamento nem ligação — o resto do mundo é
+# o mesmo. Não existe no jogo; é parâmetro de linha de comando.
+var _power_on := true
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 var _fx_seed_days := 0
 # C3 (D-107) + D-111: forçar o crédito de empresa por flag. Desde a D-111 o
@@ -99,6 +109,8 @@ func _init() -> void:
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
 		elif arg.begins_with("--property="):
 			_property = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--power="):
+			_power_on = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--out="):
 			_out = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--credit="):
@@ -496,7 +508,7 @@ func _make_world() -> Object:
 			{"only_missing": true, "initial_stock": true})
 	# PARTE E (D-116): energia — parque, acesso/perdas e potencial do dado
 	# público, declarados depois do mundo e antes da IA (mesma ordem do autoload).
-	if sim.has_method("set_power_definitions"):
+	if _power_on and sim.has_method("set_power_definitions"):
 		var power := PowerScript.new()
 		var power_report := power.apply_to_sim(sim, cities, {"only_missing": true})
 		print(("[c1] energia: parque=%.0f MW cidades=%d nações=%d operador=%d "
@@ -998,8 +1010,9 @@ func _run() -> void:
 		"monetary_timeline": monetary_timeline,
 		# PARTE E (D-116): energia — preço médio, % servida, racionamento,
 		# conexão das cidades e geração por fonte. Só medição.
-		"power": _power_digest(sim, power_samples),
+		"power": _power_digest(sim, power_samples) if _power_on else {},
 		"power_timeline": power_timeline,
+		"power_off": not _power_on,
 		# E2/E3/E5 (D-117) — diagnóstico por entidade e escala econômica.
 		# Falência = edifício da firma apagado pelo núcleo; `bank_events` cobre
 		# banco (crise C6) e `service_bankruptcies` cobre firma de serviço.
@@ -1008,8 +1021,10 @@ func _run() -> void:
 		"food_chain": food_chain,
 		"food_gate_extras": gate_extras,
 		"food_gate_control": _control_path,
-		"energy_economy": _energy_economy(energy_by_nation, power_final),
-		"interconnect_links": _link_report(link_flow, power_final),
+		"energy_economy": _energy_economy(energy_by_nation, power_final) \
+			if _power_on else {},
+		"interconnect_links": _link_report(link_flow, power_final) \
+			if _power_on else {},
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
 	if _fx_seed_days > 0:

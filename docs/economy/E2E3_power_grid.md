@@ -551,12 +551,157 @@ abaixo contra 93 do controle, e os 7 extras listados não têm canal monetário 
 **Falências 2** — as duas minas PRI-PON/USA (receita 0, 60 d de prejuízo), presentes no
 controle sem energia; nenhuma nova e nenhuma do SAH.
 
+### 8.6 Resíduo do portão de comida: E2/E3/E5 (22/11/2026)
+
+Rodada 365 com IA (`threads=1`, `--control=res://docs/economy/perf/c6_gate_base.json`,
+dado com as ligações de MDA e do Kosovo), evidência em
+`docs/economy/perf/e2e3_food_residual_365.json`:
+
+| Métrica | Controle (sem energia) | D-117 | D-118 | D-118 + ligações |
+|---|---:|---:|---:|---:|
+| Falências por entidade | 2 | 5 | 2 | **2** |
+| Portão de comida (<0,975) | 93/179 | 109 | 99 | **102** |
+| Extras vs controle | — | 19 | 7 | **9** |
+| Conta de energia / PIB (agregado) | — | 56,99 % | 2,66 % | **2,65 %** |
+| p50 / p90 da conta/PIB | — | 11,72 / 394,8 % | 0,634 / 10,26 % | **0,633 / 10,01 %** |
+| % servida (mínima) | — | 0,9961 | 0,9962 | **0,9962 (0,9958)** |
+| Ligações aplicadas (com fluxo) | — | 97 (57) | 97 (57) | **100 (58)** |
+| Importado no ano / demanda | — | 0,536 % | 0,536 % | **0,536 %** |
+
+Importado no ano: 54,84 TWh, o mesmo da D-118 (abaixo: por que as 3 linhas novas
+não movem energia). 0 violações de invariante, 0 dias travados, drift 0,0055.
+
+#### (1) Dado: as ligações de MDA e do Kosovo
+
+A derivação Ember × fronteira terrestre não criava o par em nenhum dos dois casos:
+ROU é importadora líquida no ano-base (a regra só aceita vizinho exportador) e o
+atlas não tem fronteira para XKX (`land_borders.json` sem Kosovo). Entraram com a
+capacidade nominal publicada por par (`method=public_capacity`):
+
+| Par | Capacidade | Fonte |
+|---|---:|---|
+| MDA–ROU | 600 MW | EBRD/EIB/IEA: back-to-back de Vulcănești (Isaccea–Vulcănești–Chișinău) |
+| XKX–ALB | 400 MW | OST (via Voshtina et al., JSDEWES 12(2), 1120509): NTC Albania–Kosovo |
+| XKX–MKD | 330 MW | SEE CAO: 400 kV Ferizaj 2–Shkupi 5, NTC de 330 MW (alocação de jan/2021) |
+
+`XKX–SRB` e `XKX–MNE` ficam **declarados** em `meta.declared_absence_links`, sem
+capacidade: o NTC por par Kosovo–Sérvia não está acordado nem publicado (Energy
+Community, caso ECS-02/21, decisão 2025/02/MC-EnC) e o de Montenegro também não; o
+total das 4 fronteiras (1.316 MW de importação) está na Estratégia de Energia do
+Kosovo, sem repartição por par. `meta.submarine_links` virou
+`meta.public_capacity_links`, com `by_reason` (ilha, vizinho importador líquido,
+fronteira ausente no atlas). 131 → 134 ligações no dado; 100 aplicadas (as demais
+têm ponta sem operador nacional).
+
+**As 3 linhas novas não movem energia.** Nenhuma tem fluxo (0 MWh no ano) e o total
+comercializado é idêntico ao da D-118 (149.373,755 MWh). Motivo: os quatro vizinhos
+são **importadores líquidos** no ano-base Ember (ALB +0,33; SRB +2,03; MKD +0,92;
+ROU +3,74 TWh) e a regra da E5 (`sim/power.cpp`) vende só a **capacidade disponível
+não despachada** do exportador — rede 100 % servida tem sobra ~0 e não vende. O
+tamanho do déficit modelado é coerente com a realidade:
+
+| Nação | Déficit modelado (não servido) | Importação real Ember (ano-base) |
+|---|---:|---:|
+| MDA | 39,9 % (0,601 servido) | 43,9 % da demanda (2,608 / 5,943 TWh) |
+| XKX | 27,0 % (0,730 servido) | 21,3 % da demanda (1,587 / 7,465 TWh) |
+
+Ou seja: o modelo entrega como corte o que o país importa no mundo real; falta o
+**canal de compra** (regra da E5 + ano-base em que todos os vizinhos importam), não
+a linha nem a capacidade. Classificação: **(b) dado/regra**, não erro da ligação
+adicionada.
+
+#### (2) ISL: comida 0 com 99,9 % de energia servida
+
+- Déficit físico de **3.520 MWh/ano em 6.706.123** (0,052 %, ~10 MWh/dia) e preço no
+  **teto** (1,658 XGS/MWh) **todos os dias** → conta de 11,11 M XGS/ano = **884 % do
+  PIB** de ISL. Com o preço normal da hidro/geotermia (0,0083 XGS/MWh) a conta seria
+  ~0,4 % do PIB, dentro da faixa de referência.
+- ISL não tem interligação **por dado**: `ember_net_imports_twh = 0` e não há
+  fronteira terrestre — a ausência é correta.
+- Não é divergência de semente: ISL **não** está no portão do controle sem energia
+  (≥0,975) e o valor é **idêntico** nas três rodadas com energia (D-117, âncora sem
+  E5 e D-118), inclusive sem ligação internacional. O efeito é o bloco de energia,
+  não a E5.
+- Canal: **regra declarada do preço de escassez** (cobrado sobre 100 % da carga
+  servida, §8.2) disparada por um vão de 0,05 % do próprio parque. Classificação:
+  **(b)** regra declarada; o remédio é a margem de varejo (E7) ou o preço de
+  escassez só sobre o MWh não servido — não a cadeia de comida.
+
+#### (3) AUS e ATG: margem com energia 100 % servida
+
+| Nação | Comida (controle) | Comida (energia) | Servido | Dias racionando | Preço final | No teto? |
+|---|---:|---:|---:|---:|---:|---|
+| AUS | ≥0,975 (fora das 93) | **0,934** | 1,000 | 0 | 0,0178 | não |
+| ATG | ≥0,975 (fora das 93) | **0,533** | 1,000 | 0 | 0,0174 | não |
+
+O controle versionado não guarda o valor por nação acima do limiar (só a lista das
+93 e os 10 piores), então o valor do controle é um **limite** (≥0,975), não um
+número. O valor com energia é **bit-idêntico** nas três rodadas com energia (D-117,
+âncora sem E5 e D-118): não é preço de energia nem E5. Canal: nem serviço (100 %
+servida, 0 dia racionando, preço normal a 2,7 % do teto) nem escassez — a posição
+vem do **lado da comida** (preço 1,10–1,16× o do dia 1, gasto 12 % do PIB,
+desemprego 0,04): disponibilidade/renda. O A/B no código de hoje (energia
+desligada, `tools/c1_world_ai_365.gd --power=0`) mostra: **sem energia nenhuma das 9 extras cruza o portão** (93/179, o mesmo número do controle versionado, e as 9 ficam em ≥0,975) e **com energia as 9 cruzam** (102/179) — a diferença entre os dois mundos é exatamente o conjunto das 9. O bloco de energia é a causa; o valor exato por nação no braço sem energia não é publicado (o runner só detalha quem cruza).
+
+Classificação: **(b) margem/canal não isolado** — AUS 3 % abaixo do limiar e ATG um
+degrau maior, com o mesmo valor em todo mundo com energia.
+
+#### (4) LBY e PRK: o déficit modelado é coerente com a escassez real
+
+| Nação | Servido | Dias racionando | Apagões reais documentados |
+|---|---:|---:|---|
+| LBY | 0,847 | 365 | GECOL: cortes de 8 h a 36 h por dia em Trípoli e três blecautes grandes em 2026 (Libya Herald 2025-07 e 2026-08; Arab News: até 36 h em Qasr Bin Ghashir) |
+| PRK | 0,823 | 365 | EIA: rolling blackouts na capital; RFA (2024): 1 h/dia em áreas rurais; AsiaPress (2026-02): mais de 20 h/dia |
+
+Os dois são importadores líquidos ~0 na Ember (sem par de compra modelado) e a
+direção do déficit é a documentada; o modelo é **mais brando** que o relato real
+(84,7 % e 82,3 % servidos). Classificação: **(a) consequência real** (D-116).
+
+#### (5) As três nações que cruzaram nesta rodada (CIV, KNA, SUR)
+
+Sem energia nova em jogo: CIV (0,970, 365 d racionando, 91,2 % servido) é **(a)**
+racionamento físico; KNA (0,000, 100 % servida, 1 prédio de comida e 0 t de
+produção) é **(b) dado** (mesma família de SAH, §7.5); SUR (0,9735, já abaixo no
+controle) é **(b) margem**. Nenhuma tem canal de energia ligado às linhas novas:
+elas carregam 0 MWh e o fluxo total é idêntico. O que mudou foi a trajetória (o
+mundo é caótico: `served_ratio` difere na 6ª decimal e a confiança mínima do banco
+vai de 0,992 para 0,494, sem nenhum evento C6). **O portão tem margem de ±3
+nações**: comparar 102 com 93 não separa energia de ruído.
+
+#### Classificação final do resíduo (9 extras)
+
+| Grupo | Nações | Classe |
+|---|---|---|
+| Racionamento físico 365 d | LBY, PRK, MDA, XKX, CIV | (a) — com (b) regra/dado na compra de MDA/XKX |
+| Preço de escassez sobre 0,05 % de déficit | ISL | (b) regra declarada |
+| Comida sem canal de energia (100 % servida, preço normal) | ATG, AUS, KNA | (b) margem/dado |
+
+**(c) bug:** nenhum encontrado no dado nem na cadeia. O único defeito de medição é
+`importer_short_days` (conta só dias com fluxo, porque o núcleo publica o importador
+só quando há fluxo) — declarado, não corrigido (é do C++, fora desta rodada).
+
+**O que NÃO foi tocado:** VOLL, preço de escassez, racionamento, insatisfação,
+perdas, limite do portão (0,975), a regra de comércio da E5 e o núcleo C++.
+
 ## 9. Dívidas declaradas
 
 - Escala monetária da energia: **resolvida na unidade** (D-118, §8.5) — parâmetros em
   salário-dia, âncora derivada do sim no seed e gravada no save. Segue aberto o **p50
-  abaixo de 1,5 %** (margem de varejo/T&D/tributo — E7) e o portão de comida 99/179
-  (6 extras sem canal monetário de energia).
+  abaixo de 1,5 %** (margem de varejo/T&D/tributo — E7) e o portão de comida
+  **102/179** (9 extras; classificação em §8.6 — nenhum bug de dado: são canais (a)
+  racionamento físico e (b) regra/margem).
+- **Portão de comida tem margem de ±3 nações** (§8.6): três linhas de fluxo ZERO
+  moveram CIV/KNA/SUR porque o mundo diverge na 6ª decimal. Comparar 102 com 93 não
+  separa energia de ruído; o aceite precisa de banda, não de número exato.
+- `importer_short_days` do runner conta só dias com fluxo (o núcleo publica o
+  importador só quando há fluxo): a coluna não mede o déficit do importador. Correção
+  exige o núcleo publicar o déficit nacional do dia — fora desta rodada.
+- Canal de ATG/AUS (comida 0,533/0,934 com energia 100 % servida): o A/B `--power=0`
+  isola o bloco de energia, mas não separa renda de disponibilidade de comida; falta
+  um diagnóstico de comida por nação (importação, estoque, transporte) no runner.
+- Comércio da E5: só compra de vizinho com **capacidade disponível não despachada**.
+  Em ano-base em que todos os vizinhos importam (Kosovo), a linha existe e não vende
+  (§8.6); mudar isso é regra de núcleo, não dado.
 - Vento sem série mensal (GWA não publica) — fator anual, declarado.
 - `oil: null` na matriz Ember — capacidade de óleo não publicada por país (D-115(d)).
 - Conexão parcial é um limite de troca por cidade (não se modela fluxo físico entre
