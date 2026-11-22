@@ -8,6 +8,7 @@
 
 #include "construction.h"
 #include "housing.h"
+#include "power.h"
 #include "storage.h"
 #include "profiling.h"
 #include "sim_constants.h"
@@ -347,6 +348,21 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 				plant.owner_nation = ws.cities[index].nation;
 				plant.capex = p.total_cost;
 				plant.opex_per_mwh = ws.power_params.opex_per_mwh[plant.fuel];
+				// D-122: CF de sítio da usina nova (potencial local com teto e
+				// penalidade). Térmica recebe o CF declarado da fonte.
+				double solar_mean = 0.0;
+				int solar_months = 0;
+				for (int month = 0; month < kPowerMonthCount; ++month) {
+					if (state.solar_month[month] > 0.0) {
+						solar_mean += state.solar_month[month];
+						solar_months += 1;
+					}
+				}
+				if (solar_months > 0) {
+					solar_mean /= static_cast<double>(solar_months);
+				}
+				plant.cf_base = power_local_cf(ws.power_params, plant.fuel,
+					solar_mean, state.wind_ms);
 				plant.jobs = plant.mw * 0.4;
 				plant.wage = 20.0;
 				plant.built_day = ws.day;

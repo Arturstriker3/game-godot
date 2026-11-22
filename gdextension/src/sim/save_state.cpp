@@ -1702,6 +1702,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			}
 			entry["cap_mw"] = cap;
 			entry["solar_month"] = solar;
+			// D-122 (v38): vento do sítio para a obra nova render local.
+			entry["wind_ms"] = state.wind_ms;
 			// Ancoragem nacional (D-116): a base Ember, a renda/perda do ano-base
 			// e a calibração do CF por fonte precisam sobreviver ao load; sem
 			// eles a demanda voltaria à curva global no dia seguinte.
@@ -1753,6 +1755,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["wage"] = plant.wage;
 			entry["built_day"] = plant.built_day;
 			entry["initial"] = plant.initial;
+			// D-122 (v38): CF de sítio da usina nova (0 = parque do ano-base).
+			entry["cf_base"] = plant.cf_base;
 			// Geração do dia (MWh): o status publica esse valor até o próximo
 			// despacho; o save o preserva como os agregados da rede já fazem.
 			entry["generated_mwh"] = plant.generated_mwh;
@@ -1788,6 +1792,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["import_value"] = grid.import_value;
 			entry["export_value"] = grid.export_value;
 			entry["interconnect_count"] = grid.interconnect_count;
+			// D-122 (v38): curtailment do dia (MWh) para o status/round-trip.
+			entry["curtailment_mwh"] = grid.curtailment_mwh;
 			grids[sim_str(row.first.c_str())] = entry;
 		}
 		block["grids"] = grids;
@@ -4172,6 +4178,9 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				state.solar_month[month] = std::clamp(
 					double(solar[month]), 0.0, 1.0);
 			}
+			// D-122 (v38): sem a chave (save antigo) fica 0 = sem vento local.
+			state.wind_ms = std::max(0.0,
+				double(entry.get("wind_ms", 0.0)));
 			// Save v35 antigo (sem âncora): base 0 mantém a curva global e
 			// cf_scale fica 1,0 (default do struct). Saves novos preservam.
 			state.demand_base_mwh = std::max(0.0,
@@ -4246,6 +4255,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			plant.wage = std::max(0.0, double(entry.get("wage", 0.0)));
 			plant.built_day = int(entry.get("built_day", 0));
 			plant.initial = bool(entry.get("initial", false));
+			// D-122 (v38): sem a chave (save antigo) fica 0 = calibrado pela
+			// Ember (a usina antiga continua reproduzindo o ano-base).
+			plant.cf_base = std::clamp(
+				double(entry.get("cf_base", 0.0)), 0.0, 1.0);
 			plant.generated_mwh = std::max(0.0,
 				double(entry.get("generated_mwh", 0.0)));
 			ws.power_plants.push_back(std::move(plant));
@@ -4293,6 +4306,9 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					double(entry.get("export_value", 0.0)));
 				grid.interconnect_count = std::max(0,
 					int(entry.get("interconnect_count", 0)));
+				// D-122 (v38): curtailment do dia; save antigo fica 0.
+				grid.curtailment_mwh = std::max(0.0,
+					double(entry.get("curtailment_mwh", 0.0)));
 				const Array by_fuel = entry.get("generation_by_fuel", Array());
 				for (int fuel = 0; fuel < kPowerFuelCount
 						&& fuel < by_fuel.size(); ++fuel) {

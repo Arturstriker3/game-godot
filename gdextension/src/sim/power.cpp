@@ -92,6 +92,102 @@ bool power_fuel_is_thermal(int fuel) {
 		|| fuel == POWER_OTHER;
 }
 
+bool power_fuel_is_renewable(int fuel) {
+	return fuel == POWER_HYDRO || fuel == POWER_SOLAR || fuel == POWER_WIND;
+}
+
+namespace {
+
+constexpr double kPowerPi = 3.14159265358979323846;
+
+// FNV-1a de 32 bits: fase determinística por NAÇÃO (não usa std::hash, que
+// não é estável entre compiladores/execuções — o determinismo é contrato).
+std::uint32_t power_phase_hash(const std::string& text) {
+	std::uint32_t hash = 2166136261u;
+	for (const unsigned char byte : text) {
+		hash ^= static_cast<std::uint32_t>(byte);
+		hash *= 16777619u;
+	}
+	return hash;
+}
+
+} // namespace
+
+double power_local_cf(const PowerParams& params, int fuel,
+		double solar_month_mean, double wind_ms) {
+	if (fuel < 0 || fuel >= kPowerFuelCount) {
+		return 0.0;
+	}
+	double cf = std::clamp(params.cf[fuel], 0.0, 1.0);
+	if (fuel == POWER_SOLAR && solar_month_mean > 0.0) {
+		// PVOUT médio do sítio (kWh/kWp/dia ÷ 24 h) é o CF solar local.
+		cf = solar_month_mean;
+	} else if (fuel == POWER_WIND && wind_ms > 0.0) {
+		// Curva declarada: a potência do vento cresce com v^3; o teto abaixo
+		// mantém o CF dentro da faixa realista (Betz, disponibilidade, esteira).
+		cf = params.wind_cf_ref * std::pow(
+			std::max(0.0, wind_ms) / params.wind_cf_ref_ms,
+			params.wind_cf_exponent);
+	}
+	cf = std::clamp(cf, 0.0, std::clamp(params.cf_cap[fuel], 0.0, 1.0));
+	return std::clamp(cf * params.balance_penalty[fuel], 0.0, 1.0);
+}
+
+double power_day_factor(const PowerParams& params, int fuel, int day,
+		const std::string& nation, bool southern) {
+	if (!power_fuel_is_renewable(fuel)) {
+		return 1.0;
+	}
+	const double amp = fuel == POWER_HYDRO
+		? params.hydro_season_amp : params.weather_amp[fuel];
+	if (!(amp > 0.0)) {
+		return 1.0;
+	}
+	const std::uint32_t hash = power_phase_hash(nation);
+	const double doy = static_cast<double>(((day % 365) + 365) % 365);
+	double factor = 1.0;
+	if (fuel == POWER_HYDRO) {
+		// Cheia no fim do inverno/início da primavera do hemisfério (dia 75 no
+		// norte, 255 no sul), deslocada em até ±30 dias pelo clima da nação.
+		const double base = southern ? 255.0 : 75.0;
+		const double offset = static_cast<double>(hash % 61u) - 30.0;
+		factor += amp * std::cos(
+			2.0 * kPowerPi * (doy - (base + offset)) / 365.0);
+	} else {
+		// Sazonalidade + "clima" de alta frequência. As duas harmônicas têm
+		// período que divide 365 dias, então a média em QUALQUER janela de
+		// 365 dias é exatamente 1 e o ano-base calibrado não se move.
+		const double phase_days = static_cast<double>(hash % 365u);
+		factor += amp * std::cos(
+			2.0 * kPowerPi * (doy - phase_days) / 365.0);
+		factor += 0.5 * amp * std::sin(
+			4.0 * kPowerPi * doy / 365.0 + phase_days * 2.0 * kPowerPi / 365.0);
+	}
+	return std::clamp(factor, 0.0, 2.0);
+}
+
+double power_capacity_credit(const PowerParams& params, int fuel) {
+	if (fuel < 0 || fuel >= kPowerFuelCount) {
+		return 0.0;
+	}
+	return std::clamp(params.capacity_credit[fuel], 0.0, 1.0);
+}
+
+double power_new_capex_per_mw(const PowerParams& params, int fuel) {
+	if (fuel < 0 || fuel >= kPowerFuelCount) {
+		return 0.0;
+	}
+	return std::max(0.0, params.capex_per_mw[fuel])
+		* std::max(0.0, params.capex_mult[fuel]);
+}
+
+int power_build_days(const PowerParams& params, int fuel) {
+	if (fuel == POWER_HYDRO) {
+		return std::max(params.build_days_plant, params.build_days_hydro);
+	}
+	return std::max(0, params.build_days_plant);
+}
+
 void PowerParams::apply(const std::map<std::string, double>& v) {
 	const auto get = [&v](const std::string& key, double& out) {
 		const auto found = v.find(key);
@@ -143,7 +239,22 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 		get("fuel_t_per_mwh_" + name, fuel_t_per_mwh[fuel]);
 		get("capex_per_mw_" + name, capex_per_mw_sd[fuel]);
 		get("opex_per_mwh_" + name, opex_per_mwh_sd[fuel]);
+		// D-122: balanceamento das renováveis (defaults declarados).
+		get("capex_mult_" + name, capex_mult[fuel]);
+		get("cf_cap_" + name, cf_cap[fuel]);
+		get("balance_penalty_" + name, balance_penalty[fuel]);
+		get("capacity_credit_" + name, capacity_credit[fuel]);
+		get("weather_amp_" + name, weather_amp[fuel]);
 	}
+	{
+		double days = static_cast<double>(build_days_hydro);
+		get("build_days_hydro", days);
+		build_days_hydro = static_cast<int>(days);
+	}
+	get("hydro_season_amp", hydro_season_amp);
+	get("wind_cf_ref_ms", wind_cf_ref_ms);
+	get("wind_cf_ref", wind_cf_ref);
+	get("wind_cf_exponent", wind_cf_exponent);
 	const auto get_int = [&v](const std::string& key, int& out) {
 		const auto found = v.find(key);
 		if (found != v.end()) {
@@ -183,8 +294,18 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 		fuel_t_per_mwh[fuel] = std::max(0.0, fuel_t_per_mwh[fuel]);
 		opex_per_mwh_sd[fuel] = std::max(0.0, opex_per_mwh_sd[fuel]);
 		capex_per_mw_sd[fuel] = std::max(0.0, capex_per_mw_sd[fuel]);
+		capex_mult[fuel] = std::clamp(capex_mult[fuel], 0.0, 20.0);
+		cf_cap[fuel] = std::clamp(cf_cap[fuel], 0.0, 1.0);
+		balance_penalty[fuel] = std::clamp(balance_penalty[fuel], 0.0, 1.0);
+		capacity_credit[fuel] = std::clamp(capacity_credit[fuel], 0.0, 1.0);
+		weather_amp[fuel] = std::clamp(weather_amp[fuel], 0.0, 0.9);
 	}
 	capex_per_mw_line_sd = std::max(0.0, capex_per_mw_line_sd);
+	build_days_hydro = std::max(0, build_days_hydro);
+	hydro_season_amp = std::clamp(hydro_season_amp, 0.0, 0.9);
+	wind_cf_ref_ms = std::max(0.1, wind_cf_ref_ms);
+	wind_cf_ref = std::clamp(wind_cf_ref, 0.0, 1.0);
+	wind_cf_exponent = std::clamp(wind_cf_exponent, 0.0, 6.0);
 	salary_day_xgs = std::max(0.0, salary_day_xgs);
 	resolve_money();
 }
@@ -260,7 +381,18 @@ void power_params_to_map(const PowerParams& p,
 		put("fuel_t_per_mwh_" + name, p.fuel_t_per_mwh[fuel]);
 		put("capex_per_mw_" + name, p.capex_per_mw_sd[fuel]);
 		put("opex_per_mwh_" + name, p.opex_per_mwh_sd[fuel]);
+		// D-122 (save v38): balanceamento das renováveis no mapa de regra.
+		put("capex_mult_" + name, p.capex_mult[fuel]);
+		put("cf_cap_" + name, p.cf_cap[fuel]);
+		put("balance_penalty_" + name, p.balance_penalty[fuel]);
+		put("capacity_credit_" + name, p.capacity_credit[fuel]);
+		put("weather_amp_" + name, p.weather_amp[fuel]);
 	}
+	put("build_days_hydro", static_cast<double>(p.build_days_hydro));
+	put("hydro_season_amp", p.hydro_season_amp);
+	put("wind_cf_ref_ms", p.wind_cf_ref_ms);
+	put("wind_cf_ref", p.wind_cf_ref);
+	put("wind_cf_exponent", p.wind_cf_exponent);
 }
 
 // D-118 — âncora salarial do sim: XGS por SALÁRIO-DIA. Média ponderada pela
@@ -493,6 +625,8 @@ void seed(WorldState& ws, const PowerParams& params,
 				state.solar_month[month] = def.solar_month[month];
 			}
 		}
+		// D-122: vento do sítio (GWA) para a obra NOVA render pelo potencial.
+		state.wind_ms = std::max(0.0, def.wind_ms);
 		const bool operator_nation = nation_data
 			&& nation_access >= params.operator_access_pct;
 		const double score = 0.65 * nation_urban + 0.35 * nation_rural;
@@ -755,7 +889,9 @@ bool SimCore::build_power_plant(const std::string& city_id,
 		return fail("potencial esgotado");
 	}
 	const PowerParams& params = ws_.power_params;
-	const double cost = mw * params.capex_per_mw[fuel];
+	// D-122: a obra NOVA paga o capex com o multiplicador declarado da fonte;
+	// o parque do ano-base mantém o capex semeado (só a jogabilidade muda).
+	const double cost = mw * power_new_capex_per_mw(params, fuel);
 	double* cash = nullptr;
 	std::string owner = "state";
 	if (group_id.empty()) {
@@ -787,7 +923,7 @@ bool SimCore::build_power_plant(const std::string& city_id,
 	project.power_mw = mw;
 	project.output_product = -1;
 	project.total_cost = cost;
-	project.duration_days = params.build_days_plant;
+	project.duration_days = power_build_days(params, fuel);
 	*cash -= cost;
 	add_construction_project(project);
 	return true;
@@ -1072,7 +1208,30 @@ void SimCore::phase_power() {
 		// Calibração nacional (D-116): a geração Ember do ano-base define o
 		// fator efetivo da fonte naquela nação. O teto 1,0 mantém a física
 		// (CF ≤ 1); 0 = a fonte não gerou no ano-base (dado).
-		const double cf_scale = std::clamp(state.cf_scale[plant.fuel], 0.0, 5.0);
+		double cf_scale = std::clamp(state.cf_scale[plant.fuel], 0.0, 5.0);
+		if (plant.cf_base > 0.0) {
+			// D-122: usina NOVA. Rende pelo potencial do SÍTIO (PVOUT/vento/CF
+			// hídrico), com teto e penalidade de balanceamento — NÃO usa o
+			// cf_scale da Ember, que calibra só o parque do ano-base.
+			cf = std::clamp(plant.cf_base, 0.0, 1.0);
+			cf_scale = 1.0;
+			if (plant.fuel == POWER_SOLAR && state.solar_month[month] > 0.0) {
+				// Forma mensal local do PVOUT no mês, já com o teto da fonte.
+				cf = std::clamp(
+					std::clamp(state.solar_month[month], 0.0, 1.0),
+					0.0, std::clamp(params.cf_cap[POWER_SOLAR], 0.0, 1.0))
+					* params.balance_penalty[POWER_SOLAR];
+			}
+		}
+		// D-122: variação diária determinística (solar/eólica/hídrica) da usina
+		// NOVA. A média em 365 dias é exata 1, então o ano-base calibrado não
+		// se move. O parque do ano-base fica na âncora Ember (não há série
+		// diária pública de vento/vazão para ele; ver §renováveis do doc).
+		if (plant.cf_base > 0.0) {
+			const bool southern = city.center.y > kMapHeight * 0.5;
+			cf *= power_day_factor(params, plant.fuel, ws.day, city.nation,
+				southern);
+		}
 		day.avail_mw = std::max(0.0, plant.mw)
 			* std::clamp(cf * cf_scale, 0.0, 1.0);
 		if (plant.fuel != POWER_SOLAR && plant.fuel != POWER_NUCLEAR
@@ -1302,6 +1461,7 @@ void SimCore::phase_power() {
 		grid.served_mwh = 0.0;
 		grid.price = 0.0;
 		grid.retail_margin = 0.0;
+		grid.curtailment_mwh = 0.0;
 		for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
 			grid.generation_by_fuel[fuel] = 0.0;
 		}
@@ -2048,6 +2208,26 @@ void SimCore::phase_power() {
 			* params.stress_per_unserved * duration_factor, 0.0, 1.0);
 	}
 
+	// D-122: CURTILAMENTO. Sem armazenamento, a energia renovável disponível e
+	// não despachada é desperdiçada (não abastece ninguém, não entra na
+	// geração). Fica no ledger da rede para o status e o relatório.
+	for (std::size_t p = 0; p < ws.power_plants.size(); ++p) {
+		const PowerPlant& plant = ws.power_plants[p];
+		if (!power_fuel_is_renewable(plant.fuel)
+				|| plant.city_index < 0
+				|| plant.city_index >= static_cast<int>(city_count)) {
+			continue;
+		}
+		const double available = std::max(0.0, days[p].avail_mw) * 24.0;
+		const double unused = available - std::max(0.0, plant.generated_mwh);
+		if (unused <= 1e-9) {
+			continue;
+		}
+		const std::string& nation = ws.cities[
+			static_cast<std::size_t>(plant.city_index)].nation;
+		ws.power_grids[nation].curtailment_mwh += unused;
+	}
+
 	// IA: onde o racionamento persiste, o Estado abre obra de usina (fila
 	// §15). Determinístico: nação em ordem de mapa, fonte mais barata com
 	// potencial, cidade conectada de maior população com folga.
@@ -2088,7 +2268,14 @@ void SimCore::phase_power() {
 					continue;
 				}
 				const double mw = std::min(wanted, headroom);
-				const double cost = mw * params.capex_per_mw[fuel];
+				// D-122: a IA compara o custo por MW FIRME, não o capex bruto.
+				// Renovável é caro de construir e entrega pouco no pico
+				// (crédito de capacidade baixo); a térmica é barata de
+				// construir e despachável — a troca que o dono pediu.
+				const double credit = std::max(0.05,
+					power_capacity_credit(params, fuel));
+				const double cost = mw
+					* power_new_capex_per_mw(params, fuel) / credit;
 				if (best_fuel < 0 || cost < best_cost) {
 					best_fuel = fuel;
 					best_city = city.id;

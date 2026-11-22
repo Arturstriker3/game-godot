@@ -6901,6 +6901,8 @@ int EconomySim::set_power_definitions(const Dictionary& nations,
 			def.solar_month[month] = std::clamp(double(solar[month]),
 				0.0, 1.0);
 		}
+		// D-122: vento médio anual do sítio (GWA) para o potencial da obra nova.
+		def.wind_ms = std::max(0.0, double(entry.get("wind_ms", 0.0)));
 		city_defs[std::string(city_id.utf8().get_data())] = def;
 	}
 	sim_core_.set_power_definitions(rule, nation_defs, city_defs,
@@ -7051,6 +7053,51 @@ Dictionary EconomySim::get_power_status() const {
 	out["installed_mw_by_fuel"] = park;
 	out["generation_mwh_by_fuel"] = generation;
 	out["plants"] = static_cast<int>(ws_.power_plants.size());
+	// D-122: a troca que o jogador e a IA precisam ver — capex/multiplicador,
+	// O&M, CF declarado/teto, penalidade de balanceamento, crédito de
+	// capacidade no pico e prazo da obra, por fonte. Tudo em XGS (D-118).
+	Dictionary build_costs;
+	for (int fuel = 0; fuel < ogs::kPowerFuelCount; ++fuel) {
+		Dictionary entry;
+		entry["capex_per_mw"] = ogs::power_new_capex_per_mw(params, fuel);
+		entry["capex_mult"] = params.capex_mult[fuel];
+		entry["opex_per_mwh"] = params.opex_per_mwh[fuel];
+		entry["cf_declared"] = params.cf[fuel];
+		entry["cf_cap"] = params.cf_cap[fuel];
+		entry["balance_penalty"] = params.balance_penalty[fuel];
+		entry["capacity_credit"] = ogs::power_capacity_credit(params, fuel);
+		entry["build_days"] = ogs::power_build_days(params, fuel);
+		build_costs[String(ogs::power_fuel_name(fuel))] = entry;
+	}
+	out["build_costs"] = build_costs;
+	// Usinas NOVAS (obra de jogador/IA): potência, CF de sítio e crédito de
+	// capacidade. O parque do ano-base não aparece aqui (calibrado pela Ember).
+	Array new_plants;
+	for (const ogs::PowerPlant& plant : ws_.power_plants) {
+		if (plant.initial || plant.fuel < 0
+				|| plant.fuel >= ogs::kPowerFuelCount) {
+			continue;
+		}
+		Dictionary entry;
+		entry["id"] = String(plant.id.c_str());
+		entry["city"] = plant.city_index >= 0
+			&& plant.city_index < static_cast<int>(ws_.cities.size())
+			? String(ws_.cities[static_cast<std::size_t>(plant.city_index)]
+				.id.c_str()) : String();
+		entry["fuel"] = String(ogs::power_fuel_name(plant.fuel));
+		entry["mw"] = plant.mw;
+		entry["cf_base"] = plant.cf_base;
+		entry["capacity_credit"] =
+			ogs::power_capacity_credit(params, plant.fuel);
+		entry["built_day"] = plant.built_day;
+		new_plants.append(entry);
+	}
+	out["new_plants"] = new_plants;
+	double world_curtailment = 0.0;
+	for (const auto& row : ws_.power_grids) {
+		world_curtailment += std::max(0.0, row.second.curtailment_mwh);
+	}
+	out["curtailment_mwh"] = world_curtailment;
 	// Agregado do mundo: sÃ³ as cidades COM dado (ausÃªncia nÃ£o Ã© falta).
 	double world_demand = 0.0;
 	double world_served = 0.0;
@@ -7203,6 +7250,8 @@ Dictionary EconomySim::get_power_status() const {
 		entry["import_value"] = grid.import_value;
 		entry["export_value"] = grid.export_value;
 		entry["interconnect_count"] = grid.interconnect_count;
+		// D-122: renovável disponível e não despachado no dia (MWh).
+		entry["curtailment_mwh"] = grid.curtailment_mwh;
 		Dictionary by_fuel;
 		for (int fuel = 0; fuel < ogs::kPowerFuelCount; ++fuel) {
 			by_fuel[String(ogs::power_fuel_name(fuel))] =
