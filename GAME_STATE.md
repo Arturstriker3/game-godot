@@ -1511,8 +1511,10 @@ bauxita 4,90x, trigo 1,12x, arroz 1,09x, ouro 1,65x; comida 0,988.
 - **G1 — Semicondutores, microchips e drone FPV (antes das telas, depois da Fase H):** `chips` passa a ser
   exibido como **Semicondutores** (mesmo id, sem migração de save); novo bem **`microchips`** (semicondutor
   avançado: `chips` + terras raras processadas + ferramentas de precisão) usado por computador, celular
-  avançado, robôs, drone militar e sensores; novo bem **`fpv_drone`** (drone FPV de ataque com ogiva tipo RPG:
-  micromotor, baterias, componentes eletrônicos, peças plásticas + projétil/explosivos; categoria militar).
+  avançado, robôs, drone militar e sensores; o **`military_drone` é o drone complexo** (fuselagem, micromotor,
+  sensores e baterias **+ `microchips`**, deixando de sair de um `drone` pronto); novo bem **`fpv_drone`**
+  (drone FPV de ataque com ogiva tipo RPG, **conversão do drone civil**: 1× `drone` + ogiva
+  `projectile`/`explosives` + um pouco de `electronic_components` de rádio/vídeo; categoria militar).
   Parâmetros entram como **default de jogo declarado** (`estimated`/`derived`), não dado real. Fuzil antigo
   (`old_rifles`) fica **adiado sem data** (a arte já está salva em `assets/icons/illustrated/`).
 - **Parte F — combustível e frota:** todo veículo (caminhão, navio, avião) consome combustível **ao se

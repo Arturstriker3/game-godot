@@ -258,14 +258,17 @@ Entra **antes das telas** e depois da Fase H. É conteúdo de dado + receita na 
   ferramentas de precisão (`precision_tools`)**. Usado por **computador (`computer`)** e **celular
   (`phone`)** — o bem representa o aparelho avançado, não se cria um `phone` novo —, **robôs (`robots`)**,
   **drone militar (`military_drone`)** e **sensores (`sensors`)**. Computador, celular, robôs e sensores
-  trocam o insumo `chips` por `microchips`; o `military_drone` **ganha** `microchips` (hoje usa `drone` +
-  munição + fibra de carbono). O `drone` civil continua com `chips` (a decisão do dono cita "drones
-  militares").
+  trocam o insumo `chips` por `microchips`. O `drone` civil continua com `chips` (a decisão do dono cita
+  "drones militares").
+- **`military_drone` é o drone complexo** (decisão do dono, 2026-11-22): montado de peças — fuselagem
+  (peças plásticas), micromotor, sensores e baterias — e passa a exigir **`microchips`**. Deixa de sair de
+  um `drone` civil pronto (a receita de hoje é `drone` + munição + fibra de carbono); as quantidades e a
+  permanência de `ammunition`/`carbon_fiber` são ajuste de implementação.
 - **Novo bem `fpv_drone` — drone FPV de ataque com ogiva tipo RPG** (`sector: military`, `kind: final`,
-  `tier: final`, `use: ["army"]` como os demais bens militares): insumos **micromotor (`micromotor`) +
-  baterias (`batteries`) + componentes eletrônicos (`electronic_components`) + peças plásticas
-  (`plastic_parts`) + projétil (`projectile`) e explosivos (`explosives`)**. Categoria militar, distinto do
-  `drone` civil e do `military_drone` (reconhecimento/UAV).
+  `tier: final`, `use: ["army"]` como os demais bens militares): é **conversão do drone civil** — insumos
+  **1× `drone` + ogiva (`projectile`/`explosives`) + um pouco de `electronic_components`** (rádio e vídeo
+  FPV). Categoria militar; o barato/descartável é ele, enquanto o `military_drone` é o complexo de
+  reconhecimento/UAV.
 - **Parâmetros são default de jogo declarado, não dado real:** preço-base e coeficientes de receita entram em
   `data/definitions` com `params_source`/`price_source` do mesmo tipo dos vizinhos
   (`estimated:order_of_magnitude`/`derived`) e o doc registra que é calibração inicial ajustável — nada é
