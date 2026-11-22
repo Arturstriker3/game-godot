@@ -484,9 +484,79 @@ Recomendação do GSD: **A**, no mesmo pacote da **E7** (capex + T&D + tributo d
 p50 à faixa de 1,5–4 %), depois de G/H; **B** como fecho de fase se o dono quiser encerrar
 agora; **C** se a fase precisar fechar antes da decisão de escala.
 
+### 8.5 Opção A executada (22/11/2026): unidade salário-dia na energia (D-118)
+
+Implementado no núcleo (`sim/power.{h,cpp}` + `economy_sim.cpp`), sem tocar a forma do preço:
+
+- **Unidade.** `price_floor`, `price_ceiling`, `opex_per_mwh_*`, `capex_per_mw_*` e
+  `capex_per_mw_line` são declarados em **salário-dia**. `PowerParams::resolve_money`
+  converte uma vez para XGS: `xgs = valor_salario_dia × salary_day_xgs`.
+- **Fator derivado do próprio sim.** No seed, `salary_day_xgs` é a média ponderada pela
+  população simulada do salário diário semeado do trabalhador não qualificado
+  (`Pop::wage_by_level[0]`). Mundo medido: **0,055273 XGS/dia** — o mesmo nível da
+  comparação do §8.2 (0,05). Não é constante escolhida à mão: vem do estado do mundo.
+  Sem população/salário, cai no `kLaborWageInitial` declarado (0,055). A âncora vai ao
+  save no mapa `policy` do bloco `power` (v36, aditivo), então o load não a re-deriva com
+  o salário do dia; o status publica `salary_day_xgs`, `price_floor` e `price_ceiling`.
+- **Custo marginal.** `preço = âncora × (combustível_do_mercado + O&M_salário_dia)`. A
+  usina continua **comprando** o combustível no mercado de bens pelo preço do bem (com o
+  prêmio de importação de 1,5×), e o pagamento/estoque saem como antes; a conversão é só
+  do **preço** (formação), então a ordem de mérito e os custos relativos entre usinas
+  ficam idênticos aos da regra declarada. VOLL continua múltiplo do preço da rede;
+  escassez, racionamento, insatisfação e perdas não mudaram.
+
+**Medido na rodada 365 do mesmo commit** (`c1_world_ai_365.gd --days=365
+--control=res://docs/economy/perf/c6_gate_base.json`, 0 violações, 0 travados):
+
+| Métrica | Antes (D-117) | Depois (D-118) |
+|---|---:|---:|
+| Conta/PIB agregada | 56,99 % | **2,66 %** |
+| Conta/PIB p10 / p50 / p90 | 1,59 / 11,72 / 394,75 % | 0,084 / **0,634** / 10,26 % |
+| Preço da rede típico (XGS/MWh) | 0,3155–0,35 | 0,0140–0,0194 (hidro 0,0083) |
+| Energia servida | 0,9962 | 0,9962 |
+| Falências (entidade) | 5 | **2** |
+| Resolução de banco (C6) | 1 (SAH, dia 315) | **0** |
+| Portão de comida | 109/179 | **99/179** (controle 93) |
+
+Tabela das 10 maiores nações por PIB (conta/PIB, %; real do §8.2 onde citado):
+
+| Nação | Antes | Depois | Real (US$ 90/MWh) |
+|---|---:|---:|---:|
+| CHN | 44,83 | 2,33 | 2,29 |
+| IND | 4,33 | 0,24 | 1,10 |
+| BRA | 9,22 | 0,50 | 1,40 |
+| USA | 68,09 | **3,35** | 1,33 |
+| JPN | 41,46 | 2,15 | — |
+| DEU | 13,07 | 0,69 | 0,74 |
+| MEX | 15,26 | 0,83 | — |
+| FRA | 16,85 | 0,93 | — |
+| GBR | 17,83 | 0,94 | — |
+| CAN | 51,79 | 2,69 | — |
+
+**Leitura.** O agregado e os EUA entram na faixa; a **mediana fica abaixo** dela. Como o
+preço é único e proporcional, agregado/p50 = 4,20 > 4/1,5 = 2,67: **nenhum fator uniforme
+coloca mediana e agregado na faixa ao mesmo tempo**. O que falta na mediana é a margem de
+varejo (distribuidora + T&D + tributo) — a E7 — e a dispersão nacional de MWh por XGS do
+sim (0,35 a 194) é maior que a real e não se corrige pelo preço. É o mesmo resultado que o
+§8.2 previa (p50 0,69 %).
+
+**Portão de comida 99/179 (controle 93): 7 extras, todos já extras antes da unidade.**
+Quatro têm frota modelada abaixo da demanda (LBY 0,847; MDA 0,601; PRK 0,823; XKX 0,730;
+365 d racionando — canal físico), ISL tem `food30 = 0,000` com 99,9 % de energia servida
+(lacuna de comida do dado, não preço) e ATG/AUS estão na margem (0,533/0,934, energia
+100 % servida, preço 0,017). A unidade tirou **12 extras** e **eliminou a cascata do banco
+SAH** (0 resoluções; as 3 fazendas não fecham mais). O alvo ≤93 não é atingido: são 99
+abaixo contra 93 do controle, e os 7 extras listados não têm canal monetário de energia.
+
+**Falências 2** — as duas minas PRI-PON/USA (receita 0, 60 d de prejuízo), presentes no
+controle sem energia; nenhuma nova e nenhuma do SAH.
+
 ## 9. Dívidas declaradas
 
-- Escala monetária da energia (XGS/MWh × salário-dia) não resolvida — §8.2, decisão D-118.
+- Escala monetária da energia: **resolvida na unidade** (D-118, §8.5) — parâmetros em
+  salário-dia, âncora derivada do sim no seed e gravada no save. Segue aberto o **p50
+  abaixo de 1,5 %** (margem de varejo/T&D/tributo — E7) e o portão de comida 99/179
+  (6 extras sem canal monetário de energia).
 - Vento sem série mensal (GWA não publica) — fator anual, declarado.
 - `oil: null` na matriz Ember — capacidade de óleo não publicada por país (D-115(d)).
 - Conexão parcial é um limite de troca por cidade (não se modela fluxo físico entre
