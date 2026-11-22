@@ -11,8 +11,10 @@ réplica de GeographyService.assign_provinces).
 Honestidade do dado:
   * o GPPD é de ~2021; NADA é extrapolado para 2026. Cada usina leva
     method="gppd_2021_unadjusted" e a data de referência da base no meta;
-  * a comparação nacional com a IRENA (capacidade instalada 2024/2025) fica em
-    `national_comparison`, com o desvio percentual explícito;
+  * a comparação do parque com o agregado nacional 2024-2025 (Ember, CC BY 4.0)
+    NÃO fica aqui: ela é montada em tools/data/energy/build_national_capacity.py
+    (national_capacity.json, `plant_comparison`), com desvio por fonte. A IRENA
+    saiu das saídas versionadas porque os termos dela restringem uso comercial;
   * usina em pixel sem província (mar, ilha removida, país fora do atlas) fica
     com city_id/province_id nulos e o motivo registrado — nunca é descartada.
 
@@ -33,8 +35,6 @@ import build_energy_common as ec
 ROOT = ec.ROOT
 GPPD_CSV = os.path.join(ROOT, "tools", "data", "gppd", "plants_normalized.csv")
 GPPD_MANIFEST = os.path.join(ROOT, "tools", "data", "gppd", "manifest.json")
-IRENA_CSV = os.path.join(ROOT, "tools", "data", "irena_capacity.csv")
-IRENA_MANIFEST = os.path.join(ROOT, "tools", "data", "irena_capacity_manifest.json")
 OUT = os.path.join(ROOT, "data", "definitions", "energy", "power_plants_2026.json")
 
 # GPPD primary_fuel -> grupo de energia do jogo. Grupos: hydro, solar, wind,
@@ -87,32 +87,13 @@ def province_at(ids, lon, lat):
     return int(ids[ry, rx]), rx, ry
 
 
-def irena_totals():
-    """{iso3: {year: total_mw}} a partir do cache da IRENA (se existir)."""
-    if not os.path.exists(IRENA_CSV):
-        return {}, {}
-    totals = {}
-    with open(IRENA_CSV, encoding="utf-8", newline="") as handle:
-        for row in csv.DictReader(handle):
-            tech = row["technology"]
-            if tech not in ("Total Non-Renewable", "Total Renewable"):
-                continue
-            iso3 = row["country_iso3"]
-            year = row["year"]
-            totals.setdefault(iso3, {}).setdefault(year, 0.0)
-            totals[iso3][year] += float(row["capacity_mw"])
-    manifest = {}
-    if os.path.exists(IRENA_MANIFEST):
-        manifest = ec.read_json(IRENA_MANIFEST)
-    return totals, manifest
-
-
 def main():
     cities = ec.load_cities()
     provinces = ec.load_provinces()
     areas = ec.raster_province_area_km2()
     tags, _ = ec.load_registry()
     tag_by_code = {ec.nation_code(tag): tag for tag in tags}
+    tag_by_atlas = {ec.province_tag(tag): tag for tag in tags}
     city_by_id = {c["id"]: c for c in cities}
     province_by_id = {p["id"]: p for p in provinces}
     raw = ec.read_json(GPPD_MANIFEST) if os.path.exists(GPPD_MANIFEST) else {}
@@ -136,6 +117,10 @@ def main():
         fuel_source = row["primary_fuel"]
         group = FUEL_GROUP.get(fuel_source, "other")
         year = row["commissioning_year"]
+        raster_nation = ""
+        if pid:
+            raster_nation = tag_by_atlas.get(
+                province_by_id.get(pid, {}).get("nation", ""), "")
         record = {
             "id": row["gppd_idnr"],
             "name": row["name"],
@@ -158,6 +143,11 @@ def main():
             "note": None if city_id else (
                 "province_not_assigned" if pid else "no_province_at_point"),
         }
+        if raster_nation and nation and raster_nation != nation:
+            # O raster do atlas coloca o ponto em outra nação (fronteira, ilha sem
+            # província própria, território ocupado). A usina continua na cidade dona
+            # da província — a regra do jogo —, mas o conflito fica declarado.
+            record["location_conflict"] = raster_nation
         plants.append({key: value for key, value in record.items()
                        if value is not None or key in REQUIRED_KEYS})
 
@@ -216,29 +206,6 @@ def main():
         entry["mw_per_1000_km2"] = (round(entry["total_mw"] / entry["area_km2"] * 1000.0, 3)
                                     if entry["area_km2"] > 0 else None)
 
-    # Comparação nacional: GPPD (~2021) x IRENA (2024/2025).
-    totals, irena_manifest = irena_totals()
-    comparison = []
-    for tag, entry in sorted(by_nation.items()):
-        code = ec.nation_code(tag)
-        series = totals.get(code, {})
-        year = "2025" if "2025" in series else ("2024" if "2024" in series else "")
-        if not year:
-            continue
-        irena_mw = round(series[year], 3)
-        deviation = (entry["total_mw"] / irena_mw - 1.0) * 100.0 if irena_mw > 0 else None
-        comparison.append({
-            "nation": tag,
-            "country_iso3": code,
-            "gppd_total_mw": entry["total_mw"],
-            "irena_total_mw": irena_mw,
-            "irena_year": int(year),
-            "deviation_pct": round(deviation, 1) if deviation is not None else None,
-            "gppd_shares_of_irena": round(entry["total_mw"] / irena_mw, 3) if irena_mw > 0 else None,
-        })
-    with_ira = [c for c in comparison if c["deviation_pct"] is not None]
-    biggest = sorted(with_ira, key=lambda c: abs(c["deviation_pct"]), reverse=True)[:20]
-
     meta = {
         "generated_by": "tools/build_energy_plants.py",
         "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E, E1",
@@ -272,6 +239,16 @@ def main():
             "renewable_groups": sorted(RENEWABLE_GROUPS),
             "confidence": "high (localização/MW do GPPD); atribuição cidade-província herda a do jogo",
         },
+        "location_conflicts": {
+            "count": sum(1 for p in plants if p.get("location_conflict")),
+            "mw": round(sum(p["capacity_mw"] for p in plants
+                            if p.get("location_conflict")), 3),
+            "rule": ("`location_conflict` = nação do raster de província diferente do "
+                     "`country_iso3` do GPPD (fronteira, ilha sem província própria, "
+                     "território ocupado). A usina fica na cidade dona da província; o "
+                     "conflito é registro, não correção — corrigir exige fonte."),
+            "top_pairs": [],
+        },
         "counts": {
             "plants": len(plants),
             "with_city": sum(1 for p in plants if p["city_id"]),
@@ -280,27 +257,25 @@ def main():
             "nations_with_plants": len(by_nation),
             "total_mw": round(sum(p["capacity_mw"] for p in plants), 3),
         },
-        "national_comparison": {
-            "counterpart": "IRENA ELECSTAT, Electrical Installed Capacity (MW), Grid=All",
-            "counterpart_url": irena_manifest.get("source_url"),
-            "counterpart_license": irena_manifest.get("license"),
-            "counterpart_citation": irena_manifest.get("citation"),
-            "note": ("GPPD é ~2021 e cobre usinas catalogadas; IRENA é 2024/2025 e inclui "
-                     "capacidade que o GPPD não lista (autoprodução, usinas pequenas, "
-                     "expansão pós-2021). Desvio negativo grande = base desatualizada; "
-                     "positivo grande = cobertura/dupla contagem do GPPD."),
-            "nations_compared": len(comparison),
-            "nations_without_irena": sorted(set(by_nation) - {c["nation"] for c in comparison}),
-            "top_deviations": biggest,
-        },
     }
 
+    pairs = {}
+    for plant in plants:
+        other = plant.get("location_conflict")
+        if not other:
+            continue
+        key = "%s>%s" % (plant["country_iso3"], other)
+        pairs[key] = pairs.get(key, 0) + 1
+    meta["location_conflicts"]["top_pairs"] = [
+        {"pair": key, "plants": count}
+        for key, count in sorted(pairs.items(), key=lambda kv: -kv[1])[:12]
+    ]
+
     payload = {"meta": meta, "by_nation": by_nation, "by_city": by_city,
-               "national_comparison": comparison, "plants": plants}
+               "plants": plants}
     text = ['{', ' "meta": %s,' % _compact(meta),
             ' "by_nation": %s,' % _compact(by_nation),
             ' "by_city": %s,' % _compact(by_city),
-            ' "national_comparison": %s,' % _compact(comparison),
             ' "plants": [']
     lines = []
     for plant in plants:
@@ -314,12 +289,6 @@ def main():
           % (meta["counts"]["plants"], meta["counts"]["with_city"], meta["counts"]["with_nation"]))
     print("total MW: %.1f | cidades com usina: %d | nações: %d"
           % (meta["counts"]["total_mw"], len(by_city), len(by_nation)))
-    print("comparação nacional: %d nações | com IRENA: %d"
-          % (len(by_nation), len(comparison)))
-    for row in biggest[:10]:
-        print("  %-4s GPPD %10.1f MW | IRENA %d %10.1f MW | desvio %+7.1f%%"
-              % (row["nation"], row["gppd_total_mw"], row["irena_year"],
-                 row["irena_total_mw"], row["deviation_pct"]))
     return 0
 
 

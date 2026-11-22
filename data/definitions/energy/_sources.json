@@ -1,0 +1,197 @@
+{
+ "meta": {
+  "generated_by": "tools/data/energy/build_sources_registry.py",
+  "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E, E1",
+  "verified_on": "2026-11-21",
+  "rule": "toda fonte usada precisa de URL, data de acesso e licenca verificada; fonte com licenca incompativel com uso comercial entra como used_restricted com blocker, ou como rejected",
+  "counts": {
+   "used": 5,
+   "used_restricted": 1,
+   "citation_only": 1,
+   "rejected": 2
+  }
+ },
+ "sources": [
+  {
+   "id": "gppd_wri",
+   "title": "Global Power Plant Database v1.3.0",
+   "publisher": "World Resources Institute (WRI)",
+   "url": "https://raw.githubusercontent.com/wri/global-power-plant-database/master/output_database/global_power_plant_database.csv",
+   "accessed_at_utc": "2026-11-17T10:46:04Z",
+   "sha256": "4b1f93e0fd93664f18684d9b05d0a52ed9658c6a8cf0d21ff2520791379ba7fc",
+   "reference_period": "2021 (base descontinuada nessa versao)",
+   "license": {
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "commercial_ok": true,
+    "verified_on": "2026-11-21",
+    "evidence": "licenca declarada no repositorio WRI/global-power-plant-database e no README da v1.3.0"
+   },
+   "citation": "Global Power Plant Database v1.3.0, World Resources Institute (WRI), 2021, CC BY 4.0",
+   "used_in": [
+    "data/definitions/energy/power_plants_2026.json"
+   ],
+   "transform": "usina individual (nome, fonte, MW, lat/lon) atribuida a cidade dona da provincia pelo raster do atlas; nenhum MW extrapolado",
+   "status": "used"
+  },
+  {
+   "id": "ember_yearly",
+   "title": "Yearly Electricity Data (global release)",
+   "publisher": "Ember Energy Research CIC",
+   "url": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "landing_url": "https://ember-energy.org/data/yearly-electricity-data/",
+   "accessed_at_utc": "2026-11-22T01:10:07Z",
+   "sha256": "43db1b75e3ae16eff5fc62a4bfa1f10876efa24af953e0069a939441ea95c616",
+   "reference_period": "1985-2025 (capacidade por fonte; 2025 parcial por pais)",
+   "license": {
+    "name": "CC BY 4.0",
+    "url": "https://ember-energy.org/creative-commons/",
+    "commercial_ok": true,
+    "verified_on": "2026-11-21",
+    "evidence": "\"All content is released under a Creative Commons Attribution Licence (CC-BY-4.0)\" na pagina do dataset e no rodape de ember-energy.org; a API declara o mesmo."
+   },
+   "citation": "Ember (2026). Yearly Electricity Data. Ember Energy Research CIC. https://ember-energy.org/data/yearly-electricity-data/",
+   "used_in": [
+    "data/definitions/energy/national_capacity.json",
+    "data/definitions/energy/hydro_potential.json"
+   ],
+   "transform": "Capacity (GW) x 1000 -> MW; ultimo ano nao vazio entre 2024 e 2025 por pais; matriz mapeada para as 9 fontes do jogo",
+   "status": "used"
+  },
+  {
+   "id": "wb_clear_hydro",
+   "title": "Technically feasible hydropower potential developed (%)",
+   "publisher": "World Bank (Data360, base WB_CLEAR)",
+   "url": "https://data360.worldbank.org/en/indicator/WB_CLEAR_HP_TECHNFEASIBLE_PT",
+   "metadata_url": "https://data360files.worldbank.org/data360-data/metadata/WB_CLEAR/WB_CLEAR_HP_TECHNFEASIBLE_PT.pdf",
+   "accessed_at_utc": "2026-11-22T01:10:24Z",
+   "sha256": "3cb608e5958cbf81b3e71a566ba8cfbdf35a9d847d0669df4111018fa8913d26",
+   "reference_period": "2021 (unico ano do indicador)",
+   "license": {
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "commercial_ok": true,
+    "verified_on": "2026-11-21",
+    "evidence": "metadata oficial do indicador no Data360 declara CC BY 4.0 com a clausula WIPO de mediacao"
+   },
+   "citation": "World Bank (2026). Technically feasible hydropower potential developed (%) [WB_CLEAR_HP_TECHNFEASIBLE_PT]. Data360.",
+   "used_in": [
+    "data/definitions/energy/hydro_potential.json"
+   ],
+   "transform": "potencial_mw = hidro_instalada_2021_mw / (developed_pct/100); divisao interna do pais pelo proxy precip x desnivel x rio",
+   "status": "used"
+  },
+  {
+   "id": "wb_wdi",
+   "title": "World Development Indicators - acesso a eletricidade e perdas T&D",
+   "publisher": "World Bank (Data360, base WB_WDI; agua = JMP WHO/UNICEF)",
+   "url": "https://data360api.worldbank.org/data360/data",
+   "accessed_at_utc": "2026-11-17T10:49:09Z",
+   "reference_period": "ano mais recente nao vazio por pais (sem interpolacao)",
+   "license": {
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "commercial_ok": true,
+    "verified_on": "2026-11-21",
+    "evidence": "licenca declarada no Data360/WDI para os indicadores usados"
+   },
+   "citation": "World Bank, World Development Indicators (WDI), accessed via Data360 API, 2026-11-17",
+   "used_in": [
+    "data/definitions/energy/access_losses.json"
+   ],
+   "transform": "ultimo ano nao vazio por pais/indicador; ausente fica null (sem interpolacao)",
+   "status": "used"
+  },
+  {
+   "id": "worldclim_21",
+   "title": "WorldClim 2.1 - srad, wind e elev (10 arc-min)",
+   "publisher": "Fick & Hijmans (UC Davis)",
+   "url": "https://geodata.ucdavis.edu/climate/worldclim/2_1/base/",
+   "landing_url": "https://www.worldclim.org/data/worldclim21.html",
+   "license": {
+    "name": "uso academico e nao comercial (NAO e CC BY)",
+    "url": "https://www.worldclim.org/about.html",
+    "commercial_ok": false,
+    "verified_on": "2026-11-21",
+    "quote": "The data are freely available for academic use and other non-commercial use. Redistribution or commercial use is not allowed without prior permission.",
+    "evidence": "verificado em 2026-11-21 na pagina About do worldclim.org; a pagina do dataset (worldclim21.html) nao declara licenca"
+   },
+   "citation": "WorldClim 2.1, Fick & Hijmans 2017, Int. J. Climatol. 37:4302-4315",
+   "used_in": [
+    "data/definitions/energy/renewable_potential.json",
+    "data/definitions/energy/hydro_potential.json"
+   ],
+   "transform": "srad kJ/m2/dia -> kWh/m2/dia; media anual e serie mensal por provincia/cidade; elev -> desnivel do proxy hidrico",
+   "status": "used_restricted",
+   "blocker": "licenca NAO permite distribuicao/uso comercial. Antes de release comercial: pedir permissao escrita a info@worldclim.org ou trocar solar/eolico/relevo por Global Solar Atlas / Global Wind Atlas (CC BY 4.0) e um MDE publico (SRTM/GMTED, dominio publico). O clima do jogo (province_nature.json) ja usa a mesma fonte."
+  },
+  {
+   "id": "natural_earth_10m",
+   "title": "Natural Earth 10m - rios e divisas",
+   "publisher": "Natural Earth",
+   "url": "https://www.naturalearthdata.com/downloads/10m-physical-vectors/",
+   "license": {
+    "name": "dominio publico",
+    "url": "https://www.naturalearthdata.com/about/terms-of-use/",
+    "commercial_ok": true,
+    "verified_on": "2026-11-21",
+    "evidence": "Natural Earth declara dominio publico (sem restricao de uso)"
+   },
+   "used_in": [
+    "data/definitions/energy/renewable_potential.json",
+    "data/definitions/energy/land_borders.json",
+    "data/definitions/energy/hydro_potential.json"
+   ],
+   "transform": "rios desenhados na grade 4096x2048; cobertura a 50 km vira river_factor; divisas derivadas do raster de donos",
+   "status": "used"
+  },
+  {
+   "id": "ijhd_hydropower_essentials",
+   "title": "Hydropower Essentials (potencial tecnico mundial, 16.400 TWh/ano)",
+   "publisher": "IJHD (citado via OSTI/ETDEWEB 21594387)",
+   "url": "https://www.osti.gov/etdeweb/biblio/21594387",
+   "license": {
+    "name": "citacao de um numero factual, nao redistribuicao de base",
+    "commercial_ok": true,
+    "verified_on": "2026-11-21",
+    "evidence": "apenas a frase de potencial global e citada, com atribuicao"
+   },
+   "used_in": [
+    "data/definitions/energy/renewable_potential.json"
+   ],
+   "transform": "ancora GLOBAL de 16.400 TWh/ano no proxy hidrico antigo (a ancora nacional do E1 substitui essa normalizacao em hydro_potential.json)",
+   "status": "citation_only"
+  },
+  {
+   "id": "irena_elecstat",
+   "title": "IRENA ELECSTAT - capacidade por tecnologia",
+   "publisher": "IRENA",
+   "url": "https://pxweb.irena.org/api/v1/en/IRENASTAT/Power%20Capacity%20and%20Generation/Country_ELECSTAT_2026_H2_PX.px",
+   "license": {
+    "name": "IRENA Terms and Conditions (nao comercial)",
+    "url": "https://www.irena.org/terms-and-conditions",
+    "commercial_ok": false,
+    "verified_on": "2026-11-17",
+    "quote": "Subject to article 4.3 below, Users may freely access, copy, share, download, reproduce, print and/or view IRENA's Content for non-commercial purposes, provided that appropriate attribution is given to IRENA. Use of IRENA's name in the full or abbreviated form is allowed for attribution purposes, in accordance with this Section and the Terms and Conditions. Use of IRENA's logo in connection with s",
+    "evidence": "art. 4.1 dos termos: uso livre apenas nao comercial"
+   },
+   "status": "rejected",
+   "reason": "usada pela coleta anterior apenas para comparar totais; removida das saidas versionadas porque os termos nao permitem uso comercial. A comparacao agora e contra a Ember (CC BY 4.0)."
+  },
+  {
+   "id": "gem_trackers",
+   "title": "Global Energy Monitor - trackers de usinas",
+   "publisher": "Global Energy Monitor",
+   "url": "https://globalenergymonitor.org/projects/",
+   "license": {
+    "name": "CC BY 4.0 na licenca, com atestacao de nao uso comercial no formulario",
+    "url": "https://globalenergymonitor.org/creative-commons-public-license",
+    "commercial_ok": false,
+    "verified_on": "2026-11-21",
+    "evidence": "paginas de download exigem aceitar 'I will not use this data for commercial purposes'; isencao comercial so por pedido a GEM"
+   },
+   "status": "rejected",
+   "reason": "nao foi usada: o GPPD (CC BY 4.0) ja cobre usina/MW/coordenada e a GEM adiciona uma atestacao de nao uso comercial por download."
+  }
+ ]
+}
