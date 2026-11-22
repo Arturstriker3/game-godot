@@ -7,17 +7,52 @@
   "method": "fluxo medio do importador = net_imports_twh Ember x 1e6/8760; repartido entre os vizinhos exportadores (fronteira terrestre de land_borders.json) proporcional a exportacao liquida Ember de cada um; capacidade = fluxo medio x headroom. Pares submarinos/sem exportador liquido usam a capacidade nominal publicada por par (method=public_capacity)",
   "headroom_factor": 1.25,
   "headroom_rationale": "default de jogo declarado: a NTC (ENTSO-E) e a capacidade maxima de troca entre duas areas, um limite de capacidade e nao um fluxo medio; o modelo despacha energia diaria e a linha e dimensionada no fluxo medio x 1,25 para a variacao diaria caber sem saturar em metade dos dias; nas ligacoes com `method=public_capacity` vale o valor NOMINAL publicado",
-  "submarine_links": {
+  "public_capacity_links": {
    "included": true,
-   "method": "capacidade nominal por par de fonte publica (Ofgem, Energinet/Danish Energy Agency, ADB); nao e fluxo medio derivado de Ember",
-   "pairs": 9,
+   "method": "capacidade nominal por par de fonte publica (Ofgem, Energinet/Danish Energy Agency, ADB, EBRD/EIB, OST, SEE CAO); nao e fluxo medio derivado de Ember",
+   "pairs": 12,
    "sources": [
     "adb_bgd_ind",
+    "ebrd_mda_rou_600mw",
     "energinet_dk_interconnectors",
-    "ofgem_interconnectors"
+    "ofgem_interconnectors",
+    "osts_al_ntc",
+    "seecao_ntc"
    ],
-   "rationale": "QA t80: GB e DK nao tem par terrestre (ilhas) e o par BGD-IND nao existe na derivacao porque a India e importadora liquida no ano-base; sem essas linhas a capacidade e ZERO e o par nao entra no modelo"
+   "by_reason": {
+    "": [
+     "BEL-GBR",
+     "BGD-IND",
+     "DEU-DNK",
+     "DNK-NOR",
+     "DNK-SWE",
+     "FRA-GBR",
+     "GBR-IRL",
+     "GBR-NLD",
+     "GBR-NOR"
+    ],
+    "fronteira ausente no atlas (Kosovo fora do land_borders)": [
+     "ALB-XKX",
+     "MKD-XKX"
+    ],
+    "vizinho importador liquido no ano-base Ember": [
+     "MDA-ROU"
+    ]
+   },
+   "rationale": "QA t80 e residuo E2/E3/E5: pares ilha (GB, DK), vizinho importador liquido no ano-base (BGD-IND, MDA-ROU) e fronteira ausente no atlas (XKX-ALB, XKX-MKD) nao existem na derivacao Ember x fronteira terrestre, entao a capacidade sairia ZERO. A capacidade e a NOMINAL publicada por par; a direcao do fluxo diario e do nucleo (deficit), nao do campo `importer`"
   },
+  "declared_absence_links": [
+   {
+    "a": "XKX",
+    "b": "SRB",
+    "reason": "NTC por par Kosovo-Serbia nao acordado entre KOSTT e EMS (Energy Community, caso ECS-02/21, decisao 2025/02/MC-EnC); o total das quatro fronteiras do Kosovo (1.316 MW de importacao) esta na Estrategia de Energia 2022-2031, sem reparticao por par"
+   },
+   {
+    "a": "XKX",
+    "b": "MNE",
+    "reason": "a linha 400 kV Peja 3-Ribarevina existe (KOSTT/ERO), mas o NTC por par nao esta publicado; nao se inventa capacidade"
+   }
+  ],
   "excluded_pairs": [
    {
     "a": "BRA",
@@ -38,12 +73,12 @@
    "nations_with_ember_net_imports": 175,
    "importers": 78,
    "exporters": 47,
-   "links": 131,
-   "links_public_capacity": 9,
+   "links": 134,
+   "links_public_capacity": 12,
    "importers_with_link": 66,
    "unserved_importers": 12,
    "total_avg_flow_mw": 31963.354844,
-   "total_capacity_mw": 56501.193555
+   "total_capacity_mw": 57831.193555
   },
   "known_limits": "a reparticao proporcional ignora limites internos de cada exportador (o dado Ember e anual e nacional); ilhas e importadores sem vizinho exportador continuam sem compra - a ausencia e declarada em unserved_importers"
  },
@@ -110,6 +145,50 @@
    "accessed_at_utc": "2026-11-22T06:40:00Z",
    "used_for": "capacidade da ligacao Bangladesh-India: 2x500 MW HVDC back-to-back em Bheramara (500 MW em 2013, 1.000 MW apos o segundo projeto SASEC)",
    "used_in": "links[method=public_capacity]"
+  },
+  {
+   "id": "ebrd_mda_rou_600mw",
+   "title": "Moldova-Romania power interconnection (Isaccea-Vulcanesti-Chisinau): 600 MW back-to-back converter substation",
+   "publisher": "EBRD / EIB / IEA (System Integration of Renewables in Moldova)",
+   "url": "https://www.ebrd.com/news/2019/moldova-set-to-build-power-link-with-romania.html",
+   "landing_url": "https://www.eib.org/en/projects/all/20080194",
+   "license": "publicacao publica (citacao)",
+   "accessed_at_utc": "2026-11-22T12:10:00Z",
+   "used_for": "capacidade nominal da ligacao Moldova-Romenia: 600 MW no conversor back-to-back de Vulcanesti; a importacao da Moldova passa pela Romania (os dados por par nao publicam fluxo)",
+   "used_in": "links[method=public_capacity]"
+  },
+  {
+   "id": "osts_al_ntc",
+   "title": "Current NTC values for OST borders (table 1) in Voshtina et al., 'Optimizing Net Transfer Capacity Calculation in Albania', JSDEWES 12(2), 1120509",
+   "publisher": "OST (operador albanes) via Journal of Sustainable Development of Energy, Water and Environment Systems",
+   "url": "https://doi.org/10.13044/j.sdewes.d12.0509",
+   "landing_url": "https://sdewes.org/jsdewes/pid12.0509",
+   "license": "artigo de acesso aberto, CC BY (citacao)",
+   "accessed_at_utc": "2026-11-22T12:10:00Z",
+   "used_for": "capacidade nominal da ligacao Albania-Kosovo: NTC 400 MW (linhas 400 kV Kosovo B-Koman e 220 kV Prizren-Fierza)",
+   "used_in": "links[method=public_capacity]"
+  },
+  {
+   "id": "seecao_ntc",
+   "title": "Increase of NTC values on North Macedonia-Kosovo border direction (1-5 January 2021: 330 MW)",
+   "publisher": "SEE CAO (Coordinated Auction Office, South East Europe)",
+   "url": "https://seecao.com/increase-of-ntc-values-on-north-macedonia-kosovo-border-direction",
+   "landing_url": "https://seecao.com/",
+   "license": "publicacao publica (citacao)",
+   "accessed_at_utc": "2026-11-22T12:10:00Z",
+   "used_for": "capacidade nominal da ligacao Kosovo-Macedonia do Norte (400 kV Ferizaj 2-Shkupi 5): NTC de 330 MW divulgado na alocacao",
+   "used_in": "links[method=public_capacity]"
+  },
+  {
+   "id": "kostt_energy_strategy_2022_2031",
+   "title": "Energy Strategy of the Republic of Kosovo 2022-2031 (total NTC with the four neighbours: 1.316 MW import, 1.175 MW export)",
+   "publisher": "Government of the Republic of Kosovo",
+   "url": "https://kryeministri.rks-gov.net/wp-content/uploads/2023/03/Energy-Strategy-of-the-Republic-of-Kosovo-2022-2031.pdf",
+   "landing_url": "https://kryeministri.rks-gov.net/",
+   "license": "publicacao publica (citacao)",
+   "accessed_at_utc": "2026-11-22T12:10:00Z",
+   "used_for": "total das quatro fronteiras do Kosovo (1.316 MW importacao / 1.175 MW exportacao); a reparticao por par com Serbia e Montenegro nao esta publicada e NAO e inventada aqui",
+   "used_in": "meta.public_capacity_links (contexto declarado)"
   }
  ],
  "public_capacity_applied": [
@@ -118,6 +197,7 @@
    "b": "GBR",
    "capacity_mw": 4000.0,
    "source": "ofgem_interconnectors",
+   "reason": "",
    "previous_method": null
   },
   {
@@ -125,6 +205,7 @@
    "b": "NLD",
    "capacity_mw": 1000.0,
    "source": "ofgem_interconnectors",
+   "reason": "",
    "previous_method": null
   },
   {
@@ -132,6 +213,7 @@
    "b": "GBR",
    "capacity_mw": 1000.0,
    "source": "ofgem_interconnectors",
+   "reason": "",
    "previous_method": null
   },
   {
@@ -139,6 +221,7 @@
    "b": "NOR",
    "capacity_mw": 1400.0,
    "source": "ofgem_interconnectors",
+   "reason": "",
    "previous_method": null
   },
   {
@@ -146,6 +229,7 @@
    "b": "IRL",
    "capacity_mw": 1000.0,
    "source": "ofgem_interconnectors",
+   "reason": "",
    "previous_method": null
   },
   {
@@ -153,6 +237,7 @@
    "b": "NOR",
    "capacity_mw": 1632.0,
    "source": "energinet_dk_interconnectors",
+   "reason": "",
    "previous_method": null
   },
   {
@@ -160,6 +245,7 @@
    "b": "SWE",
    "capacity_mw": 2015.0,
    "source": "energinet_dk_interconnectors",
+   "reason": "",
    "previous_method": null
   },
   {
@@ -167,6 +253,7 @@
    "b": "DNK",
    "capacity_mw": 3500.0,
    "source": "energinet_dk_interconnectors",
+   "reason": "",
    "previous_method": null
   },
   {
@@ -174,6 +261,31 @@
    "b": "IND",
    "capacity_mw": 1000.0,
    "source": "adb_bgd_ind",
+   "reason": "",
+   "previous_method": null
+  },
+  {
+   "a": "MDA",
+   "b": "ROU",
+   "capacity_mw": 600.0,
+   "source": "ebrd_mda_rou_600mw",
+   "reason": "vizinho importador liquido no ano-base Ember",
+   "previous_method": null
+  },
+  {
+   "a": "ALB",
+   "b": "XKX",
+   "capacity_mw": 400.0,
+   "source": "osts_al_ntc",
+   "reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
+   "previous_method": null
+  },
+  {
+   "a": "MKD",
+   "b": "XKX",
+   "capacity_mw": 330.0,
+   "source": "seecao_ntc",
+   "reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
    "previous_method": null
   }
  ],
@@ -665,6 +777,25 @@
    "method": "ember_net_imports_x_land_borders"
   },
   {
+   "a": "ALB",
+   "b": "XKX",
+   "importer": "",
+   "exporter": "",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 0.0,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": -0.0,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 400.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "osts_al_ntc",
+   "capacity_reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
+   "capacity_note": "NTC 400 MW Albania-Kosovo (OST, tabela de NTC): linhas 400 kV Kosovo B-Koman e 220 kV Prizren-Fierza"
+  },
+  {
    "a": "ARG",
    "b": "PRY",
    "importer": "ARG",
@@ -792,6 +923,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
+   "capacity_reason": "",
    "capacity_note": "Nemo Link 1.000 MW"
   },
   {
@@ -890,6 +1022,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "adb_bgd_ind",
+   "capacity_reason": "",
    "capacity_note": "Baharampur-Bheramara 400 kV 2xD/c + 2x500 MW HVDC B2B"
   },
   {
@@ -1404,6 +1537,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "energinet_dk_interconnectors",
+   "capacity_reason": "",
    "capacity_note": "Endrup-Alemanha 2.500 + Kontek 600 + Kriegers Flak 400 MW"
   },
   {
@@ -1470,6 +1604,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "energinet_dk_interconnectors",
+   "capacity_reason": "",
    "capacity_note": "Skagerrak 1-4 (DK1-NO2) 1.632 MW"
   },
   {
@@ -1488,6 +1623,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "energinet_dk_interconnectors",
+   "capacity_reason": "",
    "capacity_note": "Konti-Skan 715 (DK1-SE3) + Oresund 1.300 (DK2-SE4) MW"
   },
   {
@@ -1698,6 +1834,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
+   "capacity_reason": "",
    "capacity_note": "IFA 2.000 + IFA2 1.000 + ElecLink 1.000 MW"
   },
   {
@@ -1748,6 +1885,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
+   "capacity_reason": "",
    "capacity_note": "East-West 500 + Greenlink 504 MW (arredondado a 1 GW pelo Ofgem)"
   },
   {
@@ -1766,6 +1904,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
+   "capacity_reason": "",
    "capacity_note": "BritNed 1.000 MW"
   },
   {
@@ -1784,6 +1923,7 @@
    "headroom": null,
    "method": "public_capacity",
    "source": "ofgem_interconnectors",
+   "capacity_reason": "",
    "capacity_note": "North Sea Link 1.400 MW"
   },
   {
@@ -2300,6 +2440,25 @@
   },
   {
    "a": "MDA",
+   "b": "ROU",
+   "importer": "",
+   "exporter": "",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 0.0,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": -0.0,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 600.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "ebrd_mda_rou_600mw",
+   "capacity_reason": "vizinho importador liquido no ano-base Ember",
+   "capacity_note": "B2B 600 MW em Vulcanesti (Isaccea-Vulcanesti-Chisinau); linha 400 kV + conversor assincrono"
+  },
+  {
+   "a": "MDA",
    "b": "UKR",
    "importer": "MDA",
    "exporter": "UKR",
@@ -2329,6 +2488,25 @@
    "capacity_mw": 78.092802,
    "headroom": 1.25,
    "method": "ember_net_imports_x_land_borders"
+  },
+  {
+   "a": "MKD",
+   "b": "XKX",
+   "importer": "",
+   "exporter": "",
+   "border_km": 0.0,
+   "importer_net_imports_twh": 0.0,
+   "importer_avg_import_mw": 0.0,
+   "exporter_net_export_twh": -0.0,
+   "neighbor_export_sum_twh": 0.0,
+   "share": 0.0,
+   "avg_flow_mw": 0.0,
+   "capacity_mw": 330.0,
+   "headroom": null,
+   "method": "public_capacity",
+   "source": "seecao_ntc",
+   "capacity_reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
+   "capacity_note": "400 kV Ferizaj 2-Shkupi 5; NTC de 330 MW divulgado pelo SEE CAO na alocacao de 1-5 jan/2021"
   },
   {
    "a": "MLI",

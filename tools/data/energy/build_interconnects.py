@@ -26,9 +26,11 @@ Regra de derivacao (declarada, nao e dado observado):
    no fluxo medio com folga de 25% para a variacao diaria; sem a folga, metade
    dos dias ficaria limitada ao proprio fluxo medio.
 
-Ligacoes SUBMARINAS conhecidas NAO entram: o repositorio nao tem dataset
-publico por par (nem capacidades nem fluxos), e inventar MW seria fabricar
-dado. ``meta.submarine_links`` declara a ausencia.
+Pares que a derivacao Ember x fronteira nao cria entram com a capacidade
+NOMINAL publicada por par (``method=public_capacity``): ilhas (GB, DK), vizinho
+importador liquido no ano-base (BGD-IND, MDA-ROU) e fronteira ausente no atlas
+(XKX-ALB, XKX-MKD). Par real sem NTC publicado fica declarado em
+``meta.declared_absence_links`` - inventar MW seria fabricar dado.
 
 Uso:
     python tools/data/energy/build_interconnects.py [--check]
@@ -72,12 +74,35 @@ OVERSEAS_ONLY_PAIRS = {
     ),
 }
 
+# Pares reais cuja capacidade por par NÃO está publicada: entram declarados,
+# nunca inventados. A linha física existe (o regulador lista as linhas 400/220
+# kV do Kosovo), mas o NTC por par não foi acordado/publicado.
+DECLARED_ABSENCE_PAIRS = [
+    {
+        "a": "XKX", "b": "SRB",
+        "reason": (
+            "NTC por par Kosovo-Serbia nao acordado entre KOSTT e EMS "
+            "(Energy Community, caso ECS-02/21, decisao 2025/02/MC-EnC); o "
+            "total das quatro fronteiras do Kosovo (1.316 MW de importacao) "
+            "esta na Estrategia de Energia 2022-2031, sem reparticao por par"
+        ),
+    },
+    {
+        "a": "XKX", "b": "MNE",
+        "reason": (
+            "a linha 400 kV Peja 3-Ribarevina existe (KOSTT/ERO), mas o NTC "
+            "por par nao esta publicado; nao se inventa capacidade"
+        ),
+    },
+]
+
 # Ligações cujo dado derivado (Ember × fronteira terrestre) sai ZERO ou
-# subdimensionado porque o par é submarino ou porque o vizinho não é
-# exportador líquido no ano-base (as duas pontas importam em anos diferentes).
-# A capacidade vem de fonte pública por par — não é modelo: é capacidade
-# nominal publicada pelo regulador/operador. Mesmo assim o núcleo decide a
-# direção do fluxo pelo déficit diário (o campo `importer` aqui é só relatório).
+# subdimensionado porque o par é submarino, porque o vizinho não é exportador
+# líquido no ano-base (as duas pontas importam em anos diferentes) ou porque a
+# fronteira não existe no atlas do projeto (Kosovo). A capacidade vem de fonte
+# pública por par — não é modelo: é capacidade nominal publicada pelo
+# regulador/operador. Mesmo assim o núcleo decide a direção do fluxo pelo
+# déficit diário (o campo `importer` aqui é só relatório).
 PUBLIC_LINKS = [
     {
         "a": "FRA", "b": "GBR", "capacity_mw": 4000.0,
@@ -123,6 +148,36 @@ PUBLIC_LINKS = [
         "a": "BGD", "b": "IND", "capacity_mw": 1000.0,
         "source": "adb_bgd_ind",
         "note": "Baharampur-Bheramara 400 kV 2xD/c + 2x500 MW HVDC B2B",
+    },
+    {
+        # E2/E3/E5 (residuo do portao): a Moldova importa da Romania pela
+        # estacao back-to-back de 600 MW em Vulcanesti. A derivacao nao cria o
+        # par porque a Romania e importadora liquida no ano-base Ember (a
+        # regra so aceita vizinho exportador); a linha existe e a capacidade
+        # nominal e publicada (EBRD/EIB/IEA).
+        "a": "MDA", "b": "ROU", "capacity_mw": 600.0,
+        "source": "ebrd_mda_rou_600mw",
+        "reason": "vizinho importador liquido no ano-base Ember",
+        "note": ("B2B 600 MW em Vulcanesti (Isaccea-Vulcanesti-Chisinau); "
+                 "linha 400 kV + conversor assincrono"),
+    },
+    {
+        # Kosovo importa dos quatro vizinhos (1.316 MW de NTC de importacao na
+        # Estrategia de Energia 2022-2031). O atlas do projeto nao tem
+        # fronteira para XKX, entao a derivacao Ember x fronteira terrestre
+        # nunca cria o par: as capacidades abaixo sao as publicadas por par.
+        "a": "XKX", "b": "ALB", "capacity_mw": 400.0,
+        "source": "osts_al_ntc",
+        "reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
+        "note": ("NTC 400 MW Albania-Kosovo (OST, tabela de NTC): linhas "
+                 "400 kV Kosovo B-Koman e 220 kV Prizren-Fierza"),
+    },
+    {
+        "a": "XKX", "b": "MKD", "capacity_mw": 330.0,
+        "source": "seecao_ntc",
+        "reason": "fronteira ausente no atlas (Kosovo fora do land_borders)",
+        "note": ("400 kV Ferizaj 2-Shkupi 5; NTC de 330 MW divulgado pelo "
+                 "SEE CAO na alocacao de 1-5 jan/2021"),
     },
 ]
 
@@ -212,6 +267,77 @@ SOURCES = [
             "segundo projeto SASEC)"
         ),
         "used_in": "links[method=public_capacity]",
+    },
+    {
+        "id": "ebrd_mda_rou_600mw",
+        "title": (
+            "Moldova-Romania power interconnection (Isaccea-Vulcanesti-"
+            "Chisinau): 600 MW back-to-back converter substation"
+        ),
+        "publisher": "EBRD / EIB / IEA (System Integration of Renewables in Moldova)",
+        "url": "https://www.ebrd.com/news/2019/moldova-set-to-build-power-link-with-romania.html",
+        "landing_url": "https://www.eib.org/en/projects/all/20080194",
+        "license": "publicacao publica (citacao)",
+        "accessed_at_utc": "2026-11-22T12:10:00Z",
+        "used_for": (
+            "capacidade nominal da ligacao Moldova-Romenia: 600 MW no "
+            "conversor back-to-back de Vulcanesti; a importacao da Moldova "
+            "passa pela Romania (os dados por par nao publicam fluxo)"
+        ),
+        "used_in": "links[method=public_capacity]",
+    },
+    {
+        "id": "osts_al_ntc",
+        "title": (
+            "Current NTC values for OST borders (table 1) in Voshtina et al., "
+            "'Optimizing Net Transfer Capacity Calculation in Albania', "
+            "JSDEWES 12(2), 1120509"
+        ),
+        "publisher": "OST (operador albanes) via Journal of Sustainable Development of Energy, Water and Environment Systems",
+        "url": "https://doi.org/10.13044/j.sdewes.d12.0509",
+        "landing_url": "https://sdewes.org/jsdewes/pid12.0509",
+        "license": "artigo de acesso aberto, CC BY (citacao)",
+        "accessed_at_utc": "2026-11-22T12:10:00Z",
+        "used_for": (
+            "capacidade nominal da ligacao Albania-Kosovo: NTC 400 MW "
+            "(linhas 400 kV Kosovo B-Koman e 220 kV Prizren-Fierza)"
+        ),
+        "used_in": "links[method=public_capacity]",
+    },
+    {
+        "id": "seecao_ntc",
+        "title": (
+            "Increase of NTC values on North Macedonia-Kosovo border direction "
+            "(1-5 January 2021: 330 MW)"
+        ),
+        "publisher": "SEE CAO (Coordinated Auction Office, South East Europe)",
+        "url": "https://seecao.com/increase-of-ntc-values-on-north-macedonia-kosovo-border-direction",
+        "landing_url": "https://seecao.com/",
+        "license": "publicacao publica (citacao)",
+        "accessed_at_utc": "2026-11-22T12:10:00Z",
+        "used_for": (
+            "capacidade nominal da ligacao Kosovo-Macedonia do Norte (400 kV "
+            "Ferizaj 2-Shkupi 5): NTC de 330 MW divulgado na alocacao"
+        ),
+        "used_in": "links[method=public_capacity]",
+    },
+    {
+        "id": "kostt_energy_strategy_2022_2031",
+        "title": (
+            "Energy Strategy of the Republic of Kosovo 2022-2031 (total NTC "
+            "with the four neighbours: 1.316 MW import, 1.175 MW export)"
+        ),
+        "publisher": "Government of the Republic of Kosovo",
+        "url": "https://kryeministri.rks-gov.net/wp-content/uploads/2023/03/Energy-Strategy-of-the-Republic-of-Kosovo-2022-2031.pdf",
+        "landing_url": "https://kryeministri.rks-gov.net/",
+        "license": "publicacao publica (citacao)",
+        "accessed_at_utc": "2026-11-22T12:10:00Z",
+        "used_for": (
+            "total das quatro fronteiras do Kosovo (1.316 MW importacao / "
+            "1.175 MW exportacao); a reparticao por par com Serbia e "
+            "Montenegro nao esta publicada e NAO e inventada aqui"
+        ),
+        "used_in": "meta.public_capacity_links (contexto declarado)",
     },
 ]
 
@@ -351,12 +477,14 @@ def build() -> dict:
                 row["method"] = "public_capacity"
                 row["source"] = source
                 row["capacity_note"] = item["note"]
+                row["capacity_reason"] = item.get("reason", "")
                 public_applied.append(
                     {
                         "a": a,
                         "b": b,
                         "capacity_mw": round(capacity, 6),
                         "source": source,
+                        "reason": item.get("reason", ""),
                         "previous_method": "ember_net_imports_x_land_borders",
                     }
                 )
@@ -383,6 +511,7 @@ def build() -> dict:
             "headroom": None,
             "method": "public_capacity",
             "source": source,
+            "capacity_reason": item.get("reason", ""),
             "capacity_note": item["note"],
         }
         links.append(row)
@@ -393,6 +522,7 @@ def build() -> dict:
                 "b": b,
                 "capacity_mw": round(capacity, 6),
                 "source": source,
+                "reason": item.get("reason", ""),
                 "previous_method": None,
             }
         )
@@ -422,22 +552,36 @@ def build() -> dict:
                 "diaria caber sem saturar em metade dos dias; nas ligacoes "
                 "com `method=public_capacity` vale o valor NOMINAL publicado"
             ),
-            "submarine_links": {
+            "public_capacity_links": {
                 "included": True,
                 "method": (
                     "capacidade nominal por par de fonte publica (Ofgem, "
-                    "Energinet/Danish Energy Agency, ADB); nao e fluxo medio "
-                    "derivado de Ember"
+                    "Energinet/Danish Energy Agency, ADB, EBRD/EIB, OST, "
+                    "SEE CAO); nao e fluxo medio derivado de Ember"
                 ),
                 "pairs": len(public_applied),
                 "sources": sorted({row["source"] for row in public_applied}),
+                "by_reason": {
+                    reason: sorted(
+                        "%s-%s" % (row["a"], row["b"])
+                        for row in public_applied
+                        if row.get("reason", "") == reason
+                    )
+                    for reason in sorted(
+                        {row.get("reason", "") for row in public_applied}
+                    )
+                },
                 "rationale": (
-                    "QA t80: GB e DK nao tem par terrestre (ilhas) e o par "
-                    "BGD-IND nao existe na derivacao porque a India e "
-                    "importadora liquida no ano-base; sem essas linhas a "
-                    "capacidade e ZERO e o par nao entra no modelo"
+                    "QA t80 e residuo E2/E3/E5: pares ilha (GB, DK), vizinho "
+                    "importador liquido no ano-base (BGD-IND, MDA-ROU) e "
+                    "fronteira ausente no atlas (XKX-ALB, XKX-MKD) nao "
+                    "existem na derivacao Ember x fronteira terrestre, entao "
+                    "a capacidade sairia ZERO. A capacidade e a NOMINAL "
+                    "publicada por par; a direcao do fluxo diario e do nucleo "
+                    "(deficit), nao do campo `importer`"
                 ),
             },
+            "declared_absence_links": DECLARED_ABSENCE_PAIRS,
             "excluded_pairs": [
                 {"a": a, "b": b, "reason": reason}
                 for (a, b), reason in sorted(OVERSEAS_ONLY_PAIRS.items())
