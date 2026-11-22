@@ -15,6 +15,19 @@ addons/godot_mcp/
 .trae/
 .impeccable/
 
+# opengs-icons OpenAI (tools/icon_gen): venv, caches, gasto e arte gerada
+tools/icon_gen/.venv/
+tools/icon_gen/.cache/
+tools/icon_gen/__pycache__/
+tools/icon_gen/api_spend.json
+tools/icon_gen/status_grid.json
+assets/icons/illustrated_source/gen_api/
+docs/ui/icons_api_sheet.html
+
+# Credenciais de API (nunca versionar)
+openai_api_key.txt
+tools/icon_gen/secrets/
+
 # Dados brutos baixados para gerar as definições (não versionar)
 tools/data/*
 # exceção: fatos históricos documentados do câmbio (curadoria, versionada)
