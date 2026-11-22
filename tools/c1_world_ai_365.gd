@@ -122,6 +122,8 @@ func _power_sample(day: int, power: Dictionary) -> Dictionary:
 		"rationing_cities": int(power.get("rationing_cities", 0)),
 		"max_ration_days": int(power.get("max_ration_days", 0)),
 		"loss_pct": float(power.get("loss_pct", 0.0)),
+		"interconnect_flow_mwh": float(power.get("interconnect_flow_mwh", 0.0)),
+		"interconnect_value": float(power.get("interconnect_value", 0.0)),
 		"grids": grids,
 		"connected": connected,
 		"partial": partial,
@@ -176,6 +178,11 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 			"connected": int(row2.get("connected", 0)),
 			"partial": int(row2.get("partial", 0)),
 			"isolated": int(row2.get("isolated", 0)),
+			"import_mwh": float(row2.get("import_mwh", 0.0)),
+			"export_mwh": float(row2.get("export_mwh", 0.0)),
+			"import_value": float(row2.get("import_value", 0.0)),
+			"export_value": float(row2.get("export_value", 0.0)),
+			"interconnect_count": int(row2.get("interconnect_count", 0)),
 			"generation_mwh_by_fuel": row2.get("generation_mwh_by_fuel", {}),
 		})
 		if float(row2.get("served_ratio", 1.0)) < 0.995:
@@ -227,6 +234,51 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 			})
 	cost_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a["per_value"]) > float(b["per_value"]))
+	# E5 (D-117): importadores do dia (modelo) x importador Ember do ano-base,
+	# e a separação do racionamento entre importadores reais e o resto.
+	#
+	# ATENÇÃO (bug do runner, corrigido): `import_mwh`/`export_mwh` da rede são
+	# ACUMULADOS no ano por `power.cpp` (não são resetados no laço diário), então
+	# a média em MW é `mwh / (days * 24)` — dividir por 24 infla 365×. A demanda
+	# diária da rede, essa sim, vem do dia: o total anual é `demand_mwh * days`.
+	var days := maxi(1, samples.size())
+	var annual_demand := 0.0
+	for row_dem: Dictionary in by_nation:
+		annual_demand += float(row_dem.get("demand_mwh", 0.0)) * float(days)
+	var importers: Array = []
+	var ration_importers: Array = []
+	var ration_others: Array = []
+	var imported_total := 0.0
+	for row6: Dictionary in by_nation:
+		var tag6 := String(row6["nation"])
+		var imported := float(row6.get("import_mwh", 0.0))
+		var exported := float(row6.get("export_mwh", 0.0))
+		imported_total += imported
+		var ember_net6: Variant = row6.get("ember_net_imports_twh")
+		var ember_mw: Variant = null
+		if typeof(ember_net6) == TYPE_FLOAT or typeof(ember_net6) == TYPE_INT:
+			ember_mw = float(ember_net6) * 1000000.0 / 8760.0
+		if imported > 0.0:
+			importers.append({
+				"nation": tag6,
+				"import_mwh": imported,
+				"export_mwh": exported,
+				"import_value": float(row6.get("import_value", 0.0)),
+				"ember_net_imports_twh": ember_net6,
+				"served_ratio": float(row6.get("served_ratio", 0.0)),
+				"import_mw": imported / (24.0 * float(days)),
+				"export_mw": exported / (24.0 * float(days)),
+				"import_share": imported / annual_demand if annual_demand > 0.0 else 0.0,
+				"ember_import_mw": ember_mw,
+			})
+		if rationing.has(tag6):
+			var is_importer := ember_mw != null and float(ember_mw) > 0.0
+			if is_importer:
+				ration_importers.append(tag6)
+			else:
+				ration_others.append(tag6)
+	importers.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["import_mwh"]) > float(b["import_mwh"]))
 	return {
 		"ready": true,
 		"days": samples.size(),
@@ -236,6 +288,8 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 		"days_with_rationing": days_rationing,
 		"max_rationing_cities": max_ration,
 		"rationing_nations": rationing,
+		"rationing_importers": ration_importers,
+		"rationing_others": ration_others,
 		"nations_detail": by_nation,
 		"grids": grids,
 		"connected_cities": connected,
@@ -247,6 +301,16 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 		"generation_mwh_by_fuel": final.get("generation_mwh_by_fuel", {}),
 		"demand_mwh": float(final.get("demand_mwh", 0.0)),
 		"served_mwh": float(final.get("served_mwh", 0.0)),
+		"interconnect_links": int(final.get("interconnect_links", 0)),
+		"interconnect_flow_mwh": float(final.get("interconnect_flow_mwh", 0.0)),
+		"interconnect_sent_mwh": float(final.get("interconnect_sent_mwh", 0.0)),
+		"interconnect_value": float(final.get("interconnect_value", 0.0)),
+		# Média anual (o `demand_mwh` do fecho é diário; o ledger de comércio é
+		# anual). `import_share` = importado no ano / demanda do ano.
+		"annual_demand_mwh": annual_demand,
+		"annual_import_mwh": imported_total,
+		"import_share": imported_total / annual_demand if annual_demand > 0.0 else 0.0,
+		"top10_importers": importers.slice(0, 10),
 		"top5_by_served": top,
 		"industry_cost_top": cost_rows.slice(0, 8),
 		"ember_top5_capacity": _ember_top5(),
