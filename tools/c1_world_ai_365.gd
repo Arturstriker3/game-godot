@@ -187,27 +187,27 @@ func _power_digest(sim, samples: Array) -> Dictionary:
 	# cada nação com rede. Sem isso o JSON não permite separar importador real
 	# de déficit de capacidade/dado.
 	var anchors: Dictionary = _ember_demand()
-	for row5: Dictionary in by_nation:
-		var anchor: Variant = anchors.get(String(row5["nation"]), null)
-		if typeof(anchor) != TYPE_DICTIONARY:
-			continue
-		var ember_row: Dictionary = anchor
-		row5["ember_year"] = int(ember_row.get("year", 0))
-		row5["ember_demand_twh"] = ember_row.get("demand_twh")
-		row5["ember_generation_twh"] = ember_row.get("total_generation_twh")
-		row5["ember_net_imports_twh"] = ember_row.get("net_imports_twh")
-		row5["ember_low_coverage"] = bool(ember_row.get("low_coverage", false))
-		row5["ember_has_national_capacity"] = bool(
-			ember_row.get("has_national_capacity", false))
-	var top: Array = by_nation.slice(0, 5)
 	var ember: Dictionary = _ember_capacity()
-	for row3: Dictionary in top:
-		var tag2 := String(row3["nation"])
-		if ember.has(tag2):
-			var data: Dictionary = ember[tag2]
-			row3["ember_year"] = int(data.get("year", 0))
-			row3["ember_total_mw"] = float(data.get("total_mw", 0.0))
-			row3["ember_by_source"] = data.get("by_source", {})
+	for row5: Dictionary in by_nation:
+		var tag5 := String(row5["nation"])
+		var anchor: Variant = anchors.get(tag5, null)
+		if typeof(anchor) == TYPE_DICTIONARY:
+			var ember_row: Dictionary = anchor
+			row5["ember_year"] = int(ember_row.get("year", 0))
+			row5["ember_demand_twh"] = ember_row.get("demand_twh")
+			row5["ember_generation_twh"] = ember_row.get("total_generation_twh")
+			row5["ember_net_imports_twh"] = ember_row.get("net_imports_twh")
+			row5["ember_low_coverage"] = bool(
+				ember_row.get("low_coverage", false))
+			row5["ember_has_national_capacity"] = bool(
+				ember_row.get("has_national_capacity", false))
+		var cap: Variant = ember.get(tag5, null)
+		if typeof(cap) == TYPE_DICTIONARY:
+			var cap_row: Dictionary = cap
+			row5["ember_capacity_year"] = int(cap_row.get("year", 0))
+			row5["ember_total_mw"] = float(cap_row.get("total_mw", 0.0))
+			row5["ember_by_source"] = cap_row.get("by_source", {})
+	var top: Array = by_nation.slice(0, 5)
 	var city_total := connected + partial + isolated
 	# Custo de energia da indústria por unidade de valor: as cidades com
 	# planta industrial do bootstrap expõem o repasse ao preço.
