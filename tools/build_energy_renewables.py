@@ -19,11 +19,14 @@ HÍDRICO — PROXY DECLARADO (method="proxy_precip_relief_river_free"):
     precip_mm  = CHIRPS v3.0 anual 2025 (domínio público/CC BY 4.0), 0,05°;
     relief_m   = max-min da altitude ETOPO1 (domínio público) nos pixels de
                  terra da província na grade 4096x2048 do atlas;
-    runoff     = clamp((precip - PET)/precip, 0, 1), PET anual da Global
-                 Aridity and PET Database v3.1 (CC BY 4.0);
+    runoff     = clamp((precip - PET)/precip, 0, 1), PET anual da climatologia
+                 CHELSA v2.1 (CC0 1.0, ERA5 + Penman-Monteith, 1981-2010) no
+                 overview 1/8 (0,0667°), baixada por fetch_pet_chelsa.py;
     river_factor = cobertura de rio Natural Earth 10m a <= 50 km, piso 0,02.
-  NÃO usa WorldClim. CHIRPS cobre 60°N-60°S: províncias fora dessa faixa ficam
-  `no_data` (lacuna declarada), sem preencher com outra fonte restrita.
+  NÃO usa WorldClim nem o PET CGIAR-CSI v3.1 (derivado do WorldClim e
+  "provided for non-commercial use"). CHIRPS cobre 60°N-60°S: províncias fora
+  dessa faixa ficam `no_data` (lacuna declarada), sem preencher com fonte
+  restrita.
   NORMALIZAÇÃO GLOBAL: o total mundial do proxy é ancorado em 16.400 TWh/ano
   (IJHD), com confidence="low"; a normalização nacional do E1 é feita em
   build_hydro_national.py com a âncora do Banco Mundial.
@@ -32,9 +35,9 @@ HÍDRICO — PROXY DECLARADO (method="proxy_precip_relief_river_free"):
 não em province_areas.json — que tem células degeneradas.
 
 NE_DIR: pasta com `ne_10m_rivers_lake_centerlines` (Natural Earth 10m). Lida
-de `NE_DIR`; se ausente, tenta `tools/data/natural_earth` e o caminho legado
-`G:/tools/ne_extract`. Se nenhum existir, falha com instrução (nada de caminho
-absoluto silencioso).
+de `NE_DIR` ou de `tools/data/natural_earth`; se nenhuma existir, falha com a
+instrução de definir NE_DIR ou rodar o script de download. Nenhum caminho
+absoluto de máquina é tentado.
 
 Uso: python tools/build_energy_renewables.py
 Saída: data/definitions/energy/renewable_potential.json
@@ -60,19 +63,18 @@ ATLAS_CACHE = os.path.join(ROOT, "tools", "data", "energy", "cache",
                            "atlas_points.json")
 CHIRPS = os.path.join(HYDRO_CACHE, "chirps-v3.0.2025.tif")
 ETOPO = os.path.join(HYDRO_CACHE, "ETOPO1_Ice_g_geotiff.tif")
-PET = os.path.join(HYDRO_CACHE, "et0_v31_yr.tif")
+PET = os.path.join(HYDRO_CACHE, "chelsa_pet_annual_1981-2010_1of8.tif")
 OUT = os.path.join(ROOT, "data", "definitions", "energy",
                    "renewable_potential.json")
 
 
 def _find_ne_dir():
-    """Pasta do Natural Earth 10m, sem caminho absoluto silencioso."""
+    """Pasta do Natural Earth 10m, sem caminho absoluto de máquina."""
     env = os.environ.get("NE_DIR", "").strip()
     candidates = [env] if env else []
     candidates += [
         os.path.join(ROOT, "tools", "data", "natural_earth"),
         os.path.join(ROOT, "tools", "data", "ne_extract"),
-        r"G:\tools\ne_extract",
     ]
     for candidate in candidates:
         if candidate and os.path.exists(os.path.join(
@@ -81,8 +83,9 @@ def _find_ne_dir():
             return candidate
     raise SystemExit(
         "Natural Earth 10m não encontrado. Defina NE_DIR para a pasta que "
-        "contém ne_10m_rivers_lake_centerlines/ (shapefile), ou coloque-a em "
-        "tools/data/natural_earth/.")
+        "contém ne_10m_rivers_lake_centerlines/ (shapefile), ou baixe o "
+        "conjunto para tools/data/natural_earth/ (nada de caminho absoluto "
+        "de máquina).")
 
 
 NE_DIR = _find_ne_dir()
@@ -137,7 +140,8 @@ class Raster:
         if self.array.ndim != 2:
             raise SystemExit("raster não 2D: %s" % path)
         if self.nodata is None:
-            # CHIRPS usa -9999; ETOPO1 usa -32768; PET v3.1 usa -9999.
+            # CHIRPS usa -9999; ETOPO1 usa -32768; a PET CHELSA derivada usa
+            # -9999. Sem tag GDAL_NODATA, -9999 é o padrão do builder.
             self.nodata = -9999.0
 
     def _valid(self, value):
@@ -276,7 +280,7 @@ def main():
                 return best, best_d
         return None, None
 
-    print("carregando ETOPO1, CHIRPS e PET...")
+    print("carregando ETOPO1, CHIRPS e PET (CHELSA v2.1)...")
     elev_raster = Raster(ETOPO)
     chirps = Raster(CHIRPS)
     pet = Raster(PET)
@@ -648,12 +652,36 @@ def main():
             "formula": ("raw = precip_mm/1000 * area_km2 * relief_m/1000 * runoff * "
                         "river_factor"),
             "precip": "CHIRPS v3.0 anual 2025, 0,05° (domínio público/CC BY 4.0)",
-            "pet": ("Global Aridity and PET Database v3.1 (CGIAR-CSI), PET anual, "
-                    "30 arc-sec (CC BY 4.0)"),
+            "pet": ("CHELSA-climatologies v2.1, PET anual (Penman-Monteith, "
+                    "1981-2010), 0,0667° (overview 1/8 do COG 30 arc-sec), CC0 1.0 "
+                    "(domínio público; ERA5, não WorldClim)"),
+            "pet_source": {
+                "dataset": "CHELSA-climatologies v2.1 — Monthly Potential "
+                           "Evapotranspiration (pet)",
+                "landing_url": "https://chelsa-climate.org/datasets/chelsa_climatologies/",
+                "license": {
+                    "name": "CC0 1.0 (domínio público; uso comercial livre)",
+                    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+                    "commercial_ok": True,
+                    "verified_on": "2026-11-22",
+                    "quote": ("License: Creative Commons Zero - No Rights "
+                              "Reserved (CC0 1.0)"),
+                },
+                "forcing": "ERA5 (Copernicus Climate Change Service/ECMWF)",
+                "reference_period": "1981-2010",
+                "resolution_deg": 0.0666666664,
+                "transform": ("PET anual = soma dos 12 meses (mm/mês, escala "
+                              "0,01) no overview 1/8 do COG, amostrada no "
+                              "centróide da província (raio 4 pixels)"),
+                "replaced": ("CGIAR-CSI Global-PET v3.1 recusado: derivado do "
+                             "WorldClim 2.1 e 'provided for non-commercial use' "
+                             "(csidotinfo.wordpress.com/data/"
+                             "global-aridity-and-pet-database/)"),
+            },
             "relief": ("max-min da altitude ETOPO1 (1 arc-min, domínio público) nos "
                        "pixels de terra da província, na grade 4096x2048 do atlas"),
             "runoff": ("clamp((precip - PET)/precip, 0, 1) com precip CHIRPS e PET "
-                       "anual; não usa temperatura/WorldClim"),
+                       "anual CHELSA; não usa temperatura nem WorldClim"),
             "river_factor": ("cobertura = fração dos pixels de terra da província a "
                              "<= 50 km de um rio do Natural Earth 10m; "
                              "fator = clamp(cobertura, 0.02, 1.0)"),

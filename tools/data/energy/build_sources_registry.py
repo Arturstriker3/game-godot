@@ -7,9 +7,10 @@ de não usar não se perde.
 
 D-115 (2026-11-21): o WorldClim saiu do E1 (licença não comercial) e entrou
 GSA/GWA (CC BY 4.0), CHIRPS (domínio público/CC BY 4.0), ETOPO1 (domínio
-público) e CGIAR PET v3.1 (CC BY 4.0). A separação do óleo foi tentada com
-OWID e EIA; nenhuma das duas publica capacidade instalada de óleo por país, então
-a lacuna fica declarada.
+público) e a PET da CHELSA v2.1 (CC0 1.0, ERA5). O PET CGIAR-CSI v3.1 foi
+recusado: é derivado do WorldClim 2.1 e "provided for non-commercial use". A
+separação do óleo foi tentada com OWID e EIA; nenhuma das duas publica
+capacidade instalada de óleo por país, então a lacuna fica declarada.
 
 Uso:
     python tools/data/energy/build_sources_registry.py
@@ -112,8 +113,10 @@ def main() -> int:
             "used_in": ["data/definitions/energy/national_capacity.json",
                         "data/definitions/energy/hydro_potential.json",
                         "data/definitions/energy/power_plants_2026_scaled.json"],
-            "transform": ("Capacity (GW) x 1000 -> MW; último ano não vazio entre 2024 e "
-                          "2025 por país; matriz mapeada para as 9 fontes do jogo; alvo do "
+            "transform": ("Capacity (GW) x 1000 -> MW; último ano com as 9 fontes "
+                          "de capacidade completas por país (2024 ou 2025, mesmo "
+                          "sem `Total generation`), com `year_reason` por país; "
+                          "matriz mapeada para as 9 fontes do jogo; alvo do "
                           "escalonamento por nação x fonte"),
             "status": "used",
         },
@@ -253,24 +256,33 @@ def main() -> int:
             "status": "used",
         },
         {
-            "id": "cgiar_pet_v3_1",
-            "title": "Global Aridity Index and PET Database v3.1 — PET anual",
-            "publisher": "CGIAR-CSI (Trabucco & Zomer)",
-            **hydro_entry("cgiar_pet_v3_1"),
-            "reference_period": "climatologia 1970-2000 (v3.1)",
+            "id": "chelsa_pet_v21",
+            "title": ("CHELSA-climatologies v2.1 — Monthly Potential "
+                      "Evapotranspiration (pet), climatologia 1981-2010"),
+            "publisher": "WSL / CHELSA (Karger et al.)",
+            "landing_url": "https://chelsa-climate.org/datasets/chelsa_climatologies/",
+            **hydro_entry("chelsa_pet_v21"),
+            "reference_period": "1981-2010 (climatologia)",
+            "forcing": "ERA5 (Copernicus Climate Change Service/ECMWF)",
             "license": {
-                "name": "CC BY 4.0",
-                "url": "https://creativecommons.org/licenses/by/4.0/",
+                "name": "CC0 1.0 (domínio público; uso comercial livre)",
+                "url": "https://creativecommons.org/publicdomain/zero/1.0/",
                 "commercial_ok": True,
                 "verified_on": VERIFIED_ON,
-                "evidence": ("figshare 7504448 declara license CC BY 4.0; é um produto "
-                             "derivado, não o WorldClim bruto"),
+                "quote": ("License: Creative Commons Zero - No Rights Reserved "
+                          "(CC0 1.0)"),
+                "evidence": ("página oficial do dataset CHELSA-climatologies "
+                             "declara CC0 1.0; a variável pet é Penman-Monteith "
+                             "com forçante ERA5 (não é derivada do WorldClim), "
+                             "verificado em 2026-11-22"),
             },
-            "citation": ("Zomer et al. (2008); Trabucco & Zomer (2019), Global Aridity "
-                         "Index and PET Database v3.1"),
+            "citation": ("Karger, D. N. et al. (2021), Climatologies at high "
+                         "resolution for the earth's land surface areas, Version "
+                         "2.1. EnviDat. https://doi.org/10.16904/envidat.228.v2.1"),
             "used_in": ["data/definitions/energy/renewable_potential.json"],
-            "transform": ("PET anual (mm/ano) no centróide da província; runoff = "
-                          "clamp((precip-PET)/precip, 0, 1)"),
+            "transform": ("PET anual (mm/ano) = soma dos 12 meses mensais no "
+                          "overview 1/8 do COG (0,0667°), amostrada no centróide "
+                          "da província; runoff = clamp((precip-PET)/precip, 0, 1)"),
             "status": "used",
         },
         {
@@ -330,10 +342,42 @@ def main() -> int:
             },
             "status": "rejected",
             "reason": ("D-115c: substituído por Global Solar Atlas/Global Wind Atlas "
-                       "(CC BY 4.0), CHIRPS (domínio público), CGIAR PET v3.1 (CC BY "
-                       "4.0) e ETOPO1 (domínio público). O clima do jogo "
+                       "(CC BY 4.0), CHIRPS (domínio público), CHELSA v2.1 PET "
+                       "(CC0 1.0) e ETOPO1 (domínio público). O clima do jogo "
                        "(province_nature.json) ainda usa WorldClim — dívida separada, "
                        "registrada no GAME_STATE §15."),
+        },
+        {
+            "id": "cgiar_pet_v3_1",
+            "title": "Global Aridity Index and Global-PET Database v3.1",
+            "publisher": "CGIAR-CSI (Zomer & Trabucco)",
+            "url": "https://api.figshare.com/v2/file/download/56300327",
+            "landing_url": ("https://csidotinfo.wordpress.com/data/"
+                            "global-aridity-and-pet-database/"),
+            "accessed_at_utc": ACCESSED_AT,
+            "reference_period": "climatologia 1970-2000 (v3.1)",
+            "license": {
+                "name": "uso não comercial (a página do figshare diz CC BY 4.0)",
+                "url": ("https://csidotinfo.wordpress.com/data/"
+                        "global-aridity-and-pet-database/"),
+                "commercial_ok": False,
+                "verified_on": VERIFIED_ON,
+                "quote": ("The Global-PET and Global-Aridity datasets are provided "
+                          "for non-commercial use in standard ARC/INFO Grid format"),
+                "evidence": ("a página oficial do CGIAR-CSI declara uso NÃO "
+                             "comercial (o figshare 7504448 rotula CC BY 4.0, mas "
+                             "não é o termo do produto). A mesma página diz que "
+                             "Global-PET/Global-Aridity são 'modeled using the data "
+                             "available from WorldClim Global Climate Data' — é "
+                             "derivado do WorldClim 2.1, cuja licença também é não "
+                             "comercial. Verificado em 2026-11-22."),
+            },
+            "status": "rejected",
+            "reason": ("re-QA t33: o PET v3.1 é derivado do WorldClim 2.1 e "
+                       "'provided for non-commercial use'; trocado pela CHELSA v2.1 "
+                       "PET (CC0 1.0, ERA5, Penman-Monteith). O registro anterior "
+                       "dizia 'CC BY 4.0, derivado do WorldClim bruto' — a evidência "
+                       "estava invertida e foi corrigida."),
         },
         {
             "id": "owid_energy",
@@ -416,13 +460,13 @@ def main() -> int:
             "generated_by": "tools/data/energy/build_sources_registry.py",
             "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E, E1",
             "verified_on": VERIFIED_ON,
-            "owner_decision": "D-115(c/d): GSA/GWA, CHIRPS/PET/ETOPO1 e tentativa de óleo",
+            "owner_decision": "D-115(c/e): GSA/GWA, CHIRPS/CHELSA PET/ETOPO1 e tentativa de óleo",
             "rule": ("toda fonte usada precisa de URL, data de acesso e licença verificada; "
                      "fonte com licença incompatível com uso comercial entra como "
                      "used_restricted com blocker, ou como rejected"),
             "credits_debt": ("antes do E2 ligar o dado, a tela de créditos precisa citar "
                              "Ember, WRI (GPPD), Banco Mundial (WDI/âncora hídrica), "
-                             "GSA/GWA, CHIRPS, CGIAR-CSI PET, ETOPO1 e Natural Earth"),
+                             "GSA/GWA, CHIRPS, CHELSA PET (CC0), ETOPO1 e Natural Earth"),
             "counts": {
                 "used": sum(1 for s in sources if s["status"] == "used"),
                 "used_restricted": sum(1 for s in sources if s["status"] == "used_restricted"),

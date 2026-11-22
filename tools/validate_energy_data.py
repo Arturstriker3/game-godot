@@ -3,24 +3,34 @@
 Checa, arquivo por arquivo, o que o aceite exige:
   * `_sources.json` — toda fonte tem licenca verificada, com evidencia e a
     declaracao explicita de uso comercial; toda saida versionada aponta para uma
-    fonte registrada;
+    fonte registrada; fonte na lista de bloqueio nao comercial nunca pode estar
+    em uso;
   * `national_capacity.json` — matriz por nao na ordem do dado real 2024-2025:
-    9 fontes por pais, soma das fontes == total da fonte (<= 0,5 MW), oleo
-    marcado como lacuna, cobertura das 179 nacoes declarada;
-  * `power_plants_2026.json` — coordenada dentro do mundo, provincia do raster
-    DENTRO da nacao da usina, cidade dona da mesma nacao, e a soma por nacao
-    bate com a lista de usinas;
+    9 fontes por pais, soma das fontes == total da fonte (<= 0,5 MW), ano
+    escolhido com `year_reason` declarado, oleo marcado como lacuna, cobertura
+    das 179 nacoes declarada;
+  * `power_plants_base_2021_gppd.json` — coordenada dentro do mundo, provincia
+    do raster DENTRO da nacao da usina, cidade dona da mesma nacao, e a soma por
+    nacao bate com a lista de usinas;
+  * `power_plants_2026_scaled.json` — `method` em toda usina, alvo Ember por
+    nacao x fonte (<= 0,01 MW) e usinas sem alvo nacional declaradas;
   * `renewable_potential.json` — solar/eolico em faixa fisica e mensal presente;
+    hidrico com PET de licenca comercial (CHELSA CC0), sem WorldClim/CGIAR;
   * `hydro_potential.json` — soma das provincias == ancora nacional (<= 0,01 MW)
     e as fracoes somam 1 dentro do pais;
-  * `access_losses.json` — percentuais em 0..100 e cobertura das nacoes;
+  * `access_losses.json` — percentuais em 0..100 e cobertura das nacoes, com o
+    WDI ligado às tags do jogo (inclui PSE->PSX);
   * `land_borders.json` — pares simetricos (a,b)/(b,a), sem par consigo mesmo.
 
 Uso:
     python tools/validate_energy_data.py [--require-commercial]
+    python tools/validate_energy_data.py --selftest-commercial
 
-`--require-commercial` falha se alguma fonte usada tiver licenca restrita
-(hoje o WorldClim). Sem a flag, ela aparece como BLOQUEIO no relatorio.
+`--require-commercial` falha se alguma fonte usada tiver licenca restrita ou
+estiver na lista de bloqueio (WorldClim, CGIAR-CSI PET v3.1, IRENA ELECSTAT,
+Global Energy Monitor). Sem a flag, elas aparecem como BLOQUEIO no relatorio.
+`--selftest-commercial` prova que a guarda pega uma fonte nao comercial usada,
+mesmo com `commercial_ok: true` mentindo no registro.
 Saida: codigo 0 = tudo passou; 1 = alguma checagem falhou.
 """
 
@@ -40,6 +50,52 @@ import build_energy_common as ec  # noqa: E402
 ENERGY = os.path.join(ec.DEFS, "energy")
 TOLERANCE_MW = 0.5
 TOLERANCE_HYDRO_MW = 0.01
+
+# Lista de bloqueio EXPLÍCITA de fontes cujo termo é incompatível com uso
+# comercial — independente do que o registro diga. O WorldClim é o caso raiz
+# (uso acadêmico/não comercial); o PET CGIAR-CSI v3.1 é derivado do WorldClim e
+# "provided for non-commercial use"; IRENA e GEM também restringem uso comercial.
+NON_COMMERCIAL_SOURCE_IDS = {
+    "worldclim_21",
+    "cgiar_pet_v3_1",
+    "irena_elecstat",
+    "gem_trackers",
+}
+# Marcadores textuais: pega uma fonte que declara `commercial_ok: true` mas cujo
+# nome/evidência/citação diz o contrário.
+NON_COMMERCIAL_LICENSE_MARKERS = (
+    "non-commercial",
+    "noncommercial",
+    "não comercial",
+    "nao comercial",
+    "academic use",
+    "academic/non-commercial",
+    "uso acadêmico",
+    "uso academico",
+    "not allowed without prior permission",
+)
+
+
+def commercial_violations(sources: list[dict]) -> list[str]:
+    """Fontes em uso que violam a política comercial (lista de bloqueio + texto)."""
+    violations = []
+    for source in sources:
+        if source.get("status") not in ("used", "used_restricted"):
+            continue
+        license_info = source.get("license") or {}
+        if source.get("id") in NON_COMMERCIAL_SOURCE_IDS:
+            violations.append("%s: id na lista de bloqueio não comercial" % source["id"])
+            continue
+        if license_info.get("commercial_ok") is not True:
+            violations.append("%s: commercial_ok != true" % source["id"])
+            continue
+        text = " ".join(str(license_info.get(key, "")) for key in
+                        ("name", "evidence", "quote", "url")).lower()
+        hits = [marker for marker in NON_COMMERCIAL_LICENSE_MARKERS if marker in text]
+        if hits:
+            violations.append("%s: texto da licença com marcador restritivo (%s)"
+                              % (source["id"], hits[0]))
+    return violations
 
 
 class Report:
@@ -115,11 +171,63 @@ def check_sources(report: Report, require_commercial: bool) -> None:
             report.check(False, message)
         else:
             report.warn(message)
+    # Guarda independente do registro: lista de bloqueio + texto da licença.
+    violations = commercial_violations(registry["sources"])
+    if violations:
+        message = ("fontes em uso que violam a política comercial: %s"
+                   % "; ".join(violations))
+        if require_commercial:
+            report.check(False, message)
+        else:
+            report.warn(message)
     # A decisão D-115(c) tirou o WorldClim do E1; ele não pode voltar como fonte usada.
     used_ids = {source["id"] for source in registry["sources"]
                 if source["status"] in ("used", "used_restricted")}
     report.check("worldclim_21" not in used_ids,
                  "WorldClim ainda consta como fonte usada no E1 (D-115c)")
+    # re-QA t33: o PET CGIAR-CSI v3.1 é derivado do WorldClim (uso não comercial).
+    report.check("cgiar_pet_v3_1" not in used_ids,
+                 "PET CGIAR-CSI v3.1 ainda consta como fonte usada (derivado do WorldClim)")
+    used_licenses = {source["id"]: source.get("license") or {}
+                     for source in registry["sources"]
+                     if source["id"] in used_ids}
+    for source_id in ("ember_yearly", "gppd_wri", "chelsa_pet_v21", "chirps_v3"):
+        license_info = used_licenses.get(source_id) or {}
+        report.check(license_info.get("commercial_ok") is True,
+                     "%s: fonte base sem licença comercial declarada" % source_id)
+
+
+def selftest_commercial() -> int:
+    """Prova que a guarda comercial pega uma fonte não comercial em uso."""
+    real = load("_sources.json")["sources"]
+    if commercial_violations(real):
+        print("SELFTEST FALHOU: o registro real já viola a política comercial")
+        return 1
+    fake = [{
+        "id": "fake_noncommercial",
+        "status": "used",
+        "license": {
+            "name": "academic use only",
+            "verified_on": "2026-11-22",
+            "commercial_ok": True,  # mente de propósito
+            "evidence": "provided for non-commercial use",
+        },
+    }]
+    violations = commercial_violations(fake)
+    if not violations:
+        print("SELFTEST FALHOU: fonte não comercial usada passou pela guarda")
+        return 1
+    by_id = [{
+        "id": "worldclim_21",
+        "status": "used",
+        "license": {"name": "CC BY 4.0", "commercial_ok": True,
+                    "verified_on": "2026-11-22", "evidence": "ok"},
+    }]
+    if not commercial_violations(by_id):
+        print("SELFTEST FALHOU: id da lista de bloqueio não foi barrado")
+        return 1
+    print("SELFTEST OK: %s" % violations[0])
+    return 0
 
 
 def check_national_capacity(report: Report) -> None:
@@ -147,6 +255,41 @@ def check_national_capacity(report: Report) -> None:
                      "%s: soma das fontes difere do total em %.3f MW" % (tag, delta))
         report.check(entry["check"]["sum_matches_total"],
                      "%s: check.sum_matches_total falso" % tag)
+        reason = entry.get("year_reason")
+        report.check(reason in ("all_9_sources_and_total", "all_9_sources_no_total",
+                                "total_only_partial_sources",
+                                "partial_sources_any_positive"),
+                     "%s: year_reason ausente/inválido (%s)" % (tag, reason))
+        missing_sources = entry.get("sources_missing")
+        zero_absent = entry.get("sources_absent_as_zero")
+        report.check(isinstance(missing_sources, list),
+                     "%s: sources_missing não é lista" % tag)
+        report.check(isinstance(zero_absent, list),
+                     "%s: sources_absent_as_zero não é lista" % tag)
+        if reason in ("all_9_sources_and_total", "all_9_sources_no_total"):
+            report.check(set(missing_sources or []) <= set(zero_absent or []),
+                         "%s: fonte ausente sem prova de zero (sources_absent_as_zero)"
+                         % tag)
+            report.check(all(value is not None
+                             for key, value in entry["by_source"].items()
+                             if key != "oil"),
+                         "%s: ano completo com fonte null (fora do óleo)" % tag)
+        else:
+            report.check(bool(missing_sources),
+                         "%s: ano incompleto sem sources_missing declarado" % tag)
+        if reason == "all_9_sources_no_total":
+            report.check(entry.get("total_source") == "sum_sources",
+                         "%s: sem Total generation mas total_source != sum_sources" % tag)
+    reasons = payload["meta"]["counts"].get("nations_year_reason") or {}
+    report.check(sum(reasons.values()) == len(nations),
+                 "national_capacity: nations_year_reason não cobre todas as nações")
+    report.check(nations["DEU"]["year"] == 2025,
+                 "national_capacity: DEU deveria usar 2025 (9 fontes completas)")
+    report.check(nations["DEU"]["year_reason"] == "all_9_sources_no_total",
+                 "national_capacity: DEU 2025 deve ser all_9_sources_no_total")
+    report.check(abs(nations["DEU"]["total_mw"] - 268380.0) <= 1.0,
+                 "national_capacity: DEU 2025 deveria somar ~268.380 MW (%.1f)"
+                 % nations["DEU"]["total_mw"])
     oil_nulls = sum(1 for entry in nations.values() if entry["by_source"]["oil"] is None)
     report.check(oil_nulls == len(nations),
                  "oleo deveria ser lacuna declarada em toda nação (%d/%d nulos)"
@@ -256,6 +399,8 @@ def check_plants(report: Report) -> None:
                  "meta.location_conflicts.coord_error ausente")
     report.check(coord.get("discarded") == len(discarded_ids),
                  "coord_error.discarded != lista de descartadas")
+    report.check("gppd_coord_error" not in reported,
+                 "gppd_coord_error entrou em by_cause/count (deve ficar fora do count)")
     report.check(wrong_city == 0,
                  "%d usinas em cidade de nação diferente de `nation`" % wrong_city)
 
@@ -343,6 +488,15 @@ def check_scaled_plants(report: Report) -> None:
                          "%s: scaling_method inválido" % plant["id"])
             report.check("capacity_mw_gppd" in plant,
                          "%s: sem capacity_mw_gppd" % plant["id"])
+            method = plant.get("method")
+            report.check(method in ("gppd_2021_scaled_to_ember",
+                                    "gppd_2021_unadjusted"),
+                         "%s: method ausente/inválido na usina real (%s)"
+                         % (plant["id"], method))
+            report.check(
+                (method == "gppd_2021_scaled_to_ember") ==
+                (plant.get("scaling_method") == "scaled_to_ember"),
+                "%s: method e scaling_method discordam" % plant["id"])
     report.check(synthetic > 0, "scaled: nenhuma usina sintética (esperado > 0)")
     report.check(zero >= 0, "scaled: contador de zeros inválido")
 
@@ -394,6 +548,24 @@ def check_scaled_plants(report: Report) -> None:
     report.check(not meta.get("gaps", {}).get("nation_source_failures"),
                  "scaled: meta.gaps.nation_source_failures não está vazio")
 
+    # Usinas reais sem alvo nacional (nação sem matriz Ember) — declaradas.
+    gap = (meta.get("gaps") or {}).get("national_target_missing") or {}
+    target_missing = [plant for plant in plants
+                      if plant.get("scaling_note") == "national_target_missing"]
+    report.check(gap.get("plants") == len(target_missing),
+                 "scaled: gaps.national_target_missing.plants (%s) != real (%d)"
+                 % (gap.get("plants"), len(target_missing)))
+    missing_mw = round(sum(float(p["capacity_mw"]) for p in target_missing), 3)
+    report.check(abs(float(gap.get("mw", -1.0)) - missing_mw) <= 0.01,
+                 "scaled: gaps.national_target_missing.mw != real (%.3f)" % missing_mw)
+    report.check(set(gap.get("by_nation") or {}) ==
+                 {plant["nation"] for plant in target_missing},
+                 "scaled: gaps.national_target_missing.by_nation != usinas afetadas")
+    for plant in target_missing:
+        report.check(plant.get("scaling_method") == "unscaled",
+                     "%s: national_target_missing sem scaling_method unscaled"
+                     % plant["id"])
+
     # Óleo: não escalonado, porque a Ember não separa.
     base = load("power_plants_base_2021_gppd.json")["by_nation"]
     for tag, entry in base.items():
@@ -416,13 +588,29 @@ def check_renewables(report: Report) -> None:
                  "renewable_potential: solar/eólico ainda cita WorldClim (D-115c)")
     hydro_meta = meta.get("hydro") or {}
     hydro_text = " ".join(str(hydro_meta.get(key, "")) for key in
-                          ("precip", "pet", "relief"))
-    report.check("WorldClim" not in hydro_text,
-                 "renewable_potential: hídrico ainda cita WorldClim (D-115c)")
+                          ("precip", "pet", "relief", "runoff"))
     report.check("CHIRPS" in str(hydro_meta.get("precip", "")),
                  "renewable_potential: hídrico sem CHIRPS")
-    report.check("CGIAR" in str(hydro_meta.get("pet", "")),
-                 "renewable_potential: hídrico sem PET CGIAR")
+    report.check("CHELSA" in str(hydro_meta.get("pet", "")),
+                 "renewable_potential: hídrico sem PET CHELSA")
+    report.check("CGIAR" not in hydro_text,
+                 "renewable_potential: hídrico ainda usa PET CGIAR-CSI (não comercial)")
+    pet_source = hydro_meta.get("pet_source") or {}
+    pet_dataset = "%s %s" % (pet_source.get("dataset", ""),
+                             pet_source.get("forcing", ""))
+    report.check("WorldClim" not in pet_dataset,
+                 "renewable_potential: PET ainda derivado do WorldClim (D-115c)")
+    report.check("ERA5" in str(pet_source.get("forcing", "")),
+                 "renewable_potential: PET sem forçante ERA5 declarada")
+    pet_license = pet_source.get("license") or {}
+    report.check(pet_license.get("commercial_ok") is True,
+                 "renewable_potential: licença do PET não comercial")
+    report.check("CC0" in str(pet_license.get("name", "")) or
+                 "domínio público" in str(pet_license.get("name", "")),
+                 "renewable_potential: PET sem licença pública declarada")
+    report.check(bool(pet_license.get("verified_on")) and
+                 bool(pet_license.get("url")),
+                 "renewable_potential: PET sem URL/data de verificação da licença")
     provinces = payload["by_province"]
     report.check(len(provinces) > 15000, "renewable_potential: poucas províncias")
     bad_solar = bad_wind = 0
@@ -514,9 +702,20 @@ def check_access(report: Report) -> None:
     payload = load("access_losses.json")
     by_country = payload["by_country"]
     tags, _ = ec.load_registry()
-    playable = [tag for tag in tags if ec.nation_code(tag) in by_country]
-    report.check(len(playable) >= 170,
+    playable = {entry["nation"] for entry in by_country.values()
+                if entry.get("nation")}
+    report.check(playable <= set(tags),
+                 "access_losses: nation fora da lista de nações do jogo: %s"
+                 % sorted(playable - set(tags))[:5])
+    report.check(len(playable) >= 176,
                  "access_losses: só %d das 179 nações jogáveis" % len(playable))
+    for tag in ("SSD", "XKX", "PSX"):
+        report.check(tag in playable,
+                     "access_losses: WDI não ligado à tag do jogo %s" % tag)
+    bridged = payload["meta"].get("bridged_rows") or []
+    report.check(any(row.get("wdi_iso3") == "PSE" and row.get("nation") == "PSX"
+                     for row in bridged),
+                 "access_losses: alias PSE->PSX não registrado em meta.bridged_rows")
     fields = [field["key"] for field in payload["meta"]["fields"]]
     for iso3, entry in by_country.items():
         for key in fields:
@@ -550,7 +749,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--require-commercial", action="store_true",
                         help="falha se uma fonte usada tiver licença restrita")
+    parser.add_argument("--selftest-commercial", action="store_true",
+                        help="prova que a guarda comercial pega fonte não comercial")
     args = parser.parse_args()
+    if args.selftest_commercial:
+        return selftest_commercial()
     report = Report()
     check_sources(report, args.require_commercial)
     check_national_capacity(report)

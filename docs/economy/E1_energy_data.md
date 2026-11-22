@@ -3,8 +3,8 @@
 Escopo: **só dado**. Nada foi ligado à simulação, ao núcleo C++, a `core/`, `game/`,
 `map/` ou UI. Plano: `docs/plans/perf_pop_financas_plano.md`, PARTE E, E1. Branch
 `data/e1-energy`, worktree `G:/projetos/opengs-wt-data-e1`, base atual
-`balance/global-resources` @ `0edecf64` (HEAD de dados `72357b37` + esta rodada de
-correções).
+`balance/global-resources` @ `0edecf64` (HEAD de dados `ea020617` + correção 2 da
+re-QA t33).
 
 O aceite do E1 é: **por nação, capacidade instalada (MW) e matriz por fonte na ordem do
 dado real 2024–2026; usinas individuais atribuídas à cidade/província dona no mapa do
@@ -16,14 +16,14 @@ lacuna declarada onde não há dado.**
 
 | Arquivo | Conteúdo | Registros | SHA-256 |
 |---|---|---|---|
-| `data/definitions/energy/national_capacity.json` | capacidade instalada e matriz por nação (2024–2025) + desvio do parque base | 171 nações, 161 comparações | `EC9CF51764B17458A4640B538A8A1D13C38E1CBCE4C4550695AD6FD101D0D1EF` |
+| `data/definitions/energy/national_capacity.json` | capacidade instalada e matriz por nação (2024–2025) + desvio do parque base | 171 nações, 161 comparações (90 em 2024, 81 em 2025) | `CA882623C40E5B97960294DC615176D97AA7918380297896F2556C49437FCE24` |
 | `data/definitions/energy/power_plants_base_2021_gppd.json` | parque GPPD ~2021 **bruto** (usina, fonte, MW, lat/lon) atribuído à cidade/nação do atlas | 34.932 usinas / 5.706.702,5 MW / 743 cidades / 166 nações | `CB8C0F9959B86864D786AB1FFBA9D7517A23AA75584820EEFC9E78A16B867E49` |
-| `data/definitions/energy/power_plants_2026_scaled.json` | parque **escalonado** para a matriz Ember 2024–2025, com fator por nação×fonte e usinas sintéticas declaradas | 36.034 usinas (34.932 reais + 1.102 sintéticas) / 10.327.743,2 MW (10.327.735,6 MW por nação + 7,6 MW sem cidade) / 825 cidades / 176 nações | `A094300E0B76DC6208CCAF35899578080ED488655E5D3309A63063C364D70D8F` |
-| `data/definitions/energy/renewable_potential.json` | solar e eólico por província/cidade (GSA/GWA) + proxy hídrico bruto (CHIRPS/PET/ETOPO1) | 15.547 províncias / 849 cidades | `47D49953A1933208F6656ECB0CA3DCCD24501E11FDFA284D304E3FDD9BFE0D86` |
-| `data/definitions/energy/hydro_potential.json` | potencial hídrico em MW por província/cidade, normalizado pela âncora nacional | 179 nações (135 com âncora) | `D3F284DF15D8DB5BB75B01ACC83FA9B90029693CD5110FB808AE1C27B1C6B9CD` |
-| `data/definitions/energy/access_losses.json` | acesso à eletricidade (total/urbano/rural), perdas T&D, água segura | 217 países (173 jogáveis) | `DEDF622E4B564468FC58315E366A017BAA37A7CF4E6CA38414F1853BE791AA07` |
+| `data/definitions/energy/power_plants_2026_scaled.json` | parque **escalonado** para a matriz Ember 2024–2025, com fator por nação×fonte e usinas sintéticas declaradas | 36.031 usinas (34.932 reais + 1.099 sintéticas) / 10.348.013,2 MW (10.348.005,6 MW por nação + 7,6 MW sem cidade) / 825 cidades / 176 nações | `B163A9AD7C8E304D3B9943CEB3838E5ECC01D5C5289F2950CF8CD6F562878B46` |
+| `data/definitions/energy/renewable_potential.json` | solar e eólico por província/cidade (GSA/GWA) + proxy hídrico bruto (CHIRPS/CHELSA PET/ETOPO1) | 15.547 províncias / 849 cidades | `A476F01C609E96ACAD46150CE84006A176C79A547867F817AB650F16A6F3C940` |
+| `data/definitions/energy/hydro_potential.json` | potencial hídrico em MW por província/cidade, normalizado pela âncora nacional | 179 nações (135 com âncora) | `106DBE4085C24EE5BEB7ADFBC5EFBDD3EAACADA0C9572E7E66A6D5D341BB7C60` |
+| `data/definitions/energy/access_losses.json` | acesso à eletricidade (total/urbano/rural), perdas T&D, água segura | 217 países (176 jogáveis) | `6D69FD90CED04A341E56FE80B7CE8D6C75BFC871CB36ABD99F11565BEF4F26D5` |
 | `data/definitions/energy/land_borders.json` | pares de nações com fronteira terrestre (E5) | 299 pares / 152 nações | `5465B7E5017A21C12219595E80AC657E325084DCB6235C7EE65DB7E6290F8451` |
-| `data/definitions/energy/_sources.json` | registro único de fonte, URL, acesso, licença, evidência e transformação | 16 fontes (10 usadas, 1 citação, 5 recusadas) | `99736E618E3C2CB7829FE1CF66141AF25403580B4FD329D11DFCD2F0A059EAFC` |
+| `data/definitions/energy/_sources.json` | registro único de fonte, URL, acesso, licença, evidência e transformação | 17 fontes (10 usadas, 1 citação, 6 recusadas) | `05FCC88BA338471A2624D8511600A96790306454AAD981FB7BA5ED8438CEB24F` |
 
 Scripts reprodutíveis (determinísticos; 2+ execuções com SHA-256 idêntico):
 
@@ -31,7 +31,8 @@ Scripts reprodutíveis (determinísticos; 2+ execuções com SHA-256 idêntico):
 tools/data/energy/fetch_ember_capacity.py      cache Ember (CSV ~16 MB, não versionado)
 tools/data/energy/fetch_wb_hydro_anchor.py     cache do indicador do Banco Mundial
 tools/data/energy/fetch_atlas_points.py        cache GSA/GWA por província (ponto a ponto)
-tools/data/energy/fetch_hydro_inputs.py        cache CHIRPS/ETOPO1/PET (fontes livres)
+tools/data/energy/fetch_hydro_inputs.py        cache CHIRPS/ETOPO1 (fontes livres)
+tools/data/energy/fetch_pet_chelsa.py          cache PET CHELSA v2.1 (CC0), via HTTP Range
 tools/data/energy/build_national_capacity.py   -> national_capacity.json
 tools/data/energy/build_power_plants_scaled.py -> power_plants_2026_scaled.json
 tools/data/energy/build_hydro_national.py      -> hydro_potential.json
@@ -45,9 +46,9 @@ tools/validate_energy_data.py                  validador
 ```
 
 Caches baixados ficam em `tools/data/energy/cache/` (gitignored, com manifest de URL +
-SHA-256 + data de acesso). Nada acima de 20 MB é versionado. `NE_DIR` é descoberto por
-`NE_DIR`, `tools/data/natural_earth` ou o caminho legado, com falha explícita se ausente
-(sem caminho absoluto silencioso).
+SHA-256 + data de acesso). Nada acima de 20 MB é versionado. `NE_DIR` é obrigatório
+quando o Natural Earth 10m não está em `tools/data/natural_earth`: não existe mais
+fallback para caminho absoluto de máquina (`G:\tools\ne_extract`), e a falha é explícita.
 
 ## 2. Fontes e licenças (verificado em 2026-11-22)
 
@@ -60,10 +61,11 @@ SHA-256 + data de acesso). Nada acima de 20 MB é versionado. `NE_DIR` é descob
 | **Global Solar Atlas 2.x** (Solargis/ESMAP/Banco Mundial) | GHI e PVOUT (anual + mensal) | **CC BY 4.0** | usada |
 | **Global Wind Atlas 3/4** (DTU/ESMAP/Banco Mundial) | vento/densidade a 100 m (Weibull) | **CC BY 4.0** | usada |
 | **CHIRPS v3.0** (CHC/UCSB, 2025) | precipitação anual do proxy hídrico | **domínio público / CC BY 4.0** | usada |
-| **CGIAR-CSI PET v3.1** | PET anual do runoff | **CC BY 4.0** | usada |
+| **CHELSA v2.1 — PET** (WSL, ERA5/Penman-Monteith, 1981–2010) | PET anual do runoff | **CC0 1.0** (domínio público; uso comercial livre) | usada |
 | **ETOPO1** (NOAA/NCEI) | relevo do proxy hídrico | **domínio público** | usada |
 | **Natural Earth 10m** (rios, admin) | rios do proxy hídrico, divisas | **domínio público** | usada |
 | **WorldClim 2.1** | — | uso acadêmico/não comercial; redistribuição e uso comercial proibidos sem permissão | **recusada** — saiu do E1 (D-115c) |
+| **CGIAR-CSI Global-PET v3.1** (Zomer & Trabucco) | PET (versão anterior desta rodada) | página do CGIAR-CSI: “provided for **non-commercial use**”; o produto é **derivado do WorldClim 2.1** (o figshare rotula CC BY 4.0, mas não é o termo do produto) | **recusada** — re-QA t33; trocada pela CHELSA |
 | **Our World in Data — Energy** | tentativa de separar óleo | CC BY 4.0, mas só geração (`oil_electricity_twh`), não capacidade | **recusada** — lacuna declarada |
 | **EIA International Energy Data** (bulk INTL) | tentativa de separar óleo | domínio público, mas só capacidade fóssil agregada e geração de petróleo | **recusada** — lacuna declarada |
 | **IRENA ELECSTAT** | comparação de capacidade | termos IRENA art. 4.1 (**não comercial**) | **recusada** |
@@ -71,11 +73,24 @@ SHA-256 + data de acesso). Nada acima de 20 MB é versionado. `NE_DIR` é descob
 | **IJHD — Hydropower Essentials** | número global de potencial (16.400 TWh/ano) | citação de fato, com atribuição | só citação |
 
 **Decisão D-115(c):** o WorldClim **não** é mais usado no E1. Solar/eólico vêm do
-GSA/GWA (CC BY 4.0); o hídrico usa CHIRPS (domínio público/CC BY 4.0), PET CGIAR-CSI
-v3.1 (CC BY 4.0), ETOPO1 (domínio público) e rios Natural Earth. A dependência
+GSA/GWA (CC BY 4.0); o hídrico usa CHIRPS (domínio público/CC BY 4.0), PET CHELSA
+v2.1 (CC0 1.0), ETOPO1 (domínio público) e rios Natural Earth. A dependência
 **pré-existente** de `data/definitions/natural/province_nature.json` no WorldClim
 (clima do jogo) é dívida separada, registrada no §15 — não foi mexida nesta fase.
 `validate_energy_data.py --require-commercial` **passa** no estado atual.
+
+**Correção 2 (re-QA t33):** a rodada anterior usava o **CGIAR-CSI Global-PET v3.1**
+com a evidência errada ("CC BY 4.0, derivado do WorldClim bruto"). A página oficial do
+CGIAR-CSI diz que Global-PET/Global-Aridity são **"provided for non-commercial use"** e
+**"both modeled using the data available from WorldClim Global Climate Data"**
+(`https://csidotinfo.wordpress.com/data/global-aridity-and-pet-database/`, verificado
+em 2026-11-22). A fonte foi **recusada** e trocada pela **CHELSA v2.1 PET**
+(`https://chelsa-climate.org/datasets/chelsa_climatologies/`, verificado em
+2026-11-22): “License: **Creative Commons Zero - No Rights Reserved (CC0 1.0)**”,
+Penman-Monteith com forçante **ERA5** (não é derivado do WorldClim). O validador ganhou
+uma **lista de bloqueio explícita** (`NON_COMMERCIAL_SOURCE_IDS`) e varredura de texto
+de licença, além de `--selftest-commercial`, que prova que uma fonte não comercial em
+uso reprova mesmo com `commercial_ok: true` no registro.
 
 **Decisão D-115(d):** a Ember não separa óleo (`Other fossil`); a tentativa com OWID e
 EIA não encontrou capacidade instalada de óleo por país em nenhuma das duas (OWID só
@@ -85,10 +100,22 @@ escalonado** em `power_plants_2026_scaled.json`, com o motivo declarado.
 
 ## 3. Matriz nacional 2024–2025 (Ember)
 
-Regra: para cada país, a linha `Capacity (GW)` do **último ano com capacidade positiva
-entre 2024 e 2025** (nunca interpola, nunca extrapola). Ano com só zeros não conta
-(ex.: KGZ 2025 trazia apenas `Other renewables 0.0`; vale 2024). `year` fica explícito
-por país: **79 países em 2025, 92 em 2024**.
+Regra declarada (correção 2, re-QA t33): para cada país, vale o **último ano entre 2024
+e 2025 em que a Ember publica as 9 fontes de capacidade** (Hydro, Solar, Wind, Coal, Gas,
+Nuclear, Bioenergy, Other fossil, Other renewables) — **mesmo sem a linha
+`Total generation`**. Nesse caso o total é a soma exata das fontes
+(`total_source: sum_sources`). Nenhum ano é interpolado nem extrapolado e
+`year_reason` declara por país como o ano foi escolhido:
+
+| `year_reason` | Significado |
+|---|---|
+| `all_9_sources_and_total` | 9 fontes + `Total generation` (total da Ember) |
+| `all_9_sources_no_total` | 9 fontes, sem `Total generation` (total = soma das fontes) |
+| `total_only_partial_sources` | nenhum ano com 9 fontes; usa o último com total > 0 e lista `sources_missing` |
+| `partial_sources_any_positive` | só há capacidade positiva esparsa (zero puro não conta, ex.: KGZ 2025) |
+
+Exemplo do efeito: **DEU 2025** tem as 9 fontes e **não** tem `Total generation`;
+antes caía para 2024 (248,18 GW), agora vale 2025 com **268,38 GW** (soma das fontes).
 
 Mapeamento para as 9 fontes do jogo: `Hydro→hydro`, `Solar→solar`, `Wind→wind`,
 `Coal→coal`, `Gas→gas`, `Nuclear→nuclear`, `Bioenergy→biomass`,
@@ -97,20 +124,24 @@ de `Other fossil`), então `oil: null` em todos os países, com
 `other_breakdown.other_fossil_mw` e o motivo em `meta.gaps.oil` — a tentativa com
 OWID/EIA está no §2. **Nenhum número foi inventado.**
 
-Mundo (soma dos 171 países com dado): **10.033,4 GW**, 0 divergência entre a soma das
-fontes e o total da Ember (tolerância 0,5 MW; `check.sum_matches_total` verdadeiro em
-171/171).
+Mundo (soma dos 171 países com dado): **10.054,6 GW**, 0 divergência entre a soma das
+fontes e o total (`check.sum_matches_total` verdadeiro em 171/171, tolerância 0,5 MW).
+Distribuição dos anos: **81 países em 2025, 90 em 2024**; `year_reason`:
+`all_9_sources_and_total` 32, `all_9_sources_no_total` 2, `total_only_partial_sources` 135,
+`partial_sources_any_positive` 2. A maioria fica em 2024 porque a Ember 2025 ainda não
+publicou alguma linha de fonte do país (e não há publicação anterior = 0 que autorize
+assumir zero); nesses casos o total é a linha `Total generation` de 2024.
 
 | Fonte | Mundo (GW) |
 |---|---|
-| solar | 2.348,7 |
-| carvão | 2.214,5 |
-| gás | 2.058,5 |
-| hídrica | 1.286,1 |
-| eólica | 1.283,6 |
+| solar | 2.364,3 |
+| carvão | 2.214,1 |
+| gás | 2.058,6 |
+| eólica | 1.289,0 |
+| hídrica | 1.286,5 |
 | nuclear | 393,1 |
 | outras | 319,5 |
-| biomassa | 129,4 |
+| biomassa | 129,6 |
 | óleo | **lacuna** (dentro de “outras”) |
 
 ### 10 maiores por MW (cap = 2024–2025)
@@ -121,8 +152,8 @@ fontes e o total da Ember (tolerância 0,5 MW; `check.sum_matches_total` verdade
 | 2 | USA | 2025 | 1.333,2 | 84 | 212 | 159 | 189 | 550 | 97 | 10 | 33 |
 | 3 | IND | 2025 | 555,5 | 49 | 136 | 55 | 251 | 27 | 9 | 11 | 19 |
 | 4 | JPN | 2025 | 322,9 | 28 | 92 | 6 | 55 | 82 | 33 | 6 | 20 |
-| 5 | BRA | 2025 | 260,6 | 110 | 65 | 35 | 3 | 19 | 2 | 18 | 8 |
-| 6 | DEU | 2024 | 248,2 | 6 | 91 | 73 | 32 | 32 | 0 | 9 | 5 |
+| 5 | DEU | 2025 | 268,4 | 6 | 106 | 78 | 32 | 32 | 0 | 9 | 5 |
+| 6 | BRA | 2025 | 260,6 | 110 | 65 | 35 | 3 | 19 | 2 | 18 | 8 |
 | 7 | RUS | 2025 | 237,5 | 52 | 2 | 3 | 37 | 113 | 29 | 0 | 1 |
 | 8 | FRA | 2025 | 167,6 | 24 | 31 | 26 | 2 | 18 | 61 | 2 | 4 |
 | 9 | KOR | 2025 | 158,9 | 2 | 30 | 2 | 42 | 50 | 26 | 3 | 3 |
@@ -150,14 +181,23 @@ fontes e o total da Ember (tolerância 0,5 MW; `check.sum_matches_total` verdade
   total por nação é a soma exata das cidades do atlas; usina sem cidade (as 2 estações
   da Antártida, 7,6 MW) fica fora do agregado e é declarada em
   `meta.counts.mw_without_city`.
-- **Conflitos de localização (300 usinas / 61.945,7 MW)** classificados por causa:
+- **Conflitos de localização (300 usinas / 61.945,7 MW = 148 + 125 + 27)** classificados
+  por causa. O `location_conflict` só existe para usina que **continua** no parque:
 
   | Causa | Usinas | MW | Regra aplicada |
   |---|---:|---:|---|
   | `border_pixel` | 148 | 38.968,5 | fica na cidade mais próxima da nação do atlas |
   | `deleted_territory` | 125 | 2.016,1 | território do GPPD que não existe no jogo; fica na cidade do atlas |
   | `occupied` | 27 | 20.961,0 | território disputado/ocupado; vale o controlador do atlas |
-  | `gppd_coord_error` | 5 | 1.472,2 | 1 corrigido com evidência + 4 descartados (abaixo) |
+  | **total contado** | **300** | **61.945,7** | `meta.location_conflicts.count` |
+
+  **Fora do count:** `gppd_coord_error` — **5 usinas / 1.472,2 MW**. O erro de
+  coordenada/país não é um conflito de atribuição: a usina é **corrigida com evidência**
+  (1 caso, sai da lista de conflitos) ou **descartada** (4 casos, saem do parque) e por
+  isso não entra em `meta.location_conflicts.count` nem em `by_cause`. O detalhe fica em
+  `meta.location_conflicts.coord_error` (`corrected: 1`, `discarded: 4`),
+  `meta.coord_fixes` e `meta.discarded`. Somar 5 ao count daria 305 e quebraria a
+  identidade com as usinas do arquivo.
 
   Os 10 pares mais frequentes: PRT→ESP 36, FRA→MDG 25, MUS→MDG 23, UKR→RUS 21,
   FRA→DMA 20, CAN→USA 10, USA→CAN 8, FRA→LCA 8, DEU→CHE 6, ESP→MAR 6.
@@ -200,11 +240,24 @@ capacity_mw = round(base_mili * fator)        (resto na maior usina do grupo)
 - **Óleo:** alvo `null` (Ember não separa); o parque de óleo do GPPD fica **não
   escalonado** e o motivo é declarado. Nação sem matriz Ember (8 lacunas): parque fica
   não escalonado e declarado.
+- **Sem alvo nacional (`national_target_missing`):** **109 usinas / 32.493,5 MW** ficam
+  **não escalonadas** e cada uma leva `scaling_note: national_target_missing`
+  (`meta.gaps.national_target_missing`, com `plants`, `mw` e `by_nation`). São dois
+  grupos: (i) as 104 usinas das 8 nações sem matriz 2024–2025 (CAF, DMA, LKA, PSX, SAH,
+  SOL, TLS, UKR — UKR sozinha tem 41 usinas/28.886,5 MW); (ii) **5 usinas / 978,1 MW em
+  país com matriz mas sem a fonte no agregado** — CYP (gás, 868,0 MW), MDG (gás, 29,6 MW
+  em 2 usinas), MWI (gás, 15,5 MW) e NIC (gás, 65,0 MW). A QA (t33) citou essa lacuna
+  como 6 usinas/979 MW: o **MW confere (978,1)** e o arquivo tem **5** plantas nesses
+  quatro países; a fonte ausente é sempre **gás** (a Ember não publica a linha, e não há
+  publicação anterior = 0 que autorize assumir zero — por isso não vira 0,0).
+- **Usinas reais escalonadas levam `method`:** `gppd_2021_scaled_to_ember` quando o fator
+  foi aplicado e `gppd_2021_unadjusted` quando ficaram como no GPPD (óleo, sem alvo
+  nacional); o validador exige o campo e a coerência com `scaling_method`.
 
-**Resultado:** 36.034 usinas (34.932 reais + 1.102 sintéticas), **10.327.743,2 MW**
-(10.327.735,6 MW por nação + 7,6 MW sem cidade), 825 cidades, 176 nações. **1.584 checagens nação×fonte, 0 falhas** (≤0,01 MW).
+**Resultado:** 36.031 usinas (34.932 reais + 1.099 sintéticas), **10.348.013,2 MW**
+(10.348.005,6 MW por nação + 7,6 MW sem cidade), 825 cidades, 176 nações. **1.584 checagens nação×fonte, 0 falhas** (≤0,01 MW).
 O total fica **294,4 GW acima** da Ember: **261,9 GW** de óleo não separado + **32,7 GW**
-das 8 nações sem matriz Ember (com sobreposição de óleo dentro das lacunas). Isso é
+das 5 nações com usina e sem matriz Ember (com 1,2 GW de óleo dentro delas). Isso é
 lacuna declarada, não erro de soma.
 
 ### 10 maiores após o escalonamento vs Ember
@@ -215,8 +268,8 @@ lacuna declarada, não erro de soma.
 | 2 | USA | 1.370.393,4 | 1.333.250,0 | +37.143,4 | óleo não separado |
 | 3 | IND | 557.140,8 | 555.460,0 | +1.680,8 | óleo não separado |
 | 4 | JPN | 367.030,2 | 322.910,0 | +44.120,2 | óleo não separado |
-| 5 | BRA | 268.923,6 | 260.640,0 | +8.283,6 | óleo não separado |
-| 6 | DEU | 251.031,2 | 248.180,0 | +2.851,2 | óleo não separado |
+| 5 | DEU | 271.231,2 | 268.380,0 | +2.851,2 | óleo não separado (alvo agora é 2025) |
+| 6 | BRA | 268.923,6 | 260.640,0 | +8.283,6 | óleo não separado |
 | 7 | RUS | 237.569,1 | 237.470,0 | +99,1 | óleo não separado |
 | 8 | FRA | 172.028,0 | 167.600,0 | +4.428,0 | óleo não separado |
 | 9 | KOR | 163.535,0 | 158.880,0 | +4.655,0 | óleo não separado |
@@ -263,8 +316,12 @@ O proxy bruto por província é
 - **precip_mm** = CHIRPS v3.0 anual 2025 (domínio público/CC BY 4.0), 0,05°, no centróide
   da província. CHIRPS cobre **60°N–60°S**; as **1.746 províncias** fora dessa faixa ficam
   `no_data` (lacuna declarada), **sem** preencher com WorldClim.
-- **PET** = Global Aridity and PET Database v3.1 (CGIAR-CSI, CC BY 4.0), PET anual
-  30 arc-sec, no centróide; `runoff = clamp((precip − PET)/precip, 0, 1)`.
+- **PET** = **CHELSA-climatologies v2.1** (WSL, **CC0 1.0**, Penman-Monteith,
+  climatologia 1981–2010, forçante ERA5), PET anual no centróide;
+  `runoff = clamp((precip − PET)/precip, 0, 1)`. O COG de 30 arc-sec é lido por
+  **HTTP Range no overview 1/8 (0,0667° ≈ 7,4 km)** — `fetch_pet_chelsa.py` soma os 12
+  meses e grava `chelsa_pet_annual_1981-2010_1of8.tif` (mm/ano) no cache. Resolução de
+  7,4 km é declarada; CHIRPS é 0,05° (≈5,5 km).
 - **desnível** = max−min da altitude **ETOPO1** (1 arc-min, domínio público) nos pixels de
   terra da província, na grade 4096×2048 do atlas.
 - **river_factor** = cobertura de rio Natural Earth 10m a ≤50 km, piso 0,02.
@@ -277,8 +334,19 @@ O proxy bruto por província é
   confiança é `low` em toda nação, nunca `high`.
 - A soma das províncias de cada país é **igual** à âncora nacional (resto de arredondamento
   na província de maior `raw`); as frações somam 1. **135 das 179 nações** com âncora;
-  **44 sem** (`national_anchor_missing`) — lacuna declarada, não zero inventado. EGY e NAM
-  têm âncora mas o proxy é 0 em todas as províncias (`distribution_missing`).
+  **44 sem** (`national_anchor_missing`) — lacuna declarada, não zero inventado.
+- **`distribution_missing` (25 nações):** âncora existe, mas o proxy é **0 em todas as
+  províncias** (PET ≥ precipitação em todas as amostras), então nenhuma província recebe
+  MW em vez de inventar distribuição: AFG, ARM, BFA, DMA, DZA, EGY, FIN, HUN, IRN, IRQ,
+  ISL, KGZ, LBN, MAR, MDA, MLI, NAM, SDN, SYR, TGO, TJK, TUN, URY, UZB, ZMB. Outras 61
+  nações têm âncora e proxy positivo.
+- **Efeito da troca de PET (correção 2):** com a CHELSA a média global do PET amostrado é
+  1.399 mm/ano (mediana 1.432; máx 3.441) contra 1.441/1.339/3.616 do CGIAR, e o runoff
+  fica zero em **71,2 %** das províncias (antes 66,9 %). A lista de `distribution_missing`
+  muda na margem: **AZE e PAK passam a ter distribuição** e **DMA e URY entram** na lacuna
+  (25 → 25 nações: duas saem, duas entram). O proxy é grosseiro por construção
+  (`confidence: low`) e sensível ao limiar de umidade — nenhuma dessas nações recebe
+  número inventado.
 - Mundo declarado: **4.642 GW** (soma das 171 âncoras disponíveis), coerente com a âncora
   global de 16.400 TWh/ano (a 0,40 de fator de capacidade ≈ 16,3 PWh/ano).
 - O proxy global antigo (16.400 TWh/ano) continua como `normalized: global_anchor` em
@@ -289,8 +357,14 @@ O proxy bruto por província é
 
 - Ano mais recente não vazio por país/indicador; ausente = `null`, sem interpolação.
 - Cobertura entre 217 países: acesso à eletricidade 216, urbano/rural 214, **perdas T&D
-  150**, água segura 151 (urbano 104, rural 85). 173 das 179 nações jogáveis têm algum
-  dado; 6 não (`PSX, SAH, SOL, SSD, TWN, XKX`).
+  150**, água segura 151 (urbano 104, rural 85). **176 das 179 nações jogáveis** têm
+  registro no WDI; 3 não (`SAH, SOL, TWN` — o WDI não publica linha para Saara Ocidental,
+  Somalilândia nem Taiwan).
+- **Ligação de código (correção 2):** o WDI publica `SSD`, `XKX` e `PSE`; o jogo usa
+  `SSD`, `XKX` e `PSX`. A ligação é pelo id direto, pelo `NATION_CODE_OVERRIDES` do jogo
+  (ex.: `NED→NLD`) e pelo alias explícito `PSE→PSX`. Antes, os três ficavam de fora
+  porque o validador comparava `nation_code(tag)` (que devolve `SDS`/`KOS`) com a chave do
+  WDI. SSD passou a ter acesso 5,4 %, XKX 100 %, PSX 100 %.
 - Amostra (acesso total/urb/rural · perdas · água): BRA 99,8/99,9/99,2 · 14,9 % · 88,6;
   NGA 62,5/85,5/23,5 · 14,1 % · 29,9; NOR 100/100/100 · 4,6 % · 99,1; CHN 100/100/100 ·
   3,1 % · (só urbana 96,4).
@@ -308,21 +382,35 @@ pares** é o dado; o km é ±20 % (CAN-USA 9.841 km vs ~8.900 oficial).
 
 ```text
 python tools/validate_energy_data.py
-493422 checagens | 0 falhas | 1 avisos
+564101 checagens | 0 falhas | 1 avisos
+
+python tools/validate_energy_data.py --require-commercial
+564101 checagens | 0 falhas | 1 avisos
+
+python tools/validate_energy_data.py --selftest-commercial
+SELFTEST OK: fake_noncommercial: texto da licença com marcador restritivo (non-commercial)
 ```
 
 Checagens: licença completa (nome, `commercial_ok`, data, evidência e `accessed_at_utc`)
-para toda fonte usada e todo arquivo consumidor existente; matriz com as 9 fontes, ano na
-janela, soma das fontes = total (≤0,5 MW) e óleo como lacuna; cobertura 171 + 8 = 179;
-usina base com `gppd_country`, `nation` = cidade do atlas, causa de conflito válida e
+para toda fonte usada e todo arquivo consumidor existente, **lista de bloqueio explícita**
+de fontes não comerciais + marcadores de texto (um `commercial_ok: true` mentiroso não
+passa) e prova negativa em `--selftest-commercial`; matriz com as 9 fontes, ano na janela,
+`year_reason` válido/coerente (`sources_missing ⊆ sources_absent_as_zero`, `sum_sources`
+quando não há `Total generation`), soma das fontes = total (≤0,5 MW), DEU 2025 ≈ 268.380 MW
+e óleo como lacuna; cobertura 171 + 8 = 179; usina base com `gppd_country`, `nation` =
+cidade do atlas, causa de conflito válida, `gppd_coord_error` fora do `count` e
 `location_conflict` = província; descartadas ausentes; **Σ by_city = Σ by_nation**
 (≤0,01 MW) no base e no escalonado; escalonado com `data_year: 2026`, alvo 2024–2025,
-1.584 checagens nação×fonte (≤0,01 MW), óleo não escalonado e sintéticas com cidade/peso;
-solar/eólico em faixa física, série solar mensal de 12 meses, vento sem série mensal
-declarado; hídrico com soma das províncias = âncora nacional (≤0,01 MW), frações = 1 e
-`no_data` sem zero inventado; acesso 0..100; fronteiras sem par repetido/consigo mesma.
-`--require-commercial` **passa** (nenhuma fonte restrita em uso). Saídas byte-idênticas em
-execuções repetidas.
+1.584 checagens nação×fonte (≤0,01 MW), `method` em toda usina real coerente com
+`scaling_method`, `national_target_missing` batendo com as usinas, óleo não escalonado e
+sintéticas com cidade/peso; solar/eólico em faixa física, série solar mensal de 12 meses,
+vento sem série mensal declarado; hídrico com PET **CHELSA (CC0)** e sem CGIAR, soma das
+províncias = âncora nacional (≤0,01 MW), frações = 1 e `no_data` sem zero inventado;
+acesso 0..100 com **SSD/XKX/PSX ligados** ao WDI; fronteiras sem par repetido/consigo
+mesma. **Prova negativa da guarda comercial:** marcando o CGIAR como `used` (mesmo com
+`commercial_ok: true`), `--require-commercial` reprova com 2 falhas (lista de bloqueio +
+“ainda consta como fonte usada”, exit 1); restaurado, volta a 0 falhas. Saídas
+byte-idênticas em execuções repetidas (builders 2×, SHA-256 igual nos 6 arquivos).
 
 ## 11. Lacunas e o que fica para E2
 
@@ -342,6 +430,16 @@ execuções repetidas.
 7. **Geração por fonte** (TWh) está disponível na mesma base da Ember e ainda não foi
    usada — candidata natural ao fator de capacidade do E2.
 8. **Água** é só distribuição (E7); não há hidrologia nesta fase.
+9. **Sem alvo nacional (`national_target_missing`, §5):** 109 usinas / 32.493,5 MW ficam
+   com o MW do GPPD (não escalonado) — 104 em nações sem matriz Ember e **5 em CYP, MDG,
+   MWI e NIC** (gás: 978,1 MW) que têm matriz mas não a linha de gás. Não foi inventado
+   zero para essas fontes.
+10. **Petróleo/óleo e gás não publicados** são a mesma família de lacuna: a Ember agrega
+    óleo em `Other fossil` e às vezes não publica uma fonte; o E2 precisa tratar
+    `null` como “sem alvo”, não como zero.
+11. **PET em 0,0667°:** a CHELSA é 30 arc-sec e foi lida no overview 1/8 (≈7,4 km) para
+    não baixar 12 COGs de ~400 MB; se o E2 precisar de resolução maior (micro-sítio de
+    bacia), o nível 1/4 está disponível no mesmo COG.
 
 ## 12. Achado de qualidade fora do escopo
 
@@ -363,14 +461,46 @@ agregados de energia **não** usam esse arquivo: a área vem do raster do atlas 
   evidência foram descartados (não realocados).
 - **Licença no meta:** o GPPD virou objeto `{name: CC BY 4.0, url, commercial_ok}` no
   `meta.park_source`, em vez de string solta.
-- **`NE_DIR`:** descoberto por `NE_DIR`/`tools/data/natural_earth`/caminho legado, com
-  falha explícita; documentado no §1 e no cabeçalho do builder.
+- **`NE_DIR`:** lido de `NE_DIR`/`tools/data/natural_earth`, com falha explícita; o
+  fallback absoluto `G:\tools\ne_extract` foi removido (correção 2). Documentado no §1 e
+  no cabeçalho do builder.
 - **`accessed_at_utc`:** presente em todas as fontes usadas do `_sources.json`.
 - **Créditos:** dívida registrada no `_sources.json` e no §15 — a tela de créditos precisa
-  citar Ember, WRI, Banco Mundial, GSA/GWA, CHIRPS, CGIAR-CSI, ETOPO1 e Natural Earth
+  citar Ember, WRI, Banco Mundial, GSA/GWA, CHIRPS, CHELSA, ETOPO1 e Natural Earth
   antes do E2 ligar o dado.
 - **Números do doc:** conferidos contra os arquivos gerados (contagens, MW, cobertura,
   conflitos e hashes) na rodada final de builders 2× + validador.
+
+## 13b. Correções da re-QA t33 (correção 2)
+
+- **Licença do PET (BLOQUEADOR):** o CGIAR-CSI Global-PET v3.1 foi **recusado**. A
+  evidência anterior estava invertida: o produto é **derivado do WorldClim 2.1** e a
+  página oficial do CGIAR-CSI diz “provided for **non-commercial use**”. Entrou a
+  **CHELSA v2.1 PET** (WSL), **CC0 1.0**, Penman-Monteith com forçante **ERA5**
+  (licença e forçante verificadas na página do dataset em 2026-11-22). O proxy hídrico
+  (runoff/`raw_index`) foi refeito: PET média 1.399 mm/ano (mediana 1.432; máx 3.441),
+  contra 1.441/1.339/3.616 do CGIAR — mesma ordem de grandeza, distribuição um pouco
+  mais seca (runoff zero em 71,2 % das províncias contra 66,9 %).
+- **Guarda comercial independente do registro:** `NON_COMMERCIAL_SOURCE_IDS`
+  (`worldclim_21`, `cgiar_pet_v3_1`, `irena_elecstat`, `gem_trackers`) + marcadores de
+  texto de licença + `--selftest-commercial`. Prova negativa: marcando o CGIAR como
+  `used` (mesmo com `commercial_ok: true`), `--require-commercial` reprova
+  (“id na lista de bloqueio” + “ainda consta como fonte usada”, exit 1); restaurado,
+  volta a passar.
+- **Regra do ano (Ember):** último ano com as 9 fontes de capacidade cobertas, mesmo
+  sem `Total generation`, com `year_reason` e `sources_missing`/`sources_absent_as_zero`
+  por país (§3). DEU 2024 → **2025 (268.380,0 MW)**; o parque escalonado da Alemanha vai
+  a 271.231,2 MW (268.380,0 + 2.851,2 de óleo não separado).
+- **Doc §4:** a tabela fecha em 300 usinas/61.945,7 MW e os **5 `gppd_coord_error`
+  (1.472,2 MW)** ficam explicitamente **fora do count** (1 corrigido + 4 descartados).
+- **Docstrings e caminhos:** o nome antigo `power_plants_2026.json` saiu das docstrings
+  (agora `power_plants_base_2021_gppd.json`/`power_plants_2026_scaled.json`); o
+  `NE_DIR` não tem mais fallback absoluto (`G:\tools\ne_extract`) — exige `NE_DIR` ou o
+  conjunto em `tools/data/natural_earth/`.
+- **`method` nas usinas reais** e **`national_target_missing`** declarados (§5/§11).
+- **WDI → tags do jogo:** `SSD`, `XKX` e `PSE` passaram a ligar em `SSD`, `XKX` e `PSX`
+  (alias `PSE→PSX` declarado em `meta.iso3_aliases`), levando a cobertura de 173 para
+  **176** das 179 nações (§8).
 
 ## 14. Escalonamento: leitura dos 10 maiores
 
@@ -390,8 +520,8 @@ tratar o óleo como `other` (decisão de design, não de dado).
    permissão escrita de `info@worldclim.org` ou troca do clima por fonte livre. Esta dívida
    é **do clima**, não do E1, e não foi mexida nesta rodada.
 2. **Créditos das fontes (ABERTO):** a tela de créditos precisa citar **Ember, WRI
-   (GPPD), Banco Mundial (WDI + âncora hídrica), GSA/GWA, CHIRPS, CGIAR-CSI PET, ETOPO1 e
-   Natural Earth** antes do E2 popular a rede com o parque escalonado. Registro:
+   (GPPD), Banco Mundial (WDI + âncora hídrica), GSA/GWA, CHIRPS, CHELSA PET (CC0),
+   ETOPO1 e Natural Earth** antes do E2 popular a rede com o parque escalonado. Registro:
    `_sources.json › meta.credits_debt`.
 3. **Óleo (ABERTO):** sem fonte licenciada de capacidade instalada de óleo por país;
    `oil: null` e parque de óleo não escalonado. OWID/EIA foram tentados e recusados com

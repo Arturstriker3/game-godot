@@ -230,8 +230,10 @@ def main() -> int:
                     "dataset": "renewable_potential.json (proxy_hydro_free)",
                     "method": "proxy_precip_relief_river_free",
                     "note": ("precipitação CHIRPS v3.0 anual 2025 (domínio público/"
-                             "CC BY 4.0), PET anual CGIAR-CSI v3.1 (CC BY 4.0) e "
-                             "desnível ETOPO1 (domínio público); NÃO usa WorldClim"),
+                             "CC BY 4.0), PET anual CHELSA v2.1 (CC0 1.0, ERA5) e "
+                             "desnível ETOPO1 (domínio público); NÃO usa WorldClim "
+                             "nem o PET CGIAR-CSI v3.1 (derivado do WorldClim, uso "
+                             "não comercial)"),
                 },
             },
             "derivation_note": ("o denominador (Ember) nao e a mesma publicacao usada "

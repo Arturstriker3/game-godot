@@ -1,9 +1,12 @@
 """Baixa as entradas hídricas livres do E1 (sem WorldClim):
 
   * CHIRPS v3.0 anual 2025 (precipitação; domínio público / CC BY 4.0);
-  * ETOPO1 Ice Surface GeoTIFF (relevo; domínio público, NOAA/NCEI);
-  * Global Aridity Index and PET Database v3.1 — PET anual (CC BY 4.0,
-    figshare 7504448).
+  * ETOPO1 Ice Surface GeoTIFF (relevo; domínio público, NOAA/NCEI).
+
+A PET anual NÃO vem daqui: `fetch_pet_chelsa.py` baixa a CHELSA v2.1 (CC0 1.0,
+ERA5) por HTTP Range no overview 1/8 e grava o GeoTIFF anual no mesmo cache.
+O CGIAR-CSI Global-PET v3.1 foi recusado (derivado do WorldClim, uso não
+comercial).
 
 Os arquivos ficam no cache gitignored `tools/data/energy/cache/hydro/`, com
 manifest de URL, SHA-256, bytes e data de acesso. Nada é versionado.
@@ -34,7 +37,6 @@ CHIRPS_URL = ("https://data.chc.ucsb.edu/products/CHIRPS/v3.0/annual/global/"
 ETOPO_URL = ("https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/"
              "ice_surface/grid_registered/georeferenced_tiff/"
              "ETOPO1_Ice_g_geotiff.zip")
-PET_URL = "https://api.figshare.com/v2/file/download/56300327"
 
 SOURCES = {
     "chirps_v3_2025": {
@@ -62,20 +64,6 @@ SOURCES = {
             "evidence": "NOAA/NCEI distribui ETOPO1 sem restrição de uso",
         },
         "citation": "Amante & Eakins (2009), ETOPO1 1 Arc-Minute Global Relief Model, NOAA",
-    },
-    "cgiar_pet_v3_1": {
-        "url": PET_URL,
-        "file": "Global-AI_ET0__annual_v3_1.zip",
-        "dataset": "Global Aridity Index and PET Database v3.1 — PET annual",
-        "license": {
-            "name": "CC BY 4.0",
-            "url": "https://creativecommons.org/licenses/by/4.0/",
-            "commercial_ok": True,
-            "evidence": ("figshare 7504448 declara license CC BY 4.0; o dado é "
-                         "um produto derivado, não o WorldClim bruto"),
-        },
-        "citation": ("Zomer et al. (2008); Trabucco & Zomer (2019), Global "
-                     "Aridity Index and PET Database v3.1"),
     },
 }
 

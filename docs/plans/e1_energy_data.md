@@ -10,7 +10,7 @@ cidade/província no mapa do jogo (`nation` = atlas; `gppd_country` preservado);
 (b) parque inicial = GPPD ~2021 escalonado por nação×fonte até a Ember 2024–2025
 (`power_plants_base_2021_gppd.json` + `power_plants_2026_scaled.json`);
 (c) solar/eólico com Global Solar Atlas/Global Wind Atlas (CC BY 4.0) e hídrico com
-CHIRPS/PET CGIAR/ETOPO1 (sem WorldClim); (d) óleo tentado com OWID/EIA, mas nenhum
+CHIRPS/CHELSA PET (CC0 1.0)/ETOPO1 (sem WorldClim); (d) óleo tentado com OWID/EIA, mas nenhum
 publica capacidade instalada de óleo por país — lacuna declarada.
 
 O conteúdo anterior da coleta (GPPD/WorldClim/WDI/IRENA, comparação com a IRENA e

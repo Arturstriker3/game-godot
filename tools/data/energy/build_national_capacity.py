@@ -1,12 +1,22 @@
 """Monta a capacidade instalada nacional por fonte (2024-2025) e a matriz por pais.
 
 Entrada: cache da Ember (`fetch_ember_capacity.py`) e o parque atribuido a cidade
-(`data/definitions/energy/power_plants_2026.json`, GPPD/WRI CC BY 4.0).
+(`data/definitions/energy/power_plants_base_2021_gppd.json`, GPPD/WRI CC BY 4.0).
 Saida: `data/definitions/energy/national_capacity.json`.
 
 Regras de dado (E1, aceite do plano):
-  * capacidade e matriz por nao na ORDEM DO DADO REAL: usa o ultimo ano nao vazio
-    entre 2024 e 2025 por pais (Ember), sem interpolar, sem extrapolar;
+  * capacidade e matriz por nao na ORDEM DO DADO REAL: usa o ultimo ano em que a
+    Ember cobre as 9 fontes de capacidade do pais (publicadas, ou ausentes com a
+    ultima publicacao = 0), mesmo sem a linha `Total generation`, sem interpolar,
+    sem extrapolar. `year_reason` declara por pais como o ano foi escolhido:
+      - `all_9_sources_and_total`: 9 fontes cobertas + linha `Total generation`
+        (a soma publicada fecha com o total);
+      - `all_9_sources_no_total`: 9 fontes cobertas, sem `Total generation` (o
+        total e a soma exata das fontes, declarada em `total_source: sum_sources`);
+      - `total_only_partial_sources`: nenhum ano completo; usa o ultimo com total
+        positivo e declara quais fontes faltam;
+      - `partial_sources_any_positive`: so ha capacidade positiva esparsa;
+      - `no_capacity_data`;
   * a matriz usa as 9 fontes do jogo: hydro, solar, wind, coal, gas, oil,
     nuclear, biomass, other. A Ember separa coal/gas/hydro/nuclear/solar/wind/
     bioenergy/other fossil/other renewables; OLEO nao e separado (vem dentro de
@@ -58,6 +68,11 @@ EMBER_TO_GAME = {
 }
 GAME_SOURCES = ("hydro", "solar", "wind", "coal", "gas", "oil", "nuclear",
                 "biomass", "other")
+# As 9 fontes de capacidade que a Ember publica por pais (nomes da Ember).
+EMBER_CAPACITY_SOURCES = tuple(EMBER_TO_GAME)
+YEAR_REASONS = ("all_9_sources_and_total", "all_9_sources_no_total",
+                "total_only_partial_sources", "partial_sources_any_positive",
+                "no_capacity_data")
 
 
 def load_ember() -> dict:
@@ -88,26 +103,76 @@ def load_ember() -> dict:
     return series, names
 
 
-def choose_year(by_year: dict[int, dict[str, float]]) -> int | None:
-    """Ultimo ano com capacidade POSITIVA (nao interpola: se falta, assume o mais novo).
+def _last_published(by_year: dict[int, dict[str, float]], year: int,
+                    source: str) -> float | None:
+    """Último valor publicado da fonte antes de `year` (None se nunca publicada)."""
+    for previous in sorted((y for y in by_year if y < year), reverse=True):
+        value = by_year[previous].get(source)
+        if value is not None:
+            return float(value)
+    return None
 
-    Ano com so zeros (ex.: KGZ 2025 trazia apenas `Other renewables 0.0`) nao conta
-    como dado: fica valendo o ano anterior com capacidade de verdade.
+
+def _assess_year(by_year: dict[int, dict[str, float]],
+                 year: int) -> tuple[bool, str, list[str], list[str]]:
+    """(completo?, motivo, fontes ausentes, ausentes que a história diz = 0).
+
+    Completo = as 9 fontes estão cobertas: publicadas, ou ausentes com
+    comprovação de zero (última publicação da fonte = 0). Quando a linha
+    `Total generation` existe, a soma publicada ainda precisa fechar com ela.
     """
+    raw = by_year[year]
+    published = [source for source in EMBER_CAPACITY_SOURCES
+                 if raw.get(source) is not None]
+    missing = [source for source in EMBER_CAPACITY_SOURCES
+               if raw.get(source) is None]
+    zero_absent = [source for source in missing
+                   if _last_published(by_year, year, source) == 0.0]
+    sources_sum = sum(float(raw[source]) for source in published)
+    total = raw.get("Total generation")
+    if sources_sum <= 0.0:
+        # Ano sem capacidade positiva não é dado de capacidade (nada de zero
+        # inventado como "matriz"): fica fora da escolha.
+        return False, "no_capacity_data", missing, zero_absent
+    if total is not None and total > 0.0:
+        complete = (len(missing) == len(zero_absent) and
+                    abs(sources_sum - total) <= TOLERANCE_MW)
+        return complete, "all_9_sources_and_total", missing, zero_absent
+    return len(missing) == len(zero_absent), "all_9_sources_no_total", missing, zero_absent
+
+
+def choose_year(by_year: dict[int, dict[str, float]]) -> tuple[int | None, str, list[str], list[str]]:
+    """(ano, motivo, fontes ausentes, ausentes = zero pela história).
+
+    1. último ano em que as 9 fontes de capacidade estão completas — publicadas
+       ou ausentes com a última publicação = 0 — mesmo sem `Total generation`
+       (nesse caso o total é a soma exata das fontes);
+    2. senão, último ano com `Total generation` positiva (declara o que faltou);
+    3. senão, último ano com qualquer capacidade positiva (só zeros não conta:
+       ex. KGZ 2025 trazia apenas `Other renewables 0.0`);
+    4. senão, nenhum ano.
+    """
+    for year in sorted(by_year, reverse=True):
+        complete, reason, missing, zero_absent = _assess_year(by_year, year)
+        if complete:
+            return year, reason, missing, zero_absent
     for year in sorted(by_year, reverse=True):
         raw = by_year[year]
         total = raw.get("Total generation")
         if total is not None and total > 0.0:
-            return year
+            _complete, _reason, missing, zero_absent = _assess_year(by_year, year)
+            return year, "total_only_partial_sources", missing, zero_absent
     for year in sorted(by_year, reverse=True):
-        if any(value > 0.0 for value in by_year[year].values()):
-            return year
-    return None
+        raw = by_year[year]
+        if any(value > 0.0 for value in raw.values()):
+            _complete, _reason, missing, zero_absent = _assess_year(by_year, year)
+            return year, "partial_sources_any_positive", missing, zero_absent
+    return None, "no_capacity_data", list(EMBER_CAPACITY_SOURCES), []
 
 
 def build_nation(tag: str, iso3: str, by_year: dict[int, dict[str, float]],
                  area_name: str) -> dict:
-    year = choose_year(by_year)
+    year, year_reason, sources_missing, sources_absent_as_zero = choose_year(by_year)
     raw = by_year[year]
     by_source = {source: None for source in GAME_SOURCES}
     for ember_source, value in raw.items():
@@ -116,6 +181,12 @@ def build_nation(tag: str, iso3: str, by_year: dict[int, dict[str, float]],
             continue
         current = by_source[group]
         by_source[group] = round((current or 0.0) + value, 3)
+    # Fonte ausente no ano escolhido, mas coberta pela última publicação = 0:
+    # entra como 0,0 (não fica null, que significaria "sem dado").
+    for ember_source in sources_absent_as_zero:
+        group = EMBER_TO_GAME[ember_source]
+        if by_source[group] is None:
+            by_source[group] = 0.0
     total = raw.get("Total generation")
     sum_sources = round(sum(v for v in by_source.values() if v is not None), 3)
     if total is None:
@@ -130,6 +201,9 @@ def build_nation(tag: str, iso3: str, by_year: dict[int, dict[str, float]],
         "country_iso3": iso3,
         "area_name": area_name,
         "year": year,
+        "year_reason": year_reason,
+        "sources_missing": sources_missing,
+        "sources_absent_as_zero": sources_absent_as_zero,
         "total_mw": total,
         "total_source": total_source,
         "by_source": by_source,
@@ -143,8 +217,9 @@ def build_nation(tag: str, iso3: str, by_year: dict[int, dict[str, float]],
             "delta_mw": delta,
             "sum_matches_total": abs(delta) <= TOLERANCE_MW,
         },
-        "confidence": "high",
-        "method": "ember_capacity_latest_year_2024_2026",
+        "confidence": ("high" if year_reason == "all_9_sources_and_total"
+                       else "medium"),
+        "method": "ember_capacity_complete_sources_latest_year",
     }
 
 
@@ -208,7 +283,7 @@ def main() -> int:
             missing.append(tag)
             continue
         by_year = series[found]
-        year = choose_year(by_year)
+        year, _reason, _missing, _zero = choose_year(by_year)
         if year is None:
             missing.append(tag)
             continue
@@ -220,6 +295,10 @@ def main() -> int:
     unstable = sorted(tag for tag, entry in nations.items()
                       if not entry["check"]["sum_matches_total"])
     no_2025 = sorted(tag for tag, entry in nations.items() if entry["year"] == 2024)
+    reason_counts = {}
+    for entry in nations.values():
+        reason_counts[entry["year_reason"]] = reason_counts.get(
+            entry["year_reason"], 0) + 1
     top = sorted(nations.values(), key=lambda entry: entry["total_mw"], reverse=True)
 
     payload = {
@@ -242,9 +321,23 @@ def main() -> int:
                     "note": "comparacao derivada das usinas; referencia ~2021, NAO 2024-2025",
                 },
             },
-            "method": ("capacidade (GW -> MW) do ultimo ano nao vazio entre 2024 e 2025 "
-                       "por pais; nenhuma interpolacao nem extrapolacao; paises sem 2025 "
-                       "ficam com o ano 2024 declarado em `year`"),
+            "method": ("capacidade (GW -> MW) do último ano em que a Ember publica as 9 "
+                       "fontes de capacidade do país, mesmo sem `Total generation` "
+                       "(o total vira a soma exata das fontes); nenhuma interpolação "
+                       "nem extrapolação; `year_reason` declara a escolha por país e "
+                       "`sources_missing` lista o que faltou quando não houve ano "
+                       "completo"),
+            "year_rule": {
+                "primary": ("último ano entre 2024 e 2025 em que as 9 fontes de "
+                            "capacidade estão cobertas: publicadas, ou ausentes com "
+                            "a última publicação = 0 (`sources_absent_as_zero`); se "
+                            "a linha `Total generation` existe, a soma publicada "
+                            "ainda precisa fechar com ela (≤0,5 MW)"),
+                "fallbacks": [reason for reason in YEAR_REASONS[2:]],
+                "note": ("a linha `Total generation` não é obrigatória: DEU 2025 "
+                         "publica 8 fontes (Nuclear ausente e 0 desde 2023) e não tem "
+                         "o total, então 2025 vale e o total é a soma das fontes"),
+            },
             "source_map": {
                 "hydro": "Hydro", "solar": "Solar", "wind": "Wind", "coal": "Coal",
                 "gas": "Gas", "nuclear": "Nuclear", "biomass": "Bioenergy",
@@ -267,6 +360,9 @@ def main() -> int:
                 "nations_with_national_capacity": len(nations),
                 "nations_missing": len(missing),
                 "nations_year_2024": len(no_2025),
+                "nations_year_reason": dict(sorted(reason_counts.items())),
+                "nations_with_absent_zero_sources": sum(
+                    1 for entry in nations.values() if entry["sources_missing"]),
                 "nations_with_plant_comparison": len(comparison),
                 "nations_sum_mismatch": len(unstable),
                 "world_total_mw": round(sum(e["total_mw"] for e in nations.values()), 3),
@@ -287,6 +383,8 @@ def main() -> int:
           % (len(nations), len(tags), len(missing)))
     print("sem 2025 (ano 2024): %d | soma != total: %d"
           % (len(no_2025), len(unstable)))
+    print("year_reason: %s" % ", ".join("%s=%d" % (reason, count)
+                                        for reason, count in sorted(reason_counts.items())))
     print("comparação com o parque: %d nações" % len(comparison))
     for entry in top[:10]:
         print("  %-4s %6d %10.1f MW" % (entry["nation"], entry["year"], entry["total_mw"]))

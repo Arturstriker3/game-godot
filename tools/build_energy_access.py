@@ -42,6 +42,12 @@ FIELDS = [
      "água potável gerida com segurança rural (% da população rural)", "medium"),
 ]
 
+# Códigos ISO3 da fonte (WDI) que não são o id da nação no jogo. O jogo usa
+# XKX (Kosovo), SSD (Sudão do Sul) e PSX (Palestina); o WDI publica XKX, SSD e
+# **PSE**. Nada além disso é traduzido: quando o código não casa, o país fica
+# como não jogável (declarado), nunca é adivinhado.
+WDI_ISO3_TO_GAME = {"PSE": "PSX"}
+
 
 def main():
     if not os.path.exists(WDI):
@@ -49,12 +55,20 @@ def main():
     data = ec.read_json(WDI)
     manifest = ec.read_json(WDI_MANIFEST) if os.path.exists(WDI_MANIFEST) else {}
     tags, _ = ec.load_registry()
-    tag_by_code = {ec.nation_code(tag): tag for tag in tags}
+    # A fonte publica ISO3; o jogo às vezes usa outro id (NED x NLD). O mapa
+    # aceita o id do jogo E o código de override, e PSX entra pelo alias PSE.
+    tag_by_code = {}
+    for tag in tags:
+        tag_by_code.setdefault(tag, tag)
+        tag_by_code[ec.nation_code(tag)] = tag
     rows = data.get("indicators", {})
 
     nations = {}
+    bridged = []
     for iso3, values in sorted(rows.items()):
-        tag = tag_by_code.get(iso3)
+        tag = tag_by_code.get(iso3) or WDI_ISO3_TO_GAME.get(iso3)
+        if tag is not None and tag_by_code.get(iso3) is None:
+            bridged.append({"wdi_iso3": iso3, "nation": tag})
         entry = {
             "country_iso3": iso3,
             "nation": tag or None,
@@ -102,6 +116,12 @@ def main():
             "fetched_at_utc": manifest.get("fetched_at_utc"),
             "method": ("ano mais recente não vazio por país e indicador; nenhuma "
                        "interpolação/extrapolação; ausente = null"),
+            "iso3_aliases": WDI_ISO3_TO_GAME,
+            "iso3_rule": ("cada linha do WDI é ligada à nação do jogo pelo id "
+                          "direto, pelo NATION_CODE_OVERRIDES do jogo (ex.: "
+                          "NED->NLD) ou pelo alias explícito WDI_ISO3_TO_GAME "
+                          "(PSE->PSX). Código sem nação = não jogável, declarado."),
+            "bridged_rows": bridged,
             "fields": [{"key": k, "indicator": c, "description": d, "confidence": conf}
                        for k, c, d, conf in FIELDS],
             "usage": {

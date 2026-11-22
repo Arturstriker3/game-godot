@@ -12,6 +12,16 @@
   "citation": "World Bank, World Development Indicators (WDI), accessed via Data360 API, 2026-11-17",
   "fetched_at_utc": "2026-11-17T10:49:09Z",
   "method": "ano mais recente não vazio por país e indicador; nenhuma interpolação/extrapolação; ausente = null",
+  "iso3_aliases": {
+   "PSE": "PSX"
+  },
+  "iso3_rule": "cada linha do WDI é ligada à nação do jogo pelo id direto, pelo NATION_CODE_OVERRIDES do jogo (ex.: NED->NLD) ou pelo alias explícito WDI_ISO3_TO_GAME (PSE->PSX). Código sem nação = não jogável, declarado.",
+  "bridged_rows": [
+   {
+    "wdi_iso3": "PSE",
+    "nation": "PSX"
+   }
+  ],
   "fields": [
    {
     "key": "electricity_access_pct",
@@ -62,8 +72,8 @@
   },
   "counts": {
    "countries": 217,
-   "playable": 173,
-   "playable_without_data": 6,
+   "playable": 176,
+   "playable_without_data": 3,
    "coverage": {
     "electricity_access_pct": 216,
     "electricity_access_urban_pct": 214,
@@ -75,12 +85,9 @@
    }
   },
   "playable_without_data": [
-   "PSX",
    "SAH",
    "SOL",
-   "SSD",
-   "TWN",
-   "XKX"
+   "TWN"
   ]
  },
  "by_country": {
@@ -9998,8 +10005,8 @@
   },
   "PSE": {
    "country_iso3": "PSE",
-   "nation": null,
-   "playable": false,
+   "nation": "PSX",
+   "playable": true,
    "source": "World Bank WDI (Data360 API)",
    "method": "latest_non_empty_year_per_indicator",
    "electricity_access_pct": {
@@ -10985,8 +10992,8 @@
   },
   "SSD": {
    "country_iso3": "SSD",
-   "nation": null,
-   "playable": false,
+   "nation": "SSD",
+   "playable": true,
    "source": "World Bank WDI (Data360 API)",
    "method": "latest_non_empty_year_per_indicator",
    "electricity_access_pct": {
@@ -13229,8 +13236,8 @@
   },
   "XKX": {
    "country_iso3": "XKX",
-   "nation": null,
-   "playable": false,
+   "nation": "XKX",
+   "playable": true,
    "source": "World Bank WDI (Data360 API)",
    "method": "latest_non_empty_year_per_indicator",
    "electricity_access_pct": {

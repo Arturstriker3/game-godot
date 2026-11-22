@@ -3,8 +3,8 @@
 Entrada:
   * `power_plants_base_2021_gppd.json` — usinas GPPD ~2021 já atribuídas à
     cidade/nação do atlas (regra D-115a);
-  * `national_capacity.json` — alvo por nação x fonte (Ember, último ano não
-    vazio entre 2024 e 2025);
+  * `national_capacity.json` — alvo por nação x fonte (Ember, último ano com as
+    9 fontes de capacidade completas — ver `year_reason` no arquivo);
   * `renewable_potential.json` — peso solar/eólico por cidade (GSA/GWA);
   * `hydro_potential.json` — peso hídrico por cidade;
   * `cities.json` — população (peso das fontes sem potencial dedicado).
@@ -77,6 +77,8 @@ def scaled_record(plant, capacity_mw, base_mw, factor, method, note):
         "capacity_mw_gppd": round(float(base_mw), 3),
         "scale_factor": None if factor is None else round(float(factor), 9),
         "scaling_method": method,
+        "method": ("gppd_2021_scaled_to_ember" if method == "scaled_to_ember"
+                   else "gppd_2021_unadjusted"),
     }
     if note:
         record["scaling_note"] = note
@@ -350,6 +352,18 @@ def main() -> int:
 
     failures = [key for key, row in nation_source_check.items()
                 if not row["ok"]]
+    target_missing = [plant for plant in scaled_plants
+                      if plant.get("scaling_note") == "national_target_missing"]
+    target_missing_by_nation = {}
+    for plant in target_missing:
+        tag = plant["nation"]
+        row = target_missing_by_nation.setdefault(
+            tag, {"nation": tag, "plants": 0, "mw": 0.0, "sources": set()})
+        row["plants"] += 1
+        row["mw"] = round(row["mw"] + float(plant["capacity_mw"]), 3)
+        row["sources"].add(plant["fuel_group"])
+    for row in target_missing_by_nation.values():
+        row["sources"] = sorted(row["sources"])
     meta = {
         "generated_by": "tools/data/energy/build_power_plants_scaled.py",
         "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E, E1",
@@ -365,7 +379,9 @@ def main() -> int:
         "target_source": {
             "dataset": "Ember, Yearly Electricity Data (global release)",
             "license": {"name": "CC BY 4.0", "commercial_ok": True},
-            "year_rule": "último ano não vazio entre 2024 e 2025 por país",
+            "year_rule": ("último ano com as 9 fontes de capacidade completas por "
+                          "país (2024 ou 2025), mesmo sem `Total generation`; "
+                          "`year_reason` em national_capacity.json declara a escolha"),
         },
         "base_source": {
             "dataset": "Global Power Plant Database v1.3.0 (WRI)",
@@ -384,6 +400,14 @@ def main() -> int:
                     "óleo do GPPD fica NÃO escalonado, com `oil` null em "
                     "national_capacity.json"),
             "nations_without_ember": sorted(set(base_nations) - set(nations)),
+            "national_target_missing": {
+                "rule": ("usina real cuja nação×fonte não tem alvo Ember (nação sem "
+                         "matriz 2024-2025); o MW do GPPD fica NÃO escalonado e cada "
+                         "usina leva `scaling_note: national_target_missing`"),
+                "plants": len(target_missing),
+                "mw": round(sum(float(p["capacity_mw"]) for p in target_missing), 3),
+                "by_nation": dict(sorted(target_missing_by_nation.items())),
+            },
             "nation_source_failures": failures,
         },
         "scale_factors": dict(sorted(scale_factors.items())),
@@ -401,6 +425,9 @@ def main() -> int:
             "by_nation_mw": by_nation_mw,
             "nation_source_checks": len(nation_source_check),
             "nation_source_failures": len(failures),
+            "national_target_missing_plants": len(target_missing),
+            "national_target_missing_mw": round(
+                sum(float(p["capacity_mw"]) for p in target_missing), 3),
         },
         "invariant": {
             "rule": "sum(by_city[].total_mw) == sum(by_nation[].total_mw) (<= 0.01 MW)",
@@ -437,6 +464,9 @@ def main() -> int:
           % (by_city_mw, by_nation_mw, by_city_mw - by_nation_mw))
     print("checks nação x fonte: %d | falhas: %d"
           % (len(nation_source_check), len(failures)))
+    print("sem alvo nacional (national_target_missing): %d usinas / %.1f MW"
+          % (len(target_missing),
+             sum(float(p["capacity_mw"]) for p in target_missing)))
     if failures:
         print("falhas:", " ".join(failures[:20]))
     return 0

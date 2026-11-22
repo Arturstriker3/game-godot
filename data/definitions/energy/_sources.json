@@ -3,14 +3,14 @@
   "generated_by": "tools/data/energy/build_sources_registry.py",
   "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E, E1",
   "verified_on": "2026-11-22",
-  "owner_decision": "D-115(c/d): GSA/GWA, CHIRPS/PET/ETOPO1 e tentativa de óleo",
+  "owner_decision": "D-115(c/e): GSA/GWA, CHIRPS/CHELSA PET/ETOPO1 e tentativa de óleo",
   "rule": "toda fonte usada precisa de URL, data de acesso e licença verificada; fonte com licença incompatível com uso comercial entra como used_restricted com blocker, ou como rejected",
-  "credits_debt": "antes do E2 ligar o dado, a tela de créditos precisa citar Ember, WRI (GPPD), Banco Mundial (WDI/âncora hídrica), GSA/GWA, CHIRPS, CGIAR-CSI PET, ETOPO1 e Natural Earth",
+  "credits_debt": "antes do E2 ligar o dado, a tela de créditos precisa citar Ember, WRI (GPPD), Banco Mundial (WDI/âncora hídrica), GSA/GWA, CHIRPS, CHELSA PET (CC0), ETOPO1 e Natural Earth",
   "counts": {
    "used": 10,
    "used_restricted": 0,
    "citation_only": 1,
-   "rejected": 5
+   "rejected": 6
   }
  },
  "sources": [
@@ -59,7 +59,7 @@
     "data/definitions/energy/hydro_potential.json",
     "data/definitions/energy/power_plants_2026_scaled.json"
    ],
-   "transform": "Capacity (GW) x 1000 -> MW; último ano não vazio entre 2024 e 2025 por país; matriz mapeada para as 9 fontes do jogo; alvo do escalonamento por nação x fonte",
+   "transform": "Capacity (GW) x 1000 -> MW; último ano com as 9 fontes de capacidade completas por país (2024 ou 2025, mesmo sem `Total generation`), com `year_reason` por país; matriz mapeada para as 9 fontes do jogo; alvo do escalonamento por nação x fonte",
    "status": "used"
   },
   {
@@ -201,31 +201,30 @@
    "status": "used"
   },
   {
-   "id": "cgiar_pet_v3_1",
-   "title": "Global Aridity Index and PET Database v3.1 — PET anual",
-   "publisher": "CGIAR-CSI (Trabucco & Zomer)",
-   "url": "https://api.figshare.com/v2/file/download/56300327",
-   "accessed_at_utc": "2026-11-22T02:20:40Z",
-   "sha256": "a661a94f1c69077a9673d370288297de453dadd6b797ee72ac8a46c450021a09",
-   "bytes": 645783906,
-   "extracted": [
-    "tools/data/energy/cache/hydro/et0_v31_yr.tif",
-    "tools/data/energy/cache/hydro/et0_v31_yr_sd.tif",
-    "tools/data/energy/cache/hydro/ai_v31_yr.tif"
-   ],
-   "reference_period": "climatologia 1970-2000 (v3.1)",
+   "id": "chelsa_pet_v21",
+   "title": "CHELSA-climatologies v2.1 — Monthly Potential Evapotranspiration (pet), climatologia 1981-2010",
+   "publisher": "WSL / CHELSA (Karger et al.)",
+   "landing_url": "https://chelsa-climate.org/datasets/chelsa_climatologies/",
+   "url": "https://os.unil.cloud.switch.ch/chelsa02/chelsa/global/climatologies/pet/1981-2010/CHELSA_pet_01..12_1981-2010_V.2.1.tif",
+   "accessed_at_utc": "2026-11-22T03:25:01Z",
+   "sha256": "e17566526ef988448c262752e7cb51888548827d8be6d61145900fca40569f53",
+   "bytes": 11433945,
+   "extracted": null,
+   "reference_period": "1981-2010 (climatologia)",
+   "forcing": "ERA5 (Copernicus Climate Change Service/ECMWF)",
    "license": {
-    "name": "CC BY 4.0",
-    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "name": "CC0 1.0 (domínio público; uso comercial livre)",
+    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
     "commercial_ok": true,
     "verified_on": "2026-11-22",
-    "evidence": "figshare 7504448 declara license CC BY 4.0; é um produto derivado, não o WorldClim bruto"
+    "quote": "License: Creative Commons Zero - No Rights Reserved (CC0 1.0)",
+    "evidence": "página oficial do dataset CHELSA-climatologies declara CC0 1.0; a variável pet é Penman-Monteith com forçante ERA5 (não é derivada do WorldClim), verificado em 2026-11-22"
    },
-   "citation": "Zomer et al. (2008); Trabucco & Zomer (2019), Global Aridity Index and PET Database v3.1",
+   "citation": "Karger, D. N. et al. (2021), Climatologies at high resolution for the earth's land surface areas, Version 2.1. EnviDat. https://doi.org/10.16904/envidat.228.v2.1",
    "used_in": [
     "data/definitions/energy/renewable_potential.json"
    ],
-   "transform": "PET anual (mm/ano) no centróide da província; runoff = clamp((precip-PET)/precip, 0, 1)",
+   "transform": "PET anual (mm/ano) = soma dos 12 meses mensais no overview 1/8 do COG (0,0667°), amostrada no centróide da província; runoff = clamp((precip-PET)/precip, 0, 1)",
    "status": "used"
   },
   {
@@ -283,7 +282,26 @@
     "evidence": "verificado em 2026-11-22 na página About do worldclim.org; a página do dataset (worldclim21.html) não declara licença"
    },
    "status": "rejected",
-   "reason": "D-115c: substituído por Global Solar Atlas/Global Wind Atlas (CC BY 4.0), CHIRPS (domínio público), CGIAR PET v3.1 (CC BY 4.0) e ETOPO1 (domínio público). O clima do jogo (province_nature.json) ainda usa WorldClim — dívida separada, registrada no GAME_STATE §15."
+   "reason": "D-115c: substituído por Global Solar Atlas/Global Wind Atlas (CC BY 4.0), CHIRPS (domínio público), CHELSA v2.1 PET (CC0 1.0) e ETOPO1 (domínio público). O clima do jogo (province_nature.json) ainda usa WorldClim — dívida separada, registrada no GAME_STATE §15."
+  },
+  {
+   "id": "cgiar_pet_v3_1",
+   "title": "Global Aridity Index and Global-PET Database v3.1",
+   "publisher": "CGIAR-CSI (Zomer & Trabucco)",
+   "url": "https://api.figshare.com/v2/file/download/56300327",
+   "landing_url": "https://csidotinfo.wordpress.com/data/global-aridity-and-pet-database/",
+   "accessed_at_utc": "2026-11-22T01:45:00Z",
+   "reference_period": "climatologia 1970-2000 (v3.1)",
+   "license": {
+    "name": "uso não comercial (a página do figshare diz CC BY 4.0)",
+    "url": "https://csidotinfo.wordpress.com/data/global-aridity-and-pet-database/",
+    "commercial_ok": false,
+    "verified_on": "2026-11-22",
+    "quote": "The Global-PET and Global-Aridity datasets are provided for non-commercial use in standard ARC/INFO Grid format",
+    "evidence": "a página oficial do CGIAR-CSI declara uso NÃO comercial (o figshare 7504448 rotula CC BY 4.0, mas não é o termo do produto). A mesma página diz que Global-PET/Global-Aridity são 'modeled using the data available from WorldClim Global Climate Data' — é derivado do WorldClim 2.1, cuja licença também é não comercial. Verificado em 2026-11-22."
+   },
+   "status": "rejected",
+   "reason": "re-QA t33: o PET v3.1 é derivado do WorldClim 2.1 e 'provided for non-commercial use'; trocado pela CHELSA v2.1 PET (CC0 1.0, ERA5, Penman-Monteith). O registro anterior dizia 'CC BY 4.0, derivado do WorldClim bruto' — a evidência estava invertida e foi corrigida."
   },
   {
    "id": "owid_energy",

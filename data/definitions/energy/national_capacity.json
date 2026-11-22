@@ -26,7 +26,16 @@
     "note": "comparacao derivada das usinas; referencia ~2021, NAO 2024-2025"
    }
   },
-  "method": "capacidade (GW -> MW) do ultimo ano nao vazio entre 2024 e 2025 por pais; nenhuma interpolacao nem extrapolacao; paises sem 2025 ficam com o ano 2024 declarado em `year`",
+  "method": "capacidade (GW -> MW) do último ano em que a Ember publica as 9 fontes de capacidade do país, mesmo sem `Total generation` (o total vira a soma exata das fontes); nenhuma interpolação nem extrapolação; `year_reason` declara a escolha por país e `sources_missing` lista o que faltou quando não houve ano completo",
+  "year_rule": {
+   "primary": "último ano entre 2024 e 2025 em que as 9 fontes de capacidade estão cobertas: publicadas, ou ausentes com a última publicação = 0 (`sources_absent_as_zero`); se a linha `Total generation` existe, a soma publicada ainda precisa fechar com ela (≤0,5 MW)",
+   "fallbacks": [
+    "total_only_partial_sources",
+    "partial_sources_any_positive",
+    "no_capacity_data"
+   ],
+   "note": "a linha `Total generation` não é obrigatória: DEU 2025 publica 8 fontes (Nuclear ausente e 0 desde 2023) e não tem o total, então 2025 vale e o total é a soma das fontes"
+  },
   "source_map": {
    "hydro": "Hydro",
    "solar": "Solar",
@@ -56,10 +65,17 @@
    "game_nations": 179,
    "nations_with_national_capacity": 171,
    "nations_missing": 8,
-   "nations_year_2024": 92,
+   "nations_year_2024": 90,
+   "nations_year_reason": {
+    "all_9_sources_and_total": 32,
+    "all_9_sources_no_total": 2,
+    "partial_sources_any_positive": 2,
+    "total_only_partial_sources": 135
+   },
+   "nations_with_absent_zero_sources": 139,
    "nations_with_plant_comparison": 161,
    "nations_sum_mismatch": 0,
-   "world_total_mw": 10033370.0
+   "world_total_mw": 10054640.0
   },
   "plant_comparison_note": "GPPD e ~2021 e cobre usinas catalogadas; a capacidade nacional e 2024-2025. O desvio negativo esperado mede base desatualizada + cobertura, nao erro de soma."
  },
@@ -69,6 +85,11 @@
    "country_iso3": "AFG",
    "area_name": "Afghanistan",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 810.0,
    "total_source": "ember_total",
    "by_source": {
@@ -107,14 +128,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "AGO": {
    "nation": "AGO",
    "country_iso3": "AGO",
    "area_name": "Angola",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 6500.0,
    "total_source": "ember_total",
    "by_source": {
@@ -153,14 +179,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ALB": {
    "nation": "ALB",
    "country_iso3": "ALB",
    "area_name": "Albania",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3380.0,
    "total_source": "ember_total",
    "by_source": {
@@ -198,14 +230,21 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ARE": {
    "nation": "ARE",
    "country_iso3": "ARE",
    "area_name": "United Arab Emirates",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Hydro",
+    "Other fossil",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 53880.0,
    "total_source": "ember_total",
    "by_source": {
@@ -242,14 +281,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ARG": {
    "nation": "ARG",
    "country_iso3": "ARG",
    "area_name": "Argentina",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 46500.0,
    "total_source": "ember_total",
    "by_source": {
@@ -288,14 +332,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ARM": {
    "nation": "ARM",
    "country_iso3": "ARM",
    "area_name": "Armenia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 4330.0,
    "total_source": "ember_total",
    "by_source": {
@@ -333,14 +383,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ATG": {
    "nation": "ATG",
    "country_iso3": "ATG",
    "area_name": "Antigua and Barbuda",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 20.0,
    "total_source": "ember_total",
    "by_source": {
@@ -378,14 +434,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "AUS": {
    "nation": "AUS",
    "country_iso3": "AUS",
    "area_name": "Australia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Nuclear",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 115980.0,
    "total_source": "ember_total",
    "by_source": {
@@ -423,14 +485,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "AUT": {
    "nation": "AUT",
    "country_iso3": "AUT",
    "area_name": "Austria",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 37050.0,
    "total_source": "ember_total",
    "by_source": {
@@ -471,13 +536,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "AZE": {
    "nation": "AZE",
    "country_iso3": "AZE",
    "area_name": "Azerbaijan",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 8960.0,
    "total_source": "ember_total",
    "by_source": {
@@ -515,14 +586,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BDI": {
    "nation": "BDI",
    "country_iso3": "BDI",
    "area_name": "Burundi",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 120.0,
    "total_source": "ember_total",
    "by_source": {
@@ -560,14 +637,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BEL": {
    "nation": "BEL",
    "country_iso3": "BEL",
    "area_name": "Belgium",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 26930.0,
    "total_source": "ember_total",
    "by_source": {
@@ -608,13 +688,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BEN": {
    "nation": "BEN",
    "country_iso3": "BEN",
    "area_name": "Benin",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 340.0,
    "total_source": "ember_total",
    "by_source": {
@@ -653,14 +738,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BFA": {
    "nation": "BFA",
    "country_iso3": "BFA",
    "area_name": "Burkina Faso",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 640.0,
    "total_source": "ember_total",
    "by_source": {
@@ -698,14 +789,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BGD": {
    "nation": "BGD",
    "country_iso3": "BGD",
    "area_name": "Bangladesh",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 29730.0,
    "total_source": "ember_total",
    "by_source": {
@@ -746,13 +840,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BGR": {
    "nation": "BGR",
    "country_iso3": "BGR",
    "area_name": "Bulgaria",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 17110.0,
    "total_source": "ember_total",
    "by_source": {
@@ -791,14 +890,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BHR": {
    "nation": "BHR",
    "country_iso3": "BHR",
    "area_name": "Bahrain",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 9350.0,
    "total_source": "ember_total",
    "by_source": {
@@ -836,14 +941,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BHS": {
    "nation": "BHS",
    "country_iso3": "BHS",
    "area_name": "Bahamas",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1080.0,
    "total_source": "ember_total",
    "by_source": {
@@ -882,14 +992,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BIH": {
    "nation": "BIH",
    "country_iso3": "BIH",
    "area_name": "Bosnia Herzegovina",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 4890.0,
    "total_source": "ember_total",
    "by_source": {
@@ -927,14 +1043,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BLR": {
    "nation": "BLR",
    "country_iso3": "BLR",
    "area_name": "Belarus",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 12690.0,
    "total_source": "ember_total",
    "by_source": {
@@ -972,14 +1094,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BLZ": {
    "nation": "BLZ",
    "country_iso3": "BLZ",
    "area_name": "Belize",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 260.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1017,14 +1145,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BOL": {
    "nation": "BOL",
    "country_iso3": "BOL",
    "area_name": "Bolivia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3700.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1063,14 +1196,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BRA": {
    "nation": "BRA",
    "country_iso3": "BRA",
    "area_name": "Brazil",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 260640.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1109,14 +1247,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BRB": {
    "nation": "BRB",
    "country_iso3": "BRB",
    "area_name": "Barbados",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 370.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1154,14 +1298,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BRN": {
    "nation": "BRN",
    "country_iso3": "BRN",
    "area_name": "Brunei Darussalam",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 1380.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1202,13 +1349,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BTN": {
    "nation": "BTN",
    "country_iso3": "BTN",
    "area_name": "Bhutan",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2460.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1246,14 +1399,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "BWA": {
    "nation": "BWA",
    "country_iso3": "BWA",
    "area_name": "Botswana",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 870.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1292,14 +1450,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CAN": {
    "nation": "CAN",
    "country_iso3": "CAN",
    "area_name": "Canada",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 155990.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1338,14 +1501,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CHE": {
    "nation": "CHE",
    "country_iso3": "CHE",
    "area_name": "Switzerland",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 29010.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1384,14 +1552,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CHL": {
    "nation": "CHL",
    "country_iso3": "CHL",
    "area_name": "Chile",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 36540.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1432,13 +1603,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CHN": {
    "nation": "CHN",
    "country_iso3": "CHN",
    "area_name": "China",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3726510.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1477,14 +1653,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CIV": {
    "nation": "CIV",
    "country_iso3": "CIV",
    "area_name": "Cote d'Ivoire",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2700.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1523,14 +1704,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CMR": {
    "nation": "CMR",
    "country_iso3": "CMR",
    "area_name": "Cameroon",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1870.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1569,14 +1755,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "COD": {
    "nation": "COD",
    "country_iso3": "COD",
    "area_name": "Congo (DRC)",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3700.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1614,14 +1806,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "COG": {
    "nation": "COG",
    "country_iso3": "COG",
    "area_name": "Congo",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 810.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1660,14 +1857,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "COL": {
    "nation": "COL",
    "country_iso3": "COL",
    "area_name": "Colombia",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 22730.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1708,13 +1908,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CRI": {
    "nation": "CRI",
    "country_iso3": "CRI",
    "area_name": "Costa Rica",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3460.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1752,14 +1958,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CUB": {
    "nation": "CUB",
    "country_iso3": "CUB",
    "area_name": "Cuba",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 6820.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1798,14 +2009,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CYP": {
    "nation": "CYP",
    "country_iso3": "CYP",
    "area_name": "Cyprus",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2890.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1843,14 +2060,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "CZE": {
    "nation": "CZE",
    "country_iso3": "CZE",
    "area_name": "Czechia",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 20000.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1891,60 +2111,70 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "DEU": {
    "nation": "DEU",
    "country_iso3": "DEU",
    "area_name": "Germany",
-   "year": 2024,
-   "total_mw": 248180.0,
-   "total_source": "ember_total",
+   "year": 2025,
+   "year_reason": "all_9_sources_no_total",
+   "sources_missing": [
+    "Nuclear"
+   ],
+   "sources_absent_as_zero": [
+    "Nuclear"
+   ],
+   "total_mw": 268380.0,
+   "total_source": "sum_sources",
    "by_source": {
-    "hydro": 5500.0,
-    "solar": 91200.0,
-    "wind": 72740.0,
-    "coal": 32340.0,
-    "gas": 32330.0,
+    "hydro": 5690.0,
+    "solar": 106270.0,
+    "wind": 77810.0,
+    "coal": 31970.0,
+    "gas": 32440.0,
     "oil": null,
     "nuclear": 0.0,
-    "biomass": 8880.0,
-    "other": 5190.0
+    "biomass": 8980.0,
+    "other": 5220.0
    },
    "other_breakdown": {
     "other_fossil_mw": 4130.0,
-    "other_renewables_mw": 1060.0
+    "other_renewables_mw": 1090.0
    },
    "ember_raw_mw": {
-    "Bioenergy": 8880.0,
-    "Clean": 179380.0,
-    "Coal": 32340.0,
-    "Fossil": 68800.0,
-    "Gas": 32330.0,
-    "Hydro": 5500.0,
-    "Hydro, bioenergy and other renewables": 15440.0,
-    "Nuclear": 0.0,
+    "Bioenergy": 8980.0,
+    "Coal": 31970.0,
+    "Fossil": 68540.0,
+    "Gas": 32440.0,
+    "Hydro": 5690.0,
+    "Hydro, bioenergy and other renewables": 15760.0,
     "Other fossil": 4130.0,
-    "Other renewables": 1060.0,
-    "Renewables": 179380.0,
-    "Solar": 91200.0,
-    "Total generation": 248180.0,
-    "Wind": 72740.0,
-    "Wind and solar": 163940.0
+    "Other renewables": 1090.0,
+    "Renewables": 199840.0,
+    "Solar": 106270.0,
+    "Wind": 77810.0,
+    "Wind and solar": 184080.0
    },
    "check": {
-    "sum_sources_mw": 248180.0,
+    "sum_sources_mw": 268380.0,
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "DJI": {
    "nation": "DJI",
    "country_iso3": "DJI",
    "area_name": "Djibouti",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 200.0,
    "total_source": "ember_total",
    "by_source": {
@@ -1982,14 +2212,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "DNK": {
    "nation": "DNK",
    "country_iso3": "DNK",
    "area_name": "Denmark",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 16710.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2030,13 +2263,16 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "DOM": {
    "nation": "DOM",
    "country_iso3": "DOM",
    "area_name": "Dominican Republic",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 9020.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2077,13 +2313,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "DZA": {
    "nation": "DZA",
    "country_iso3": "DZA",
    "area_name": "Algeria",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 27990.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2122,14 +2363,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ECU": {
    "nation": "ECU",
    "country_iso3": "ECU",
    "area_name": "Ecuador",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 10080.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2168,14 +2414,21 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "EGY": {
    "nation": "EGY",
    "country_iso3": "EGY",
    "area_name": "Egypt",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Nuclear",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 63480.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2212,14 +2465,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ERI": {
    "nation": "ERI",
    "country_iso3": "ERI",
    "area_name": "Eritrea",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 230.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2257,14 +2516,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ESP": {
    "nation": "ESP",
    "country_iso3": "ESP",
    "area_name": "Spain",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 137730.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2305,13 +2567,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "EST": {
    "nation": "EST",
    "country_iso3": "EST",
    "area_name": "Estonia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3650.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2350,14 +2617,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ETH": {
    "nation": "ETH",
    "country_iso3": "ETH",
    "area_name": "Ethiopia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 10170.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2395,14 +2668,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "FIN": {
    "nation": "FIN",
    "country_iso3": "FIN",
    "area_name": "Finland",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 26110.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2443,13 +2719,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "FJI": {
    "nation": "FJI",
    "country_iso3": "FJI",
    "area_name": "Fiji",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 470.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2487,14 +2769,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "FRA": {
    "nation": "FRA",
    "country_iso3": "FRA",
    "area_name": "France",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 167600.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2535,13 +2820,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GAB": {
    "nation": "GAB",
    "country_iso3": "GAB",
    "area_name": "Gabon",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1020.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2580,14 +2870,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GBR": {
    "nation": "GBR",
    "country_iso3": "GBR",
    "area_name": "United Kingdom",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 110740.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2626,14 +2921,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GEO": {
    "nation": "GEO",
    "country_iso3": "GEO",
    "area_name": "Georgia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 5900.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2671,14 +2972,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GHA": {
    "nation": "GHA",
    "country_iso3": "GHA",
    "area_name": "Ghana",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 5210.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2717,14 +3023,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GIN": {
    "nation": "GIN",
    "country_iso3": "GIN",
    "area_name": "Guinea",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1260.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2762,14 +3074,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GMB": {
    "nation": "GMB",
    "country_iso3": "GMB",
    "area_name": "Gambia",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 180.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2807,14 +3125,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GNB": {
    "nation": "GNB",
    "country_iso3": "GNB",
    "area_name": "Guinea-Bissau",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 30.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2852,14 +3176,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GNQ": {
    "nation": "GNQ",
    "country_iso3": "GNQ",
    "area_name": "Equatorial Guinea",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 410.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2898,14 +3227,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GRC": {
    "nation": "GRC",
    "country_iso3": "GRC",
    "area_name": "Greece",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 30520.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2946,13 +3278,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GRD": {
    "nation": "GRD",
    "country_iso3": "GRD",
    "area_name": "Grenada",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 70.0,
    "total_source": "ember_total",
    "by_source": {
@@ -2990,14 +3328,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GTM": {
    "nation": "GTM",
    "country_iso3": "GTM",
    "area_name": "Guatemala",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3730.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3036,14 +3379,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "GUY": {
    "nation": "GUY",
    "country_iso3": "GUY",
    "area_name": "Guyana",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 380.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3081,14 +3430,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "HND": {
    "nation": "HND",
    "country_iso3": "HND",
    "area_name": "Honduras",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 2970.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3129,13 +3481,16 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "HRV": {
    "nation": "HRV",
    "country_iso3": "HRV",
    "area_name": "Croatia",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 7000.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3176,13 +3531,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "HTI": {
    "nation": "HTI",
    "country_iso3": "HTI",
    "area_name": "Haiti",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 480.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3220,14 +3581,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "HUN": {
    "nation": "HUN",
    "country_iso3": "HUN",
    "area_name": "Hungary",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 16870.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3268,13 +3632,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "IDN": {
    "nation": "IDN",
    "country_iso3": "IDN",
    "area_name": "Indonesia",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Nuclear"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 97330.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3313,14 +3682,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "IND": {
    "nation": "IND",
    "country_iso3": "IND",
    "area_name": "India",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 555460.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3359,14 +3733,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "IRL": {
    "nation": "IRL",
    "country_iso3": "IRL",
    "area_name": "Ireland",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 13230.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3407,13 +3784,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "IRN": {
    "nation": "IRN",
    "country_iso3": "IRN",
    "area_name": "Iran",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 88590.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3451,14 +3834,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "IRQ": {
    "nation": "IRQ",
    "country_iso3": "IRQ",
    "area_name": "Iraq",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 46240.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3497,14 +3885,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ISL": {
    "nation": "ISL",
    "country_iso3": "ISL",
    "area_name": "Iceland",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2210.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3542,14 +3936,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ISR": {
    "nation": "ISR",
    "country_iso3": "ISR",
    "area_name": "Israel",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 25830.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3588,14 +3987,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ITA": {
    "nation": "ITA",
    "country_iso3": "ITA",
    "area_name": "Italy",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 144750.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3636,13 +4038,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "JAM": {
    "nation": "JAM",
    "country_iso3": "JAM",
    "area_name": "Jamaica",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1630.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3681,14 +4088,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "JOR": {
    "nation": "JOR",
    "country_iso3": "JOR",
    "area_name": "Jordan",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 7360.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3727,14 +4139,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "JPN": {
    "nation": "JPN",
    "country_iso3": "JPN",
    "area_name": "Japan",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 322910.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3773,14 +4190,21 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "KAZ": {
    "nation": "KAZ",
    "country_iso3": "KAZ",
    "area_name": "Kazakhstan",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Nuclear",
+    "Other fossil",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 24260.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3817,14 +4241,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "KEN": {
    "nation": "KEN",
    "country_iso3": "KEN",
    "area_name": "Kenya",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2620.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3862,14 +4292,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "KGZ": {
    "nation": "KGZ",
    "country_iso3": "KGZ",
    "area_name": "Kyrgyzstan",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 4120.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3907,14 +4343,22 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "KHM": {
    "nation": "KHM",
    "country_iso3": "KHM",
    "area_name": "Cambodia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Wind",
+    "Gas",
+    "Nuclear",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 5630.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3950,14 +4394,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "KNA": {
    "nation": "KNA",
    "country_iso3": "KNA",
    "area_name": "Saint Kitts and Nevis",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 80.0,
    "total_source": "ember_total",
    "by_source": {
@@ -3995,14 +4445,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "KOR": {
    "nation": "KOR",
    "country_iso3": "KOR",
    "area_name": "South Korea",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 158880.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4041,14 +4496,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "KWT": {
    "nation": "KWT",
    "country_iso3": "KWT",
    "area_name": "Kuwait",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 20330.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4087,14 +4547,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LAO": {
    "nation": "LAO",
    "country_iso3": "LAO",
    "area_name": "Lao PDR",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 12250.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4132,14 +4598,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LBN": {
    "nation": "LBN",
    "country_iso3": "LBN",
    "area_name": "Lebanon",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 4060.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4178,14 +4649,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LBR": {
    "nation": "LBR",
    "country_iso3": "LBR",
    "area_name": "Liberia",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 190.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4223,14 +4700,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LBY": {
    "nation": "LBY",
    "country_iso3": "LBY",
    "area_name": "Libya",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 14280.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4269,14 +4751,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LCA": {
    "nation": "LCA",
    "country_iso3": "LCA",
    "area_name": "Saint Lucia",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 90.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4314,14 +4802,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LSO": {
    "nation": "LSO",
    "country_iso3": "LSO",
    "area_name": "Lesotho",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 110.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4360,14 +4853,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LTU": {
    "nation": "LTU",
    "country_iso3": "LTU",
    "area_name": "Lithuania",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 7810.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4405,14 +4904,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LUX": {
    "nation": "LUX",
    "country_iso3": "LUX",
    "area_name": "Luxembourg",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1130.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4451,14 +4955,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "LVA": {
    "nation": "LVA",
    "country_iso3": "LVA",
    "area_name": "Latvia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3820.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4496,14 +5006,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MAR": {
    "nation": "MAR",
    "country_iso3": "MAR",
    "area_name": "Morocco",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 10850.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4544,13 +5057,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MDA": {
    "nation": "MDA",
    "country_iso3": "MDA",
    "area_name": "Moldova",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3810.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4589,14 +5107,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MDG": {
    "nation": "MDG",
    "country_iso3": "MDG",
    "area_name": "Madagascar",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 870.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4635,14 +5158,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MEX": {
    "nation": "MEX",
    "country_iso3": "MEX",
    "area_name": "Mexico",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 128330.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4681,14 +5209,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MKD": {
    "nation": "MKD",
    "country_iso3": "MKD",
    "area_name": "North Macedonia",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 3130.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4729,13 +5260,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MLI": {
    "nation": "MLI",
    "country_iso3": "MLI",
    "area_name": "Mali",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1250.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4773,14 +5310,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MLT": {
    "nation": "MLT",
    "country_iso3": "MLT",
    "area_name": "Malta",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 800.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4819,14 +5361,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MMR": {
    "nation": "MMR",
    "country_iso3": "MMR",
    "area_name": "Myanmar",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 6180.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4865,14 +5412,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MNE": {
    "nation": "MNE",
    "country_iso3": "MNE",
    "area_name": "Montenegro",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1140.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4910,14 +5463,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MNG": {
    "nation": "MNG",
    "country_iso3": "MNG",
    "area_name": "Mongolia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1720.0,
    "total_source": "ember_total",
    "by_source": {
@@ -4956,14 +5514,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MOZ": {
    "nation": "MOZ",
    "country_iso3": "MOZ",
    "area_name": "Mozambique",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3100.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5001,14 +5565,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MRT": {
    "nation": "MRT",
    "country_iso3": "MRT",
    "area_name": "Mauritania",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 720.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5047,14 +5616,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MWI": {
    "nation": "MWI",
    "country_iso3": "MWI",
    "area_name": "Malawi",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 640.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5092,14 +5667,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "MYS": {
    "nation": "MYS",
    "country_iso3": "MYS",
    "area_name": "Malaysia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Nuclear",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 42030.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5137,14 +5718,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "NAM": {
    "nation": "NAM",
    "country_iso3": "NAM",
    "area_name": "Namibia",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 790.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5183,14 +5769,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "NED": {
    "nation": "NED",
    "country_iso3": "NLD",
    "area_name": "Netherlands",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 57400.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5231,13 +5820,16 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "NER": {
    "nation": "NER",
    "country_iso3": "NER",
    "area_name": "Niger",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 520.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5278,13 +5870,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "NGA": {
    "nation": "NGA",
    "country_iso3": "NGA",
    "area_name": "Nigeria",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 15450.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5323,14 +5920,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "NIC": {
    "nation": "NIC",
    "country_iso3": "NIC",
    "area_name": "Nicaragua",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 990.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5368,14 +5971,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "NOR": {
    "nation": "NOR",
    "country_iso3": "NOR",
    "area_name": "Norway",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 41290.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5414,14 +6022,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "NPL": {
    "nation": "NPL",
    "country_iso3": "NPL",
    "area_name": "Nepal",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3520.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5459,14 +6073,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "NZL": {
    "nation": "NZL",
    "country_iso3": "NZL",
    "area_name": "New Zealand",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 9900.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5505,14 +6124,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "OMN": {
    "nation": "OMN",
    "country_iso3": "OMN",
    "area_name": "Oman",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 15340.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5551,14 +6175,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "PAK": {
    "nation": "PAK",
    "country_iso3": "PAK",
    "area_name": "Pakistan",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 51280.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5597,14 +6226,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "PAN": {
    "nation": "PAN",
    "country_iso3": "PAN",
    "area_name": "Panama",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 5320.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5645,24 +6277,31 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "PER": {
    "nation": "PER",
    "country_iso3": "PER",
    "area_name": "Peru",
-   "year": 2024,
-   "total_mw": 15190.0,
-   "total_source": "ember_total",
+   "year": 2025,
+   "year_reason": "all_9_sources_no_total",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [
+    "Coal"
+   ],
+   "total_mw": 16260.0,
+   "total_source": "sum_sources",
    "by_source": {
-    "hydro": 5540.0,
-    "solar": 530.0,
-    "wind": 1030.0,
+    "hydro": 5770.0,
+    "solar": 1020.0,
+    "wind": 1340.0,
     "coal": 0.0,
     "gas": 4910.0,
     "oil": null,
     "nuclear": 0.0,
-    "biomass": 200.0,
+    "biomass": 240.0,
     "other": 2980.0
    },
    "other_breakdown": {
@@ -5670,35 +6309,35 @@
     "other_renewables_mw": 0.0
    },
    "ember_raw_mw": {
-    "Bioenergy": 200.0,
-    "Clean": 7300.0,
-    "Coal": 0.0,
-    "Fossil": 7890.0,
+    "Bioenergy": 240.0,
+    "Clean": 8370.0,
     "Gas": 4910.0,
-    "Hydro": 5540.0,
-    "Hydro, bioenergy and other renewables": 5740.0,
+    "Hydro": 5770.0,
+    "Hydro, bioenergy and other renewables": 6010.0,
     "Nuclear": 0.0,
     "Other fossil": 2980.0,
     "Other renewables": 0.0,
-    "Renewables": 7300.0,
-    "Solar": 530.0,
-    "Total generation": 15190.0,
-    "Wind": 1030.0,
-    "Wind and solar": 1560.0
+    "Renewables": 8370.0,
+    "Solar": 1020.0,
+    "Wind": 1340.0,
+    "Wind and solar": 2360.0
    },
    "check": {
-    "sum_sources_mw": 15190.0,
+    "sum_sources_mw": 16260.0,
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "PHL": {
    "nation": "PHL",
    "country_iso3": "PHL",
    "area_name": "The Philippines",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 29390.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5739,13 +6378,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "PNG": {
    "nation": "PNG",
    "country_iso3": "PNG",
    "area_name": "Papua New Guinea",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1080.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5784,14 +6428,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "POL": {
    "nation": "POL",
    "country_iso3": "POL",
    "area_name": "Poland",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 70680.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5832,13 +6479,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "PRK": {
    "nation": "PRK",
    "country_iso3": "PRK",
    "area_name": "North Korea",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 8510.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5876,14 +6529,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "PRT": {
    "nation": "PRT",
    "country_iso3": "PRT",
    "area_name": "Portugal",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 26290.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5924,13 +6580,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "PRY": {
    "nation": "PRY",
    "country_iso3": "PRY",
    "area_name": "Paraguay",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 8870.0,
    "total_source": "ember_total",
    "by_source": {
@@ -5968,14 +6630,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "QAT": {
    "nation": "QAT",
    "country_iso3": "QAT",
    "area_name": "Qatar",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 13400.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6013,14 +6681,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ROU": {
    "nation": "ROU",
    "country_iso3": "ROU",
    "area_name": "Romania",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 24900.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6061,13 +6732,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "RUS": {
    "nation": "RUS",
    "country_iso3": "RUS",
    "area_name": "Russia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 237470.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6106,14 +6782,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "RWA": {
    "nation": "RWA",
    "country_iso3": "RWA",
    "area_name": "Rwanda",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 390.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6154,13 +6833,21 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SAU": {
    "nation": "SAU",
    "country_iso3": "SAU",
    "area_name": "Saudi Arabia",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Hydro",
+    "Coal",
+    "Nuclear",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 104350.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6196,14 +6883,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SDN": {
    "nation": "SDN",
    "country_iso3": "SDN",
    "area_name": "Sudan",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 4020.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6242,14 +6934,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SEN": {
    "nation": "SEN",
    "country_iso3": "SEN",
    "area_name": "Senegal",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 1930.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6290,13 +6985,22 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SGP": {
    "nation": "SGP",
    "country_iso3": "SGP",
    "area_name": "Singapore",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Hydro",
+    "Wind",
+    "Coal",
+    "Nuclear",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 13480.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6331,14 +7035,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SLB": {
    "nation": "SLB",
    "country_iso3": "SLB",
    "area_name": "Solomon Islands",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 70.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6376,14 +7086,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SLE": {
    "nation": "SLE",
    "country_iso3": "SLE",
    "area_name": "Sierra Leone",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 250.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6421,14 +7137,22 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SLV": {
    "nation": "SLV",
    "country_iso3": "SLV",
    "area_name": "El Salvador",
    "year": 2024,
+   "year_reason": "partial_sources_any_positive",
+   "sources_missing": [
+    "Coal",
+    "Gas",
+    "Nuclear",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1730.0,
    "total_source": "sum_sources",
    "by_source": {
@@ -6462,14 +7186,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SOM": {
    "nation": "SOM",
    "country_iso3": "SOM",
    "area_name": "Somalia",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 110.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6507,14 +7237,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SRB": {
    "nation": "SRB",
    "country_iso3": "SRB",
    "area_name": "Serbia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 9220.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6553,14 +7288,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SSD": {
    "nation": "SSD",
    "country_iso3": "SSD",
    "area_name": "South Sudan",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 230.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6598,14 +7339,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SUR": {
    "nation": "SUR",
    "country_iso3": "SUR",
    "area_name": "Suriname",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 700.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6643,14 +7390,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SVK": {
    "nation": "SVK",
    "country_iso3": "SVK",
    "area_name": "Slovakia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 7720.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6689,14 +7441,22 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SVN": {
    "nation": "SVN",
    "country_iso3": "SVN",
    "area_name": "Slovenia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [
+    "Other renewables"
+   ],
    "total_mw": 5090.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6708,7 +7468,7 @@
     "oil": null,
     "nuclear": 700.0,
     "biomass": 70.0,
-    "other": null
+    "other": 0.0
    },
    "other_breakdown": {
     "other_fossil_mw": 0.0,
@@ -6734,14 +7494,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SWE": {
    "nation": "SWE",
    "country_iso3": "SWE",
    "area_name": "Sweden",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 54890.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6782,13 +7545,19 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SWZ": {
    "nation": "SWZ",
    "country_iso3": "SWZ",
    "area_name": "Eswatini",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 210.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6826,14 +7595,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "SYR": {
    "nation": "SYR",
    "country_iso3": "SYR",
    "area_name": "Syria",
    "year": 2024,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 11680.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6874,13 +7646,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TCD": {
    "nation": "TCD",
    "country_iso3": "TCD",
    "area_name": "Chad",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 280.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6919,14 +7696,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TGO": {
    "nation": "TGO",
    "country_iso3": "TGO",
    "area_name": "Togo",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 360.0,
    "total_source": "ember_total",
    "by_source": {
@@ -6965,14 +7747,21 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "THA": {
    "nation": "THA",
    "country_iso3": "THA",
    "area_name": "Thailand",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Nuclear",
+    "Other fossil",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 60490.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7009,14 +7798,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TJK": {
    "nation": "TJK",
    "country_iso3": "TJK",
    "area_name": "Tajikistan",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 6450.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7055,14 +7849,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TKM": {
    "nation": "TKM",
    "country_iso3": "TKM",
    "area_name": "Turkmenistan",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 7090.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7100,14 +7900,26 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TTO": {
    "nation": "TTO",
    "country_iso3": "TTO",
    "area_name": "Trinidad and Tobago",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Hydro",
+    "Solar",
+    "Wind",
+    "Coal",
+    "Nuclear",
+    "Bioenergy",
+    "Other fossil",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2060.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7135,14 +7947,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TUN": {
    "nation": "TUN",
    "country_iso3": "TUN",
    "area_name": "Tunisia",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 6660.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7180,14 +7998,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TUR": {
    "nation": "TUR",
    "country_iso3": "TUR",
    "area_name": "Türkiye",
    "year": 2025,
+   "year_reason": "partial_sources_any_positive",
+   "sources_missing": [
+    "Nuclear"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 123070.0,
    "total_source": "sum_sources",
    "by_source": {
@@ -7224,14 +8047,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TWN": {
    "nation": "TWN",
    "country_iso3": "TWN",
    "area_name": "Taiwan (China)",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 62910.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7270,14 +8098,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "TZA": {
    "nation": "TZA",
    "country_iso3": "TZA",
    "area_name": "Tanzania (the United Republic of)",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2750.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7316,14 +8149,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "UGA": {
    "nation": "UGA",
    "country_iso3": "UGA",
    "area_name": "Uganda",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2020.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7361,14 +8200,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "URY": {
    "nation": "URY",
    "country_iso3": "URY",
    "area_name": "Uruguay",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 5320.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7407,14 +8251,17 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "USA": {
    "nation": "USA",
    "country_iso3": "USA",
    "area_name": "United States",
    "year": 2025,
+   "year_reason": "all_9_sources_and_total",
+   "sources_missing": [],
+   "sources_absent_as_zero": [],
    "total_mw": 1333250.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7455,13 +8302,18 @@
     "sum_matches_total": true
    },
    "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "UZB": {
    "nation": "UZB",
    "country_iso3": "UZB",
    "area_name": "Uzbekistan",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other fossil"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 26900.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7500,14 +8352,20 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "VCT": {
    "nation": "VCT",
    "country_iso3": "VCT",
    "area_name": "Saint Vincent and the Grenadines",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal",
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 70.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7545,14 +8403,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "VEN": {
    "nation": "VEN",
    "country_iso3": "VEN",
    "area_name": "Venezuela",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 34090.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7591,14 +8454,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "VNM": {
    "nation": "VNM",
    "country_iso3": "VNM",
    "area_name": "Viet Nam",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 84190.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7637,14 +8505,26 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "XKX": {
    "nation": "XKX",
    "country_iso3": "XKX",
    "area_name": "Kosovo",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Hydro",
+    "Solar",
+    "Wind",
+    "Gas",
+    "Nuclear",
+    "Bioenergy",
+    "Other fossil",
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 1330.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7672,14 +8552,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "YEM": {
    "nation": "YEM",
    "country_iso3": "YEM",
    "area_name": "Yemen",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Coal"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2640.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7718,14 +8603,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ZAF": {
    "nation": "ZAF",
    "country_iso3": "ZAF",
    "area_name": "South Africa",
    "year": 2025,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Other renewables"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 69730.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7764,14 +8654,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ZMB": {
    "nation": "ZMB",
    "country_iso3": "ZMB",
    "area_name": "Zambia",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 3940.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7810,14 +8705,19 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   },
   "ZWE": {
    "nation": "ZWE",
    "country_iso3": "ZWE",
    "area_name": "Zimbabwe",
    "year": 2024,
+   "year_reason": "total_only_partial_sources",
+   "sources_missing": [
+    "Gas"
+   ],
+   "sources_absent_as_zero": [],
    "total_mw": 2960.0,
    "total_source": "ember_total",
    "by_source": {
@@ -7856,8 +8756,8 @@
     "delta_mw": 0.0,
     "sum_matches_total": true
    },
-   "confidence": "high",
-   "method": "ember_capacity_latest_year_2024_2026"
+   "confidence": "medium",
+   "method": "ember_capacity_complete_sources_latest_year"
   }
  },
  "plant_comparison": {
@@ -9823,36 +10723,36 @@
    "nation": "DEU",
    "year": {
     "plants": "gppd_2021",
-    "national": 2024
+    "national": 2025
    },
    "plant_total_mw": 108296.922,
-   "national_total_mw": 248180.0,
-   "deviation_pct": -56.4,
+   "national_total_mw": 268380.0,
+   "deviation_pct": -59.6,
    "by_source": {
     "hydro": {
      "plant_mw": 8447.8,
-     "national_mw": 5500.0,
-     "deviation_pct": 53.6
+     "national_mw": 5690.0,
+     "deviation_pct": 48.5
     },
     "solar": {
      "plant_mw": 6723.01,
-     "national_mw": 91200.0,
-     "deviation_pct": -92.6
+     "national_mw": 106270.0,
+     "deviation_pct": -93.7
     },
     "wind": {
      "plant_mw": 3373.562,
-     "national_mw": 72740.0,
-     "deviation_pct": -95.4
+     "national_mw": 77810.0,
+     "deviation_pct": -95.7
     },
     "coal": {
      "plant_mw": 47532.9,
-     "national_mw": 32340.0,
-     "deviation_pct": 47.0
+     "national_mw": 31970.0,
+     "deviation_pct": 48.7
     },
     "gas": {
      "plant_mw": 24212.25,
-     "national_mw": 32330.0,
-     "deviation_pct": -25.1
+     "national_mw": 32440.0,
+     "deviation_pct": -25.4
     },
     "nuclear": {
      "plant_mw": 11171.0,
@@ -9861,13 +10761,13 @@
     },
     "biomass": {
      "plant_mw": 3228.3,
-     "national_mw": 8880.0,
-     "deviation_pct": -63.6
+     "national_mw": 8980.0,
+     "deviation_pct": -64.1
     },
     "other": {
      "plant_mw": 756.9,
-     "national_mw": 5190.0,
-     "deviation_pct": -85.4
+     "national_mw": 5220.0,
+     "deviation_pct": -85.5
     }
    }
   },
@@ -14003,26 +14903,26 @@
    "nation": "PER",
    "year": {
     "plants": "gppd_2021",
-    "national": 2024
+    "national": 2025
    },
    "plant_total_mw": 7432.1,
-   "national_total_mw": 15190.0,
-   "deviation_pct": -51.1,
+   "national_total_mw": 16260.0,
+   "deviation_pct": -54.3,
    "by_source": {
     "hydro": {
      "plant_mw": 2735.4,
-     "national_mw": 5540.0,
-     "deviation_pct": -50.6
+     "national_mw": 5770.0,
+     "deviation_pct": -52.6
     },
     "solar": {
      "plant_mw": 240.5,
-     "national_mw": 530.0,
-     "deviation_pct": -54.6
+     "national_mw": 1020.0,
+     "deviation_pct": -76.4
     },
     "wind": {
      "plant_mw": 62.0,
-     "national_mw": 1030.0,
-     "deviation_pct": -94.0
+     "national_mw": 1340.0,
+     "deviation_pct": -95.4
     },
     "coal": {
      "plant_mw": 132.0,
@@ -14041,7 +14941,7 @@
     },
     "biomass": {
      "plant_mw": 0.0,
-     "national_mw": 200.0,
+     "national_mw": 240.0,
      "deviation_pct": -100.0
     },
     "other": {
@@ -15160,9 +16060,8 @@
     },
     "other": {
      "plant_mw": 0.0,
-     "national_mw": null,
-     "deviation_pct": null,
-     "note": "fonte ausente no agregado nacional"
+     "national_mw": 0.0,
+     "deviation_pct": null
     }
    }
   },
@@ -16415,14 +17314,14 @@
    "total_mw": 322910.0
   },
   {
+   "nation": "DEU",
+   "year": 2025,
+   "total_mw": 268380.0
+  },
+  {
    "nation": "BRA",
    "year": 2025,
    "total_mw": 260640.0
-  },
-  {
-   "nation": "DEU",
-   "year": 2024,
-   "total_mw": 248180.0
   },
   {
    "nation": "RUS",
