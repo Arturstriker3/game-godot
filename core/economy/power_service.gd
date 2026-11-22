@@ -85,7 +85,7 @@ func apply_to_sim(sim: Object, cities: Array, options: Dictionary = {}) -> Dicti
 	var nations: Dictionary = {}
 	for iso3: Variant in _access:
 		var row: Dictionary = _access[iso3]
-		var tag := String(row.get("nation", ""))
+		var tag := _text(row.get("nation"))
 		if tag.is_empty() or not bool(row.get("playable", true)):
 			continue
 		var access := _indicator(row, "electricity_access_pct")
@@ -177,6 +177,13 @@ func _indicator(row: Dictionary, key: String) -> float:
 	if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
 		return -1.0
 	return float(value)
+
+
+## Texto tolerante a `null` do JSON (nunca converte null em "<null>").
+static func _text(value: Variant) -> String:
+	if value == null:
+		return ""
+	return String(value)
 
 
 ## Parque instalado da cidade por fonte (MW) — dado GPPD escalonado à Ember.
