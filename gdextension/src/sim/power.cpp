@@ -1247,6 +1247,41 @@ void SimCore::phase_power() {
 		}
 		contract_targets[line.contract_exporter] += line.contract_mw * 24.0;
 	}
+	// O contrato é uma ENTREGA média, não uma obrigação de gerar energia que
+	// o importador não consome: o alvo do dia é limitado ao déficit esperado
+	// do importador (demanda − disponibilidade local do próprio parque).
+	// Sem esse teto, um contrato dimensionado no fluxo médio anual geraria
+	// energia ociosa nos dias de demanda baixa.
+	for (const InterconnectState& line : ws.interconnects) {
+		if (!(line.contract_mw > 0.0)
+				|| line.contract_importer.empty()
+				|| line.contract_exporter.empty()) {
+			continue;
+		}
+		const auto imp = ws.power_grids.find(line.contract_importer);
+		if (imp == ws.power_grids.end() || !imp->second.exists
+				|| imp->second.connected <= 0) {
+			continue;
+		}
+		double imp_demand = 0.0;
+		double imp_local = 0.0;
+		for (std::size_t index = 0; index < city_count; ++index) {
+			if (ws.cities[index].nation != line.contract_importer
+					|| !ws.power_cities[index].has_data) {
+				continue;
+			}
+			imp_demand += demand_mwh[index];
+			for (const int p : plants_by_city[index]) {
+				imp_local += days[static_cast<std::size_t>(p)].avail_mw
+					* 24.0;
+			}
+		}
+		const double deficit = std::max(0.0, imp_demand - imp_local);
+		double& target = contract_targets[line.contract_exporter];
+		const double line_target = line.contract_mw * 24.0;
+		target = std::max(0.0, target - line_target
+			+ std::min(line_target, deficit));
+	}
 
 	// Zera os agregados da rede do dia.
 	for (auto& row : ws.power_grids) {
@@ -1790,6 +1825,15 @@ void SimCore::phase_power() {
 		}
 		return previous + (sample - previous) / window;
 	};
+	// O repasse de escassez parte de zero: a média móvel não pode cobrar o
+	// pico inteiro no primeiro dia (era o defeito do §8.6). Com janela 0 o
+	// repasse é imediato (regra declarada).
+	const auto ema_pass = [window](double previous, double sample) {
+		if (window <= 1e-9) {
+			return sample;
+		}
+		return previous + (sample - previous) / window;
+	};
 	std::vector<bool> in_national_grid(city_count, false);
 	for (const auto& row : trade_states) {
 		const GridTrade& trade = row.second;
@@ -1845,7 +1889,7 @@ void SimCore::phase_power() {
 				/ grid.demand_mwh, 0.0, 1.0) : 0.0;
 		const double premium = std::max(0.0,
 			grid.price - grid.average_cost) * shortfall;
-		grid.scarcity_pass = ema(grid.scarcity_pass, premium);
+		grid.scarcity_pass = ema_pass(grid.scarcity_pass, premium);
 		grid.tariff = std::max(0.0,
 			grid.average_cost / retail_divisor + grid.scarcity_pass);
 	}
@@ -1882,7 +1926,7 @@ void SimCore::phase_power() {
 				/ state.demand_mwh, 0.0, 1.0) : 0.0;
 		const double premium = std::max(0.0,
 			state.price - state.average_cost) * shortfall;
-		state.scarcity_pass = ema(state.scarcity_pass, premium);
+		state.scarcity_pass = ema_pass(state.scarcity_pass, premium);
 		state.tariff = std::max(0.0,
 			state.average_cost / retail_divisor + state.scarcity_pass);
 	}

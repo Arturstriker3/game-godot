@@ -21,7 +21,7 @@ extends SceneTree
 ##   (6) cidade/rede LOCAL (isolada) não comercia (D-116);
 ##   (7) `build_interconnect` é obra (custo, fila) e conclui criando/somando
 ##       capacidade ao par;
-##   (8) save v36: round-trip do status de energia (com as linhas), continuação
+##   (8) save v37: round-trip do status de energia (com as linhas), continuação
 ##       idêntica e o dado do ano-base não sobrescreve o save;
 ##   (9) determinismo: duas entradas iguais → mesmo status.
 ##
@@ -63,7 +63,7 @@ func _init() -> void:
 		print("[e5] OK: linha só entre redes nacionais, fluxo e preço de "
 			+ "fronteira, conservação de energia/dinheiro, limite da linha, "
 			+ "fim da escassez, isolada sem comércio, obra de interconexão, "
-			+ "save v36 e determinismo.")
+			+ "save v37 e determinismo.")
 		quit(0)
 	else:
 		print("[e5] FALHAS (%d):" % _failures.size())
@@ -268,7 +268,7 @@ func _test_build_interconnect_work() -> void:
 		String(invalid.get("error", "")))
 
 
-# --- (8) save v36 ----------------------------------------------------------
+# --- (8) save v37 ----------------------------------------------------------
 func _test_save_v36_roundtrip() -> void:
 	var sim = _world(_parks())
 	sim.set_power_interconnects([
