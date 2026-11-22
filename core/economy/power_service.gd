@@ -38,6 +38,7 @@ const RENEWABLE_PATH := "res://data/definitions/energy/renewable_potential.json"
 const HYDRO_PATH := "res://data/definitions/energy/hydro_potential.json"
 const PARAMS_PATH := "res://data/definitions/energy/power_params.json"
 const DEMAND_PATH := "res://data/definitions/energy/national_demand.json"
+const INTERCONNECTS_PATH := "res://data/definitions/energy/interconnects.json"
 
 const HOURS_PER_DAY := 24.0
 const DAYS_PER_YEAR := 365.0
@@ -48,6 +49,7 @@ var _renewable: Dictionary = {}
 var _hydro: Dictionary = {}
 var _params: Dictionary = {}
 var _demand: Dictionary = {}
+var _interconnects: Array = []
 var _loaded := false
 
 
@@ -60,6 +62,8 @@ func load_data() -> bool:
 	_hydro = _read_dict(HYDRO_PATH).get("by_city", {})
 	_params = _read_dict(PARAMS_PATH)
 	_demand = _read_dict(DEMAND_PATH).get("by_nation", {})
+	var links: Variant = _read_dict(INTERCONNECTS_PATH).get("links", [])
+	_interconnects = links if typeof(links) == TYPE_ARRAY else []
 	_loaded = true
 	return not _access.is_empty() or not _plants.is_empty()
 
@@ -167,6 +171,13 @@ func apply_to_sim(sim: Object, cities: Array, options: Dictionary = {}) -> Dicti
 
 	var applied := int(sim.set_power_definitions(nations, city_defs,
 		_params.get("params", {}), only_missing))
+	# E5 (D-117): interconexões do ano-base (dado derivado). `only_missing`
+	# preserva as linhas de um save v36; save v35 chega sem elas e recebe o
+	# ano-base aqui (a ausência anterior era declarada).
+	var links_applied := 0
+	if sim.has_method("set_power_interconnects"):
+		links_applied = int(sim.set_power_interconnects(_interconnects,
+			only_missing))
 	var report := {
 		"applied": applied,
 		"cities_in_scenario": cities.size(),
@@ -180,6 +191,8 @@ func apply_to_sim(sim: Object, cities: Array, options: Dictionary = {}) -> Dicti
 		"cap_mw_by_fuel": cap_by_fuel,
 		"cities_with_solar_month": solar_source,
 		"only_missing": only_missing,
+		"interconnect_links_data": _interconnects.size(),
+		"interconnect_links_applied": links_applied,
 	}
 	if applied == 0:
 		report["reason"] = "save_has_power" if not only_missing else "no_city_def"

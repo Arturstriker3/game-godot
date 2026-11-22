@@ -338,6 +338,12 @@ void EconomySim::_bind_methods() {
 		"group_id"), &EconomySim::build_power_plant, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("build_power_line", "city_id", "mw",
 		"group_id"), &EconomySim::build_power_line, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("set_power_interconnects", "links",
+		"only_missing"), &EconomySim::set_power_interconnects,
+		DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("build_interconnect", "nation_a",
+		"nation_b", "mw", "group_id"), &EconomySim::build_interconnect,
+		DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("get_power_status"),
 		&EconomySim::get_power_status);
 	ClassDB::bind_method(D_METHOD("set_deposit", "city_id", "product", "reserve_kt",
@@ -6948,6 +6954,60 @@ Dictionary EconomySim::build_power_line(const String& city_id, double mw,
 	return result;
 }
 
+int EconomySim::set_power_interconnects(const Array& links,
+		bool only_missing) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::vector<ogs::InterconnectDef> defs;
+	const bool ready_before = ws_.power_interconnects_ready;
+	for (const Variant& raw : links) {
+		if (raw.get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = raw;
+		ogs::InterconnectDef def;
+		def.a = std::string(
+			String(entry.get("a", "")).utf8().get_data());
+		def.b = std::string(
+			String(entry.get("b", "")).utf8().get_data());
+		def.importer = std::string(
+			String(entry.get("importer", "")).utf8().get_data());
+		def.capacity_mw = std::max(0.0,
+			double(entry.get("capacity_mw", 0.0)));
+		if (def.a.empty() || def.b.empty() || def.a == def.b) {
+			continue;
+		}
+		if (def.b < def.a) {
+			std::swap(def.a, def.b);
+		}
+		defs.push_back(def);
+	}
+	sim_core_.set_power_interconnects(defs, only_missing);
+	status_invalidate();
+	// O retorno é o número de linhas SEMEADAS nesta chamada: um save v36 já
+	// pronto não re-semeia (`only_missing`), então devolve 0.
+	if (only_missing && ready_before) {
+		return 0;
+	}
+	return static_cast<int>(ws_.interconnects.size());
+}
+
+Dictionary EconomySim::build_interconnect(const String& nation_a,
+		const String& nation_b, double mw, const String& group_id) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::string error;
+	const bool started = sim_core_.build_interconnect(
+		std::string(nation_a.utf8().get_data()),
+		std::string(nation_b.utf8().get_data()), mw,
+		std::string(group_id.utf8().get_data()), &error);
+	Dictionary result;
+	result["started"] = started;
+	result["error"] = String(error.c_str());
+	if (started) {
+		status_invalidate();
+	}
+	return result;
+}
+
 Dictionary EconomySim::get_power_status() const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
@@ -7053,6 +7113,37 @@ Dictionary EconomySim::get_power_status() const {
 	out["lost_gdp"] = world_lost_gdp;
 	out["loss_pct"] = world_demand > 0.0
 		? world_loss_weighted / world_demand : 0.0;
+	// E5 (D-117): comércio do dia entre redes NACIONAIS. `flow_mwh` é a energia
+	// entregue ao importador (o que entra na carga); `sent_mwh` é a gerada pelo
+	// exportador (inclui a perda da linha) e `value` é o dinheiro a preço de
+	// fronteira que entrou no caixa do setor.
+	double world_trade_flow = 0.0;
+	double world_trade_sent = 0.0;
+	double world_trade_value = 0.0;
+	Array interconnect_rows;
+	for (const ogs::InterconnectState& line : ws_.interconnects) {
+		Dictionary entry;
+		entry["a"] = String(line.a.c_str());
+		entry["b"] = String(line.b.c_str());
+		entry["capacity_mw"] = line.capacity_mw;
+		entry["built_day"] = line.built_day;
+		entry["initial"] = line.initial;
+		entry["importer"] = String(line.importer_today.c_str());
+		entry["exporter"] = String(line.exporter_today.c_str());
+		entry["flow_mwh"] = line.flow_mwh;
+		entry["sent_mwh"] = line.sent_mwh;
+		entry["price"] = line.price;
+		entry["value"] = line.value;
+		world_trade_flow += line.flow_mwh;
+		world_trade_sent += line.sent_mwh;
+		world_trade_value += line.value;
+		interconnect_rows.append(entry);
+	}
+	out["interconnects"] = interconnect_rows;
+	out["interconnect_links"] = static_cast<int>(ws_.interconnects.size());
+	out["interconnect_flow_mwh"] = world_trade_flow;
+	out["interconnect_sent_mwh"] = world_trade_sent;
+	out["interconnect_value"] = world_trade_value;
 	// Rede por naÃ§Ã£o: usa o estado publicado no dia (o agregado da fase).
 	Dictionary nations_out;
 	for (const auto& row : ws_.power_grids) {
@@ -7071,6 +7162,12 @@ Dictionary EconomySim::get_power_status() const {
 		entry["partial"] = grid.partial;
 		entry["isolated"] = grid.isolated;
 		entry["last_build_day"] = grid.last_build_day;
+		// E5 (D-117): ledger do comércio da rede.
+		entry["import_mwh"] = grid.import_mwh;
+		entry["export_mwh"] = grid.export_mwh;
+		entry["import_value"] = grid.import_value;
+		entry["export_value"] = grid.export_value;
+		entry["interconnect_count"] = grid.interconnect_count;
 		Dictionary by_fuel;
 		for (int fuel = 0; fuel < ogs::kPowerFuelCount; ++fuel) {
 			by_fuel[String(ogs::power_fuel_name(fuel))] =

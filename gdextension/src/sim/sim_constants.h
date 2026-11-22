@@ -151,7 +151,15 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // público depois do load e semeia o parque real. As obras de energia em voo
 // viajam em `construction_projects` com `kind = CONSTRUCTION_POWER_PLANT`/
 // `CONSTRUCTION_POWER_LINE` e os campos `power_fuel`/`power_mw`.
-constexpr int kSaveVersion = 35;
+// v36 (PARTE E, D-117): interconexões entre redes NACIONAIS (E5). ADITIVO: o
+// bloco `power` ganha `interconnects` (par a/b, capacidade, fluxo/preço do dia
+// e a marca de linha do ano-base × obra) e `interconnects_ready`; cada rede
+// ganha o ledger `import_mwh`/`export_mwh`/`import_value`/`export_value`. As
+// obras em voo viajam em `construction_projects` com
+// `kind = CONSTRUCTION_INTERCONNECT` e `power_nation_a`/`power_nation_b`. Save
+// v35 carrega sem a chave: `ready = false` e o PowerService semeia as linhas do
+// ano-base depois do load (nada inventado para trás).
+constexpr int kSaveVersion = 36;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

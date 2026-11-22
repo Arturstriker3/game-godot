@@ -462,6 +462,9 @@ struct WorldState {
 	std::vector<PowerCityState> power_cities;
 	std::vector<PowerPlant> power_plants;
 	std::map<std::string, PowerGridState> power_grids;
+	// E5 (D-117): interconexões entre redes nacionais (ano-base + obras).
+	std::vector<InterconnectState> interconnects;
+	bool power_interconnects_ready = false;
 	bool power_ready = false;
 	double power_cash = 0.0;
 	// REGRA (não persistida): espelho de data/definitions/energy/power_params.json.

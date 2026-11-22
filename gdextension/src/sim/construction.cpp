@@ -59,7 +59,8 @@ double SimCore::project_land_cost(
 	// PARTE E (D-116): usina e linha ficam no interior/rede, não ocupam lote
 	// urbano — sem parcela de terra municipal.
 	if (project.kind == CONSTRUCTION_POWER_PLANT
-			|| project.kind == CONSTRUCTION_POWER_LINE) {
+			|| project.kind == CONSTRUCTION_POWER_LINE
+			|| project.kind == CONSTRUCTION_INTERCONNECT) {
 		return 0.0;
 	}
 	const City* city = find_city(project.city);
@@ -189,7 +190,8 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 		// tamanho do lote de capacidade.
 		project.duration_days = std::max(1, kStorageBuildDays);
 	} else if (project.kind == CONSTRUCTION_POWER_PLANT
-			|| project.kind == CONSTRUCTION_POWER_LINE) {
+			|| project.kind == CONSTRUCTION_POWER_LINE
+			|| project.kind == CONSTRUCTION_INTERCONNECT) {
 		// PARTE E (D-116): prazo declarado do parâmetro de energia (o valor
 		// já veio do construtor da obra; guarda de sanidade só).
 		project.duration_days = std::max(1, project.duration_days);
@@ -356,6 +358,30 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 			break;
 		}
 		after_load(ws);
+		return;
+	}
+	// E5 (D-117): interconexão entre redes nacionais — soma capacidade ao par
+	// (obra nova de um par que já existe) ou cria a linha. O dinheiro já saiu
+	// do dono na abertura; aqui só entra a capacidade.
+	if (p.kind == CONSTRUCTION_INTERCONNECT) {
+		bool found = false;
+		for (InterconnectState& line : ws.interconnects) {
+			if (line.a == p.power_nation_a && line.b == p.power_nation_b) {
+				line.capacity_mw += std::max(0.0, p.power_mw);
+				found = true;
+				break;
+			}
+		}
+		if (!found && !p.power_nation_a.empty() && !p.power_nation_b.empty()) {
+			InterconnectState line;
+			line.a = p.power_nation_a;
+			line.b = p.power_nation_b;
+			line.capacity_mw = std::max(0.0, p.power_mw);
+			line.built_day = ws.day;
+			line.initial = false;
+			ws.interconnects.push_back(line);
+		}
+		ws.power_interconnects_ready = true;
 		return;
 	}
 	if (p.expand_existing) {

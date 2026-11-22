@@ -399,6 +399,22 @@ public:
 	Dictionary build_power_line(const String& city_id, double mw,
 		const String& group_id);
 	/**
+	 * E5 (D-117): declara as interconexões do ano-base. `links` = array de
+	 * `{a, b, importer, capacity_mw}` (par canônico; `capacity_mw` na escala do
+	 * dado). Só entram pares com rede NACIONAL nos dois lados; `only_missing`
+	 * (default true) preserva o que veio de um save v36.
+	 * Devolve o número de linhas semeadas.
+	 */
+	int set_power_interconnects(const Array& links, bool only_missing);
+	/**
+	 * E5: obra de interconexão entre duas redes NACIONAIS (mesmo padrão da
+	 * linha de cidade): paga `capex_per_mw_line` × MW do caixa do dono,
+	 * entra na fila §15 e soma capacidade ao par ao concluir.
+	 * `group_id` vazio = governo da maior cidade conectada de `nation_a`.
+	 */
+	Dictionary build_interconnect(const String& nation_a,
+		const String& nation_b, double mw, const String& group_id);
+	/**
 	 * Leitura da rede (testes/UI): por nação (demanda, servido, % servida,
 	 * preço, racionamento, geração por fonte, perdas e membros por estado) e
 	 * por cidade (estado de conexão, linha, acesso, perda efetiva, demanda,

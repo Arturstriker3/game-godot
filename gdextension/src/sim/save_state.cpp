@@ -986,6 +986,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		// PARTE E (save v35): obra de energia — fonte (usina) e potência (MW).
 		entry["power_fuel"] = project.power_fuel;
 		entry["power_mw"] = project.power_mw;
+		// E5 (save v36): interconexão nova — par canônico de nações.
+		entry["power_nation_a"] = sim_str(project.power_nation_a.c_str());
+		entry["power_nation_b"] = sim_str(project.power_nation_b.c_str());
 		Array materials = make_array();
 		Array material_qty = make_array();
 		Array material_delivered = make_array();
@@ -1770,9 +1773,35 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 				by_fuel.append(grid.generation_by_fuel[fuel]);
 			}
 			entry["generation_by_fuel"] = by_fuel;
+			// E5 (save v36): ledger do comércio do dia.
+			entry["import_mwh"] = grid.import_mwh;
+			entry["export_mwh"] = grid.export_mwh;
+			entry["import_value"] = grid.import_value;
+			entry["export_value"] = grid.export_value;
+			entry["interconnect_count"] = grid.interconnect_count;
 			grids[sim_str(row.first.c_str())] = entry;
 		}
 		block["grids"] = grids;
+		// E5 (save v36): interconexões (ano-base + obras). O vetor já está em
+		// ordem determinística; o load remonta o estado e o mesmo round-trip.
+		block["interconnects_ready"] = ws.power_interconnects_ready;
+		Array interconnects = make_array();
+		for (const InterconnectState& line : ws.interconnects) {
+			Dictionary entry = make_object();
+			entry["a"] = sim_str(line.a.c_str());
+			entry["b"] = sim_str(line.b.c_str());
+			entry["capacity_mw"] = line.capacity_mw;
+			entry["built_day"] = line.built_day;
+			entry["initial"] = line.initial;
+			entry["importer_today"] = sim_str(line.importer_today.c_str());
+			entry["exporter_today"] = sim_str(line.exporter_today.c_str());
+			entry["flow_mwh"] = line.flow_mwh;
+			entry["sent_mwh"] = line.sent_mwh;
+			entry["price"] = line.price;
+			entry["value"] = line.value;
+			interconnects.append(entry);
+		}
+		block["interconnects"] = interconnects;
 		data["power"] = block;
 	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
@@ -3964,6 +3993,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	project.power_fuel = std::max(-1,
 		std::min(int(entry.get("power_fuel", -1)), kPowerFuelCount - 1));
 	project.power_mw = safe_nonneg(double(entry.get("power_mw", 0.0)));
+	project.power_nation_a = std::string(
+		String(entry.get("power_nation_a", "")).utf8().get_data());
+	project.power_nation_b = std::string(
+		String(entry.get("power_nation_b", "")).utf8().get_data());
 		const Array materials = entry.get("materials", Array());
 		const Array material_qty = entry.get("material_qty", Array());
 		const Array material_delivered = entry.get("material_delivered", Array());
@@ -4067,6 +4100,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	ws.power_cash = 0.0;
 	ws.power_ready = false;
 	ws.power_params = PowerParams{};
+	// E5: o estado de interconexões é do save; v35 chega sem a chave e o
+	// PowerService semeia o ano-base depois do load.
+	ws.interconnects.clear();
+	ws.power_interconnects_ready = false;
 	if (data.has("power")) {
 		const Dictionary block = data.get("power", Dictionary());
 		ws.power_cash = double(block.get("cash", 0.0));
@@ -4209,6 +4246,18 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				grid.lost_gdp = std::max(0.0,
 					double(entry.get("lost_gdp", 0.0)));
 				grid.last_build_day = int(entry.get("last_build_day", -1000000));
+				// E5 (v36): ledger do comércio. Save v35 chega sem as chaves
+				// (0 = sem comércio no dia — nada inventado para trás).
+				grid.import_mwh = std::max(0.0,
+					double(entry.get("import_mwh", 0.0)));
+				grid.export_mwh = std::max(0.0,
+					double(entry.get("export_mwh", 0.0)));
+				grid.import_value = std::max(0.0,
+					double(entry.get("import_value", 0.0)));
+				grid.export_value = std::max(0.0,
+					double(entry.get("export_value", 0.0)));
+				grid.interconnect_count = std::max(0,
+					int(entry.get("interconnect_count", 0)));
 				const Array by_fuel = entry.get("generation_by_fuel", Array());
 				for (int fuel = 0; fuel < kPowerFuelCount
 						&& fuel < by_fuel.size(); ++fuel) {
@@ -4217,6 +4266,43 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				}
 				ws.power_grids[row.first] = grid;
 			}
+		}
+		// E5 (v36): interconexões. Save v35 chega sem a chave: `ready` fica
+		// falso e o PowerService semeia as linhas do ano-base depois do load.
+		ws.power_interconnects_ready = bool(
+			block.get("interconnects_ready", false));
+		const Array links = block.get("interconnects", Array());
+		for (int index = 0; index < links.size(); ++index) {
+			if (links[index].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			const Dictionary entry = links[index];
+			InterconnectState line;
+			line.a = std::string(
+				String(entry.get("a", "")).utf8().get_data());
+			line.b = std::string(
+				String(entry.get("b", "")).utf8().get_data());
+			if (line.a.empty() || line.b.empty() || line.a == line.b) {
+				continue;
+			}
+			if (line.b < line.a) {
+				std::swap(line.a, line.b);
+			}
+			line.capacity_mw = std::max(0.0,
+				double(entry.get("capacity_mw", 0.0)));
+			line.built_day = int(entry.get("built_day", 0));
+			line.initial = bool(entry.get("initial", false));
+			line.importer_today = std::string(
+				String(entry.get("importer_today", "")).utf8().get_data());
+			line.exporter_today = std::string(
+				String(entry.get("exporter_today", "")).utf8().get_data());
+			line.flow_mwh = std::max(0.0,
+				double(entry.get("flow_mwh", 0.0)));
+			line.sent_mwh = std::max(0.0,
+				double(entry.get("sent_mwh", 0.0)));
+			line.price = std::max(0.0, double(entry.get("price", 0.0)));
+			line.value = std::max(0.0, double(entry.get("value", 0.0)));
+			ws.interconnects.push_back(line);
 		}
 	}
 	// Recompte os membros da rede e valide o índice de cidade das usinas: a

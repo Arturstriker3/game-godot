@@ -274,6 +274,10 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.power_cities = ws_.power_cities;
 	out.power_plants = ws_.power_plants;
 	out.power_grids = ws_.power_grids;
+	// E5 (D-117): o comércio do dia gera energia e move a conta da rede;
+	// reverter o tick precisa devolver as linhas e o preço/servido do dia.
+	out.interconnects = ws_.interconnects;
+	out.power_interconnects_ready = ws_.power_interconnects_ready;
 	out.power_cash = ws_.power_cash;
 	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
@@ -923,6 +927,8 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.power_cities = in.power_cities;
 	ws_.power_plants = in.power_plants;
 	ws_.power_grids = in.power_grids;
+	ws_.interconnects = in.interconnects;
+	ws_.power_interconnects_ready = in.power_interconnects_ready;
 	ws_.power_cash = in.power_cash;
 	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();

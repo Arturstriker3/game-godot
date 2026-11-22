@@ -24,6 +24,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 namespace ogs {
 
@@ -144,6 +145,17 @@ struct PowerCityDef {
 	double solar_month[kPowerMonthCount] = {};
 };
 
+// E5 (D-117) — interconexão entre redes NACIONAIS, derivada do dado
+// (data/definitions/energy/interconnects.json): par canônico `a < b`, a nação
+// importadora do ano-base e a capacidade da linha em MW na escala do DADO
+// (o seed multiplica pela fração simulada da nação importadora, como o parque).
+struct InterconnectDef {
+	std::string a;
+	std::string b;
+	std::string importer;
+	double capacity_mw = 0.0;
+};
+
 // Nomes canônicos das fontes (ordem de `PowerFuel`): usado no status/save.
 const char* power_fuel_name(int fuel);
 // Índice da fonte pelo nome; -1 = desconhecida.
@@ -156,6 +168,13 @@ bool power_fuel_is_thermal(int fuel);
 void seed(WorldState& ws, const PowerParams& params,
 	const std::map<std::string, PowerNationDef>& nations,
 	const std::map<std::string, PowerCityDef>& cities, bool only_missing);
+
+// E5 (D-117): semeia as interconexões do ano-base. Só entram pares cujas duas
+// nações têm REDE NACIONAL (operador + ao menos uma cidade conectada) neste
+// mundo; a capacidade é escalada pela fração simulada da nação importadora.
+// `only_missing` preserva as linhas que vieram de um save (v36+).
+void seed_interconnects(WorldState& ws,
+	const std::vector<InterconnectDef>& defs, bool only_missing);
 
 // Recalcula os índices derivados depois do load. Cidade sem estado de energia
 // continua `power_ready = false` (ausência declarada).

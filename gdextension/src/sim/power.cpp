@@ -233,6 +233,8 @@ void seed(WorldState& ws, const PowerParams& params,
 	ws.power_cities.assign(count, PowerCityState());
 	ws.power_plants.clear();
 	ws.power_grids.clear();
+	ws.interconnects.clear();
+	ws.power_interconnects_ready = false;
 	// Escala do universo simulado: a economia modela a população simulada
 	// (aglomerações urbanas), não a população exibida do mapa. O dado de parque
 	// é NACIONAL (mundo exibido); para MW e dinheiro viverem na mesma escala,
@@ -517,6 +519,78 @@ void after_load(WorldState& ws) {
 	ws.power_ready = ws.power_ready && !ws.power_cities.empty();
 }
 
+// E5 (D-117) — semeia as interconexões do ano-base. A capacidade do dado é
+// escalada pela fração simulada da nação IMPORTADORA (o fluxo do dado é a
+// importação dela, como a demanda Ember), do mesmo jeito que o parque.
+void seed_interconnects(WorldState& ws,
+		const std::vector<InterconnectDef>& defs, bool only_missing) {
+	if (only_missing && ws.power_interconnects_ready) {
+		return;
+	}
+	if (defs.empty()) {
+		ws.interconnects.clear();
+		ws.power_interconnects_ready = true;
+		return;
+	}
+	if (ws.power_grids.empty()) {
+		// Sem redes declaradas ainda: não marca pronto (o chamador reaplica
+		// depois de `set_power_definitions`).
+		return;
+	}
+	std::map<std::string, double> sim_pop;
+	std::map<std::string, double> shown_pop;
+	for (const City& city : ws.cities) {
+		if (city.population > 0.0 && city.simulation_population > 0.0) {
+			sim_pop[city.nation] += city.simulation_population;
+			shown_pop[city.nation] += city.population;
+		}
+	}
+	const auto nation_scale = [&sim_pop, &shown_pop](
+			const std::string& nation) {
+		const auto sim = sim_pop.find(nation);
+		const auto shown = shown_pop.find(nation);
+		if (sim == sim_pop.end() || shown == shown_pop.end()
+				|| shown->second <= 0.0) {
+			return 1.0;
+		}
+		return std::clamp(sim->second / shown->second, 0.0, 1.0);
+	};
+	ws.interconnects.clear();
+	for (const InterconnectDef& def : defs) {
+		if (def.a.empty() || def.b.empty() || def.a == def.b
+				|| !(def.capacity_mw > 0.0)) {
+			continue;
+		}
+		// Só redes NACIONAIS comerciam (D-116): operador + conectada nos dois
+		// lados. Rede parcial/isolada fica de fora da E5.
+		const auto grid_a = ws.power_grids.find(def.a);
+		const auto grid_b = ws.power_grids.find(def.b);
+		if (grid_a == ws.power_grids.end() || grid_b == ws.power_grids.end()
+				|| !grid_a->second.exists || !grid_b->second.exists
+				|| grid_a->second.connected <= 0
+				|| grid_b->second.connected <= 0) {
+			continue;
+		}
+		const std::string& deficit_nation = def.importer.empty()
+			? def.a : def.importer;
+		InterconnectState line;
+		line.a = def.a;
+		line.b = def.b;
+		line.capacity_mw = def.capacity_mw * nation_scale(deficit_nation);
+		line.built_day = ws.day;
+		line.initial = true;
+		ws.interconnects.push_back(line);
+	}
+	std::stable_sort(ws.interconnects.begin(), ws.interconnects.end(),
+		[](const InterconnectState& left, const InterconnectState& right) {
+			if (left.a != right.a) {
+				return left.a < right.a;
+			}
+			return left.b < right.b;
+		});
+	ws.power_interconnects_ready = true;
+}
+
 // ---------------------------------------------------------------------------
 // SimCore — API de declaração/obra.
 // ---------------------------------------------------------------------------
@@ -688,6 +762,108 @@ bool SimCore::build_power_line(const std::string& city_id, double mw,
 	*cash -= cost;
 	add_construction_project(project);
 	(void)state;
+	return true;
+}
+
+void SimCore::set_power_interconnects(
+		const std::vector<InterconnectDef>& defs, bool only_missing) {
+	seed_interconnects(ws_, defs, only_missing);
+}
+
+// E5 (D-117) — obra de interconexão entre duas REDES NACIONAIS. Mesmo padrão
+// da linha de cidade (`build_power_line`): paga `capex_per_mw_line` × MW do
+// caixa do dono, entra na fila §15 e, ao concluir, soma capacidade ao par.
+bool SimCore::build_interconnect(const std::string& nation_a,
+		const std::string& nation_b, double mw, const std::string& group_id,
+		std::string* err) {
+	const auto fail = [&err](const char* message) {
+		if (err != nullptr) {
+			*err = message;
+		}
+		return false;
+	};
+	if (nation_a.empty() || nation_b.empty() || nation_a == nation_b) {
+		return fail("nações inválidas");
+	}
+	if (!(mw > 0.0)) {
+		return fail("capacidade inválida");
+	}
+	const auto grid_a = ws_.power_grids.find(nation_a);
+	const auto grid_b = ws_.power_grids.find(nation_b);
+	if (grid_a == ws_.power_grids.end() || !grid_a->second.exists
+			|| grid_a->second.connected <= 0) {
+		return fail("rede nacional ausente: nação A");
+	}
+	if (grid_b == ws_.power_grids.end() || !grid_b->second.exists
+			|| grid_b->second.connected <= 0) {
+		return fail("rede nacional ausente: nação B");
+	}
+	std::string a = nation_a;
+	std::string b = nation_b;
+	if (b < a) {
+		std::swap(a, b);
+	}
+	for (const ConstructionProject& project : ws_.construction_projects) {
+		if (project.kind == CONSTRUCTION_INTERCONNECT
+				&& project.power_nation_a == a
+				&& project.power_nation_b == b) {
+			return fail("obra em andamento");
+		}
+	}
+	// Cidade que assina a obra: a maior CONECTADA da nação A (determinístico:
+	// ordem do vetor, empate fica com a primeira).
+	City* owner_city = nullptr;
+	const std::size_t city_count = std::min(ws_.power_cities.size(),
+		ws_.cities.size());
+	for (std::size_t index = 0; index < city_count; ++index) {
+		City& city = ws_.cities[index];
+		if (city.nation != a
+				|| ws_.power_cities[index].connection != POWER_CONNECTED) {
+			continue;
+		}
+		if (owner_city == nullptr
+				|| city.simulation_population > owner_city->simulation_population) {
+			owner_city = &city;
+		}
+	}
+	if (owner_city == nullptr) {
+		return fail("cidade conectada ausente na nação A");
+	}
+	const PowerParams& params = ws_.power_params;
+	const double cost = mw * params.capex_per_mw_line;
+	double* cash = nullptr;
+	std::string owner = "state";
+	if (group_id.empty()) {
+		cash = &owner_city->government_budget;
+	} else {
+		Group* group = find_group(group_id);
+		if (group == nullptr) {
+			return fail("grupo desconhecido");
+		}
+		cash = &group->cash;
+		owner = group->origin_nation == a
+			? "national:" + group->id
+			: "foreign:" + group->id + "@" + group->origin_nation;
+	}
+	if (*cash < cost) {
+		return fail("orçamento insuficiente");
+	}
+	ConstructionProject project;
+	project.id = "PWI-" + a + "-" + b + "-" + std::to_string(ws_.day)
+		+ "-" + std::to_string(ws_.construction_projects.size());
+	project.building_id = project.id;
+	project.city = owner_city->id;
+	project.owner = owner;
+	project.group_id = group_id;
+	project.kind = CONSTRUCTION_INTERCONNECT;
+	project.power_nation_a = a;
+	project.power_nation_b = b;
+	project.power_mw = mw;
+	project.output_product = -1;
+	project.total_cost = cost;
+	project.duration_days = params.build_days_line;
+	*cash -= cost;
+	add_construction_project(project);
 	return true;
 }
 
@@ -946,6 +1122,22 @@ void SimCore::phase_power() {
 			});
 	};
 
+	// E5 (D-117): estado da rede NACIONAL do dia, usado no comércio com as
+	// vizinhas. Só redes nacionais entram (D-116: cidade isolada/rede local
+	// não comercia). `pool` é o mérito já ordenado; o excedente é o que sobrou
+	// de capacidade sem despacho.
+	struct GridTrade {
+		bool national = false;
+		std::vector<int> connected;
+		std::vector<int> partial;
+		std::vector<int> pool;
+		double connected_demand = 0.0;
+		double connected_served = 0.0;
+		double domestic_price = 0.0;
+		double marginal_price = 0.0;
+	};
+	std::map<std::string, GridTrade> trade_states;
+
 	// Zera os agregados da rede do dia.
 	for (auto& row : ws.power_grids) {
 		PowerGridState& grid = row.second;
@@ -1098,6 +1290,23 @@ void SimCore::phase_power() {
 				}
 				grid.generation_by_fuel[plant.fuel] += plant.generated_mwh;
 			}
+			// E5: estado do dia para o comércio entre redes nacionais.
+			GridTrade& trade = trade_states[nation];
+			trade.national = true;
+			trade.connected = connected;
+			trade.partial = partial;
+			trade.pool = pool;
+			trade.connected_demand = connected_demand;
+			trade.connected_served = 0.0;
+			for (const int index : connected) {
+				trade.connected_served +=
+					ws.power_cities[static_cast<std::size_t>(index)].served_mwh;
+			}
+			trade.domestic_price = price;
+			trade.marginal_price = out.served > 0.0
+				? std::clamp(out.price * params.price_scale,
+					params.price_floor, params.price_ceiling)
+				: params.price_floor;
 		} else {
 			for (const int index : isolated) {
 				const PowerCityState& state =
@@ -1118,7 +1327,205 @@ void SimCore::phase_power() {
 				grid.generation_by_fuel[plant.fuel] += plant.generated_mwh;
 			}
 		}
-		// Indicadores da rede.
+		// (Os indicadores da rede saem depois do comércio, em um laço próprio,
+		// porque a fração servida muda quando entra energia importada.)
+	}
+
+	// ------------------------------------------------------------------
+	// E5 (D-117) — comércio diário entre redes NACIONAIS vizinhas.
+	//
+	// Regra: depois do balanço de cada rede, a nação com excedente vende para
+	// a vizinha em déficit até a capacidade da linha. O preço de fronteira é o
+	// custo marginal do exportador (última usina despachada para a exportação)
+	// dividido por (1 - perda): a perda é o piso técnico de transmissão que já
+	// existe em `loss_floor_pct` (não se inventa coeficiente novo). O importador
+	// paga esse preço; a conta entra no caixa do setor (`power_cash`), o canal
+	// que já existia — soma zero mantida, nada é criado nem perdido. Cidade
+	// isolada / rede local NÃO comercia (D-116).
+	//
+	// TODO(relações): guerra/sanção/hostilidade NÃO corta a linha. O mundo não
+	// modela diplomacia (`tpl.dossie.relations.note`: "a diplomacia não é
+	// simulada"); quando houver a API de relações, o gancho entra aqui.
+	const double line_loss = std::clamp(
+		params.loss_floor_pct / 100.0, 0.0, 0.5);
+	for (InterconnectState& line : ws.interconnects) {
+		line.importer_today.clear();
+		line.exporter_today.clear();
+		line.flow_mwh = 0.0;
+		line.sent_mwh = 0.0;
+		line.price = 0.0;
+		line.value = 0.0;
+		auto left = trade_states.find(line.a);
+		auto right = trade_states.find(line.b);
+		if (left == trade_states.end() || right == trade_states.end()
+				|| !left->second.national || !right->second.national) {
+			continue;
+		}
+		const auto deficit_of = [](const GridTrade& grid) {
+			return std::max(0.0,
+				grid.connected_demand - grid.connected_served);
+		};
+		GridTrade* importer = nullptr;
+		GridTrade* exporter = nullptr;
+		const std::string* importer_tag = nullptr;
+		const std::string* exporter_tag = nullptr;
+		if (deficit_of(left->second) > 1e-6
+				&& deficit_of(right->second) <= 1e-6) {
+			importer = &left->second;
+			importer_tag = &line.a;
+			exporter = &right->second;
+			exporter_tag = &line.b;
+		} else if (deficit_of(right->second) > 1e-6) {
+			importer = &right->second;
+			importer_tag = &line.b;
+			exporter = &left->second;
+			exporter_tag = &line.a;
+		}
+		if (importer == nullptr || exporter == nullptr) {
+			continue;
+		}
+		// Excedente do exportador: capacidade ainda não despachada no mérito.
+		double spare_mwh = 0.0;
+		for (const int plant_index : exporter->pool) {
+			const std::size_t p = static_cast<std::size_t>(plant_index);
+			spare_mwh += std::max(0.0, days[p].avail_mw * 24.0
+				- ws.power_plants[p].generated_mwh);
+		}
+		double sent = std::min(
+			std::max(0.0, line.capacity_mw) * 24.0, spare_mwh);
+		if (sent <= 1e-9) {
+			continue;
+		}
+		double delivered = sent * (1.0 - line_loss);
+		const double deficit = deficit_of(*importer);
+		if (delivered > deficit) {
+			delivered = deficit;
+			sent = line_loss < 1.0 ? delivered / (1.0 - line_loss) : 0.0;
+		}
+		if (sent <= 1e-9 || delivered <= 1e-9) {
+			continue;
+		}
+		// Despacha o extra no mérito do exportador (gera de verdade: o
+		// combustível e o O&M entram na liquidação do dia).
+		double need = sent;
+		double sent_done = 0.0;
+		double marginal_cost = 0.0;
+		for (const int plant_index : exporter->pool) {
+			if (need <= 1e-9) {
+				break;
+			}
+			const std::size_t p = static_cast<std::size_t>(plant_index);
+			PowerPlant& plant = ws.power_plants[p];
+			const double free_mwh = std::max(0.0,
+				days[p].avail_mw * 24.0 - plant.generated_mwh);
+			const double take = std::min(free_mwh, need);
+			if (take <= 0.0) {
+				continue;
+			}
+			plant.generated_mwh += take;
+			need -= take;
+			sent_done += take;
+			marginal_cost = days[p].cost;
+		}
+		if (sent_done <= 1e-9) {
+			continue;
+		}
+		delivered = sent_done * (1.0 - line_loss);
+		// Preço de fronteira: o exportador recebe o custo marginal pela energia
+		// que injeta; a perda da linha é paga pelo importador (÷ (1 - perda)).
+		const double border_price = std::clamp(
+			marginal_cost * params.price_scale / (1.0 - line_loss),
+			params.price_floor, params.price_ceiling);
+		const double served_before = importer->connected_served;
+		// O importado entra nas CONECTADAS, pro rata do que falta. A cidade
+		// parcial não recebe além da própria linha (D-116).
+		double unmet_total = 0.0;
+		for (const int index : importer->connected) {
+			const PowerCityState& state = ws.power_cities[index];
+			unmet_total += std::max(0.0,
+				state.demand_mwh - state.served_mwh);
+		}
+		double remaining = delivered;
+		for (std::size_t slot = 0; slot < importer->connected.size();
+				++slot) {
+			const int index = importer->connected[slot];
+			PowerCityState& state = ws.power_cities[index];
+			const double unmet = std::max(0.0,
+				state.demand_mwh - state.served_mwh);
+			double give = unmet_total > 0.0
+				? delivered * unmet / unmet_total : 0.0;
+			if (slot + 1 == importer->connected.size()) {
+				give = remaining;
+			}
+			const double cap = std::max(0.0, std::min(unmet, remaining));
+			give = std::clamp(give, 0.0, cap);
+			state.served_mwh += give;
+			remaining -= give;
+		}
+		importer->connected_served = 0.0;
+		for (const int index : importer->connected) {
+			importer->connected_served +=
+				ws.power_cities[index].served_mwh;
+		}
+		const double received = importer->connected_served - served_before;
+		if (received <= 1e-9) {
+			continue;
+		}
+		const double value = received * border_price;
+		// Preço do importador: se o importado fechou o déficit, a escassez
+		// acaba e o preço doméstico volta ao marginal; o importado entra pelo
+		// preço de fronteira. Se ainda falta, o preço de escassez continua.
+		const double still_short = deficit_of(*importer);
+		const double base_price = still_short > 1e-6
+			? importer->domestic_price : importer->marginal_price;
+		const double total_served = served_before + received;
+		double weighted = base_price;
+		if (total_served > 1e-9) {
+			weighted = (served_before * base_price + value) / total_served;
+		}
+		weighted = std::clamp(weighted, params.price_floor,
+			params.price_ceiling);
+		for (const int index : importer->connected) {
+			ws.power_cities[index].price = weighted;
+		}
+		for (const int index : importer->partial) {
+			ws.power_cities[index].price = importer->domestic_price;
+		}
+		PowerGridState& imp_grid = ws.power_grids[*importer_tag];
+		PowerGridState& exp_grid = ws.power_grids[*exporter_tag];
+		imp_grid.price = weighted;
+		imp_grid.import_mwh += received;
+		imp_grid.import_value += value;
+		exp_grid.export_mwh += sent_done;
+		exp_grid.export_value += value;
+		line.importer_today = *importer_tag;
+		line.exporter_today = *exporter_tag;
+		line.flow_mwh = received;
+		line.sent_mwh = sent_done;
+		line.price = border_price;
+		line.value = value;
+	}
+
+	// Agregados e indicadores da rede DEPOIS do comércio: a fração servida
+	// inclui o importado; o racionamento e o VOLL são os mesmos do E3.
+	for (auto& row : ws.power_grids) {
+		PowerGridState& grid = row.second;
+		grid.demand_mwh = 0.0;
+		grid.served_mwh = 0.0;
+		grid.interconnect_count = 0;
+		for (std::size_t index = 0; index < city_count; ++index) {
+			if (ws.cities[index].nation != row.first
+					|| !ws.power_cities[index].has_data) {
+				continue;
+			}
+			grid.demand_mwh += ws.power_cities[index].demand_mwh;
+			grid.served_mwh += ws.power_cities[index].served_mwh;
+		}
+		for (const InterconnectState& line : ws.interconnects) {
+			if (line.a == row.first || line.b == row.first) {
+				grid.interconnect_count += 1;
+			}
+		}
 		const double ratio = grid.demand_mwh > 0.0
 			? grid.served_mwh / grid.demand_mwh : 1.0;
 		if (ratio < params.ration_threshold) {

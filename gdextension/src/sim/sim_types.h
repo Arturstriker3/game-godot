@@ -468,6 +468,10 @@ namespace ogs {
 		// (isolada/parcial → conectada) com a capacidade `power_mw`.
 		CONSTRUCTION_POWER_PLANT = 5,
 		CONSTRUCTION_POWER_LINE = 6,
+		// E5 (D-117): interconexão nova entre duas redes NACIONAIS. Ao
+		// concluir soma capacidade ao `InterconnectState` do par (ou cria a
+		// linha, se ainda não existir).
+		CONSTRUCTION_INTERCONNECT = 7,
 	};
 
 	struct ConstructionProject {
@@ -551,6 +555,10 @@ namespace ogs {
 		// da usina nova ou capacidade da linha. -1 = não se aplica.
 		int power_fuel = -1;
 		double power_mw = 0.0;
+		// E5 (D-117): par de nações da interconexão nova (canônico a < b).
+		// Vazio = não se aplica.
+		std::string power_nation_a;
+		std::string power_nation_b;
 	};
 
 	struct Pop {
@@ -1562,6 +1570,35 @@ struct Region {
 		// Cooldown da decisão de obra da IA (dia do último projeto aberto).
 		int last_build_day = -1000000;
 		double generation_by_fuel[kPowerFuelCount] = {};
+		// E5 (D-117): comércio do dia com redes vizinhas. O importado já está
+		// dentro de `served_mwh`; estes campos são o LEDGER do fluxo (MWh e
+		// valor a preço de fronteira em XGS) para o status e o round-trip.
+		double import_mwh = 0.0;
+		double export_mwh = 0.0;
+		double import_value = 0.0;
+		double export_value = 0.0;
+		int interconnect_count = 0;
+	};
+
+	// E5 (D-117) — INTERCONEXÃO entre duas redes NACIONAIS. O estado guarda o
+	// par canônico (a < b), a capacidade da linha em MW e o fluxo do dia. A
+	// capacidade do ano-base vem do dado derivado (data/definitions/energy/
+	// interconnects.json) escalada como o parque; `built_day`/`initial` marcam
+	// a obra nova (§15) contra a linha do ano-base.
+	struct InterconnectState {
+		std::string a;
+		std::string b;
+		// Nações do dia: quem importou/exportou de fato (vazio = linha ociosa).
+		std::string importer_today;
+		std::string exporter_today;
+		double capacity_mw = 0.0;
+		int built_day = 0;
+		bool initial = false;
+		// Fluxos do dia (persistidos para o status e o round-trip).
+		double flow_mwh = 0.0;   // entregue ao importador (lado da carga)
+		double sent_mwh = 0.0;   // gerado pelo exportador (inclui a perda)
+		double price = 0.0;      // preço de fronteira (XGS/MWh)
+		double value = 0.0;      // flow_mwh × price (dinheiro pago)
 	};
 
 	struct City {
@@ -1935,6 +1972,10 @@ struct Region {
 		std::vector<PowerCityState> power_cities;
 		std::vector<PowerPlant> power_plants;
 		std::map<std::string, PowerGridState> power_grids;
+		// E5 (D-117): linhas entre redes nacionais (ano-base + obras). Vetor
+		// ordenado por (a, b) no seed; obras novas entram no fim.
+		std::vector<InterconnectState> interconnects;
+		bool power_interconnects_ready = false;
 		double power_cash = 0.0;
 		double emission_today = 0.0;
 		double transport_cash = 0.0;

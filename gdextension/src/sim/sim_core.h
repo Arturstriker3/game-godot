@@ -157,6 +157,15 @@ public:
 		double mw, const std::string& group_id, std::string* err);
 	bool build_power_line(const std::string& city_id, double mw,
 		const std::string& group_id, std::string* err);
+	// E5 (D-117): declara as interconexões do ano-base (dado derivado) e a obra
+	// de uma linha nova entre duas REDES NACIONAIS. A obra paga pelo caixa do
+	// dono (grupo ou governo da maior cidade conectada de `nation_a`), consome
+	// material no mercado dessa cidade e, ao concluir, soma capacidade ao par.
+	void set_power_interconnects(const std::vector<InterconnectDef>& defs,
+		bool only_missing);
+	bool build_interconnect(const std::string& nation_a,
+		const std::string& nation_b, double mw, const std::string& group_id,
+		std::string* err);
 
 	// ------------------------------------------------------------------
 	// G — AGRICULTURA SAZONAL (sim/agriculture.cpp, D-096).
