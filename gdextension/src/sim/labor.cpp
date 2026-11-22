@@ -651,7 +651,12 @@ double SimCore::labor_day(City& city) {
 			}
 		}
 	}
-	const double full_service_bill = city.service_jobs * service_payroll_per_job;
+	// PARTE E (D-116): a folha de serviços segue a energia SERVIDA — a vaga de
+	// serviço já nasce limitada por `service_power` (linha ~435) e é esse o
+	// valor creditado às famílias. Cobrar a folha CHEIA aqui destruiria a
+	// diferença (violação de conservação de dinheiro).
+	const double full_service_bill = city.service_jobs * service_power
+		* service_payroll_per_job;
 	const double paid_service_bill = std::min(full_service_bill,
 		std::max(0.0, city.service_cash));
 	// C1: atraso da folha do setor de serviços (caixa insuficiente) — passivo

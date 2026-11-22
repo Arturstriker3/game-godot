@@ -1702,6 +1702,19 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["price"] = state.price;
 			entry["ration_days"] = state.ration_days;
 			entry["lost_gdp"] = state.lost_gdp;
+			// Efeitos do dia publicados pela cidade (fator industrial/serviço,
+			// insatisfação e conta da indústria): sem eles o round-trip do
+			// status divergiria até o próximo tick.
+			const City& saved_city = ws.cities[index];
+			entry["stress"] = saved_city.power_stress;
+			entry["industry_factor"] = saved_city.power_industry_factor;
+			entry["service_factor"] = saved_city.power_service_factor;
+			entry["served_ratio"] = saved_city.power_served_ratio;
+			entry["power_price"] = saved_city.power_price;
+			entry["power_cost_industry"] =
+				saved_city.power_cost_industry;
+			entry["power_cost_per_value"] =
+				saved_city.power_cost_per_value;
 			power_cities.append(entry);
 		}
 		block["cities"] = power_cities;
@@ -1720,6 +1733,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			entry["wage"] = plant.wage;
 			entry["built_day"] = plant.built_day;
 			entry["initial"] = plant.initial;
+			// Geração do dia (MWh): o status publica esse valor até o próximo
+			// despacho; o save o preserva como os agregados da rede já fazem.
+			entry["generated_mwh"] = plant.generated_mwh;
 			plants.append(entry);
 		}
 		block["plants"] = plants;
@@ -4087,6 +4103,21 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				int(entry.get("ration_days", 0)));
 			state.lost_gdp = std::max(0.0,
 				double(entry.get("lost_gdp", 0.0)));
+			City& loaded_city = ws.cities[found->second];
+			loaded_city.power_stress = std::clamp(
+				double(entry.get("stress", 0.0)), 0.0, 1.0);
+			loaded_city.power_industry_factor = std::clamp(
+				double(entry.get("industry_factor", 1.0)), 0.0, 1.0);
+			loaded_city.power_service_factor = std::clamp(
+				double(entry.get("service_factor", 1.0)), 0.0, 1.0);
+			loaded_city.power_served_ratio = std::clamp(
+				double(entry.get("served_ratio", 1.0)), 0.0, 1.0);
+			loaded_city.power_price = std::max(0.0,
+				double(entry.get("power_price", 0.0)));
+			loaded_city.power_cost_industry = std::max(0.0,
+				double(entry.get("power_cost_industry", 0.0)));
+			loaded_city.power_cost_per_value = std::max(0.0,
+				double(entry.get("power_cost_per_value", 0.0)));
 		}
 		const Array plants = block.get("plants", Array());
 		for (int index = 0; index < plants.size(); ++index) {
@@ -4115,6 +4146,8 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			plant.wage = std::max(0.0, double(entry.get("wage", 0.0)));
 			plant.built_day = int(entry.get("built_day", 0));
 			plant.initial = bool(entry.get("initial", false));
+			plant.generated_mwh = std::max(0.0,
+				double(entry.get("generated_mwh", 0.0)));
 			ws.power_plants.push_back(std::move(plant));
 		}
 		const Value& grids_variant = block.get("grids", Value());
