@@ -1119,8 +1119,9 @@ constexpr double kDissatisfactionInformality = 0.10;
 constexpr double kDissatisfactionLand = 0.00;
 // PARTE E (D-116): falta de energia — peso do componente no bloco urbano e no
 // interior. O valor do componente é `City::power_stress` (0..1), que já cresce
-// com a DURAÇÃO do blecaute (ver power.cpp). A soma dos pesos passa a ser
-// normalizada por bloco, como os demais.
+// com a DURAÇÃO do blecaute (ver power.cpp). O termo é ADITIVO sobre o índice
+// anterior (o divisor segue o antigo: urbano 1,00, interior 0,50), então com
+// energia plenamente servida a insatisfação é a mesma de antes da energia.
 constexpr double kDissatisfactionPower = 0.20;
 // Jovens (15-24) pesam mais na insatisfação com desemprego.
 constexpr double kDissatisfactionYouthWeight = 0.50;

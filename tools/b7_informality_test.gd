@@ -437,14 +437,14 @@ func _run() -> void:
 		_check(low_idx >= 0.0 and low_idx <= 1.0 and high_idx >= 0.0 and high_idx <= 1.0,
 			"índices de insatisfação em [0,1]")
 
-	# --- (5b) Insatisfação da REGIÃO: normalização por pesos APLICÁVEIS. ----
-	# O interior aplica comida+inflacao+informalidade+ENERGIA (pesos
-	# 0,25+0,15+0,10+0,20 = 0,70, D-116): o indice divide pela soma dos
-	# pesos aplicaveis, nao pelo total 1,00. Com informalidade=1 e
-	# inflacao=1, as componentes ficam 0,10/0,70=0,143 e 0,15/0,70=0,214
-	# - e os componentes somam o indice. Urbano: soma 1,20 (era 1,00 antes
-	# da energia). Sem dupla contagem: power_stress entra UMA vez no
-	# numerador e o divisor inclui seu peso UMA vez.
+	# --- (5b) Insatisfação da REGIÃO: normalização pelos pesos ANTIGOS. ----
+	# O interior aplica comida+inflacao+informalidade (pesos 0,25+0,15+0,10 =
+	# 0,50): o indice divide pela soma dos pesos aplicaveis, nao pelo total
+	# 1,00. Com informalidade=1 e inflacao=1, as componentes ficam
+	# 0,10/0,50=0,200 e 0,15/0,50=0,300 - e os componentes somam o indice.
+	# A energia (D-116, correcao t106) entra ADITIVA (+0,20*stress) e NAO no
+	# divisor: com energia plenamente servida o indice e o mesmo de antes da
+	# energia. O fixture nao semeia parque, entao `power_stress` e 0 aqui.
 	if true:
 		var save_reg: Dictionary = sim.to_dict()
 		var c_reg: Dictionary = save_reg.get("cities", [])[ci]
@@ -470,10 +470,10 @@ func _run() -> void:
 			var r_infl := float(rcomp.get("inflation", -1.0))
 			var r_food := float(rcomp.get("food", -1.0))
 			var r_idx := float(rdiss.get("index", -1.0))
-			_check(absf(r_inf - 0.10 / 0.70) < 0.02,
-				"região: componente informalidade ~0,20 (0,10/0,70) — medido %.3f" % r_inf)
-			_check(absf(r_infl - 0.15 / 0.70) < 0.02,
-				"região: componente inflação ~0,30 (0,15/0,70) — medido %.3f" % r_infl)
+			_check(absf(r_inf - 0.10 / 0.50) < 0.02,
+				"região: componente informalidade ~0,20 (0,10/0,50) — medido %.3f" % r_inf)
+			_check(absf(r_infl - 0.15 / 0.50) < 0.02,
+				"região: componente inflação ~0,30 (0,15/0,50) — medido %.3f" % r_infl)
 			_check(absf(r_idx - (r_food + r_infl + r_inf)) < 1e-6,
 				"região: componentes somam o índice (%.4f vs %.4f)"
 				% [r_food + r_infl + r_inf, r_idx])

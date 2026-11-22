@@ -25,6 +25,9 @@ extends SceneTree
 ##       energia NÃO sobrescreve o estado que veio do save.
 ##  (10) determinismo: mesma entrada → mesmo mundo (status de energia).
 ##  (11) ausência declarada: cidade sem dado não recebe racionamento fabricado.
+##  (12) âncora nacional Ember (D-116).
+##  (13) D-116/t106: energia 100% servida não dilui a insatisfação (índice ==
+##       soma das 5 componentes, tolerância 1e-9); racionamento soma o termo.
 ##
 ## Roda pelo runner: powershell -File tools/run_tests.ps1 -List e2e3_power_test
 
@@ -64,11 +67,13 @@ func _init() -> void:
 	_test_determinism()
 	_test_absence_declared()
 	_test_national_anchor()
+	_test_dissatisfaction_fully_served()
 	if _failures.is_empty():
 		print("[power] OK: mérito/preço marginal, racionamento (indústria, "
 			+ "emprego, satisfação, PIB), combustível, conservação, "
 			+ "conexão (isolada/parcial/conectada), obra de linha, save v35, "
-			+ "determinismo, ausência declarada e âncora nacional Ember.")
+			+ "determinismo, ausência declarada, âncora nacional Ember e "
+			+ "insatisfação sem diluição (D-116/t106).")
 		quit(0)
 	else:
 		print("[power] FALHAS (%d):" % _failures.size())
@@ -514,6 +519,63 @@ func _test_national_anchor() -> void:
 		"dia=%s/%s" % [_canon_power(sim).hash(), _canon_power(loaded).hash()])
 
 
+# --- (13) energia servida não dilui a insatisfação (t106/D-116) -----------
+func _test_dissatisfaction_fully_served() -> void:
+	# A energia é ADITIVA sobre o índice anterior: com a carga 100% servida
+	# (`stress == 0`) a insatisfação é a MESMA de antes da D-116, isto é, a
+	# soma das cinco componentes clássicas — o divisor NÃO inclui o peso da
+	# energia. O racionamento soma `kDissatisfactionPower * stress`.
+	var served_cities := {
+		"AGRIA": _city({"hydro": 400.0}, {"hydro": 800.0}),
+		"PORTUS": _city({"hydro": 800.0}, {"hydro": 1600.0}),
+	}
+	var served = _world(_nation(), served_cities, DAYS_CONSEQUENCE)
+	var row: Dictionary = _power_city(served, "AGRIA")
+	var stress := float(row.get("stress", -1.0))
+	var ratio := float(row.get("served_ratio", 0.0))
+	_check("(13) mundo iluminado: stress == 0 e carga servida",
+		absf(stress) <= 1e-9 and ratio > 0.99,
+		"stress=%.12f ratio=%.6f" % [stress, ratio])
+	var diss: Dictionary = _city_status(served, "AGRIA").get(
+		"dissatisfaction", {})
+	var index := float(diss.get("index", -1.0))
+	var base := _components_sum(diss)
+	_check("(13) energia 100% servida: insatisfação == controle sem energia "
+			+ "(soma das 5 componentes, tolerância 1e-9)",
+		absf(index - base) <= 1e-9,
+		"índice=%.12f base=%.12f delta=%.12f" % [index, base, index - base])
+	var region_diss: Dictionary = served.get_region_status("AGRIA").get(
+		"dissatisfaction", {})
+	if region_diss.has("index"):
+		var region_index := float(region_diss.get("index", -1.0))
+		var region_base := _components_sum(region_diss)
+		_check("(13) interior com energia servida: mesmo índice de antes da energia",
+			absf(region_index - region_base) <= 1e-9,
+			"índice=%.12f base=%.12f delta=%.12f comp=%s" % [
+				region_index, region_base, region_index - region_base,
+				str(region_diss.get("components", {}))])
+	else:
+		# O fixture AGRIA/PORTUS não tem bloco de região (B3 não é semeada
+		# aqui): a identidade do interior é coberta pelo b7_informality_test.
+		print("[power] (13) fixture sem bloco de região: identidade do "
+			+ "interior fica com o b7_informality_test")
+
+	var dark_cities := {"AGRIA": _city({}, {}), "PORTUS": _city({}, {})}
+	var dark = _world(_nation(), dark_cities, DAYS_CONSEQUENCE)
+	var dark_row: Dictionary = _power_city(dark, "AGRIA")
+	var dark_stress := float(dark_row.get("stress", 0.0))
+	var dark_diss: Dictionary = _city_status(dark, "AGRIA").get(
+		"dissatisfaction", {})
+	var dark_index := float(dark_diss.get("index", -1.0))
+	var dark_base := _components_sum(dark_diss)
+	var expected_extra := minf(0.20 * dark_stress, 1.0)
+	_check("(13) racionamento ADICIONA o termo de energia ao índice",
+		dark_index > dark_base + 1e-6
+			and absf((dark_index - dark_base) - expected_extra) <= 1e-9,
+		"índice=%.9f base=%.9f extra=%.9f esperado=%.9f"
+			% [dark_index, dark_base, dark_index - dark_base, expected_extra])
+
+
 ## Demanda total da nação do fixture (soma das cidades com dado).
 func _nation_demand(sim: Object) -> float:
 	var total := 0.0
@@ -612,6 +674,16 @@ func _fuel(sim: Object, fuel: String) -> float:
 
 func _city_status(sim: Object, city_id: String) -> Dictionary:
 	return sim.get_city_status(city_id)
+
+
+## Soma das componentes clássicas do índice (a fórmula de antes da energia).
+func _components_sum(diss: Dictionary) -> float:
+	var comp: Dictionary = diss.get("components", {})
+	var total := 0.0
+	for key: String in ["unemployment", "rent", "food", "inflation",
+			"informality"]:
+		total += float(comp.get(key, 0.0))
+	return total
 
 
 func _product_index(sim: Object, product: String) -> int:
