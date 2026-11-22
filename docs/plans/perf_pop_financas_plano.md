@@ -376,15 +376,36 @@ combustíveis (`coal`, `gas`, `oil`, `fuel`, `uranium`, `wood`, `charcoal`, `eth
   próprio de energia e a oferta de minerais calibrada, o portão volta a ≤ 2,5 p.p. por nação.
 
 ### E1 — Dados de potencial e parque instalado
-- **Solar e eólica:** mapa de potencial por província, agregado por cidade (interior). Fontes candidatas:
-  WorldClim 2.1 `srad` e `wind` (mesmo pipeline do clima, mensal → sazonalidade) ou Global Solar Atlas /
-  Global Wind Atlas (mais precisos). Conferir licença antes de usar.
-- **Hídrica:** não há mapa de potencial hoje (só rios do Natural Earth para desenho, e
-  altitude/precipitação por província). Derivar potencial de precipitação × desnível × presença de rio,
-  normalizado pelo potencial técnico nacional de fonte pública.
-- **Parque instalado de 2026:** base pública de usinas (ex.: Global Power Plant Database — usina, fonte,
-  MW, coordenada) para o estado inicial, atribuída à cidade dona da província.
-- Aceite: capacidade instalada e matriz por nação na ordem do dado real; nenhum número inventado.
+- **Decisão do dono (D-115, 2026-11-21):**
+  - **(a) Dono da usina:** a usina em território disputado pertence ao **controlador da cidade/província no mapa do jogo**
+    (`nation` = nação do atlas, não a do GPPD); o ISO3 do GPPD fica em `gppd_country` para rastreio. O total por nação
+    é a soma das cidades do atlas e a usina sem cidade fica fora do agregado, declarada.
+  - **(b) Parque inicial:** GPPD (~2021) como base, **escalonado por nação×fonte** para a matriz Ember 2024–2025
+    (fator declarado). Fonte sem usina no GPPD mas com MW na Ember: distribuir pelas cidades da nação proporcionalmente
+    ao potencial (solar/eólico pelo atlas; hídrico pelo potencial; demais por população, porque indústria por cidade
+    não existe como dado). Arquivos: `power_plants_base_2021_gppd.json` (bruto, `data_year: 2021`) e
+    `power_plants_2026_scaled.json` (escalonado, `data_year: 2026`, alvo 2024–2025).
+  - **(c) Solar/eólica:** Global Solar Atlas (GHI/PVOUT, CC BY 4.0) e Global Wind Atlas (vento/densidade a 100 m,
+    CC BY 4.0), agregados por província/cidade; hídrico sem WorldClim, com CHIRPS (precipitação, domínio público/CC BY
+    4.0), PET CHELSA v2.1 (CC0 1.0, forçante ERA5), ETOPO1 (relevo, domínio público) e rios Natural Earth. Se não houver fonte livre
+    viável, lacuna declarada — **não** usar WorldClim. A dependência pré-existente de `province_nature.json` no
+    WorldClim fica como dívida no §15.
+  - **(d) Óleo:** tentar separar de `other fossil` com OWID (CC BY 4.0) ou EIA (domínio público); se impossível,
+    lacuna declarada. Nenhuma das duas publica capacidade instalada de óleo por país (OWID só geração; EIA só capacidade
+    fóssil agregada + geração de petróleo), então `oil: null` permanece declarado.
+  - **(e) Correção 2 (re-QA t33):** o PET do CGIAR-CSI v3.1 foi **recusado** (derivado do WorldClim 2.1 e
+    “provided for non-commercial use”); entrou **CHELSA v2.1 PET** (WSL, **CC0 1.0**, Penman-Monteith/ERA5,
+    1981–2010). A matriz Ember usa o **último ano com as 9 fontes de capacidade cobertas** (publicadas ou ausentes
+    com última publicação = 0 **dentro da janela 2024–2025**), mesmo sem `Total generation`, com `year_reason` por país — DEU passa a 2025
+    (268,38 GW). O validador tem **lista de bloqueio explícita** de fontes não comerciais + `--selftest-commercial`.
+- **Conflitos de localização (QA):** classificar por causa (`gppd_coord_error`, `deleted_territory`, `border_pixel`,
+  `occupied`). Coordenada errada: corrigir com fonte ou descartar (ex.: ESCOMBRERAS lat 7,5732→37,5732 só com
+  evidência da usina irmã); território deletado: nação-mãe se existir no jogo no mesmo landmass, senão cidade mais
+  próxima, declarando; pixel de fronteira: cidade mais próxima da nação do atlas; ocupado: regra (a).
+- **Invariantes do validador:** `Σ by_city[nação] == by_nation[nação]` (≤0,01 MW) no parque base e no escalonado; e,
+  após o escalonamento, desvio por nação×fonte vs Ember declarado (≤0,01 MW).
+- Aceite: capacidade instalada e matriz por nação na ordem do dado real; nenhum número inventado; lacuna declarada onde
+  não há dado. Evidência: `docs/economy/E1_energy_data.md`; scripts em `tools/data/energy/` e `tools/build_energy_*.py`.
 
 ### E2 — Usinas e geração
 - Usina = construção no **interior** da cidade, com dono (F9), obra física (§15), empregos e custo.
