@@ -840,14 +840,12 @@ trajetória de 60/365 d não mudou):
    `power_nation_a = ""`, `power_nation_b = ""` — chaves aditivas da obra de
    energia escritas para **todas** as 2.413 obras do A0 (o bloco `power` em si
    **não** é gravado sem energia semeada);
-3. `pop.dissatisfaction*` e `region.dissatisfaction*` — o divisor da
-   normalização passou a incluir o peso novo `kDissatisfactionPower = 0,20`,
-   somado mesmo com estresse de energia zero (`sim_constants.h`/
-   `informality.cpp`): **interior 0,50 → 0,70** (índice = 71,4 % do anterior) e
-   **urbano 1,00 → 1,20** (83,3 %). É efeito medido do bloco de energia na
-   insatisfação a estresse 0. O status publicado não carrega as componentes de
-   insatisfação, por isso o `status_sha256` não muda; o `b7_informality_test`
-   pina o divisor antigo (0,50) e fica vermelho — ver §9.9.
+3. `pop.dissatisfaction*` e `region.dissatisfaction*` — na origem deste fechamento
+   o divisor da normalização chegou a incluir o peso novo
+   `kDissatisfactionPower = 0,20`, somado mesmo com estresse de energia zero
+   (`sim_constants.h`/`informality.cpp`): **interior 0,50 → 0,70** (índice =
+   71,4 % do anterior) e **urbano 1,00 → 1,20** (83,3 %). **Corrigido na t106**
+   (§9.10): o peso voltou a ser ADITIVO e o divisor é o antigo.
 
 **Equivalência CLI × Godot:** snapshot do dia 0 (`export_world_snapshot.gd`,
 `--ai=1 --urban=0`, 67.773.105 B) → 10 d com IA, `threads=1`, no Godot
@@ -871,12 +869,57 @@ trajetória de 60/365 d não mudou):
   "save version 37 != 34"); os valores medidos e o round-trip passam.
 - **2 por divisor da insatisfação** (`b7_informality_test`): espera
   informalidade 0,10/0,50 = 0,20 e inflação 0,15/0,50 = 0,30; com o peso de
-  energia o divisor é 0,70 e mede **0,143 e 0,214** (§9.8 item 3). É expectativa
-  defasada do teste, não regressão do E7.
+  energia no divisor o teste media **0,143 e 0,214**. Resolvido na **t106**
+  (§9.10): o divisor voltou a 0,50/1,00 e o teste está verde.
 
 O runner terminou com `OutOfMemoryException` ao gravar o `summary.json` (os 96
 exit codes foram capturados no log e são a base da contagem); a suite já estava
 vermelha antes desta rodada de docs (só docs/JSON foram commitados aqui).
+
+### 9.10 Correção pós-QA t106 — insatisfação sem diluição (D-116)
+
+A D-116 tinha somado `kDissatisfactionPower` (0,20) ao **divisor** da
+insatisfação: interior 0,50 → 0,70 e urbano 1,00 → 1,20, reduzindo a
+insatisfação de base em **28,6 % / 16,7 %** mesmo com energia 100 % servida —
+o sistema amolecia. Correção (HEAD desta rodada):
+
+- `informality.cpp`: o divisor é o **antigo** (comida+inflação+informalidade no
+  interior; +desemprego+aluguel no urbano) e o termo de energia entra
+  **aditivo**: `índice = clamp(base_sem_energia + 0,20 · power_stress, 0, 1)`.
+  Com `power_stress = 0` o índice é **idêntico** ao de antes da energia.
+- `b7_informality_test`: volta a pinar 0,10/0,50 = 0,20 e 0,15/0,50 = 0,30.
+- `e2e3_power_test` (13): mundo iluminado ⇒ `índice == soma das 5 componentes`
+  (tolerância 1e-9); mundo escuro ⇒ `índice − base = 0,20 · stress`.
+  (O fixture AGRIA/PORTUS não tem bloco de região; o interior fica no B7.)
+- Digest D-105 (`core/economy/trajectory_digest.gd`): entram, por dia,
+  geração somada por fonte, carga servida, racionamento (`demanda − servida`),
+  caixa do setor, soma da tarifa de varejo por rede e fluxo de importação
+  (campos 12–17 de `FIELDS`). Sem energia semeada o núcleo publica zeros
+  declarados. Trajetórias de energia diferentes passam a dar sha diferente.
+- `power.cpp`: guarda `plant_city_in_range` (assert + skip determinístico) nas
+  três listas do `phase_power_settle` que indexam `cities[plant.city_index]`;
+  comentários do E5/E7 corrigidos (o importado é ledger `import_value`; o
+  pagamento é a tarifa no caixa global, não débito imediato em `power_cash`).
+
+**Medido:** `e2e3_power_test`, `e5_interconnect_test`, `e7_tariff_test`,
+`b7_informality_test` e `economy_save_load_roundtrip_test` **verdes**. Rodada
+365 d com `--control=c6_gate_base.json` (0 violações, 0 travados):
+
+| Métrica | Valor |
+|---|---:|
+| Falências | 2 (as duas minas PRI-PON/USA, dia 126) |
+| Portão de comida | 95/179 (mediana 0,9698; controle 93) |
+| Conta/PIB | agregada 1,248 % · p50 0,658 % |
+| Carga servida | 99,65 % (mín. 99,61 %) |
+| `trajectory_sha256` | `866113fe…` (17 campos) |
+
+Goldens A0/S0 regerados (o índice de insatisfação voltou ao valor pré-energia
+no save; o **status** global segue idêntico, provando que a trajetória não
+mudou): `A0 ee07fd9c → 2b3b0b6e`, `real_60_ai f0e4fbed → b1774c3f`,
+`real_60_noai 1e36319e → e9c6e473`, `demo_365 d507e0db → e7bf1a25`; cada um
+gerado e reconferido com o mesmo binário (2 rodadas → 0 diferenças).
+Equivalência CLI × Godot (snapshot do dia 0, 10 d, IA, `threads=1`):
+**byte-idênticos**, 79.615.141 B, SHA `1EEDAB08…`, 0 violações.
 
 ## 10. Dívidas declaradas
 
