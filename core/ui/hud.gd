@@ -29,6 +29,10 @@ signal city_focused(city_id: String)
 signal map_mode_requested(mode: String)
 ## Filtro da legenda de recursos: chave -> visível. Vazio = todos.
 signal resource_filter_changed(enabled: Dictionary)
+## Filtro da legenda de energia: fonte -> ligada/desligada (vazio = todas).
+signal energy_filter_changed(enabled: Dictionary)
+## Toggles das camadas opcionais de energia (redes e potencial renovável).
+signal energy_overlay_changed(overlays: Dictionary)
 ## Filtro por modal da legenda de rotas: terrestre / marítimo.
 signal trade_filter_changed(land: bool, sea: bool)
 ## Clique no minimapa: ponto do mapa em UV (0..1).
@@ -103,10 +107,11 @@ const SCREEN_ICONS := {
 ## Modos de camada do mapa. As abas ficam junto ao minimapa (canto inferior
 ## direito); população/economia/indústria continuam no mapa, mas sem botão por
 ## enquanto.
-const MAP_MODES := ["political", "resources", "routes"]
+const MAP_MODES := ["political", "resources", "energy", "routes"]
 const MODE_ICONS := {
 	"political": preload("res://assets/ui/map_mode_political.png"),
 	"resources": preload("res://assets/ui/map_mode_resources.png"),
+	"energy": preload("res://assets/icons/illustrated/places/power_solar.png"),
 	"routes": preload("res://assets/icons/products/truck.svg"),
 }
 ## Ícones dos quatro indicadores da barra superior (paleta C). wheat/truck são
@@ -123,8 +128,7 @@ const BELL_TEXTURE: Texture2D = preload("res://assets/icons/bell.svg")
 ## tools/build_resource_map.py (map/map_data/atlas/resource_points.json).
 const RESOURCE_KEYS := ["coal", "copper", "gas", "iron", "oil",
 		"bauxite", "lead", "gold", "phosphate", "tungsten",
-		"rare_earths", "sulfur", "diamond", "uranium"]
-## Renováveis na MESMA ordem do CROP_KEYS do map_mode_layer.gd (índice no ponto).
+		"rare_earths", "sulfur", "diamond", "uranium"]## Renováveis na MESMA ordem do CROP_KEYS do map_mode_layer.gd (índice no ponto).
 const RENEWABLE_KEYS := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
 const RESOURCE_LEGEND := [
 	{"key": "coal", "color": Color("#3E3B38")},
@@ -149,6 +153,38 @@ const RESOURCE_LEGEND := [
 	{"key": "cotton", "color": Color("#E8E0D0")},
 	{"key": "wood", "color": Color("#5B8C5A")},
 ]
+## Fontes de POTENCIAL renovável (ícones power_* ilustrados). A legenda filtra
+## por fonte; a camada de calor opcional usa as mesmas cores.
+const ENERGY_SOURCES := ["solar", "wind", "hydro"]
+const ENERGY_LEGEND := [
+	{"key": "solar", "color": Color("#E8B028")},
+	{"key": "wind", "color": Color("#6F8F8C")},
+	{"key": "hydro", "color": Color("#6FA8DC")},
+]
+## Classes do potencial (limiares p25/p50/p75 declarados em map_mode_layer.gd).
+const ENERGY_CLASSES := ["excellent", "good", "medium", "weak"]
+## Cor e piso de px de TELA por classe: a MESMA tabela de
+## map/map_mode_layer.gd (ENERGY_CLASS_COLORS / ENERGY_CLASS_MIN_PX). A legenda
+## desenha a amostra com esta cor e esta proporção de tamanho.
+const ENERGY_CLASS_COLORS := {
+	"excellent": Color("#3F8F43"), "good": Color("#A9C24B"),
+	"medium": Color("#D99A2B"), "weak": Color("#8C8C8C"),
+}
+const ENERGY_CLASS_MIN_PX := {
+	"excellent": 36, "good": 31, "medium": 26, "weak": 22,
+}
+const ENERGY_SWATCH_COLORS := {
+	"solar": Color("#E8B028"), "wind": Color("#6F8F8C"),
+	"hydro": Color("#6FA8DC"),
+}
+const ENERGY_RENEWABLE_PATH := \
+		"res://data/definitions/energy/renewable_potential.json"
+const ENERGY_HYDRO_PATH := "res://data/definitions/energy/hydro_potential.json"
+const CONNECTION_SWATCH_COLOR := Color("#6F8F5F")
+const HEAT_SWATCH_COLORS := {
+	"solar": Color("#E8B028"), "wind": Color("#6F8F8C"),
+	"hydro": Color("#6FA8DC"),
+}
 ## Cores das setas de comércio no modo rotas (mesmas de map/trade_flow_layer.gd).
 const ROUTE_LAND_COLOR := Color("#C9A24A")
 const ROUTE_SEA_COLOR := Color("#6F8F8C")
@@ -237,6 +273,17 @@ var _resource_enabled := {}
 var _resource_counts := {}
 var _resource_checks := {}
 var _resource_rows := {}
+## Estado da legenda de energia: filtro por fonte, contagens do parque e os
+## toggles das camadas opcionais (redes/potencial), desligados por padrão.
+var _energy_enabled := {}
+var _energy_counts := {}
+var _energy_checks := {}
+var _energy_rows := {}
+var _energy_overlay_checks := {}
+var _energy_overlay := {"grid": false, "solar": false, "wind": false, "hydro": false}
+## Fonte cujo calor foi ligado AUTOMATICAMENTE pelo filtro de fonte única. Não
+## sobrevive à troca do filtro nem por cima de uma escolha manual do jogador.
+var _energy_auto_heat := ""
 var _mode := "political"
 
 ## Legenda do modo rotas: filtro por modal, amostras e números reais do mapa
@@ -496,7 +543,7 @@ func _refresh_mode_bar() -> void:
 	if _minimap != null:
 		_minimap.set_active_mode(_mode)
 	if _legend != null:
-		var show_legend := _mode in ["resources", "routes"]
+		var show_legend := _mode in ["resources", "energy", "routes"]
 		_legend.visible = show_legend
 		_legend.mouse_filter = Control.MOUSE_FILTER_STOP if show_legend \
 				else Control.MOUSE_FILTER_IGNORE
@@ -531,7 +578,7 @@ func _build_legend() -> void:
 	margin.add_child(_legend_box)
 
 	_render_legend_filters()
-	_legend.visible = _mode in ["resources", "routes"]
+	_legend.visible = _mode in ["resources", "energy", "routes"]
 	if not _legend.visible:
 		_legend.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -648,12 +695,427 @@ func _render_legend_filters() -> void:
 	_fit_legend()
 
 
+# --- Mapa de energia: legenda, ficha e filtros (E6) -------------------------
+
+## Etiqueta do mapa de energia: a MESMA "Etiqueta de inventário" do mapa de
+## recursos, mas o dado é o POTENCIAL renovável por cidade (solar/eólica/
+## hídrica), com filtro por fonte, a régua de classes (p25/p50/p75) e os
+## toggles das camadas opcionais (redes e calor por fonte).
+func _render_energy_legend() -> void:
+	if _legend_box == null:
+		return
+	_legend_state = "energy"
+	_clear_legend_content()
+
+	# O subtítulo soma os sítios: carregar as contagens ANTES do cabeçalho.
+	if _energy_counts.is_empty():
+		_energy_counts = _energy_counts_from_file()
+	_legend_header("", I18n.t("map.legend.kind.energy"), _energy_subtitle(),
+			null, "all")
+	var body := _legend_paper_sheet()
+	var body_box := VBoxContainer.new()
+	body_box.add_theme_constant_override("separation", 2)
+	body.add_child(body_box)
+	_legend_box.add_child(body)
+
+	if _energy_enabled.is_empty():
+		for entry in ENERGY_LEGEND:
+			_energy_enabled[String(entry["key"])] = true
+	for entry in ENERGY_LEGEND:
+		var key := String(entry["key"])
+		var row := _make_energy_row(key, entry["color"])
+		body_box.add_child(row)
+		_energy_rows[key] = row
+
+	body_box.add_child(_legend_section_title(I18n.t("map.legend.energy.classes")))
+	for class_key in ENERGY_CLASSES:
+		body_box.add_child(_energy_class_row(class_key))
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.energy.thresholds"), "", false))
+
+	body_box.add_child(_legend_section_title(I18n.t("map.legend.energy.layers")))
+	for kind in ["grid", "solar", "wind", "hydro"]:
+		body_box.add_child(_make_energy_overlay_row(kind))
+
+	_legend_hint = _legend_footer(I18n.t("map.legend.energy.hint"))
+	body_box.add_child(_legend_hint)
+	_refresh_energy_rows()
+	_fit_legend()
+
+
+func _energy_subtitle() -> String:
+	var sites := 0
+	for key: Variant in _energy_counts:
+		sites += int((_energy_counts[key] as Dictionary).get("sites", 0))
+	if sites <= 0:
+		return I18n.t("map.legend.energy.empty")
+	return I18n.t("map.legend.energy.potential_subtitle", {
+		"sites": sites,
+		"sources": ENERGY_LEGEND.size(),
+	})
+
+
+## Linha de CLASSE com amostra do mapa: disco na cor da classe e diâmetro
+## proporcional ao piso em px de tela; o valor à direita repete o piso.
+func _energy_class_row(class_key: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6.0)
+	var min_px := int(ENERGY_CLASS_MIN_PX.get(class_key, 22))
+	row.add_child(EnergyClassSample.new(
+			ENERGY_CLASS_COLORS.get(class_key, Color("#8C8C8C")),
+			float(min_px)))
+	var label := UiKit.label(I18n.t("energy.class." + class_key),
+			UiKit.FS_SMALL, UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(label)
+	row.add_child(DottedLeader.new())
+	var value := UiKit.label(I18n.t("map.legend.energy.class_min_px",
+			{"px": min_px}), UiKit.FS_SMALL, UiKit.TINTA_SUAVE)
+	value.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(value)
+	return row
+
+
+## Textura power_* da fonte (arte própria do projeto).
+static func _energy_texture(source: String) -> Texture2D:
+	return ProductIcons.place_texture("power_" + source, 32.0)
+
+
+## Cidades com dado por fonte (fallback da legenda na captura; no jogo o mapa
+## publica a contagem real via `set_energy_counts`).
+func _energy_counts_from_file() -> Dictionary:
+	var counts := {}
+	for key in ENERGY_SOURCES:
+		counts[key] = {"sites": 0}
+	var renewable: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(ENERGY_RENEWABLE_PATH))
+	if typeof(renewable) == TYPE_DICTIONARY:
+		var rows: Dictionary = (renewable as Dictionary).get("by_city", {})
+		for row: Variant in rows.values():
+			var solar: Dictionary = (row as Dictionary).get("solar", {})
+			var wind: Dictionary = (row as Dictionary).get("wind", {})
+			if _json_number(solar.get("pvout_kwh_kwp_year")) > 0.0:
+				_bump_energy_count(counts, "solar")
+			if _json_number(wind.get("power_density_w_m2")) > 0.0:
+				_bump_energy_count(counts, "wind")
+	var hydro: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(ENERGY_HYDRO_PATH))
+	if typeof(hydro) == TYPE_DICTIONARY:
+		var rows: Dictionary = (hydro as Dictionary).get("by_city", {})
+		for row: Variant in rows.values():
+			if _json_number((row as Dictionary).get("potential_mw")) > 0.0:
+				_bump_energy_count(counts, "hydro")
+	return counts
+
+
+## JSON traz `null` onde o dado falta; `float(null)` estoura no GDScript.
+static func _json_number(value: Variant) -> float:
+	if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+		return float(value)
+	return 0.0
+
+
+static func _bump_energy_count(counts: Dictionary, source: String) -> void:
+	var row: Dictionary = counts.get(source, {"sites": 0})
+	row["sites"] = int(row["sites"]) + 1
+	counts[source] = row
+
+
+## Contagens reais do mapa (chamado pelo jogo; a captura usa o arquivo).
+func set_energy_counts(counts: Dictionary) -> void:
+	if counts.is_empty():
+		return
+	var converted := {}
+	for source in ENERGY_SOURCES:
+		converted[source] = {"sites": int(counts.get(source, 0))}
+	_energy_counts = converted
+	if _legend_state == "energy":
+		_render_energy_legend()
+
+
+func _make_energy_row(key: String, color: Color) -> Button:
+	var button := Button.new()
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(180.0, 24.0)
+	button.add_theme_stylebox_override("normal",
+			UiKit.flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0.0))
+	button.add_theme_stylebox_override("hover",
+			UiKit.surface(Color(UiKit.MANILA, 0.22), 2.0))
+	button.add_theme_stylebox_override("pressed",
+			UiKit.surface(Color(UiKit.MANILA, 0.38), 2.0))
+	button.pressed.connect(func() -> void: _toggle_energy(key))
+
+	var row := HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 2.0
+	row.offset_right = -2.0
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 6)
+	button.add_child(row)
+
+	var stamp := LegendStamp.new()
+	row.add_child(stamp)
+	_energy_checks[key] = stamp
+	row.add_child(LegendResourceIcon.new(color, _energy_texture(key)))
+
+	var label := UiKit.label(I18n.t("energy." + key), UiKit.FS_SMALL, UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
+	row.add_child(DottedLeader.new())
+
+	var row_data: Dictionary = _energy_counts.get(key, {"sites": 0})
+	var count := UiKit.label(str(int(row_data.get("sites", 0))),
+			UiKit.FS_SMALL, UiKit.TINTA_SUAVE)
+	count.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(count)
+	return button
+
+
+## Toggle de camada opcional (redes / potencial). Desligado por padrão; o
+## mapa só paga a camada quando ela está ligada.
+func _make_energy_overlay_row(kind: String) -> Button:
+	var button := Button.new()
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(180.0, 22.0)
+	button.add_theme_stylebox_override("normal",
+			UiKit.flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0.0))
+	button.add_theme_stylebox_override("hover",
+			UiKit.surface(Color(UiKit.MANILA, 0.22), 2.0))
+	button.add_theme_stylebox_override("pressed",
+			UiKit.surface(Color(UiKit.MANILA, 0.38), 2.0))
+	button.pressed.connect(func() -> void: _toggle_energy_overlay(kind))
+	var row := HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 2.0
+	row.offset_right = -2.0
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 6)
+	button.add_child(row)
+	var stamp := LegendStamp.new()
+	row.add_child(stamp)
+	_energy_overlay_checks[kind] = stamp
+	if kind == "grid":
+		row.add_child(LegendSwatch.new(CONNECTION_SWATCH_COLOR, false))
+	else:
+		row.add_child(LegendSwatch.new(HEAT_SWATCH_COLORS.get(kind, UiKit.TINTA),
+				false))
+	var label := UiKit.label(I18n.t("map.legend.energy.layer." + kind),
+			UiKit.FS_SMALL, UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
+	return button
+
+
+func _toggle_energy(key: String) -> void:
+	_energy_enabled[key] = not bool(_energy_enabled.get(key, true))
+	_sync_energy_auto_heat()
+	_refresh_energy_rows()
+	energy_filter_changed.emit(_energy_enabled.duplicate())
+
+
+func _toggle_energy_overlay(kind: String) -> void:
+	_energy_overlay[kind] = not bool(_energy_overlay.get(kind, false))
+	# Escolha manual do jogador manda: o automático não religa depois.
+	if kind == _energy_auto_heat:
+		_energy_auto_heat = ""
+	_refresh_energy_rows()
+	_emit_energy_overlay()
+
+
+## Com UMA fonte filtrada o calor dela entra sozinho (opacidade baixa, pedida
+## na camada). Ao voltar a duas ou mais fontes, desliga só o que foi automático.
+func _sync_energy_auto_heat() -> void:
+	var only := ""
+	var count := 0
+	for key: String in ENERGY_SOURCES:
+		if bool(_energy_enabled.get(key, true)):
+			count += 1
+			only = key
+	if count != 1:
+		only = ""
+	if not _energy_auto_heat.is_empty() and _energy_auto_heat != only:
+		if _energy_auto_heat != "" \
+				and bool(_energy_overlay.get(_energy_auto_heat, false)):
+			_energy_overlay[_energy_auto_heat] = false
+		_energy_auto_heat = ""
+	if only.is_empty() or bool(_energy_overlay.get(only, false)):
+		return
+	_energy_overlay[only] = true
+	_energy_auto_heat = only
+	_emit_energy_overlay()
+
+
+## Estado enviado ao mapa: os toggles + a fonte cujo calor é automático
+## (`auto`), para a camada desenhar esse calor em opacidade baixa.
+func _emit_energy_overlay() -> void:
+	var state := _energy_overlay.duplicate()
+	state["auto"] = _energy_auto_heat
+	energy_overlay_changed.emit(state)
+
+
+func _select_all_energy() -> void:
+	var all_on := true
+	for key in _energy_enabled:
+		if not bool(_energy_enabled[key]):
+			all_on = false
+			break
+	for key in _energy_enabled:
+		_energy_enabled[key] = not all_on
+	_sync_energy_auto_heat()
+	_refresh_energy_rows()
+	energy_filter_changed.emit(_energy_enabled.duplicate())
+	legend_reset_requested.emit()
+
+
+func _refresh_energy_rows() -> void:
+	for key: Variant in _energy_rows:
+		var enabled := bool(_energy_enabled.get(key, true))
+		var row: Button = _energy_rows[key]
+		var stamp: LegendStamp = _energy_checks.get(key)
+		if stamp != null:
+			stamp.set_on(enabled)
+		row.modulate = Color(1, 1, 1, 1.0 if enabled else 0.42)
+	for kind: Variant in _energy_overlay_checks:
+		var stamp: LegendStamp = _energy_overlay_checks[kind]
+		if stamp != null:
+			stamp.set_on(bool(_energy_overlay.get(kind, false)))
+	_refresh_all_button()
+
+
+## Ficha do sítio/agregado clicado: valor do recurso e classe, quanto do parque
+## atual já está construído e, no hídrico, o disponível (potencial - construído).
+func show_energy_info(info: Dictionary) -> void:
+	if _legend_box == null or info.is_empty():
+		return
+	_legend_state = "energy_info"
+	_legend_data = info
+	_clear_legend_content()
+
+	var source_key := String(info.get("source", "solar"))
+	var source := I18n.t("energy." + source_key)
+	var aggregate := bool(info.get("aggregate", false))
+	var city_id := String(info.get("city_id", ""))
+	var city := I18n.city_name(city_id, String(info.get("city", "")))
+	var nation := String(info.get("nation", ""))
+	var nation_name := I18n.nation_name(nation) if not nation.is_empty() else ""
+	var class_label := I18n.t("energy.class." + String(info.get("class", "weak")))
+	var title := I18n.t("map.legend.energy.site_name",
+			{"source": source, "city": city})
+	if aggregate:
+		title = I18n.t("map.legend.energy.aggregate_name", {
+			"n": int(info.get("count", 0)),
+			"source": source,
+			"nation": nation_name,
+		})
+	_legend_header("", title, source, null, "back")
+
+	var body := _legend_paper_sheet()
+	var body_box := VBoxContainer.new()
+	body_box.add_theme_constant_override("separation", 3)
+	body.add_child(body_box)
+	_legend_box.add_child(body)
+
+	body_box.add_child(_energy_legend_row(source_key,
+			I18n.t("map.legend.energy.potential"),
+			_format_potential(float(info.get("value", 0.0)),
+					String(info.get("unit", "")))))
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.energy.class"), class_label, false))
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.energy.built"),
+			_format_power(float(info.get("built_mw", 0.0))), false))
+	var available := float(info.get("available_mw", -1.0))
+	if source_key == "hydro" and available >= 0.0:
+		body_box.add_child(_legend_row(Color.TRANSPARENT,
+				I18n.t("map.legend.energy.available"),
+				_format_power(available), false))
+	else:
+		body_box.add_child(_legend_row(Color.TRANSPARENT,
+				I18n.t("map.legend.energy.available"),
+				I18n.t("map.legend.energy.available_resource",
+						{"class": class_label}), false))
+	if aggregate:
+		body_box.add_child(_legend_row(Color.TRANSPARENT,
+				I18n.t("map.legend.energy.sites"),
+				str(int(info.get("count", 0))), false))
+	if not city.is_empty():
+		body_box.add_child(_legend_row(Color.TRANSPARENT,
+				I18n.t("map.legend.energy.city"), city, false))
+	if not nation_name.is_empty():
+		body_box.add_child(_legend_row(Color.TRANSPARENT,
+				I18n.t("map.legend.energy.nation"), nation_name, false))
+	_legend_hint = _legend_footer(I18n.t("map.legend.energy.detail_hint"))
+	body_box.add_child(_legend_hint)
+	_legend.visible = true
+	_fit_legend()
+
+
+## Linha de dados com o ícone power_* da fonte no lugar do swatch de cor.
+func _energy_legend_row(source: String, text: String,
+		detail: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6.0)
+	row.add_child(LegendResourceIcon.new(
+			ENERGY_SWATCH_COLORS.get(source, UiKit.TINTA),
+			_energy_texture(source)))
+	var label := UiKit.label(text, UiKit.FS_SMALL, UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(label)
+	row.add_child(DottedLeader.new())
+	var value := UiKit.label(detail, UiKit.FS_SMALL, UiKit.TINTA)
+	value.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(value)
+	return row
+
+
+## Valor do recurso com a unidade declarada (kWh/kWp/ano, W/m² ou MW).
+func _format_potential(value: float, unit: String) -> String:
+	var text := ""
+	if unit == "MW":
+		text = _format_power(value)
+	else:
+		var decimals := 1 if unit == "W/m²" else 0
+		text = UiKit.number(value, decimals) + " " + unit
+	return text
+
+
+## Potência legível: GW acima de 1.000 MW, senão MW (1 decimal abaixo de 10).
+func _format_power(mw: float) -> String:
+	if mw >= 1000.0:
+		return "%.1f GW" % (mw / 1000.0)
+	if mw >= 10.0:
+		return "%d MW" % int(round(mw))
+	return "%.1f MW" % mw
+
+
 ## Limpa o conteúdo da etiqueta e zera as referências dos widgets.
 func _clear_legend_content() -> void:
 	UiKit.clear(_legend_box)
 	_legend_labels.clear()
 	_resource_checks.clear()
 	_resource_rows.clear()
+	_energy_checks.clear()
+	_energy_rows.clear()
+	_energy_overlay_checks.clear()
 	_route_checks.clear()
 	_route_rows.clear()
 	_legend_title = null
@@ -674,9 +1136,11 @@ func show_general_legend() -> void:
 	if _legend_box != null:
 		if _mode == "routes":
 			_render_routes_legend()
+		elif _mode == "energy":
+			_render_energy_legend()
 		else:
 			_render_legend_filters()
-		_legend.visible = _mode in ["resources", "routes"]
+		_legend.visible = _mode in ["resources", "energy", "routes"]
 		_legend.mouse_filter = Control.MOUSE_FILTER_STOP if _legend.visible \
 				else Control.MOUSE_FILTER_IGNORE
 
@@ -728,7 +1192,7 @@ func _legend_header(kind: String, title: String, subtitle: String,
 		"all":
 			_legend_all = _legend_check_all_button()
 			_legend_all.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			_legend_all.pressed.connect(_select_all_resources)
+			_legend_all.pressed.connect(_on_legend_all_pressed)
 			title_row.add_child(_legend_all)
 		"back":
 			_legend_back = _legend_back_button()
@@ -1388,6 +1852,14 @@ func _select_all_resources() -> void:
 	legend_reset_requested.emit()
 
 
+## "Todos" do cabeçalho despacha para o filtro do modo ativo (recursos/energia).
+func _on_legend_all_pressed() -> void:
+	if _mode == "energy":
+		_select_all_energy()
+	else:
+		_select_all_resources()
+
+
 ## "Voltar" para a lista: limpa a seleção no mapa e restaura os filtros.
 func _on_legend_back() -> void:
 	legend_reset_requested.emit()
@@ -1411,10 +1883,11 @@ func _refresh_resource_rows() -> void:
 func _refresh_all_button() -> void:
 	if _legend_all == null or _legend_all_glyph == null:
 		return
+	var filters := _energy_enabled if _mode == "energy" else _resource_enabled
 	var all_on := true
 	var any_on := false
-	for key in _resource_enabled:
-		if bool(_resource_enabled[key]):
+	for key in filters:
+		if bool(filters[key]):
 			any_on = true
 		else:
 			all_on = false
@@ -1622,11 +2095,15 @@ func _refresh_legend() -> void:
 			show_deposit_info(_legend_data)
 		"agriculture":
 			show_deposit_info(_legend_data)
+		"energy_info":
+			show_energy_info(_legend_data)
 		"city":
 			show_city_resources(String(_legend_data.get("city_id", "")),
 					_legend_city_entries)
 		"routes":
 			_render_routes_legend()
+		"energy":
+			_render_energy_legend()
 		_:
 			_render_legend_filters()
 
@@ -1639,6 +2116,8 @@ func _set_map_mode(mode: String) -> void:
 	if _legend_box != null:
 		if mode == "resources":
 			_render_legend_filters()
+		elif mode == "energy":
+			_render_energy_legend()
 		elif mode == "routes":
 			_render_routes_legend()
 	map_mode_requested.emit(mode)
@@ -3416,6 +3895,32 @@ class LegendFlowSample extends Control:
 			Vector2(tip_x - 5.0, y + 3.5),
 		])
 		draw_colored_polygon(head, _color)
+
+
+## Amostra de CLASSE do mapa de energia: disco na cor da classe com aro de
+## tinta e um miolo claro (o mesmo desenho do disco aceso sob o power_* no mapa).
+## O diâmetro é proporcional ao piso de tela da classe, reduzido para caber na
+## caixa da legenda (22 px -> 14, 36 px -> ~23): lê-se a diferença de tamanho e
+## a cor sem abrir a ficha.
+class EnergyClassSample extends Control:
+	const BOX := 24.0
+	var _color: Color
+	var _diameter: float
+
+	func _init(color: Color, min_px: float) -> void:
+		_color = color
+		_diameter = clampf(min_px * 0.64, 12.0, BOX - 1.0)
+		custom_minimum_size = Vector2(BOX, BOX)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var center := size * 0.5
+		var radius := _diameter * 0.5
+		draw_circle(center, radius, _color)
+		draw_arc(center, radius, 0.0, TAU, 32, UiKit.TINTA, 1.0, true)
+		draw_arc(center, radius * 0.5, 0.0, TAU, 24,
+				Color(UiKit.PAPEL, 0.9), 1.1, true)
 
 
 ## Amostra de cor (círculo para mineral, losango para renovável) — espelha o

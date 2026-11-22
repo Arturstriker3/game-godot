@@ -63,6 +63,8 @@ func _ready() -> void:
 	Economy.speed_changed.connect(_on_speed_changed)
 	_on_speed_changed(Economy.speed)
 	hud.resource_filter_changed.connect(city_world.set_resource_filter)
+	hud.energy_filter_changed.connect(city_world.set_energy_filter)
+	hud.energy_overlay_changed.connect(city_world.set_energy_overlays)
 	hud.trade_filter_changed.connect(_on_trade_filter_changed)
 	Economy.status_updated.connect(_on_status_updated)
 	city_world.territory_changed.connect(_on_territory_changed)
@@ -267,6 +269,10 @@ func _on_map_mode_requested(mode: String) -> void:
 		hud.clear_tooltip()
 	city_world.set_nation_highlight("")
 	city_world.set_mode(mode)
+	if mode == "energy" and hud != null:
+		# Contagem de sítios com dado por fonte (legenda), sem o HUD reparsear os
+		# arquivos de potencial.
+		hud.set_energy_counts(city_world.energy_source_counts())
 
 
 ## Esc com seleção no mapa desseleciona e consome o evento; o menu de pausa só
@@ -344,6 +350,24 @@ func _handle_map_click(mouse: Vector2) -> bool:
 	if player == null or city_world == null or hud == null:
 		return false
 	var camera: Camera3D = player.camera
+	# Mapa de energia: clique no sítio (ou no agregado) mostra a ficha na legenda.
+	if hud.map_mode() == "energy":
+		var marker: int = city_world.pick_energy_marker(mouse, camera)
+		if marker >= 0:
+			GameCursor.set_city_hover(false)
+			if city_world.selected_energy_marker() == marker:
+				city_world.set_energy_selected(-1)
+				city_world.set_deposit_selected(-1)
+				hud.show_general_legend()
+			else:
+				city_world.select_city("")
+				city_world.set_deposit_selected(-1)
+				city_world.set_energy_selected(marker)
+				hud.show_energy_info(city_world.energy_marker_info(marker))
+			return true
+		# Clique fora do sítio limpa o anel E volta a legenda geral (filtros).
+		city_world.clear_selection()
+		hud.show_general_legend()
 	# Mapa de recursos: clique no depósito mostra a ficha na legenda.
 	if hud.map_mode() == "resources":
 		var deposit: int = city_world.pick_deposit(mouse, camera)
@@ -426,6 +450,7 @@ func _update_city_hover_at(mouse: Vector2) -> void:
 		_last_nation_hover = ""
 		city_world.set_nation_highlight("")
 		city_world.set_deposit_hover(-1)
+		city_world.set_energy_hover(-1)
 		GameCursor.set_state(dragging, "")
 		return
 	if player == null:
@@ -436,9 +461,19 @@ func _update_city_hover_at(mouse: Vector2) -> void:
 	if nation_hover != _last_nation_hover:
 		_last_nation_hover = nation_hover
 		city_world.set_nation_highlight(nation_hover)
-	# Cidade, porto e jazida são clicáveis em TODOS os modos: o hover sempre vira
-	# mão (nunca o I-beam de texto). No mapa de recursos a jazida tem prioridade
-	# (badge sobre o ponto e clique abre a ficha do depósito na legenda).
+	# Cidade, porto, sítio de energia e jazida são clicáveis em TODOS os modos: o
+	# hover sempre vira mão (nunca o I-beam de texto). No mapa de energia o sítio
+	# tem prioridade; no de recursos, a jazida.
+	if hud.map_mode() == "energy":
+		var marker: int = city_world.pick_energy_marker(mouse, player.camera)
+		if marker >= 0:
+			if not _last_hover.is_empty():
+				_last_hover = ""
+				city_world.set_hover("")
+			city_world.set_energy_hover(marker)
+			GameCursor.set_state(false, "energy")
+			return
+		city_world.set_energy_hover(-1)
 	if hud.map_mode() == "resources":
 		var deposit: int = city_world.pick_deposit(mouse, player.camera)
 		if deposit >= 0:

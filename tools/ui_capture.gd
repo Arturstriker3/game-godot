@@ -384,9 +384,17 @@ func _capture_icons(size_text: String) -> void:
 			func() -> void: _production_tab("chain"))
 	await _capture_state(directory, width, height, "04_resource_legend",
 			_show_resource_legend)
+	await _capture_state(directory, width, height, "05_energy_legend",
+			_show_energy_legend)
 	_hud.set_map_mode("political")
 	await get_tree().process_frame
 	_reset_ui()
+
+
+## Fecha a janela e abre a legenda de energia do mapa (modo energia).
+func _show_energy_legend() -> void:
+	_close_window()
+	_hud.set_map_mode("energy")
 
 
 ## Fecha a janela e abre a legenda de recursos do mapa (modo recursos).
