@@ -145,7 +145,9 @@ Regressão coberta: `economy_save_load_roundtrip_test`, `economy_integration_tes
 Rodada canônica: `godot --headless --path . --script res://tools/c1_world_ai_365.gd --
 --days=365 --out=res://docs/economy/perf/c1_world_ai_365_e2e3.json`
 (365 d, threads=1, ~240 s, saída `docs/economy/perf/c1_world_ai_365_e2e3.json`).
-"Antes" = `docs/economy/perf/c1_world_ai_365.json` (mesmo mundo, sem energia ligada).
+"Antes" = `docs/economy/perf/c1_world_ai_365.json` (mundo sem energia ligada, medido
+antes da E2/E3). O controle **no mesmo commit** da E2/E3 está no §6.1 (2 falências,
+93/179): a referência antiga é de um commit anterior e não isola só a energia.
 
 | Métrica | Antes (sem energia) | Depois (E2/E3) | Portão |
 |---|---:|---:|---|
@@ -208,6 +210,51 @@ diagnóstico, sem merge/push:
    vizinhas com fronteira terrestre, `land_borders.json` já no repositório) e/ou E7
    (tarifa regulada da distribuidora), que são as alavancas que o plano prevê para a
    falta. Sem elas, o mundo base não fecha o portão com energia ligada.
+
+### 6.1 Calibração da demanda (pós-QA t67) — medida, portão ainda REPROVA
+
+A curva de demanda foi reajustada por dado, não por chute (§3 e
+`meta.demand_calibration` em `power_params.json`): OLS log-log da demanda Ember por
+pessoa/dia contra o índice de renda, descontando acesso e perdas T&D (os termos que
+`sim/power.cpp` aplica). n=135, R²=0,681, expoente **0,912238** e âncora
+**7,93828 kWh/pessoa/dia** (eram 9,0 e 1,0). Foram excluídas 40 nações com Ember
+< 1,37 kWh/pessoa/dia (cobertura fraca), com regra e lista no JSON; não há série
+pública de clima/indústria no repositório independente da renda (o emprego
+industrial das demais nações é estimado a partir do próprio índice), então não
+entrou termo adicional. Preço de escassez, VOLL, fatores de produção, insatisfação,
+perdas e racionamento **não** mudaram.
+
+Rodada 365 no mesmo commit, adicionando a curva nova (e controle sem energia):
+
+| Métrica | Sem energia (controle) | Curva antiga | Curva calibrada | Portão |
+|---|---:|---:|---:|---|
+| Falências | 2 | 5 | **3** | ≤ 2 — REPROVA |
+| Violações de invariante | 0 | 0 | 0 | 0 |
+| Portão de comida (abaixo de 0,975) | 93/179 | 124/179 | **124/179** | ≤ 93 (meta ≤ 86) — REPROVA |
+| Preço médio ponderado (XGS/MWh) | — | 6,46 | 4,67 | — |
+| Demanda servida (média / mínima diária) | — | 94,1 / 93,5 % | 96,2 / 95,9 % | — |
+| Redes com racionamento no fecho | — | 69/148 | 56/148 | — |
+| Demanda total (TWh/dia) | — | 25,2 | 21,3 | — |
+| Demanda modelada / Ember (mediana; p90, 147 redes) | — | 1,21; 2,23 | 1,08; 1,97 | — |
+| Nações com disponibilidade < demanda | — | 87 | **76** | — |
+
+O controle sem energia (mesmo commit, `PowerService` desligado) dá 2 falências e
+93/179 — ou seja, o gate já está no limite do regulamento sem energia, e a E2/E3
+acrescenta 1 falência e 31 nações. Das 36 nações que cruzam o portão com a curva
+nova, 30 têm racionamento (rede nacional ou cidade isolada por acesso < 60 %), 5
+têm rede sem racionamento e cruzam por efeito geral com perda ≤ 0,05, e SAH (sem
+dado de energia) cruza só por efeito geral (0,32).
+
+Diagnóstico (não é amolecimento): a curva de 2 parâmetros corrige a mediana, mas
+não os outliers de renda alta e consumo baixo — GBR 1,57×, SGP 1,33× e DEU 1,30×
+o Ember; no mesmo PIB PPP pc o consumo real varia de 12 a 36 kWh/pessoa/dia por
+clima, indústria e preço, que o modelo não tem. Dos 76 déficits, ~35 são
+estruturais (importadores reais sem E5 e cidades isoladas pelo corte de acesso) e
+os demais incluem as 40 nações de cobertura fraca excluídas do ajuste (YEM, NGA…),
+cujo índice herda a mediana regional (YEM não tem PIB em `nations.json`). Conclusão:
+**parar aqui**, sem tocar em consequência; a alavanca continua sendo E5 e/ou dado
+de demanda por nação (E4).
+
 
 
 ## 7. Dívidas declaradas
