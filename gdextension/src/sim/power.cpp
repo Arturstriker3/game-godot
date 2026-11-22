@@ -2317,14 +2317,32 @@ void SimCore::phase_power() {
 					continue;
 				}
 				const double mw = std::min(wanted, headroom);
-				// D-122: a IA compara o custo por MW FIRME, não o capex bruto.
-				// Renovável é caro de construir e entrega pouco no pico
-				// (crédito de capacidade baixo); a térmica é barata de
-				// construir e despachável — a troca que o dono pediu.
+				// D-122: a IA compara o custo do PRIMEIRO ANO por MW FIRME:
+				// capex da obra + combustível declarado ao preço do mercado
+				// local (com prêmio de importação quando falta estoque),
+				// dividido pelo crédito de capacidade no pico. Renovável é caro
+				// de construir e entrega pouco no pico; a térmica é barata de
+				// construir mas paga combustível — a troca do dono, explícita.
+				double fuel_year = 0.0;
+				if (params.fuel_t_per_mwh[fuel] > 0.0) {
+					const int product = fuel_product_of(ws, fuel);
+					if (product >= 0 && product < ws.products) {
+						double price = city.markets[product].price;
+						if (price <= 0.0) {
+							price = base_price(product);
+						}
+						const bool local =
+							city.markets[product].stock > 1e-9;
+						fuel_year = params.fuel_t_per_mwh[fuel] * price
+							* (local ? 1.0 : params.fuel_import_premium)
+							* 8760.0
+							* std::clamp(params.cf[fuel], 0.0, 1.0);
+					}
+				}
 				const double credit = std::max(0.05,
 					power_capacity_credit(params, fuel));
-				const double cost = mw
-					* power_new_capex_per_mw(params, fuel) / credit;
+				const double cost = mw * (power_new_capex_per_mw(params, fuel)
+					+ fuel_year) / credit;
 				if (best_fuel < 0 || cost < best_cost) {
 					best_fuel = fuel;
 					best_city = city.id;

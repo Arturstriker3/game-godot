@@ -223,11 +223,12 @@ func _solar_income(target: float) -> float:
 	sim.set_external_income_index("AGRIA", 1.0)
 	sim.tick_day()
 	var demand := float(_city_row(sim, "AGRIA").get("demand_mwh", 0.0))
+	var elasticity := maxf(0.01, _param(_params(), "income_elasticity"))
 	var income := 1.0
 	for _attempt in 10:
 		if demand <= 0.0:
 			break
-		income = clampf(income * pow(target / demand, 1.0 / 0.912238),
+		income = clampf(income * pow(target / demand, 1.0 / elasticity),
 			0.05, 8.0)
 		sim.set_external_income_index("AGRIA", income)
 		sim.tick_day()
@@ -322,7 +323,6 @@ func _test_new_hydro_season_mean_one() -> void:
 	var new_plants: Array = sim.get_power_status().get("new_plants", [])
 	var cf := float((new_plants[0] as Dictionary).get("cf_base", 0.0))
 	sim.set_external_income_index("AGRIA", 5.0)
-	var monthly: Array = []
 	var monthly_sum: Array = []
 	for _month in 12:
 		monthly_sum.append(0.0)
@@ -343,8 +343,6 @@ func _test_new_hydro_season_mean_one() -> void:
 		high = maxf(high, value)
 	_check("(2) hídrica nova tem estação (cheia/seca)",
 		high > low * 1.15, "mín=%.2f máx=%.2f" % [low, high])
-	if monthly.is_empty():
-		pass
 
 
 # --- (5b) save/load preserva o CF de sítio --------------------------------

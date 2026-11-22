@@ -50,7 +50,7 @@
         "day_factor": "variacao diaria deterministica com fase derivada da nao (FNV-1a, nunca std::hash); as harmonicas tem periodo que divide 365 dias, entao a media em qualquer janela de 365 dias e exatamente 1 e o ano-base calibrado nao se move.",
         "hydro_season": "cheia no fim do inverno/inicio da primavera do hemisferio (dia 75 norte, 255 sul, deslocamento de +/-30 dias pela nao); amplitude hydro_season_amp.",
         "curtailment": "sem armazenamento, renovavel disponivel e nao despachada e desperdicada; o nucleo publica o curtailment da rede e do mundo.",
-        "capacity_credit": "fracao da potencia que conta como firme no pico: solar 0,35; eolica 0,20; hidrica 0,55; termica/nuclear 1,0. A IA de obra compara capex/capacity_credit (XGS por MW firme)."
+        "capacity_credit": "fracao da potencia que conta como firme no pico: solar 0,35; eolica 0,20; hidrica 0,55; termica/nuclear 1,0. A IA de obra compara (capex + combustivel do primeiro ano) por MW firme, com o combustivel ao preco do mercado local (premio de importacao quando falta estoque)."
       }
     },
     "demand_calibration": {
