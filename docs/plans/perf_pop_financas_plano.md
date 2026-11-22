@@ -396,7 +396,7 @@ combustíveis (`coal`, `gas`, `oil`, `fuel`, `uranium`, `wood`, `charcoal`, `eth
   - **(e) Correção 2 (re-QA t33):** o PET do CGIAR-CSI v3.1 foi **recusado** (derivado do WorldClim 2.1 e
     “provided for non-commercial use”); entrou **CHELSA v2.1 PET** (WSL, **CC0 1.0**, Penman-Monteith/ERA5,
     1981–2010). A matriz Ember usa o **último ano com as 9 fontes de capacidade cobertas** (publicadas ou ausentes
-    com última publicação = 0), mesmo sem `Total generation`, com `year_reason` por país — DEU passa a 2025
+    com última publicação = 0 **dentro da janela 2024–2025**), mesmo sem `Total generation`, com `year_reason` por país — DEU passa a 2025
     (268,38 GW). O validador tem **lista de bloqueio explícita** de fontes não comerciais + `--selftest-commercial`.
 - **Conflitos de localização (QA):** classificar por causa (`gppd_coord_error`, `deleted_territory`, `border_pixel`,
   `occupied`). Coordenada errada: corrigir com fonte ou descartar (ex.: ESCOMBRERAS lat 7,5732→37,5732 só com

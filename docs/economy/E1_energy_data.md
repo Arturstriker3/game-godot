@@ -18,7 +18,7 @@ lacuna declarada onde não há dado.**
 |---|---|---|---|
 | `data/definitions/energy/national_capacity.json` | capacidade instalada e matriz por nação (2024–2025) + desvio do parque base | 171 nações, 161 comparações (90 em 2024, 81 em 2025) | `CA882623C40E5B97960294DC615176D97AA7918380297896F2556C49437FCE24` |
 | `data/definitions/energy/power_plants_base_2021_gppd.json` | parque GPPD ~2021 **bruto** (usina, fonte, MW, lat/lon) atribuído à cidade/nação do atlas | 34.932 usinas / 5.706.702,5 MW / 743 cidades / 166 nações | `CB8C0F9959B86864D786AB1FFBA9D7517A23AA75584820EEFC9E78A16B867E49` |
-| `data/definitions/energy/power_plants_2026_scaled.json` | parque **escalonado** para a matriz Ember 2024–2025, com fator por nação×fonte e usinas sintéticas declaradas | 36.031 usinas (34.932 reais + 1.099 sintéticas) / 10.348.013,2 MW (10.348.005,6 MW por nação + 7,6 MW sem cidade) / 825 cidades / 176 nações | `B163A9AD7C8E304D3B9943CEB3838E5ECC01D5C5289F2950CF8CD6F562878B46` |
+| `data/definitions/energy/power_plants_2026_scaled.json` | parque **escalonado** para a matriz Ember 2024–2025, com fator por nação×fonte e usinas sintéticas declaradas | 36.031 usinas (34.932 reais + 1.099 sintéticas) / 10.349.013,2 MW (10.349.005,6 MW por nação + 7,6 MW sem cidade) / 825 cidades / 176 nações | `B163A9AD7C8E304D3B9943CEB3838E5ECC01D5C5289F2950CF8CD6F562878B46` |
 | `data/definitions/energy/renewable_potential.json` | solar e eólico por província/cidade (GSA/GWA) + proxy hídrico bruto (CHIRPS/CHELSA PET/ETOPO1) | 15.547 províncias / 849 cidades | `A476F01C609E96ACAD46150CE84006A176C79A547867F817AB650F16A6F3C940` |
 | `data/definitions/energy/hydro_potential.json` | potencial hídrico em MW por província/cidade, normalizado pela âncora nacional | 179 nações (135 com âncora) | `106DBE4085C24EE5BEB7ADFBC5EFBDD3EAACADA0C9572E7E66A6D5D341BB7C60` |
 | `data/definitions/energy/access_losses.json` | acesso à eletricidade (total/urbano/rural), perdas T&D, água segura | 217 países (176 jogáveis) | `6D69FD90CED04A341E56FE80B7CE8D6C75BFC871CB36ABD99F11565BEF4F26D5` |
@@ -87,7 +87,13 @@ CGIAR-CSI diz que Global-PET/Global-Aridity são **"provided for non-commercial 
 em 2026-11-22). A fonte foi **recusada** e trocada pela **CHELSA v2.1 PET**
 (`https://chelsa-climate.org/datasets/chelsa_climatologies/`, verificado em
 2026-11-22): “License: **Creative Commons Zero - No Rights Reserved (CC0 1.0)**”,
-Penman-Monteith com forçante **ERA5** (não é derivado do WorldClim). O validador ganhou
+Penman-Monteith com forçante **ERA5** (não é derivado do WorldClim). A forçante é a
+declarada na **especificação técnica do CHELSA V2.1**
+(`https://chelsa-climate.org/models/chelsa`): o modelo faz downscaling de campos de
+reanálise e a precipitação não corrigida (`prec`) e o vento (`sfcWE`) vêm do **ERA5**; o
+artigo de forçante é Karger et al. (2023), *CHELSA-W5E5: daily 1 km meteorological forcing
+data for climate impact studies*, Earth Syst. Sci. Data 15, 2445–2464,
+`https://doi.org/10.5194/essd-15-2445-2023`. Verificado em 2026-11-22. O validador ganhou
 uma **lista de bloqueio explícita** (`NON_COMMERCIAL_SOURCE_IDS`) e varredura de texto
 de licença, além de `--selftest-commercial`, que prova que uma fonte não comercial em
 uso reprova mesmo com `commercial_ok: true` no registro.
@@ -131,6 +137,14 @@ Distribuição dos anos: **81 países em 2025, 90 em 2024**; `year_reason`:
 `partial_sources_any_positive` 2. A maioria fica em 2024 porque a Ember 2025 ainda não
 publicou alguma linha de fonte do país (e não há publicação anterior = 0 que autorize
 assumir zero); nesses casos o total é a linha `Total generation` de 2024.
+
+**Janela da prova de zero (re-QA t39):** `sources_absent_as_zero` vale **só dentro da
+janela 2024–2025**. A fonte ausente no ano escolhido é lida como zero apenas porque a
+**última publicação anterior** daquela fonte no dataset da Ember é `0.0` — e essa
+publicação pode ser de um ano **anterior à janela** (ex.: nuclear alemã ausente em 2025 e
+0 desde 2023). É uma comprovação de zero **na janela**, não prova histórica de que a fonte
+nunca existiu; nenhum ano antes de 2024 vira matriz e a ausência **sem** publicação
+anterior = 0 continua `null` (§5, `national_target_missing`), nunca zero inventado.
 
 | Fonte | Mundo (GW) |
 |---|---|
@@ -236,7 +250,9 @@ capacity_mw = round(base_mili * fator)        (resto na maior usina do grupo)
   `synthetic: true` com `method: ember_2024_2025_city_allocation`.
 - Fonte com alvo **zero** na Ember (ex.: nuclear alemã, carvão britânico): fator 0
   declarado; a usina permanece como registro com 0 MW e
-  `scaling_note: retired_by_ember_target_zero`.
+  `scaling_note: retired_by_ember_target_zero` (o zero é o **alvo da janela 2024–2025**,
+  não prova de que a usina nunca operou; o MW do GPPD ~2021 fica preservado em
+  `capacity_mw_gppd`).
 - **Óleo:** alvo `null` (Ember não separa); o parque de óleo do GPPD fica **não
   escalonado** e o motivo é declarado. Nação sem matriz Ember (8 lacunas): parque fica
   não escalonado e declarado.
@@ -254,11 +270,22 @@ capacity_mw = round(base_mili * fator)        (resto na maior usina do grupo)
   foi aplicado e `gppd_2021_unadjusted` quando ficaram como no GPPD (óleo, sem alvo
   nacional); o validador exige o campo e a coerência com `scaling_method`.
 
-**Resultado:** 36.031 usinas (34.932 reais + 1.099 sintéticas), **10.348.013,2 MW**
-(10.348.005,6 MW por nação + 7,6 MW sem cidade), 825 cidades, 176 nações. **1.584 checagens nação×fonte, 0 falhas** (≤0,01 MW).
-O total fica **294,4 GW acima** da Ember: **261,9 GW** de óleo não separado + **32,7 GW**
-das 5 nações com usina e sem matriz Ember (com 1,2 GW de óleo dentro delas). Isso é
-lacuna declarada, não erro de soma.
+**Resultado:** 36.031 usinas (34.932 reais + 1.099 sintéticas), **10.349.013,2 MW**
+(10.349.005,6 MW por nação + **7,6 MW em 2 usinas sem cidade**, que ficam fora de
+`by_nation`), 825 cidades, 176 nações. **1.584 checagens nação×fonte, 0 falhas** (≤0,01 MW).
+Contra a Ember (**10.054.640,0 MW** nas 171 nações com matriz), `by_nation` fica
+**294,4 GW acima**, e a aritmética fecha em três parcelas declaradas (re-QA t39):
+
+| Parcela | MW | Leitura |
+|---|---:|---|
+| Óleo do GPPD **fora** das nações sem matriz | 260.659,3 | dos **261.878,7 MW** de óleo total, **1.219,4 MW** estão dentro das 5 nações sem matriz; a Ember não separa óleo (`Other fossil`) |
+| 5 nações com usina e **sem** matriz Ember (CAF, DMA, LKA, PSX, UKR) | 32.734,8 | as outras 3 nações da lacuna (SAH, SOL, TLS) não têm usina no GPPD |
+| `national_target_missing` **em nação com matriz**: 5 usinas de gás em CYP, MDG, MWI e NIC | 978,1 | a Ember não publica a linha de gás; sem publicação anterior = 0, fica não escalonado em vez de virar 0,0 |
+| **Soma** | **294.372,2** | **294,4 GW** (a diferença de ~6,6 MW para o total medido é arredondamento de 3 casas por usina) |
+
+Os **7,6 MW** das 2 usinas sem cidade **não entram** nessa conta, porque não estão em
+`by_nation`; somados, dão o total bruto **10.349.013,2 MW**. Isso é lacuna declarada, não
+erro de soma.
 
 ### 10 maiores após o escalonamento vs Ember
 
@@ -317,7 +344,9 @@ O proxy bruto por província é
   da província. CHIRPS cobre **60°N–60°S**; as **1.746 províncias** fora dessa faixa ficam
   `no_data` (lacuna declarada), **sem** preencher com WorldClim.
 - **PET** = **CHELSA-climatologies v2.1** (WSL, **CC0 1.0**, Penman-Monteith,
-  climatologia 1981–2010, forçante ERA5), PET anual no centróide;
+  climatologia 1981–2010, forçante ERA5 declarada na especificação técnica do CHELSA V2.1 —
+  `https://chelsa-climate.org/models/chelsa` — e em Karger et al. 2023, ESSD 15,
+  2445–2464, `https://doi.org/10.5194/essd-15-2445-2023`), PET anual no centróide;
   `runoff = clamp((precip − PET)/precip, 0, 1)`. O COG de 30 arc-sec é lido por
   **HTTP Range no overview 1/8 (0,0667° ≈ 7,4 km)** — `fetch_pet_chelsa.py` soma os 12
   meses e grava `chelsa_pet_annual_1981-2010_1of8.tif` (mm/ano) no cache. Resolução de
