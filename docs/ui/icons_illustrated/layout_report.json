@@ -1,0 +1,6315 @@
+{
+  "audits": [
+    {
+      "context": [
+        {
+          "id": "market",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry/@Control@738/@Control@532/@CenterContainer@533/@PanelContainer@737/@VBoxContainer@534/@PanelContainer@727/@VBoxContainer@726/@VBoxContainer@725/@MarginContainer@548/@HBoxContainer@547/@Button@647",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 00:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Market by nation and city",
+        "Market",
+        "⌕",
+        "849 of 849",
+        "Lucknow",
+        "India",
+        "169.9 M",
+        "Patna",
+        "India",
+        "133.3 M",
+        "Kolkata",
+        "India",
+        "113.7 M",
+        "Kanpur",
+        "India",
+        "99.4 M",
+        "Zhengzhou",
+        "People's Republic of China",
+        "98.8 M",
+        "Chengdu",
+        "People's Republic of China",
+        "88.9 M",
+        "Jaipur",
+        "India",
+        "85.0 M",
+        "Select a city",
+        "Page 1 of 122",
+        "Nation summary"
+      ],
+      "resolution": "1920x1080",
+      "state": "01_market_all",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1920,
+        1080
+      ],
+      "window_open": true
+    },
+    {
+      "context": [
+        {
+          "id": "market",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry/@Control@738/@Control@532/@CenterContainer@533/@PanelContainer@737/@VBoxContainer@534/@PanelContainer@727/@VBoxContainer@726/@VBoxContainer@725/@MarginContainer@548/@HBoxContainer@547/@Button@647",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 00:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Market by nation and city",
+        "Market",
+        "⌕",
+        "849 of 849",
+        "Lucknow",
+        "India",
+        "169.9 M",
+        "Patna",
+        "India",
+        "133.3 M",
+        "Kolkata",
+        "India",
+        "113.7 M",
+        "Kanpur",
+        "India",
+        "99.4 M",
+        "Zhengzhou",
+        "People's Republic of China",
+        "98.8 M",
+        "Chengdu",
+        "People's Republic of China",
+        "88.9 M",
+        "Jaipur",
+        "India",
+        "85.0 M",
+        "Select a city",
+        "Page 1 of 122",
+        "Nation summary"
+      ],
+      "resolution": "1920x1080",
+      "state": "02_market_chemical",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1920,
+        1080
+      ],
+      "window_open": true
+    },
+    {
+      "context": [
+        {
+          "id": "production",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63/ProductionRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63/ProductionRegistry/@Control@2057/@Control@1856/@CenterContainer@1857/@PanelContainer@2056/@VBoxContainer@1858/@PanelContainer@2046/@VBoxContainer@2045/@VBoxContainer@2044/@MarginContainer@1872/@HBoxContainer@1871/@Button@1969",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 00:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Production ›",
+        "Production and supply chain",
+        "Production chain",
+        "Alternative recipes for the selected good: inputs → product → byproducts → who consumes it. Without a recipe, the good is extracted.",
+        "Extraction",
+        "No industrial input",
+        "1",
+        "—",
+        "Factory · Al Mansurah, Palana +704",
+        "Flour, Animal feed (+2)",
+        "Recipes declared in recipes.json",
+        "Page 1 of 1",
+        "706 results",
+        "Lucknow",
+        "India",
+        "0 t",
+        "356 t",
+        "9 t",
+        "40.4 d",
+        "Patna",
+        "India",
+        "0 t",
+        "78,701 t",
+        "1,722 t",
+        "45.7 d",
+        "Kolkata",
+        "India",
+        "0 t"
+      ],
+      "resolution": "1920x1080",
+      "state": "03_chain",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1920,
+        1080
+      ],
+      "window_open": true
+    },
+    {
+      "context": [],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250": {
+          "class": "Control",
+          "rect": [
+            1616.0,
+            891.0,
+            288.0,
+            165.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@ColorRect@254": {
+          "class": "ColorRect",
+          "rect": [
+            1655.0,
+            912.0,
+            244.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Label@253": {
+          "class": "Label",
+          "rect": [
+            1655.0,
+            896.0,
+            244.0,
+            23.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@251": {
+          "class": "Panel",
+          "rect": [
+            1650.0,
+            891.0,
+            254.0,
+            165.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@251/@Panel@252": {
+          "class": "Panel",
+          "rect": [
+            1651.0,
+            892.0,
+            252.0,
+            163.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@255": {
+          "class": "Panel",
+          "rect": [
+            1655.0,
+            915.0,
+            244.0,
+            127.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@257": {
+          "class": "Panel",
+          "rect": [
+            1765.30004882813,
+            943.400024414063,
+            11.6999969482422,
+            5.85000228881836
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@TextureRect@256": {
+          "class": "TextureRect",
+          "rect": [
+            1660.0,
+            920.0,
+            234.0,
+            117.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259": {
+          "class": "VBoxContainer",
+          "rect": [
+            1616.0,
+            915.0,
+            34.0,
+            98.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@261": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            915.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@263": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            949.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@265": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            983.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269": {
+          "class": "PanelContainer",
+          "rect": [
+            1616.0,
+            72.0,
+            290.0,
+            366.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266": {
+          "class": "VBoxContainer",
+          "rect": [
+            1617.0,
+            73.0,
+            288.0,
+            364.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266/@Button@267": {
+          "class": "Button",
+          "rect": [
+            1617.0,
+            73.0,
+            288.0,
+            34.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266/@VBoxContainer@268": {
+          "class": "VBoxContainer",
+          "rect": [
+            1617.0,
+            107.0,
+            288.0,
+            330.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69": {
+          "class": "VBoxContainer",
+          "rect": [
+            224.0,
+            420.0,
+            236.0,
+            644.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69/@MarginContainer@70": {
+          "class": "MarginContainer",
+          "rect": [
+            224.0,
+            420.0,
+            236.0,
+            644.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69/@MarginContainer@70/@VBoxContainer@71": {
+          "class": "VBoxContainer",
+          "rect": [
+            246.0,
+            430.0,
+            202.0,
+            622.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 00:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Resource map",
+        "Coal",
+        "33",
+        "Copper",
+        "68",
+        "Gas",
+        "27",
+        "Iron",
+        "70",
+        "Oil",
+        "39",
+        "Bauxite",
+        "39",
+        "Lead",
+        "40",
+        "Gold",
+        "51",
+        "Phosphate",
+        "49",
+        "Tungsten",
+        "34",
+        "Rare earths",
+        "30",
+        "Sulfur",
+        "29",
+        "Diamond",
+        "23",
+        "Uranium"
+      ],
+      "resolution": "1920x1080",
+      "state": "04_resource_legend",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1920,
+        1080
+      ],
+      "window_open": false
+    },
+    {
+      "context": [
+        {
+          "id": "market",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry/@Control@738/@Control@532/@CenterContainer@533/@PanelContainer@737/@VBoxContainer@534/@PanelContainer@727/@VBoxContainer@726/@VBoxContainer@725/@MarginContainer@548/@HBoxContainer@547/@Button@647",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 00:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Market by nation and city",
+        "Market",
+        "⌕",
+        "849 of 849",
+        "Lucknow",
+        "India",
+        "169.9 M",
+        "Patna",
+        "India",
+        "133.3 M",
+        "Kolkata",
+        "India",
+        "113.7 M",
+        "Kanpur",
+        "India",
+        "99.4 M",
+        "Zhengzhou",
+        "People's Republic of China",
+        "98.8 M",
+        "Chengdu",
+        "People's Republic of China",
+        "88.9 M",
+        "Jaipur",
+        "India",
+        "85.0 M",
+        "Select a city",
+        "Page 1 of 122",
+        "Nation summary"
+      ],
+      "resolution": "1600x900",
+      "state": "01_market_all",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1600,
+        900
+      ],
+      "window_open": true
+    },
+    {
+      "context": [
+        {
+          "id": "market",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry/@Control@738/@Control@532/@CenterContainer@533/@PanelContainer@737/@VBoxContainer@534/@PanelContainer@727/@VBoxContainer@726/@VBoxContainer@725/@MarginContainer@548/@HBoxContainer@547/@Button@647",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 00:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Market by nation and city",
+        "Market",
+        "⌕",
+        "849 of 849",
+        "Lucknow",
+        "India",
+        "169.9 M",
+        "Patna",
+        "India",
+        "133.3 M",
+        "Kolkata",
+        "India",
+        "113.7 M",
+        "Kanpur",
+        "India",
+        "99.4 M",
+        "Zhengzhou",
+        "People's Republic of China",
+        "98.8 M",
+        "Chengdu",
+        "People's Republic of China",
+        "88.9 M",
+        "Jaipur",
+        "India",
+        "85.0 M",
+        "Select a city",
+        "Page 1 of 122",
+        "Nation summary"
+      ],
+      "resolution": "1600x900",
+      "state": "02_market_chemical",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1600,
+        900
+      ],
+      "window_open": true
+    },
+    {
+      "context": [
+        {
+          "id": "production",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63/ProductionRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63/ProductionRegistry/@Control@2057/@Control@1856/@CenterContainer@1857/@PanelContainer@2056/@VBoxContainer@1858/@PanelContainer@2046/@VBoxContainer@2045/@VBoxContainer@2044/@MarginContainer@1872/@HBoxContainer@1871/@Button@1969",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 00:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Production ›",
+        "Production and supply chain",
+        "Production chain",
+        "Alternative recipes for the selected good: inputs → product → byproducts → who consumes it. Without a recipe, the good is extracted.",
+        "Extraction",
+        "No industrial input",
+        "1",
+        "—",
+        "Factory · Al Mansurah, Palana +704",
+        "Flour, Animal feed (+2)",
+        "Recipes declared in recipes.json",
+        "Page 1 of 1",
+        "706 results",
+        "Lucknow",
+        "India",
+        "0 t",
+        "356 t",
+        "9 t",
+        "40.4 d",
+        "Patna",
+        "India",
+        "0 t",
+        "78,701 t",
+        "1,722 t",
+        "45.7 d",
+        "Kolkata",
+        "India",
+        "0 t"
+      ],
+      "resolution": "1600x900",
+      "state": "03_chain",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1600,
+        900
+      ],
+      "window_open": true
+    },
+    {
+      "context": [],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250": {
+          "class": "Control",
+          "rect": [
+            1616.0,
+            891.0,
+            288.0,
+            165.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@ColorRect@254": {
+          "class": "ColorRect",
+          "rect": [
+            1655.0,
+            912.0,
+            244.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Label@253": {
+          "class": "Label",
+          "rect": [
+            1655.0,
+            896.0,
+            244.0,
+            23.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@251": {
+          "class": "Panel",
+          "rect": [
+            1650.0,
+            891.0,
+            254.0,
+            165.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@251/@Panel@252": {
+          "class": "Panel",
+          "rect": [
+            1651.0,
+            892.0,
+            252.0,
+            163.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@255": {
+          "class": "Panel",
+          "rect": [
+            1655.0,
+            915.0,
+            244.0,
+            127.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@257": {
+          "class": "Panel",
+          "rect": [
+            1765.30004882813,
+            943.400024414063,
+            11.6999969482422,
+            5.85000228881836
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@TextureRect@256": {
+          "class": "TextureRect",
+          "rect": [
+            1660.0,
+            920.0,
+            234.0,
+            117.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259": {
+          "class": "VBoxContainer",
+          "rect": [
+            1616.0,
+            915.0,
+            34.0,
+            98.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@261": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            915.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@263": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            949.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@265": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            983.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269": {
+          "class": "PanelContainer",
+          "rect": [
+            1616.0,
+            72.0,
+            290.0,
+            366.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266": {
+          "class": "VBoxContainer",
+          "rect": [
+            1617.0,
+            73.0,
+            288.0,
+            364.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266/@Button@267": {
+          "class": "Button",
+          "rect": [
+            1617.0,
+            73.0,
+            288.0,
+            34.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266/@VBoxContainer@268": {
+          "class": "VBoxContainer",
+          "rect": [
+            1617.0,
+            107.0,
+            288.0,
+            330.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69": {
+          "class": "VBoxContainer",
+          "rect": [
+            224.0,
+            420.0,
+            236.0,
+            644.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69/@MarginContainer@70": {
+          "class": "MarginContainer",
+          "rect": [
+            224.0,
+            420.0,
+            236.0,
+            644.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69/@MarginContainer@70/@VBoxContainer@71": {
+          "class": "VBoxContainer",
+          "rect": [
+            246.0,
+            430.0,
+            202.0,
+            622.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 00:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Resource map",
+        "Coal",
+        "33",
+        "Copper",
+        "68",
+        "Gas",
+        "27",
+        "Iron",
+        "70",
+        "Oil",
+        "39",
+        "Bauxite",
+        "39",
+        "Lead",
+        "40",
+        "Gold",
+        "51",
+        "Phosphate",
+        "49",
+        "Tungsten",
+        "34",
+        "Rare earths",
+        "30",
+        "Sulfur",
+        "29",
+        "Diamond",
+        "23",
+        "Uranium"
+      ],
+      "resolution": "1600x900",
+      "state": "04_resource_legend",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1600,
+        900
+      ],
+      "window_open": false
+    },
+    {
+      "context": [
+        {
+          "id": "market",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry/@Control@738/@Control@532/@CenterContainer@533/@PanelContainer@737/@VBoxContainer@534/@PanelContainer@727/@VBoxContainer@726/@VBoxContainer@725/@MarginContainer@548/@HBoxContainer@547/@Button@647",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 01:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Market by nation and city",
+        "Market",
+        "⌕",
+        "849 of 849",
+        "Lucknow",
+        "India",
+        "169.9 M",
+        "Patna",
+        "India",
+        "133.3 M",
+        "Kolkata",
+        "India",
+        "113.7 M",
+        "Kanpur",
+        "India",
+        "99.4 M",
+        "Zhengzhou",
+        "People's Republic of China",
+        "98.8 M",
+        "Chengdu",
+        "People's Republic of China",
+        "88.9 M",
+        "Jaipur",
+        "India",
+        "85.0 M",
+        "Select a city",
+        "Page 1 of 122",
+        "Nation summary"
+      ],
+      "resolution": "1366x768",
+      "state": "01_market_all",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1366,
+        768
+      ],
+      "window_open": true
+    },
+    {
+      "context": [
+        {
+          "id": "market",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry/@Control@738/@Control@532/@CenterContainer@533/@PanelContainer@737/@VBoxContainer@534/@PanelContainer@727/@VBoxContainer@726/@VBoxContainer@725/@MarginContainer@548/@HBoxContainer@547/@Button@647",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 01:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Market by nation and city",
+        "Market",
+        "⌕",
+        "849 of 849",
+        "Lucknow",
+        "India",
+        "169.9 M",
+        "Patna",
+        "India",
+        "133.3 M",
+        "Kolkata",
+        "India",
+        "113.7 M",
+        "Kanpur",
+        "India",
+        "99.4 M",
+        "Zhengzhou",
+        "People's Republic of China",
+        "98.8 M",
+        "Chengdu",
+        "People's Republic of China",
+        "88.9 M",
+        "Jaipur",
+        "India",
+        "85.0 M",
+        "Select a city",
+        "Page 1 of 122",
+        "Nation summary"
+      ],
+      "resolution": "1366x768",
+      "state": "02_market_chemical",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1366,
+        768
+      ],
+      "window_open": true
+    },
+    {
+      "context": [
+        {
+          "id": "production",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63/ProductionRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63/ProductionRegistry/@Control@2057/@Control@1856/@CenterContainer@1857/@PanelContainer@2056/@VBoxContainer@1858/@PanelContainer@2046/@VBoxContainer@2045/@VBoxContainer@2044/@MarginContainer@1872/@HBoxContainer@1871/@Button@1969",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 01:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Production ›",
+        "Production and supply chain",
+        "Production chain",
+        "Alternative recipes for the selected good: inputs → product → byproducts → who consumes it. Without a recipe, the good is extracted.",
+        "Extraction",
+        "No industrial input",
+        "1",
+        "—",
+        "Factory · Al Mansurah, Palana +704",
+        "Flour, Animal feed (+2)",
+        "Recipes declared in recipes.json",
+        "Page 1 of 1",
+        "706 results",
+        "Lucknow",
+        "India",
+        "0 t",
+        "356 t",
+        "9 t",
+        "40.4 d",
+        "Patna",
+        "India",
+        "0 t",
+        "78,701 t",
+        "1,722 t",
+        "45.7 d",
+        "Kolkata",
+        "India",
+        "0 t"
+      ],
+      "resolution": "1366x768",
+      "state": "03_chain",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1366,
+        768
+      ],
+      "window_open": true
+    },
+    {
+      "context": [],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250": {
+          "class": "Control",
+          "rect": [
+            1616.0,
+            891.0,
+            288.0,
+            165.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@ColorRect@254": {
+          "class": "ColorRect",
+          "rect": [
+            1655.0,
+            912.0,
+            244.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Label@253": {
+          "class": "Label",
+          "rect": [
+            1655.0,
+            896.0,
+            244.0,
+            23.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@251": {
+          "class": "Panel",
+          "rect": [
+            1650.0,
+            891.0,
+            254.0,
+            165.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@251/@Panel@252": {
+          "class": "Panel",
+          "rect": [
+            1651.0,
+            892.0,
+            252.0,
+            163.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@255": {
+          "class": "Panel",
+          "rect": [
+            1655.0,
+            915.0,
+            244.0,
+            127.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@257": {
+          "class": "Panel",
+          "rect": [
+            1765.30004882813,
+            943.400024414063,
+            11.6999969482422,
+            5.85000228881836
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@TextureRect@256": {
+          "class": "TextureRect",
+          "rect": [
+            1660.0,
+            920.0,
+            234.0,
+            117.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259": {
+          "class": "VBoxContainer",
+          "rect": [
+            1616.0,
+            915.0,
+            34.0,
+            98.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@261": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            915.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@263": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            949.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@265": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            983.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269": {
+          "class": "PanelContainer",
+          "rect": [
+            1616.0,
+            72.0,
+            290.0,
+            366.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266": {
+          "class": "VBoxContainer",
+          "rect": [
+            1617.0,
+            73.0,
+            288.0,
+            364.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266/@Button@267": {
+          "class": "Button",
+          "rect": [
+            1617.0,
+            73.0,
+            288.0,
+            34.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266/@VBoxContainer@268": {
+          "class": "VBoxContainer",
+          "rect": [
+            1617.0,
+            107.0,
+            288.0,
+            330.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69": {
+          "class": "VBoxContainer",
+          "rect": [
+            224.0,
+            420.0,
+            236.0,
+            644.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69/@MarginContainer@70": {
+          "class": "MarginContainer",
+          "rect": [
+            224.0,
+            420.0,
+            236.0,
+            644.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69/@MarginContainer@70/@VBoxContainer@71": {
+          "class": "VBoxContainer",
+          "rect": [
+            246.0,
+            430.0,
+            202.0,
+            622.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 01:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Resource map",
+        "Coal",
+        "33",
+        "Copper",
+        "68",
+        "Gas",
+        "27",
+        "Iron",
+        "70",
+        "Oil",
+        "39",
+        "Bauxite",
+        "39",
+        "Lead",
+        "40",
+        "Gold",
+        "51",
+        "Phosphate",
+        "49",
+        "Tungsten",
+        "34",
+        "Rare earths",
+        "30",
+        "Sulfur",
+        "29",
+        "Diamond",
+        "23",
+        "Uranium"
+      ],
+      "resolution": "1366x768",
+      "state": "04_resource_legend",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        1366,
+        768
+      ],
+      "window_open": false
+    },
+    {
+      "context": [
+        {
+          "id": "market",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry/@Control@738/@Control@532/@CenterContainer@533/@PanelContainer@737/@VBoxContainer@534/@PanelContainer@727/@VBoxContainer@726/@VBoxContainer@725/@MarginContainer@548/@HBoxContainer@547/@Button@647",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 01:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Market by nation and city",
+        "Market",
+        "⌕",
+        "849 of 849",
+        "Lucknow",
+        "India",
+        "169.9 M",
+        "Patna",
+        "India",
+        "133.3 M",
+        "Kolkata",
+        "India",
+        "113.7 M",
+        "Kanpur",
+        "India",
+        "99.4 M",
+        "Zhengzhou",
+        "People's Republic of China",
+        "98.8 M",
+        "Chengdu",
+        "People's Republic of China",
+        "88.9 M",
+        "Jaipur",
+        "India",
+        "85.0 M",
+        "Select a city",
+        "Page 1 of 122",
+        "Nation summary"
+      ],
+      "resolution": "2560x1440",
+      "state": "01_market_all",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        2560,
+        1440
+      ],
+      "window_open": true
+    },
+    {
+      "context": [
+        {
+          "id": "market",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@61/MarketRegistry/@Control@738/@Control@532/@CenterContainer@533/@PanelContainer@737/@VBoxContainer@534/@PanelContainer@727/@VBoxContainer@726/@VBoxContainer@725/@MarginContainer@548/@HBoxContainer@547/@Button@647",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 01:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Market by nation and city",
+        "Market",
+        "⌕",
+        "849 of 849",
+        "Lucknow",
+        "India",
+        "169.9 M",
+        "Patna",
+        "India",
+        "133.3 M",
+        "Kolkata",
+        "India",
+        "113.7 M",
+        "Kanpur",
+        "India",
+        "99.4 M",
+        "Zhengzhou",
+        "People's Republic of China",
+        "98.8 M",
+        "Chengdu",
+        "People's Republic of China",
+        "88.9 M",
+        "Jaipur",
+        "India",
+        "85.0 M",
+        "Select a city",
+        "Page 1 of 122",
+        "Nation summary"
+      ],
+      "resolution": "2560x1440",
+      "state": "02_market_chemical",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        2560,
+        1440
+      ],
+      "window_open": true
+    },
+    {
+      "context": [
+        {
+          "id": "production",
+          "kind": "screen"
+        }
+      ],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63/ProductionRegistry": {
+          "class": "Control",
+          "rect": [
+            220.0,
+            0.0,
+            1700.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@59/@Control@63/ProductionRegistry/@Control@2057/@Control@1856/@CenterContainer@1857/@PanelContainer@2056/@VBoxContainer@1858/@PanelContainer@2046/@VBoxContainer@2045/@VBoxContainer@2044/@MarginContainer@1872/@HBoxContainer@1871/@Button@1969",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 01:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Production ›",
+        "Production and supply chain",
+        "Production chain",
+        "Alternative recipes for the selected good: inputs → product → byproducts → who consumes it. Without a recipe, the good is extracted.",
+        "Extraction",
+        "No industrial input",
+        "1",
+        "—",
+        "Factory · Al Mansurah, Palana +704",
+        "Flour, Animal feed (+2)",
+        "Recipes declared in recipes.json",
+        "Page 1 of 1",
+        "706 results",
+        "Lucknow",
+        "India",
+        "0 t",
+        "356 t",
+        "9 t",
+        "40.4 d",
+        "Patna",
+        "India",
+        "0 t",
+        "78,701 t",
+        "1,722 t",
+        "45.7 d",
+        "Kolkata",
+        "India",
+        "0 t"
+      ],
+      "resolution": "2560x1440",
+      "state": "03_chain",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        2560,
+        1440
+      ],
+      "window_open": true
+    },
+    {
+      "context": [],
+      "elements": {
+        "/root/UiCapture/@CanvasLayer@4/@Control@5": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@7": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            60.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@ColorRect@8": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            63.0,
+            1920.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250": {
+          "class": "Control",
+          "rect": [
+            1616.0,
+            891.0,
+            288.0,
+            165.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@ColorRect@254": {
+          "class": "ColorRect",
+          "rect": [
+            1655.0,
+            912.0,
+            244.0,
+            1.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Label@253": {
+          "class": "Label",
+          "rect": [
+            1655.0,
+            896.0,
+            244.0,
+            23.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@251": {
+          "class": "Panel",
+          "rect": [
+            1650.0,
+            891.0,
+            254.0,
+            165.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@251/@Panel@252": {
+          "class": "Panel",
+          "rect": [
+            1651.0,
+            892.0,
+            252.0,
+            163.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@255": {
+          "class": "Panel",
+          "rect": [
+            1655.0,
+            915.0,
+            244.0,
+            127.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@Panel@257": {
+          "class": "Panel",
+          "rect": [
+            1765.30004882813,
+            943.400024414063,
+            11.6999969482422,
+            5.85000228881836
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@TextureRect@256": {
+          "class": "TextureRect",
+          "rect": [
+            1660.0,
+            920.0,
+            234.0,
+            117.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259": {
+          "class": "VBoxContainer",
+          "rect": [
+            1616.0,
+            915.0,
+            34.0,
+            98.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@261": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            915.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@263": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            949.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@250/@VBoxContainer@259/@Button@265": {
+          "class": "Button",
+          "rect": [
+            1616.0,
+            983.0,
+            34.0,
+            30.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@Control@393": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269": {
+          "class": "PanelContainer",
+          "rect": [
+            1616.0,
+            72.0,
+            290.0,
+            366.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266": {
+          "class": "VBoxContainer",
+          "rect": [
+            1617.0,
+            73.0,
+            288.0,
+            364.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266/@Button@267": {
+          "class": "Button",
+          "rect": [
+            1617.0,
+            73.0,
+            288.0,
+            34.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@269/@VBoxContainer@266/@VBoxContainer@268": {
+          "class": "VBoxContainer",
+          "rect": [
+            1617.0,
+            107.0,
+            288.0,
+            330.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6": {
+          "class": "PanelContainer",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            0.0,
+            1896.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@57": {
+          "class": "Button",
+          "rect": [
+            1806.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Button@58": {
+          "class": "Button",
+          "rect": [
+            1865.0,
+            12.0,
+            43.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@16": {
+          "class": "ColorRect",
+          "rect": [
+            293.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@30": {
+          "class": "ColorRect",
+          "rect": [
+            1060.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@36": {
+          "class": "ColorRect",
+          "rect": [
+            1275.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@42": {
+          "class": "ColorRect",
+          "rect": [
+            1431.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@ColorRect@48": {
+          "class": "ColorRect",
+          "rect": [
+            1587.0,
+            14.0,
+            1.0,
+            35.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@Control@24": {
+          "class": "Control",
+          "rect": [
+            516.0,
+            0.0,
+            376.0,
+            64.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@15": {
+          "class": "HBoxContainer",
+          "rect": [
+            12.0,
+            12.0,
+            265.0,
+            40.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@29": {
+          "class": "HBoxContainer",
+          "rect": [
+            908.0,
+            11.0,
+            136.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@35": {
+          "class": "HBoxContainer",
+          "rect": [
+            1077.0,
+            11.0,
+            182.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@41": {
+          "class": "HBoxContainer",
+          "rect": [
+            1292.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@47": {
+          "class": "HBoxContainer",
+          "rect": [
+            1448.0,
+            11.0,
+            123.0,
+            41.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@HBoxContainer@53": {
+          "class": "HBoxContainer",
+          "rect": [
+            1604.0,
+            13.0,
+            186.0,
+            37.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@PanelContainer@6/@HBoxContainer@9/@VBoxContainer@23": {
+          "class": "VBoxContainer",
+          "rect": [
+            310.0,
+            14.0,
+            190.0,
+            36.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69": {
+          "class": "VBoxContainer",
+          "rect": [
+            224.0,
+            420.0,
+            236.0,
+            644.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69/@MarginContainer@70": {
+          "class": "MarginContainer",
+          "rect": [
+            224.0,
+            420.0,
+            236.0,
+            644.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/@VBoxContainer@69/@MarginContainer@70/@VBoxContainer@71": {
+          "class": "VBoxContainer",
+          "rect": [
+            246.0,
+            430.0,
+            202.0,
+            622.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@274": {
+          "class": "ColorRect",
+          "rect": [
+            204.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@ColorRect@275": {
+          "class": "ColorRect",
+          "rect": [
+            207.0,
+            64.0,
+            1.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276": {
+          "class": "MarginContainer",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/@MarginContainer@276/@VBoxContainer@277": {
+          "class": "VBoxContainer",
+          "rect": [
+            10.0,
+            74.0,
+            184.0,
+            996.0
+          ]
+        },
+        "/root/UiCapture/@CanvasLayer@4/@Control@5/PanelRail/RailBackground": {
+          "class": "Panel",
+          "rect": [
+            0.0,
+            64.0,
+            208.0,
+            1016.0
+          ]
+        },
+        "/root/UiCapture/@ColorRect@3": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiCapture/@TextureRect@2": {
+          "class": "TextureRect",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "United Kingdom",
+        "2 January 2027 · 01:00",
+        "Day 1",
+        "Population",
+        "8,203.7 M",
+        "Stockpile",
+        "262,725,071 t",
+        "Deficit",
+        "97,228 t",
+        "In transit",
+        "23,361 t",
+        "6",
+        "Resource map",
+        "Coal",
+        "33",
+        "Copper",
+        "68",
+        "Gas",
+        "27",
+        "Iron",
+        "70",
+        "Oil",
+        "39",
+        "Bauxite",
+        "39",
+        "Lead",
+        "40",
+        "Gold",
+        "51",
+        "Phosphate",
+        "49",
+        "Tungsten",
+        "34",
+        "Rare earths",
+        "30",
+        "Sulfur",
+        "29",
+        "Diamond",
+        "23",
+        "Uranium"
+      ],
+      "resolution": "2560x1440",
+      "state": "04_resource_legend",
+      "viewport": [
+        1920.0,
+        1080.0
+      ],
+      "window": [
+        2560,
+        1440
+      ],
+      "window_open": false
+    }
+  ],
+  "engine": "4.7.2-stable (official)",
+  "locale": "en",
+  "phase": "icons",
+  "shots": [
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1920x1080/01_market_all.png",
+      "resolution": "1920x1080",
+      "state": "01_market_all"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1920x1080/02_market_chemical.png",
+      "resolution": "1920x1080",
+      "state": "02_market_chemical"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1920x1080/03_chain.png",
+      "resolution": "1920x1080",
+      "state": "03_chain"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1920x1080/04_resource_legend.png",
+      "resolution": "1920x1080",
+      "state": "04_resource_legend"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1600x900/01_market_all.png",
+      "resolution": "1600x900",
+      "state": "01_market_all"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1600x900/02_market_chemical.png",
+      "resolution": "1600x900",
+      "state": "02_market_chemical"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1600x900/03_chain.png",
+      "resolution": "1600x900",
+      "state": "03_chain"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1600x900/04_resource_legend.png",
+      "resolution": "1600x900",
+      "state": "04_resource_legend"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1366x768/01_market_all.png",
+      "resolution": "1366x768",
+      "state": "01_market_all"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1366x768/02_market_chemical.png",
+      "resolution": "1366x768",
+      "state": "02_market_chemical"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1366x768/03_chain.png",
+      "resolution": "1366x768",
+      "state": "03_chain"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/1366x768/04_resource_legend.png",
+      "resolution": "1366x768",
+      "state": "04_resource_legend"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/2560x1440/01_market_all.png",
+      "resolution": "2560x1440",
+      "state": "01_market_all"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/2560x1440/02_market_chemical.png",
+      "resolution": "2560x1440",
+      "state": "02_market_chemical"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/2560x1440/03_chain.png",
+      "resolution": "2560x1440",
+      "state": "03_chain"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/captures/icons/v3/2560x1440/04_resource_legend.png",
+      "resolution": "2560x1440",
+      "state": "04_resource_legend"
+    }
+  ],
+  "skipped": [],
+  "stretch": {
+    "aspect": "expand",
+    "mode": "canvas_items"
+  },
+  "timestamp": "2026-11-22T00:42:01"
+}

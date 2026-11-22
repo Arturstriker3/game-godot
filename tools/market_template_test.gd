@@ -144,45 +144,58 @@ func _check_offer_costs(screen: Node) -> void:
 				% [origin, tariff, cif, freight, total])
 
 
-## Cada linha tem o glifo do Icon Forge e o selo do setor legível sobre o papel.
-## Um conjunto só: nenhum bem resolve para `assets/icons/products/` (o antigo
-## game-icons herdado) e o selo não é tingido com a cor do bem.
+## Cada linha tem o PNG ilustrado (colorido) do bem e, no fallback, o glifo do
+## Icon Forge com o selo do setor legível sobre o papel. O conjunto ativo é
+## `assets/icons/illustrated/`; nenhum bem resolve para
+## `assets/icons/products/` (o antigo game-icons herdado) e o ícone ilustrado
+## não é tingido (é exibido com `modulate` branco).
 func _check_icons(table) -> void:
 	var paper := Color("#efe6cc")
 	var missing: Array[String] = []
 	var mixed: Array[String] = []
+	var fallback: Array[String] = []
 	var faint: Array[String] = []
 	var uncolored: Array[String] = []
 	for row in table.rows:
 		var cell: Dictionary = row[0]
 		var id := String(cell.get("icon", ""))
-		if id.is_empty() or ProductIcons.texture(id) == null:
+		var tex := ProductIcons.texture(id, ProductIcons.SEAL_SIZE)
+		if id.is_empty() or tex == null:
 			missing.append(id if not id.is_empty() else "?")
 			continue
-		if not ProductIcons.icon_path(id).begins_with(ProductIcons.GOODS_DIR):
+		var path := ProductIcons.icon_path(id)
+		if not (path.begins_with(ProductIcons.ILLUSTRATED_DIR) \
+				or path.begins_with(ProductIcons.GOODS_DIR)):
 			mixed.append(id)
-		var sector := String(cell.get("sector", ""))
-		if not ProductIcons.SECTOR_TINTS.has(sector):
-			uncolored.append(id)
 			continue
-		var seal_bg := ProductIcons.seal_background(sector, paper)
-		if ProductIcons.contrast(ProductIcons.INK, seal_bg) < 3.0:
-			faint.append(id)
+		if path.begins_with(ProductIcons.GOODS_DIR):
+			fallback.append(id)
+		if not ProductIcons.is_colored_texture(tex):
+			var sector := String(cell.get("sector", ""))
+			if not ProductIcons.SECTOR_TINTS.has(sector):
+				uncolored.append(id)
+				continue
+			var seal_bg := ProductIcons.seal_background(sector, paper)
+			if ProductIcons.contrast(ProductIcons.INK, seal_bg) < 3.0:
+				faint.append(id)
 	if not missing.is_empty():
 		_failures.append("%d bens sem textura de ícone: %s"
 				% [missing.size(), ", ".join(missing.slice(0, 5))])
 	if not mixed.is_empty():
-		_failures.append("%d bens fora do conjunto do Icon Forge: %s"
+		_failures.append("%d bens fora dos conjuntos ilustrado/Icon Forge: %s"
 				% [mixed.size(), ", ".join(mixed.slice(0, 5))])
+	if not fallback.is_empty():
+		_failures.append("%d bens ainda no fallback SVG (sem PNG ilustrado): %s"
+				% [fallback.size(), ", ".join(fallback.slice(0, 5))])
 	if not uncolored.is_empty():
 		_failures.append("%d bens em setor sem cor no selo: %s"
 				% [uncolored.size(), ", ".join(uncolored.slice(0, 5))])
 	if not faint.is_empty():
 		_failures.append("%d selos sem contraste sobre o papel: %s"
 				% [faint.size(), ", ".join(faint.slice(0, 5))])
-	if missing.is_empty() and mixed.is_empty() and uncolored.is_empty() \
-			and faint.is_empty():
-		print("ícones=%d no Icon Forge, selo do setor com contraste ≥ 3:1"
+	if missing.is_empty() and mixed.is_empty() and fallback.is_empty() \
+			and uncolored.is_empty() and faint.is_empty():
+		print("ícones=%d no conjunto ilustrado, nenhum no fallback SVG"
 				% table.rows.size())
 
 

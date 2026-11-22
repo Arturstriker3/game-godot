@@ -4,6 +4,13 @@ Gerador determinístico (Python puro, sem dependências) dos ícones de matéria
 Os ícones são **descritos** em `resource_icons.json` com primitivas SVG; o script aplica o
 estilo da casa e escreve SVGs brancos 24×24 que o Godot tinge (`modulate`).
 
+> **Papel atual (2026-11):** a arte ativa dos BENS é o PNG ilustrado aprovado em
+> `assets/icons/illustrated/` (gerado por `tools/icon_gen`, backend OpenAI). O SVG
+> do Icon Forge continua no jogo como **fallback** de `ProductIcons` enquanto um id
+> não tiver PNG, e como conjunto ativo dos **20 setores de serviço** em
+> `assets/icons/services/`. Para bem novo, gere o PNG ilustrado primeiro; o SVG só
+> é necessário se o PNG faltar.
+
 ```powershell
 python tools/icon_forge/icon_forge.py check                                   # valida as regras
 python tools/icon_forge/icon_forge.py build --out assets/icons/resources      # gera os SVGs

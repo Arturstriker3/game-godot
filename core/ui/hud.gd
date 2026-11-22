@@ -869,7 +869,8 @@ func _legend_row(color: Color, text: String, detail: String,
 	row.add_theme_constant_override("separation", 6.0)
 	if swatch:
 		if not key.is_empty():
-			row.add_child(LegendResourceIcon.new(color, ProductIcons.texture(key)))
+			row.add_child(LegendResourceIcon.new(color,
+					ProductIcons.texture(key, LegendResourceIcon.ICON_SIZE)))
 		else:
 			row.add_child(LegendSwatch.new(color, diamond))
 	var label := UiKit.label(text, UiKit.FS_SMALL, UiKit.TINTA)
@@ -3269,10 +3270,14 @@ class DottedLeader extends Control:
 				Color(UiKit.TINTA, 0.45), 1.4, 1.2)
 
 
-## Símbolo do recurso nas fichas (cidade/trigo/depósito): ícone de produto de
-## 16 px tingido de TINTA dentro de um quadrado arredondado de 20 px preenchido
-## com a cor do recurso a ~35% de opacidade e borda de 1 px TINTA a 50%. Sem
-## ícone para a chave (fallback), desenha só o quadrado na cor cheia do recurso.
+## Símbolo do recurso nas fichas (cidade/trigo/depósito): ícone de produto
+## dentro de um quadrado arredondado de 20 px preenchido com a cor do recurso a
+## ~35% de opacidade e borda de 1 px TINTA a 50%. O quadrado aqui é o SWATCH de
+## cor do recurso no mapa (não o selo do setor): por isso ele fica também nos
+## ícones ilustrados. O PNG colorido entra em cores naturais e ocupa o quadro
+## inteiro (a arte já tem margem própria); o SVG branco do Icon Forge continua
+## com 16 px tingidos de TINTA. Sem ícone para a chave (fallback), desenha só o
+## quadrado na cor cheia do recurso.
 class LegendResourceIcon extends Control:
 	const SIZE := 20.0
 	const ICON_SIZE := 16.0
@@ -3295,9 +3300,12 @@ class LegendResourceIcon extends Control:
 	func _draw() -> void:
 		draw_style_box(_style, Rect2(Vector2.ZERO, size))
 		if _tex != null:
-			var inset := (size.x - ICON_SIZE) * 0.5
-			draw_texture_rect(_tex, Rect2(Vector2(inset, inset),
-					Vector2(ICON_SIZE, ICON_SIZE)), false, UiKit.TINTA)
+			var colored := ProductIcons.is_colored_texture(_tex)
+			var glyph := size.x if colored else ICON_SIZE
+			var at := (size - Vector2(glyph, glyph)) * 0.5
+			draw_texture_rect(_tex, Rect2(at,
+					Vector2(glyph, glyph)), false,
+					Color.WHITE if colored else UiKit.TINTA)
 		else:
 			var inset := 4.0
 			draw_rect(Rect2(Vector2(inset, inset), size - Vector2(inset, inset) * 2.0),
