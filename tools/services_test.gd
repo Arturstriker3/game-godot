@@ -24,6 +24,7 @@ const WEEK_DAYS := 7
 
 const GeneratorScript: Script = preload("res://core/culture/business_name_generator.gd")
 const CultureDbScript: Script = preload("res://core/culture/culture_db.gd")
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 
 var _failures: Array[String] = []
 var _goods: Array = []

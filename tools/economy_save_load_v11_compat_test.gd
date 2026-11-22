@@ -17,6 +17,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/economy_save_load_v11_compat_test.gd
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"

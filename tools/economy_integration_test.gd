@@ -5,6 +5,7 @@ extends SceneTree
 ## e save/load. Roda headless e falha com código diferente de zero.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
