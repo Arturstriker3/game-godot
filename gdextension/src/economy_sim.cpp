@@ -9,6 +9,7 @@
 #include "sim/central_bank.h"
 #include "sim/exchange.h"
 #include "sim/monetary.h"
+#include "sim/power.h"
 #include "sim/storage.h"
 #include "sim/profiling.h"
 #include "sim/save_definitions.h"
@@ -43,7 +44,7 @@ namespace godot {
 namespace {
 
 // Hash da thread corrente: separa "a thread do dia" de "outra thread" em
-// `dispatch_command` (A3). Barato e estável durante toda a sessão.
+// `dispatch_command` (A3). Barato e estÃ¡vel durante toda a sessÃ£o.
 std::size_t current_thread_hash() {
 	return std::hash<std::thread::id>{}(std::this_thread::get_id());
 }
@@ -54,7 +55,7 @@ using namespace ogs;
 
 namespace {
 
-// Segurança numérica: nada de NaN/Inf no estado nem nos outputs.
+// SeguranÃ§a numÃ©rica: nada de NaN/Inf no estado nem nos outputs.
 inline double safe_value(double v) {
 	return std::isfinite(v) ? v : 0.0;
 }
@@ -65,16 +66,16 @@ inline double safe_unit(double v) {
 	return std::isfinite(v) ? std::clamp(v, 0.0, 1.0) : 0.0;
 }
 
-// §19: leitura defensiva de um sub-dicionário do JSON carregado pelo GDScript
-// (chave ausente ou de outro tipo vira dicionário vazio — ausência explícita).
+// Â§19: leitura defensiva de um sub-dicionÃ¡rio do JSON carregado pelo GDScript
+// (chave ausente ou de outro tipo vira dicionÃ¡rio vazio â€” ausÃªncia explÃ­cita).
 inline Dictionary dict_value(const Dictionary& parent, const String& key) {
 	const Variant value = parent.get(key, Variant());
 	return value.get_type() == Variant::DICTIONARY ? Dictionary(value) : Dictionary();
 }
 
-// B3: lê o bloco `region` de um dict de cidade (state_regions.json já
+// B3: lÃª o bloco `region` de um dict de cidade (state_regions.json jÃ¡
 // resolvido pelo GDScript) e preenche o struct Region. Devolve false quando o
-// bloco está ausente/inválido — região inerte (ausência explícita).
+// bloco estÃ¡ ausente/invÃ¡lido â€” regiÃ£o inerte (ausÃªncia explÃ­cita).
 inline bool parse_region(const Dictionary& d, Region& region) {
 	if (!d.has("population_region") && !d.has("urban_population")) {
 		return false;
@@ -84,18 +85,18 @@ inline bool parse_region(const Dictionary& d, Region& region) {
 		static_cast<double>(d.get("population_region", 0.0)));
 	const double urban = safe_nonneg(
 		static_cast<double>(d.get("urban_population", 0.0)));
-	// Urbano capado no total (20 cidades têm urban > population_region: as 19
-	// abaixo do urbano da D-005 + SGP-SIN, cuja região é 0).
+	// Urbano capado no total (20 cidades tÃªm urban > population_region: as 19
+	// abaixo do urbano da D-005 + SGP-SIN, cuja regiÃ£o Ã© 0).
 	region.urban_population = std::min(urban, region.population_region);
 	// Invariante: interior = total - urbano (piso 0). O campo do JSON
-	// (`region_population`) é só referência; recalculamos para o invariante
+	// (`region_population`) Ã© sÃ³ referÃªncia; recalculamos para o invariante
 	// valer mesmo com dado inconsistente.
 	region.region_pop = std::max(0.0,
 		region.population_region - region.urban_population);
 	const Variant us = d.get("urban_share", Variant());
 	if (us.get_type() == Variant::FLOAT || us.get_type() == Variant::INT) {
 		const double value = static_cast<double>(us);
-		// -1 (ou negativo) = sem dado (mix neutro); só valores >= 0 são fração.
+		// -1 (ou negativo) = sem dado (mix neutro); sÃ³ valores >= 0 sÃ£o fraÃ§Ã£o.
 		region.urban_share = value >= 0.0 ? std::clamp(value, 0.0, 1.0) : -1.0;
 	} else {
 		region.urban_share = -1.0;
@@ -120,8 +121,8 @@ inline bool parse_region(const Dictionary& d, Region& region) {
 	return true;
 }
 
-// §19: height_class do urban_land.json → gabarito do jogo. Valor ausente ou
-// desconhecido cai em baixa densidade (o save antigo não tem o campo).
+// Â§19: height_class do urban_land.json â†’ gabarito do jogo. Valor ausente ou
+// desconhecido cai em baixa densidade (o save antigo nÃ£o tem o campo).
 inline Density density_from_height_class(const String& height_class) {
 	if (height_class == "high") {
 		return DENSITY_HIGH;
@@ -132,10 +133,10 @@ inline Density density_from_height_class(const String& height_class) {
 	return DENSITY_LOW;
 }
 
-// População de SIMULAÇÃO da cidade. Desde a calibração de 2026, `population`
-// no cenário é a população real exibida (nação inteira rateada) e a aglomeração
-// da fonte viaja em `sim_population`. Sem o campo (save antigo, cenário
-// sintético), a população histórica É a unidade de simulação — comportamento
+// PopulaÃ§Ã£o de SIMULAÃ‡ÃƒO da cidade. Desde a calibraÃ§Ã£o de 2026, `population`
+// no cenÃ¡rio Ã© a populaÃ§Ã£o real exibida (naÃ§Ã£o inteira rateada) e a aglomeraÃ§Ã£o
+// da fonte viaja em `sim_population`. Sem o campo (save antigo, cenÃ¡rio
+// sintÃ©tico), a populaÃ§Ã£o histÃ³rica Ã‰ a unidade de simulaÃ§Ã£o â€” comportamento
 // anterior preservado.
 inline double read_sim_population(const Dictionary& data, double population) {
 	if (!data.has("sim_population")) {
@@ -148,7 +149,7 @@ inline double read_sim_population(const Dictionary& data, double population) {
 } // namespace
 
 EconomySim::EconomySim() {
-	// Produtos padrão (21 primários) e cesta alimentar validada. O autoload
+	// Produtos padrÃ£o (21 primÃ¡rios) e cesta alimentar validada. O autoload
 	// sobrescreve ambos com goods.json/needs.json via set_goods/needs.
 	ws_.products = 21;
 	ws_.product_names.clear();
@@ -170,16 +171,16 @@ EconomySim::EconomySim() {
 		ws_.food_products.push_back(kFoodProductIds[index]);
 		ws_.food_factors.push_back(kCaloricFactor[index]);
 	}
-	// F3: sem goods.json carregado nenhum dos 21 primários é durável.
+	// F3: sem goods.json carregado nenhum dos 21 primÃ¡rios Ã© durÃ¡vel.
 	ws_.product_durable.assign(kMaxProducts, 0);
 }
 
 EconomySim::~EconomySim() {
 	// Se o sim for liberado com um dia AINDA rodando na thread do pool (o jogo
 	// encerrando, por exemplo), espera o tick sair antes de destruir os
-	// contêineres do status: destruí-los debaixo de quem os escreve era um
-	// access violation (0xC0000005) intermitente no fim do processo. O mutex é
-	// recursivo, então a mesma thread do tick não bloqueia aqui.
+	// contÃªineres do status: destruÃ­-los debaixo de quem os escreve era um
+	// access violation (0xC0000005) intermitente no fim do processo. O mutex Ã©
+	// recursivo, entÃ£o a mesma thread do tick nÃ£o bloqueia aqui.
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 }
 
@@ -242,7 +243,7 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_suitability);
 	ClassDB::bind_method(D_METHOD("set_land_capacity", "city_id", "product", "value"),
 	                     &EconomySim::set_land_capacity);
-	// G (D-096) — agricultura sazonal.
+	// G (D-096) â€” agricultura sazonal.
 	ClassDB::bind_method(D_METHOD("set_crop_plan", "city_id", "product",
 	                     "area_ha", "yield_t_ha", "seasons"),
 	                     &EconomySim::set_crop_plan);
@@ -276,11 +277,11 @@ void EconomySim::_bind_methods() {
 		&EconomySim::set_central_bank_gold);
 	ClassDB::bind_method(D_METHOD("set_central_bank_policy", "currency",
 		"independence"), &EconomySim::set_central_bank_policy);
-	// C2b2 (D-106) — regimes de câmbio, padrão monetário e ouro físico.
+	// C2b2 (D-106) â€” regimes de cÃ¢mbio, padrÃ£o monetÃ¡rio e ouro fÃ­sico.
 	ClassDB::bind_method(D_METHOD("set_exchange_regime", "currency", "regime",
 		"parity", "band_width", "nation"),
 		&EconomySim::set_exchange_regime, DEFVAL(String()));
-	// C2c (D-108) — regimes reais (IMF AREAER 2026) e sucessão de moeda.
+	// C2c (D-108) â€” regimes reais (IMF AREAER 2026) e sucessÃ£o de moeda.
 	ClassDB::bind_method(D_METHOD("set_fx_regimes", "data"),
 		&EconomySim::set_fx_regimes);
 	ClassDB::bind_method(D_METHOD("migrate_currency", "from", "to",
@@ -298,7 +299,7 @@ void EconomySim::_bind_methods() {
 		"tonnes", "buy"), &EconomySim::central_bank_gold_trade);
 	ClassDB::bind_method(D_METHOD("central_bank_gold_convert", "currency",
 		"tonnes"), &EconomySim::central_bank_gold_convert);
-	// C3 (D-107): crédito de empresa (banco agregado como credor).
+	// C3 (D-107): crÃ©dito de empresa (banco agregado como credor).
 	ClassDB::bind_method(D_METHOD("set_bank_credit", "enabled"),
 		&EconomySim::set_bank_credit);
 	ClassDB::bind_method(D_METHOD("set_bank_policy", "spread", "leverage_cap",
@@ -312,7 +313,7 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("group_borrow", "group_id", "amount"),
 		&EconomySim::group_borrow);
 	ClassDB::bind_method(D_METHOD("get_bank_status"), &EconomySim::get_bank_status);
-	// C6 (D-114): crise bancária (regras de laboratório e choque de perda).
+	// C6 (D-114): crise bancÃ¡ria (regras de laboratÃ³rio e choque de perda).
 	ClassDB::bind_method(D_METHOD("set_bank_crisis", "config"),
 		&EconomySim::set_bank_crisis);
 	ClassDB::bind_method(D_METHOD("bank_shock", "bank_id", "loss",
@@ -325,6 +326,20 @@ void EconomySim::_bind_methods() {
 		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
 		&EconomySim::get_storage_product_types);
+	// PARTE E (D-116) â€” energia elÃ©trica (save v35).
+	ClassDB::bind_method(D_METHOD("set_power_definitions", "nations", "cities",
+		"params", "only_missing"), &EconomySim::set_power_definitions,
+		DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("set_power_params", "values"),
+		&EconomySim::set_power_params);
+	ClassDB::bind_method(D_METHOD("set_power_city", "city_id", "connection",
+		"line_mw", "access_pct"), &EconomySim::set_power_city);
+	ClassDB::bind_method(D_METHOD("build_power_plant", "city_id", "fuel", "mw",
+		"group_id"), &EconomySim::build_power_plant, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("build_power_line", "city_id", "mw",
+		"group_id"), &EconomySim::build_power_line, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("get_power_status"),
+		&EconomySim::get_power_status);
 	ClassDB::bind_method(D_METHOD("set_deposit", "city_id", "product", "reserve_kt",
 	                     "quality", "depth_m"),
 	                     &EconomySim::set_deposit);
@@ -384,7 +399,7 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::urban_social_housing);
 	ClassDB::bind_method(D_METHOD("set_instant_construction", "instant"),
 	                     &EconomySim::set_instant_construction);
-	// A5: fase da IA no fim do dia (desligada por padrão).
+	// A5: fase da IA no fim do dia (desligada por padrÃ£o).
 	ClassDB::bind_method(D_METHOD("set_ai_enabled", "enabled"),
 	                     &EconomySim::set_ai_enabled);
 	ClassDB::bind_method(D_METHOD("get_service_sectors"),
@@ -424,7 +439,7 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("from_snapshot", "snapshot"),
 	                     &EconomySim::from_snapshot);
 	// A1: as mesmas fotos, mas pelo serializador da biblioteca (round-trip
-	// IEEE-exato) — o snapshot não atravessa o JSON do Godot.
+	// IEEE-exato) â€” o snapshot nÃ£o atravessa o JSON do Godot.
 	ClassDB::bind_method(D_METHOD("to_snapshot_file", "path"),
 	                     &EconomySim::to_snapshot_file);
 	ClassDB::bind_method(D_METHOD("from_snapshot_file", "path"),
@@ -521,7 +536,7 @@ void EconomySim::fill_leg_status(Dictionary& dict, const Leg& leg) const {
 	dict[k.batch_capacity_tons] = mode_spec.batch_capacity_tons;
 }
 
-// Cenário de validação: duas cidades, POPs agregados, trigo consumido direto.
+// CenÃ¡rio de validaÃ§Ã£o: duas cidades, POPs agregados, trigo consumido direto.
 // ---------------------------------------------------------------------------
 
 const ogs::Currency* EconomySim::currency_for(
@@ -612,9 +627,9 @@ void EconomySim::apply_set_tariff(const String& buyer_nation,
 				&& existing.product == tariff.product) {
 			existing.rate = tariff.rate;
 			ws_.tariff_lookup[key] = tariff.rate;
-			// A2: o índice inteiro acompanha a mudança (a tabela de nações já
-			// existe neste ponto; o rebuild é da ordem de centenas de linhas).
-			// A3: a invalidação fica em `apply_pending_locked`, ponto único do lote.
+			// A2: o Ã­ndice inteiro acompanha a mudanÃ§a (a tabela de naÃ§Ãµes jÃ¡
+			// existe neste ponto; o rebuild Ã© da ordem de centenas de linhas).
+			// A3: a invalidaÃ§Ã£o fica em `apply_pending_locked`, ponto Ãºnico do lote.
 			sim_core_.rebuild_tariff_lookup();
 			return;
 		}
@@ -689,16 +704,16 @@ void EconomySim::apply_set_currency_rate(const String& code, double rate,
 	}
 	Currency& currency = ws_.currencies[static_cast<std::size_t>(found->second)];
 	currency.rate = rate;
-	// `base_rate` fixa a referência da banda e da competitividade float. Sem
-	// ele, a taxa informada vira a própria referência (comportamento anterior).
+	// `base_rate` fixa a referÃªncia da banda e da competitividade float. Sem
+	// ele, a taxa informada vira a prÃ³pria referÃªncia (comportamento anterior).
 	currency.base_rate = (std::isfinite(base_rate) && base_rate > 0.0)
 		? base_rate : rate;
 	currency.floating = floating;
-	// C2b2 (D-106): o regime salvo é a fonte do ramo do dia (float/peg/band).
+	// C2b2 (D-106): o regime salvo Ã© a fonte do ramo do dia (float/peg/band).
 	// O toggle do F5 (`set_currency_rate(..., floating)`) tem de mover os dois
-	// juntos; senão a moeda fica `floating` para o câmbio sombreado e `peg`
+	// juntos; senÃ£o a moeda fica `floating` para o cÃ¢mbio sombreado e `peg`
 	// para o ramo do dia, e a taxa congela (moeda de fixture parada em 1,0).
-	// `band` não é rebaixada: ela já flutua dentro da banda.
+	// `band` nÃ£o Ã© rebaixada: ela jÃ¡ flutua dentro da banda.
 	if (floating && currency.exchange_regime == central_bank::kRegimePeg) {
 		currency.exchange_regime = central_bank::kRegimeFloating;
 	} else if (!floating
@@ -712,7 +727,7 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 	ws_.fx_regime.clear();
 	ws_.fx_no_policy_nations.clear();
 	ws_.fx_regime_source.clear();
-	// Fonte do arquivo inteiro (o status publica o que está valendo).
+	// Fonte do arquivo inteiro (o status publica o que estÃ¡ valendo).
 	const String as_of = String(data.get("as_of", ""));
 	const String title = String(data.get("title", "IMF AREAER"));
 	std::string source = std::string(title.utf8().get_data());
@@ -735,9 +750,9 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 		}
 		const Dictionary entry = entry_variant;
 		ogs::FxRegimeInfo info;
-		// Regime: o vocabulário do arquivo é o do jogo (floating/band/peg).
-		// "unknown" (sem fonte no FMI) é preenchido pela declaração do emissor
-		// no DADO; se chegar vazio, o carregador declara band de jogo (§D-108d)
+		// Regime: o vocabulÃ¡rio do arquivo Ã© o do jogo (floating/band/peg).
+		// "unknown" (sem fonte no FMI) Ã© preenchido pela declaraÃ§Ã£o do emissor
+		// no DADO; se chegar vazio, o carregador declara band de jogo (Â§D-108d)
 		// em vez de deixar a moeda sem regime.
 		const String regime = String(entry.get("game_regime", ""));
 		info.regime = ogs::central_bank::regime_from_name(
@@ -754,9 +769,9 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 		info.source = std::string(String(entry.get("source", ""))
 			.utf8().get_data());
 		if (info.source.empty()) {
-			info.source = source + " — default de jogo";
+			info.source = source + " â€” default de jogo";
 		}
-		// Composição PUBLICADA (quando o dado traz): {moeda: peso}.
+		// ComposiÃ§Ã£o PUBLICADA (quando o dado traz): {moeda: peso}.
 		const Variant basket_variant = entry.get("basket", Variant());
 		if (basket_variant.get_type() == Variant::DICTIONARY) {
 			const Dictionary basket = basket_variant;
@@ -770,9 +785,9 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 				}
 			}
 		}
-		// Emissor: a nação da moeda quando ela é de um país só. Moeda
-		// compartilhada por várias nações (união monetária/dolarização) fica
-		// TRAVADA: ninguém muda o regime (regra de bloco é fase futura).
+		// Emissor: a naÃ§Ã£o da moeda quando ela Ã© de um paÃ­s sÃ³. Moeda
+		// compartilhada por vÃ¡rias naÃ§Ãµes (uniÃ£o monetÃ¡ria/dolarizaÃ§Ã£o) fica
+		// TRAVADA: ninguÃ©m muda o regime (regra de bloco Ã© fase futura).
 		const Variant nations_variant = entry.get("nations", Array());
 		if (nations_variant.get_type() == Variant::ARRAY) {
 			const Array nations = nations_variant;
@@ -782,7 +797,7 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 				info.issuer = std::string(String(nations[0]).utf8().get_data());
 			}
 		}
-		// Dolarizados / sem moeda própria: sem política cambial.
+		// Dolarizados / sem moeda prÃ³pria: sem polÃ­tica cambial.
 		const Variant exceptions_variant = entry.get("exceptions", Variant());
 		if (exceptions_variant.get_type() == Variant::DICTIONARY) {
 			const Dictionary exceptions = exceptions_variant;
@@ -797,9 +812,9 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 		ws_.fx_regime[code] = std::move(info);
 		++count;
 	}
-	// D-108(d): moeda sem classificação AREAER não fica sem regime. O bloco
+	// D-108(d): moeda sem classificaÃ§Ã£o AREAER nÃ£o fica sem regime. O bloco
 	// `game_fallback` do MESMO arquivo declara o default de jogo (e a fonte,
-	// quando há uma declaração do emissor). Não é dado observado.
+	// quando hÃ¡ uma declaraÃ§Ã£o do emissor). NÃ£o Ã© dado observado.
 	const Variant fallback_variant = data.get("game_fallback", Variant());
 	if (fallback_variant.get_type() == Variant::DICTIONARY) {
 		const Dictionary fallback = fallback_variant;
@@ -835,8 +850,8 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 			}
 		}
 	}
-	// O mesmo carregador roda sobre um mundo já criado (teste/API): aplica o
-	// regime às moedas que estão no estado. Em mundo vazio, `set_currencies`
+	// O mesmo carregador roda sobre um mundo jÃ¡ criado (teste/API): aplica o
+	// regime Ã s moedas que estÃ£o no estado. Em mundo vazio, `set_currencies`
 	// aplica depois (o mundo nasce com o regime real).
 	for (Currency& currency : ws_.currencies) {
 		const auto found = ws_.fx_regime.find(currency.code);
@@ -844,7 +859,7 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 			continue;
 		}
 		currency.exchange_regime = found->second.regime;
-		// `band` deriva dentro da faixa (C2b2 §8); `peg` não deriva.
+		// `band` deriva dentro da faixa (C2b2 Â§8); `peg` nÃ£o deriva.
 		currency.floating = found->second.regime
 			!= ogs::central_bank::kRegimePeg;
 	}
@@ -859,11 +874,11 @@ int EconomySim::set_fx_regimes(const Dictionary& data) {
 void EconomySim::set_currencies(const Variant& currencies) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Array list;
-	// Sem `regime` declarado no dado a taxa fica FIXA (`peg`). O dado é do F1 e
-	// não traz a fonte do regime cambial (currencies.json: `regime: null`), então
-	// inventar flutuação violaria a regra "não invente dados" — e o drift diário
-	// move preços/competitividade sem fonte. `regime: "float"` no JSON ativa o
-	// drift por balança.
+	// Sem `regime` declarado no dado a taxa fica FIXA (`peg`). O dado Ã© do F1 e
+	// nÃ£o traz a fonte do regime cambial (currencies.json: `regime: null`), entÃ£o
+	// inventar flutuaÃ§Ã£o violaria a regra "nÃ£o invente dados" â€” e o drift diÃ¡rio
+	// move preÃ§os/competitividade sem fonte. `regime: "float"` no JSON ativa o
+	// drift por balanÃ§a.
 	std::string default_regime = "peg";
 	if (currencies.get_type() == Variant::DICTIONARY) {
 		const Dictionary data = currencies;
@@ -871,9 +886,9 @@ void EconomySim::set_currencies(const Variant& currencies) {
 		if (entries.get_type() == Variant::ARRAY) {
 			list = entries;
 		}
-		// `regime: null` no dado (currencies.json não tem fonte de regime) NÃO
-		// é flutuação: só o valor explícito "float" ativa o drift e o fator de
-		// competitividade. Qualquer outro valor mantém a taxa FIXA.
+		// `regime: null` no dado (currencies.json nÃ£o tem fonte de regime) NÃƒO
+		// Ã© flutuaÃ§Ã£o: sÃ³ o valor explÃ­cito "float" ativa o drift e o fator de
+		// competitividade. Qualquer outro valor mantÃ©m a taxa FIXA.
 		const Variant regime_var = data.get("regime", Variant());
 		if (regime_var.get_type() == Variant::STRING) {
 			const String regime = regime_var;
@@ -891,7 +906,7 @@ void EconomySim::set_currencies(const Variant& currencies) {
 	// Fallback documentado para moedas sem PIB PPP (currencies.json:
 	// `rate_per_anchor: null`, `source: unknown:no_gdp`): usa a mediana das
 	// taxas conhecidas e marca source `fallback:median`. A taxa 1,0 fica como
-	// último recurso (nunca inventa um PIB).
+	// Ãºltimo recurso (nunca inventa um PIB).
 	std::vector<double> known_rates;
 	known_rates.reserve(static_cast<std::size_t>(list.size()));
 	for (int index = 0; index < list.size(); ++index) {
@@ -927,9 +942,9 @@ void EconomySim::set_currencies(const Variant& currencies) {
 		currency.source = std::string(String(entry.get("source", "default")).utf8().get_data());
 		const String regime = String(entry.get("regime", String(default_regime.c_str())));
 		currency.floating = regime == "float";
-		// C2a (D-103): o regime da política nasce do regime já aceito pelo
-		// F5 — nenhuma mecânica nova. "band" (banda administrada) usa o mesmo
-		// drift dentro da banda do fx.cpp; a intervenção é C2b.
+		// C2a (D-103): o regime da polÃ­tica nasce do regime jÃ¡ aceito pelo
+		// F5 â€” nenhuma mecÃ¢nica nova. "band" (banda administrada) usa o mesmo
+		// drift dentro da banda do fx.cpp; a intervenÃ§Ã£o Ã© C2b.
 		currency.exchange_regime = central_bank::kRegimePeg;
 		if (regime == "float") {
 			currency.exchange_regime = central_bank::kRegimeFloating;
@@ -971,8 +986,8 @@ void EconomySim::set_currencies(const Variant& currencies) {
 		return;
 	}
 	// C2c (D-108): o regime inicial vem do IMF AREAER (fx_regimes_2026.json),
-	// não mais do "peg administrativo" único. Moeda sem entrada no arquivo
-	// mantém o que o dado declarou (nada é inventado).
+	// nÃ£o mais do "peg administrativo" Ãºnico. Moeda sem entrada no arquivo
+	// mantÃ©m o que o dado declarou (nada Ã© inventado).
 	for (Currency& currency : next) {
 		const auto found = ws_.fx_regime.find(currency.code);
 		if (found == ws_.fx_regime.end()) {
@@ -985,11 +1000,11 @@ void EconomySim::set_currencies(const Variant& currencies) {
 	ws_.currencies = std::move(next);
 	rebuild_currency_indexes();
 	// Paridade CRUZADA inicial: a taxa com que o mundo nasce vira o ponto de
-	// partida do peg (nenhuma paridade nominal é publicada pelo FMI).
+	// partida do peg (nenhuma paridade nominal Ã© publicada pelo FMI).
 	ogs::exchange::initialize_anchors(ws_);
 
-	// O preço interno está na âncora: carregar moedas NÃO reescala preços. A
-	// taxa só entra na exibição local e na competitividade float.
+	// O preÃ§o interno estÃ¡ na Ã¢ncora: carregar moedas NÃƒO reescala preÃ§os. A
+	// taxa sÃ³ entra na exibiÃ§Ã£o local e na competitividade float.
 	if (ws_.active && !ws_.cities.empty()) {
 		++status_static_version_;
 		status_invalidate();
@@ -999,9 +1014,9 @@ void EconomySim::set_currencies(const Variant& currencies) {
 
 void EconomySim::set_goods(const Array& goods) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// Tabela de produtos: 21 primários nas posições 0..20 (ordem do goods.json
-	// legado) e os bens novos em `order` (21..112). O núcleo não lê arquivos:
-	// todo o conteúdo entra por aqui, no padrão do set_goods antigo.
+	// Tabela de produtos: 21 primÃ¡rios nas posiÃ§Ãµes 0..20 (ordem do goods.json
+	// legado) e os bens novos em `order` (21..112). O nÃºcleo nÃ£o lÃª arquivos:
+	// todo o conteÃºdo entra por aqui, no padrÃ£o do set_goods antigo.
 	const int previous_products = ws_.products;
 	std::vector<std::string> names = ws_.product_names;
 	std::vector<double> prices(kMaxProducts, 0.0);
@@ -1062,8 +1077,8 @@ void EconomySim::set_goods(const Array& goods) {
 	ws_.product_sectors = std::move(sectors);
 	ws_.product_sectors.resize(static_cast<std::size_t>(product_count));
 
-	// Mundo já inicializado: os produtos novos entram com o preço-base e sem
-	// estoque. Os índices existentes (0..previous_products-1) não mudam.
+	// Mundo jÃ¡ inicializado: os produtos novos entram com o preÃ§o-base e sem
+	// estoque. Os Ã­ndices existentes (0..previous_products-1) nÃ£o mudam.
 	if (ws_.active && product_count > previous_products) {
 		for (City& city : ws_.cities) {
 			for (int product = previous_products; product < product_count; ++product) {
@@ -1074,9 +1089,9 @@ void EconomySim::set_goods(const Array& goods) {
 		++status_deposit_version_;
 		status_invalidate();
 	}
-	// F4: os índices dos bens da frota dependem dos ids carregados. Se o mundo
-	// já existe e ainda não tem frota (set_goods chamado depois da
-	// inicialização, como no autoload), deriva agora.
+	// F4: os Ã­ndices dos bens da frota dependem dos ids carregados. Se o mundo
+	// jÃ¡ existe e ainda nÃ£o tem frota (set_goods chamado depois da
+	// inicializaÃ§Ã£o, como no autoload), deriva agora.
 	ws_.fleet_product_fuel = product_index(String("fuel"));
 	ws_.fleet_product_truck = product_index(String("truck"));
 	ws_.fleet_product_ship = product_index(String("cargo_ship"));
@@ -1095,14 +1110,14 @@ void EconomySim::initialize_scenario() {
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
-	// A3: a fila de comandos e o log também são do mundo anterior.
+	// A3: a fila de comandos e o log tambÃ©m sÃ£o do mundo anterior.
 	commands_.reset();
-	// A5: o estado da IA pertence ao mundo — contadores, janelas e templates
-	// de um cenário não valem no outro.
+	// A5: o estado da IA pertence ao mundo â€” contadores, janelas e templates
+	// de um cenÃ¡rio nÃ£o valem no outro.
 	ai_phase_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
-	// S14: o cenário AGRIA/PORTUS vive em sim/scenario_fixture.cpp (C++ puro);
-	// aqui só o cache de status (estado Godot) é resetado.
+	// S14: o cenÃ¡rio AGRIA/PORTUS vive em sim/scenario_fixture.cpp (C++ puro);
+	// aqui sÃ³ o cache de status (estado Godot) Ã© resetado.
 	initialize_scenario_fixture(ws_, sim_core_);
 }
 
@@ -1116,7 +1131,7 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
-	// A3: a fila de comandos e o log também são do mundo anterior.
+	// A3: a fila de comandos e o log tambÃ©m sÃ£o do mundo anterior.
 	commands_.reset();
 	// A5: mundo novo, estado da IA novo (sem os ids/janelas do anterior).
 	ai_phase_.reset();
@@ -1127,14 +1142,14 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	ws_.cities.clear();
 	ws_.buildings.clear();
 	ws_.construction_projects.clear();
-	// C5 (D-112): a bolsa é dos grupos deste mundo; o estado anterior não vale
-	// e a bolsa nasce no primeiro tick com o patrimônio medido do grupo.
+	// C5 (D-112): a bolsa Ã© dos grupos deste mundo; o estado anterior nÃ£o vale
+	// e a bolsa nasce no primeiro tick com o patrimÃ´nio medido do grupo.
 	ogs::stock::reset(ws_);
 	// C6 (D-114): mundo novo zera fundo de seguro, eventos e estado de crise
-	// (os bancos nascem calmos e sem resolução).
+	// (os bancos nascem calmos e sem resoluÃ§Ã£o).
 	ogs::bank_crisis::reset(ws_);
-	// §19: mundo novo zera os vetores urbanos; o set_urban os preenche
-	// depois (o casamento é pelo id da cidade criada aqui).
+	// Â§19: mundo novo zera os vetores urbanos; o set_urban os preenche
+	// depois (o casamento Ã© pelo id da cidade criada aqui).
 	ws_.land.clear();
 	ws_.housing.clear();
 	ws_.city_gov.clear();
@@ -1143,8 +1158,8 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	ws_.ports.clear();
 	ws_.last_orders.clear();
 	ws_.bankruptcies = 0;
-	// D-099: composição das falências é diagnóstico de runtime — mundo novo
-	// começa do zero.
+	// D-099: composiÃ§Ã£o das falÃªncias Ã© diagnÃ³stico de runtime â€” mundo novo
+	// comeÃ§a do zero.
 	for (int product = 0; product < kMaxProducts; ++product) {
 		ws_.bankrupt_by_output[product] = 0;
 	}
@@ -1169,7 +1184,7 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	ws_.agri_month_key = 0;
 	ws_.agri_delivered_today = 0.0;
 	ws_.agri_harvests_today = 0;
-	// F9: mundo novo, grupos/política novos (a semeadura roda no fim).
+	// F9: mundo novo, grupos/polÃ­tica novos (a semeadura roda no fim).
 	ws_.groups.clear();
 	ws_.group_lookup.clear();
 	ws_.groups_seeded = false;
@@ -1187,7 +1202,7 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		ws_.consumed_today[index] = 0.0;
 	}
 
-	// Cidades reais do cenário: identidade geográfica + caixas iniciais.
+	// Cidades reais do cenÃ¡rio: identidade geogrÃ¡fica + caixas iniciais.
 	for (int index = 0; index < cities.size(); ++index) {
 		const Dictionary d = cities[index];
 		City city;
@@ -1197,9 +1212,9 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		city.home_nation =
 			std::string(String(d.get("home_nation", d["nation"])).utf8().get_data());
 		city.landmass = std::string(String(d.get("landmass", "")).utf8().get_data());
-		// B3: região da cidade (estados inteiros). Com dado (`region` no dict),
-		// `population` vira o total da região e `simulation_population` vira a
-		// aglomeração urbana (capada). Sem o bloco (cenário sintético), mantém o
+		// B3: regiÃ£o da cidade (estados inteiros). Com dado (`region` no dict),
+		// `population` vira o total da regiÃ£o e `simulation_population` vira a
+		// aglomeraÃ§Ã£o urbana (capada). Sem o bloco (cenÃ¡rio sintÃ©tico), mantÃ©m o
 		// comportamento anterior (population = rateio; sim_population = urbano).
 		Region region;
 		const bool has_region = parse_region(d.get("region", Dictionary()), region);
@@ -1212,8 +1227,8 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		}
 		city.center = {static_cast<double>(d["x"]), static_cast<double>(d["y"])};
 
-		// Caixas iniciais por habitante (constantes do modelo demo). A escala é
-		// a população de SIMULAÇÃO: a população real exibida não muda o balanço.
+		// Caixas iniciais por habitante (constantes do modelo demo). A escala Ã©
+		// a populaÃ§Ã£o de SIMULAÃ‡ÃƒO: a populaÃ§Ã£o real exibida nÃ£o muda o balanÃ§o.
 		city.firm_cash = city.simulation_population * kFirmCashPerCapita;
 		city.service_cash = city.simulation_population * kServiceCashPerCapita;
 		city.government_budget =
@@ -1225,27 +1240,27 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		city.pop.desired_by_category.assign(ws_.food_products.size(), 0.0);
 		city.pop.consumed_by_category.assign(ws_.food_products.size(), 0.0);
 		init_pop_needs(city.pop);
-		// F7: perfil inicial de trabalho/educação a partir do índice de renda
-		// (1,0 por padrão; o GeographyService reaplica quando tem o PIB real).
+		// F7: perfil inicial de trabalho/educaÃ§Ã£o a partir do Ã­ndice de renda
+		// (1,0 por padrÃ£o; o GeographyService reaplica quando tem o PIB real).
 		apply_labor_profile(city);
-		// B3: o bloco da região (estados inteiros) foi parseado acima; semeia a
-		// demografia e os quintis do interior e reconcilia a população exibida.
+		// B3: o bloco da regiÃ£o (estados inteiros) foi parseado acima; semeia a
+		// demografia e os quintis do interior e reconcilia a populaÃ§Ã£o exibida.
 		city.region = std::move(region);
 		if (city.region.ready) {
 			sim_core_.seed_region(city);
 		}
-		// Aptidão padrão (inicializador do struct: suitability = {1.0, 1.0, 1.0,
-		// 0, ...} — trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
-		// o dado real em tempo de execução.
+		// AptidÃ£o padrÃ£o (inicializador do struct: suitability = {1.0, 1.0, 1.0,
+		// 0, ...} â€” trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
+		// o dado real em tempo de execuÃ§Ã£o.
 		city.suitability[0] = 1.0;
 		for (int product = 0; product < ws_.products; ++product) {
 			city.markets[product] = {0.0, base_price(product),
 				0.0, 0.0};
 		}
-		// §15: estoque inicial de materiais de construção por cidade (a "obra em
-		// estoque" pré-existente, derivada da população de simulação). Sem ele a
-		// construção real (sem produtor de materiais no mundo inicial) travaria
-		// no primeiro dia. `derived:initial_stock` — não é dado observado.
+		// Â§15: estoque inicial de materiais de construÃ§Ã£o por cidade (a "obra em
+		// estoque" prÃ©-existente, derivada da populaÃ§Ã£o de simulaÃ§Ã£o). Sem ele a
+		// construÃ§Ã£o real (sem produtor de materiais no mundo inicial) travaria
+		// no primeiro dia. `derived:initial_stock` â€” nÃ£o Ã© dado observado.
 		const int cmat = product_index(String("construction_material"));
 		const int csteel = product_index(String("steel_structure"));
 		const int celec = product_index(String("electrical_material"));
@@ -1269,10 +1284,10 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		ws_.cities.push_back(std::move(city));
 	}
 
-	// Construções reais (fazendas primárias): o produto vem do campo "resource"
-	// (resolvido pelo GeographyService para o alimento básico de maior aptidão ×
-	// caloria da nação da cidade); ausente, mantém trigo (comportamento legado).
-	// A produção efetiva segue multiplicando a capacidade pela aptidão do produto
+	// ConstruÃ§Ãµes reais (fazendas primÃ¡rias): o produto vem do campo "resource"
+	// (resolvido pelo GeographyService para o alimento bÃ¡sico de maior aptidÃ£o Ã—
+	// caloria da naÃ§Ã£o da cidade); ausente, mantÃ©m trigo (comportamento legado).
+	// A produÃ§Ã£o efetiva segue multiplicando a capacidade pela aptidÃ£o do produto
 	// escolhido (fase 4b usa city.suitability[output_product]).
 	for (int index = 0; index < buildings.size(); ++index) {
 		const Dictionary d = buildings[index];
@@ -1286,14 +1301,14 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 			String(building.resource.c_str()));
 		building.output_product = output_product >= 0 ? output_product : 0;
 		building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
-		// D-086: mina/poço inicial já EXISTENTE. `stage` = -1 no contrato do
-		// GeographyService significa "último estágio" (o número mora aqui, não
-		// no GDScript): a construção histórica produz no piso (5%).
-		// D-086b: `stage >= 0` é a mina semeada PELA PRODUÇÃO REAL de 2024/2025
-		// (lista de extração, `extraction_2025.json`) — ela nasce operando e a
-		// reserva do estágio é aberta quando a jazida é declarada
+		// D-086: mina/poÃ§o inicial jÃ¡ EXISTENTE. `stage` = -1 no contrato do
+		// GeographyService significa "Ãºltimo estÃ¡gio" (o nÃºmero mora aqui, nÃ£o
+		// no GDScript): a construÃ§Ã£o histÃ³rica produz no piso (5%).
+		// D-086b: `stage >= 0` Ã© a mina semeada PELA PRODUÃ‡ÃƒO REAL de 2024/2025
+		// (lista de extraÃ§Ã£o, `extraction_2025.json`) â€” ela nasce operando e a
+		// reserva do estÃ¡gio Ã© aberta quando a jazida Ã© declarada
 		// (`apply_set_deposit`), porque a semente chega antes do `set_deposit`.
-		// Dono padrão: Estado.
+		// Dono padrÃ£o: Estado.
 		{
 			const int stage_in = int(d.get("stage", 0));
 			building.stage = stage_in < 0 ? kMineInitialStage : stage_in;
@@ -1307,20 +1322,20 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		building.input_product = -1;
 		const double capacity =
 			safe_nonneg(static_cast<double>(d["output_tons_per_day"]));
-		// Aptidão da cultura escolhida na bacia da cidade (opcional; 1.0 no
-		// caminho legado). A capacidade nominal é o teto de terra; a produção
-		// efetiva da fase 4b é capacidade × aptidão. Folha e opex acompanham a
-		// FRAÇÃO APTA da terra — antes seguiam a capacidade nominal inteira e
-		// uma fazenda de aptidão 4% pagava 100% dos custos para produzir 4%,
-		// falindo em 60 dias (§19). Sem essa correção o mundo perdia 83 das 252
+		// AptidÃ£o da cultura escolhida na bacia da cidade (opcional; 1.0 no
+		// caminho legado). A capacidade nominal Ã© o teto de terra; a produÃ§Ã£o
+		// efetiva da fase 4b Ã© capacidade Ã— aptidÃ£o. Folha e opex acompanham a
+		// FRAÃ‡ÃƒO APTA da terra â€” antes seguiam a capacidade nominal inteira e
+		// uma fazenda de aptidÃ£o 4% pagava 100% dos custos para produzir 4%,
+		// falindo em 60 dias (Â§19). Sem essa correÃ§Ã£o o mundo perdia 83 das 252
 		// fazendas iniciais no dia 61.
 		const double aptitude = std::clamp(
 			safe_nonneg(static_cast<double>(d.get("aptitude", 1.0))), 0.0, 1.0);
-		// D-086b: a semente de produção real informa a régua de engenharia da
+		// D-086b: a semente de produÃ§Ã£o real informa a rÃ©gua de engenharia da
 		// MINA (a mesma tabela que a IA usa para abrir/expandir mina). Sem os
 		// campos, o caminho legado (fazenda: 7,5 empregos/t, 2,5 opex/t) fica
-		// intacto — fazendas e minas históricas não mudam. A mina semeada com a
-		// régua da fazenda pagava ~2-4x a folha de uma mina igual da IA e
+		// intacto â€” fazendas e minas histÃ³ricas nÃ£o mudam. A mina semeada com a
+		// rÃ©gua da fazenda pagava ~2-4x a folha de uma mina igual da IA e
 		// falia com a venda da cidade limitada pela demanda local.
 		const double jobs_per_ton = d.has("jobs_per_ton")
 			? safe_nonneg(static_cast<double>(d["jobs_per_ton"])) : kJobsPerTon;
@@ -1336,7 +1351,7 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		ws_.buildings.push_back(std::move(building));
 	}
 
-	// Portos do cenário (identidade geográfica, para o minimapa e os comboios).
+	// Portos do cenÃ¡rio (identidade geogrÃ¡fica, para o minimapa e os comboios).
 	for (int index = 0; index < ports.size(); ++index) {
 		const Dictionary d = ports[index];
 		Port port;
@@ -1345,37 +1360,37 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		port.nation = std::string(String(d["nation"]).utf8().get_data());
 		port.center = {static_cast<double>(d["x"]), static_cast<double>(d["y"])};
 		port.landmass = std::string(String(d.get("landmass", "")).utf8().get_data());
-		// Cidade-sede: só a âncora do porto (não é dono exclusivo do tráfego).
+		// Cidade-sede: sÃ³ a Ã¢ncora do porto (nÃ£o Ã© dono exclusivo do trÃ¡fego).
 		port.host_city = std::string(String(d.get("port_of", d.get("host_city", "")))
 			.utf8().get_data());
 		ws_.ports.push_back(std::move(port));
 	}
 
 	rebuild_indexes();
-	// Capacidade de nível 1 depende da população da cidade-sede: só depois do
-	// índice de cidades (e de os portos existirem).
+	// Capacidade de nÃ­vel 1 depende da populaÃ§Ã£o da cidade-sede: sÃ³ depois do
+	// Ã­ndice de cidades (e de os portos existirem).
 	init_port_capacities();
-	// F4: frota inicial derivada de população/PIB (source: derived). Os bens da
-	// frota só resolvem depois de set_goods; aqui as contagens/estoques já
-	// existem e os índices são atualizados quando os bens chegam.
+	// F4: frota inicial derivada de populaÃ§Ã£o/PIB (source: derived). Os bens da
+	// frota sÃ³ resolvem depois de set_goods; aqui as contagens/estoques jÃ¡
+	// existem e os Ã­ndices sÃ£o atualizados quando os bens chegam.
 	init_fleets();
-	// F8: serviços — catálogo já carregado pelo autoload/teste; os negócios
-	// iniciais saem do caixa do próprio setor (capital fica em service_cash).
+	// F8: serviÃ§os â€” catÃ¡logo jÃ¡ carregado pelo autoload/teste; os negÃ³cios
+	// iniciais saem do caixa do prÃ³prio setor (capital fica em service_cash).
 	seed_services();
 	// F9: grupos/empresas a partir dos ativos privados existentes.
 	seed_groups();
 }
 
 // ---------------------------------------------------------------------------
-// F4 — frota nacional e combustível.
+// F4 â€” frota nacional e combustÃ­vel.
 //
-// Contrato: cada trecho de um pedido exige (a) veículo livre da nação
-// VENDEDORA na capacidade do ModeSpec (caminhão 25 t, navio 2.000 t, avião 20 t)
-// e (b) combustível no estoque nacional, consumido por t·km. Sem os dois, a
-// carga não embarca; a diferença entra em `queue_today` e o governo repõe frota
-// e combustível na manutenção mensal. Não há número fora do dado: a frota
-// inicial é derivada de população/PIB (`source: derived`), o combustível é um
-// bem físico (fuel, order 47) e os veículos são os bens finais da F2
+// Contrato: cada trecho de um pedido exige (a) veÃ­culo livre da naÃ§Ã£o
+// VENDEDORA na capacidade do ModeSpec (caminhÃ£o 25 t, navio 2.000 t, aviÃ£o 20 t)
+// e (b) combustÃ­vel no estoque nacional, consumido por tÂ·km. Sem os dois, a
+// carga nÃ£o embarca; a diferenÃ§a entra em `queue_today` e o governo repÃµe frota
+// e combustÃ­vel na manutenÃ§Ã£o mensal. NÃ£o hÃ¡ nÃºmero fora do dado: a frota
+// inicial Ã© derivada de populaÃ§Ã£o/PIB (`source: derived`), o combustÃ­vel Ã© um
+// bem fÃ­sico (fuel, order 47) e os veÃ­culos sÃ£o os bens finais da F2
 // (truck/cargo_ship/cargo_plane).
 // ---------------------------------------------------------------------------
 
@@ -1397,7 +1412,7 @@ Dictionary EconomySim::get_fleet(const String& nation) const {
 	out["ships_busy"] = fleet.ships_busy;
 	out["planes_busy"] = fleet.planes_busy;
 	out["health"] = Array{fleet.health[0], fleet.health[1], fleet.health[2]};
-	// Capacidade efetiva de um lote por modal (t) — veículos × saúde × carga.
+	// Capacidade efetiva de um lote por modal (t) â€” veÃ­culos Ã— saÃºde Ã— carga.
 	out["capacity_tons"] = fleet.trucks * fleet.health[0] * 25.0
 		+ fleet.ships * fleet.health[1] * 2000.0
 		+ fleet.planes * fleet.health[2] * 20.0;
@@ -1541,8 +1556,8 @@ Dictionary EconomySim::apply_expand_port(const String& port_id, double t_per_day
 		return result;
 	}
 
-	// Obra pública: paga o orçamento da cidade-sede e credita o setor de
-	// construção (dinheiro conservado).
+	// Obra pÃºblica: paga o orÃ§amento da cidade-sede e credita o setor de
+	// construÃ§Ã£o (dinheiro conservado).
 	int payer_index = -1;
 	if (!port->host_city.empty()) {
 		const auto found = ws_.city_lookup.find(port->host_city);
@@ -1590,7 +1605,7 @@ void EconomySim::set_instant_construction(bool instant) {
 
 void EconomySim::set_ai_enabled(bool enabled) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// Só a flag: o estado entre dias da IA pertence ao MUNDO (resetado em
+	// SÃ³ a flag: o estado entre dias da IA pertence ao MUNDO (resetado em
 	// initialize_*/from_snapshot*, preservado no load por from_dict).
 	ai_enabled_ = enabled;
 }
@@ -1598,20 +1613,20 @@ void EconomySim::set_ai_enabled(bool enabled) {
 Dictionary EconomySim::tick_day() {
 	tick_and_publish();
 	// A4: tools/testes/goldens recebem o status completo SOB PEDIDO. Este
-	// caminho mantém a cadência por slot da S17 exatamente como antes (o
+	// caminho mantÃ©m a cadÃªncia por slot da S17 exatamente como antes (o
 	// primeiro build de um slot calcula o dia corrente) e desliga de vez a
 	// semeadura pelo retrato semanal. O jogo usa `tick_and_publish` +
-	// `get_day_summary` e nunca chega aqui; o agendador de teste, que só chama
-	// `tick_and_publish`, mantém a semeadura.
+	// `get_day_summary` e nunca chega aqui; o agendador de teste, que sÃ³ chama
+	// `tick_and_publish`, mantÃ©m a semeadura.
 	status_seed_labor_from_snapshot_ = false;
 	return get_status();
 }
 
 void EconomySim::tick_and_publish() {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// A3: enquanto o dia roda, quem muta o mundo só enfileira (dispatch_command
-	// vê a flag e não toca no `ws_`). A flag é limpa na saída, inclusive quando
-	// o dia sai por exceção.
+	// A3: enquanto o dia roda, quem muta o mundo sÃ³ enfileira (dispatch_command
+	// vÃª a flag e nÃ£o toca no `ws_`). A flag Ã© limpa na saÃ­da, inclusive quando
+	// o dia sai por exceÃ§Ã£o.
 	struct TickGuard {
 		std::atomic<bool>& flag;
 		std::atomic<std::size_t>& thread;
@@ -1627,29 +1642,29 @@ void EconomySim::tick_and_publish() {
 	} tick_guard(tick_in_progress_, tick_thread_);
 #if defined(OGS_PROFILING)
 	// Sink das fases do tick: os 15 slots de `profile_us_`, com o toggle
-	// `profile_` como interruptor (desligado, nenhum relógio é lido).
+	// `profile_` como interruptor (desligado, nenhum relÃ³gio Ã© lido).
 	ogs::profile::Sink phase_sink{profile_us_, kPhaseCount, &profile_};
 	const ogs::profile::SinkScope phase_scope(&phase_sink);
 #endif
 	tick_core();
 	if (ai_enabled_) {
-		// A5/D-076: fase da IA no FIM do dia, já com o dia fechado (`ws_.day` é
-		// o dia que acabou de rodar) e ANTES da publicação do status. A IA lê
-		// um retrato próprio (`AiView`), não o status, então a ordem não muda
-		// nenhuma decisão; e cada comando emitido é aplicado na hora pela
-		// própria fase (ai_emit_*), então o status abaixo já sai com os
-		// efeitos do dia. Rodar a IA depois do status obrigava a invalidá-lo e
-		// a construí-lo DUAS vezes por dia (~20 ms), e a segunda construção
-		// lia o cache semanal do slot anterior — publicando `nations[].labor`
-		// com até 13 dias de atraso.
+		// A5/D-076: fase da IA no FIM do dia, jÃ¡ com o dia fechado (`ws_.day` Ã©
+		// o dia que acabou de rodar) e ANTES da publicaÃ§Ã£o do status. A IA lÃª
+		// um retrato prÃ³prio (`AiView`), nÃ£o o status, entÃ£o a ordem nÃ£o muda
+		// nenhuma decisÃ£o; e cada comando emitido Ã© aplicado na hora pela
+		// prÃ³pria fase (ai_emit_*), entÃ£o o status abaixo jÃ¡ sai com os
+		// efeitos do dia. Rodar a IA depois do status obrigava a invalidÃ¡-lo e
+		// a construÃ­-lo DUAS vezes por dia (~20 ms), e a segunda construÃ§Ã£o
+		// lia o cache semanal do slot anterior â€” publicando `nations[].labor`
+		// com atÃ© 13 dias de atraso.
 		OGS_SIM_ZONE(kPhaseAi);
 		ai_phase_.run(ws_, sim_core_, commands_, instant_construction_,
 			bootstrap_construction_);
 	}
 	{
-		// Fase `status` (RAII). A4: o dia NÃO monta mais o Dictionary do mundo
-		// inteiro. No fecho semanal captura-se o retrato de trabalho das nações
-		// (S17), em doubles puros; o resumo leve do dia é montado sob demanda
+		// Fase `status` (RAII). A4: o dia NÃƒO monta mais o Dictionary do mundo
+		// inteiro. No fecho semanal captura-se o retrato de trabalho das naÃ§Ãµes
+		// (S17), em doubles puros; o resumo leve do dia Ã© montado sob demanda
 		// por `get_day_summary()` depois do join (main thread).
 		OGS_SIM_ZONE(kPhaseStatus);
 		if ((ws_.day % 7) == 0 || labor_snapshot_day_ < 0) {
@@ -1664,7 +1679,7 @@ void EconomySim::status_invalidate() {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	status_built_day_ = -1;
 	++data_version_;
-	// A4: as consultas cacheadas por dia também ficam velhas.
+	// A4: as consultas cacheadas por dia tambÃ©m ficam velhas.
 	columns_day_ = -1;
 	query_rows_day_ = -1;
 	query_light_day_ = -1;
@@ -1680,16 +1695,16 @@ int EconomySim::get_data_version() const {
 // A3 - fila de comandos (sim/commands.h; racional em
 // docs/economy/refactor/A3_commands.md).
 //
-// Cada método que muda o mundo (jogador ou IA) agora só monta um Command,
-// enfileira e pede a aplicação. A ordem de aplicação é a de emissão; a fila é
-// aplicada (a) no início do dia, antes do prólogo (tick_core), e (b) na hora,
-// quando o método precisa devolver o efeito (contrato de retorno de invest,
-// build, group_invest, ...) - esse é o único caminho síncrono.
+// Cada mÃ©todo que muda o mundo (jogador ou IA) agora sÃ³ monta um Command,
+// enfileira e pede a aplicaÃ§Ã£o. A ordem de aplicaÃ§Ã£o Ã© a de emissÃ£o; a fila Ã©
+// aplicada (a) no inÃ­cio do dia, antes do prÃ³logo (tick_core), e (b) na hora,
+// quando o mÃ©todo precisa devolver o efeito (contrato de retorno de invest,
+// build, group_invest, ...) - esse Ã© o Ãºnico caminho sÃ­ncrono.
 // ---------------------------------------------------------------------------
 
 namespace {
 
-// Log/dict <-> Command. O log é a evidência do replay e sai em JSON pelo
+// Log/dict <-> Command. O log Ã© a evidÃªncia do replay e sai em JSON pelo
 Dictionary command_to_dict(const ogs::Command& cmd) {
 	Dictionary entry;
 	const char* name = ogs::command_type_name(cmd.type);
@@ -1780,14 +1795,14 @@ bool command_from_dict(const Dictionary& entry, ogs::Command& out) {
 } // namespace
 
 Dictionary EconomySim::dispatch_command(const ogs::Command& cmd) {
-	// Dia em andamento em OUTRA thread (tick_scheduler): a ação só entra na
-	// fila. Nada do `ws_` é tocado aqui, então não há disputa com o escritor
-	// único - é o caminho que dispensa o mutex recursivo. O efeito chega no
-	// início do próximo dia (`apply_pending_locked` em tick_core).
+	// Dia em andamento em OUTRA thread (tick_scheduler): a aÃ§Ã£o sÃ³ entra na
+	// fila. Nada do `ws_` Ã© tocado aqui, entÃ£o nÃ£o hÃ¡ disputa com o escritor
+	// Ãºnico - Ã© o caminho que dispensa o mutex recursivo. O efeito chega no
+	// inÃ­cio do prÃ³ximo dia (`apply_pending_locked` em tick_core).
 	//
-	// Na PRÓPRIA thread do dia (seed_industry chama build, por exemplo) a
-	// mutação aplica na hora: o tick é o escritor, já está sob o mutex e a
-	// ordem interna do dia é parte do resultado.
+	// Na PRÃ“PRIA thread do dia (seed_industry chama build, por exemplo) a
+	// mutaÃ§Ã£o aplica na hora: o tick Ã© o escritor, jÃ¡ estÃ¡ sob o mutex e a
+	// ordem interna do dia Ã© parte do resultado.
 	const bool in_tick_thread = tick_thread_.load(std::memory_order_acquire)
 		== current_thread_hash();
 	if (tick_in_progress_.load(std::memory_order_acquire) && !in_tick_thread) {
@@ -1800,8 +1815,8 @@ Dictionary EconomySim::dispatch_command(const ogs::Command& cmd) {
 		deferred["apply_day"] = queued.day + 1;
 		return deferred;
 	}
-	// Fora do dia: aplica agora, na ordem de emissão. Comandos anteriores na
-	// fila (se houver) saem antes - é o que garante a ordem determinística.
+	// Fora do dia: aplica agora, na ordem de emissÃ£o. Comandos anteriores na
+	// fila (se houver) saem antes - Ã© o que garante a ordem determinÃ­stica.
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	ogs::Command accepted = cmd;
 	accepted.day = ws_.day;
@@ -1816,10 +1831,10 @@ Dictionary EconomySim::apply_pending_locked(uint64_t wanted_seq) {
 		return receipt;
 	}
 	for (const ogs::Command& pending_cmd : pending) {
-		// Cópia: o log grava o dia em que o comando FOI aplicado. Os emitidos
+		// CÃ³pia: o log grava o dia em que o comando FOI aplicado. Os emitidos
 		// entre dias aplicam no mesmo dia; os emitidos com o dia em andamento
-		// (outra thread) aplicam no início do dia seguinte - o replay usa
-		// `apply_day`, não `day`, para acertar os dois casos.
+		// (outra thread) aplicam no inÃ­cio do dia seguinte - o replay usa
+		// `apply_day`, nÃ£o `day`, para acertar os dois casos.
 		ogs::Command cmd = pending_cmd;
 		cmd.apply_day = ws_.day;
 		const Dictionary result = apply_one_locked(cmd);
@@ -1828,7 +1843,7 @@ Dictionary EconomySim::apply_pending_locked(uint64_t wanted_seq) {
 			receipt = result;
 		}
 	}
-	// Ponto ÚNICO de invalidação do lote (os aplicadores não invalidam mais).
+	// Ponto ÃšNICO de invalidaÃ§Ã£o do lote (os aplicadores nÃ£o invalidam mais).
 	if (!tick_in_progress_.load(std::memory_order_relaxed)) {
 		status_invalidate();
 	}
@@ -1869,8 +1884,8 @@ bool EconomySim::replay_commands(const Array& entries, int target_day) {
 		if (!command_from_dict(entries[index], cmd)) {
 			return false;
 		}
-		// O relógio do replay é o dia em que o comando FOI aplicado (não o dia
-		// em que foi emitido): os dois coincidem para as ações entre dias e
+		// O relÃ³gio do replay Ã© o dia em que o comando FOI aplicado (nÃ£o o dia
+		// em que foi emitido): os dois coincidem para as aÃ§Ãµes entre dias e
 		// diferem em 1 para as que esperaram a fila (dia em andamento).
 		const int when = cmd.apply_day > 0 ? cmd.apply_day : cmd.day;
 		while (ws_.day < when) {
@@ -1933,11 +1948,11 @@ Dictionary EconomySim::get_profile() const {
 	return profile;
 }
 
-// Pré-aquece os dois slots do status. O primeiro dia publicado em um slot
-// frio paga a criação de TODOS os dicionários por cidade (medido no cenário
+// PrÃ©-aquece os dois slots do status. O primeiro dia publicado em um slot
+// frio paga a criaÃ§Ã£o de TODOS os dicionÃ¡rios por cidade (medido no cenÃ¡rio
 // real: 60 ms contra 17 ms num dia quente). Aqui isso vira custo de carga, e
-// nenhum tick paga a alocação. Só roda com o mundo já preenchido (aptidão,
-// demanda externa e índice de renda aplicados), senão o bloco estático do
+// nenhum tick paga a alocaÃ§Ã£o. SÃ³ roda com o mundo jÃ¡ preenchido (aptidÃ£o,
+// demanda externa e Ã­ndice de renda aplicados), senÃ£o o bloco estÃ¡tico do
 // status sairia com os valores default.
 void EconomySim::warm_status() {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -1948,7 +1963,7 @@ void EconomySim::warm_status() {
 	if (status_live_ < 0) {
 		return;
 	}
-	// `built_day_ = -1` faz a próxima chamada construir no OUTRO slot.
+	// `built_day_ = -1` faz a prÃ³xima chamada construir no OUTRO slot.
 	status_built_day_ = -1;
 	get_status();
 }
@@ -1959,18 +1974,18 @@ void EconomySim::tick_core() {
 	if (!ws_.active) {
 		initialize_scenario();
 	}
-	// A3: o dia começa aplicando a fila de comandos (ordem de emissão), antes
-	// do prólogo e de qualquer fase. Comandos emitidos com o dia em andamento
-	// (outra thread) chegam aqui; os emitidos entre dias já foram aplicados
-	// pelo dispatch e a fila está vazia.
+	// A3: o dia comeÃ§a aplicando a fila de comandos (ordem de emissÃ£o), antes
+	// do prÃ³logo e de qualquer fase. Comandos emitidos com o dia em andamento
+	// (outra thread) chegam aqui; os emitidos entre dias jÃ¡ foram aplicados
+	// pelo dispatch e a fila estÃ¡ vazia.
 	apply_pending_locked(0);
 	current_day_.store(ws_.day, std::memory_order_relaxed);
-	// §12.3: se o mundo real ainda não tem indústria, semeia poucas plantas de
-	// referência (moinho + padaria) antes de contar dinheiro/invariantes.
+	// Â§12.3: se o mundo real ainda nÃ£o tem indÃºstria, semeia poucas plantas de
+	// referÃªncia (moinho + padaria) antes de contar dinheiro/invariantes.
 	seed_industry();
 
-	// A ordem do dia (prólogo + fases) é da biblioteca (sim/sim_day.cpp): a
-	// mesma sequência roda sem o Godot. Aqui ficam só a inicialização acima e o
+	// A ordem do dia (prÃ³logo + fases) Ã© da biblioteca (sim/sim_day.cpp): a
+	// mesma sequÃªncia roda sem o Godot. Aqui ficam sÃ³ a inicializaÃ§Ã£o acima e o
 	// log dos invariantes abaixo.
 	ogs::tick_day(ws_, sim_core_);
 	if (!ws_.invariant_violations.empty()) {
@@ -2220,7 +2235,7 @@ EconomySim::StatusKeys::StatusKeys() :
 		owner_nation("owner_nation"),
 		local_share("local_share"),
 		groups("groups"),
-		// D-086: estágio de mina.
+		// D-086: estÃ¡gio de mina.
 		stage("stage"),
 		stage_factor("stage_factor"),
 		stage_reserve_kt("stage_reserve_kt"),
@@ -2272,8 +2287,8 @@ EconomySim::StatusKeys::StatusKeys() :
 EconomySim::CityScalars EconomySim::city_scalars(std::size_t city_index,
 		double in_transit) const {
 	const City& city = ws_.cities[city_index];
-	// A4: a MESMA conta que o bloco leve do status fazia inline, extraída para
-	// a ficha (`get_city_info`) e as colunas (`get_city_columns`) não
+	// A4: a MESMA conta que o bloco leve do status fazia inline, extraÃ­da para
+	// a ficha (`get_city_info`) e as colunas (`get_city_columns`) nÃ£o
 	// divergirem. `population` = populacao real exibida; `simulation_population`
 	// = unidade de simulacao.
 	CityScalars s;
@@ -2301,8 +2316,8 @@ EconomySim::CityScalars EconomySim::city_scalars(std::size_t city_index,
 	s.disposable_per_capita = city.simulation_population > 0.0
 		? city.pop.disposable / city.simulation_population : 0.0;
 
-	// Padrão de vida: quantas cestas alimentares diárias a renda disponível
-	// por pessoa compra. Diferente do PIB per capita, usa renda das famílias.
+	// PadrÃ£o de vida: quantas cestas alimentares diÃ¡rias a renda disponÃ­vel
+	// por pessoa compra. Diferente do PIB per capita, usa renda das famÃ­lias.
 	double cheapest_price = 0.0;
 	for (int food = 0; food < static_cast<int>(ws_.food_products.size()); ++food) {
 		const int product = food_product(food);
@@ -2320,9 +2335,9 @@ EconomySim::CityScalars EconomySim::city_scalars(std::size_t city_index,
 	s.living_standard = basket_cost > 0.0 && city.simulation_population > 0.0
 		? (city.pop.disposable / city.simulation_population) / basket_cost : 0.0;
 
-	// Indicadores derivados, no espírito do formato legado, para a camada
-	// visual: produção primária (t/dia), empregos, renda relativa, grau de
-	// industrialização, estoque de trigo e necessidade diária.
+	// Indicadores derivados, no espÃ­rito do formato legado, para a camada
+	// visual: produÃ§Ã£o primÃ¡ria (t/dia), empregos, renda relativa, grau de
+	// industrializaÃ§Ã£o, estoque de trigo e necessidade diÃ¡ria.
 	double production = 0.0;
 	double secondary_capacity = 0.0;
 	double total_capacity = 0.0;
@@ -2352,7 +2367,7 @@ EconomySim::CityScalars EconomySim::city_scalars(std::size_t city_index,
 }
 
 void EconomySim::compute_in_transit(std::vector<double>& out) const {
-	// A4: a mesma passada única do status, reusada pelas consultas.
+	// A4: a mesma passada Ãºnica do status, reusada pelas consultas.
 	out.assign(ws_.cities.size(), 0.0);
 	for (const Shipment& shipment : ws_.in_transit) {
 		const auto found = ws_.city_lookup.find(shipment.to_city);
@@ -2367,13 +2382,13 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	const City& city = ws_.cities[city_index];
 	const StatusKeys& k = status_keys_;
 	Dictionary& dict = slot.dict;
-	// Taxa de câmbio da nação, resolvida UMA vez por cidade (antes eram 2
+	// Taxa de cÃ¢mbio da naÃ§Ã£o, resolvida UMA vez por cidade (antes eram 2
 	// lookups de moeda por cidade: aqui e no bloco de mercados).
 	const double city_fx = fx_rate(city.nation);
 
-	// Strings estáveis: comparam a origem (memcmp) antes de realocar a String.
-	// `nation`/`home_nation` entram aqui porque o território pode mudar com a
-	// política; id, nome e massa de terra são imutáveis após a inicialização.
+	// Strings estÃ¡veis: comparam a origem (memcmp) antes de realocar a String.
+	// `nation`/`home_nation` entram aqui porque o territÃ³rio pode mudar com a
+	// polÃ­tica; id, nome e massa de terra sÃ£o imutÃ¡veis apÃ³s a inicializaÃ§Ã£o.
 	auto sync_string = [&dict](std::string& src, String& stored,
 			const std::string& value, const String& key) {
 		if (src != value) {
@@ -2390,8 +2405,8 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	sync_string(slot.currency_src, slot.currency,
 		std::string(currency_code(city.nation)), k.currency);
 
-	// Campos que só mudam quando um dado do território muda (aptidão, demanda
-	// externa, posição): reescritos apenas quando a versão estática sobe.
+	// Campos que sÃ³ mudam quando um dado do territÃ³rio muda (aptidÃ£o, demanda
+	// externa, posiÃ§Ã£o): reescritos apenas quando a versÃ£o estÃ¡tica sobe.
 	if (!slot.static_filled || slot.static_version != status_static_version_) {
 		dict[k.x] = city.center.x;
 		dict[k.y] = city.center.y;
@@ -2413,7 +2428,7 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	}
 
 	// A4: os escalares saem de `city_scalars` (POD) para a ficha e as colunas
-	// usarem a MESMA conta. A ordem das escritas e dos espelhos não muda.
+	// usarem a MESMA conta. A ordem das escritas e dos espelhos nÃ£o muda.
 	const CityScalars scalars = city_scalars(city_index, in_transit);
 	double* scalar_mirror = slot.scalar_written;
 	bool& scalar_filled = slot.scalar_written_filled;
@@ -2462,9 +2477,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	slot.scalar_written_filled = true;
 
 
-	// F9: emprego setorial (4 posições). Espelho de 8 doubles: só reescreve o
-	// PackedFloat64Array quando algum valor muda (o custo por escrita é a
-	// ponte GDExtension, não o cálculo).
+	// F9: emprego setorial (4 posiÃ§Ãµes). Espelho de 8 doubles: sÃ³ reescreve o
+	// PackedFloat64Array quando algum valor muda (o custo por escrita Ã© a
+	// ponte GDExtension, nÃ£o o cÃ¡lculo).
 	{
 		bool changed = !slot.sector_written_filled
 			|| slot.sector_workers.size() != 4;
@@ -2492,16 +2507,16 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		}
 	}
 
-	// S7-c: o detalhe pesado (deposits/pop/markets/services) só é publicado
-	// quando `heavy` — isto é, em get_city_status(id). O status diário publica
+	// S7-c: o detalhe pesado (deposits/pop/markets/services) sÃ³ Ã© publicado
+	// quando `heavy` â€” isto Ã©, em get_city_status(id). O status diÃ¡rio publica
 	// apenas os escalares leves e o bloco `light`.
 	if (heavy) {
-	// Reservas minerais declaradas (só produtos com jazida conhecida; ausência
-	// da chave = sem dado, não "zero"). O bloco ESTÁTICO (reserva inicial,
-	// qualidade, profundidade, eficiência, opex) é escrito uma vez; por dia só
-	// mudam reserva restante, extraído e esgotado. Antes o dicionário inteiro
-	// era reconstruído a cada dia — custo que crescia com as cidades mineiras
-	// do cenário real (o cenário de validação não tem depósito nenhum).
+	// Reservas minerais declaradas (sÃ³ produtos com jazida conhecida; ausÃªncia
+	// da chave = sem dado, nÃ£o "zero"). O bloco ESTÃTICO (reserva inicial,
+	// qualidade, profundidade, eficiÃªncia, opex) Ã© escrito uma vez; por dia sÃ³
+	// mudam reserva restante, extraÃ­do e esgotado. Antes o dicionÃ¡rio inteiro
+	// era reconstruÃ­do a cada dia â€” custo que crescia com as cidades mineiras
+	// do cenÃ¡rio real (o cenÃ¡rio de validaÃ§Ã£o nÃ£o tem depÃ³sito nenhum).
 	if (slot.deposit_entry.size() < ws_.products) {
 		slot.deposit_entry.resize(static_cast<std::size_t>(ws_.products));
 		slot.deposit_present.assign(static_cast<std::size_t>(ws_.products), 0);
@@ -2515,8 +2530,8 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		}
 	}
 	// Jazida descoberta depois do primeiro dia (a IA/geografia chama
-	// `set_deposit`): a lista de jazidas rastreadas é recalculada uma vez e
-	// só as novas entram no dicionário (as antigas mantêm o bloco estático).
+	// `set_deposit`): a lista de jazidas rastreadas Ã© recalculada uma vez e
+	// sÃ³ as novas entram no dicionÃ¡rio (as antigas mantÃªm o bloco estÃ¡tico).
 	if (slot.deposit_tracked_version != status_deposit_version_) {
 		slot.deposit_tracked.clear();
 		for (int product = 0; product < ws_.products; ++product) {
@@ -2526,10 +2541,10 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		}
 		slot.deposit_tracked_version = status_deposit_version_;
 	}
-	// `deposits` só é remontado quando a cidade tem jazida rastreada. Cidade
-	// sem jazida publica o dicionário vazio UMA vez (a chave sempre existe:
-	// ausência seria "sem dado", não "sem reserva"); sem isso o bloco custava
-	// ~4,5 ms/dia só de referenciar 834 dicionários.
+	// `deposits` sÃ³ Ã© remontado quando a cidade tem jazida rastreada. Cidade
+	// sem jazida publica o dicionÃ¡rio vazio UMA vez (a chave sempre existe:
+	// ausÃªncia seria "sem dado", nÃ£o "sem reserva"); sem isso o bloco custava
+	// ~4,5 ms/dia sÃ³ de referenciar 834 dicionÃ¡rios.
 	if (slot.deposit_tracked.empty()) {
 		if (!slot.deposits_published) {
 			dict[k.deposits] = slot.deposits;
@@ -2558,16 +2573,16 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				entry[k.extracted_kt] = deposit.extracted_kt;
 				previous.extracted_kt = deposit.extracted_kt;
 			}
-			// D-086 (decisão do dono): o recurso nunca acaba — publica `depleted`
+			// D-086 (decisÃ£o do dono): o recurso nunca acaba â€” publica `depleted`
 			// SEMPRE false (campo mantido por contrato de status/save).
 			if (first || slot.deposit_depleted[static_cast<std::size_t>(product)] != 0) {
 				entry[k.depleted] = false;
 				slot.deposit_depleted[static_cast<std::size_t>(product)] = 0;
 			}
 		}
-		// Dictionary é por referência no Godot 4: uma única atribuição basta —
+		// Dictionary Ã© por referÃªncia no Godot 4: uma Ãºnica atribuiÃ§Ã£o basta â€”
 		// as entradas novas e os valores atualizados aparecem no publicado.
-		// (Reatribuir todo dia custava ~1,4 µs × 662 cidades ≈ 0,9 ms.)
+		// (Reatribuir todo dia custava ~1,4 Âµs Ã— 662 cidades â‰ˆ 0,9 ms.)
 		if (!slot.deposits_published) {
 			dict[k.deposits] = slot.deposits;
 			slot.deposits_published = true;
@@ -2575,9 +2590,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	}
 
 	Dictionary& pop = slot.pop;
-	// Valores diários: só reescreve o que mudou. Cada `pop[chave] = valor` é
-	// uma chamada à ponte GDExtension com hash da chave (~190 ns); com 20
-	// campos × 834 cidades isso custava ~3 ms/dia. `population`,
+	// Valores diÃ¡rios: sÃ³ reescreve o que mudou. Cada `pop[chave] = valor` Ã©
+	// uma chamada Ã  ponte GDExtension com hash da chave (~190 ns); com 20
+	// campos Ã— 834 cidades isso custava ~3 ms/dia. `population`,
 	// `labor_force` e `dependents` quase nunca mudam.
 	{
 		double* mirror = slot.pop_written;
@@ -2622,7 +2637,7 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			durable_total += tons;
 		}
 		sync_pop(k.durable_stock, durable_total);
-		// F7: população ativa, fora da força e mercado de trabalho.
+		// F7: populaÃ§Ã£o ativa, fora da forÃ§a e mercado de trabalho.
 		sync_pop(k.working_age, city.pop.working_age);
 		sync_pop(k.retirees, city.pop.retirees);
 		sync_pop(k.students, city.pop.students);
@@ -2649,8 +2664,8 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			slot.stratum_population.resize(kEducationLevels);
 			slot.stratum_wage_income.resize(kEducationLevels);
 		}
-		// Grupo "raro": educação, força por nível, estudo, fatias de renda e o
-		// nível de consumo de cada estrato. Compara com o último publicado e só
+		// Grupo "raro": educaÃ§Ã£o, forÃ§a por nÃ­vel, estudo, fatias de renda e o
+		// nÃ­vel de consumo de cada estrato. Compara com o Ãºltimo publicado e sÃ³
 		// toca nos Arrays quando algo muda (mudam em escala de semanas).
 		{
 			double rare[16];
@@ -2694,7 +2709,7 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				slot.labor_rare_filled = true;
 			}
 		}
-		// Grupo "diário": salários, emprego, vagas e folha por escolaridade.
+		// Grupo "diÃ¡rio": salÃ¡rios, emprego, vagas e folha por escolaridade.
 		{
 			double daily[24];
 			int di = 0;
@@ -2735,8 +2750,8 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				slot.labor_daily_filled = true;
 			}
 		}
-		// Renda por estrato: o memcmp evita reescrever os três vetores quando
-		// os valores não mudaram (população e folha do estrato variam devagar).
+		// Renda por estrato: o memcmp evita reescrever os trÃªs vetores quando
+		// os valores nÃ£o mudaram (populaÃ§Ã£o e folha do estrato variam devagar).
 		{
 			double strata[12];
 			int si = 0;
@@ -2816,9 +2831,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		slot.pop_published = true;
 	}
 
-	// B7: informalidade, mortalidade e insatisfação (blocos pesados, sob
-	// demanda em get_city_status). Construídos a cada chamada — o caminho é
-	// raro (uma cidade por consulta), então não há cache/mirror.
+	// B7: informalidade, mortalidade e insatisfaÃ§Ã£o (blocos pesados, sob
+	// demanda em get_city_status). ConstruÃ­dos a cada chamada â€” o caminho Ã©
+	// raro (uma cidade por consulta), entÃ£o nÃ£o hÃ¡ cache/mirror.
 	{
 		Dictionary informal;
 		informal["share"] = city.pop.informal_share;
@@ -2868,8 +2883,8 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		dict["dissatisfaction"] = dissatisfaction;
 	}
 
-	// B1: coortes etárias (5 faixas). Publicadas como Array de doubles no bloco
-	// `pop`, reescritas só quando a composição muda (uma vez por mês).
+	// B1: coortes etÃ¡rias (5 faixas). Publicadas como Array de doubles no bloco
+	// `pop`, reescritas sÃ³ quando a composiÃ§Ã£o muda (uma vez por mÃªs).
 	{
 		double bands[kAgeBands];
 		for (int band = 0; band < kAgeBands; ++band) {
@@ -2892,10 +2907,10 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		}
 	}
 
-	// B2: cinco estratos de renda no bloco `pop`. Publica população, renda
-	// disponível, poupança, dívida, patrimônio, taxa de poupança, posse (3),
-	// nível de consumo, aluguel pago e a fatia da renda gasta em comida — os
-	// números que a validação de padrão real lê. Republicado quando muda.
+	// B2: cinco estratos de renda no bloco `pop`. Publica populaÃ§Ã£o, renda
+	// disponÃ­vel, poupanÃ§a, dÃ­vida, patrimÃ´nio, taxa de poupanÃ§a, posse (3),
+	// nÃ­vel de consumo, aluguel pago e a fatia da renda gasta em comida â€” os
+	// nÃºmeros que a validaÃ§Ã£o de padrÃ£o real lÃª. Republicado quando muda.
 	{
 		double flat[kIncomeStrata * 14 + 7];
 		int fi = 0;
@@ -2927,8 +2942,8 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			put(city.pop.stratum_tenure[s][2]);
 		}
 		put(sim_core_.strata_gini(city.pop));
-		// B6: Gini de RIQUEZA dos quintis (poupança + imóvel + terra +
-		// participações; no urbano a terra é 0 — ela é da região).
+		// B6: Gini de RIQUEZA dos quintis (poupanÃ§a + imÃ³vel + terra +
+		// participaÃ§Ãµes; no urbano a terra Ã© 0 â€” ela Ã© da regiÃ£o).
 		put(ogs::SimCore::quintile_gini(city.pop.stratum_wealth, kIncomeStrata));
 		for (int band = 0; band < 5; ++band) {
 			put(city.pop.lifecycle_saving[band]);
@@ -2964,9 +2979,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		}
 	}
 
-	// `resize` com o mesmo tamanho já provoca copy-on-write no Array
-	// compartilhado com o dicionário publicado (medido: ~4,5 ms/dia, 114
-	// Variants copiados por cidade). Só redimensiona quando muda de fato.
+	// `resize` com o mesmo tamanho jÃ¡ provoca copy-on-write no Array
+	// compartilhado com o dicionÃ¡rio publicado (medido: ~4,5 ms/dia, 114
+	// Variants copiados por cidade). SÃ³ redimensiona quando muda de fato.
 	if (slot.markets.size() != ws_.products) {
 		slot.markets.resize(ws_.products);
 	}
@@ -2978,8 +2993,8 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		slot.io_written.assign(static_cast<std::size_t>(4 * ws_.products), 0.0);
 		slot.io_filled.assign(4, 0);
 	}
-	// Preço local é EXIBIÇÃO: âncora ÷ taxa da moeda da nação (F5, opção c).
-	// Não volta para a simulação; o valor na âncora é a fonte de verdade.
+	// PreÃ§o local Ã© EXIBIÃ‡ÃƒO: Ã¢ncora Ã· taxa da moeda da naÃ§Ã£o (F5, opÃ§Ã£o c).
+	// NÃ£o volta para a simulaÃ§Ã£o; o valor na Ã¢ncora Ã© a fonte de verdade.
 	const double local_rate = std::max(1e-9, city_fx);
 	bool markets_dirty = false;
 	for (int product = 0; product < ws_.products; ++product) {
@@ -2987,7 +3002,7 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		Market& previous = slot.market_written[static_cast<std::size_t>(product)];
 		const double local = source.price / local_rate;
 		if (slot.market_written_filled[static_cast<std::size_t>(product)] == 0) {
-			// Primeira gravação desta cidade: cria as chaves do mercado.
+			// Primeira gravaÃ§Ã£o desta cidade: cria as chaves do mercado.
 			Dictionary& market = slot.market_entry[static_cast<std::size_t>(product)];
 			market[k.product] = product;
 			market[k.stock] = source.stock;
@@ -3007,9 +3022,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			continue;
 		}
 		// Caminho comum (mercado publicado igual ao dia anterior): NENHUM
-		// acesso ao Dictionary. A comparação cobre os 8 campos publicados, que
-		// são contíguos (ver Market): um memcmp de 64 bytes por produto.
-		// `sold_prev` é interno e muda TODO dia (`sold_prev = sold` no reset);
+		// acesso ao Dictionary. A comparaÃ§Ã£o cobre os 8 campos publicados, que
+		// sÃ£o contÃ­guos (ver Market): um memcmp de 64 bytes por produto.
+		// `sold_prev` Ã© interno e muda TODO dia (`sold_prev = sold` no reset);
 		// por isso fica no fim do struct, fora do bloco comparado.
 		const bool local_changed = slot.market_local_written[
 			static_cast<std::size_t>(product)] != local;
@@ -3055,14 +3070,14 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			previous.surplus = source.surplus;
 		}
 	}
-	// Sem nenhuma mudança o Array publicado continua o mesmo objeto: reatribuir
-	// só custaria uma chamada à ponte GDExtension por cidade (~0,3 ms/dia).
+	// Sem nenhuma mudanÃ§a o Array publicado continua o mesmo objeto: reatribuir
+	// sÃ³ custaria uma chamada Ã  ponte GDExtension por cidade (~0,3 ms/dia).
 	if (markets_dirty) {
 		dict[k.markets] = slot.markets;
 	}
 
-	// F8: bloco plano de serviços (20 × 12). Só reescreve quando algum valor
-	// muda; o Array publicado é reutilizado pela UI (ordem de service_sectors).
+	// F8: bloco plano de serviÃ§os (20 Ã— 12). SÃ³ reescreve quando algum valor
+	// muda; o Array publicado Ã© reutilizado pela UI (ordem de service_sectors).
 	if (ws_.services_loaded) {
 		PackedFloat64Array& services = slot.services;
 		services.resize(kMaxServiceSectors * kServiceFields);
@@ -3101,9 +3116,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	}
 	}  // fim do bloco pesado (deposits/pop/markets/services)
 
-	// `Array` é tipo por referência no Godot 4 (validado em teste): mutar
-	// `slot.imported` já aparece no dicionário publicado. Redimensionar para o
-	// mesmo tamanho era uma chamada à ponte por array/cidade/dia sem efeito.
+	// `Array` Ã© tipo por referÃªncia no Godot 4 (validado em teste): mutar
+	// `slot.imported` jÃ¡ aparece no dicionÃ¡rio publicado. Redimensionar para o
+	// mesmo tamanho era uma chamada Ã  ponte por array/cidade/dia sem efeito.
 	if (slot.io_written.size() < static_cast<std::size_t>(4 * ws_.products)) {
 		slot.io_written.assign(static_cast<std::size_t>(4 * ws_.products), 0.0);
 		slot.io_filled.assign(4, 0);
@@ -3116,8 +3131,8 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	}
 	{
 		// Quatro arrays de fluxo, um por produto (ws_.products): idem
-		// mercados, só produtos com comércio mudam (o resto fica em 0 dia após
-		// dia) e a linha inteira é comparada com um memcmp antes do hash.
+		// mercados, sÃ³ produtos com comÃ©rcio mudam (o resto fica em 0 dia apÃ³s
+		// dia) e a linha inteira Ã© comparada com um memcmp antes do hash.
 		const double* source_values[4] = {
 			city.imported, city.exported, city.import_value, city.export_value};
 		Array* targets[4] = {
@@ -3147,7 +3162,7 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		}
 	}
 
-	// S7-c: construções também são detalhe pesado sob demanda.
+	// S7-c: construÃ§Ãµes tambÃ©m sÃ£o detalhe pesado sob demanda.
 	if (heavy) {
 	const std::vector<int>& local_buildings = ws_.buildings_by_city[city_index];
 	if (slot.buildings.size() != local_buildings.size()) {
@@ -3164,9 +3179,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		Dictionary& entry = slot.building_entry[index];
 		StatusCitySlot::BuildingCache& cached = slot.building_cache[index];
 		const bool identity_changed = !cached.filled || cached.id_src != building.id;
-		// F9: privatização/nacionalização muda o dono sem mudar a identidade.
+		// F9: privatizaÃ§Ã£o/nacionalizaÃ§Ã£o muda o dono sem mudar a identidade.
 		const bool owner_changed = cached.owner_src != building.owner;
-		// Bloco estático: só quando a construção nasce (ou muda de identidade).
+		// Bloco estÃ¡tico: sÃ³ quando a construÃ§Ã£o nasce (ou muda de identidade).
 		if (identity_changed || owner_changed) {
 			cached.id_src = building.id;
 			cached.id = String(building.id.c_str());
@@ -3178,7 +3193,7 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			cached.owner_src = building.owner;
 			cached.owner = String(building.owner.c_str());
 			entry[k.owner] = cached.owner;
-			// F9: decomposição do dono para a UI/status (sem parse no cliente).
+			// F9: decomposiÃ§Ã£o do dono para a UI/status (sem parse no cliente).
 			std::string group_id;
 			std::string origin_nation;
 			const int owner_code = owner_kind(building.owner, &group_id,
@@ -3197,13 +3212,13 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			cached.recipe = -2;
 			cached.filled = true;
 		}
-		// Reinsere o `entry` no Array publicado só quando ele nasce/muda de
-		// índice; mutações do Dictionary já são visíveis pela referência.
+		// Reinsere o `entry` no Array publicado sÃ³ quando ele nasce/muda de
+		// Ã­ndice; mutaÃ§Ãµes do Dictionary jÃ¡ sÃ£o visÃ­veis pela referÃªncia.
 		if (!slot.buildings_bound || identity_changed) {
 			slot.buildings[index] = entry;
 		}
-		// Receita (insumos/subprodutos): as Arrays/Dictionaries só são
-		// reconstruídos quando a receita da construção muda — nunca por dia.
+		// Receita (insumos/subprodutos): as Arrays/Dictionaries sÃ³ sÃ£o
+		// reconstruÃ­dos quando a receita da construÃ§Ã£o muda â€” nunca por dia.
 		if (cached.recipe != building.recipe) {
 			cached.recipe = building.recipe;
 			if (building.recipe >= 0
@@ -3236,7 +3251,7 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				entry[k.byproducts] = Array();
 			}
 		}
-		// Valores diários: só reescreve o que mudou (comparar double é ~20×
+		// Valores diÃ¡rios: sÃ³ reescreve o que mudou (comparar double Ã© ~20Ã—
 		// mais barato que um Dictionary::operator[] com hash de StringName).
 		auto sync_double = [&entry, &cached](StringName key, double& mirror,
 				double value) {
@@ -3263,9 +3278,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		sync_double(k.profit, cached.profit, building.profit);
 		sync_double(k.site_suitability, cached.site,
 			city.suitability[building.output_product]);
-		// D-086 — estágio de mina: profundidade de operação, produção relativa do
-		// estágio (0,05..1,0) e custo do PRÓXIMO aprofundamento. Fazenda/indústria
-		// publicam estágio 0 / fator 1,0 (não têm estágio) — ausência explícita.
+		// D-086 â€” estÃ¡gio de mina: profundidade de operaÃ§Ã£o, produÃ§Ã£o relativa do
+		// estÃ¡gio (0,05..1,0) e custo do PRÃ“XIMO aprofundamento. Fazenda/indÃºstria
+		// publicam estÃ¡gio 0 / fator 1,0 (nÃ£o tÃªm estÃ¡gio) â€” ausÃªncia explÃ­cita.
 		{
 			const bool mine = SimCore::is_mine_building(city, building);
 			const int stage = mine ? building.stage : 0;
@@ -3279,9 +3294,9 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				mine ? building.stage_reserve_kt : 0.0);
 			sync_double(k.stage_mined_kt, cached.stage_mined_kt,
 				mine ? building.stage_mined_kt : 0.0);
-			// D-086 (decisão do dono): `can_deepen` só exige a mina não falida — a
-			// reserva NUNCA bloqueia o aprofundamento (a jazida é referência de
-			// profundidade, não um limite físico).
+			// D-086 (decisÃ£o do dono): `can_deepen` sÃ³ exige a mina nÃ£o falida â€” a
+			// reserva NUNCA bloqueia o aprofundamento (a jazida Ã© referÃªncia de
+			// profundidade, nÃ£o um limite fÃ­sico).
 			const bool can_deepen = mine && !building.bankrupt;
 			sync_double(k.next_deepen_cost, cached.next_deepen_cost,
 				can_deepen ? sim_core_.mine_deepen_cost(city, building) : 0.0);
@@ -3301,9 +3316,9 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 	const std::size_t products = static_cast<std::size_t>(ws_.products);
 	const std::size_t market_len = cities * products;
 
-	// Mercados: 7 campos que a IA lê (preço âncora, estoque, oferta, excedente,
-	// vendido, escassez, desejado). São os MESMOS doubles do bloco pesado por
-	// cidade (`source.price` etc. em fill_city_status) — bit a bit.
+	// Mercados: 7 campos que a IA lÃª (preÃ§o Ã¢ncora, estoque, oferta, excedente,
+	// vendido, escassez, desejado). SÃ£o os MESMOS doubles do bloco pesado por
+	// cidade (`source.price` etc. em fill_city_status) â€” bit a bit.
 	cache.light_m_price.resize(static_cast<int>(market_len));
 	cache.light_m_stock.resize(static_cast<int>(market_len));
 	cache.light_m_supply.resize(static_cast<int>(market_len));
@@ -3319,8 +3334,8 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 	double* lm_shortage = cache.light_m_shortage.ptrw();
 	double* lm_desired = cache.light_m_desired.ptrw();
 
-	// POP: 5 escalares que a IA lê por cidade (necessidade alimentar, consumo,
-	// satisfação alimentar, força de trabalho e desemprego).
+	// POP: 5 escalares que a IA lÃª por cidade (necessidade alimentar, consumo,
+	// satisfaÃ§Ã£o alimentar, forÃ§a de trabalho e desemprego).
 	cache.light_p_need.resize(static_cast<int>(cities));
 	cache.light_p_consumed.resize(static_cast<int>(cities));
 	cache.light_p_satisfaction.resize(static_cast<int>(cities));
@@ -3353,10 +3368,10 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 		lp_unemployed[city_index] = city.pop.unemployed;
 	}
 
-	// Incumbentes (F9): pares (cidade, recurso) com dono-grupo — o que o
+	// Incumbentes (F9): pares (cidade, recurso) com dono-grupo â€” o que o
 	// group_investor montava varrendo city["buildings"] de TODAS as cidades.
-	// Mesmo filtro do GDScript: owner_group e resource não-vazios. Ordem:
-	// cidade → construção (buildings_by_city), idêntica ao Array do bloco pesado.
+	// Mesmo filtro do GDScript: owner_group e resource nÃ£o-vazios. Ordem:
+	// cidade â†’ construÃ§Ã£o (buildings_by_city), idÃªntica ao Array do bloco pesado.
 	cache.light_i_city.clear();
 	cache.light_i_resource.clear();
 	cache.light_i_owner_group.clear();
@@ -3376,10 +3391,10 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 		}
 	}
 
-	// Construções (CSR): o que a IA por cidade lê — produto de saída, dono,
-	// capacidade, utilização, custos e aptidão do sítio. São os MESMOS valores
-	// do bloco pesado (fill_city_status), na ordem cidade → construção
-	// (buildings_by_city). `site_suitability` = suitability do produto de saída.
+	// ConstruÃ§Ãµes (CSR): o que a IA por cidade lÃª â€” produto de saÃ­da, dono,
+	// capacidade, utilizaÃ§Ã£o, custos e aptidÃ£o do sÃ­tio. SÃ£o os MESMOS valores
+	// do bloco pesado (fill_city_status), na ordem cidade â†’ construÃ§Ã£o
+	// (buildings_by_city). `site_suitability` = suitability do produto de saÃ­da.
 	cache.light_b_offset.clear();
 	cache.light_b_id.clear();
 	cache.light_b_output_product.clear();
@@ -3407,9 +3422,9 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 			static_cast<int32_t>(cache.light_b_output_product.size()));
 	}
 
-	// Jazidas (CSR): o que a IA por cidade lê — recurso (nome do produto),
-	// reserva restante e fator de profundidade, mais o bloco estático completo
-	// para a tabela ser um substituto do dicionário pesado. Mesmas jazidas
+	// Jazidas (CSR): o que a IA por cidade lÃª â€” recurso (nome do produto),
+	// reserva restante e fator de profundidade, mais o bloco estÃ¡tico completo
+	// para a tabela ser um substituto do dicionÃ¡rio pesado. Mesmas jazidas
 	// rastreadas do bloco pesado (deposit.tracked), ordem de produto.
 	cache.light_d_offset.clear();
 	cache.light_d_product.clear();
@@ -3439,7 +3454,7 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 			cache.light_d_efficiency.push_back(extraction_efficiency(deposit));
 			cache.light_d_opex_factor.push_back(depth_opex_factor(deposit));
 			cache.light_d_extracted_kt.push_back(deposit.extracted_kt);
-			// D-086 (decisão do dono): o recurso nunca acaba — `d_depleted` é
+			// D-086 (decisÃ£o do dono): o recurso nunca acaba â€” `d_depleted` Ã©
 			// SEMPRE 0 (campo mantido por contrato do bloco `light`).
 			cache.light_d_depleted.push_back(0);
 		}
@@ -3447,11 +3462,11 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 			static_cast<int32_t>(cache.light_d_product.size()));
 	}
 
-	// Obras em andamento (CSR, §15): o que a IA lê para não reconstruir a
-	// mesma lacuna enquanto uma obra está em voo (direção de calibração do
-	// D-060). Ordem cidade → obra (ordem de criação do vetor
-	// construction_projects), determinística. `c_expand` = 1 marca expansão de
-	// prédio existente (o produto JÁ existe na cidade); 0 é obra nova.
+	// Obras em andamento (CSR, Â§15): o que a IA lÃª para nÃ£o reconstruir a
+	// mesma lacuna enquanto uma obra estÃ¡ em voo (direÃ§Ã£o de calibraÃ§Ã£o do
+	// D-060). Ordem cidade â†’ obra (ordem de criaÃ§Ã£o do vetor
+	// construction_projects), determinÃ­stica. `c_expand` = 1 marca expansÃ£o de
+	// prÃ©dio existente (o produto JÃ existe na cidade); 0 Ã© obra nova.
 	cache.light_c_offset.clear();
 	cache.light_c_output_product.clear();
 	cache.light_c_capacity.clear();
@@ -3471,8 +3486,8 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 			static_cast<int32_t>(cache.light_c_output_product.size()));
 	}
 
-	// Dictionary é por referência: pendura os arrays (o `ptrw` desanexa o
-	// buffer por copy-on-write, então reassocia a cada dia) e só cria as
+	// Dictionary Ã© por referÃªncia: pendura os arrays (o `ptrw` desanexa o
+	// buffer por copy-on-write, entÃ£o reassocia a cada dia) e sÃ³ cria as
 	// chaves escalares uma vez.
 	Dictionary& light = cache.light;
 	if (!cache.light_filled) {
@@ -3521,9 +3536,9 @@ void EconomySim::fill_light_signals(StatusCache& cache) const {
 }
 
 // ---------------------------------------------------------------------------
-// A4: pedaços do status extraídos para as consultas sob demanda reusarem o
-// MESMO código (mesmos valores, mesma ordem de chaves). Movidos de
-// `get_status()` sem mudança de lógica.
+// A4: pedaÃ§os do status extraÃ­dos para as consultas sob demanda reusarem o
+// MESMO cÃ³digo (mesmos valores, mesma ordem de chaves). Movidos de
+// `get_status()` sem mudanÃ§a de lÃ³gica.
 // ---------------------------------------------------------------------------
 
 void EconomySim::build_ports(StatusCache& cache) {
@@ -3539,8 +3554,8 @@ void EconomySim::build_ports(StatusCache& cache) {
 		dict[k.x] = port.center.x;
 		dict[k.y] = port.center.y;
 		dict[k.landmass] = String(port.landmass.c_str());
-		// Capacidade/fila (port_design.md §2): o porto serve a nação toda;
-		// `host_city` é só a sede (âncora e base da capacidade).
+		// Capacidade/fila (port_design.md Â§2): o porto serve a naÃ§Ã£o toda;
+		// `host_city` Ã© sÃ³ a sede (Ã¢ncora e base da capacidade).
 		dict[k.host_city] = String(port.host_city.c_str());
 		const double base = std::max(1.0, port.base_capacity_t_per_day);
 		dict[k.level] = std::max(1, static_cast<int>(std::ceil(
@@ -3631,10 +3646,10 @@ void EconomySim::build_tariffs(StatusCache& cache) {
 }
 
 void EconomySim::capture_nation_labor() {
-	// S17/A4: o agregado `nations[].labor` é semanal. Capturado no fecho do dia
+	// S17/A4: o agregado `nations[].labor` Ã© semanal. Capturado no fecho do dia
 	// `day % 7 == 0` como doubles puros, para um `get_status()` sob demanda em
-	// qualquer dia publicar exatamente o que a publicação diária antiga
-	// publicaria (o retrato semanal mais recente). A simulação não muda.
+	// qualquer dia publicar exatamente o que a publicaÃ§Ã£o diÃ¡ria antiga
+	// publicaria (o retrato semanal mais recente). A simulaÃ§Ã£o nÃ£o muda.
 	labor_snapshot_.clear();
 	std::unordered_map<std::string, int> index;
 	index.reserve(ws_.cities.size() * 2);
@@ -3698,8 +3713,8 @@ const EconomySim::NationLaborSnapshot* EconomySim::find_labor_snapshot(
 void EconomySim::build_nations(StatusCache& cache,
 		const std::vector<double>& in_transit_by_city) {
 	const StatusKeys& k = status_keys_;
-	// Nações agregadas (telas de política/economia), na ordem de aparição.
-	// Uma única passada sobre as cidades (antes: nação × cidade × construção).
+	// NaÃ§Ãµes agregadas (telas de polÃ­tica/economia), na ordem de apariÃ§Ã£o.
+	// Uma Ãºnica passada sobre as cidades (antes: naÃ§Ã£o Ã— cidade Ã— construÃ§Ã£o).
 	struct NationTotals {
 		double population = 0.0;
 		double production = 0.0;
@@ -3708,7 +3723,7 @@ void EconomySim::build_nations(StatusCache& cache,
 		double deficit = 0.0;
 		double in_transit = 0.0;
 		int city_count = 0;
-		// F7: mercado de trabalho agregado (soma das cidades da nação).
+		// F7: mercado de trabalho agregado (soma das cidades da naÃ§Ã£o).
 		double working_age = 0.0;
 		double labor_force = 0.0;
 		double employed = 0.0;
@@ -3722,20 +3737,20 @@ void EconomySim::build_nations(StatusCache& cache,
 		double vacancies_by_level[kEducationLevels] = {};
 		double wage_weighted[kEducationLevels] = {};
 		double wage_weight[kEducationLevels] = {};
-		// F7 calibração: fatia da POP da nação por nível de consumo
+		// F7 calibraÃ§Ã£o: fatia da POP da naÃ§Ã£o por nÃ­vel de consumo
 		// (0 = nenhum, 1 = basic, 2 = life, 3 = luxury).
 		double income_share[kIncomeLevels] = {};
 		double income_population = 0.0;
-		// F7 calibração: TFP nacional ponderada pela população de simulação.
+		// F7 calibraÃ§Ã£o: TFP nacional ponderada pela populaÃ§Ã£o de simulaÃ§Ã£o.
 		double productivity_weighted = 0.0;
-		// B6: patrimônio por quintil somado nas cidades + regiões da nação
-		// (poupança + imóvel + terra + participações) — base do Gini de riqueza.
+		// B6: patrimÃ´nio por quintil somado nas cidades + regiÃµes da naÃ§Ã£o
+		// (poupanÃ§a + imÃ³vel + terra + participaÃ§Ãµes) â€” base do Gini de riqueza.
 		double wealth[kIncomeStrata] = {};
 	};
-	// S17: cadência do agregado `labor` (semanal), POR SLOT como sempre foi.
-	// A4: um slot parado (o jogo/agendador não constrói status todo dia) é
-	// semeado pelo retrato semanal em vez de publicar valores de semanas atrás
-	// — é o valor que a publicação diária teria no último múltiplo de 7.
+	// S17: cadÃªncia do agregado `labor` (semanal), POR SLOT como sempre foi.
+	// A4: um slot parado (o jogo/agendador nÃ£o constrÃ³i status todo dia) Ã©
+	// semeado pelo retrato semanal em vez de publicar valores de semanas atrÃ¡s
+	// â€” Ã© o valor que a publicaÃ§Ã£o diÃ¡ria teria no Ãºltimo mÃºltiplo de 7.
 	const bool seed_labor = status_seed_labor_from_snapshot_
 		&& labor_snapshot_day_ >= 0 && (ws_.day % 7) != 0
 		&& (!cache.labor_cadence_built
@@ -3761,7 +3776,7 @@ void EconomySim::build_nations(StatusCache& cache,
 		totals.stockpile += city.markets[0].stock;
 		totals.need += city.pop.need;
 		totals.deficit += std::max(0.0, city.pop.need - city.pop.consumed);
-		// B6: riqueza nacional = urbana + região (patrimônio por quintil).
+		// B6: riqueza nacional = urbana + regiÃ£o (patrimÃ´nio por quintil).
 		for (int s = 0; s < kIncomeStrata; ++s) {
 			totals.wealth[s] += std::max(0.0, city.pop.stratum_wealth[s])
 				+ std::max(0.0, city.region.stratum_wealth[s]);
@@ -3839,13 +3854,13 @@ void EconomySim::build_nations(StatusCache& cache,
 		nation[k.need] = totals.need;
 		nation[k.deficit] = totals.deficit;
 		nation[k.in_transit] = totals.in_transit;
-		// B6: Gini de riqueza da nação (poupança + imóvel + terra + ações).
+		// B6: Gini de riqueza da naÃ§Ã£o (poupanÃ§a + imÃ³vel + terra + aÃ§Ãµes).
 		nation[k.wealth_gini] = ogs::SimCore::quintile_gini(
 			totals.wealth, kIncomeStrata);
-		// F4: frota/combustível da nação (a UI e a IA leem daqui; a fila do dia
-		// é o sinal de compra de veículos/combustível). O sub-dicionário e o
-		// Array de saúde são reaproveitados entre ticks (byte-idêntico: mesmos
-		// valores, só sem realocar os contêineres).
+		// F4: frota/combustÃ­vel da naÃ§Ã£o (a UI e a IA leem daqui; a fila do dia
+		// Ã© o sinal de compra de veÃ­culos/combustÃ­vel). O sub-dicionÃ¡rio e o
+		// Array de saÃºde sÃ£o reaproveitados entre ticks (byte-idÃªntico: mesmos
+		// valores, sÃ³ sem realocar os contÃªineres).
 		const auto fleet_found = ws_.fleets.find(tag);
 		if (fleet_found != ws_.fleets.end()) {
 			const Fleet& fleet = fleet_found->second;
@@ -3870,12 +3885,12 @@ void EconomySim::build_nations(StatusCache& cache,
 			fleet_dict[k.source] = fleet.derived ? "derived" : "declared";
 			nation[k.fleet] = fleet_dict;
 		}
-		// F7: mercado de trabalho da nação (telas de política/trabalho). O
-		// sub-dicionário e os Arrays de níveis são reaproveitados entre ticks.
-		// S17: cadência semanal POR SLOT (como sempre foi). A4: o primeiro
-		// build de um slot frio — jogo/agendador não constroem status todo dia —
-		// é semeado pelo retrato semanal, o mesmo valor que a publicação diária
-		// teria no último múltiplo de 7.
+		// F7: mercado de trabalho da naÃ§Ã£o (telas de polÃ­tica/trabalho). O
+		// sub-dicionÃ¡rio e os Arrays de nÃ­veis sÃ£o reaproveitados entre ticks.
+		// S17: cadÃªncia semanal POR SLOT (como sempre foi). A4: o primeiro
+		// build de um slot frio â€” jogo/agendador nÃ£o constroem status todo dia â€”
+		// Ã© semeado pelo retrato semanal, o mesmo valor que a publicaÃ§Ã£o diÃ¡ria
+		// teria no Ãºltimo mÃºltiplo de 7.
 		if (labor_due) {
 			Dictionary& labor = slot.labor;
 			const NationLaborSnapshot* snap = find_labor_snapshot(tag);
@@ -4001,8 +4016,8 @@ void EconomySim::build_nations(StatusCache& cache,
 
 Dictionary EconomySim::get_status() {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// Snapshot do dia já publicado: devolve o mesmo dicionário (a UI lê o dia
-	// inteiro; mutações entre ticks só valem no próximo status).
+	// Snapshot do dia jÃ¡ publicado: devolve o mesmo dicionÃ¡rio (a UI lÃª o dia
+	// inteiro; mutaÃ§Ãµes entre ticks sÃ³ valem no prÃ³ximo status).
 	if (status_live_ >= 0 && status_built_day_ == ws_.day) {
 		return status_slots_[status_live_].root;
 	}
@@ -4025,9 +4040,9 @@ Dictionary EconomySim::get_status() {
 	root[k.transport_cash] = ws_.transport_cash;
 	root[k.foreign_cash] = ws_.foreign_cash;
 	root[k.construction_cash] = ws_.construction_cash;
-	// C1 (D-102): identidade financeira do dia. `financial_sum` é o novo
-	// invariante (tem de ser 0); `cash_residual` é a checagem cruzada entre a
-	// enumeração do balanço e o `money_total` acima. O detalhe por agente sai
+	// C1 (D-102): identidade financeira do dia. `financial_sum` Ã© o novo
+	// invariante (tem de ser 0); `cash_residual` Ã© a checagem cruzada entre a
+	// enumeraÃ§Ã£o do balanÃ§o e o `money_total` acima. O detalhe por agente sai
 	// sob demanda em `get_balance_status()` (A4).
 	{
 		const ogs::balance::Ledger book = ogs::balance::ledger(ws_,
@@ -4044,13 +4059,13 @@ Dictionary EconomySim::get_status() {
 		balance["monetary_base"] = book.monetary_base;
 		balance["monetary_claims"] = book.monetary_claims;
 		balance["government_debt"] = book.government_debt;
-		// C3 (D-107): o crédito de empresa é zero no default do jogo; os dois
-		// números ficam no resumo diário para o painel/diagnóstico não precisar
+		// C3 (D-107): o crÃ©dito de empresa Ã© zero no default do jogo; os dois
+		// nÃºmeros ficam no resumo diÃ¡rio para o painel/diagnÃ³stico nÃ£o precisar
 		// montar o status inteiro.
 		balance["group_debt"] = book.group_debt;
 		balance["bank_loan_assets"] = book.bank_loans;
-		// C5 (D-112): ação dos dois lados (carteiras = emissores) pelo mesmo
-		// valor de mercado. Valorização não cria dinheiro; o dividendo sim.
+		// C5 (D-112): aÃ§Ã£o dos dois lados (carteiras = emissores) pelo mesmo
+		// valor de mercado. ValorizaÃ§Ã£o nÃ£o cria dinheiro; o dividendo sim.
 		balance["stock_assets"] = book.stock_assets;
 		balance["stock_claims"] = book.stock_claims;
 		balance["financial_sum"] = book.financial_sum();
@@ -4058,7 +4073,7 @@ Dictionary EconomySim::get_status() {
 			&& std::abs(book.cash_residual()) <= 1e-3;
 		root["balance"] = balance;
 	}
-	// C5 (D-112): resumo barato da bolsa (índice global e confiança mediana).
+	// C5 (D-112): resumo barato da bolsa (Ã­ndice global e confianÃ§a mediana).
 	{
 		const ogs::stock::Policy pol = ogs::stock::policy(ws_);
 		Dictionary stock;
@@ -4098,11 +4113,11 @@ Dictionary EconomySim::get_status() {
 	}
 	root[k.bankruptcies] = ws_.bankruptcies;
 	root[k.depleted_mines] = ws_.depleted_mines;
-	// B4: totais de migração do mundo (acumulados) + urbanização CORRENTE.
-	// O urbano vivo é `simulation_population` (Σ coortes, acompanha demografia e
-	// migração); a região viva é `region.region_pop` (Σ coortes do interior).
-	// `region.urban_population`/`region.population_region` são a SEED do dia 0 e
-	// não podem ser usados aqui.
+	// B4: totais de migraÃ§Ã£o do mundo (acumulados) + urbanizaÃ§Ã£o CORRENTE.
+	// O urbano vivo Ã© `simulation_population` (Î£ coortes, acompanha demografia e
+	// migraÃ§Ã£o); a regiÃ£o viva Ã© `region.region_pop` (Î£ coortes do interior).
+	// `region.urban_population`/`region.population_region` sÃ£o a SEED do dia 0 e
+	// nÃ£o podem ser usados aqui.
 	{
 		double rural_in = 0.0;
 		double city_in = 0.0;
@@ -4127,7 +4142,7 @@ Dictionary EconomySim::get_status() {
 			? urban / (urban + region_pop) : 0.0;
 		root[k.migration] = migration;
 	}
-	// F8: catálogo de serviços (uma vez) + contadores de negócios do dia.
+	// F8: catÃ¡logo de serviÃ§os (uma vez) + contadores de negÃ³cios do dia.
 	if (ws_.services_loaded && !cache.service_sectors_filled) {
 		cache.service_sectors = get_service_sectors();
 		root[k.service_sectors] = cache.service_sectors;
@@ -4136,8 +4151,8 @@ Dictionary EconomySim::get_status() {
 	root[k.service_businesses] = get_service_business_count();
 	root[k.service_bankruptcies] = ws_.service_bankruptcies;
 
-	// Cabeçalho: os contêineres são pendurados no dicionário UMA vez; a partir
-	// daí só são redimensionados/reescritos no lugar.
+	// CabeÃ§alho: os contÃªineres sÃ£o pendurados no dicionÃ¡rio UMA vez; a partir
+	// daÃ­ sÃ³ sÃ£o redimensionados/reescritos no lugar.
 	if (!cache.header_filled) {
 		cache.products.resize(ws_.products);
 		for (int index = 0; index < ws_.products; ++index) {
@@ -4170,15 +4185,15 @@ Dictionary EconomySim::get_status() {
 		cache.violations[index] = String(ws_.invariant_violations[index].c_str());
 	}
 
-	// Carga em trânsito por cidade numa passada única. Antes, cada cidade
-	// varria TODAS as cargas do mundo (O(cidades × cargas) por dia).
-	// A4: mesma passada única do status, agora em `compute_in_transit`.
+	// Carga em trÃ¢nsito por cidade numa passada Ãºnica. Antes, cada cidade
+	// varria TODAS as cargas do mundo (O(cidades Ã— cargas) por dia).
+	// A4: mesma passada Ãºnica do status, agora em `compute_in_transit`.
 	compute_in_transit(cache.in_transit_by_city);
 	OGS_SIM_PHASE_LAP(3);
 
-	// Totais do sistema por produto — a mesma soma que a IA fazia em GDScript
-	// sobre `cities[]` (858 cidades × 21 mercados, ~13 ms no frame da virada).
-	// Aqui é uma passada de doubles na memória do núcleo, na thread do tick.
+	// Totais do sistema por produto â€” a mesma soma que a IA fazia em GDScript
+	// sobre `cities[]` (858 cidades Ã— 21 mercados, ~13 ms no frame da virada).
+	// Aqui Ã© uma passada de doubles na memÃ³ria do nÃºcleo, na thread do tick.
 	cache.tot_surplus.resize(ws_.products);
 	cache.tot_sold.resize(ws_.products);
 	cache.tot_demand.resize(ws_.products);
@@ -4187,8 +4202,8 @@ Dictionary EconomySim::get_status() {
 		cache.tot_sold[product] = 0.0;
 		cache.tot_demand[product] = 0.0;
 	}
-	// Soma só os valores positivos, na ordem das cidades: idêntico (bit a bit)
-	// ao laço que o `PrivateInvestor.prepare_totals` fazia.
+	// Soma sÃ³ os valores positivos, na ordem das cidades: idÃªntico (bit a bit)
+	// ao laÃ§o que o `PrivateInvestor.prepare_totals` fazia.
 	for (const City& city : ws_.cities) {
 		for (int product = 0; product < ws_.products; ++product) {
 			const Market& market = city.markets[product];
@@ -4200,22 +4215,22 @@ Dictionary EconomySim::get_status() {
 			}
 			// F3: a IA usa este agregado como "existe demanda corrente no
 			// sistema". Com bens finais ainda sem produtor, `demand` (compras
-			// realizadas) é zero e só `desired` carrega a necessidade das POPs —
-			// publicar `desired` permite a fábrica nascer onde há demanda real.
+			// realizadas) Ã© zero e sÃ³ `desired` carrega a necessidade das POPs â€”
+			// publicar `desired` permite a fÃ¡brica nascer onde hÃ¡ demanda real.
 			if (market.desired > 0.0) {
 				cache.tot_demand[product] += market.desired;
 			}
 		}
 	}
-	// Packed arrays são COW: depois de mutar o buffer da cache, o dicionário
-	// precisa receber a referência de novo (senão o consumidor lê o dia anterior).
+	// Packed arrays sÃ£o COW: depois de mutar o buffer da cache, o dicionÃ¡rio
+	// precisa receber a referÃªncia de novo (senÃ£o o consumidor lÃª o dia anterior).
 	cache.market_totals[k.surplus] = cache.tot_surplus;
 	cache.market_totals[k.sold] = cache.tot_sold;
 	cache.market_totals[k.demand] = cache.tot_demand;
 
-	// Sinais leves por cidade (S7-c): arrays planos para a varredura diária da
-	// IA (mercados, POP e incumbentes) — o detalhe pesado por cidade fica sob
-	// demanda em get_city_status(id) na próxima fatia.
+	// Sinais leves por cidade (S7-c): arrays planos para a varredura diÃ¡ria da
+	// IA (mercados, POP e incumbentes) â€” o detalhe pesado por cidade fica sob
+	// demanda em get_city_status(id) na prÃ³xima fatia.
 	fill_light_signals(cache);
 
 	cache.cities.resize(ws_.cities.size());
@@ -4228,16 +4243,16 @@ Dictionary EconomySim::get_status() {
 	}
 	OGS_SIM_PHASE_LAP(0);
 
-	// Portos (modo mundo) para o minimapa e o mundo 3D. A4: o mesmo código
+	// Portos (modo mundo) para o minimapa e o mundo 3D. A4: o mesmo cÃ³digo
 	// atende `get_ports()`.
 	build_ports(cache);
 
-	// Pedidos de comércio do último tick (comboios 3D e HUD). A4: o mesmo
-	// código atende `get_trade_orders()`.
+	// Pedidos de comÃ©rcio do Ãºltimo tick (comboios 3D e HUD). A4: o mesmo
+	// cÃ³digo atende `get_trade_orders()`.
 	build_orders(cache);
 	OGS_SIM_PHASE_LAP(1);
 
-	// Nações agregadas (telas de política/economia). A4: o mesmo código
+	// NaÃ§Ãµes agregadas (telas de polÃ­tica/economia). A4: o mesmo cÃ³digo
 	// atende `get_nation_rows()`/`get_nation_status(tag)`.
 	if (labor_snapshot_day_ < 0) {
 		capture_nation_labor();
@@ -4250,7 +4265,7 @@ Dictionary EconomySim::get_status() {
 		cache.tot_produced_today[index] = ws_.produced_today[index];
 		cache.tot_consumed_today[index] = ws_.consumed_today[index];
 	}
-	// F5: moedas e tarifas para a UI da F6. A4: o mesmo código atende
+	// F5: moedas e tarifas para a UI da F6. A4: o mesmo cÃ³digo atende
 	// `get_currencies()`/`get_tariffs()`.
 	build_currencies(cache);
 	build_tariffs(cache);
@@ -4271,8 +4286,8 @@ Dictionary EconomySim::get_city_status(const String& city_id) {
 	}
 	const std::size_t city_index = static_cast<std::size_t>(found->second);
 
-	// Carga em trânsito PARA esta cidade (o status diário calcula a mesma soma
-	// numa passada única; aqui é só uma cidade, então varre as cargas do mundo).
+	// Carga em trÃ¢nsito PARA esta cidade (o status diÃ¡rio calcula a mesma soma
+	// numa passada Ãºnica; aqui Ã© sÃ³ uma cidade, entÃ£o varre as cargas do mundo).
 	double in_transit = 0.0;
 	for (const Shipment& shipment : ws_.in_transit) {
 		if (shipment.to_city == id) {
@@ -4281,7 +4296,7 @@ Dictionary EconomySim::get_city_status(const String& city_id) {
 	}
 
 	// Slot frio (nada preenchido): `fill_city_status` escreve todos os
-	// campos — mesmo conteúdo que o bloco por cidade do status diário, mais o
+	// campos â€” mesmo conteÃºdo que o bloco por cidade do status diÃ¡rio, mais o
 	// detalhe pesado (markets/pop/services/buildings/deposits) sob demanda.
 	StatusCitySlot slot;
 	fill_city_status(city_index, slot, in_transit, true);
@@ -4292,9 +4307,9 @@ Dictionary EconomySim::get_city_status(const String& city_id) {
 Dictionary EconomySim::get_day_summary() {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const StatusKeys& k = status_keys_;
-	// A4: resumo leve, construído do zero a cada chamada (≈20 chaves) para o
-	// dicionário entregue à UI ser imutável — o tick roda na worker thread e o
-	// consumidor não pode ver um dicionário compartilhado sendo reescrito.
+	// A4: resumo leve, construÃ­do do zero a cada chamada (â‰ˆ20 chaves) para o
+	// dicionÃ¡rio entregue Ã  UI ser imutÃ¡vel â€” o tick roda na worker thread e o
+	// consumidor nÃ£o pode ver um dicionÃ¡rio compartilhado sendo reescrito.
 	Dictionary root;
 	root[k.mode] = "demo";
 	root[k.day] = ws_.day;
@@ -4354,7 +4369,7 @@ Dictionary EconomySim::get_day_summary() {
 		consumed += city.pop.consumed;
 		deficit += std::max(0.0, city.pop.need - city.pop.consumed);
 		in_transit += transit[city_index];
-		// B7: agregados leves (média ponderada por população).
+		// B7: agregados leves (mÃ©dia ponderada por populaÃ§Ã£o).
 		informal_share_sum += city.pop.informal_share * city.population;
 		dissatisfaction_sum += city.pop.dissatisfaction * city.population;
 		excess_deaths += city.pop.excess_deaths_total
@@ -4528,8 +4543,8 @@ Dictionary EconomySim::get_city_info(const String& city_id) {
 
 Array EconomySim::get_nation_rows() {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// Se o status do dia já foi montado (tools/testes/uma tela pediu), devolve
-	// o MESMO bloco `nations` — as fichas consultadas batem bit a bit com ele.
+	// Se o status do dia jÃ¡ foi montado (tools/testes/uma tela pediu), devolve
+	// o MESMO bloco `nations` â€” as fichas consultadas batem bit a bit com ele.
 	if (status_live_ >= 0 && status_built_day_ == ws_.day) {
 		return status_slots_[status_live_].nations;
 	}
@@ -4750,7 +4765,7 @@ void EconomySim::set_recipes(const Array& recipes) {
 		const String output_id = String(entry.get("output", ""));
 		const int output = product_index(output_id);
 		if (output < 0) {
-			continue;  // receita de bem que não existe no goods.json carregado
+			continue;  // receita de bem que nÃ£o existe no goods.json carregado
 		}
 		Recipe recipe;
 		recipe.id = std::string(String(entry.get("id", "")).utf8().get_data());
@@ -4764,7 +4779,7 @@ void EconomySim::set_recipes(const Array& recipes) {
 		recipe.wage = safe_nonneg(static_cast<double>(entry.get("wage", 2.0)));
 		recipe.opex_per_ton = safe_nonneg(
 			static_cast<double>(entry.get("opex_per_ton", 2.5)));
-		// F7: escolaridade das vagas. `education_mix` explícito vence a tabela
+		// F7: escolaridade das vagas. `education_mix` explÃ­cito vence a tabela
 		// por setor (dado do Game Systems Designer); sem ele, o setor decide.
 		const std::string sector(
 			String(entry.get("sector", "")).utf8().get_data());
@@ -4838,7 +4853,7 @@ void EconomySim::seed_industry() {
 	}
 	for (const Building& building : ws_.buildings) {
 		if (building.recipe >= 0 || building.input_product >= 0) {
-			ws_.industry_seeded = true;  // o mundo já tem indústria
+			ws_.industry_seeded = true;  // o mundo jÃ¡ tem indÃºstria
 			return;
 		}
 	}
@@ -4855,9 +4870,9 @@ void EconomySim::seed_industry() {
 		}
 	}
 	if (flour_recipe < 0) {
-		return;  // recipes.json ainda não carregou
+		return;  // recipes.json ainda nÃ£o carregou
 	}
-	// Maiores cidades (capitais/megacidades) por população de simulação.
+	// Maiores cidades (capitais/megacidades) por populaÃ§Ã£o de simulaÃ§Ã£o.
 	std::vector<int> order(ws_.cities.size());
 	for (std::size_t index = 0; index < order.size(); ++index) {
 		order[index] = static_cast<int>(index);
@@ -4868,16 +4883,16 @@ void EconomySim::seed_industry() {
 	});
 	const int seed_cities = std::min<int>(6, static_cast<int>(order.size()));
 	int created = 0;
-	// R1/Q-014: as plantas de referência abaixo são o estoque industrial
-	// PRÉ-EXISTENTE do cenário (não obra nova): nascem concluídas. A obra física
-	// (§15) segue valendo para tudo o que a IA/o jogador investe depois.
+	// R1/Q-014: as plantas de referÃªncia abaixo sÃ£o o estoque industrial
+	// PRÃ‰-EXISTENTE do cenÃ¡rio (nÃ£o obra nova): nascem concluÃ­das. A obra fÃ­sica
+	// (Â§15) segue valendo para tudo o que a IA/o jogador investe depois.
 	const bool previous_bootstrap = bootstrap_construction_;
 	bootstrap_construction_ = true;
 	for (int slot = 0; slot < seed_cities; ++slot) {
 		City& city = ws_.cities[static_cast<std::size_t>(order[slot])];
-		// Capacidade de referência = 5% da necessidade alimentar diária da
-		// cidade, em toneladas de farinha/pão. É uma ESTIMATIVA de transição
-		// (§12.3), não um dado observado; calibrada no laboratório em F3.
+		// Capacidade de referÃªncia = 5% da necessidade alimentar diÃ¡ria da
+		// cidade, em toneladas de farinha/pÃ£o. Ã‰ uma ESTIMATIVA de transiÃ§Ã£o
+		// (Â§12.3), nÃ£o um dado observado; calibrada no laboratÃ³rio em F3.
 		const double capacity = std::clamp(
 			city.simulation_population * kNeedPerCapita * 0.05, 2.0, 20.0);
 		const Recipe& flour = ws_.recipes[static_cast<std::size_t>(flour_recipe)];
@@ -4919,13 +4934,13 @@ void EconomySim::seed_industry() {
 			}
 		}
 	}
-	// F3: corrente final representativa (bem de POP) para a demanda final não
-	// ficar só no papel. A IA ainda não atravessa a cadeia inteira quando o
-	// insumo não existe (gate de `_input_available` + uma construção por
-	// visita), então as 3 maiores cidades com aptidão para a matéria-prima
-	// recebem uma cadeia de referência cotton→fabric→clothes e wood→cellulose→
-	// paper. É ESTIMATIVA de transição (§12.3), marcada `strategic`, não dado
-	// observado; as capacidades derivam da necessidade per capita do nível.
+	// F3: corrente final representativa (bem de POP) para a demanda final nÃ£o
+	// ficar sÃ³ no papel. A IA ainda nÃ£o atravessa a cadeia inteira quando o
+	// insumo nÃ£o existe (gate de `_input_available` + uma construÃ§Ã£o por
+	// visita), entÃ£o as 3 maiores cidades com aptidÃ£o para a matÃ©ria-prima
+	// recebem uma cadeia de referÃªncia cottonâ†’fabricâ†’clothes e woodâ†’celluloseâ†’
+	// paper. Ã‰ ESTIMATIVA de transiÃ§Ã£o (Â§12.3), marcada `strategic`, nÃ£o dado
+	// observado; as capacidades derivam da necessidade per capita do nÃ­vel.
 	auto recipe_for = [this](const char* output_id) {
 		const int product = product_index(String(output_id));
 		for (std::size_t index = 0; index < ws_.recipes.size(); ++index) {
@@ -4944,7 +4959,7 @@ void EconomySim::seed_industry() {
 		if (raw_product < 0 || mid_recipe < 0 || final_recipe < 0) {
 			return 0;
 		}
-		// Sem aptidão para a matéria-prima não há cadeia local (nada inventado).
+		// Sem aptidÃ£o para a matÃ©ria-prima nÃ£o hÃ¡ cadeia local (nada inventado).
 		if (city.suitability[raw_product] < 0.30) {
 			return 0;
 		}
@@ -4953,16 +4968,16 @@ void EconomySim::seed_industry() {
 		for (const auto& existing : ws_.buildings) {
 			if (existing.city == city.id
 					&& existing.id.find("SEED-" + std::string(final_id)) != std::string::npos) {
-				return 0;  // já semeada
+				return 0;  // jÃ¡ semeada
 			}
 		}
 		const Recipe& mid = ws_.recipes[static_cast<std::size_t>(mid_recipe)];
 		const Recipe& final = ws_.recipes[static_cast<std::size_t>(final_recipe)];
-		// R2/Q-014: a lavoura bruta (algodão/madeira) nasce JUNTO da fábrica que
-		// a consome — sem ela a matéria-prima não existe no mundo (a IA excluía
-		// essas lavouras, então fabric/cellulose/paper ficavam sem oferta desde o
-		// dia 0). Capacidade = o insumo que a transformação consome; custo pelo
-		// capital padrão por capacidade das primárias (ESTIMATIVA §12.3).
+		// R2/Q-014: a lavoura bruta (algodÃ£o/madeira) nasce JUNTO da fÃ¡brica que
+		// a consome â€” sem ela a matÃ©ria-prima nÃ£o existe no mundo (a IA excluÃ­a
+		// essas lavouras, entÃ£o fabric/cellulose/paper ficavam sem oferta desde o
+		// dia 0). Capacidade = o insumo que a transformaÃ§Ã£o consome; custo pelo
+		// capital padrÃ£o por capacidade das primÃ¡rias (ESTIMATIVA Â§12.3).
 		double raw_capacity = 0.0;
 		for (int input = 0; input < mid.input_count; ++input) {
 			if (mid.inputs[input] == raw_product) {
@@ -5027,9 +5042,9 @@ void EconomySim::seed_industry() {
 		return built;
 	};
 	if (ws_.needs_loaded) {
-		// Só capital com folga alimentar: a fábrica de referência não pode
-		// competir com a comida de uma nação importadora (EGY/SAH). A folga é
-		// medida pela capacidade primária de alimento já instalada × aptidão.
+		// SÃ³ capital com folga alimentar: a fÃ¡brica de referÃªncia nÃ£o pode
+		// competir com a comida de uma naÃ§Ã£o importadora (EGY/SAH). A folga Ã©
+		// medida pela capacidade primÃ¡ria de alimento jÃ¡ instalada Ã— aptidÃ£o.
 		int chains_seeded = 0;
 		const int scan = std::min<int>(24, static_cast<int>(order.size()));
 		for (int slot = 0; slot < scan && chains_seeded < 3; ++slot) {
@@ -5048,10 +5063,10 @@ void EconomySim::seed_industry() {
 				continue;
 			}
 			int built = 0;
-			// basic/clothing: 0,0004 t/mês por habitante.
+			// basic/clothing: 0,0004 t/mÃªs por habitante.
 			built += seed_final_chain(city, "cotton", "fabric", "clothes",
 				0.0004 / 30.0, 20.0);
-			// institutional/government paper: 0,005 × âncora alimentar/dia.
+			// institutional/government paper: 0,005 Ã— Ã¢ncora alimentar/dia.
 			built += seed_final_chain(city, "wood", "cellulose", "paper",
 				kNeedPerCapita * 0.005, 10.0);
 			if (built > 0) {
@@ -5063,15 +5078,15 @@ void EconomySim::seed_industry() {
 	bootstrap_construction_ = previous_bootstrap;
 	ws_.industry_seeded = true;
 	if (created > 0) {
-		UtilityFunctions::print(String(("economia: bootstrap industrial (estimativa) — "
-			+ std::to_string(created) + " plantas de referência semeadas").c_str()));
+		UtilityFunctions::print(String(("economia: bootstrap industrial (estimativa) â€” "
+			+ std::to_string(created) + " plantas de referÃªncia semeadas").c_str()));
 	}
 }
 
 void EconomySim::set_needs(const Dictionary& needs) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// Cesta alimentar a partir do nível básico de needs.json. Só a categoria
-	// `food` tem âncora física no núcleo hoje (kNeedPerCapita); as demais
+	// Cesta alimentar a partir do nÃ­vel bÃ¡sico de needs.json. SÃ³ a categoria
+	// `food` tem Ã¢ncora fÃ­sica no nÃºcleo hoje (kNeedPerCapita); as demais
 	// categorias ficam para F3.
 	const Dictionary levels = needs.get("levels", Dictionary());
 	const Dictionary basic = levels.get("basic", Dictionary());
@@ -5079,7 +5094,7 @@ void EconomySim::set_needs(const Dictionary& needs) {
 	const Dictionary food = categories.get("food", Dictionary());
 	const Array substitutes = food.get("substitutes", Array());
 	if (substitutes.is_empty()) {
-		return;  // mantém a cesta validada (5 culturas)
+		return;  // mantÃ©m a cesta validada (5 culturas)
 	}
 	const Dictionary equivalence = needs.get("equivalence", Dictionary());
 	const Dictionary calories = equivalence.get("calories", Dictionary());
@@ -5097,17 +5112,17 @@ void EconomySim::set_needs(const Dictionary& needs) {
 			factor = static_cast<double>(calories[id]);
 		}
 		factor = std::clamp(factor, 0.05, 4.0);
-		// Mantém a ordem data-driven, mas garante os 5 grãos validados no
-		// início quando estão entre os substitutos (a ordem de consumo importa
-		// sob orçamento apertado: os mais baratos/legados primeiro).
+		// MantÃ©m a ordem data-driven, mas garante os 5 grÃ£os validados no
+		// inÃ­cio quando estÃ£o entre os substitutos (a ordem de consumo importa
+		// sob orÃ§amento apertado: os mais baratos/legados primeiro).
 		products.push_back(product);
 		factors.push_back(factor);
 	}
 	if (products.size() < 2) {
 		return;
 	}
-	// Ordem de consumo: os 5 grãos/raízes validados primeiro (a ordem importa
-	// sob orçamento apertado e no fallback "sem estoque"); os processados
+	// Ordem de consumo: os 5 grÃ£os/raÃ­zes validados primeiro (a ordem importa
+	// sob orÃ§amento apertado e no fallback "sem estoque"); os processados
 	// (bread/meat/canned_food/bagged_rice) entram depois.
 	static const char* const kLegacyFood[] = {
 		"wheat", "rice", "maize", "potato", "soy"};
@@ -5139,10 +5154,10 @@ void EconomySim::set_needs(const Dictionary& needs) {
 	ws_.food_products = std::move(ordered_products);
 	ws_.food_factors = std::move(ordered_factors);
 
-	// F3: níveis completos (basic/life/luxury). A cesta alimentar acima é o
-	// contrato validado e continua com o laço próprio no tick; aqui entram os
-	// níveis e as categorias não alimentares, com a ordem dos substitutos
-	// preservada (do melhor ao último caso).
+	// F3: nÃ­veis completos (basic/life/luxury). A cesta alimentar acima Ã© o
+	// contrato validado e continua com o laÃ§o prÃ³prio no tick; aqui entram os
+	// nÃ­veis e as categorias nÃ£o alimentares, com a ordem dos substitutos
+	// preservada (do melhor ao Ãºltimo caso).
 	ws_.needs_levels.clear();
 	ws_.needs_food_level = -1;
 	ws_.needs_loaded = false;
@@ -5197,8 +5212,8 @@ void EconomySim::set_needs(const Dictionary& needs) {
 			category.per_capita_day = std::max(0.0,
 				static_cast<double>(category_data.get("per_capita_t_month", 0.0)))
 				/ 30.0;
-			// Cada categoria declara a tabela de equivalência que usa
-			// (ex.: basic/food → equivalence.calories).
+			// Cada categoria declara a tabela de equivalÃªncia que usa
+			// (ex.: basic/food â†’ equivalence.calories).
 			const String eq_key = String(category_data.get("equivalence_key", ""));
 			Dictionary eq_table;
 			if (!eq_key.is_empty()) {
@@ -5241,11 +5256,11 @@ void EconomySim::set_needs(const Dictionary& needs) {
 		static_cast<double>(needs.get("durable_replacement_per_year", 0.1)), 0.0, 0.99);
 	ws_.durable_decay = replacement_per_year > 0.0
 		? 1.0 - std::pow(1.0 - replacement_per_year, 1.0 / 365.0) : 0.0;
-	// Consumo institucional (decisão §12.10): o Estado compra paper/computer.
+	// Consumo institucional (decisÃ£o Â§12.10): o Estado compra paper/computer.
 	// O dado de needs.json lista os BENS (`institutional.government`); a
-	// quantidade não existe na spec, então usa-se uma fração ESTIMADA da âncora
+	// quantidade nÃ£o existe na spec, entÃ£o usa-se uma fraÃ§Ã£o ESTIMADA da Ã¢ncora
 	// alimentar (kNeedPerCapita), declarada na tabela abaixo e registrada em
-	// GAME_STATE/perf como estimativa — nunca como medição. Se um needs.json
+	// GAME_STATE/perf como estimativa â€” nunca como mediÃ§Ã£o. Se um needs.json
 	// futuro trouxer `institutional_per_capita_t_month.government.<bem>`, ele
 	// vence a estimativa.
 	const Dictionary institutional = needs.get("institutional", Dictionary());
@@ -5255,7 +5270,7 @@ void EconomySim::set_needs(const Dictionary& needs) {
 	const Dictionary quantities = quantities_root.get("government", Dictionary());
 	static const struct {
 		const char* id;
-		double anchor_share;  // fração de kNeedPerCapita por dia
+		double anchor_share;  // fraÃ§Ã£o de kNeedPerCapita por dia
 	} kEstimatedGovernmentNeeds[] = {
 		{"paper", 0.005},
 		{"computer", 0.0001},
@@ -5311,29 +5326,29 @@ void EconomySim::set_balance(const Dictionary& values) {
 		number("inventory_cover_days", ws_.inventory_cover_days), 1.0, 30.0);
 	ws_.inventory_recovery = std::clamp(
 		number("inventory_recovery", ws_.inventory_recovery), 0.05, 1.0);
-	// Busca do comércio de alimento (K vizinhos + M ofertas externas).
+	// Busca do comÃ©rcio de alimento (K vizinhos + M ofertas externas).
 	ws_.trade_neighbors = std::clamp(
 		static_cast<int>(number("trade_neighbors", ws_.trade_neighbors)), 1, 256);
 	ws_.trade_external = std::clamp(
 		static_cast<int>(number("trade_external", ws_.trade_external)), 0, 256);
-	// F7 calibração: folga de custo de vida do gate de renda → nível de
-	// consumo. Padrão = kIncomeBasketMargin; o laboratório pode isolá-la
-	// (1.0 = sem folga) para testar a regra do nível sem depender da calibração.
+	// F7 calibraÃ§Ã£o: folga de custo de vida do gate de renda â†’ nÃ­vel de
+	// consumo. PadrÃ£o = kIncomeBasketMargin; o laboratÃ³rio pode isolÃ¡-la
+	// (1.0 = sem folga) para testar a regra do nÃ­vel sem depender da calibraÃ§Ã£o.
 	ws_.income_basket_margin = std::clamp(
 		number("income_basket_margin", ws_.income_basket_margin), 1.0, 8.0);
-	// B5 (D-089): penalidade máxima de acesso da infra (estrada 0). Gancho de
-	// laboratório do A/B da infra — 0 isola o frete do efeito dos níveis e o
-	// padrão continua sendo kInfraAccessPenaltyMax.
+	// B5 (D-089): penalidade mÃ¡xima de acesso da infra (estrada 0). Gancho de
+	// laboratÃ³rio do A/B da infra â€” 0 isola o frete do efeito dos nÃ­veis e o
+	// padrÃ£o continua sendo kInfraAccessPenaltyMax.
 	ws_.infra_access_penalty = std::clamp(
 		number("infra_access_penalty", ws_.infra_access_penalty), 0.0, 1.0);
-	// D-105 + D-111: juro da taxa básica no envelope de crédito da safra.
-	// Padrão do jogo = LIGADO (a C4 criou o credor); o A/B desliga por aqui.
+	// D-105 + D-111: juro da taxa bÃ¡sica no envelope de crÃ©dito da safra.
+	// PadrÃ£o do jogo = LIGADO (a C4 criou o credor); o A/B desliga por aqui.
 	if (values.has("harvest_credit_rate")) {
 		ws_.harvest_credit_rate = number("harvest_credit_rate", 0.0) > 0.5;
 	}
-	// C3 (D-107): regras do crédito de empresa (default de jogo em
+	// C3 (D-107): regras do crÃ©dito de empresa (default de jogo em
 	// data/definitions/economy/bank_credit.json). 0 = default do sim/bank.h.
-	// O mundo novo nasce com o crédito ligado (D-111); o teste/laboratório
+	// O mundo novo nasce com o crÃ©dito ligado (D-111); o teste/laboratÃ³rio
 	// desliga ou liga explicitamente por aqui.
 	if (values.has("bank_credit_enabled")) {
 		ws_.bank_credit_enabled =
@@ -5364,7 +5379,7 @@ void EconomySim::apply_set_suitability(const String& city_id, const String& prod
 		return;
 	}
 	city->suitability[index] = std::clamp(value, 0.0, 1.0);
-	// O status reuse arrays de aptidão: invalida só quando o dado muda.
+	// O status reuse arrays de aptidÃ£o: invalida sÃ³ quando o dado muda.
 	++status_static_version_;
 }
 
@@ -5383,21 +5398,21 @@ bool EconomySim::apply_set_deposit(const String& city_id, const String& product,
 	deposit.quality = std::clamp(safe_nonneg(quality), 0.0, 1.0);
 	deposit.depth_m = safe_nonneg(depth_m);
 	if (deposit.tracked) {
-		// Idempotente: não reabastece uma jazida já em exploração (load/save).
+		// Idempotente: nÃ£o reabastece uma jazida jÃ¡ em exploraÃ§Ã£o (load/save).
 		return false;
 	}
 	deposit.tracked = true;
 	deposit.initial_kt = safe_nonneg(reserve_kt);
 	deposit.remaining_kt = deposit.initial_kt;
 	deposit.extracted_kt = 0.0;
-	// D-086b: a mina semeada pela produção real nasce OPERANDO. O contrato do
+	// D-086b: a mina semeada pela produÃ§Ã£o real nasce OPERANDO. O contrato do
 	// GeographyService chega no `initialize_world`, antes de a jazida ser
-	// declarada aqui; a reserva do estágio (fatia de referência do núcleo) é
-	// aberta agora, na primeira declaração do depósito. Mina histórica
-	// (`stage_pending == false`) fica no piso até pagar o aprofundamento.
+	// declarada aqui; a reserva do estÃ¡gio (fatia de referÃªncia do nÃºcleo) Ã©
+	// aberta agora, na primeira declaraÃ§Ã£o do depÃ³sito. Mina histÃ³rica
+	// (`stage_pending == false`) fica no piso atÃ© pagar o aprofundamento.
 	for (Building& building : ws_.buildings) {
-		// `stage_pending` primeiro: a maioria das construções não é semente e o
-		// teste barato evita o compare de string por construção/depósito.
+		// `stage_pending` primeiro: a maioria das construÃ§Ãµes nÃ£o Ã© semente e o
+		// teste barato evita o compare de string por construÃ§Ã£o/depÃ³sito.
 		if (!building.stage_pending || building.city != city->id
 				|| building.output_product != index
 				|| building.stage_reserve_kt > 1e-12) {
@@ -5432,13 +5447,13 @@ void EconomySim::apply_set_external_income_index(const String& city_id, double i
 	if (city == nullptr) {
 		return;
 	}
-	// [0, 8]: 0 desliga a renda (calibração/teste), 8 cobre com folga a maior
-	// razão PIB PPP per capita do cenário (Singapura ≈ 6,3× a média mundial) e
-	// corta dados corrompidos sem virar um teto econômico silencioso.
+	// [0, 8]: 0 desliga a renda (calibraÃ§Ã£o/teste), 8 cobre com folga a maior
+	// razÃ£o PIB PPP per capita do cenÃ¡rio (Singapura â‰ˆ 6,3Ã— a mÃ©dia mundial) e
+	// corta dados corrompidos sem virar um teto econÃ´mico silencioso.
 	city->external_income_index = std::clamp(index, 0.0, 8.0);
-	// F7: a estrutura etária, a escolaridade e a participação derivam do mesmo
-	// índice de renda real (único dado por país do cenário). Reaplica o perfil
-	// quando o índice chega do GeographyService, logo após criar o mundo.
+	// F7: a estrutura etÃ¡ria, a escolaridade e a participaÃ§Ã£o derivam do mesmo
+	// Ã­ndice de renda real (Ãºnico dado por paÃ­s do cenÃ¡rio). Reaplica o perfil
+	// quando o Ã­ndice chega do GeographyService, logo apÃ³s criar o mundo.
 	apply_labor_profile(*city);
 	++status_static_version_;
 }
@@ -5449,10 +5464,10 @@ void EconomySim::apply_set_productivity_index(const String& city_id, double inde
 	if (city == nullptr) {
 		return;
 	}
-	// 0 (ou negativo) = DERIVAR do índice de renda real: o dado do PIB PPP per
+	// 0 (ou negativo) = DERIVAR do Ã­ndice de renda real: o dado do PIB PPP per
 	// capita chega por set_external_income_index e a TFP acompanha. Um
-	// valor positivo é fator explícito do laboratório. Os limites só contêm
-	// dado corrompido: o cenário real fica em ~0,38 (NGA) a ~3,57 (USA).
+	// valor positivo Ã© fator explÃ­cito do laboratÃ³rio. Os limites sÃ³ contÃªm
+	// dado corrompido: o cenÃ¡rio real fica em ~0,38 (NGA) a ~3,57 (USA).
 	city->productivity_index = index > 0.0
 		? std::clamp(index, 0.05, 8.0) : 0.0;
 	++status_static_version_;
@@ -5480,7 +5495,7 @@ void EconomySim::apply_set_city_strata(const String& city_id,
 		// Sem dado: re-semeia com a proxy do Gini declarado.
 		sim_core_.seed_strata(*city, nullptr);
 	}
-	// B3: o interior espelha os quintis observados do país (20% de pessoas cada;
+	// B3: o interior espelha os quintis observados do paÃ­s (20% de pessoas cada;
 	// a renda acompanha o alvo nacional). Sem dado urbano, 20% iguais.
 	if (city->region.ready) {
 		sim_core_.seed_region_strata(*city, total > 1e-9 ? values : nullptr);
@@ -5492,9 +5507,9 @@ void EconomySim::apply_set_city_strata(const String& city_id,
 void EconomySim::set_city_strata(const String& city_id,
 		const PackedFloat64Array& shares) {
 	// API de SETUP (initialize_world/set_urban/apply_to_sim): antes do dia 1,
-	// como set_external_income_index e set_income_gini na inicialização. Não é
-	// ação de jogador — não passa pela fila A3 porque não existe, no jogo, um
-	// comando para reescrever a distribuição inicial.
+	// como set_external_income_index e set_income_gini na inicializaÃ§Ã£o. NÃ£o Ã©
+	// aÃ§Ã£o de jogador â€” nÃ£o passa pela fila A3 porque nÃ£o existe, no jogo, um
+	// comando para reescrever a distribuiÃ§Ã£o inicial.
 	apply_set_city_strata(city_id, shares);
 }
 
@@ -5512,8 +5527,8 @@ void EconomySim::apply_set_city_region(const String& city_id,
 	city->region = std::move(region);
 	city->population = city->region.population_region;
 	city->simulation_population = city->region.urban_population;
-	// A aglomeração pode ter mudado: re-semeia o perfil urbano (demografia/
-	// estratos) e o bloco do interior. API de setup — vale antes do dia 1.
+	// A aglomeraÃ§Ã£o pode ter mudado: re-semeia o perfil urbano (demografia/
+	// estratos) e o bloco do interior. API de setup â€” vale antes do dia 1.
 	apply_labor_profile(*city);
 	sim_core_.seed_region(*city);
 	++status_static_version_;
@@ -5542,9 +5557,9 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 	out["employment"] = region.employment;
 	out["employment_mix"] = Array{region.employment_mix[0],
 		region.employment_mix[1], region.employment_mix[2]};
-	// Renda em base DIÁRIA (o salário do interior é pago por semana na cadência
-	// A6; `region.wage_income`/`income`/`taxes` já guardam o equivalente diário).
-	// Os totais semanais (brutos) ficam explícitos com o sufixo `_weekly`.
+	// Renda em base DIÃRIA (o salÃ¡rio do interior Ã© pago por semana na cadÃªncia
+	// A6; `region.wage_income`/`income`/`taxes` jÃ¡ guardam o equivalente diÃ¡rio).
+	// Os totais semanais (brutos) ficam explÃ­citos com o sufixo `_weekly`.
 	const double week = double(std::max(1, ws_.cadence.weekly_period));
 	out["wage_income"] = region.wage_income;
 	out["income"] = region.income;
@@ -5577,10 +5592,10 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 	out["strata_people"] = strata_people;
 	out["strata_income_share"] = strata_income_share;
 	out["strata_savings"] = strata_savings;
-	// B4: migração — acumuladores + fluxo do último fechamento mensal + a
-	// urbanização CORRENTE (urbano vivo ÷ população exibida) contra a referência
-	// nacional (World Bank; -1 = sem dado). O urbano vivo é `simulation_population`
-	// (Σ coortes), não `region.urban_population` (a SEED do dia 0).
+	// B4: migraÃ§Ã£o â€” acumuladores + fluxo do Ãºltimo fechamento mensal + a
+	// urbanizaÃ§Ã£o CORRENTE (urbano vivo Ã· populaÃ§Ã£o exibida) contra a referÃªncia
+	// nacional (World Bank; -1 = sem dado). O urbano vivo Ã© `simulation_population`
+	// (Î£ coortes), nÃ£o `region.urban_population` (a SEED do dia 0).
 	{
 		Dictionary migration;
 		migration["rural_in_total"] = region.migration_rural_in_total;
@@ -5596,8 +5611,8 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 		migration["urban_share_ref"] = region.urban_share;
 		out["migration"] = migration;
 	}
-	// B5: infraestrutura do estado — níveis, manutenção do dia e os
-	// multiplicadores derivados (custo de acesso, produtividade, êxodo).
+	// B5: infraestrutura do estado â€” nÃ­veis, manutenÃ§Ã£o do dia e os
+	// multiplicadores derivados (custo de acesso, produtividade, Ãªxodo).
 	{
 		Dictionary infra;
 		infra["road"] = region.infra_road;
@@ -5613,7 +5628,7 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 			ogs::SimCore::infra_exodus_multiplier(region);
 		out["infra"] = infra;
 	}
-	// B7: informalidade, mortalidade e insatisfação do interior.
+	// B7: informalidade, mortalidade e insatisfaÃ§Ã£o do interior.
 	{
 		Dictionary informal;
 		informal["share"] = region.informal_share;
@@ -5662,8 +5677,8 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 		dissatisfaction["components"] = components;
 		out["dissatisfaction"] = dissatisfaction;
 	}
-	// B5: concessões — dono (F9) e royalty por mina/fazenda (extração primária)
-	// da região (construções da cidade-polo). Dono = "state" | "national:<g>" |
+	// B5: concessÃµes â€” dono (F9) e royalty por mina/fazenda (extraÃ§Ã£o primÃ¡ria)
+	// da regiÃ£o (construÃ§Ãµes da cidade-polo). Dono = "state" | "national:<g>" |
 	// "foreign:<g>@<n>" | "private".
 	{
 		Array concessions;
@@ -5674,7 +5689,7 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 				const Building& b =
 					ws_.buildings[static_cast<std::size_t>(bi)];
 				if (b.recipe >= 0 || b.input_product >= 0) {
-					continue;  // só mina/fazenda (extração primária)
+					continue;  // sÃ³ mina/fazenda (extraÃ§Ã£o primÃ¡ria)
 				}
 				Dictionary c;
 				c["id"] = String(b.id.c_str());
@@ -5688,11 +5703,11 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 		}
 		out["concessions"] = concessions;
 	}
-	// B6: patrimônio da região — terra, moradia do interior e anel periurbano.
-	// Os VALORES são de mercado (não são dinheiro); `book` é a base contábil
-	// (1ª avaliação) e o fluxo mensal é o aluguel efetivamente pago no fecho.
-	// Os ativos vêm em `assets` com a semântica de BALANÇO da C1 (tipo, dono,
-	// quantidade, valor de mercado, valor contábil e fluxo mensal).
+	// B6: patrimÃ´nio da regiÃ£o â€” terra, moradia do interior e anel periurbano.
+	// Os VALORES sÃ£o de mercado (nÃ£o sÃ£o dinheiro); `book` Ã© a base contÃ¡bil
+	// (1Âª avaliaÃ§Ã£o) e o fluxo mensal Ã© o aluguel efetivamente pago no fecho.
+	// Os ativos vÃªm em `assets` com a semÃ¢ntica de BALANÃ‡O da C1 (tipo, dono,
+	// quantidade, valor de mercado, valor contÃ¡bil e fluxo mensal).
 	{
 		const std::size_t cidx = static_cast<std::size_t>(
 			city - ws_.cities.data());
@@ -5705,7 +5720,7 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 				? house.pop_anchor / house.households : 0.0;
 		}();
 		const double land_value = region.land_ha * region.land_value_per_ha;
-		// O anel tem estoque próprio: a casa do interior é de quem NÃO vive nele.
+		// O anel tem estoque prÃ³prio: a casa do interior Ã© de quem NÃƒO vive nele.
 		const double housing_units = size > 0.0
 			? std::max(0.0, region.region_pop - region.ring_population) / size
 			: 0.0;
@@ -5757,11 +5772,11 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 		property["wealth_by_quintile"] = wealth_row;
 		property["wealth_gini"] = ogs::SimCore::quintile_gini(
 			region.stratum_wealth, kIncomeStrata);
-		// BALANÇO (pronto para a C1): um ativo por tipo × dono (quintil).
-		// `market_value` = valor de mercado; `book_value` = valor contábil (1ª
-		// avaliação, congelada — não há compra/venda nesta fase);
+		// BALANÃ‡O (pronto para a C1): um ativo por tipo Ã— dono (quintil).
+		// `market_value` = valor de mercado; `book_value` = valor contÃ¡bil (1Âª
+		// avaliaÃ§Ã£o, congelada â€” nÃ£o hÃ¡ compra/venda nesta fase);
 		// `income_month` = fluxo de renda mensal (aluguel do anel repartido
-		// entre os donos; terra e moradia próprias não geram aluguel).
+		// entre os donos; terra e moradia prÃ³prias nÃ£o geram aluguel).
 		Array assets;
 		double ring_value_total = 0.0;
 		for (int s = 0; s < kIncomeStrata; ++s) {
@@ -5823,26 +5838,26 @@ void EconomySim::apply_set_income_gini(const String& city_id, double gini) {
 	if (city == nullptr) {
 		return;
 	}
-	// [0, 1]: 0 desliga (legado por escolaridade); dados corrompidos não viram
-	// sigma negativo. A faixa real estimada por região fica em 0,33–0,47.
+	// [0, 1]: 0 desliga (legado por escolaridade); dados corrompidos nÃ£o viram
+	// sigma negativo. A faixa real estimada por regiÃ£o fica em 0,33â€“0,47.
 	city->income_gini = std::clamp(gini, 0.0, 1.0);
-	// B2 (correção): o Gini chega DEPOIS do `initialize_world` (o GDScript
-	// declara a renda no `apply_to_sim`), mas os quintis já foram semeados pela
-	// proxy com Gini zero — repartição igual, que zerava life/luxury na classe
-	// publicada. Re-semeia a proxy com o Gini declarado; a repartição de DADO
-	// observado (set_city_strata) não é tocada.
+	// B2 (correÃ§Ã£o): o Gini chega DEPOIS do `initialize_world` (o GDScript
+	// declara a renda no `apply_to_sim`), mas os quintis jÃ¡ foram semeados pela
+	// proxy com Gini zero â€” repartiÃ§Ã£o igual, que zerava life/luxury na classe
+	// publicada. Re-semeia a proxy com o Gini declarado; a repartiÃ§Ã£o de DADO
+	// observado (set_city_strata) nÃ£o Ã© tocada.
 	if (city->pop.strata_ready && !city->pop.strata_from_data) {
 		sim_core_.seed_strata(*city, nullptr);
 	}
-	// Recalcula as classes na hora: o status lido antes do primeiro tick já
-	// publica a repartição ancorada (se o mundo ainda não tem preços, cai no
+	// Recalcula as classes na hora: o status lido antes do primeiro tick jÃ¡
+	// publica a repartiÃ§Ã£o ancorada (se o mundo ainda nÃ£o tem preÃ§os, cai no
 	// espelho dos estratos, sem inventar Gini).
 	refresh_income_classes(*city);
 	++status_static_version_;
 }
 
 // ---------------------------------------------------------------------------
-// F7 — trabalho, educação e renda.
+// F7 â€” trabalho, educaÃ§Ã£o e renda.
 // ---------------------------------------------------------------------------
 void EconomySim::apply_labor_profile(City& city) {
 	sim_core_.apply_labor_profile(city);
@@ -5884,9 +5899,9 @@ void EconomySim::set_labor_profile(const String& city_id,
 					pop.education[0] = pop.working_age * basic;
 					pop.education[1] = pop.working_age * intermediate;
 					pop.education[2] = pop.working_age * higher;
-					// Perfil explícito substitui a estrutura etária: as coortes
-					// em formação do perfil derivado da renda não podem vazar
-					// para a nova distribuição (senão "todo mundo básico" ainda
+					// Perfil explÃ­cito substitui a estrutura etÃ¡ria: as coortes
+					// em formaÃ§Ã£o do perfil derivado da renda nÃ£o podem vazar
+					// para a nova distribuiÃ§Ã£o (senÃ£o "todo mundo bÃ¡sico" ainda
 					// formava superiores todos os dias).
 					pop.studying[0] = 0.0;
 					pop.studying[1] = 0.0;
@@ -5950,8 +5965,8 @@ void EconomySim::apply_set_minimum_wage(const String& nation, double value) {
 	} else {
 		ws_.minimum_wages[tag] = std::min(value, 100.0);
 	}
-	// O piso vale a partir do próximo ajuste salarial; cidades sem histórico de
-	// salário recebem o âncora com o piso imediatamente.
+	// O piso vale a partir do prÃ³ximo ajuste salarial; cidades sem histÃ³rico de
+	// salÃ¡rio recebem o Ã¢ncora com o piso imediatamente.
 	const double floor = value > 0.0 ? std::min(value, 100.0) : 0.0;
 	if (floor > 0.0) {
 		for (City& city : ws_.cities) {
@@ -5972,19 +5987,19 @@ void EconomySim::apply_set_wage_rigidity(double value) {
 }
 
 // ---------------------------------------------------------------------------
-// F9 — EMPREGO SETORIAL (docs/economy/sector_employment_report.md)
+// F9 â€” EMPREGO SETORIAL (docs/economy/sector_employment_report.md)
 //
 // O mercado de trabalho da F7 continua fechando emprego/desemprego como antes
-// (o setor de serviços é o empregador residual). A F9 decompõe esse emprego em
+// (o setor de serviÃ§os Ã© o empregador residual). A F9 decompÃµe esse emprego em
 // setores com estrutura ancorada em dados observados:
-//   0 agropecuária — da produção local de alimentos (t/dia) e da TFP;
-//   1 indústria/mineração/construção — da âncora ILO por renda e do valor
-//     adicionado simulado (quando ele passa da âncora);
-//   2 serviços — residual (formal + informal de serviços);
-//   3 informal — SOBREPOSIÇÃO (fração do emprego total), não soma com 0..2.
-// Não cria nem destrói dinheiro: a renda domiciliar continua agregada por
-// cidade. O único fluxo novo é o autoconsumo agrícola em espécie (ver o piso de
-// subsistência no consumo), que vem da produção local e é conservado no estoque.
+//   0 agropecuÃ¡ria â€” da produÃ§Ã£o local de alimentos (t/dia) e da TFP;
+//   1 indÃºstria/mineraÃ§Ã£o/construÃ§Ã£o â€” da Ã¢ncora ILO por renda e do valor
+//     adicionado simulado (quando ele passa da Ã¢ncora);
+//   2 serviÃ§os â€” residual (formal + informal de serviÃ§os);
+//   3 informal â€” SOBREPOSIÃ‡ÃƒO (fraÃ§Ã£o do emprego total), nÃ£o soma com 0..2.
+// NÃ£o cria nem destrÃ³i dinheiro: a renda domiciliar continua agregada por
+// cidade. O Ãºnico fluxo novo Ã© o autoconsumo agrÃ­cola em espÃ©cie (ver o piso de
+// subsistÃªncia no consumo), que vem da produÃ§Ã£o local e Ã© conservado no estoque.
 // ---------------------------------------------------------------------------
 
 void EconomySim::set_sector_employment(const Variant& data) {
@@ -6052,16 +6067,16 @@ void EconomySim::set_sector_employment(const Variant& data) {
 }
 
 // ---------------------------------------------------------------------------
-// B1 — ESTRUTURA ETÁRIA (data/definitions/population/age_structure_2026.json)
+// B1 â€” ESTRUTURA ETÃRIA (data/definitions/population/age_structure_2026.json)
 //
-// DEFINIÇÃO estática, não estado do mundo: só o mapa por tag de nação entra no
-// WorldState. O arquivo traz cinco faixas como fração da população, a fração
-// 18-49, a TFR e as taxas brutas de natalidade/mortalidade por mil. Nação cujas
-// faixas não fecham em 1 (tolerância de 2%) é descartada inteira: dado
-// inconsistente não vira número de simulação. As cidades NÃO são tocadas aqui:
-// o mapa é a DEFINIÇÃO e a semeadura das coortes acontece em
+// DEFINIÃ‡ÃƒO estÃ¡tica, nÃ£o estado do mundo: sÃ³ o mapa por tag de naÃ§Ã£o entra no
+// WorldState. O arquivo traz cinco faixas como fraÃ§Ã£o da populaÃ§Ã£o, a fraÃ§Ã£o
+// 18-49, a TFR e as taxas brutas de natalidade/mortalidade por mil. NaÃ§Ã£o cujas
+// faixas nÃ£o fecham em 1 (tolerÃ¢ncia de 2%) Ã© descartada inteira: dado
+// inconsistente nÃ£o vira nÃºmero de simulaÃ§Ã£o. As cidades NÃƒO sÃ£o tocadas aqui:
+// o mapa Ã© a DEFINIÃ‡ÃƒO e a semeadura das coortes acontece em
 // `SimCore::seed_demography` (chamada por apply_labor_profile e pelo load do
-// save), que precisa das cidades já criadas.
+// save), que precisa das cidades jÃ¡ criadas.
 // ---------------------------------------------------------------------------
 
 void EconomySim::set_age_structure(const Variant& data) {
@@ -6122,14 +6137,14 @@ void EconomySim::set_age_structure(const Variant& data) {
 }
 
 // ---------------------------------------------------------------------------
-// B7 — INFORMALIDADE E ACESSO À SAÚDE (data/definitions/economy/informality.json
+// B7 â€” INFORMALIDADE E ACESSO Ã€ SAÃšDE (data/definitions/economy/informality.json
 // e data/definitions/population/health_access.json).
 //
-// DEFINIÇÃO estática no WorldState (como `age_structures`), NÃO entra no save:
-// a fração informal inicial é semeada no dia 0 (`SimCore::seed_informality`) e
-// a referência de saúde é lida na semeadura e na mortalidade mensal. O loader
-// tolera arquivo ausente (o GDScript entrega {}) e cai na âncora de renda /
-// kHealthAccessDefault quando a nação não tem entrada.
+// DEFINIÃ‡ÃƒO estÃ¡tica no WorldState (como `age_structures`), NÃƒO entra no save:
+// a fraÃ§Ã£o informal inicial Ã© semeada no dia 0 (`SimCore::seed_informality`) e
+// a referÃªncia de saÃºde Ã© lida na semeadura e na mortalidade mensal. O loader
+// tolera arquivo ausente (o GDScript entrega {}) e cai na Ã¢ncora de renda /
+// kHealthAccessDefault quando a naÃ§Ã£o nÃ£o tem entrada.
 // ---------------------------------------------------------------------------
 
 void EconomySim::set_informality(const Variant& data) {
@@ -6138,7 +6153,7 @@ void EconomySim::set_informality(const Variant& data) {
 		return;
 	}
 	const Dictionary root = data;
-	// O arquivo usa `rates` (tag -> fração 0..1); `nations` é aceito por
+	// O arquivo usa `rates` (tag -> fraÃ§Ã£o 0..1); `nations` Ã© aceito por
 	// compatibilidade (mesmo layout de age_structure).
 	Dictionary nations = root.get("rates", Dictionary());
 	if (nations.is_empty()) {
@@ -6223,14 +6238,14 @@ void EconomySim::set_health_access(const Variant& data) {
 }
 
 // ---------------------------------------------------------------------------
-// B5 (D-089) — NÍVEL INICIAL DE INFRAESTRUTURA DO ESTADO
+// B5 (D-089) â€” NÃVEL INICIAL DE INFRAESTRUTURA DO ESTADO
 // (data/definitions/scenario/state_infrastructure_2026.json, World Bank).
 //
-// O GDScript aplica a regra %->nível (core/economy/initial_infra.gd) e entrega
-// `{state_id: {road, power, water}}`. Aqui só se resolve o estado -> região:
-// região com vários estados usa o MENOR nível de cada tipo (pior caso, a mesma
-// lógica rural do dado) e estado sem entrada vale 0 (ausência explícita). Os
-// níveis ficam no Region e são persistidos pelo save v21+ (o formato não muda).
+// O GDScript aplica a regra %->nÃ­vel (core/economy/initial_infra.gd) e entrega
+// `{state_id: {road, power, water}}`. Aqui sÃ³ se resolve o estado -> regiÃ£o:
+// regiÃ£o com vÃ¡rios estados usa o MENOR nÃ­vel de cada tipo (pior caso, a mesma
+// lÃ³gica rural do dado) e estado sem entrada vale 0 (ausÃªncia explÃ­cita). Os
+// nÃ­veis ficam no Region e sÃ£o persistidos pelo save v21+ (o formato nÃ£o muda).
 // ---------------------------------------------------------------------------
 
 void EconomySim::set_region_infra(const Variant& data) {
@@ -6294,7 +6309,7 @@ void EconomySim::set_region_property(const Variant& data) {
 	for (City& city : ws_.cities) {
 		Region& region = city.region;
 		if (!region.ready || region.property_ready) {
-			continue;  // save v23 manda; sem região não há B6
+			continue;  // save v23 manda; sem regiÃ£o nÃ£o hÃ¡ B6
 		}
 		const Variant raw = by_city.get(String(city.id.c_str()), Variant());
 		if (raw.get_type() != Variant::DICTIONARY) {
@@ -6338,7 +6353,7 @@ void EconomySim::set_property_tax_rate(const String& nation,
 }
 
 // ---------------------------------------------------------------------------
-// F8 — SERVIÇOS
+// F8 â€” SERVIÃ‡OS
 // ---------------------------------------------------------------------------
 
 void EconomySim::set_services(const Variant& services) {
@@ -6444,7 +6459,7 @@ void EconomySim::set_services(const Variant& services) {
 		parsed.push_back(std::move(sector));
 		service_ids.push_back(std::move(names));
 	}
-	// Resolve os serviços intermediários depois de todos os ids existirem.
+	// Resolve os serviÃ§os intermediÃ¡rios depois de todos os ids existirem.
 	for (std::size_t index = 0; index < parsed.size(); ++index) {
 		for (const std::string& id : service_ids[index]) {
 			int found = -1;
@@ -6681,9 +6696,9 @@ Dictionary EconomySim::get_bankruptcy_diag() const {
 	return out;
 }
 
-// A5: a lógica dos aplicadores vive em sim/actions.cpp (C++ puro); aqui só a
-// borda — converte o resultado em `Dictionary` escrevendo as MESMAS chaves, nas
-// mesmas condições do original.
+// A5: a lÃ³gica dos aplicadores vive em sim/actions.cpp (C++ puro); aqui sÃ³ a
+// borda â€” converte o resultado em `Dictionary` escrevendo as MESMAS chaves, nas
+// mesmas condiÃ§Ãµes do original.
 Dictionary EconomySim::apply_invest(const String& city_id, const String& building_id,
 		double amount) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -6695,7 +6710,7 @@ Dictionary EconomySim::apply_invest(const String& city_id, const String& buildin
 	result["invested"] = outcome.invested;
 	result["capacity_added"] = outcome.capacity_added;
 	result["error"] = String(outcome.error.c_str());
-	// "project_id" só existe quando a expansão virou projeto físico.
+	// "project_id" sÃ³ existe quando a expansÃ£o virou projeto fÃ­sico.
 	if (!outcome.project_id.empty()) {
 		result["project_id"] = String(outcome.project_id.c_str());
 	}
@@ -6775,8 +6790,279 @@ Dictionary EconomySim::apply_storage_trade(const String& city_id, int type,
 	return result;
 }
 
-Dictionary EconomySim::apply_build(const String& city_id, const String& building_id,
-		const String& resource, int input_product, int output_product,
+// =====================================================================
+// PARTE E (D-116) â€” ENERGIA ELÃ‰TRICA
+// =====================================================================
+namespace {
+// Converte {fonte: valor} do Dictionary do Godot para o vetor por fonte.
+void read_fuel_values(const Dictionary& source, double* out) {
+	for (const Variant& key : source.keys()) {
+		const int fuel = ogs::power_fuel_from_name(
+			std::string(String(key).utf8().get_data()));
+		if (fuel < 0) {
+			continue;
+		}
+		out[fuel] = std::max(0.0, double(source[key]));
+	}
+}
+} // namespace
+
+int EconomySim::set_power_definitions(const Dictionary& nations,
+		const Dictionary& cities, const Dictionary& params,
+		bool only_missing) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	ogs::PowerParams rule = ws_.power_params;
+	std::map<std::string, double> values;
+	for (const Variant& key : params.keys()) {
+		values[std::string(String(key).utf8().get_data())] = double(params[key]);
+	}
+	rule.apply(values);
+	std::map<std::string, ogs::PowerNationDef> nation_defs;
+	for (const Variant& key : nations.keys()) {
+		const String tag = key;
+		if (tag.is_empty()) {
+			continue;
+		}
+		const Variant raw = nations[key];
+		if (raw.get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = raw;
+		ogs::PowerNationDef def;
+		def.access_pct = double(entry.get("access_pct", 100.0));
+		def.access_urban_pct = double(entry.get("access_urban_pct",
+			def.access_pct));
+		def.access_rural_pct = double(entry.get("access_rural_pct",
+			def.access_pct));
+		def.loss_pct = double(entry.get("loss_pct", 10.0));
+		def.has_data = true;
+		nation_defs[std::string(tag.utf8().get_data())] = def;
+	}
+	std::map<std::string, ogs::PowerCityDef> city_defs;
+	for (const Variant& key : cities.keys()) {
+		const String city_id = key;
+		if (city_id.is_empty()) {
+			continue;
+		}
+		const Variant raw = cities[key];
+		if (raw.get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = raw;
+		ogs::PowerCityDef def;
+		def.access_pct = double(entry.get("access_pct", 100.0));
+		def.loss_pct = double(entry.get("loss_pct", 10.0));
+		const Variant park = entry.get("park", Variant());
+		if (park.get_type() == Variant::DICTIONARY) {
+			read_fuel_values(park, def.park);
+		}
+		const Variant cap = entry.get("cap", Variant());
+		if (cap.get_type() == Variant::DICTIONARY) {
+			read_fuel_values(cap, def.cap);
+		}
+		const Array solar = entry.get("solar_month", Array());
+		for (int month = 0; month < ogs::kPowerMonthCount
+				&& month < solar.size(); ++month) {
+			def.solar_month[month] = std::clamp(double(solar[month]),
+				0.0, 1.0);
+		}
+		city_defs[std::string(city_id.utf8().get_data())] = def;
+	}
+	sim_core_.set_power_definitions(rule, nation_defs, city_defs,
+		only_missing);
+	status_invalidate();
+	return static_cast<int>(city_defs.size());
+}
+
+int EconomySim::set_power_params(const Dictionary& values) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::map<std::string, double> parsed;
+	for (const Variant& key : values.keys()) {
+		parsed[std::string(String(key).utf8().get_data())] = double(values[key]);
+	}
+	sim_core_.set_power_params(parsed);
+	return static_cast<int>(parsed.size());
+}
+
+bool EconomySim::set_power_city(const String& city_id, int connection,
+		double line_mw, double access_pct) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	sim_core_.set_power_city(std::string(city_id.utf8().get_data()),
+		connection, line_mw, access_pct);
+	return true;
+}
+
+Dictionary EconomySim::build_power_plant(const String& city_id,
+		const String& fuel, double mw, const String& group_id) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::string error;
+	const bool started = sim_core_.build_power_plant(
+		std::string(city_id.utf8().get_data()),
+		std::string(fuel.utf8().get_data()), mw,
+		std::string(group_id.utf8().get_data()), &error);
+	Dictionary result;
+	result["started"] = started;
+	result["error"] = String(error.c_str());
+	if (started) {
+		status_invalidate();
+	}
+	return result;
+}
+
+Dictionary EconomySim::build_power_line(const String& city_id, double mw,
+		const String& group_id) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::string error;
+	const bool started = sim_core_.build_power_line(
+		std::string(city_id.utf8().get_data()), mw,
+		std::string(group_id.utf8().get_data()), &error);
+	Dictionary result;
+	result["started"] = started;
+	result["error"] = String(error.c_str());
+	if (started) {
+		status_invalidate();
+	}
+	return result;
+}
+
+Dictionary EconomySim::get_power_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["day"] = ws_.day;
+	out["ready"] = ws_.power_ready;
+	out["cash"] = ws_.power_cash;
+	const ogs::PowerParams& params = ws_.power_params;
+	// Parque instalado (MW) e geraÃ§Ã£o do dia (MWh) por fonte, no mundo.
+	double park_total[ogs::kPowerFuelCount] = {};
+	double generation_total[ogs::kPowerFuelCount] = {};
+	for (const ogs::PowerPlant& plant : ws_.power_plants) {
+		if (plant.fuel < 0 || plant.fuel >= ogs::kPowerFuelCount) {
+			continue;
+		}
+		park_total[plant.fuel] += std::max(0.0, plant.mw);
+		generation_total[plant.fuel] += std::max(0.0,
+			plant.generated_mwh);
+	}
+	Dictionary park;
+	Dictionary generation;
+	for (int fuel = 0; fuel < ogs::kPowerFuelCount; ++fuel) {
+		park[String(ogs::power_fuel_name(fuel))] = park_total[fuel];
+		generation[String(ogs::power_fuel_name(fuel))] =
+			generation_total[fuel];
+	}
+	out["installed_mw_by_fuel"] = park;
+	out["generation_mwh_by_fuel"] = generation;
+	out["plants"] = static_cast<int>(ws_.power_plants.size());
+	// Agregado do mundo: sÃ³ as cidades COM dado (ausÃªncia nÃ£o Ã© falta).
+	double world_demand = 0.0;
+	double world_served = 0.0;
+	double world_lost_gdp = 0.0;
+	double world_bill = 0.0;
+	int rationing_cities = 0;
+	int max_ration_days = 0;
+	double world_loss_weighted = 0.0;
+	const std::size_t city_count = std::min(ws_.power_cities.size(),
+		ws_.cities.size());
+	Dictionary city_rows;
+	Dictionary nation_rows;
+	// Estrutura por naÃ§Ã£o (mapa vazio = naÃ§Ã£o sem rede declarada).
+	std::map<std::string, Dictionary> nation_accumulator;
+	for (std::size_t index = 0; index < city_count; ++index) {
+		const ogs::PowerCityState& state = ws_.power_cities[index];
+		const ogs::City& city = ws_.cities[index];
+		Dictionary row;
+		row["city"] = String(city.id.c_str());
+		row["nation"] = String(city.nation.c_str());
+		row["has_data"] = state.has_data;
+		const char* connection = state.connection == ogs::POWER_CONNECTED
+			? "connected"
+			: (state.connection == ogs::POWER_PARTIAL ? "partial"
+				: "isolated");
+		row["connection"] = String(connection);
+		row["line_mw"] = state.line_mw;
+		row["access_pct"] = state.access_pct;
+		// Perda efetiva do dia: base do dado reduzida pela infra B5, com piso
+		// tÃ©cnico (obra nunca zera a perda).
+		const double infra = std::clamp(
+			static_cast<double>(city.region.infra_power) / ogs::kInfraMaxLevel,
+			0.0, 1.0);
+		const double loss_pct = std::clamp(
+			state.loss_pct * (1.0 - params.loss_infra_reduction * infra),
+			params.loss_floor_pct, params.loss_max_pct);
+		row["loss_pct"] = state.loss_pct;
+		row["loss_pct_effective"] = loss_pct;
+		row["demand_mwh"] = state.demand_mwh;
+		row["served_mwh"] = state.served_mwh;
+		const double ratio = state.demand_mwh > 0.0
+			? std::clamp(state.served_mwh / state.demand_mwh, 0.0, 1.0) : 1.0;
+		row["served_ratio"] = ratio;
+		row["price"] = state.price;
+		row["ration_days"] = state.ration_days;
+		row["lost_gdp"] = state.lost_gdp;
+		row["stress"] = city.power_stress;
+		row["industry_factor"] = city.power_industry_factor;
+		row["service_factor"] = city.power_service_factor;
+		row["power_cost_industry"] = city.power_cost_industry;
+		row["power_cost_per_value"] = city.power_cost_per_value;
+		city_rows[String(city.id.c_str())] = row;
+		if (!state.has_data) {
+			continue;
+		}
+		world_demand += state.demand_mwh;
+		world_served += state.served_mwh;
+		world_lost_gdp += state.lost_gdp;
+		world_bill += state.served_mwh * state.price;
+		world_loss_weighted += loss_pct * state.demand_mwh;
+		if (state.ration_days > 0) {
+			rationing_cities += 1;
+		}
+		max_ration_days = std::max(max_ration_days, state.ration_days);
+	}
+	out["cities"] = city_rows;
+	out["demand_mwh"] = world_demand;
+	out["served_mwh"] = world_served;
+	out["served_ratio"] = world_demand > 0.0
+		? world_served / world_demand : 1.0;
+	out["average_price"] = world_served > 0.0
+		? world_bill / world_served : 0.0;
+	out["rationing_cities"] = rationing_cities;
+	out["max_ration_days"] = max_ration_days;
+	out["lost_gdp"] = world_lost_gdp;
+	out["loss_pct"] = world_demand > 0.0
+		? world_loss_weighted / world_demand : 0.0;
+	// Rede por naÃ§Ã£o: usa o estado publicado no dia (o agregado da fase).
+	Dictionary nations_out;
+	for (const auto& row : ws_.power_grids) {
+		const ogs::PowerGridState& grid = row.second;
+		Dictionary entry;
+		entry["nation"] = String(grid.nation.c_str());
+		entry["exists"] = grid.exists;
+		entry["price"] = grid.price;
+		entry["demand_mwh"] = grid.demand_mwh;
+		entry["served_mwh"] = grid.served_mwh;
+		entry["served_ratio"] = grid.demand_mwh > 0.0
+			? grid.served_mwh / grid.demand_mwh : 1.0;
+		entry["ration_days"] = grid.ration_days;
+		entry["lost_gdp"] = grid.lost_gdp;
+		entry["connected"] = grid.connected;
+		entry["partial"] = grid.partial;
+		entry["isolated"] = grid.isolated;
+		entry["last_build_day"] = grid.last_build_day;
+		Dictionary by_fuel;
+		for (int fuel = 0; fuel < ogs::kPowerFuelCount; ++fuel) {
+			by_fuel[String(ogs::power_fuel_name(fuel))] =
+				grid.generation_by_fuel[fuel];
+		}
+		entry["generation_mwh_by_fuel"] = by_fuel;
+		nations_out[String(row.first.c_str())] = entry;
+	}
+	out["nations"] = nations_out;
+	return out;
+}
+
+Dictionary EconomySim::apply_build(const String& city_id,
+		const String& building_id, const String& resource, int input_product,
+		int output_product,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const String& owner, double cost,
 		const String& recipe_id) {
@@ -6793,11 +7079,11 @@ Dictionary EconomySim::apply_build(const String& city_id, const String& building
 	result["created"] = outcome.created;
 	result["cost"] = outcome.cost;
 	result["error"] = String(outcome.error.c_str());
-	// §19: sinaliza à IA que a obra ficou pendente por falta de zona (só true).
+	// Â§19: sinaliza Ã  IA que a obra ficou pendente por falta de zona (sÃ³ true).
 	if (outcome.zone_pending) {
 		result["zone_pending"] = true;
 	}
-	// "project_id" só existe quando a obra virou projeto físico.
+	// "project_id" sÃ³ existe quando a obra virou projeto fÃ­sico.
 	if (!outcome.project_id.empty()) {
 		result["project_id"] = String(outcome.project_id.c_str());
 	}
@@ -6805,7 +7091,7 @@ Dictionary EconomySim::apply_build(const String& city_id, const String& building
 }
 
 // =====================================================================
-// F9 — investimento e propriedade
+// F9 â€” investimento e propriedade
 // =====================================================================
 
 void EconomySim::seed_groups() {
@@ -6909,10 +7195,10 @@ Array EconomySim::get_groups() const {
 
 Array EconomySim::get_group_ranking() const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// Ordem idêntica à de get_groups (faturamento, caixa, id), sem a
-	// varredura de construções: a IA precisa do caixa do dia e da vez de cada
-	// grupo, não dos ativos/países. Evita 1 std::set + 1 entrada de ranking por
-	// grupo a cada dia de decisão.
+	// Ordem idÃªntica Ã  de get_groups (faturamento, caixa, id), sem a
+	// varredura de construÃ§Ãµes: a IA precisa do caixa do dia e da vez de cada
+	// grupo, nÃ£o dos ativos/paÃ­ses. Evita 1 std::set + 1 entrada de ranking por
+	// grupo a cada dia de decisÃ£o.
 	std::vector<int> order(ws_.groups.size());
 	for (std::size_t index = 0; index < order.size(); ++index) {
 		order[index] = static_cast<int>(index);
@@ -6989,11 +7275,11 @@ Dictionary EconomySim::apply_fund_group(const String& group_id, double amount) {
 		return result;
 	}
 	if (amount <= 0.0) {
-		result["error"] = "valor inválido";
+		result["error"] = "valor invÃ¡lido";
 		return result;
 	}
-	// Retira do orçamento das cidades da nação de origem, na ordem dos índices
-	// (determinística). Não cria dinheiro.
+	// Retira do orÃ§amento das cidades da naÃ§Ã£o de origem, na ordem dos Ã­ndices
+	// (determinÃ­stica). NÃ£o cria dinheiro.
 	double remaining = amount;
 	for (City& city : ws_.cities) {
 		if (remaining <= 0.0) {
@@ -7014,7 +7300,7 @@ Dictionary EconomySim::apply_fund_group(const String& group_id, double amount) {
 	result["moved"] = moved;
 	result["funded"] = moved > 0.0;
 	if (moved <= 0.0) {
-		result["error"] = "sem orçamento na nação de origem";
+		result["error"] = "sem orÃ§amento na naÃ§Ã£o de origem";
 	}
 	return result;
 }
@@ -7035,17 +7321,17 @@ Dictionary EconomySim::apply_group_invest(const String& group_id,
 	result["created"] = outcome.created;
 	result["cost"] = outcome.cost;
 	result["error"] = String(outcome.error.c_str());
-	// O original só gravava "cash" nas recusas por capital insuficiente do
-	// próprio grupo (caminho instantâneo e caminho de projeto).
+	// O original sÃ³ gravava "cash" nas recusas por capital insuficiente do
+	// prÃ³prio grupo (caminho instantÃ¢neo e caminho de projeto).
 	if (outcome.error == "capital insuficiente") {
 		result["cash"] = outcome.cash;
 	}
-	// "owner" e "local_share" só nas duas conclusões (instantânea e projeto).
+	// "owner" e "local_share" sÃ³ nas duas conclusÃµes (instantÃ¢nea e projeto).
 	if (outcome.created) {
 		result["owner"] = String(outcome.owner.c_str());
 		result["local_share"] = outcome.local_share;
 	}
-	// "project_id" só existe quando a obra virou projeto físico.
+	// "project_id" sÃ³ existe quando a obra virou projeto fÃ­sico.
 	if (!outcome.project_id.empty()) {
 		result["project_id"] = String(outcome.project_id.c_str());
 	}
@@ -7072,7 +7358,7 @@ Dictionary EconomySim::apply_set_fdi_policy(const String& nation,
 		mode_value = 3;
 	}
 	if (mode_value < 0) {
-		result["error"] = "modo inválido";
+		result["error"] = "modo invÃ¡lido";
 		return result;
 	}
 	const std::string key = tag + "|" + sector_id;
@@ -7131,7 +7417,7 @@ Dictionary EconomySim::apply_create_state_company(const String& nation,
 	result["error"] = "";
 	const std::string tag(nation.utf8().get_data());
 	if (tag.empty()) {
-		result["error"] = "nação vazia";
+		result["error"] = "naÃ§Ã£o vazia";
 		return result;
 	}
 	Group group;
@@ -7166,7 +7452,7 @@ Dictionary EconomySim::apply_create_state_company(const String& nation,
 	result["id"] = String(created->id.c_str());
 	result["capital"] = created->cash;
 	if (created->cash <= 0.0) {
-		result["warning"] = "nenhum orçamento disponível na nação";
+		result["warning"] = "nenhum orÃ§amento disponÃ­vel na naÃ§Ã£o";
 	}
 	return result;
 }
@@ -7189,7 +7475,7 @@ Dictionary EconomySim::apply_privatize(const String& city_id,
 		return result;
 	}
 	if (building->owner != "state") {
-		result["error"] = "ativo não é estatal";
+		result["error"] = "ativo nÃ£o Ã© estatal";
 		return result;
 	}
 	Group* buyer = find_group(std::string(buyer_group.utf8().get_data()));
@@ -7221,9 +7507,9 @@ Dictionary EconomySim::apply_privatize(const String& city_id,
 		: "national:" + buyer->id;
 	building->local_share = 0.0;
 	building->partner_group.clear();
-	// D1: o ativo privatizado é propriedade plena do comprador, não concessão —
+	// D1: o ativo privatizado Ã© propriedade plena do comprador, nÃ£o concessÃ£o â€”
 	// limpar o royalty evita renda residual (conceder -> estatizar -> privatizar
-	// deixava 5% e o ativo aparecia como concessão no status).
+	// deixava 5% e o ativo aparecia como concessÃ£o no status).
 	building->royalty = 0.0;
 	building->royalty_paid = 0.0;
 	result["ok"] = true;
@@ -7233,9 +7519,9 @@ Dictionary EconomySim::apply_privatize(const String& city_id,
 }
 
 // B5: conceder mina/fazenda do Estado a um grupo (nacional/estrangeiro) com um
-// royalty sobre a produção. Igual à privatização na transferência de dinheiro
-// (o comprador paga o valor contábil ao governo), mas o Estado mantém uma renda
-// de royalty (`building.royalty`). O dono F9 é o grupo concessionário — sem
+// royalty sobre a produÃ§Ã£o. Igual Ã  privatizaÃ§Ã£o na transferÃªncia de dinheiro
+// (o comprador paga o valor contÃ¡bil ao governo), mas o Estado mantÃ©m uma renda
+// de royalty (`building.royalty`). O dono F9 Ã© o grupo concessionÃ¡rio â€” sem
 // duplicar sistema de donos.
 Dictionary EconomySim::apply_concede(const String& city_id,
 		const String& building_id, const String& group_id,
@@ -7276,7 +7562,7 @@ Dictionary EconomySim::apply_nationalize(const String& city_id,
 	std::string origin;
 	const int kind = owner_kind(building->owner, &group_id, &origin);
 	if (kind == 0) {
-		result["error"] = "ativo já é estatal";
+		result["error"] = "ativo jÃ¡ Ã© estatal";
 		return result;
 	}
 	const double book = building->capacity * building->capital_per_capacity;
@@ -7294,12 +7580,12 @@ Dictionary EconomySim::apply_nationalize(const String& city_id,
 	building->owner = "state";
 	building->local_share = 0.0;
 	building->partner_group.clear();
-	// D1: estatizar extingue a concessão — o Estado não paga royalty a si mesmo
-	// nem o ativo pode seguir publicado como concessão.
+	// D1: estatizar extingue a concessÃ£o â€” o Estado nÃ£o paga royalty a si mesmo
+	// nem o ativo pode seguir publicado como concessÃ£o.
 	building->royalty = 0.0;
 	building->royalty_paid = 0.0;
-	// Derruba a confiança do anfitrião por um período: o IDE novo fica
-	// bloqueado enquanto a confiança estiver abaixo de 0,5.
+	// Derruba a confianÃ§a do anfitriÃ£o por um perÃ­odo: o IDE novo fica
+	// bloqueado enquanto a confianÃ§a estiver abaixo de 0,5.
 	ws_.confidence[city->nation] = kNationalizationConfidence;
 	ws_.confidence_penalty_day[city->nation] = ws_.day + kNationalizationDays;
 	result["ok"] = true;
@@ -7419,8 +7705,8 @@ Dictionary EconomySim::get_investment_status() const {
 Dictionary EconomySim::get_investment_signals() const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
-	// Confiança: só as nações com penalidade registrada; as demais valem 1,0
-	// (o consumidor usa o default). Sem varredura de construções.
+	// ConfianÃ§a: sÃ³ as naÃ§Ãµes com penalidade registrada; as demais valem 1,0
+	// (o consumidor usa o default). Sem varredura de construÃ§Ãµes.
 	Dictionary nations;
 	for (const auto& row : ws_.confidence) {
 		Dictionary entry;
@@ -7462,7 +7748,7 @@ bool EconomySim::apply_spend_government(const String& city_id, double amount) {
 		return false;
 	}
 	city->government_budget -= amount;
-	// Serviço doméstico (prospecção, estudos, licenciamento).
+	// ServiÃ§o domÃ©stico (prospecÃ§Ã£o, estudos, licenciamento).
 	city->service_cash += amount;
 	city->service_revenue += amount;
 	city->service_profit += amount;
@@ -7480,7 +7766,7 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 		const Dictionary& municipal_finance) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	if (ws_.cities.empty()) {
-		return;  // mundo ainda não criado: sem id de cidade não há o que casar
+		return;  // mundo ainda nÃ£o criado: sem id de cidade nÃ£o hÃ¡ o que casar
 	}
 	const Dictionary land_cities = dict_value(urban_land, "cities");
 	const Dictionary housing_cities = dict_value(housing_city, "cities");
@@ -7488,9 +7774,9 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 	const Dictionary nation_finance = dict_value(
 		municipal_finance, "nations");
 	const std::size_t count = ws_.cities.size();
-	// Vetores temporários: só substituem o estado urbano se ALGUMA cidade casar
-	// com os dados. Cenário sintético (AGRIA/PORTUS) e load sem os JSON mantêm
-	// os vetores vazios — ausência explícita, sem linhas de zeros no save.
+	// Vetores temporÃ¡rios: sÃ³ substituem o estado urbano se ALGUMA cidade casar
+	// com os dados. CenÃ¡rio sintÃ©tico (AGRIA/PORTUS) e load sem os JSON mantÃªm
+	// os vetores vazios â€” ausÃªncia explÃ­cita, sem linhas de zeros no save.
 	std::vector<CityLand> parsed_land(count);
 	std::vector<CityHousing> parsed_housing(count);
 	std::vector<CityGov> parsed_gov(count);
@@ -7527,11 +7813,11 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 		}
 		land.reserve_km2 = safe_nonneg(
 			static_cast<double>(u.get("expandable_reserve_km2", 0.0)));
-		// Infraestrutura atual atende a população de simulação da cidade; sem
-		// dado de cobertura, é o ponto de partida honesto (expansão no W2).
+		// Infraestrutura atual atende a populaÃ§Ã£o de simulaÃ§Ã£o da cidade; sem
+		// dado de cobertura, Ã© o ponto de partida honesto (expansÃ£o no W2).
 		land.infra_capacity = safe_nonneg(city.simulation_population);
-		// §19 (integração): base do custo crescente — raio e reserva no
-		// carregamento. Área inicial = área construída da fonte (sem a
+		// Â§19 (integraÃ§Ã£o): base do custo crescente â€” raio e reserva no
+		// carregamento. Ãrea inicial = Ã¡rea construÃ­da da fonte (sem a
 		// informal, que nasce dentro/fora da malha conforme a fonte).
 		land.initial_area_km2 = built_up;
 		land.initial_reserve_km2 = land.reserve_km2;
@@ -7563,10 +7849,10 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 				stock_total = split_sum;
 			}
 		}
-		// A fonte divide o estoque por PADRÃO, não por densidade. A densidade
-		// inicial segue a capacidade física permitida (FAR) até o gabarito da
-		// cidade: um município baixo fica 100% em casas; um alto reparte entre
-		// casa/prédio/torre na proporção da capacidade. Derivado, não medido.
+		// A fonte divide o estoque por PADRÃƒO, nÃ£o por densidade. A densidade
+		// inicial segue a capacidade fÃ­sica permitida (FAR) atÃ© o gabarito da
+		// cidade: um municÃ­pio baixo fica 100% em casas; um alto reparte entre
+		// casa/prÃ©dio/torre na proporÃ§Ã£o da capacidade. Derivado, nÃ£o medido.
 		double weights[DENSITY_COUNT] = {};
 		double weight_sum = 0.0;
 		for (int density = 0; density < DENSITY_COUNT; ++density) {
@@ -7585,8 +7871,8 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 					stock[tier] * weights[density] / weight_sum;
 			}
 		}
-		// Posse por estrato: tenure_by_tier da cidade; sem a linha, o padrão
-		// nacional de housing.json (casa própria + favela; aluguel = resto).
+		// Posse por estrato: tenure_by_tier da cidade; sem a linha, o padrÃ£o
+		// nacional de housing.json (casa prÃ³pria + favela; aluguel = resto).
 		const Dictionary tenure = dict_value(h, "tenure_by_tier");
 		const Dictionary nation = dict_value(
 			nation_housing, String(city.nation.c_str()));
@@ -7617,8 +7903,8 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 				}
 			}
 		}
-		// Donos: casa própria da fonte = famílias; o restante do estoque é
-		// atribuído a empresas até W2/W3 criarem moradia social (governo).
+		// Donos: casa prÃ³pria da fonte = famÃ­lias; o restante do estoque Ã©
+		// atribuÃ­do a empresas atÃ© W2/W3 criarem moradia social (governo).
 		bool has_ownership = false;
 		double ownership = 0.0;
 		if (h.has("homeownership_rate")) {
@@ -7634,10 +7920,10 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 			house.owner_share[OWNER_FIRM] = 1.0 - ownership;
 			house.owner_share[OWNER_GOVERNMENT] = 0.0;
 		}
-		// Aluguel/preço: a fonte publica USD/m². O câmbio do jogo é a âncora
-		// XGS, referenciada no dólar (currencies.json: USD = 1,0) e a fonte
-		// deriva o USD da renda PPP — o valor já está em âncora, 1 USD = 1 XGS.
-		// A taxa da nação entra na EXIBIÇÃO local (price_local = XGS ÷ taxa);
+		// Aluguel/preÃ§o: a fonte publica USD/mÂ². O cÃ¢mbio do jogo Ã© a Ã¢ncora
+		// XGS, referenciada no dÃ³lar (currencies.json: USD = 1,0) e a fonte
+		// deriva o USD da renda PPP â€” o valor jÃ¡ estÃ¡ em Ã¢ncora, 1 USD = 1 XGS.
+		// A taxa da naÃ§Ã£o entra na EXIBIÃ‡ÃƒO local (price_local = XGS Ã· taxa);
 		// multiplicar por ela aqui converteria o valor em moeda local e mudaria
 		// a magnitude em 5-10x (aluguel deixaria de bater com a renda).
 		const double rent_m2 = safe_nonneg(
@@ -7654,26 +7940,26 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 			house.informal_units +=
 				stock[tier] * house.tenure[tier][TENURE_INFORMAL];
 		}
-		// Área informal derivada das unidades informais: sem FAR para favela,
-		// uma unidade ocupa o m² de piso do padrão popular baixo.
+		// Ãrea informal derivada das unidades informais: sem FAR para favela,
+		// uma unidade ocupa o mÂ² de piso do padrÃ£o popular baixo.
 		land.informal_km2 = house.informal_units
 			* kUrbanUnitM2[DENSITY_LOW][TIER_POPULAR] / 1.0e6;
-		// §19 W1 / Q-015-C: capacidade da MORADIA no dia 0. O envelope do
-		// lote (área × FAR ÷ m²) é 5-15× o estoque real: na escala da cidade
-		// a maior parte do solo é rua, pátio, uso misto e construção antiga.
-		// `zone_fill` guarda a fração do envelope que corresponde ao estoque
+		// Â§19 W1 / Q-015-C: capacidade da MORADIA no dia 0. O envelope do
+		// lote (Ã¡rea Ã— FAR Ã· mÂ²) Ã© 5-15Ã— o estoque real: na escala da cidade
+		// a maior parte do solo Ã© rua, pÃ¡tio, uso misto e construÃ§Ã£o antiga.
+		// `zone_fill` guarda a fraÃ§Ã£o do envelope que corresponde ao estoque
 		// FORMAL (a unidade informal mora em informal_km2, fora da zona) para
-		// a ocupação nascer no alvo da faixa de população urbana
-		// (kUrbanBandOccupancy). Sem isso a cidade nasce com 5-15× de
-		// folga: o preço da terra não reage e a prefeitura nunca precisa de
+		// a ocupaÃ§Ã£o nascer no alvo da faixa de populaÃ§Ã£o urbana
+		// (kUrbanBandOccupancy). Sem isso a cidade nasce com 5-15Ã— de
+		// folga: o preÃ§o da terra nÃ£o reage e a prefeitura nunca precisa de
 		// solo novo. COM/IND ficam em 1,0 (emprego modelado, outra escala).
 		land.zone_fill[ZONE_RES] = 1.0;
 		const double physical_res = urban_land::zone_capacity(land, ZONE_RES);
 		const double formal_units = std::max(0.0, stock_total - house.informal_units);
 		const double urban_population = safe_nonneg(
 			static_cast<double>(u.get("urban_population", 0.0)));
-		// Alvo por FAIXA de população urbana (a mesma que o relatório de
-		// auditoria agrupa): metrópole quase cheia, cidade média com folga
+		// Alvo por FAIXA de populaÃ§Ã£o urbana (a mesma que o relatÃ³rio de
+		// auditoria agrupa): metrÃ³pole quase cheia, cidade mÃ©dia com folga
 		// moderada, pequena com folga.
 		const double target_occupancy = urban_population >= 5.0e6
 			? kUrbanBandOccupancy[3]
@@ -7689,9 +7975,9 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 		const Dictionary fin = dict_value(
 			nation_finance, String(city.nation.c_str()));
 		if (!fin.is_empty()) {
-			// A fonte não publica a alíquota municipal: usa-se o peso do IPTU
+			// A fonte nÃ£o publica a alÃ­quota municipal: usa-se o peso do IPTU
 			// no total de tributos como proxy da taxa anual sobre o valor do
-			// estoque (calibração real fica para o W2).
+			// estoque (calibraÃ§Ã£o real fica para o W2).
 			gov.iptu_rate = std::clamp(
 				safe_nonneg(static_cast<double>(
 					fin.get("property_tax_pct_total_tax", 0.0))) / 100.0,
@@ -7699,9 +7985,9 @@ void EconomySim::set_urban(const Dictionary& urban_land,
 			gov.transfer_share = safe_unit(
 				static_cast<double>(fin.get(
 					"central_transfers_pct_subnational", 0.0)) / 100.0);
-			// §19 W2: alvo da receita municipal do mês = receita subnacional
-			// observada/proxy da fonte (% do PIB) × PIB municipal do mês. Sem o
-			// campo (no_data), fica 0: a prefeitura não inventa nível de receita.
+			// Â§19 W2: alvo da receita municipal do mÃªs = receita subnacional
+			// observada/proxy da fonte (% do PIB) Ã— PIB municipal do mÃªs. Sem o
+			// campo (no_data), fica 0: a prefeitura nÃ£o inventa nÃ­vel de receita.
 			gov.revenue_pct_gdp = safe_unit(
 				static_cast<double>(fin.get(
 					"subnational_revenue_pct_gdp", 0.0)) / 100.0);
@@ -7741,7 +8027,7 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 	out["city"] = city_id;
 	out["nation"] = String(city.nation.c_str());
 	out["population"] = city.simulation_population;
-	// §19 (integração): PIB diário e população, usados pela calibração do custo
+	// Â§19 (integraÃ§Ã£o): PIB diÃ¡rio e populaÃ§Ã£o, usados pela calibraÃ§Ã£o do custo
 	// de infraestrutura contra a receita municipal (teste/UI).
 	out["gdp_day"] = city.gdp;
 	Array area;
@@ -7758,8 +8044,8 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 	out["reserve_km2"] = land.reserve_km2;
 	out["infra_capacity"] = land.infra_capacity;
 	out["informal_km2"] = land.informal_km2;
-	// §19 (integração): base do custo crescente e tamanho atual do solo, para
-	// a UI/teste conferirem o fator de distância/relevo.
+	// Â§19 (integraÃ§Ã£o): base do custo crescente e tamanho atual do solo, para
+	// a UI/teste conferirem o fator de distÃ¢ncia/relevo.
 	out["initial_area_km2"] = land.initial_area_km2;
 	out["initial_reserve_km2"] = land.initial_reserve_km2;
 	out["expansion_cost_per_km2"] = urban_land::expansion_cost_per_km2(ws_, index);
@@ -7799,8 +8085,8 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 	out["price"] = price;
 	out["vacancy"] = vacancy;
 	out["informal_units"] = house.informal_units;
-	// B2: quintis (população, renda disponível, aluguel pago/faturado, posse
-	// alugada e nível de consumo). O probe urbano de 365 d calcula ônus e
+	// B2: quintis (populaÃ§Ã£o, renda disponÃ­vel, aluguel pago/faturado, posse
+	// alugada e nÃ­vel de consumo). O probe urbano de 365 d calcula Ã´nus e
 	// pago/faturado POR ESTRATO INQUILINO a partir daqui.
 	{
 		Array strata_population;
@@ -7828,8 +8114,8 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 		out["strata_tenure_informal"] = strata_tenure_informal;
 		out["strata_level"] = strata_level;
 	}
-	// B3: região da cidade (estados inteiros) — campos leves para o probe e a
-	// ficha. Cidade sem dado publica 0/vazio (ausência explícita).
+	// B3: regiÃ£o da cidade (estados inteiros) â€” campos leves para o probe e a
+	// ficha. Cidade sem dado publica 0/vazio (ausÃªncia explÃ­cita).
 	{
 		const Region& region = city.region;
 		out["region_population"] = region.region_pop;
@@ -7841,19 +8127,19 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 		out["region_states"] = region_states;
 		out["region_employment"] = region.employment;
 		out["region_food"] = region.food_consumed;
-		// B4: acumuladores de migração e a urbanização corrente do bloco.
+		// B4: acumuladores de migraÃ§Ã£o e a urbanizaÃ§Ã£o corrente do bloco.
 		out["region_migration_rural_in"] = region.migration_rural_in_total;
 		out["region_migration_city_in"] = region.migration_city_in_total;
 		out["region_migration_city_out"] = region.migration_city_out_total;
 		out["region_urban_share"] = region.population_region > 0.0
 			? region.urban_population / region.population_region : 0.0;
 	}
-	// §19 W3: sinal de aperto por cidade (W4/UI) e fluxo do dia/mês.
+	// Â§19 W3: sinal de aperto por cidade (W4/UI) e fluxo do dia/mÃªs.
 	out["housing_stress"] = house.housing_stress;
 	out["rent_paid"] = house.rent_paid_today;
 	out["rent_paid_month"] = house.rent_paid_month;
-	// Repasse do aluguel aos donos no mês (família → renda de capital; empresa
-	// → caixa das firmas; prefeitura → caixa municipal) e a manutenção.
+	// Repasse do aluguel aos donos no mÃªs (famÃ­lia â†’ renda de capital; empresa
+	// â†’ caixa das firmas; prefeitura â†’ caixa municipal) e a manutenÃ§Ã£o.
 	out["rent_to_households"] = house.rent_households_month;
 	out["rent_to_firms"] = house.rent_firms_month;
 	out["rent_to_government"] = house.rent_government_month;
@@ -7870,7 +8156,7 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 	gov_out["month_expense_maintenance"] = gov.month_expense_maintenance;
 	gov_out["month_expense_infrastructure"] = gov.month_expense_infrastructure;
 	gov_out["month_expense_social_housing"] = gov.month_expense_social_housing;
-	// §19 W2: calibração do repasse, repasse pago por esta cidade e a obra em
+	// Â§19 W2: calibraÃ§Ã£o do repasse, repasse pago por esta cidade e a obra em
 	// andamento (o teste e a UI leem daqui).
 	gov_out["revenue_pct_gdp"] = gov.revenue_pct_gdp;
 	gov_out["target_revenue_month"] = gov.target_revenue_month;
@@ -7891,15 +8177,15 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 	}
 	gov_out["projects"] = projects;
 	out["gov"] = gov_out;
-	// §19 (W1): capacidade, uso e ocupação de cada zona [res, com, ind] e o
+	// Â§19 (W1): capacidade, uso e ocupaÃ§Ã£o de cada zona [res, com, ind] e o
 	// sinal de demanda barrada (insumo da IA da prefeitura no W2).
 	Array zone_capacity;
 	Array zone_usage;
 	Array zone_occupancy;
 	Array zone_demand;
 	for (int zone = 0; zone < ZONE_COUNT; ++zone) {
-		// Capacidade EFETIVA (com piso no uso): é a que a ocupação usa, então
-		// `zone_usage/zone_capacity` nunca passa de 1 por inconsistência de
+		// Capacidade EFETIVA (com piso no uso): Ã© a que a ocupaÃ§Ã£o usa, entÃ£o
+		// `zone_usage/zone_capacity` nunca passa de 1 por inconsistÃªncia de
 		// fonte (Q-015-C).
 		zone_capacity.append(urban_land::zone_capacity_for(ws_, index, zone));
 		zone_usage.append(urban_land::zone_usage(ws_, index, zone));
@@ -8005,7 +8291,7 @@ Dictionary EconomySim::apply_urban_social_housing(const String& city_id,
 	}
 	out["ok"] = true;
 	out["units"] = std::max(0.0, built_units - units_before);
-	// Custo LÍQUIDO: a parcela de TERRA voltou para o caixa da prefeitura no
+	// Custo LÃQUIDO: a parcela de TERRA voltou para o caixa da prefeitura no
 	// momento da abertura (o resto foi reservado na obra).
 	out["cost"] = std::max(0.0, cash_before - ws_.city_gov[index].cash);
 	return out;
@@ -8013,21 +8299,21 @@ Dictionary EconomySim::apply_urban_social_housing(const String& city_id,
 
 void EconomySim::from_dict(const Dictionary& data) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// O save substitui o mundo: o cache de status (dicionários reaproveitados)
-	// não pode sobreviver a ele.
+	// O save substitui o mundo: o cache de status (dicionÃ¡rios reaproveitados)
+	// nÃ£o pode sobreviver a ele.
 	status_slots_[0] = StatusCache{};
 	status_slots_[1] = StatusCache{};
 	status_live_ = -1;
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
-	// A3: save carregado não herda a fila nem o log do mundo anterior.
+	// A3: save carregado nÃ£o herda a fila nem o log do mundo anterior.
 	commands_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
 	ogs::edge::from_dict(ws_, sim_core_, data);
-	// C4 (D-110): o save v31 migrado não tem nomes e o v32 pode vir de outro
-	// dado; as definições de `banks.json` são reaplicadas para nomear os
-	// bancos e — se o dado não declara estrangeiro — fundir o papel no
+	// C4 (D-110): o save v31 migrado nÃ£o tem nomes e o v32 pode vir de outro
+	// dado; as definiÃ§Ãµes de `banks.json` sÃ£o reaplicadas para nomear os
+	// bancos e â€” se o dado nÃ£o declara estrangeiro â€” fundir o papel no
 	// privado conservando valores.
 	if (!bank_defs_.empty()) {
 		ogs::bank::apply_definitions(ws_, bank_defs_);
@@ -8036,7 +8322,7 @@ void EconomySim::from_dict(const Dictionary& data) {
 
 Dictionary EconomySim::to_snapshot() const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// Mesmo lock de to_dict: o snapshot tem de ver mundo + definições do
+	// Mesmo lock de to_dict: o snapshot tem de ver mundo + definiÃ§Ãµes do
 	// MESMO dia (nenhum tick no meio).
 	Dictionary snapshot;
 	snapshot["definitions"] =
@@ -8051,16 +8337,16 @@ void EconomySim::from_snapshot(const Dictionary& snapshot) {
 	const Variant save_block = snapshot.get("save", Variant());
 	if (definitions.get_type() != Variant::DICTIONARY) {
 		UtilityFunctions::push_error(
-			"economia.snapshot: bloco 'definitions' ausente ou inválido.");
+			"economia.snapshot: bloco 'definitions' ausente ou invÃ¡lido.");
 		return;
 	}
 	if (save_block.get_type() != Variant::DICTIONARY) {
 		UtilityFunctions::push_error(
-			"economia.snapshot: bloco 'save' ausente ou inválido.");
+			"economia.snapshot: bloco 'save' ausente ou invÃ¡lido.");
 		return;
 	}
-	// O snapshot substitui o mundo inteiro: o cache de status (dicionários
-	// reaproveitados) não pode sobreviver a ele (mesmo caminho de
+	// O snapshot substitui o mundo inteiro: o cache de status (dicionÃ¡rios
+	// reaproveitados) nÃ£o pode sobreviver a ele (mesmo caminho de
 	// from_dict).
 	status_slots_[0] = StatusCache{};
 	status_slots_[1] = StatusCache{};
@@ -8068,41 +8354,41 @@ void EconomySim::from_snapshot(const Dictionary& snapshot) {
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
-	// A3: snapshot carregado não herda a fila nem o log do mundo anterior.
+	// A3: snapshot carregado nÃ£o herda a fila nem o log do mundo anterior.
 	commands_.reset();
-	// A5: o snapshot substitui o mundo inteiro — o estado da IA também não
-	// sobrevive (diferente de from_dict, que é load de save: ver o comentário
+	// A5: o snapshot substitui o mundo inteiro â€” o estado da IA tambÃ©m nÃ£o
+	// sobrevive (diferente de from_dict, que Ã© load de save: ver o comentÃ¡rio
 	// de AiPhase::reset).
 	ai_phase_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
-	// Definições primeiro: o save assume produtos/receitas/necessidades já
-	// carregados (índices incluídos). A conversão do Variant é feita UMA vez e
-	// reaproveitada para o teto agrícola, que só entra depois do save.
+	// DefiniÃ§Ãµes primeiro: o save assume produtos/receitas/necessidades jÃ¡
+	// carregados (Ã­ndices incluÃ­dos). A conversÃ£o do Variant Ã© feita UMA vez e
+	// reaproveitada para o teto agrÃ­cola, que sÃ³ entra depois do save.
 	const ogs::save::Value definition_data = ogs::edge::from_godot(definitions);
 	ogs::save::definitions_from(ws_, definition_data);
 	ogs::edge::from_dict(ws_, sim_core_,
 		static_cast<Dictionary>(save_block));
-	// `land_capacity` é dado de geografia e só pode entrar depois das cidades:
+	// `land_capacity` Ã© dado de geografia e sÃ³ pode entrar depois das cidades:
 	// `definitions_from` rodou com o mundo vazio e ignorou os itens.
 	ogs::save::apply_land_capacity(ws_, sim_core_, definition_data);
 }
 
 bool EconomySim::to_snapshot_file(const String& path) const {
 	// Mesmo lock recursivo de to_snapshot: o snapshot tem de ver mundo +
-	// definições do MESMO dia (nenhum tick no meio).
+	// definiÃ§Ãµes do MESMO dia (nenhum tick no meio).
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	ogs::save::Value snapshot = ogs::save::Value::make_object();
 	snapshot["definitions"] = ogs::save::definitions_to(ws_);
 	snapshot["save"] = ogs::save::to_value(ws_, sim_core_);
-	// A serialização é a da BIBLIOTECA (nlohmann via dump_json), não a do
-	// Godot: é o único caminho com round-trip IEEE-exato para |x| < 1.
+	// A serializaÃ§Ã£o Ã© a da BIBLIOTECA (nlohmann via dump_json), nÃ£o a do
+	// Godot: Ã© o Ãºnico caminho com round-trip IEEE-exato para |x| < 1.
 	const std::string text = ogs::save::dump_json(snapshot, 2);
 	const std::string file_path(path.utf8().get_data());
-	// Binário e truncado: UTF-8 cru, sem BOM e sem tradução de fim de linha.
+	// BinÃ¡rio e truncado: UTF-8 cru, sem BOM e sem traduÃ§Ã£o de fim de linha.
 	std::ofstream file(file_path, std::ios::binary | std::ios::trunc);
 	if (!file) {
 		UtilityFunctions::push_error(
-			"economia.snapshot: não foi possível abrir para escrita: "
+			"economia.snapshot: nÃ£o foi possÃ­vel abrir para escrita: "
 			+ String(file_path.c_str()));
 		return false;
 	}
@@ -8124,13 +8410,13 @@ bool EconomySim::from_snapshot_file(const String& path) {
 	std::string error;
 	if (!ogs::save::parse_json_file(file_path, snapshot, error)) {
 		UtilityFunctions::push_error(
-			"economia.snapshot: snapshot ilegível (" + String(file_path.c_str())
+			"economia.snapshot: snapshot ilegÃ­vel (" + String(file_path.c_str())
 			+ "): " + String(error.c_str()));
 		return false;
 	}
 	if (snapshot.get_type() != ogs::save::Value::DICTIONARY) {
 		UtilityFunctions::push_error(
-			"economia.snapshot: o snapshot não é um objeto JSON: "
+			"economia.snapshot: o snapshot nÃ£o Ã© um objeto JSON: "
 			+ String(file_path.c_str()));
 		return false;
 	}
@@ -8138,15 +8424,15 @@ bool EconomySim::from_snapshot_file(const String& path) {
 	const ogs::save::Value& save_block = snapshot["save"];
 	if (definitions.get_type() != ogs::save::Value::DICTIONARY) {
 		UtilityFunctions::push_error(
-			"economia.snapshot: bloco 'definitions' ausente ou inválido.");
+			"economia.snapshot: bloco 'definitions' ausente ou invÃ¡lido.");
 		return false;
 	}
 	if (save_block.get_type() != ogs::save::Value::DICTIONARY) {
 		UtilityFunctions::push_error(
-			"economia.snapshot: bloco 'save' ausente ou inválido.");
+			"economia.snapshot: bloco 'save' ausente ou invÃ¡lido.");
 		return false;
 	}
-	// O snapshot substitui o mundo inteiro: o cache de status não sobrevive
+	// O snapshot substitui o mundo inteiro: o cache de status nÃ£o sobrevive
 	// (mesmo caminho de from_snapshot).
 	status_slots_[0] = StatusCache{};
 	status_slots_[1] = StatusCache{};
@@ -8154,25 +8440,25 @@ bool EconomySim::from_snapshot_file(const String& path) {
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
-	// A3: snapshot carregado não herda a fila nem o log do mundo anterior.
+	// A3: snapshot carregado nÃ£o herda a fila nem o log do mundo anterior.
 	commands_.reset();
-	// A5: mesmo motivo de from_snapshot — snapshot é mundo inteiro novo.
+	// A5: mesmo motivo de from_snapshot â€” snapshot Ã© mundo inteiro novo.
 	ai_phase_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
-	// Definições primeiro: o save assume produtos/receitas/necessidades já
-	// carregados (índices incluídos). `save::from_value` é exatamente o que
+	// DefiniÃ§Ãµes primeiro: o save assume produtos/receitas/necessidades jÃ¡
+	// carregados (Ã­ndices incluÃ­dos). `save::from_value` Ã© exatamente o que
 	// `edge::from_dict` chama: nada de Variant no meio do caminho.
 	ogs::save::definitions_from(ws_, definitions);
 	ogs::save::from_value(ws_, sim_core_, save_block);
-	// Só agora as cidades existem: o teto agrícola do bloco estático entra no
-	// núcleo depois do estado dinâmico (mesmo motivo de from_snapshot).
+	// SÃ³ agora as cidades existem: o teto agrÃ­cola do bloco estÃ¡tico entra no
+	// nÃºcleo depois do estado dinÃ¢mico (mesmo motivo de from_snapshot).
 	ogs::save::apply_land_capacity(ws_, sim_core_, definitions);
 	return true;
 }
 
 // ---------------------------------------------------------------------------
-// A3 - aplicação de um comando já tirado da fila. Roda sempre sob o mutex do
-// escritor; não enfileira nada (os `apply_*` são os corpos antigos).
+// A3 - aplicaÃ§Ã£o de um comando jÃ¡ tirado da fila. Roda sempre sob o mutex do
+// escritor; nÃ£o enfileira nada (os `apply_*` sÃ£o os corpos antigos).
 // ---------------------------------------------------------------------------
 
 namespace {
@@ -8313,13 +8599,13 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			}
 			Currency& currency = ws_.currencies[
 				static_cast<std::size_t>(found->second)];
-			// D-108(c): só o EMISSOR muda regime/padrão da própria moeda;
-			// moeda de união fica travada e nação dolarizada não tem política.
+			// D-108(c): sÃ³ o EMISSOR muda regime/padrÃ£o da prÃ³pria moeda;
+			// moeda de uniÃ£o fica travada e naÃ§Ã£o dolarizada nÃ£o tem polÃ­tica.
 			const auto info = ws_.fx_regime.find(currency.code);
 			if (info != ws_.fx_regime.end()) {
 				if (info->second.locked) {
 					out["ok"] = false;
-					out["error"] = "moeda de uniao — regras de bloco futuras";
+					out["error"] = "moeda de uniao â€” regras de bloco futuras";
 					return out;
 				}
 				if (!cmd.s[2].empty()) {
@@ -8345,12 +8631,12 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			const int regime = ogs::central_bank::regime_from_name(cmd.s[1],
 				currency.exchange_regime);
 			currency.exchange_regime = regime;
-			// O toggle do F5 acompanha: o regime é a fonte, agora que ele age.
+			// O toggle do F5 acompanha: o regime Ã© a fonte, agora que ele age.
 			currency.floating = regime
 				!= ogs::central_bank::kRegimePeg;
 			// O espelho de estado acompanha o comando: o load restaura
 			// `currency.exchange_regime` a partir de `fx_regime`
-			// (save_state.cpp, bloco 2), então sem isto um regime comandado
+			// (save_state.cpp, bloco 2), entÃ£o sem isto um regime comandado
 			// voltaria ao do arquivo ao recarregar.
 			if (info != ws_.fx_regime.end()) {
 				info->second.regime = regime;
@@ -8377,8 +8663,8 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 				return out;
 			}
 			ws_.monetary_standard = standard;
-			// O preço fixo de conversão do ouro é o de catálogo do jogo,
-			// congelado no comando (não é o par histórico de 1944).
+			// O preÃ§o fixo de conversÃ£o do ouro Ã© o de catÃ¡logo do jogo,
+			// congelado no comando (nÃ£o Ã© o par histÃ³rico de 1944).
 			if (standard != ogs::central_bank::kStandardFiat) {
 				const int gold = sim_core_.product_index(std::string("gold"));
 				const double price = gold >= 0 ? sim_core_.base_price(gold)
@@ -8424,7 +8710,7 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 }
 
 // ---------------------------------------------------------------------------
-// A3 - superfície pública: MESMA assinatura de antes, agora enfileirando.
+// A3 - superfÃ­cie pÃºblica: MESMA assinatura de antes, agora enfileirando.
 // Slots por tipo (o log JSON usa estes mesmos nomes): ver A3_commands.md.
 // ---------------------------------------------------------------------------
 
@@ -8468,7 +8754,7 @@ bool EconomySim::spend_government(const String& city_id, double amount) {
 	cmd.v[0] = amount;
 	const Dictionary result = dispatch_command(cmd);
 	if (result.has("queued")) {
-		// Comando aceito; o gasto acontece no início do próximo dia. Só
+		// Comando aceito; o gasto acontece no inÃ­cio do prÃ³ximo dia. SÃ³
 		// acontece para quem chama com o dia em andamento (outra thread).
 		return true;
 	}
@@ -8495,8 +8781,8 @@ void EconomySim::set_suitability(const String& city_id, const String& product,
 
 void EconomySim::set_land_capacity(const String& city_id, const String& product,
 		double value) {
-	// Dado de geografia que só a IA consome: entra direto no núcleo (sem fila
-	// de comandos) e NÃO invalida o status publicado — nada na UI muda.
+	// Dado de geografia que sÃ³ a IA consome: entra direto no nÃºcleo (sem fila
+	// de comandos) e NÃƒO invalida o status publicado â€” nada na UI muda.
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const int index = product_index(product);
 	if (index < 0) {
@@ -8507,13 +8793,13 @@ void EconomySim::set_land_capacity(const String& city_id, const String& product,
 }
 
 // ---------------------------------------------------------------------------
-// G — AGRICULTURA SAZONAL (D-096)
+// G â€” AGRICULTURA SAZONAL (D-096)
 // ---------------------------------------------------------------------------
 
 void EconomySim::set_crop_plan(const String& city_id, const String& product,
 		double area_ha, double yield_t_ha, const Array& seasons) {
-	// Dado de simulação declarado antes do dia 1 (como a geografia/estratos):
-	// entra direto no núcleo, sem fila de comandos.
+	// Dado de simulaÃ§Ã£o declarado antes do dia 1 (como a geografia/estratos):
+	// entra direto no nÃºcleo, sem fila de comandos.
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const int index = product_index(product);
 	if (index < 0) {
@@ -8542,8 +8828,8 @@ void EconomySim::set_crop_plan(const String& city_id, const String& product,
 	}
 	sim_core_.set_crop_plan(std::string(city_id.utf8().get_data()), index,
 		area_ha, yield_t_ha, parsed);
-	// O índice (cidade × produto) muda com o plano: refaz agora para a
-	// supressão da produção diária valer no primeiro dia.
+	// O Ã­ndice (cidade Ã— produto) muda com o plano: refaz agora para a
+	// supressÃ£o da produÃ§Ã£o diÃ¡ria valer no primeiro dia.
 	sim_core_.rebuild_crop_indexes();
 }
 
@@ -8595,7 +8881,7 @@ void EconomySim::set_storage_quality(const String& city_id, double quality) {
 }
 
 // ---------------------------------------------------------------------------
-// G2 — ARMAZENAGEM (D-100)
+// G2 â€” ARMAZENAGEM (D-100)
 // ---------------------------------------------------------------------------
 
 void EconomySim::set_storage_capacity(const String& city_id,
@@ -8653,7 +8939,7 @@ Dictionary EconomySim::storage_build(const String& city_id,
 				scope)) {
 		Dictionary result;
 		result["started"] = false;
-		result["error"] = "tipo/dono inválido";
+		result["error"] = "tipo/dono invÃ¡lido";
 		return result;
 	}
 	ogs::Command cmd;
@@ -8678,7 +8964,7 @@ Dictionary EconomySim::storage_trade(const String& city_id,
 				scope)) {
 		Dictionary result;
 		result["ok"] = false;
-		result["error"] = "tipo/dono/produto inválido";
+		result["error"] = "tipo/dono/produto invÃ¡lido";
 		return result;
 	}
 	ogs::Command cmd;
@@ -8689,7 +8975,7 @@ Dictionary EconomySim::storage_trade(const String& city_id,
 	cmd.v[0] = tons;
 	cmd.v[1] = static_cast<double>(resolved_product);
 	cmd.b = buy;
-	// `relief` não cabe no `b` (que já é o lado); usa o slot s[1].
+	// `relief` nÃ£o cabe no `b` (que jÃ¡ Ã© o lado); usa o slot s[1].
 	cmd.s[1] = relief ? "relief" : "paid";
 	return dispatch_command(cmd);
 }
@@ -8711,7 +8997,7 @@ Dictionary EconomySim::get_agriculture_status() const {
 	out["delivered_today_t"] = ws_.agri_delivered_today;
 	out["harvests_today"] = ws_.agri_harvests_today;
 
-	// Slot de cada produto na lista da cadeia (índice do livro de perdas).
+	// Slot de cada produto na lista da cadeia (Ã­ndice do livro de perdas).
 	std::vector<int> slot_of(static_cast<std::size_t>(ws_.products), -1);
 	for (std::size_t slot = 0; slot < ws_.agri_chain.size(); ++slot) {
 		const int product = ws_.agri_chain[slot];
@@ -8720,8 +9006,8 @@ Dictionary EconomySim::get_agriculture_status() const {
 				static_cast<int>(slot);
 		}
 	}
-	// Slot de cada produto na cesta alimentar (consumo em espécie das famílias
-	// agrícolas, que NÃO passa por `market.demand`).
+	// Slot de cada produto na cesta alimentar (consumo em espÃ©cie das famÃ­lias
+	// agrÃ­colas, que NÃƒO passa por `market.demand`).
 	std::vector<int> food_slot_of(static_cast<std::size_t>(ws_.products), -1);
 	for (std::size_t slot = 0; slot < ws_.food_products.size(); ++slot) {
 		const int product = ws_.food_products[slot];
@@ -8731,7 +9017,7 @@ Dictionary EconomySim::get_agriculture_status() const {
 		}
 	}
 
-	// Acumuladores por nação (std::map: ordem determinística no dump).
+	// Acumuladores por naÃ§Ã£o (std::map: ordem determinÃ­stica no dump).
 	struct CropAcc {
 		double stock_t = 0.0;
 		double demand_t_day = 0.0;
@@ -8773,9 +9059,9 @@ Dictionary EconomySim::get_agriculture_status() const {
 			crop.imported_today_t += city.imported[plan.product];
 			crop.exported_today_t += city.exported[plan.product];
 			crop.arrived_today_t += city.agri_arrived[plan.product];
-			// Consumo em ESPÉCIE das famílias agrícolas: sai do estoque do
+			// Consumo em ESPÃ‰CIE das famÃ­lias agrÃ­colas: sai do estoque do
 			// mercado da cidade sem entrar em `market.demand` (consumption.cpp).
-			// Sem ele a conta da entressafra não fecha.
+			// Sem ele a conta da entressafra nÃ£o fecha.
 			const int food_slot = plan.product >= 0
 				&& plan.product < ws_.products
 				? food_slot_of[static_cast<std::size_t>(plan.product)] : -1;
@@ -8801,8 +9087,8 @@ Dictionary EconomySim::get_agriculture_status() const {
 				const ogs::CropSeasonState& state = plan.state[season];
 				crop.loss_month_t += state.loss_month_t;
 				crop.entry_loss_month_t += state.loss_month_t;
-				// Produção da safra em curso: o acumulado da instância que
-				// contém hoje (janela que atravessa o ano continua contando).
+				// ProduÃ§Ã£o da safra em curso: o acumulado da instÃ¢ncia que
+				// contÃ©m hoje (janela que atravessa o ano continua contando).
 				const int instance = ogs::window_start_year(today.year,
 					today.doy, window.harvest_start_doy);
 				const int position = ogs::window_position(today.doy,
@@ -8811,8 +9097,8 @@ Dictionary EconomySim::get_agriculture_status() const {
 						|| (position >= 0 && state.harvest_year == instance)) {
 					crop.production_year_t += state.delivered_t;
 				}
-				// Próxima colheita: 0 quando já está colhendo; senão os dias
-				// até o início da próxima instância da janela.
+				// PrÃ³xima colheita: 0 quando jÃ¡ estÃ¡ colhendo; senÃ£o os dias
+				// atÃ© o inÃ­cio da prÃ³xima instÃ¢ncia da janela.
 				double days = 0.0;
 				if (position < 0) {
 					const int year_days = ogs::game_year_days(today.year);
@@ -8848,8 +9134,8 @@ Dictionary EconomySim::get_agriculture_status() const {
 			item["exported_today_t"] = crop.exported_today_t;
 			item["arrived_today_t"] = crop.arrived_today_t;
 			item["in_kind_today_t"] = crop.in_kind_today_t;
-			// Dias de consumo: estoque ÷ consumo do dia. Sem consumo
-			// observado não há número (-1 = sem observação).
+			// Dias de consumo: estoque Ã· consumo do dia. Sem consumo
+			// observado nÃ£o hÃ¡ nÃºmero (-1 = sem observaÃ§Ã£o).
 			item["days_cover"] = crop.demand_t_day > 0.0
 				? crop.stock_t / crop.demand_t_day : -1.0;
 			item["next_harvest_days"] = crop.next_harvest_days;
@@ -8866,14 +9152,14 @@ Dictionary EconomySim::get_agriculture_status() const {
 		nations_out.append(entry);
 	}
 	out["nations"] = nations_out;
-	// Totais acumulados desde o dia 0, por bem da cadeia (diagnóstico do teste
-	// e da UI; não entram no save).
+	// Totais acumulados desde o dia 0, por bem da cadeia (diagnÃ³stico do teste
+	// e da UI; nÃ£o entram no save).
 	Dictionary totals;
 	Dictionary perishable;
 	Dictionary storage;
 	Dictionary entry;
 	// Estoque do dia por bem da cadeia (TODAS as cidades, inclusive as sem
-	// plano — é o estoque que a perecibilidade e a armazenagem alcançam).
+	// plano â€” Ã© o estoque que a perecibilidade e a armazenagem alcanÃ§am).
 	Dictionary stock_by_product;
 	for (const int product : ws_.agri_chain) {
 		if (product < 0 || product >= ws_.products) {
@@ -8962,8 +9248,8 @@ Dictionary EconomySim::get_balance_status() const {
 	world["firms"] = sheet_to_dict(ogs::balance::firms(ws_));
 	world["government"] = sheet_to_dict(ogs::balance::government(ws_));
 	world["external"] = sheet_to_dict(ogs::balance::external(ws_));
-	// C3 (D-107): o setor bancário (banco agregado por nação) e o balanço de
-	// cada grupo. Sem crédito o setor é zero e os grupos publicam dívida 0.
+	// C3 (D-107): o setor bancÃ¡rio (banco agregado por naÃ§Ã£o) e o balanÃ§o de
+	// cada grupo. Sem crÃ©dito o setor Ã© zero e os grupos publicam dÃ­vida 0.
 	{
 		Dictionary row = sheet_to_dict(ogs::balance::banking(ws_));
 		const ogs::bank::Totals totals = ogs::bank::totals(ws_);
@@ -8986,7 +9272,7 @@ Dictionary EconomySim::get_balance_status() const {
 		row["insolvent"] = solvency.insolvent;
 		world["firms_solvency"] = row;
 	}
-	// C3 (D-107): balanço de cada grupo (ordem = `ws.groups`, estável).
+	// C3 (D-107): balanÃ§o de cada grupo (ordem = `ws.groups`, estÃ¡vel).
 	{
 		const std::vector<ogs::balance::GroupSheet> sheets =
 			ogs::balance::group_sheets(ws_);
@@ -9001,8 +9287,8 @@ Dictionary EconomySim::get_balance_status() const {
 			row["daily_cost"] = sheet.daily_cost;
 			row["daily_profit"] = sheet.daily_profit;
 			row["building_count"] = sheet.building_count;
-			// Alavancagem = dívida ÷ (patrimônio líquido + dívida); sem
-			// patrimônio e sem dívida é 0 (ausência declarada, não 100%).
+			// Alavancagem = dÃ­vida Ã· (patrimÃ´nio lÃ­quido + dÃ­vida); sem
+			// patrimÃ´nio e sem dÃ­vida Ã© 0 (ausÃªncia declarada, nÃ£o 100%).
 			const double base = sheet.net_worth() + sheet.debt;
 			row["leverage"] = std::abs(base) > 1e-9
 				? sheet.debt / base : 0.0;
@@ -9014,9 +9300,9 @@ Dictionary EconomySim::get_balance_status() const {
 	}
 	out["world"] = world;
 
-	// Por nação: as mesmas contas, restritas às cidades do país. Caixas que
-	// não têm nação (fundos de obra em voo, grupos sem origem declarada) ficam
-	// FORA da soma por país e aparecem em `unallocated` (nada é rateado por
+	// Por naÃ§Ã£o: as mesmas contas, restritas Ã s cidades do paÃ­s. Caixas que
+	// nÃ£o tÃªm naÃ§Ã£o (fundos de obra em voo, grupos sem origem declarada) ficam
+	// FORA da soma por paÃ­s e aparecem em `unallocated` (nada Ã© rateado por
 	// palpite).
 	std::vector<std::string> nations;
 	for (const ogs::City& city : ws_.cities) {
@@ -9033,11 +9319,11 @@ Dictionary EconomySim::get_balance_status() const {
 		row["firms"] = sheet_to_dict(ogs::balance::firms(ws_, nation));
 		row["government"] = sheet_to_dict(
 			ogs::balance::government(ws_, nation));
-		// O `foreign_cash` do núcleo é GLOBAL: a posição do exterior não é
-		// decomposta por país (ausência declarada, não rateio inventado).
+		// O `foreign_cash` do nÃºcleo Ã© GLOBAL: a posiÃ§Ã£o do exterior nÃ£o Ã©
+		// decomposta por paÃ­s (ausÃªncia declarada, nÃ£o rateio inventado).
 		Dictionary external;
 		external["decomposed"] = false;
-		external["reason"] = "foreign_cash global no núcleo";
+		external["reason"] = "foreign_cash global no nÃºcleo";
 		row["external"] = external;
 		by_nation[String(nation.c_str())] = row;
 	}
@@ -9064,18 +9350,18 @@ Dictionary EconomySim::get_balance_status() const {
 		}
 		row["group_cash_without_origin"] = group_cash;
 		row["construction_funds"] = construction_funds;
-		row["note"] = "caixas sem nação atribuível (leitura)";
+		row["note"] = "caixas sem naÃ§Ã£o atribuÃ­vel (leitura)";
 		return row;
 	}();
 	out["notes"] = [&]() {
 		Dictionary notes;
 		notes["monetary_base"] =
-			"passivo do emissor: base monetária M0 medida por moeda (C2a/D-103); "
-			"a emissão é a C2b";
+			"passivo do emissor: base monetÃ¡ria M0 medida por moeda (C2a/D-103); "
+			"a emissÃ£o Ã© a C2b";
 		notes["arrears"] =
-			"salário atrasado = passivo da firma + ativo das famílias";
+			"salÃ¡rio atrasado = passivo da firma + ativo das famÃ­lias";
 		notes["equity"] =
-			"participação em grupos (stratum_equity) não entra: avaliação já "
+			"participaÃ§Ã£o em grupos (stratum_equity) nÃ£o entra: avaliaÃ§Ã£o jÃ¡ "
 			"contida nos ativos dos grupos";
 		notes["banks"] =
 			"banco agregado por nacao (C3/D-107): credor minimo, sem deposito "
@@ -9103,13 +9389,13 @@ Dictionary EconomySim::get_central_bank_status() const {
 			ogs::central_bank::standard_name(ws_.monetary_standard);
 		policy["reserve_currency"] = String(ws_.reserve_currency.c_str());
 		policy["active"] = true;
-		// D-105 + D-111: o juro da taxa básica no envelope de crédito da safra
-		// (D-099) está ligado? Verdadeiro desde a D-111 (a C4 criou o credor).
+		// D-105 + D-111: o juro da taxa bÃ¡sica no envelope de crÃ©dito da safra
+		// (D-099) estÃ¡ ligado? Verdadeiro desde a D-111 (a C4 criou o credor).
 		// Declarado em `data/definitions/economy/monetary_policy.json` e
 		// conferido pelo teste.
 		policy["harvest_credit_rate"] = ws_.harvest_credit_rate;
-		// C2b2 (D-106): o padrão AGE (Bretton Woods e padrão ouro forçam o peg
-		// e a conversão do ouro). A troca é só por comando na fila A3.
+		// C2b2 (D-106): o padrÃ£o AGE (Bretton Woods e padrÃ£o ouro forÃ§am o peg
+		// e a conversÃ£o do ouro). A troca Ã© sÃ³ por comando na fila A3.
 		const ogs::exchange::Parameters params =
 			ogs::exchange::parameters(ws_);
 		policy["standard_forces_peg"] =
@@ -9124,9 +9410,9 @@ Dictionary EconomySim::get_central_bank_status() const {
 		policy["regime_currencies"] =
 			static_cast<int>(ws_.fx_regime.size());
 		policy["note"] =
-			"C2b1 (D-104): taxa básica por moeda (Taylor no BC independente; "
-			"objetivo do governo no controlado) e emissão só por compra de "
-			"títulos do governo pelo BC controlado. Bancos/redesconto são C4.";
+			"C2b1 (D-104): taxa bÃ¡sica por moeda (Taylor no BC independente; "
+			"objetivo do governo no controlado) e emissÃ£o sÃ³ por compra de "
+			"tÃ­tulos do governo pelo BC controlado. Bancos/redesconto sÃ£o C4.";
 		out["monetary_policy"] = policy;
 	}
 
@@ -9170,9 +9456,9 @@ Dictionary EconomySim::get_central_bank_status() const {
 		row["regime"] = ogs::central_bank::regime_name(bank.regime);
 		row["bank_independence"] =
 			ogs::central_bank::independence_name(bank.independence);
-		// C2b1 (D-104): política ATIVA da moeda. `bank_independence` acima é o
+		// C2b1 (D-104): polÃ­tica ATIVA da moeda. `bank_independence` acima Ã© o
 		// valor SALVO (pode ser `no_data`); o efetivo resolve no default
-		// declarado do jogo. A taxa, a leitura e a emissão saem do estado.
+		// declarado do jogo. A taxa, a leitura e a emissÃ£o saem do estado.
 		{
 			const auto state = ws_.monetary.find(bank.code);
 			Dictionary active;
@@ -9189,9 +9475,9 @@ Dictionary EconomySim::get_central_bank_status() const {
 			active["neutral_rate"] = ogs::monetary::kNeutralRate;
 			active["max_step_per_day"] = ogs::monetary::kMaxRateStepPerDay;
 			active["smoothing"] = ogs::monetary::kRateSmoothing;
-			// D-113: a suavização é por decisão mensal; a taxa anda pelo
-			// equivalente diário. Os dois valores vão publicados para a
-			// medição não precisar recalcular.
+			// D-113: a suavizaÃ§Ã£o Ã© por decisÃ£o mensal; a taxa anda pelo
+			// equivalente diÃ¡rio. Os dois valores vÃ£o publicados para a
+			// mediÃ§Ã£o nÃ£o precisar recalcular.
 			active["smoothing_per_day"] = 1.0 - std::pow(
 				1.0 - ogs::monetary::kRateSmoothing,
 				1.0 / static_cast<double>(
@@ -9232,7 +9518,7 @@ Dictionary EconomySim::get_central_bank_status() const {
 		}
 		row["nations"] = nations;
 		row["nations_count"] = static_cast<int>(bank.nations.size());
-		// Passivo (base monetária) e agregados medidos.
+		// Passivo (base monetÃ¡ria) e agregados medidos.
 		row["currency_in_circulation"] = bank.currency_in_circulation;
 		row["bank_reserves"] = bank.bank_reserves;
 		row["m0"] = bank.m0;
@@ -9256,7 +9542,7 @@ Dictionary EconomySim::get_central_bank_status() const {
 		}
 		row["net_financial_worth"] = bank.net_financial_worth();
 		// C2b2 (D-106): regime efetivo, paridade, banda, reservas, cobertura e
-		// eventos da moeda. `funded` falso = fixo/banda administrativo (o F5 já
+		// eventos da moeda. `funded` falso = fixo/banda administrativo (o F5 jÃ¡
 		// segurava a taxa sem reserva).
 		{
 			Dictionary fx;
@@ -9281,7 +9567,7 @@ Dictionary EconomySim::get_central_bank_status() const {
 			fx["coverage"] = bank.coverage_ratio;
 			fx["conversion_price"] = bank.conversion_price;
 			// C2c (D-108): de onde veio o regime, contra o que ele prende a
-			// taxa, quem é o emissor e se a moeda está travada (união).
+			// taxa, quem Ã© o emissor e se a moeda estÃ¡ travada (uniÃ£o).
 			const auto info = ws_.fx_regime.find(bank.code);
 			const auto state = ws_.fx.find(bank.code);
 			fx["regime_source"] = info != ws_.fx_regime.end()
@@ -9360,7 +9646,7 @@ Dictionary EconomySim::get_central_bank_status() const {
 			bonds_total += row.second;
 		}
 		totals["government_debt"] = bonds_total;
-		// C2b2 (D-106): reservas, fatia do cofre e contador de desvalorizações.
+		// C2b2 (D-106): reservas, fatia do cofre e contador de desvalorizaÃ§Ãµes.
 		double reserves_total = 0.0;
 		double vault_total = 0.0;
 		int devaluations_total = 0;
@@ -9392,7 +9678,7 @@ Dictionary EconomySim::get_central_bank_status() const {
 		out["totals"] = totals;
 	}
 	{
-		// C2b2: anel de eventos do câmbio (mais recente primeiro).
+		// C2b2: anel de eventos do cÃ¢mbio (mais recente primeiro).
 		Array events;
 		for (auto it = ws_.fx_events.rbegin(); it != ws_.fx_events.rend();
 				++it) {
@@ -9408,7 +9694,7 @@ Dictionary EconomySim::get_central_bank_status() const {
 		out["fx_events"] = events;
 	}
 	{
-		// C2b1: dívida pública por nação (só quem tem título do BC).
+		// C2b1: dÃ­vida pÃºblica por naÃ§Ã£o (sÃ³ quem tem tÃ­tulo do BC).
 		Dictionary bonds;
 		for (const auto& row : ws_.gov_bonds) {
 			bonds[String(row.first.c_str())] = row.second;
@@ -9416,9 +9702,9 @@ Dictionary EconomySim::get_central_bank_status() const {
 		out["government_bonds"] = bonds;
 	}
 
-	// CPI por país: o índice é o MESMO do IPC do G2 (uma dona só). A inflação
-	// de 12 meses vem da série mensal; sem 12 meses, `has_12m` é falso —
-	// ausência declarada, nunca um número inventado.
+	// CPI por paÃ­s: o Ã­ndice Ã© o MESMO do IPC do G2 (uma dona sÃ³). A inflaÃ§Ã£o
+	// de 12 meses vem da sÃ©rie mensal; sem 12 meses, `has_12m` Ã© falso â€”
+	// ausÃªncia declarada, nunca um nÃºmero inventado.
 	const std::map<std::string, ogs::central_bank::CpiRow> cpi =
 		ogs::central_bank::cpi_by_nation(ws_, base_list);
 	Dictionary cpi_rows;
@@ -9463,7 +9749,7 @@ Dictionary EconomySim::get_central_bank_status() const {
 			static_cast<int>(ogs::central_bank::kCpiSampleDays);
 		cpi_totals["last_sample_day"] = ws_.cpi_last_observe_day;
 		cpi_totals["basis"] =
-			"cesta de alimentos do G2 (fator calórico x preço/base x necessidade "
+			"cesta de alimentos do G2 (fator calÃ³rico x preÃ§o/base x necessidade "
 			"dos quintis); 12 meses = 360 dias do modelo";
 		out["cpi_totals"] = cpi_totals;
 	}
@@ -9477,26 +9763,26 @@ Dictionary EconomySim::get_central_bank_status() const {
 		row["nation_without_currency"] = money.no_currency;
 		row["total"] = money.unallocated();
 		row["note"] =
-			"caixas sem nação atribuível (o exterior do núcleo é global); nada "
-			"é rateado por palpite";
+			"caixas sem naÃ§Ã£o atribuÃ­vel (o exterior do nÃºcleo Ã© global); nada "
+			"Ã© rateado por palpite";
 		out["unallocated"] = row;
 	}
 
 	{
 		Dictionary notes;
 		notes["banks"] =
-			"sem banco (C4): reservas bancárias 0, então M1 = M2 = M0";
+			"sem banco (C4): reservas bancÃ¡rias 0, entÃ£o M1 = M2 = M0";
 		notes["securities"] =
-			"títulos 0: não há dívida pública no estado da C1 (C3/C4)";
+			"tÃ­tulos 0: nÃ£o hÃ¡ dÃ­vida pÃºblica no estado da C1 (C3/C4)";
 		notes["reserve_currency_holdings"] =
-			"0: o exterior do núcleo é um único foreign_cash global, não "
+			"0: o exterior do nÃºcleo Ã© um Ãºnico foreign_cash global, nÃ£o "
 			"decomposto por moeda (C2b)";
 		notes["gold"] =
-			"ouro = dado real da G2/D-101 por moeda do banco central; é ativo "
-			"REAL e não entra na identidade financeira";
+			"ouro = dado real da G2/D-101 por moeda do banco central; Ã© ativo "
+			"REAL e nÃ£o entra na identidade financeira";
 		notes["names"] =
-			"nome institucional do BC vem do dado D-090 no GDScript; o núcleo "
-			"não inventa nome";
+			"nome institucional do BC vem do dado D-090 no GDScript; o nÃºcleo "
+			"nÃ£o inventa nome";
 		out["notes"] = notes;
 	}
 	return out;
@@ -9532,7 +9818,7 @@ double EconomySim::set_central_bank_gold(const Dictionary& tonnes_by_nation) {
 		if (!std::isfinite(tonnes) || tonnes <= 0.0) {
 			continue;
 		}
-		// Nação → moeda (o banco central é POR MOEDA; a zona do euro e o CFA
+		// NaÃ§Ã£o â†’ moeda (o banco central Ã© POR MOEDA; a zona do euro e o CFA
 		// somam as reservas dos membros, como no dado).
 		std::string currency;
 		const std::string tag(nation.utf8().get_data());
@@ -9560,7 +9846,7 @@ bool EconomySim::set_central_bank_policy(const String& currency,
 	const std::string name(independence.utf8().get_data());
 	const int value = ogs::central_bank::independence_from_name(name,
 		ogs::central_bank::kIndependenceNoData);
-	// Nome inválido não vira `no_data` por acidente: exige um dos três nomes.
+	// Nome invÃ¡lido nÃ£o vira `no_data` por acidente: exige um dos trÃªs nomes.
 	if (name != "no_data" && name != "independent" && name != "controlled") {
 		return false;
 	}
@@ -9571,7 +9857,7 @@ bool EconomySim::set_central_bank_policy(const String& currency,
 }
 
 // ---------------------------------------------------------------------------
-// C2b2 (D-106) — regimes de câmbio, padrão monetário e ouro físico.
+// C2b2 (D-106) â€” regimes de cÃ¢mbio, padrÃ£o monetÃ¡rio e ouro fÃ­sico.
 // ---------------------------------------------------------------------------
 bool EconomySim::set_exchange_regime(const String& currency,
 		const String& regime, double parity, double band_width,
@@ -9585,8 +9871,8 @@ bool EconomySim::set_exchange_regime(const String& currency,
 	if (name != "floating" && name != "peg" && name != "band") {
 		return false;
 	}
-	// D-108(c): moeda de união/dolarizada não aceita comando de regime. A
-	// recusa vale já no pedido (o motivo também volta na aplicação do A3).
+	// D-108(c): moeda de uniÃ£o/dolarizada nÃ£o aceita comando de regime. A
+	// recusa vale jÃ¡ no pedido (o motivo tambÃ©m volta na aplicaÃ§Ã£o do A3).
 	const std::string acting(nation.utf8().get_data());
 	const auto info = ws_.fx_regime.find(code);
 	if (info != ws_.fx_regime.end()) {
@@ -9685,7 +9971,7 @@ void EconomySim::set_exchange_policy(double band_width, double defence_share,
 }
 
 // ---------------------------------------------------------------------------
-// C3 (D-107) — crédito de empresa (banco agregado como credor).
+// C3 (D-107) â€” crÃ©dito de empresa (banco agregado como credor).
 // ---------------------------------------------------------------------------
 
 Dictionary EconomySim::set_bank_credit(bool enabled) {
@@ -9741,7 +10027,7 @@ void EconomySim::set_bank_definitions(const Dictionary& definitions) {
 	}
 	const Dictionary nations = nations_variant;
 	const Array codes = nations.keys();
-	// Dado com `null` (ausência declarada) vira "" — nunca "<null>".
+	// Dado com `null` (ausÃªncia declarada) vira "" â€” nunca "<null>".
 	const auto text_of = [](const Dictionary& row, const char* key) {
 		const Variant value = row.get(key, Variant());
 		if (value.get_type() != Variant::STRING) {
@@ -9788,10 +10074,10 @@ void EconomySim::set_bank_definitions(const Dictionary& definitions) {
 
 Dictionary EconomySim::set_bank_crisis(const Dictionary& raw_config) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// C6 (D-114): alavancas de configuração (laboratório/teste). `enabled` é
-	// estado e vai ao save; o resto é regra (0 = default de sim/bank_crisis.h).
-	// Aceita o JSON como está (seções capital/liquidity/losses/confidence/
-	// lolr/insurance/resolution) e também as chaves planas.
+	// C6 (D-114): alavancas de configuraÃ§Ã£o (laboratÃ³rio/teste). `enabled` Ã©
+	// estado e vai ao save; o resto Ã© regra (0 = default de sim/bank_crisis.h).
+	// Aceita o JSON como estÃ¡ (seÃ§Ãµes capital/liquidity/losses/confidence/
+	// lolr/insurance/resolution) e tambÃ©m as chaves planas.
 	Dictionary config_flat = raw_config;
 	const auto sub = [&raw_config](const char* section) {
 		const Variant value = raw_config.get(section, Variant());
@@ -9862,8 +10148,8 @@ Dictionary EconomySim::set_bank_crisis(const Dictionary& raw_config) {
 		ws_.bank_crisis.capital_cut_floor = std::clamp(
 			number("capital_cut_floor"), 0.0, 1.0);
 	}
-	// RESERVADO: `liquidity_min` é publicado/salvo, mas nenhuma regra o
-	// consome (o sinal de liquidez da confiança usa a referência do banco).
+	// RESERVADO: `liquidity_min` Ã© publicado/salvo, mas nenhuma regra o
+	// consome (o sinal de liquidez da confianÃ§a usa a referÃªncia do banco).
 	if (config.has("liquidity_min")) {
 		ws_.bank_crisis.liquidity_min = std::max(0.0,
 			number("liquidity_min"));
@@ -10012,8 +10298,8 @@ Dictionary EconomySim::group_borrow(const String& group_id, double amount) {
 
 Dictionary EconomySim::set_stock_exchange(const Dictionary& config) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	// C5 (D-112): alavancas de configuração do laboratório (não são feature de
-	// jogador nesta fase). `enabled` é estado e vai ao save; os parâmetros são
+	// C5 (D-112): alavancas de configuraÃ§Ã£o do laboratÃ³rio (nÃ£o sÃ£o feature de
+	// jogador nesta fase). `enabled` Ã© estado e vai ao save; os parÃ¢metros sÃ£o
 	// regra e 0 significa "usar o default declarado em sim/stock.h".
 	if (config.has("enabled")) {
 		ws_.stock_enabled = bool(config.get("enabled", true));
@@ -10066,7 +10352,7 @@ Dictionary EconomySim::get_stock_status() const {
 		policy["pe_floor"] = ogs::stock::kPeFloor;
 		policy["pe_ceiling"] = ogs::stock::kPeCeiling;
 		policy["rate_pass_through"] = ogs::stock::kRatePassThrough;
-		// D-113 (calibração pré-C6): porte mínimo de listagem declarado.
+		// D-113 (calibraÃ§Ã£o prÃ©-C6): porte mÃ­nimo de listagem declarado.
 		policy["min_listed_price"] = ogs::stock::kMinListedPrice;
 		policy["listing_reason"] = "below_min_price";
 		policy["rate_expected"] =
@@ -10074,9 +10360,9 @@ Dictionary EconomySim::get_stock_status() const {
 		policy["profit_reference"] =
 			"measured mean 1/n during warmup, then EMA (D-112 fix)";
 		policy["name_source"] =
-			"game_default (fictício/genérico, sem marca real)";
+			"game_default (fictÃ­cio/genÃ©rico, sem marca real)";
 		policy["source"] = "default de jogo (sim/stock.h)";
-		// Ausências declaradas desta fase.
+		// AusÃªncias declaradas desta fase.
 		policy["trading"] = "absent (C5)";
 		policy["ipo"] = "later";
 		policy["regulation"] = "later";
@@ -10099,11 +10385,11 @@ Dictionary EconomySim::get_stock_status() const {
 		row["listed"] = totals.listed;
 		row["unlisted"] = totals.unlisted;
 		row["exchanges"] = totals.exchanges;
-		// Identidade da bolsa: carteiras − market cap (tem de ser 0).
+		// Identidade da bolsa: carteiras âˆ’ market cap (tem de ser 0).
 		row["equity_identity"] = totals.market_cap - totals.holdings;
 		out["totals"] = row;
 	}
-	// Patrimônio medido do grupo no último fechamento (base do q de Tobin).
+	// PatrimÃ´nio medido do grupo no Ãºltimo fechamento (base do q de Tobin).
 	Array exchanges;
 	for (const auto& row : ws_.stock_exchanges) {
 		const ogs::StockExchange& exchange = row.second;
@@ -10166,7 +10452,7 @@ Dictionary EconomySim::get_stock_status() const {
 		entry["dividends_paid"] = exchange.dividends_paid;
 		entry["remittance"] = exchange.remittance;
 		entry["remittance_origin"] = exchange.remittance_origin;
-		// Top papéis da praça por market cap (5) — determinístico no empate.
+		// Top papÃ©is da praÃ§a por market cap (5) â€” determinÃ­stico no empate.
 		std::vector<std::pair<double, std::string>> ranked;
 		double cap = 0.0;
 		int listed = 0;
@@ -10275,10 +10561,10 @@ Dictionary EconomySim::get_bank_status() const {
 		policy["repay_share"] = pol.repay_share;
 		policy["source"] =
 			"default de jogo (data/definitions/economy/bank_credit.json)";
-		// Ausências declaradas desta fase (C4/C6), não números inventados.
-		// C4 (D-110): depósitos à vista são dinheiro bancário (firmas), e o
-		// capital de cada banco é pago pelo SEU dono (Estado, famílias ou
-		// exterior). Resolução de banco insolvente é C6.
+		// AusÃªncias declaradas desta fase (C4/C6), nÃ£o nÃºmeros inventados.
+		// C4 (D-110): depÃ³sitos Ã  vista sÃ£o dinheiro bancÃ¡rio (firmas), e o
+		// capital de cada banco Ã© pago pelo SEU dono (Estado, famÃ­lias ou
+		// exterior). ResoluÃ§Ã£o de banco insolvente Ã© C6.
 		policy["deposits"] = "firm deposits (bank money, C4)";
 		policy["deposits_owner"] = "C4";
 		policy["resolution"] = "C6";
@@ -10338,7 +10624,7 @@ Dictionary EconomySim::get_bank_status() const {
 		row["loans_count"] = totals.loans_count;
 		row["group_debt"] = group_debt;
 		row["group_arrears"] = group_arrears;
-		// C4 (D-110): dinheiro bancário e distribuição ao dono.
+		// C4 (D-110): dinheiro bancÃ¡rio e distribuiÃ§Ã£o ao dono.
 		row["deposits"] = totals.deposits;
 		row["retained"] = totals.retained;
 		row["dividends"] = totals.dividends;
@@ -10346,8 +10632,8 @@ Dictionary EconomySim::get_bank_status() const {
 		row["remittance_origin"] = totals.remittance_origin;
 		row["harvest_interest"] = totals.harvest_interest;
 		row["banks"] = totals.banks;
-		// C4 (D-110): M1 global = dinheiro do mundo − cofre dos bancos (o
-		// cofre é reserva, que é M0 e não M1); M0 = dinheiro − depósitos.
+		// C4 (D-110): M1 global = dinheiro do mundo âˆ’ cofre dos bancos (o
+		// cofre Ã© reserva, que Ã© M0 e nÃ£o M1); M0 = dinheiro âˆ’ depÃ³sitos.
 		double vault = 0.0;
 		for (const auto& bank_row : ws_.banks) {
 			vault += std::max(0.0, bank_row.second.cash);
@@ -10378,15 +10664,15 @@ Dictionary EconomySim::get_bank_status() const {
 		row["crisis_events"] = crisis.events_total;
 		out["totals"] = row;
 	}
-	// Participação efetiva nos empréstimos da nação (0 sem crédito) e lista
-	// por BANCO (C4/D-110). O agregado por nação vem logo abaixo.
+	// ParticipaÃ§Ã£o efetiva nos emprÃ©stimos da naÃ§Ã£o (0 sem crÃ©dito) e lista
+	// por BANCO (C4/D-110). O agregado por naÃ§Ã£o vem logo abaixo.
 	std::map<std::string, double> nation_assets;
 	for (const auto& row : ws_.banks) {
 		nation_assets[row.second.nation] += row.second.loans
 			+ row.second.arrears;
 	}
 	Array banks;
-	// Uma linha por banco (o mapa é ordenado por nação: ordem determinística).
+	// Uma linha por banco (o mapa Ã© ordenado por naÃ§Ã£o: ordem determinÃ­stica).
 	Array nations;
 	for (const auto& row : ws_.banks) {
 		const ogs::Bank& bank = row.second;
@@ -10394,7 +10680,7 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["id"] = String(bank.id.c_str());
 		entry["nation"] = String(bank.nation.c_str());
 		entry["role"] = String(ogs::bank::role_key(bank.role));
-		// Nome só quando o dado o declara: chave ausente é a ausência honesta
+		// Nome sÃ³ quando o dado o declara: chave ausente Ã© a ausÃªncia honesta
 		// (`name_status = no_data`), nunca um nome inventado.
 		if (!bank.name.empty()) {
 			entry["name"] = String::utf8(bank.name.c_str());
@@ -10416,8 +10702,8 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["cash"] = bank.cash;
 		entry["capital"] = bank.capital;
 		entry["equity"] = ogs::bank::equity(bank);
-		// Razão de capital: patrimônio ÷ empréstimo em aberto (negativa =
-		// insolvente; a resolução é C6).
+		// RazÃ£o de capital: patrimÃ´nio Ã· emprÃ©stimo em aberto (negativa =
+		// insolvente; a resoluÃ§Ã£o Ã© C6).
 		entry["equity_ratio"] = (bank.loans + bank.arrears) > 1e-9
 			? ogs::bank::equity(bank) / (bank.loans + bank.arrears) : 0.0;
 		entry["writeoffs"] = bank.writeoffs;
@@ -10431,9 +10717,9 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["remittance_origin"] = bank.remittance_origin;
 		entry["harvest_interest"] = bank.harvest_interest;
 		entry["last_dividend_day"] = bank.last_dividend_day;
-		// C6 (D-114): confiança, indicadores medidos, corrida, redesconto,
-		// seguro e resolução. `credit_factor` é o aperto aplicado ao crédito
-		// novo (1 = sem aperto; 0 = crédito cortado).
+		// C6 (D-114): confianÃ§a, indicadores medidos, corrida, redesconto,
+		// seguro e resoluÃ§Ã£o. `credit_factor` Ã© o aperto aplicado ao crÃ©dito
+		// novo (1 = sem aperto; 0 = crÃ©dito cortado).
 		const ogs::bank_crisis::Indicators crisis_ind =
 			ogs::bank_crisis::indicators(bank);
 		entry["confidence"] = bank.confidence;
@@ -10459,7 +10745,7 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["absorbed_into"] = String(bank.absorbed_into.c_str());
 		banks.append(entry);
 	}
-	// Agregado por nação (soma dos papéis) — contrato da C3 preservado.
+	// Agregado por naÃ§Ã£o (soma dos papÃ©is) â€” contrato da C3 preservado.
 	std::vector<std::string> nation_order;
 	std::map<std::string, Dictionary> by_nation;
 	for (const auto& row : ws_.banks) {
@@ -10515,7 +10801,7 @@ Dictionary EconomySim::get_bank_status() const {
 	}
 	out["nations"] = nations;
 	out["banks"] = banks;
-	// Só os grupos com posição de crédito (a lista inteira é o
+	// SÃ³ os grupos com posiÃ§Ã£o de crÃ©dito (a lista inteira Ã© o
 	// `get_balance_status().world.groups`).
 	Array groups;
 	for (const ogs::Group& group : ws_.groups) {
@@ -10556,7 +10842,7 @@ Dictionary EconomySim::get_bank_status() const {
 			&& std::abs(book.cash_residual()) <= tolerance;
 		out["invariant"] = invariant;
 	}
-	// C6 (D-114): fundo de seguro por nação e o anel de eventos (dia, banco,
+	// C6 (D-114): fundo de seguro por naÃ§Ã£o e o anel de eventos (dia, banco,
 	// causa e custo por parte). O total de eventos fica em `totals`.
 	{
 		Array funds;
@@ -10733,8 +11019,8 @@ Dictionary EconomySim::get_storage_status() const {
 
 	// ------------------------------------------------------------------
 	// Camada NACIONAL (leitura): reserva/estoque por produto, capacidade,
-	// dias de consumo cobertos, IPC e preço médio ponderados pela cesta dos
-	// quintis. NÃO existe mercado nacional — só a leitura agregada.
+	// dias de consumo cobertos, IPC e preÃ§o mÃ©dio ponderados pela cesta dos
+	// quintis. NÃƒO existe mercado nacional â€” sÃ³ a leitura agregada.
 	// ------------------------------------------------------------------
 	struct NationAcc {
 		double capacity = 0.0;
@@ -10751,7 +11037,7 @@ Dictionary EconomySim::get_storage_status() const {
 	};
 	std::map<std::string, NationAcc> nations;
 
-	// Pesos da cesta: fatores calóricos do dado (needs.json). Sem cesta
+	// Pesos da cesta: fatores calÃ³ricos do dado (needs.json). Sem cesta
 	// carregada, todos os alimentos pesam igual (declarado).
 	std::vector<double> food_weight(products, 0.0);
 	double food_weight_sum = 0.0;
@@ -10801,7 +11087,7 @@ Dictionary EconomySim::get_storage_status() const {
 		NationAcc& nation = nations[city.nation];
 		// Peso da cidade no IPC: a cesta dos QUINTIS (necessidade de cada
 		// estrato); sem estratos, a necessidade da POP; sem ambas, a
-		// população de simulação pela necessidade per capita.
+		// populaÃ§Ã£o de simulaÃ§Ã£o pela necessidade per capita.
 		double city_weight = 0.0;
 		for (int stratum = 0; stratum < ogs::kIncomeStrata; ++stratum) {
 			city_weight += std::max(0.0,
@@ -10818,7 +11104,7 @@ Dictionary EconomySim::get_storage_status() const {
 		nation.weight += city_weight;
 		nation.food_need_t_day += city_weight;
 		// O IPC em si tem UMA dona (`central_bank::cpi_by_nation`, C2a/D-103);
-		// aqui só acumula a demanda e o preço médio por produto.
+		// aqui sÃ³ acumula a demanda e o preÃ§o mÃ©dio por produto.
 		if (food_weight_sum > 0.0) {
 			for (std::size_t product = 0; product < products; ++product) {
 				const double weight = food_weight[product];
@@ -10836,7 +11122,7 @@ Dictionary EconomySim::get_storage_status() const {
 		}
 	}
 
-	// IPC por nação: a MESMA função que o banco central publica (C2a/D-103).
+	// IPC por naÃ§Ã£o: a MESMA funÃ§Ã£o que o banco central publica (C2a/D-103).
 	std::vector<double> base_list(products, 0.0);
 	for (std::size_t product = 0; product < products; ++product) {
 		base_list[product] = sim_core_.base_price(static_cast<int>(product));

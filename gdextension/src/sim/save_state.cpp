@@ -983,6 +983,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		// G2 (save v25): obra de armazém (tipo e capacidade a entregar).
 		entry["storage_type"] = project.storage_type;
 		entry["storage_capacity_t"] = project.storage_capacity_t;
+		// PARTE E (save v35): obra de energia — fonte (usina) e potência (MW).
+		entry["power_fuel"] = project.power_fuel;
+		entry["power_mw"] = project.power_mw;
 		Array materials = make_array();
 		Array material_qty = make_array();
 		Array material_delivered = make_array();
@@ -1657,6 +1660,91 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		}
 		block["tickers"] = tickers;
 		data["stock"] = block;
+	}
+	// PARTE E (v35/D-116) - ENERGIA: caixa do setor, regra, estado por cidade,
+	// usinas e a rede por nação. ADITIVO: v34 e anteriores chegam sem o bloco
+	// (ver a carga) e o PowerService semeia o parque do dado público.
+	{
+		Dictionary block = make_object();
+		block["cash"] = ws.power_cash;
+		block["ready"] = ws.power_ready;
+		Dictionary policy = make_object();
+		std::map<std::string, double> param_map;
+		power_params_to_map(ws.power_params, param_map);
+		for (const auto& row : param_map) {
+			policy[sim_str(row.first.c_str())] = row.second;
+		}
+		block["policy"] = policy;
+		Array power_cities = make_array();
+		const std::size_t power_count = std::min(ws.power_cities.size(),
+			ws.cities.size());
+		for (std::size_t index = 0; index < power_count; ++index) {
+			const PowerCityState& state = ws.power_cities[index];
+			Dictionary entry = make_object();
+			entry["city"] = sim_str(ws.cities[index].id.c_str());
+			entry["connection"] = state.connection;
+			entry["line_mw"] = state.line_mw;
+			entry["has_data"] = state.has_data;
+			entry["access_pct"] = state.access_pct;
+			entry["loss_pct"] = state.loss_pct;
+			Array cap = make_array();
+			Array solar = make_array();
+			for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+				cap.append(state.cap_mw[fuel]);
+			}
+			for (int month = 0; month < kPowerMonthCount; ++month) {
+				solar.append(state.solar_month[month]);
+			}
+			entry["cap_mw"] = cap;
+			entry["solar_month"] = solar;
+			entry["demand_mwh"] = state.demand_mwh;
+			entry["served_mwh"] = state.served_mwh;
+			entry["price"] = state.price;
+			entry["ration_days"] = state.ration_days;
+			entry["lost_gdp"] = state.lost_gdp;
+			power_cities.append(entry);
+		}
+		block["cities"] = power_cities;
+		Array plants = make_array();
+		for (const PowerPlant& plant : ws.power_plants) {
+			Dictionary entry = make_object();
+			entry["id"] = sim_str(plant.id.c_str());
+			entry["city_index"] = plant.city_index;
+			entry["fuel"] = plant.fuel;
+			entry["mw"] = plant.mw;
+			entry["owner_group"] = sim_str(plant.owner_group.c_str());
+			entry["owner_nation"] = sim_str(plant.owner_nation.c_str());
+			entry["capex"] = plant.capex;
+			entry["opex_per_mwh"] = plant.opex_per_mwh;
+			entry["jobs"] = plant.jobs;
+			entry["wage"] = plant.wage;
+			entry["built_day"] = plant.built_day;
+			entry["initial"] = plant.initial;
+			plants.append(entry);
+		}
+		block["plants"] = plants;
+		// std::map ordenado: a ordem do array é estável (round-trip byte a byte).
+		Dictionary grids = make_object();
+		for (const auto& row : ws.power_grids) {
+			const PowerGridState& grid = row.second;
+			Dictionary entry = make_object();
+			entry["nation"] = sim_str(grid.nation.c_str());
+			entry["exists"] = grid.exists;
+			entry["price"] = grid.price;
+			entry["demand_mwh"] = grid.demand_mwh;
+			entry["served_mwh"] = grid.served_mwh;
+			entry["ration_days"] = grid.ration_days;
+			entry["lost_gdp"] = grid.lost_gdp;
+			entry["last_build_day"] = grid.last_build_day;
+			Array by_fuel = make_array();
+			for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+				by_fuel.append(grid.generation_by_fuel[fuel]);
+			}
+			entry["generation_by_fuel"] = by_fuel;
+			grids[sim_str(row.first.c_str())] = entry;
+		}
+		block["grids"] = grids;
+		data["power"] = block;
 	}
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
 	Array groups = make_array();
@@ -3755,7 +3843,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		// mantém a obra urbana como infra (2) e o resto como prédio (0).
 		project.kind = std::clamp(
 			int(entry.get("kind", project.urban_action != 0 ? 2 : 0)), 0,
-			static_cast<int>(CONSTRUCTION_REGION_INFRA));
+			static_cast<int>(CONSTRUCTION_POWER_LINE));
 		// Moradia (§19 W3): densidade, padrão, dono e unidades da obra, mais a
 		// parcela de terra já paga à prefeitura na abertura.
 		project.housing_density = std::clamp(
@@ -3842,6 +3930,11 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		std::min(int(entry.get("storage_type", -1)), kStorageTypeCount - 1));
 	project.storage_capacity_t = safe_nonneg(
 		double(entry.get("storage_capacity_t", 0.0)));
+	// PARTE E (v35): obra de energia. Save v34 e anteriores não têm as chaves:
+	// -1/0 = não é obra de energia (nada inventado para trás).
+	project.power_fuel = std::max(-1,
+		std::min(int(entry.get("power_fuel", -1)), kPowerFuelCount - 1));
+	project.power_mw = safe_nonneg(double(entry.get("power_mw", 0.0)));
 		const Array materials = entry.get("materials", Array());
 		const Array material_qty = entry.get("material_qty", Array());
 		const Array material_delivered = entry.get("material_delivered", Array());
@@ -3925,6 +4018,142 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	if (!has_saved_ports && !ws.ports.empty()) {
 		core.init_port_capacities();
 	}
+	// PARTE E (v35/D-116) - ENERGIA. v34 e anteriores chegam SEM o bloco:
+	// `power_ready = false`, sem parque e sem rede (ausência declarada); o
+	// PowerService aplica o dado público depois do load e semeia o parque.
+	// O `power_cities` é paralelo a `cities`: o save guarda o id e a carga
+	// remapeia para o índice atual (cidade que sumiu fica sem estado).
+	ws.power_cities.assign(ws.cities.size(), PowerCityState());
+	ws.power_plants.clear();
+	ws.power_grids.clear();
+	ws.power_cash = 0.0;
+	ws.power_ready = false;
+	ws.power_params = PowerParams{};
+	if (data.has("power")) {
+		const Dictionary block = data.get("power", Dictionary());
+		ws.power_cash = double(block.get("cash", 0.0));
+		ws.power_ready = bool(block.get("ready", false));
+		const Value& policy_variant = block.get("policy", Value());
+		if (policy_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary policy = policy_variant;
+			std::map<std::string, double> param_map;
+			for (const auto& row : policy.entries()) {
+				param_map[row.first] = double(row.second);
+			}
+			ws.power_params.apply(param_map);
+		}
+		std::map<std::string, std::size_t> city_index;
+		for (std::size_t index = 0; index < ws.cities.size(); ++index) {
+			city_index[ws.cities[index].id] = index;
+		}
+		const Array saved_cities = block.get("cities", Array());
+		for (int index = 0; index < saved_cities.size(); ++index) {
+			if (saved_cities[index].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			const Dictionary entry = saved_cities[index];
+			const std::string city_id = std::string(
+				String(entry.get("city", "")).utf8().get_data());
+			const auto found = city_index.find(city_id);
+			if (found == city_index.end()) {
+				continue;
+			}
+			PowerCityState& state = ws.power_cities[found->second];
+			state.connection = std::clamp(int(entry.get("connection", 0)),
+				0, static_cast<int>(POWER_CONNECTED));
+			state.line_mw = std::max(0.0, double(entry.get("line_mw", 0.0)));
+			state.has_data = bool(entry.get("has_data", false));
+			state.access_pct = std::clamp(
+				double(entry.get("access_pct", 100.0)), 0.0, 100.0);
+			state.loss_pct = std::clamp(
+				double(entry.get("loss_pct", 10.0)), 0.0, 100.0);
+			const Array cap = entry.get("cap_mw", Array());
+			for (int fuel = 0; fuel < kPowerFuelCount && fuel < cap.size();
+					++fuel) {
+				state.cap_mw[fuel] = std::max(0.0, double(cap[fuel]));
+			}
+			const Array solar = entry.get("solar_month", Array());
+			for (int month = 0; month < kPowerMonthCount
+					&& month < solar.size(); ++month) {
+				state.solar_month[month] = std::clamp(
+					double(solar[month]), 0.0, 1.0);
+			}
+			state.demand_mwh = std::max(0.0,
+				double(entry.get("demand_mwh", 0.0)));
+			state.served_mwh = std::max(0.0,
+				double(entry.get("served_mwh", 0.0)));
+			state.price = std::max(0.0, double(entry.get("price", 0.0)));
+			state.ration_days = std::max(0,
+				int(entry.get("ration_days", 0)));
+			state.lost_gdp = std::max(0.0,
+				double(entry.get("lost_gdp", 0.0)));
+		}
+		const Array plants = block.get("plants", Array());
+		for (int index = 0; index < plants.size(); ++index) {
+			if (plants[index].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			const Dictionary entry = plants[index];
+			PowerPlant plant;
+			plant.id = std::string(
+				String(entry.get("id", "")).utf8().get_data());
+			if (plant.id.empty()) {
+				continue;
+			}
+			plant.city_index = int(entry.get("city_index", -1));
+			plant.fuel = std::clamp(int(entry.get("fuel", 0)), 0,
+				kPowerFuelCount - 1);
+			plant.mw = std::max(0.0, double(entry.get("mw", 0.0)));
+			plant.owner_group = std::string(
+				String(entry.get("owner_group", "")).utf8().get_data());
+			plant.owner_nation = std::string(
+				String(entry.get("owner_nation", "")).utf8().get_data());
+			plant.capex = std::max(0.0, double(entry.get("capex", 0.0)));
+			plant.opex_per_mwh = std::max(0.0,
+				double(entry.get("opex_per_mwh", 0.0)));
+			plant.jobs = std::max(0.0, double(entry.get("jobs", 0.0)));
+			plant.wage = std::max(0.0, double(entry.get("wage", 0.0)));
+			plant.built_day = int(entry.get("built_day", 0));
+			plant.initial = bool(entry.get("initial", false));
+			ws.power_plants.push_back(std::move(plant));
+		}
+		const Value& grids_variant = block.get("grids", Value());
+		if (grids_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary grids = grids_variant;
+			for (const auto& row : grids.entries()) {
+				if (row.first.empty()
+						|| row.second.get_type() != Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary entry = row.second;
+				PowerGridState grid;
+				grid.nation = row.first;
+				grid.exists = bool(entry.get("exists", false));
+				grid.price = std::max(0.0,
+					double(entry.get("price", 0.0)));
+				grid.demand_mwh = std::max(0.0,
+					double(entry.get("demand_mwh", 0.0)));
+				grid.served_mwh = std::max(0.0,
+					double(entry.get("served_mwh", 0.0)));
+				grid.ration_days = std::max(0,
+					int(entry.get("ration_days", 0)));
+				grid.lost_gdp = std::max(0.0,
+					double(entry.get("lost_gdp", 0.0)));
+				grid.last_build_day = int(entry.get("last_build_day", -1000000));
+				const Array by_fuel = entry.get("generation_by_fuel", Array());
+				for (int fuel = 0; fuel < kPowerFuelCount
+						&& fuel < by_fuel.size(); ++fuel) {
+					grid.generation_by_fuel[fuel] = std::max(0.0,
+						double(by_fuel[fuel]));
+				}
+				ws.power_grids[row.first] = grid;
+			}
+		}
+	}
+	// Recompte os membros da rede e valide o índice de cidade das usinas: a
+	// carga pode trazer cidade que não existe mais (usina fica órfã, fora do
+	// despacho — declarado no status).
+	ogs::after_load(ws);
 	// B7 (save v22): migração v21 → v22. Save anterior não tem os blocos: a
 	// informalidade é semeada do dado da nação (ou âncora de renda), a
 	// referência de saúde do dado (ou kHealthAccessDefault) e os contadores

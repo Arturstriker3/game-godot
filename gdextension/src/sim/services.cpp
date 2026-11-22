@@ -433,6 +433,10 @@ void SimCore::services_day(City& city, double* foreign_slots,
 	// abre/fecha entre aqui e o passo 9 (abertura/fechamento acontecem no próprio
 	// passo 9), então a contagem é idêntica à varredura antiga — resultado igual.
 	int active_by_sector[kMaxServiceSectors] = {};
+	// PARTE E (D-116): a falta de energia limita a OFERTA de serviços do dia
+	// (a "última milha" depende da rede). É multiplicador do dia, calculado em
+	// `phase_power` a partir do servido na cidade.
+	const double power_supply = std::clamp(city.power_service_factor, 0.0, 1.0);
 	for (const int index : ws_.service_by_city[city_index]) {
 		ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
@@ -442,7 +446,7 @@ void SimCore::services_day(City& city, double* foreign_slots,
 		}
 		const double capacity = std::max(0.0,
 			business.capacity * std::clamp(business.utilization > 0.0
-				? business.utilization : 1.0, 0.05, 1.0));
+				? business.utilization : 1.0, 0.05, 1.0)) * power_supply;
 		sector_supply[business.sector] += capacity;
 		++active_by_sector[business.sector];
 	}

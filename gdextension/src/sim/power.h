@@ -141,4 +141,10 @@ void seed(WorldState& ws, const PowerParams& params,
 // continua `power_ready = false` (ausência declarada).
 void after_load(WorldState& ws);
 
+// Mapa nome→valor dos parâmetros de REGRA (os mesmos nomes do
+// data/definitions/energy/power_params.json). O save v35 guarda o mapa para o
+// round-trip não perder a regra declarada; `PowerParams::apply` relê.
+void power_params_to_map(const PowerParams& params,
+	std::map<std::string, double>& out);
+
 } // namespace ogs

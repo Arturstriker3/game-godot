@@ -141,7 +141,17 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // (moeda ou cesta), fonte, emissor e trava de união monetária; a cesta
 // resolvida vai no `fx.currencies[moeda]`. ADITIVO: v30 carrega com os regimes
 // do arquivo (`set_fx_regimes`) e as moedas extintas fundidas no substituto.
-constexpr int kSaveVersion = 34;
+// v35 (PARTE E, D-116): ENERGIA ELÉTRICA — bloco raiz `power` com o caixa
+// agregado do setor (`power_cash`), a regra (`policy`), o estado por cidade
+// (conexão conectada/parcial/isolada, capacidade da linha, acesso e perda,
+// teto e parque solar mensal, e os indicadores do dia) e as usinas por cidade.
+// A rede por nação (`grids`) guarda o cooldown da obra da IA. ADITIVO: v34 e
+// anteriores chegam SEM o bloco — `power_ready = false`, sem parque e sem
+// rede (ausência declarada); o PowerService aplica as definições do dado
+// público depois do load e semeia o parque real. As obras de energia em voo
+// viajam em `construction_projects` com `kind = CONSTRUCTION_POWER_PLANT`/
+// `CONSTRUCTION_POWER_LINE` e os campos `power_fuel`/`power_mw`.
+constexpr int kSaveVersion = 35;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

@@ -23,6 +23,7 @@ const GeoScript := preload("res://core/economy/geography_service.gd")
 const LandPropertyScript := preload("res://core/economy/land_property.gd")
 const AgriScript := preload("res://core/economy/agriculture_service.gd")
 const StorageScript := preload("res://core/economy/storage_service.gd")
+const PowerScript := preload("res://core/economy/power_service.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
 const TrajectoryDigest := preload("res://core/economy/trajectory_digest.gd")
 
@@ -167,6 +168,16 @@ func _make_world() -> Object:
 		var storage := StorageScript.new()
 		storage.apply_to_sim(sim, cities, buildings,
 			{"only_missing": true, "initial_stock": true})
+	# PARTE E (D-116): energia — parque, acesso/perdas e potencial do dado
+	# público, declarados depois do mundo e antes da IA (mesma ordem do autoload).
+	if sim.has_method("set_power_definitions"):
+		var power := PowerScript.new()
+		var power_report := power.apply_to_sim(sim, cities, {"only_missing": true})
+		print("[c1] energia: parque=%.0f MW cidades=%d nações=%d operador=%d" % [
+			float(power_report.get("park_mw", 0.0)),
+			int(power_report.get("cities_with_park", 0)),
+			int(power_report.get("nations", 0)),
+			(power_report.get("operator_nations", []) as Array).size()])
 	sim.set_ai_enabled(true)
 	# D-111: sem flag vale o default do jogo (LIGADO). Com flag, ela MANDA --
 	# inclusive `--credit=0`/`--harvest-rate=0` (braço "off" do A/B).

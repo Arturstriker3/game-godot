@@ -165,6 +165,56 @@ void PowerParams::apply(const std::map<std::string, double>& v) {
 // ---------------------------------------------------------------------------
 // Semeadura (dado público) e load.
 // ---------------------------------------------------------------------------
+void power_params_to_map(const PowerParams& p,
+		std::map<std::string, double>& out) {
+	out.clear();
+	const auto put = [&out](const std::string& key, double value) {
+		out[key] = value;
+	};
+	put("kwh_per_capita_day", p.kwh_per_capita_day);
+	put("income_elasticity", p.income_elasticity);
+	put("income_index_cap", p.income_index_cap);
+	put("share_households", p.share_households);
+	put("share_industry", p.share_industry);
+	put("share_services", p.share_services);
+	put("share_other", p.share_other);
+	put("access_floor", p.access_floor);
+	put("loss_floor_pct", p.loss_floor_pct);
+	put("loss_max_pct", p.loss_max_pct);
+	put("loss_infra_reduction", p.loss_infra_reduction);
+	put("operator_access_pct", p.operator_access_pct);
+	put("connected_score", p.connected_score);
+	put("partial_score", p.partial_score);
+	put("partial_line_share", p.partial_line_share);
+	put("partial_line_min_mw", p.partial_line_min_mw);
+	put("price_scale", p.price_scale);
+	put("price_floor", p.price_floor);
+	put("price_ceiling", p.price_ceiling);
+	put("fuel_import_premium", p.fuel_import_premium);
+	put("industry_floor", p.industry_floor);
+	put("self_generation_floor", p.self_generation_floor);
+	put("service_factor_min", p.service_factor_min);
+	put("stress_per_unserved", p.stress_per_unserved);
+	put("stress_duration_days", p.stress_duration_days);
+	put("ration_threshold", p.ration_threshold);
+	put("voll_multiple", p.voll_multiple);
+	put("build_ration_days", static_cast<double>(p.build_ration_days));
+	put("build_cooldown_days", static_cast<double>(p.build_cooldown_days));
+	put("build_share_demand", p.build_share_demand);
+	put("thermal_cap_multiple", p.thermal_cap_multiple);
+	put("build_days_plant", static_cast<double>(p.build_days_plant));
+	put("build_days_line", static_cast<double>(p.build_days_line));
+	put("capex_per_mw_line", p.capex_per_mw_line);
+	put("line_build_share_demand", p.line_build_share_demand);
+	for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
+		const std::string name = kFuelNames[fuel];
+		put("cf_" + name, p.cf[fuel]);
+		put("fuel_t_per_mwh_" + name, p.fuel_t_per_mwh[fuel]);
+		put("capex_per_mw_" + name, p.capex_per_mw[fuel]);
+		put("opex_per_mwh_" + name, p.opex_per_mwh[fuel]);
+	}
+}
+
 void seed(WorldState& ws, const PowerParams& params,
 		const std::map<std::string, PowerNationDef>& nations,
 		const std::map<std::string, PowerCityDef>& cities,
@@ -406,6 +456,7 @@ bool SimCore::build_power_plant(const std::string& city_id,
 	const PowerParams& params = ws_.power_params;
 	const double cost = mw * params.capex_per_mw[fuel];
 	double* cash = nullptr;
+	std::string owner = "state";
 	if (group_id.empty()) {
 		cash = &city->government_budget;
 	} else {
@@ -414,6 +465,11 @@ bool SimCore::build_power_plant(const std::string& city_id,
 			return fail("grupo desconhecido");
 		}
 		cash = &group->cash;
+		// F9: a obra do grupo viaja com o dono no formato canônico — o refund
+		// e a conclusão usam a mesma string.
+		owner = group->origin_nation == city->nation
+			? "national:" + group->id
+			: "foreign:" + group->id + "@" + group->origin_nation;
 	}
 	if (*cash < cost) {
 		return fail("orçamento insuficiente");
@@ -423,7 +479,7 @@ bool SimCore::build_power_plant(const std::string& city_id,
 		+ std::to_string(ws_.day) + "-" + std::to_string(ws_.power_plants.size());
 	project.building_id = project.id;
 	project.city = city->id;
-	project.owner = group_id.empty() ? "state" : "group:" + group_id;
+	project.owner = owner;
 	project.group_id = group_id;
 	project.kind = CONSTRUCTION_POWER_PLANT;
 	project.power_fuel = fuel;
@@ -465,6 +521,7 @@ bool SimCore::build_power_line(const std::string& city_id, double mw,
 	const PowerParams& params = ws_.power_params;
 	const double cost = mw * params.capex_per_mw_line;
 	double* cash = nullptr;
+	std::string owner = "state";
 	if (group_id.empty()) {
 		cash = &city->government_budget;
 	} else {
@@ -473,6 +530,9 @@ bool SimCore::build_power_line(const std::string& city_id, double mw,
 			return fail("grupo desconhecido");
 		}
 		cash = &group->cash;
+		owner = group->origin_nation == city->nation
+			? "national:" + group->id
+			: "foreign:" + group->id + "@" + group->origin_nation;
 	}
 	if (*cash < cost) {
 		return fail("orçamento insuficiente");
@@ -481,7 +541,7 @@ bool SimCore::build_power_line(const std::string& city_id, double mw,
 	project.id = "PWL-" + city->id + "-" + std::to_string(ws_.day);
 	project.building_id = project.id;
 	project.city = city->id;
-	project.owner = group_id.empty() ? "state" : "group:" + group_id;
+	project.owner = owner;
 	project.group_id = group_id;
 	project.kind = CONSTRUCTION_POWER_LINE;
 	project.power_mw = mw;
