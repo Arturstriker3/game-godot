@@ -2,16 +2,19 @@
 # -*- coding: utf-8 -*-
 """Backend OpenAI para a grade de 16 ícones de recurso (opengs-icons).
 
-Gera UMA folha 4×4 com 16 ícones de jogo no estilo cartoon de ícone de jogo
-da referência: contorno escuro grosso e uniforme, cel shading chapado em 2–3
-tons, paleta sóbria oliva/cáqui/aço, vista 3/4 e objeto isolado. Recorta as 16
-células, apara, remove o fundo e salva 128 px e 64 px em
+Gera UMA folha 4×4 com 16 ícones de inventário de jogo militar moderno /
+grande estratégia sério (tom Modern Warfare / Arma). O estilo atual (v3) é
+SEMI-REALISTA: materiais e proporções reais, texturas detalhadas, paleta
+dessaturada e suja (cinzas, oliva, ferrugem, ocre), luz dura de cima-esquerda
+com sombra de contato e contorno escuro FINO só para legibilidade. A referência
+serve apenas de enquadramento (objeto isolado, vista 3/4, margem), não de traço.
+Recorta as 16 células, apara, remove o fundo e salva 128 px e 64 px em
 ``assets/icons/illustrated_source/gen_api/<id>/<id>_v<n>.png`` (+ ``_64.png``
 e metadados em ``.json``).
 
 A referência padrão é ``ref_sheet_military_pack.png``. ``refs`` / ``--refs``
 aceita uma ou mais imagens (caminho absoluto ou nome dentro de ref_style).
-``variant`` / ``--tag`` (ex.: ``v2``) fixa o número da variação para não
+``variant`` / ``--tag`` (ex.: ``v3``) fixa o número da variação para não
 sobrescrever um lote anterior.
 
 Ferramenta MCP: ``generate_grid(ids, descriptions, quality, dry_run, refs, variant)``.
@@ -20,7 +23,7 @@ Uso direto (CLI, mesma máquina):
 
     python tools/icon_gen/openai_grid.py --dry-run --quality medium
     python tools/icon_gen/openai_grid.py --quality medium          # chamada real
-    python tools/icon_gen/openai_grid.py --tag v2                  # lote 2 (novo estilo)
+    python tools/icon_gen/openai_grid.py --tag v3                  # lote 3 (semi-realista)
     python tools/icon_gen/openai_grid.py --refs a.png|b.png       # referências extras
     python tools/icon_gen/openai_grid.py --spend                   # só o gasto
     python tools/icon_gen/openai_grid.py --rebuild-sheet           # refaz a folha
@@ -77,8 +80,10 @@ DEFAULT_KEY_FILE = Path(
 )
 DEFAULT_REF_DIR = Path(r"G:\projetos\Fooocus_win64_2-5-0\treino_icones\ref_style")
 # Lote 1 (v1) usou ref_sheet_goods_transparent.png + ref_sheet_minerals.png
-# (estilo pintado à mão). O lote 2 segue a folha do pack militar do dono
-# (estilo cartoon de ícone com contorno grosso), por isso a referência única.
+# (estilo pintado à mão). O lote 2 (v2) seguiu a folha do pack militar do dono
+# como estilo (cartoon com contorno grosso). O lote 3 (v3) mantém a mesma folha
+# apenas como enquadramento e troca o traço por semi-realismo militar.
+# Os prompts/descrições de v1 e v2 ficam gravados nos JSONs de cada ícone.
 REF_FILES = ("ref_sheet_military_pack.png",)
 REF_TARGET_WIDTH = 512  # menor tamanho ainda útil para o estilo (menos tokens)
 
@@ -108,25 +113,25 @@ IMAGE_INPUT_PIXELS_PER_TOKEN = 512
 ICON_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 SECRET_RE = re.compile(r"(sk|sess|org)-[A-Za-z0-9_\-]{8,}")
 
-# Metáforas das matérias-primas (derivadas de tools/icon_forge/resource_icons.json
-# e do README do icon_forge), em inglês, prontas para o prompt.
+# Metáforas das matérias-primas na FORMA MINERAL/BRUTA (v3), em inglês,
+# prontas para o prompt. Derivadas de tools/icon_forge/resource_icons.json.
 DEFAULT_DESCRIPTIONS: dict[str, str] = {
-    "coal": "a small pile of lumpy black coal chunks with a few sharp glinting edges",
-    "copper": "a spool of coiled copper wire, bright orange-red metal with a soft sheen",
-    "gas": "a single blue natural-gas flame with a lighter inner core",
-    "iron": "a stack of three grey iron ingots, slightly worn cast metal",
-    "oil": "one fat teardrop of dark crude oil, glossy black-brown, with a small light glint",
-    "bauxite": "a cluster of rough reddish-orange bauxite ore rocks with earthy bands",
-    "lead": "rounded dull blue-gray lead ingots, different shape from iron",
-    "gold": "a neat pyramid of three shiny gold bullion bars with warm highlights",
-    "phosphate": "a heap of pale lilac-grey phosphate rock chunks in a small burlap mound",
-    "tungsten": "a stout tungsten light-bulb-shaped metal lump with a glowing coiled filament",
-    "rare_earths": "a chunky green horseshoe magnet with two thick square pole tips",
-    "sulfur": "a cluster of bright yellow sulfur crystals with faceted highlights",
-    "diamond": "a single pale blue faceted diamond, brilliant cut, with crisp sparkles",
-    "uranium": "a green-yellow radiation trefoil sign, heavy metal, slightly worn edges",
-    "wheat": "one golden wheat ear with full grains and a short stalk",
-    "wood": "a sawn wooden log seen from the front, bark on top and tree rings on the cut end",
+    "coal": "a pile of black bituminous coal lumps, dusty",
+    "copper": "a raw copper ore chunk: dark rock with green malachite and azurite crust and native copper veins",
+    "gas": "an industrial compressed natural gas steel cylinder with worn paint",
+    "iron": "chunks of hematite iron ore, dark reddish-grey metallic rock",
+    "oil": "crude oil in a worn steel barrel with a black oil spill",
+    "bauxite": "reddish-brown bauxite ore rubble",
+    "lead": "galena ore: cubic silvery-grey crystals set in rock",
+    "gold": "rough gold ore nuggets embedded in white quartz",
+    "phosphate": "a pile of pale beige porous phosphate rock",
+    "tungsten": "wolframite ore: black heavy prismatic crystals in rock",
+    "rare_earths": "monazite rare-earth ore chunks with reddish-brown crystals beside a small heap of grey oxide powder",
+    "sulfur": "a crust of yellow sulfur crystals on rock",
+    "diamond": "rough, uncut diamonds embedded in blue-grey kimberlite rock, NOT a cut gem",
+    "uranium": "uranium ore: black pitchy pitchblende rock with a bright yellow uraninite crust, no radiation symbol",
+    "wheat": "a tied bundle of ripe wheat sheaves",
+    "wood": "stacked cut timber logs with sawn ends",
 }
 
 TEST_IDS = (
@@ -138,31 +143,35 @@ TEST_IDS = (
 
 STYLE_PROMPT = """\
 Create ONE square sprite sheet: a strict 4x4 grid of sixteen separate game
-resource icons, one single object per cell, following the art style of the
-reference image exactly (the reference is a 4x4 sheet of game item icons).
+inventory icons for a serious modern-military / grand-strategy game (tone of
+Modern Warfare, Arma, a serious strategy title), one single object per cell.
 
-STYLE — copy the reference with high fidelity:
-- stylized cartoon game-icon illustration, flat and vector-like, NOT a
-  painting: cel shading with only two or three solid flat tones per material
-  (base, one darker shadow tone, one small highlight), hard color steps, no
-  blended gradients, no brush strokes, no canvas texture;
-- THICK, UNIFORM, DARK outline (near-black) of the same width around every
-  silhouette and around every inner detail, clean and slightly rounded, as in
-  the reference;
-- muted, sober palette: olive drab, khaki, sand, steel grey, gunmetal and dark
-  brown dominate; only small accents (brass, dull red, dim blue) are allowed;
-  no neon and no oversaturated colors;
-- light flat texture only where the reference has it: a few thin hatching
-  lines, stitched seams or worn scratches, never photo-real noise;
-- three-quarter view of a single isolated object, chunky readable silhouette,
-  a small flat contact shadow hugging the object (no soft blurred drop
-  shadow);
-- every icon centered inside its cell with a clear empty margin (about 10% of
-  the cell), all sixteen objects drawn at the same visual weight and scale;
+STYLE — semi-realistic military game art:
+- SEMI-REALISTIC rendering with believable proportions and real materials
+  (rock, ore, matte metal, wood, dust), not stylized shapes;
+- richly detailed textures: stone grain and cracks, mineral crust, oxidation,
+  chipped and worn paint, dust, small facets that catch the light;
+- dirty, desaturated palette: greys, olive drab, rust, ochre, dull steel,
+  aged brass, weathered wood; low saturation everywhere, no candy colors;
+- hard directional light from the upper LEFT, clear light/shadow split across
+  each object, a small tight contact shadow hugging the base; lit faces
+  clearly brighter than shadowed faces, no soft glow, no halo;
+- THIN dark outline (dark brown or near-black, 1-2 px at icon size) used only
+  to keep the silhouette readable; inner details are not outlined and the line
+  must never look like a cartoon stroke;
+- three-quarter view of one isolated object, natural silhouette, centered in
+  its cell with a clean empty margin (about 10% of the cell); all sixteen
+  objects drawn at the same visual weight and scale;
 - nothing touches or crosses a cell border.
 
-Match the reference's outline thickness, flat shading and palette; do not
-invent a different rendering style.
+The reference image is ONLY a framing guide (single isolated object,
+three-quarter view, clear margin). Do NOT copy its cartoon style: no flat cel
+shading, no thick uniform outlines, no toy look.
+
+AVOID: cute, toy-like or child-cartoon shapes; thick uniform outlines; flat
+vector shading; saturated or neon colors; drawing-style sparkles and star
+glints; symbols, logos, emblems or warning signs standing in for the material
+itself (for example a radiation trefoil instead of the ore).
 
 BACKGROUND: fully transparent PNG (background=transparent, output_format=png).
 If transparency is impossible, use one flat light neutral grey (#D9D9D9), no
@@ -600,6 +609,7 @@ def _next_variation(icon_id: str) -> int:
 VARIATION_NOTES = {
     1: "pintado à mão (lote 1)",
     2: "cartoon da referência (contorno grosso)",
+    3: "semi-realista militar (luz dura, paleta suja)",
 }
 
 
@@ -722,10 +732,13 @@ a{{color:var(--brass)}}
 <body>
 <h1>OpenGS — ícones de recurso gerados pela API da OpenAI</h1>
 {raw_block}
-<p class="meta note">v2 segue <code>ref_sheet_military_pack.png</code> com fidelidade:
-contorno escuro grosso e uniforme, cel shading chapado em 2–3 tons, paleta sóbria
-oliva/cáqui/aço, vista 3/4 e objeto isolado. v1 é o lote anterior, pintado à mão.
-Lead pede formato diferente do ferro.</p>
+<p class="meta note">v1 é o lote pintado à mão. v2 copia o traço cartoon de
+<code>ref_sheet_military_pack.png</code> (contorno escuro grosso, cel shading chapado).
+v3 responde ao feedback do dono: tom de jogo militar moderno (Modern Warfare / Arma),
+semi-realista, materiais e texturas reais, paleta dessaturada e suja, luz dura de
+cima-esquerda com sombra de contato e contorno fino só para legibilidade; a referência
+passa a valer apenas como enquadramento. Todas as matérias-primas aparecem na forma
+mineral/bruta.</p>
 <p class="meta">{esc(len(grouped))} matérias-primas • variações {esc(sorted({e.get("variation") for e in entries}))} •
 gasto real desta chamada US$ {esc(call_meta.get('cost_usd'))} •
 gasto acumulado US$ {esc(spend.get('total_usd'))} de US$ {esc(spend.get('budget_usd'))} (orçamento) •
@@ -1111,7 +1124,7 @@ def register_grid_tools(mcp) -> None:
             model: gpt-image-2.6-sunburst (padrão) ou outro modelo GPT Image atual.
             size: 1024x1024 (padrão) ou outro tamanho múltiplo de 16.
             refs: imagens de estilo separadas por '|' (vazio = ref_sheet_military_pack.png).
-            variant: número/tag da variação ("v2"); vazio = próxima livre, sem sobrescrever.
+            variant: número/tag da variação ("v3"); vazio = próxima livre, sem sobrescrever.
 
         Recorta as 16 células, apara, remove o fundo chapado e salva 128 e 64 px
         em assets/icons/illustrated_source/gen_api/<id>/<id>_v<n>.png (+ _64).
@@ -1160,7 +1173,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--tag",
         default="",
-        help="variação do lote (ex.: v2); não sobrescreve um lote já existente",
+        help="variação do lote (ex.: v3); não sobrescreve um lote já existente",
     )
     parser.add_argument("--dry-run", action="store_true", help="só prompt + custo estimado")
     parser.add_argument("--spend", action="store_true", help="mostra o gasto acumulado")
