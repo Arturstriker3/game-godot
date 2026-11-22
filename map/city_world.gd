@@ -42,6 +42,7 @@ const FLAG_SHADER: Shader = preload("res://map/map_shaders/flag_atlas.gdshader")
 const LABEL_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 
 const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
+const EnergyGridLayerScript: Script = preload("res://map/energy_grid_layer.gd")
 const TradeFlowLayerScript: Script = preload("res://map/trade_flow_layer.gd")
 const UrbanGrowthScript: Script = preload("res://core/urban/urban_growth_manager.gd")
 const IndustryProfileScript: Script = preload("res://core/urban/industry_profile.gd")
@@ -377,6 +378,9 @@ var _political_layer: MeshInstance3D
 var _atlas_material: ShaderMaterial
 var _political_material: ShaderMaterial
 var _mode_layer: Node3D
+## Camada opcional do mapa de energia: redes (cidades + interconexões E5) e
+## potencial renovável. Desligada por padrão (toggle da legenda).
+var _energy_grid: Node3D
 var _city_nodes: Array[Dictionary] = []
 var _port_nodes: Array[Dictionary] = []
 var _hovered_id := ""
@@ -567,6 +571,7 @@ func build(cities: Array, ports: Array) -> void:
 	_build_gps_plane()
 	_build_political_layer()
 	_build_mode_layer(cities)
+	_build_energy_grid(cities)
 	_build_cities(cities)
 	_build_ports(ports)
 	_build_trade_flows(cities)
@@ -686,8 +691,15 @@ func set_mode(mode: String) -> void:
 		_political_material.set_shader_parameter("atlas_mode", false)
 		_political_material.set_shader_parameter("fill_opacity", 0.028)
 		_political_material.set_shader_parameter("border_opacity", 0.42)
+	var power := _power_status() if mode == "energy" else {}
 	if _mode_layer != null:
+		# Energia: os marcadores são o POTENCIAL do dado (estático). O estado do
+		# dia (conexão/fluxo) fica na camada opcional de redes.
 		_mode_layer.set_mode(mode)
+	if _energy_grid != null:
+		_energy_grid.set_active(mode == "energy")
+		if mode == "energy" and not power.is_empty():
+			_energy_grid.refresh(power)
 	if _trade_flows != null:
 		_trade_flows.set_active(mode == "routes")
 	if mode != "political" and mode != "routes":
@@ -701,6 +713,19 @@ func set_resource_filter(enabled: Dictionary) -> void:
 	_resource_filter = enabled.duplicate()
 	if _mode_layer != null:
 		_mode_layer.set_resource_filter(_resource_filter)
+
+
+## Filtro da legenda de energia: esconde os marcadores de uma fonte.
+func set_energy_filter(enabled: Dictionary) -> void:
+	if _mode_layer != null:
+		_mode_layer.set_energy_filter(enabled)
+
+
+## Toggles das camadas opcionais de energia: `grid` (redes), `solar`, `wind` e
+## `hydro` (potencial). Desligados por padrão; o mapa não paga nada por eles.
+func set_energy_overlays(overlays: Dictionary) -> void:
+	if _energy_grid != null:
+		_energy_grid.set_overlays(overlays)
 
 
 func _content_roots() -> Array[Node3D]:
@@ -727,6 +752,10 @@ func refresh_modes(columns: Dictionary) -> void:
 		return
 	if _mode_layer != null:
 		_mode_layer.refresh(columns)
+	if _mode == "energy":
+		var power := _power_status()
+		if not power.is_empty() and _energy_grid != null:
+			_energy_grid.refresh(power)
 	_refresh_city_indicators(columns)
 	_sync_territory(columns)
 
@@ -966,6 +995,44 @@ func set_deposit_selected(index: int) -> void:
 		_mode_layer.set_deposit_selected(index)
 
 
+## Marcador de potencial sob o cursor (modo energia), ou -1.
+func pick_energy_marker(screen_position: Vector2, camera: Camera3D) -> int:
+	if _mode != "energy" or _mode_layer == null:
+		return -1
+	return _mode_layer.pick_energy_marker(screen_position, camera)
+
+
+## Ficha do sítio/agregado de potencial (valor, classe, construído/disponível).
+func energy_marker_info(index: int) -> Dictionary:
+	if _mode_layer == null:
+		return {}
+	return _mode_layer.energy_marker_info(index)
+
+
+func set_energy_hover(index: int) -> void:
+	if _mode_layer != null:
+		_mode_layer.set_energy_hover(index)
+
+
+func set_energy_selected(index: int) -> void:
+	if _mode_layer != null:
+		_mode_layer.set_energy_selected(index)
+
+
+## Marcador de energia selecionado (-1 = nenhum).
+func selected_energy_marker() -> int:
+	if _mode_layer == null:
+		return -1
+	return _mode_layer.selected_energy_marker()
+
+
+## Cidades com dado por fonte (legenda).
+func energy_source_counts() -> Dictionary:
+	if _mode_layer == null:
+		return {}
+	return _mode_layer.energy_source_counts()
+
+
 ## Recursos que a cidade alcança (para a legenda): minérios no raio + trigo.
 func city_resource_entries(city_id: String) -> Array:
 	for record in _city_nodes:
@@ -1054,16 +1121,18 @@ func selected_deposit() -> int:
 	return _mode_layer.selected_deposit()
 
 
-## Há qualquer seleção no mapa (cidade, porto/construção ou jazida)?
+## Há qualquer seleção no mapa (cidade, porto/construção, jazida ou usina)?
 func has_selection() -> bool:
-	return not _selected_id.is_empty() or selected_deposit() >= 0
+	return not _selected_id.is_empty() or selected_deposit() >= 0 \
+			or selected_energy_marker() >= 0
 
 
-## Remove TODA a seleção do mapa: anel de cidade/porto, jazida e hover.
+## Remove TODA a seleção do mapa: anel de cidade/porto, jazida, usina e hover.
 func clear_selection() -> void:
 	if not _selected_id.is_empty():
 		select_city("")
 	set_deposit_selected(-1)
+	set_energy_selected(-1)
 	set_hover("")
 
 
@@ -2783,6 +2852,31 @@ func _build_mode_layer(cities: Array) -> void:
 	# Passa a geografia já carregada; o ModeLayer só cria a própria instância
 	# quando chamado fora do CityWorld (sem Economy).
 	_mode_layer.setup(cities, _geo)
+
+
+## Camada opcional do mapa de energia (redes e potencial): ela só desenha
+## quando o modo Energia e os toggles da legenda estão ligados.
+func _build_energy_grid(cities: Array) -> void:
+	_energy_grid = EnergyGridLayerScript.new()
+	_energy_grid.name = "EnergyGridLayer"
+	add_child(_energy_grid)
+	_energy_grid.setup(cities)
+
+
+## Status de energia do núcleo pelo autoload Economy (mesmo acesso de
+## `_shared_geography`). Sem o autoload — testes isolados — devolve vazio e a
+## camada honestamente fica só com o parque do dado.
+func _power_status() -> Dictionary:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return {}
+	var economy := tree.root.get_node_or_null("Economy")
+	if economy == null:
+		return {}
+	var sim: Object = economy.get("sim")
+	if sim != null and sim.has_method("get_power_status"):
+		return sim.get_power_status()
+	return {}
 
 
 func _build_cities(cities: Array) -> void:

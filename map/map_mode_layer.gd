@@ -37,6 +37,68 @@ const CROP_COLORS := [
 	Color("#5B8C5A"),
 ]
 
+## --- Mapa de energia (E6) ---------------------------------------------------
+## Mapa de POTENCIAL renovável (onde vale instalar), na MESMA infraestrutura de
+## marcadores do mapa de recursos: um MultiMesh por fonte, seleção/hover com os
+## mesmos anéis, filtro e ficha na legenda.
+##
+## Fontes (ícones power_* ilustrados) e valor por cidade:
+##   solar -> PVOUT kWh/kWp/ano (Global Solar Atlas);
+##   wind  -> densidade de potência W/m² a 100 m (Global Wind Atlas);
+##   hydro -> potencial técnico em MW (hydro_potential.json, E1).
+## O valor não é convertido em MW para solar/eólica: o dado é de RECURSO, e
+## inventar um teto de potência seria inventar dado de simulação.
+const ENERGY_SOURCES: Array[String] = ["solar", "wind", "hydro"]
+const ENERGY_TEXTURES := {
+	"solar": preload("res://assets/icons/illustrated/places/power_solar.png"),
+	"wind": preload("res://assets/icons/illustrated/places/power_wind.png"),
+	"hydro": preload("res://assets/icons/illustrated/places/power_hydro.png"),
+}
+const ENERGY_COLORS := {
+	"solar": Color("#E8B028"),
+	"wind": Color("#6F8F8C"),
+	"hydro": Color("#6FA8DC"),
+}
+## Unidade declarada de cada fonte (a ficha e a legenda usam esta tabela).
+const ENERGY_UNITS := {
+	"solar": "kWh/kWp/ano",
+	"wind": "W/m²",
+	"hydro": "MW",
+}
+const ENERGY_RENEWABLE_PATH := \
+		"res://data/definitions/energy/renewable_potential.json"
+const ENERGY_HYDRO_PATH := \
+		"res://data/definitions/energy/hydro_potential.json"
+const ENERGY_PLANTS_PATH := \
+		"res://data/definitions/energy/power_plants_2026_scaled.json"
+const ENERGY_CITIES_PATH := "res://data/definitions/scenario/cities.json"
+## Classes de potencial e limiares DECLARADOS a partir da distribuição das
+## cidades COM DADO (valor > 0) por fonte, 2026-11: quartis p25/p50/p75
+## calculados como `sorted[floor(q * n)]` em tools/e6_energy_map_test.gd, que
+## reconfere estes números contra os arquivos. valor <= p25 = fraco;
+## <= p50 = médio; <= p75 = bom; acima = excelente. Hídrico: 452 cidades com
+## potencial > 0; as 397 sem bacia não geram marcador (vazio honesto).
+const ENERGY_CLASSES: Array[String] = ["weak", "medium", "good", "excellent"]
+const ENERGY_THRESHOLDS := {
+	"solar": [1314.8, 1507.0, 1681.8],
+	"wind": [117.9, 200.0, 301.5],
+	"hydro": [262.5, 2331.3, 10586.5],
+}
+## Tamanho e opacidade do marcador pela CLASSE: excelente é o maior/mais forte,
+## fraco o menor/mais apagado. Agregado de nação (zoom afastado) cresce um pouco
+## para ler como um resumo, sem competir com os sítios individuais.
+const ENERGY_CLASS_SIZE := {
+	"weak": 0.55, "medium": 0.82, "good": 1.12, "excellent": 1.50,
+}
+const ENERGY_CLASS_ALPHA := {
+	"weak": 0.50, "medium": 0.68, "good": 0.86, "excellent": 1.0,
+}
+const ENERGY_AGGREGATE_SCALE := 1.18
+## Célula (px de mapa) da grade espacial de pick: evita projetar os ~2 mil
+## marcadores por frame. 64 px = 12,8 unidades de mundo.
+const ENERGY_PICK_CELL := 64.0
+const ENERGY_PICK_CELLS := 2
+
 const MODE_COLORS := {
 	"population": [Color("#3A5563"), Color("#C9A24A")],
 	"economic": [Color("#3A5563"), Color("#7FA86B")],
@@ -92,6 +154,26 @@ var _uv_count := -1
 ## Filtros da legenda: {} = todos; senão chave -> bool.
 var _resource_filter: Dictionary = {}
 
+## --- Estado do mapa de energia (E6) -----------------------------------------
+## Potencial por fonte e cidade: `_energy_values[fonte][city_id]` é o valor do
+## recurso; `_energy_built[fonte][city_id]` é o MW já construído no parque
+## atual (power_plants_2026_scaled.json). As posições vêm de cities.json.
+var _energy_values: Dictionary = {}
+var _energy_built_mw: Dictionary = {}
+var _energy_city_px: Dictionary = {}
+var _energy_cells: Dictionary = {}
+var _energy_meshes: Dictionary = {}
+## Marcadores visíveis no nível de zoom atual (cidade×fonte perto/médio,
+## nação×fonte no longe). O pick devolve índice NESTA lista.
+var _energy_drawn: Array = []
+var _energy_filter: Dictionary = {}
+var _energy_band := -1
+var _energy_built := false
+var _energy_hover := -1
+var _energy_selected := -1
+var _city_names: Dictionary = {}
+var _city_nations: Dictionary = {}
+
 
 ## Constrói a camada e normaliza os indicadores de cada modo. `shared_geo` é o
 ## GeographyService já carregado pelo chamador (mapa/Economy) — reutilizado para
@@ -129,6 +211,16 @@ func setup(cities: Array, shared_geo: RefCounted = null) -> void:
 	_material.set_shader_parameter("opacity", 0.45)
 
 	_capture(cities)
+	if cities is Array:
+		for entry: Variant in cities:
+			if not (entry is Dictionary):
+				continue
+			var city: Dictionary = entry
+			var city_id := String(city.get("id", ""))
+			if city_id.is_empty():
+				continue
+			_city_names[city_id] = String(city.get("name", ""))
+			_city_nations[city_id] = String(city.get("nation", ""))
 	visible = false
 
 
@@ -159,28 +251,43 @@ func refresh(source: Variant) -> void:
 	if source == null or source.is_empty():
 		return
 	_capture(source)
-	if _current == "resources" or not MODE_COLORS.has(_current):
+	if _current == "resources" or _current == "energy" \
+			or not MODE_COLORS.has(_current):
 		return
 	_build_values(_current)
 	_publish(_current)
 
 
-## Liga/desliga as camadas sem recriar os planos. O mapa de recursos usa
-## marcadores; os demais mostram o campo de calor.
+## Liga/desliga as camadas sem recriar os planos. O mapa de recursos e o de
+## energia usam marcadores; os demais mostram o campo de calor.
 func set_mode(mode: String) -> void:
 	_current = mode
 	var resources := mode == "resources"
+	var energy := mode == "energy"
 	var heat := MODE_COLORS.has(mode) and not resources
+	if energy:
+		_ensure_energy_built()
 	if _mineral_mesh != null:
 		_mineral_mesh.visible = resources
 	if _renewable_mesh != null:
 		_renewable_mesh.visible = resources
 	if _heat_mesh != null:
 		_heat_mesh.visible = heat
-	if _hover_ring != null and not resources:
+	if _hover_ring != null and not resources and not energy:
 		_hover_ring.visible = false
+	if energy:
+		# Nível de zoom atual: perto = usina, médio = cidade×fonte, longe =
+		# nação×fonte. Evita 36 mil ícones no mapa afastado.
+		_energy_band = -1
+		_rebuild_energy()
+	else:
+		for fuel: Variant in _energy_meshes:
+			var mesh: MultiMeshInstance3D = _energy_meshes[fuel]
+			mesh.visible = false
+		if _energy_hover >= 0:
+			_energy_hover = -1
 	_update_selection_ring()
-	visible = resources or heat
+	visible = resources or heat or energy
 
 	if not heat:
 		return
@@ -337,6 +444,503 @@ func set_resource_filter(enabled: Dictionary) -> void:
 
 func _is_enabled(key: String) -> bool:
 	return _resource_filter.is_empty() or bool(_resource_filter.get(key, true))
+
+
+# --- Mapa de energia (E6) ----------------------------------------------------
+
+## Carrega uma vez (lazy: o build do mapa político não paga o parse dos três
+## arquivos). Posições de cities.json; potencial de renewable/hydro_potential;
+## construído do parque atual. Cria um MultiMesh por fonte com a MESMA fábrica
+## de marcadores do mapa de recursos.
+func _ensure_energy_built() -> void:
+	if _energy_built:
+		return
+	_energy_built = true
+	_load_energy_cities()
+	for source in ENERGY_SOURCES:
+		_energy_values[source] = {}
+		_energy_built_mw[source] = {}
+		_energy_meshes[source] = _make_marker_layer(
+				"Energy%s" % source.capitalize(), ENERGY_TEXTURES[source])
+		_energy_meshes[source].visible = false
+	var renewable: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(ENERGY_RENEWABLE_PATH))
+	if typeof(renewable) == TYPE_DICTIONARY:
+		var rows: Dictionary = (renewable as Dictionary).get("by_city", {})
+		for city_id: Variant in rows:
+			var key := str(city_id)
+			var row: Dictionary = rows[city_id]
+			var solar: Dictionary = row.get("solar", {})
+			var wind: Dictionary = row.get("wind", {})
+			_set_energy_value("solar", key,
+					_json_number(solar.get("pvout_kwh_kwp_year")))
+			_set_energy_value("wind", key,
+					_json_number(wind.get("power_density_w_m2")))
+	var hydro: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(ENERGY_HYDRO_PATH))
+	if typeof(hydro) == TYPE_DICTIONARY:
+		var rows: Dictionary = (hydro as Dictionary).get("by_city", {})
+		for city_id: Variant in rows:
+			var row: Dictionary = rows[city_id]
+			_set_energy_value("hydro", str(city_id),
+					_json_number(row.get("potential_mw")))
+	_load_energy_built_mw()
+
+
+func _load_energy_cities() -> void:
+	var data: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(ENERGY_CITIES_PATH))
+	if not (data is Array):
+		return
+	for entry: Variant in data:
+		if not (entry is Dictionary):
+			continue
+		var city: Dictionary = entry
+		var city_id := str(city.get("id", ""))
+		if city_id.is_empty():
+			continue
+		_energy_city_px[city_id] = Vector2(
+				_json_number(city.get("x")), _json_number(city.get("y")))
+		if not _city_names.has(city_id):
+			_city_names[city_id] = str(city.get("name", ""))
+		_city_nations[city_id] = str(city.get("nation", ""))
+
+
+## JSON traz `null` onde o dado falta (ex.: potencial_hidro de cidade sem
+## bacia). Converter `null` com `float()` estoura no GDScript; aqui o vazio vira
+## 0 e é filtrado por `_set_energy_value`.
+static func _json_number(value: Variant) -> float:
+	if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+		return float(value)
+	return 0.0
+
+
+## Só entra cidade com posição no mapa e valor > 0: sem sítio ou sem recurso
+## não há marcador (o vazio é honesto). Solar/eólica têm valor em todas as 849.
+func _set_energy_value(source: String, city_id: String, value: float) -> void:
+	if value <= 0.0 or not _energy_city_px.has(city_id):
+		return
+	var values: Dictionary = _energy_values[source]
+	values[city_id] = value
+	_energy_values[source] = values
+
+
+## MW já construídos por cidade×fonte, do parque atual do jogo. É o lado
+## "construído" da ficha; o "disponível" hídrico é potencial técnico - isto.
+func _load_energy_built_mw() -> void:
+	var data: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(ENERGY_PLANTS_PATH))
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	for raw: Variant in (data as Dictionary).get("plants", []):
+		if not (raw is Dictionary):
+			continue
+		var plant: Dictionary = raw
+		var source := str(plant.get("fuel_group", ""))
+		if not ENERGY_SOURCES.has(source):
+			continue
+		var city_id := str(plant.get("city_id", ""))
+		if city_id.is_empty():
+			continue
+		var mw := _json_number(plant.get("capacity_mw"))
+		if mw <= 0.0:
+			continue
+		var rows: Dictionary = _energy_built_mw[source]
+		rows[city_id] = float(rows.get(city_id, 0.0)) + mw
+		_energy_built_mw[source] = rows
+
+
+## Filtro da legenda de energia (chaves ENERGY_SOURCES). Vazio = tudo ligado.
+func set_energy_filter(enabled: Dictionary) -> void:
+	_energy_filter = enabled.duplicate()
+	if _energy_built:
+		_rebuild_energy(true)
+
+
+func _energy_enabled(source: String) -> bool:
+	return _energy_filter.is_empty() or bool(_energy_filter.get(source, true))
+
+
+## Nível de zoom do mapa (0 longe, 1 médio, 2 perto). O parent é o CityWorld.
+func energy_zoom_band() -> int:
+	var parent := get_parent()
+	if parent != null and parent.has_method("zoom_level"):
+		return clampi(int(parent.call("zoom_level")), 0, 2)
+	return clampi(_energy_band, 0, 2)
+
+
+## Força uma faixa de zoom (teste determinístico, sem câmera).
+func set_energy_zoom_band(band: int) -> void:
+	_energy_band = -1
+	_rebuild_energy(true, clampi(band, 0, 2))
+
+
+## Reconstrói os marcadores do nível atual: perto/médio = cidade×fonte;
+## longe = nação×fonte, no sítio da MELHOR cidade da fonte naquela nação (o
+## marcador fica onde há capacidade, não num centro inventado). O filtro esconde
+## a fonte sem descartar o dado.
+func _rebuild_energy(force: bool = false, band_override: int = -1) -> void:
+	if not _energy_built:
+		return
+	var band := band_override if band_override >= 0 else energy_zoom_band()
+	if not force and band == _energy_band and not _energy_drawn.is_empty():
+		return
+	var kept_selected := _energy_marker_id(_energy_selected)
+	var kept_hover := _energy_marker_id(_energy_hover)
+	_energy_band = band
+	_energy_drawn.clear()
+	_energy_hover = -1
+	_energy_selected = -1
+	var buckets: Dictionary = {}
+	if band >= 1:
+		_collect_energy_cities(buckets)
+	else:
+		_collect_energy_nations(buckets)
+	_rebuild_energy_cells()
+	_write_energy_meshes(buckets)
+	if not kept_selected.is_empty():
+		_energy_selected = _energy_find_marker(kept_selected)
+	if not kept_hover.is_empty():
+		_energy_hover = _energy_find_marker(kept_hover)
+	_update_selection_ring()
+
+
+func _collect_energy_cities(buckets: Dictionary) -> void:
+	for source in ENERGY_SOURCES:
+		if not _energy_enabled(source):
+			continue
+		var values: Dictionary = _energy_values.get(source, {})
+		var built: Dictionary = _energy_built_mw.get(source, {})
+		for city_id: Variant in values:
+			var value := float(values[city_id])
+			var point: Vector2 = _energy_city_px[city_id]
+			var marker := {
+				"marker_id": _energy_key(source, String(city_id)),
+				"kind": "city",
+				"group": "city",
+				"source": source,
+				"value": value,
+				"class": energy_class(source, value),
+				"city_id": String(city_id),
+				"nation": String(_city_nations.get(city_id, "")),
+				"px": point.x,
+				"py": point.y,
+				"built_mw": float(built.get(city_id, 0.0)),
+				"count": 1,
+			}
+			if source == "hydro":
+				marker["potential_mw"] = value
+				marker["available_mw"] = maxf(
+						value - float(marker["built_mw"]), 0.0)
+			_energy_drawn.append(marker)
+			_append_energy_bucket(buckets, marker)
+
+
+func _collect_energy_nations(buckets: Dictionary) -> void:
+	var groups: Dictionary = {}
+	for source in ENERGY_SOURCES:
+		if not _energy_enabled(source):
+			continue
+		var values: Dictionary = _energy_values.get(source, {})
+		var built: Dictionary = _energy_built_mw.get(source, {})
+		for city_id: Variant in values:
+			var nation := String(_city_nations.get(city_id, ""))
+			if nation.is_empty():
+				continue
+			var key := _energy_key(source, nation)
+			var group: Dictionary = groups.get(key, {})
+			if group.is_empty():
+				group = {
+					"marker_id": key,
+					"kind": "aggregate",
+					"group": "nation",
+					"source": source,
+					"nation": nation,
+					"value": 0.0,
+					"class": "weak",
+					"best_city_id": "",
+					"city_id": "",
+					"px": 0.0,
+					"py": 0.0,
+					"built_mw": 0.0,
+					"potential_mw": 0.0,
+					"available_mw": 0.0,
+					"count": 0,
+				}
+			var value := float(values[city_id])
+			group["count"] = int(group["count"]) + 1
+			group["built_mw"] = float(group["built_mw"]) \
+					+ float(built.get(city_id, 0.0))
+			if source == "hydro":
+				group["potential_mw"] = float(group["potential_mw"]) + value
+			if value > float(group["value"]):
+				group["value"] = value
+				group["best_city_id"] = String(city_id)
+				group["city_id"] = String(city_id)
+				var point: Vector2 = _energy_city_px[city_id]
+				group["px"] = point.x
+				group["py"] = point.y
+			groups[key] = group
+	for key: Variant in groups:
+		var group: Dictionary = groups[key]
+		var source := String(group["source"])
+		group["class"] = energy_class(source, float(group["value"]))
+		if source == "hydro":
+			group["available_mw"] = maxf(
+					float(group["potential_mw"]) - float(group["built_mw"]), 0.0)
+		_energy_drawn.append(group)
+		_append_energy_bucket(buckets, group)
+
+
+func _append_energy_bucket(buckets: Dictionary, marker: Dictionary) -> void:
+	var source := String(marker["source"])
+	var list: Array = buckets.get(source, [])
+	list.append(marker)
+	buckets[source] = list
+
+
+static func _energy_key(source: String, place: String) -> String:
+	return "%s|%s" % [source, place]
+
+
+func _energy_marker_id(index: int) -> String:
+	if index < 0 or index >= _energy_drawn.size():
+		return ""
+	return String((_energy_drawn[index] as Dictionary).get("marker_id", ""))
+
+
+func _energy_find_marker(marker_id: String) -> int:
+	for index in _energy_drawn.size():
+		if String((_energy_drawn[index] as Dictionary).get("marker_id", "")) \
+				== marker_id:
+			return index
+	return -1
+
+
+## Grade espacial do pick, refeita a cada troca de faixa/nível de zoom. O pick
+## percorre só as células em volta do cursor, não os ~2 mil marcadores.
+func _rebuild_energy_cells() -> void:
+	_energy_cells.clear()
+	for index in _energy_drawn.size():
+		var marker: Dictionary = _energy_drawn[index]
+		var cell := Vector2i(int(float(marker["px"]) / ENERGY_PICK_CELL),
+				int(float(marker["py"]) / ENERGY_PICK_CELL))
+		var bucket: Array = _energy_cells.get(cell, [])
+		bucket.append(index)
+		_energy_cells[cell] = bucket
+
+
+## Classe do potencial pela distribuição declarada em ENERGY_THRESHOLDS.
+## Pública: a legenda, a ficha e os testes usam a MESMA régua.
+func energy_class(source: String, value: float) -> String:
+	var thresholds: Array = ENERGY_THRESHOLDS.get(source, [])
+	if thresholds.size() != 3:
+		return "weak"
+	if value <= float(thresholds[0]):
+		return "weak"
+	if value <= float(thresholds[1]):
+		return "medium"
+	if value <= float(thresholds[2]):
+		return "good"
+	return "excellent"
+
+
+func _write_energy_meshes(buckets: Dictionary) -> void:
+	for source in ENERGY_SOURCES:
+		var mesh: MultiMeshInstance3D = _energy_meshes.get(source)
+		if mesh == null:
+			continue
+		var list: Array = buckets.get(source, [])
+		var multimesh := mesh.multimesh
+		if multimesh.instance_count < list.size():
+			multimesh.instance_count = list.size()
+		for index in list.size():
+			var marker: Dictionary = list[index]
+			var color: Color = ENERGY_COLORS.get(source, Color.WHITE)
+			var alpha := float(ENERGY_CLASS_ALPHA.get(
+					String(marker["class"]), 0.5))
+			_set_marker(mesh, index, float(marker["px"]), float(marker["py"]),
+					_energy_marker_size(marker), Color(color.r, color.g,
+							color.b, alpha))
+		multimesh.visible_instance_count = list.size()
+		mesh.visible = _current == "energy" and not list.is_empty()
+
+
+## Tamanho pela CLASSE (excelente maior, fraco menor); o agregado de nação
+## cresce um pouco para ler como resumo.
+func _energy_marker_size(marker: Dictionary) -> float:
+	var size := float(ENERGY_CLASS_SIZE.get(
+			String(marker.get("class", "weak")), 0.55))
+	if String(marker.get("kind", "city")) == "aggregate":
+		size *= ENERGY_AGGREGATE_SCALE
+	return size
+
+
+## Usina/marcador sob o cursor (índice em `_energy_drawn`), ou -1.
+func pick_energy_marker(screen_position: Vector2, camera: Camera3D) -> int:
+	if camera == null or _current != "energy":
+		return -1
+	var best := -1
+	var best_distance := INF
+	if energy_zoom_band() >= 1:
+		for index in _energy_candidates(screen_position, camera):
+			var marker: Dictionary = _energy_drawn[index]
+			var distance := _energy_pick_distance(marker, screen_position, camera)
+			if distance >= 0.0 and distance < best_distance:
+				best = index
+				best_distance = distance
+		return best
+	for index in _energy_drawn.size():
+		var marker: Dictionary = _energy_drawn[index]
+		var distance := _energy_pick_distance(marker, screen_position, camera)
+		if distance >= 0.0 and distance < best_distance:
+			best = index
+			best_distance = distance
+	return best
+
+
+## Candidatos no chão em volta do cursor: grade espacial em px de mapa, em vez
+## de projetar os ~2 mil marcadores por frame.
+func _energy_candidates(screen_position: Vector2, camera: Camera3D) -> Array:
+	var result: Array = []
+	var origin := camera.project_ray_origin(screen_position)
+	var direction := camera.project_ray_normal(screen_position)
+	if absf(direction.y) < 0.000001:
+		return result
+	var plane_y := to_global(_marker_world([0.0, 0.0])).y
+	var distance := (plane_y - origin.y) / direction.y
+	if distance <= 0.0:
+		return result
+	var hit := to_local(origin + direction * distance)
+	var px := hit.x / 0.2 + MAP_PX.x * 0.5
+	var py := hit.z / 0.2 + MAP_PX.y * 0.5
+	var center := Vector2i(int(px / ENERGY_PICK_CELL), int(py / ENERGY_PICK_CELL))
+	for dx in range(-ENERGY_PICK_CELLS, ENERGY_PICK_CELLS + 1):
+		for dy in range(-ENERGY_PICK_CELLS, ENERGY_PICK_CELLS + 1):
+			var cell := center + Vector2i(dx, dy)
+			var bucket: Array = _energy_cells.get(cell, [])
+			for index: Variant in bucket:
+				result.append(int(index))
+	return result
+
+
+func _energy_pick_distance(marker: Dictionary, screen_position: Vector2,
+		camera: Camera3D) -> float:
+	var world := to_global(_marker_world([float(marker["px"]), float(marker["py"])]))
+	if camera.is_position_behind(world):
+		return -1.0
+	var center := camera.unproject_position(world)
+	var radius: float = MapPickScript.pick_radius_px(camera, world,
+			_energy_marker_size(marker) * 0.5,
+			MapPickScript.DEPOSIT_RADIUS_FACTOR)
+	var distance := center.distance_to(screen_position)
+	return distance if distance <= radius else -1.0
+
+
+## Hover do marcador de energia (anel branco) ou -1.
+func set_energy_hover(index: int) -> void:
+	if _hover_ring == null:
+		return
+	if index < 0 or index >= _energy_drawn.size() or _current != "energy":
+		_hover_ring.visible = false
+		return
+	if index == _energy_selected:
+		_hover_ring.visible = false
+		return
+	var marker: Dictionary = _energy_drawn[index]
+	var point: Array = [float(marker["px"]), float(marker["py"])]
+	_hover_ring.position = _marker_world(point) + Vector3(0.0, 0.01, 0.0)
+	_hover_diameter = _energy_marker_size(marker) * HOVER_RING_FACTOR
+	_hover_ring.pixel_size = _hover_diameter / RING_TEXTURE_PX
+	_hover_ring.modulate = Color(1.0, 1.0, 1.0, 0.8)
+	_hover_ring.visible = true
+	_hover_time = 0.0
+
+
+## Seleção do marcador de energia (anel persistente) ou -1.
+func set_energy_selected(index: int) -> void:
+	_energy_selected = index
+	_update_selection_ring()
+
+
+func selected_energy_marker() -> int:
+	return _energy_selected
+
+
+## Ficha do sítio (cidade×fonte) ou do agregado de nação×fonte: valor do
+## recurso + classe, construído no parque atual e, no hídrico, o disponível
+## (potencial técnico - construído). Solar/eólica não têm teto de MW no dado:
+## `available_mw` fica -1 e a UI mostra só o construído.
+func energy_marker_info(index: int) -> Dictionary:
+	if index < 0 or index >= _energy_drawn.size():
+		return {}
+	var marker: Dictionary = _energy_drawn[index]
+	var source := String(marker.get("source", "solar"))
+	var city_id := String(marker.get("city_id", ""))
+	var nation := String(marker.get("nation", ""))
+	# Nomes ficam CRUS aqui (id + fallback do cenário): a tradução é do HUD, que
+	# já tem o I18n carregado. Isso mantém a camada utilizável em teste headless
+	# sem autoload e evita acoplar o mapa ao idioma.
+	var city_name := String(_city_names.get(city_id, "")) if not city_id \
+			.is_empty() else ""
+	return {
+		"kind": "energy",
+		"source": source,
+		"value": float(marker.get("value", 0.0)),
+		"unit": String(ENERGY_UNITS.get(source, "")),
+		"class": String(marker.get("class", "weak")),
+		"built_mw": float(marker.get("built_mw", 0.0)),
+		"potential_mw": float(marker.get("potential_mw", -1.0)),
+		"available_mw": float(marker.get("available_mw", -1.0)),
+		"count": int(marker.get("count", 1)),
+		"city_id": city_id,
+		"city": city_name,
+		"best_city_id": String(marker.get("best_city_id", "")),
+		"nation": nation,
+		"group": String(marker.get("group", "city")),
+		"aggregate": String(marker.get("kind", "city")) == "aggregate",
+	}
+
+
+## Cidades com dado por fonte (a legenda e os testes leem daqui). Não depende
+## do zoom: é o total do arquivo com valor > 0.
+func energy_source_counts() -> Dictionary:
+	if not _energy_built:
+		_ensure_energy_built()
+	var counts := {}
+	for source in ENERGY_SOURCES:
+		counts[source] = (_energy_values.get(source, {}) as Dictionary).size()
+	return counts
+
+
+## Limiares declarados por fonte (p25/p50/p75) — a legenda mostra a régua.
+func energy_thresholds() -> Dictionary:
+	return ENERGY_THRESHOLDS.duplicate(true)
+
+
+## Valores por cidade de uma fonte (cópia, para teste/inspeção).
+func energy_city_values(source: String) -> Dictionary:
+	if not _energy_built:
+		_ensure_energy_built()
+	return (_energy_values.get(source, {}) as Dictionary).duplicate()
+
+
+func energy_marker_count() -> int:
+	return _energy_drawn.size()
+
+
+## Marcadores visíveis por fonte (contagem da legenda/filtro e testes).
+func energy_marker_counts() -> Dictionary:
+	var counts := {}
+	for marker: Dictionary in _energy_drawn:
+		var source := String(marker.get("source", ""))
+		counts[source] = int(counts.get(source, 0)) + 1
+	return counts
+
+
+## Índice do marcador por chave "fonte|cidade/nação" no nível atual, ou -1.
+func energy_marker_index(marker_id: String) -> int:
+	return _energy_find_marker(marker_id)
 
 
 ## Recria as instâncias apenas com os recursos ligados. Barato: ~1k pontos.
@@ -503,6 +1107,19 @@ func selected_deposit() -> int:
 func _update_selection_ring() -> void:
 	if _selection_ring == null:
 		return
+	if _current == "energy":
+		if _energy_selected < 0 or _energy_selected >= _energy_drawn.size():
+			_selection_ring.visible = false
+			return
+		var emarker: Dictionary = _energy_drawn[_energy_selected]
+		_selection_ring.position = _marker_world(
+				[float(emarker["px"]), float(emarker["py"])]) \
+				+ Vector3(0.0, 0.02, 0.0)
+		_selection_diameter = _energy_marker_size(emarker) * SELECTION_RING_FACTOR
+		_selection_ring.pixel_size = _selection_diameter / RING_TEXTURE_PX
+		_selection_ring.modulate = Color(1.0, 0.86, 0.42, 1.0)
+		_selection_ring.visible = true
+		return
 	if _selected_deposit < 0 or _selected_deposit >= _total_pickable() \
 			or _current != "resources":
 		_selection_ring.visible = false
@@ -521,6 +1138,10 @@ func _process(_delta: float) -> void:
 	# Pulso contínuo (sem depender de estado): seleção mais forte que o hover.
 	var t := Time.get_ticks_msec() / 1000.0
 	var camera := get_viewport().get_camera_3d()
+	if _current == "energy" and _energy_built:
+		var band := energy_zoom_band()
+		if band != _energy_band:
+			_rebuild_energy(true, band)
 	if _hover_ring != null and _hover_ring.visible:
 		var pulse := 1.0 + 0.05 * sin(t * 5.0)
 		_hover_ring.scale = Vector3(pulse, pulse, 1.0)
