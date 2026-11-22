@@ -431,21 +431,30 @@ def description_for(icon_id: str) -> str:
 
 
 def build_prompt(items: list[tuple[str, str]]) -> str:
-    if len(items) != 16:
-        raise ValueError(f"a grade é 4x4: 16 itens por folha (recebi {len(items)})")
+    if not 1 <= len(items) <= 16:
+        raise ValueError(f"a grade é 4x4: de 1 a 16 itens por folha (recebi {len(items)})")
     lines = [STYLE_PROMPT]
     for row in range(4):
         cells = []
         for col in range(4):
             idx = row * 4 + col
-            icon_id, desc = items[idx]
-            cells.append(f"{idx + 1}) {icon_id}: {desc}")
+            if idx < len(items):
+                icon_id, desc = items[idx]
+                cells.append(f"{idx + 1}) {icon_id}: {desc}")
+            else:
+                cells.append(f"{idx + 1}) (empty cell — leave it completely blank)")
         lines.append(f"Row {row + 1}: " + "; ".join(cells) + ".")
     lines.append("")
     lines.append(
         "Rendering order matters: keep the 4x4 order above, equal cell sizes, and "
         "do not merge cells or move objects between rows."
     )
+    if len(items) < 16:
+        missing = ", ".join(str(i) for i in range(len(items) + 1, 17))
+        lines.append(
+            f"The last cells ({missing}) are intentionally EMPTY: draw nothing there, "
+            "not even a shadow. Never duplicate an earlier object to fill them."
+        )
     return "\n".join(lines)
 
 
@@ -804,9 +813,11 @@ def generate_grid(
     """Gera uma folha 4×4 (16 ícones) com a API de imagens da OpenAI.
 
     Args:
-        ids: 16 ids separados por vírgula (ou lista), na ordem linha a linha.
-        descriptions: 16 descrições (lista ou separadas por '|'), opcional; sem
-            elas usa as metáforas do icon_forge para matérias-primas.
+        ids: até 16 ids separados por vírgula (ou lista), na ordem linha a linha;
+            menos de 16 deixa as últimas células vazias (lote final).
+        descriptions: descrições na mesma quantidade (lista ou separadas por
+            '|'), opcional; sem elas usa as metáforas do icon_forge para
+            matérias-primas.
         quality: low, medium, high, xhigh ou max (padrão medium).
         dry_run: mostra prompt, referências e custo estimado sem chamar a API.
         model: gpt-image-2.6-sunburst (padrão), -flare, 2.5 ou gpt-image-2.
@@ -821,14 +832,17 @@ def generate_grid(
     """
     try:
         icon_ids = _validate_ids(_split_ids(ids) or list(TEST_IDS))
-        if len(icon_ids) != 16:
-            return _error("input", f"preciso de exatamente 16 ids (recebi {len(icon_ids)})")
+        if not 1 <= len(icon_ids) <= 16:
+            return _error("input", f"preciso de 1 a 16 ids (recebi {len(icon_ids)})")
         if isinstance(descriptions, str):
             descs = [d.strip() for d in descriptions.split("|") if d.strip()]
         else:
             descs = [" ".join(str(d).split()) for d in (descriptions or []) if str(d).strip()]
-        if descs and len(descs) != 16:
-            return _error("input", f"descriptions precisa ter 16 itens (recebi {len(descs)})")
+        if descs and len(descs) != len(icon_ids):
+            return _error(
+                "input",
+                f"descriptions precisa ter {len(icon_ids)} itens (recebi {len(descs)})",
+            )
         if not descs:
             descs = [description_for(i) for i in icon_ids]
         quality = (quality or DEFAULT_QUALITY).strip().lower()
@@ -1160,8 +1174,8 @@ def _serve() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Grade 4x4 de ícones de recurso via OpenAI")
-    parser.add_argument("--ids", default=",".join(TEST_IDS), help="16 ids separados por vírgula")
-    parser.add_argument("--descriptions", default="", help="16 descrições separadas por '|'")
+    parser.add_argument("--ids", default=",".join(TEST_IDS), help="até 16 ids separados por vírgula")
+    parser.add_argument("--descriptions", default="", help="descrições separadas por '|' (mesma quantidade de ids)")
     parser.add_argument("--quality", default=DEFAULT_QUALITY, choices=QUALITY_CHOICES)
     parser.add_argument("--model", default=DEFAULT_MODEL, choices=MODEL_CHOICES)
     parser.add_argument("--size", default=DEFAULT_SIZE)

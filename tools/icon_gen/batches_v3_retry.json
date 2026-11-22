@@ -1,0 +1,21 @@
+{
+  "tag": 3,
+  "quality": "medium",
+  "refs": ["ref_sheet_military_pack.png"],
+  "stop_usd": 3.0,
+  "replace_existing": ["artillery", "combat_ration"],
+  "batches": [
+    {
+      "n": 11,
+      "title": "refação (1 por id)",
+      "items": {
+        "artillery": "a towed field howitzer with split trails and a long barrel, the whole gun and both trail legs fully visible",
+        "combat_ration": "a sealed olive-drab ration pouch beside a folded ration carton with no labels, both objects fully visible"
+      },
+      "restore": {
+        "artillery": {"batch": 5, "batch_title": "máquinas, peças e munição", "cell": 16},
+        "combat_ration": {"batch": 1, "batch_title": "comida e agricultura", "cell": 12}
+      }
+    }
+  ]
+}

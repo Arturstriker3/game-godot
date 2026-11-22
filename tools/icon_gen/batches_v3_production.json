@@ -1,0 +1,227 @@
+{
+  "tag": 3,
+  "quality": "medium",
+  "refs": ["ref_sheet_military_pack.png"],
+  "stop_usd": 3.0,
+  "replace_existing": ["gas"],
+  "batches": [
+    {
+      "n": 1,
+      "title": "comida e agricultura",
+      "items": {
+        "rice": "a heap of white rice grains with a small wooden scoop set into it",
+        "maize": "two dried yellow corn cobs with the husks partly peeled back",
+        "potato": "a small pile of unwashed brown potatoes still dusty with soil",
+        "soy": "a heap of dry yellow soybeans with a few opened pods",
+        "feed": "a mound of coarse brown animal feed pellets spilling from a plain burlap sack",
+        "flour": "an open burlap sack of fine white flour with a wooden scoop",
+        "bran": "a heap of coarse brown bran flakes in a shallow wooden bowl",
+        "bread": "a round rustic bread loaf with a scored baked crust",
+        "bagged_rice": "a stack of plain woven sacks filled with white rice, the top sack open",
+        "meat": "a raw red meat cut resting on a worn wooden cutting board",
+        "canned_food": "two plain unlabelled tin cans, one opened showing stew inside",
+        "combat_ration": "a sealed olive-drab ration pouch beside a folded ration carton with no labels",
+        "alcohol": "a plain glass bottle of amber liquor with a cork stopper",
+        "premium_spirits": "a dark glass bottle of premium spirit with a wax-sealed neck and a brass cap",
+        "ethanol": "a clear glass carboy of colourless ethanol with a screw cap",
+        "organic_fertilizer": "a heap of dark compost and manure mix with a pitchfork stuck in it"
+      }
+    },
+    {
+      "n": 2,
+      "title": "têxtil, madeira e bens de consumo",
+      "items": {
+        "cotton": "a fluffy white cotton boll with raw fibre bursting out",
+        "fabric": "a folded bolt of undyed cotton cloth with a raw edge",
+        "synthetic_fabric": "a folded roll of olive-grey nylon fabric with a slight sheen",
+        "clothes": "a folded stack of plain civilian shirts and trousers",
+        "uniforms": "a folded olive-drab military uniform shirt over matching trousers, no insignia",
+        "shoes": "a pair of worn brown leather work boots",
+        "planks": "a stack of sawn pine planks with visible grain",
+        "sawdust": "a heap of pale sawdust and wood shavings",
+        "pallets": "a stack of plain wooden shipping pallets",
+        "cellulose": "a stack of pressed off-white cellulose pulp sheets",
+        "paper": "a neat stack of blank white paper sheets beside a rolled paper tube",
+        "furniture": "a plain wooden dining chair with a woven seat",
+        "luxury_furniture": "an ornate dark-wood armchair with carved arms and velvet upholstery",
+        "charcoal": "lumpy black charcoal pieces spilling from a burlap sack",
+        "containers": "an empty galvanized steel drum with a clamp-ring lid",
+        "jewelry": "a gold necklace with a red gemstone beside two gold rings"
+      }
+    },
+    {
+      "n": 3,
+      "title": "química, combustíveis e farmácia",
+      "items": {
+        "fertilizer": "a heap of pale grey-white fertilizer granules beside a small scoop",
+        "fuel": "a red steel jerrycan of fuel with a spout cap",
+        "plastic": "translucent plastic pellets spilling from a small sack",
+        "plastic_parts": "a set of moulded plastic parts: a gear, a casing half and a bracket",
+        "chemicals": "a cluster of glass chemical bottles and a flask holding amber and pale liquids",
+        "rubber": "a dark vulcanized rubber block with cut edges and a few rubber strips",
+        "refined_sulfur": "a heap of fine bright-yellow sulfur powder spilling from a sack",
+        "gunpowder": "a heap of black granular gunpowder with a small brass scoop",
+        "explosives": "a bundle of dynamite sticks tied with cord, a fuse curling out",
+        "carbon_fiber": "a roll of black carbon-fibre weave cloth",
+        "medicine": "a white plastic pill bottle with a few loose tablets beside it",
+        "antibiotics": "a blister pack of white capsules beside an amber glass bottle",
+        "vaccines": "two small glass vials with aluminium crimp caps set in a cold-pack tray",
+        "gas": "an industrial compressed-gas steel cylinder with worn paint, a red diamond GHS flammable-gas flame pictogram stencilled on the metal, pictogram only",
+        "casing": "a rugged aluminium equipment case with latches and a folding handle",
+        "construction_material": "a stack of plain grey cement sacks beside a few red bricks"
+      }
+    },
+    {
+      "n": 4,
+      "title": "metais e ligas",
+      "items": {
+        "iron_ingot": "a stack of rough cast-iron pig ingots, dark grey with sand-cast texture",
+        "steel": "two forged steel billets with mill scale and cut ends",
+        "steel_sheet": "a stack of flat rolled steel sheets with bright sheared edges",
+        "special_alloy": "a precision-machined titanium alloy bar billet, pale blue-grey with fine machining marks",
+        "cast_parts": "a rough sand-cast grey iron gearbox housing",
+        "mechanical_parts": "a group of machined steel gears, a shaft and a bearing",
+        "hardware": "a small crate of bolts, nuts, washers and wood screws",
+        "copper_ingot": "a stack of reddish-orange copper ingots",
+        "wires": "two coils of insulated copper cable, one black and one dull red",
+        "aluminum_ingot": "a stack of bright silver aluminium ingots",
+        "lead_ingot": "a stack of dull blue-grey lead ingots, rough cast",
+        "tungsten_ingot": "a dense dark-grey tungsten billet with a machined face",
+        "gold_bar": "a single cast gold bar with bevelled edges and no markings",
+        "processed_rare_earths": "fine grey rare-earth oxide powder heaped in a shallow steel tray",
+        "steel_structure": "a stack of steel I-beams beside a riveted truss girder",
+        "electrical_material": "an open grey electrical panel with breakers, copper busbars and a cable coil"
+      }
+    },
+    {
+      "n": 5,
+      "title": "máquinas, peças e munição",
+      "items": {
+        "tools": "a claw hammer, an adjustable wrench and pliers grouped together",
+        "industrial_tools": "a heavy angle grinder with a worn cord and a cutting disc",
+        "precision_tools": "a machinist dial caliper and a micrometer beside small files",
+        "engine": "a heavy inline diesel engine block with cylinder head and exhaust manifold",
+        "micromotor": "a tiny electric motor with visible copper windings beside a small coil",
+        "tires": "a stack of three black truck tires",
+        "chassis": "a bare steel vehicle chassis frame with axles and no body",
+        "spare_parts": "a parts crate holding a piston, a bearing and a gear",
+        "industrial_machinery": "a metal lathe with a chuck, tool post and control levers",
+        "mining_machine": "a heavy tracked mining excavator with a toothed bucket",
+        "robots": "an industrial six-axis robot arm mounted on a steel base",
+        "tractor": "an olive-green farm tractor with large rear wheels and no branding",
+        "projectile": "a large unpainted steel artillery shell body with a pointed ogive and no markings",
+        "ammunition": "a handful of brass rifle cartridges, some standing and some scattered",
+        "artillery_ammo": "a large artillery shell seated in a tall brass casing, standing upright",
+        "artillery": "a towed field howitzer with split trails and a long barrel"
+      }
+    },
+    {
+      "n": 6,
+      "title": "eletrônica e equipamento",
+      "items": {
+        "electronic_components": "a small pile of electronic components: capacitors, resistors and transistors",
+        "circuit_board": "a green printed circuit board with copper traces and soldered components",
+        "chips": "a black integrated-circuit chip with fine metal pins",
+        "advanced_chips": "a cutting-edge 3 nm microchip: a gleaming die with a fine grid pattern on a dark substrate, premium look, clearly more advanced than a common chip",
+        "sensors": "a compact camera sensor module with a glass lens and a machined metal housing",
+        "batteries": "a lithium battery pack of cylindrical cells held in a plastic frame",
+        "computer": "a dark desktop computer tower with side vents",
+        "phone": "a black smartphone with a blank screen",
+        "appliances": "a white front-loading washing machine",
+        "drone": "a small white quadcopter drone with four rotors",
+        "fuselage": "an unpainted aluminium aircraft fuselage barrel with ribs and window cutouts",
+        "cargo_plane": "a grey four-engine military transport aircraft with high wings and no markings",
+        "military_drone": "a grey fixed-wing reconnaissance UAV with a sensor ball under the nose",
+        "infantry_gear": "an olive-drab combat helmet resting on a folded load-bearing vest",
+        "small_arms": "a modern black assault rifle with a curved magazine and no markings",
+        "old_rifles": "a WW1-era bolt-action military rifle with a full-length wooden stock, straight bolt handle and iron sights, no scope"
+      }
+    },
+    {
+      "n": 7,
+      "title": "construções: produção",
+      "items": {
+        "farm": "a miniature farm: a wooden barn with an attached silo and hay bales, whole building, no ground plane",
+        "ranch": "a miniature ranch: a wooden corral fence enclosing a feeding trough beside a small stable, whole structure, no ground plane",
+        "mine": "a miniature mine entrance: a timber-framed tunnel mouth with a rail track and a mine cart, whole structure, no ground plane",
+        "oil_well": "a miniature oil pumpjack (nodding donkey) on a small steel base, whole structure, no ground plane",
+        "gas_field": "a miniature gas extraction derrick with a flare stack burning at the top, whole structure, no ground plane",
+        "factory_food": "a miniature food factory: a long warehouse with a grain silo and a short chimney, whole building, no ground plane",
+        "factory_textile": "a miniature textile mill: a long brick shed with a sawtooth roof and rows of windows, whole building, no ground plane",
+        "factory_wood": "a miniature sawmill: an open-sided shed with a stack of logs beside it, whole building, no ground plane",
+        "factory_chemical": "a miniature chemical plant: clustered steel tanks with pipes and a distillation column, whole plant, no ground plane",
+        "factory_metal": "a miniature steel mill: a tall blast furnace with charging pipes and a chimney, whole plant, no ground plane",
+        "factory_machinery": "a miniature machine works: a large shed with an overhead gantry crane on roof rails, whole building, no ground plane",
+        "factory_electronics": "a miniature modern electronics plant: a flat white building with glass strip windows and rooftop vents, whole building, no ground plane",
+        "factory_transport": "a miniature vehicle assembly plant: a long shed with a conveyor line and a car body at the door, whole building, no ground plane",
+        "factory_military": "a miniature fortified military factory: a concrete-walled hangar with reinforced doors, whole building, no ground plane",
+        "factory_packaging": "a miniature packaging plant: a warehouse with stacked cardboard boxes and a loading dock, whole building, no ground plane",
+        "factory_construction": "a miniature cement plant: several tall concrete silos with a rotary kiln tube, whole plant, no ground plane"
+      }
+    },
+    {
+      "n": 8,
+      "title": "construções: logística, cidade e infraestrutura",
+      "items": {
+        "factory_generic": "a miniature generic factory: a plain industrial shed with a brick chimney, whole building, no ground plane",
+        "warehouse": "a miniature storage warehouse: a long low shed with a roll-up loading door, whole building, no ground plane",
+        "grain_silo": "a miniature grain silo complex: a row of cylindrical concrete silos with a head house, whole structure, no ground plane",
+        "strategic_reserve": "a miniature strategic reserve depot: an armoured concrete bunker with heavy blast doors, whole building, no ground plane",
+        "port": "a miniature port: a concrete quay edge with a container gantry crane and stacked containers, whole structure, no ground plane",
+        "city": "a miniature city block: a small cluster of mid-rise buildings of different heights, whole block, no ground plane",
+        "house": "a miniature modest single-storey house with a pitched roof and a chimney, whole building, no ground plane",
+        "apartment_building": "a miniature mid-rise apartment building with rows of balconies, whole building, no ground plane",
+        "informal_housing": "a miniature cluster of improvised shacks with corrugated metal roofs, whole cluster, no ground plane",
+        "commercial_building": "a miniature commercial building: a shopfront with a glass front and a small office above, whole building, no ground plane",
+        "industrial_zone": "a miniature industrial park: three adjacent factory sheds of different heights, whole complex, no ground plane",
+        "land_plot": "a miniature surveyed empty land plot marked by wooden stakes and string on bare dirt, small flat slab only",
+        "city_hall": "a miniature town hall: a civic building with a portico and a small clock tower, whole building, no ground plane",
+        "construction_site": "a miniature construction site: a concrete frame with scaffolding and a tower crane, whole structure, no ground plane",
+        "government": "a miniature national government palace: a neoclassical building with columns and a dome, whole building, no ground plane",
+        "infra_road": "a miniature stretch of asphalt road with a dashed centre line and a steel guardrail, small slab only, no landscape"
+      }
+    },
+    {
+      "n": 9,
+      "title": "construções: finanças e infraestrutura",
+      "items": {
+        "central_bank": "a miniature central bank: an imposing classical stone building with a colonnade and a domed roof, whole building, no ground plane",
+        "bank_public": "a miniature public bank: a solid stone building with a row of columns and a stepped entrance, whole building, no ground plane",
+        "bank_private": "a miniature private bank: a modern glass office tower with a stone base, whole building, no ground plane",
+        "bank_foreign": "a miniature foreign bank: a stone bank building topped with a plain metal globe, whole building, no ground plane",
+        "stock_exchange": "a miniature stock exchange: a colonnaded hall with a rising abstract chart sculpture on the pediment, whole building, no ground plane",
+        "currency": "a stack of generic banknotes with abstract engraved patterns and no portraits or numbers",
+        "coins": "a stack of generic gold coins with abstract relief and no numbers",
+        "gold_reserve": "an open steel vault door revealing stacked gold bars inside",
+        "exchange_rate": "two coins of different sizes with circular exchange arrows between them",
+        "credit": "a folded paper contract tied with a ribbon beside a small stack of coins",
+        "dividend": "coins falling from a paper share certificate into a small pile",
+        "treasury": "a government treasury safe: a heavy steel safe with a dial lock",
+        "company_group": "a miniature corporate headquarters: a tall glass office tower, whole building, no ground plane",
+        "infra_power": "a miniature high-voltage transmission pylon with insulators and conductor cables, whole structure, no ground plane",
+        "infra_water": "a miniature water tower on steel legs with a cylindrical tank, whole structure, no ground plane",
+        "power_coal": "a miniature coal power plant: a tall chimney beside a boiler house with a coal pile, whole plant, no ground plane"
+      }
+    },
+    {
+      "n": 10,
+      "title": "veículos, energia e transporte",
+      "items": {
+        "truck": "a civilian flatbed cargo truck with a canvas-covered cab",
+        "car": "a compact civilian sedan with dull paint",
+        "naval_hull": "a bare steel ship hull under construction with exposed ribs and no superstructure",
+        "cargo_ship": "a container cargo ship loaded with plain steel containers",
+        "power_gas": "a miniature gas power plant: a compact turbine hall with two gas tanks and a short stack, whole plant, no ground plane",
+        "power_oil": "a miniature oil-fired power plant: a turbine hall with cylindrical fuel tanks, whole plant, no ground plane",
+        "power_biomass": "a miniature biomass power plant: a shed with a pile of wood chips and a short stack, whole plant, no ground plane",
+        "power_hydro": "a miniature hydroelectric dam: a concrete gravity dam with spillway gates, whole structure, no ground plane",
+        "power_nuclear": "a miniature nuclear power plant: two hyperbolic cooling towers beside a reactor building, no radiation symbol, whole plant, no ground plane",
+        "power_wind": "a miniature wind farm: three wind turbines on towers, whole structure, no ground plane",
+        "power_solar": "a miniature solar farm: rows of photovoltaic panels on mounting frames, whole structure, no ground plane",
+        "railway": "a miniature railway: a short section of track with rails and sleepers beside a diesel locomotive, whole structure, no ground plane",
+        "airport": "a miniature airport: a control tower with an apron and a parked airliner, whole structure, no ground plane",
+        "train_station": "a miniature railway station: a station building with a platform canopy and a track, whole structure, no ground plane"
+      }
+    }
+  ]
+}
