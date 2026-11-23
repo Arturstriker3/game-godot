@@ -508,3 +508,69 @@ da correção de DADOS, não do núcleo C++; decisão do dono pendente. Próxima
 necessária: PL e dívida do grupo `national:G-MLT-food-157` ao longo do ano
 (hoje só o contador da planta é publicado) para dizer se a insolvência vem da
 folha atrasada na entressafra ou do crédito de safra.
+
+## 13. F0 - diagnóstico do óleo e correção do seed de refino (D-124)
+
+### 13.1 O que estava errado
+
+Com os preços restaurados (113 bens iguais a `balance/global-resources`; só
+gasolina 81,08, diesel 74,90 e querosene 78,22 diferem), a rodada de 365 d
+media **5 falências / comida 98/179 / 0 violações**. As duas novas eram
+`usa_ren_oil_mine` (dia 136) e `usa_bil_oil_mine` (dia 167), com receita 0,
+`loss_days` 60/59 e utilização 15,3%/17,4%.
+
+**Baseline (`balance/global-resources`, sem refino):** as duas minas vendiam
+**localmente** todos os dias (BIL 124,3 t/dia; REN 5,4 t/dia), sem pedido de
+comércio, a 47,70 no dia 1 e 144,00 no dia 135; receita BIL 17 892/dia.
+
+**Com o seed antigo (F0):** no dia 1 BIL vendia a `USA-PHO` (75,0),
+`MEX-TIJ` (36,8) e `CAN-VIC` (12,5); REN a `CAN-VIC` (5,4). O frete era
+552-10 536 por ordem (BIL->PHO 140/t). No dia 135 as ordens de óleo de/para
+BIL/REN eram **zero**, a demanda local 0 e o estoque 5 299 t (BIL) e 101 t
+(REN). O preço do petróleo **não caiu**: 45,72 (dia 1) -> 48,60 (dia 135/365).
+A causa é alocação: o seed escolhia as 3 cidades com mina de **maior
+população** (NEW, PHO, SANA), não os 3 maiores campos; BIL (2º campo) e REN
+ficavam dependentes de rotas caras, e a demanda efetiva de gasolina (1,5% do
+desejo) derrubou as compras das refinarias. A mina primária segue o bootstrap
+(produz sem venda), forma estoque e quebra por `loss_days`.
+
+### 13.2 Correção (regra declarada)
+
+`core/economy/refining_service.gd`: **toda** cidade com mina de petróleo
+recebe uma refinaria, com peso = capacidade de petróleo local (t/dia), sem o
+teto de 3 (o teto de 3 fica só para nações sem mina, que usam portos e peso
+populacional). `data/definitions/transport/refining_capacity.json`
+(`meta.allocation.rule`) republica a regra. Nada de subsídio, teto ou C++.
+
+### 13.3 Verificação
+
+Rodada de 365 d (`c1_world_ai_365.gd --days=365
+--control=res://docs/economy/perf/c6_gate_base.json --refining-diag=1
+--fuel-diag=1 --oil-diag=1`, saída `docs/economy/perf/f0_fix_365.json`):
+
+| Braço | Falências | Comida (<0,975) | Violações | Travados |
+|---|---:|---:|---:|---:|
+| Antes (5/98, `f0_diag_365_prices.json`) | 5 | 98/179 | 0 | 0 |
+| **Seed novo** | **2** | **97/179** | 0 | 0 |
+
+As 2 restantes são as aceitas do controle (`PRI-PON` cobre/ferro, dia 126);
+`MLT-VAL` deixou de falir. Plantas: 112/112 vivas; capacidade 1 655,8 t/dia;
+utilização 0,218; lucro do setor +24 709/dia. Óleo: BIL/REN com receita
+positiva em todos os dias amostrados (1/30/60/90/120/135/136/167/365) e
+`loss_days=0`; preço 45,3 -> 48,6. Testes headless OK (exit 0):
+`f0_fuels_test`, `goods_data_test`, `e2e3_power_test`,
+`economy_save_load_roundtrip_test`, `production_chain_test`,
+`production_template_test`.
+
+### 13.4 Comida 97 vs 95 (alvo não fechado)
+
+Entram vs baseline 95: `SAH` 0,456, `TTO` 0,959, `SUR` 0,959; sai `LVA`.
+Cadeia: o baseline tem um único `fuel` a 43,50; a F0 separa gasolina 81,08,
+diesel 74,90 e querosene 78,22 - o combustível entra no frete e na cesta.
+Números do fecho: SAH (3 cidades isoladas, produção local 0, trigo 0,25 t/dia
+contra 3,50 de desejo, preço do trigo 92,98, cesta 1,257x, frete 39,26/t) é o
+colapso; TTO (cesta 0,844x, trigo 46,18/86,36, frete 12,08/t) e SUR (cesta
+1,063x, trigo 10,52/10,52, frete 22,88/t) são marginais (0,004 abaixo do
+limiar). Não é um erro do seed: o seed novo melhora 98->97 e sobe KWT/MEX
+para 0,976, mas SAH/TTO/SUR continuam abaixo. O alvo **comida <=95 não fecha**;
+decisão do dono.

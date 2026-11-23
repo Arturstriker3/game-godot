@@ -80,7 +80,7 @@
   },
   "allocation": {
    "service": "core/economy/refining_service.gd",
-   "rule": "capacidade nacional distribuida entre ate 3 cidades-porto do ports.json (host city), peso = populacao simulada; nacao sem porto usa a maior cidade. Comecam como construcoes 'refinery' com a receita gasoline_a, operando no dia 1 (output_scale 1, sem rampa).",
+   "rule": "cada cidade com mina de petroleo recebe uma refinaria (o insumo nasce junto), peso = capacidade de petroleo local (t/dia); nacao sem mina usa ate 3 cidades-porto do ports.json (host city), peso = populacao simulada. Comecam como construcoes 'refinery' com a receita gasoline_a, operando no dia 1 (output_scale 1, sem rampa).",
    "owner": "private",
    "order": "seed_industry() ANTES do refino (farinha/pao nao bloqueiam)"
   },

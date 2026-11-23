@@ -4,7 +4,7 @@ extends SceneTree
 ##
 ##   godot --headless --path . --script res://tools/c1_world_ai_365.gd -- \
 ##     [--days=365] [--out=docs/economy/perf/c1_world_ai_365.json] [--power=0]
-##     [--refining=0] [--refining-diag=1] [--fuel-diag=1]
+##     [--refining=0] [--refining-diag=1] [--fuel-diag=1] [--oil-diag=1]
 ##
 ## `--power=0` é o braço "sem energia" do A/B (só medição): não aplica o dado
 ## de energia, então o mundo roda como antes da E2/E3. O controle versionado
@@ -114,7 +114,7 @@ var _fuel_diag := false
 # demanda, preco e compradores por cidade/rota nos dias 1, 135, 136, 167 e no
 # fecho, para separar mina sem comprador de preco de mercado. So medicao.
 var _oil_diag := false
-const OIL_SAMPLE_DAYS: Array[int] = [1, 135, 136, 167]
+const OIL_SAMPLE_DAYS: Array[int] = [1, 30, 60, 90, 120, 135, 136, 167]
 # Receitas que produzem combustível: refinaria (co-produção) e as rotas
 # alternativas declaradas em recipes.json (GTL/CTL).
 const FUEL_RECIPES: Array[String] = ["gasoline_a", "diesel_a", "diesel_b"]
