@@ -639,6 +639,125 @@ Value balance_to(const WorldState& ws) {
 	return out;
 }
 
+// ---------------------------------------------------------------------------
+// D-125 — parâmetros da eficiência de produção (defaults declarados em
+// data/definitions/production/efficiency.json). A ordem das chaves é parte do
+// dump estável byte a byte.
+// ---------------------------------------------------------------------------
+Value efficiency_curve_to(const EfficiencyCurve& curve) {
+	Value out;
+	out["start"] = Value(curve.start);
+	out["mid"] = Value(curve.mid);
+	out["mid_days"] = Value(curve.mid_days);
+	out["full_days"] = Value(curve.full_days);
+	return out;
+}
+
+Value efficiency_to(const WorldState& ws) {
+	const EfficiencyParams& p = ws.efficiency;
+	Value out;
+	out["factory"] = efficiency_curve_to(p.factory);
+	out["refinery"] = efficiency_curve_to(p.refinery);
+	out["mine"] = efficiency_curve_to(p.mine);
+	out["farm"] = efficiency_curve_to(p.farm);
+	out["ranch"] = efficiency_curve_to(p.ranch);
+	out["equipment_cap_without"] = Value(p.equipment_cap_without);
+	out["equipment_rate_boost"] = Value(p.equipment_rate_boost);
+	out["equipment_fuel_per_capacity_day"] =
+		Value(p.equipment_fuel_per_capacity_day);
+	out["transition_factory_days"] = Value(p.transition_factory_days);
+	out["transition_refinery_days"] = Value(p.transition_refinery_days);
+	out["transition_military_days"] = Value(p.transition_military_days);
+	out["transition_semiconductor_days"] = Value(p.transition_semiconductor_days);
+	out["transition_mode_days"] = Value(p.transition_mode_days);
+	out["retention_same_family"] = Value(p.retention_same_family);
+	out["retention_other"] = Value(p.retention_other);
+	Value modes = empty_array();
+	for (int mode = 0; mode < 3; ++mode) {
+		Value row = empty_array();
+		row.append(Value(p.mode_shares[mode][0]));
+		row.append(Value(p.mode_shares[mode][1]));
+		row.append(Value(p.mode_shares[mode][2]));
+		modes.append(row);
+	}
+	out["mode_shares"] = modes;
+	out["ai_mode_cooldown_days"] = Value(p.ai_mode_cooldown_days);
+	out["ai_mode_payback_days"] = Value(p.ai_mode_payback_days);
+	out["ai_mode_min_gain"] = Value(p.ai_mode_min_gain);
+	return out;
+}
+
+void efficiency_curve_from(const Value& block, EfficiencyCurve& curve) {
+	curve.start = std::clamp(read_double(block, "start", curve.start), 0.0, 1.0);
+	curve.mid = std::clamp(read_double(block, "mid", curve.mid),
+		curve.start, 1.0);
+	curve.mid_days = std::max(1.0, read_double(block, "mid_days",
+		curve.mid_days));
+	curve.full_days = std::max(curve.mid_days,
+		read_double(block, "full_days", curve.full_days));
+}
+
+void efficiency_from(WorldState& ws, const Value& block) {
+	if (block.get_type() != Value::DICTIONARY) {
+		return;
+	}
+	EfficiencyParams& p = ws.efficiency;
+	if (const Value* curve = read_object(block, "factory")) {
+		efficiency_curve_from(*curve, p.factory);
+	}
+	if (const Value* curve = read_object(block, "refinery")) {
+		efficiency_curve_from(*curve, p.refinery);
+	}
+	if (const Value* curve = read_object(block, "mine")) {
+		efficiency_curve_from(*curve, p.mine);
+	}
+	if (const Value* curve = read_object(block, "farm")) {
+		efficiency_curve_from(*curve, p.farm);
+	}
+	if (const Value* curve = read_object(block, "ranch")) {
+		efficiency_curve_from(*curve, p.ranch);
+	}
+	p.equipment_cap_without = std::clamp(read_double(block,
+		"equipment_cap_without", p.equipment_cap_without), 0.0, 1.0);
+	p.equipment_rate_boost = std::max(1.0, read_double(block,
+		"equipment_rate_boost", p.equipment_rate_boost));
+	p.equipment_fuel_per_capacity_day = std::max(0.0, read_double(block,
+		"equipment_fuel_per_capacity_day",
+		p.equipment_fuel_per_capacity_day));
+	p.transition_factory_days = std::max(0, read_int(block,
+		"transition_factory_days", p.transition_factory_days));
+	p.transition_refinery_days = std::max(0, read_int(block,
+		"transition_refinery_days", p.transition_refinery_days));
+	p.transition_military_days = std::max(0, read_int(block,
+		"transition_military_days", p.transition_military_days));
+	p.transition_semiconductor_days = std::max(0, read_int(block,
+		"transition_semiconductor_days", p.transition_semiconductor_days));
+	p.transition_mode_days = std::max(0, read_int(block,
+		"transition_mode_days", p.transition_mode_days));
+	p.retention_same_family = std::clamp(read_double(block,
+		"retention_same_family", p.retention_same_family), 0.0, 1.0);
+	p.retention_other = std::clamp(read_double(block, "retention_other",
+		p.retention_other), 0.0, 1.0);
+	if (const Value* modes = read_array(block, "mode_shares")) {
+		for (int mode = 0; mode < 3 && mode < modes->size(); ++mode) {
+			const Value& row = (*modes)[mode];
+			if (row.get_type() != Value::ARRAY || row.size() < 3) {
+				continue;
+			}
+			for (int product = 0; product < 3; ++product) {
+				p.mode_shares[mode][product] = std::clamp(
+					double(row[product]), 0.0, 1.0);
+			}
+		}
+	}
+	p.ai_mode_cooldown_days = std::max(0, read_int(block,
+		"ai_mode_cooldown_days", p.ai_mode_cooldown_days));
+	p.ai_mode_payback_days = std::max(1, read_int(block,
+		"ai_mode_payback_days", p.ai_mode_payback_days));
+	p.ai_mode_min_gain = std::clamp(read_double(block, "ai_mode_min_gain",
+		p.ai_mode_min_gain), 0.0, 1.0);
+}
+
 void balance_from(WorldState& ws, const Value& block) {
 	ws.natural_unemployment = read_double(block, "natural_unemployment",
 		ws.natural_unemployment);
@@ -982,6 +1101,7 @@ Value definitions_to(const WorldState& ws) {
 	out["services"] = services_to(ws);
 	out["employment"] = employment_to(ws);
 	out["balance"] = balance_to(ws);
+	out["efficiency"] = efficiency_to(ws);
 	out["land_capacity"] = land_capacity_to(ws);
 	out["age_structure"] = age_structure_to(ws);
 	// G — agricultura sazonal (dado; o estado vai no save v24).
@@ -1013,6 +1133,9 @@ void definitions_from(WorldState& ws, const Value& data) {
 	}
 	if (const Value* block = read_object(data, "balance")) {
 		balance_from(ws, *block);
+	}
+	if (const Value* block = read_object(data, "efficiency")) {
+		efficiency_from(ws, *block);
 	}
 	if (const Value* array = read_array(data, "land_capacity")) {
 		land_capacity_from(ws, *array);

@@ -3,6 +3,8 @@
 // C++ puro (STL): nada de godot_cpp aqui.
 #include "actions.h"
 
+#include "efficiency.h"
+
 #include "sim_constants.h"
 #include "sim_core.h"
 #include "storage.h"
@@ -259,11 +261,18 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 		building.jobs = jobs;
 		building.wage = wage;
 		building.opex = opex;
-		// Fábrica nova começa em rampa (25% da capacidade): evita o pico de
-		// produção/oferta no primeiro dia e deixa a curva de preço reagir.
-		if (recipe >= 0 || input_product >= 0) {
-			building.output_scale = 0.25;
-			building.last_utilization = 0.25;
+		// D-125: eficiência de produção por construção. Planta de BOOTSTRAP é
+		// estoque pré-existente do ano-base (nasce madura, com equipamento);
+		// construção instantânea de teste/obra nova nasce com a curva baixa da
+		// classe. `output_scale` deixa de começar em 0,25: a rampa agora é a
+		// eficiência (uma única curva, não duas penalidades somadas).
+		if (bootstrap_construction) {
+			eff::mature(building, true);
+		} else if (city != nullptr) {
+			eff::init_new(ws, *city, building);
+		} else {
+			building.production_efficiency = 0.30;
+			building.efficiency_days = 0;
 		}
 		ws.buildings.push_back(building);
 		// D-086: mina nova abre o estágio 0 reivindicando uma fatia da reserva da
@@ -555,10 +564,9 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 		}
 		building.local_share = local_share;
 		building.partner_group = partner != nullptr ? partner->id : std::string();
-		if (recipe >= 0) {
-			building.output_scale = 0.25;
-			building.last_utilization = 0.25;
-		}
+		// D-125: obra nova nasce na eficiência inicial da classe (a rampa é a
+		// curva de eficiência; `output_scale` fica 1,0).
+		eff::init_new(ws, *city, building);
 		ws.buildings.push_back(building);
 		// D-086: mina nova abre o estágio 0 (mesma regra do build do Estado).
 		if (SimCore::is_mine_building(*city, ws.buildings.back())) {

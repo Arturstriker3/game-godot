@@ -962,6 +962,14 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["royalty"] = building.royalty;
 		// C1 (save v26): salário atrasado da planta (passivo da firma).
 		entry["wage_arrears"] = building.wage_arrears;
+		// D-125 (save v40): eficiência de produção, transição, equipamento e
+		// modo da refinaria. Mundo semeado nasce maduro (1.0/9999/equipamento
+		// ligado); construção nova carrega a curva baixa da classe.
+		entry["production_efficiency"] = building.production_efficiency;
+		entry["efficiency_days"] = building.efficiency_days;
+		entry["transition_days"] = building.transition_days;
+		entry["equipment"] = building.equipment;
+		entry["refinery_mode"] = building.refinery_mode;
 		buildings.append(entry);
 	}
 	data["buildings"] = buildings;
@@ -3988,6 +3996,23 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		building.strategic = bool(entry.get("strategic", false));
 		building.loss_days = int(entry.get("loss_days", 0));
 		building.bankrupt = bool(entry.get("bankrupt", false));
+		// D-125 (save v40): eficiência de produção. Save v39 e anteriores não
+		// têm as chaves: a planta é estoque PRÉ-EXISTENTE do ano-base, então
+		// carrega MADURA (eficiência 1, trator/máquina ligados) — nada
+		// inventado para trás e o comportamento anterior preservado.
+		building.production_efficiency = std::clamp(
+			version >= 40 ? double(entry.get("production_efficiency", 1.0)) : 1.0,
+			0.0, 1.0);
+		building.efficiency_days = version >= 40
+			? std::max(0, int(entry.get("efficiency_days", 9999))) : 9999;
+		building.transition_days = version >= 40
+			? std::max(0, int(entry.get("transition_days", 0))) : 0;
+		building.equipment = std::clamp(version >= 40
+			? double(entry.get("equipment", 0.0)) : 1.0, 0.0, 1.0);
+		building.refinery_mode = version >= 40
+			? std::clamp(int(entry.get("refinery_mode", 0)), 0, 2) : 0;
+		building.idle_today = false;
+		building.equipment_active = building.equipment > 0.0;
 		// D-086 (decisão do dono): o recurso nunca acaba — ignora o `depleted`
 		// salvo (que antes marcava a jazida esgotada) e força `false`. O formato
 		// e a versão (v18) NÃO mudam.

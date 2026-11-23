@@ -159,7 +159,13 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // `kind = CONSTRUCTION_INTERCONNECT` e `power_nation_a`/`power_nation_b`. Save
 // v35 carrega sem a chave: `ready = false` e o PowerService semeia as linhas do
 // ano-base depois do load (nada inventado para trás).
-constexpr int kSaveVersion = 39;
+//
+// D-125 (save v40, aditivo): por construção `production_efficiency`,
+// `efficiency_days`, `transition_days`, `equipment` e `refinery_mode`; o bloco
+// `definitions.efficiency` guarda os parâmetros de balanceamento da curva.
+// Save v39 carrega com a planta MADURA (eficiência 1, equipamento ligado): o
+// estoque existente é o ano-base e o comportamento anterior é preservado.
+constexpr int kSaveVersion = 40;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

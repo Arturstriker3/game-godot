@@ -7,6 +7,7 @@
 #include "sim_core.h"
 
 #include "construction.h"
+#include "efficiency.h"
 #include "housing.h"
 #include "power.h"
 #include "storage.h"
@@ -426,12 +427,13 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 	building.local_share = std::clamp(p.local_share, 0.0, 1.0);
 	building.partner_group = p.partner_group;
 	building.strategic = p.strategic;
-	// Fábrica nova começa em rampa (25% da capacidade): evita o pico de
-	// produção/oferta no primeiro dia (mesma regra do build instantâneo). Minas
-	// e fazendas entram em 100% (extração primária não tem curva de setup).
-	if (p.recipe >= 0 || p.input_product >= 0) {
-		building.output_scale = 0.25;
-		building.last_utilization = 0.25;
+	// D-125: prédio concluído nasce na eficiência inicial da classe; a curva
+	// substitui a rampa antiga de `output_scale` (não são duas penalidades).
+	for (City& city : ws.cities) {
+		if (city.id == building.city) {
+			eff::init_new(ws, city, building);
+			break;
+		}
 	}
 	// Carência de falência (empresa nova real, §15): a planta construída não é
 	// avaliada por prejuízo durante os primeiros kRampDays de operação — o

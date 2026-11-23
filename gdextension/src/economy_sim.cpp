@@ -7,6 +7,7 @@
 #include "sim/bank.h"
 #include "sim/bank_crisis.h"
 #include "sim/central_bank.h"
+#include "sim/efficiency.h"
 #include "sim/exchange.h"
 #include "sim/monetary.h"
 #include "sim/power.h"
@@ -1084,6 +1085,13 @@ void EconomySim::set_goods(const Array& goods) {
 	ws_.product_durable = std::move(durable);
 	ws_.product_sectors = std::move(sectors);
 	ws_.product_sectors.resize(static_cast<std::size_t>(product_count));
+	// D-125: índices dos bens do equipamento e dos três graus do refino. A
+	// resolução é aqui (o catálogo é a fonte); produto ausente = -1 e a regra
+	// fica inerte (ausência explícita).
+	ws_.efficiency.equipment_fuel_product = product_index(String("diesel"));
+	ws_.efficiency.refinery_gasoline = product_index(String("gasoline"));
+	ws_.efficiency.refinery_diesel = product_index(String("diesel"));
+	ws_.efficiency.refinery_jet = product_index(String("jet_fuel"));
 
 	// Mundo jÃ¡ inicializado: os produtos novos entram com o preÃ§o-base e sem
 	// estoque. Os Ã­ndices existentes (0..previous_products-1) nÃ£o mudam.
@@ -1357,6 +1365,10 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		building.jobs = capacity * aptitude * jobs_per_ton;
 		building.wage = wage_in;
 		building.opex = capacity * aptitude * opex_per_ton;
+		// D-125: o mundo inicial é o ano-base — a fazenda/mina já existe
+		// madura (eficiência 1, trator/máquina ligados). Construção nova via
+		// obra/projeto nasce na curva baixa.
+		ogs::eff::mature(building, true);
 		ws_.buildings.push_back(std::move(building));
 	}
 

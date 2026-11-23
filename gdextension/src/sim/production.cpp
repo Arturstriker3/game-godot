@@ -3,6 +3,7 @@
 // SimCore:: métodos movidos de sim_core.cpp — realocação byte-idêntica.
 #include "sim_core.h"
 
+#include "efficiency.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
@@ -148,6 +149,13 @@ void SimCore::phase_production() {
 						|| building.output_product >= ws_.products) {
 					continue;
 				}
+				// D-125: planta em troca de produto/modo não produz no dia
+				// (transição); a eficiência corrente multiplica a produção.
+				if (building.idle_today) {
+					continue;
+				}
+				const double efficiency = std::clamp(
+					building.production_efficiency, 0.0, 1.0);
 				// G — lavoura sazonal: a produção diária é suprimida (a safra
 				// vem de phase_agriculture na janela de colheita).
 				if (crop_planned_at(city_index, building.output_product)) {
@@ -219,7 +227,7 @@ void SimCore::phase_production() {
 				}
 				target = std::clamp(target, 0.0, effective_capacity);
 				const double desired_output = target * capacity_share * labor
-					* power_factor;
+					* power_factor * efficiency;
 				double input_used = 0.0;
 				double output = desired_output;
 				if (building.recipe >= 0) {
@@ -232,6 +240,10 @@ void SimCore::phase_production() {
 					}
 					const Recipe& recipe =
 						ws_.recipes[static_cast<std::size_t>(building.recipe)];
+					// D-125: rendimentos EFETIVOS da receita (a refinaria no
+					// modo diesel/querosene troca as frações do lote). Fora
+					// do refino são os próprios valores do dado.
+					const double out_yield = eff::main_yield(ws_, building, recipe);
 					// D-092 — DEMANDA DA FIRMA POR MARGEM. Custo unitário
 					// corrente (insumos + trabalho/opex); com o preço do
 					// produto abaixo dele a produção cai proporcionalmente
@@ -239,13 +251,13 @@ void SimCore::phase_production() {
 					// que impede a demanda industrial de puxar ferro/carvão/
 					// petróleo/gás sem fim quando o produto já não paga.
 					double unit_input_cost = 0.0;
-					if (recipe.yield > 0.0) {
+					if (out_yield > 0.0) {
 						for (int slot = 0; slot < recipe.input_count; ++slot) {
 							const int input = recipe.inputs[slot];
 							if (input < 0 || input >= ws_.products) {
 								continue;
 							}
-							unit_input_cost += recipe.input_qty[slot] / recipe.yield
+							unit_input_cost += recipe.input_qty[slot] / out_yield
 								* city.markets[input].price;
 						}
 					}
@@ -257,7 +269,7 @@ void SimCore::phase_production() {
 					// (o custo do petróleo é dividido só pela gasolina) e
 					// cortaria produção mesmo com diesel/querosene vendáveis.
 					double unit_byproduct_revenue = 0.0;
-					if (recipe.yield > 0.0) {
+					if (out_yield > 0.0) {
 						for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
 							const int product = recipe.byproducts[slot];
 							if (product < 0 || product >= ws_.products) {
@@ -268,8 +280,8 @@ void SimCore::phase_production() {
 							const Market& product_market = city.markets[product];
 							const double product_price = product_market.price > 0.0
 								? product_market.price : base_price(product);
-							unit_byproduct_revenue += recipe.byproduct_qty[slot]
-								/ recipe.yield * product_price;
+							unit_byproduct_revenue += eff::byproduct_yield(ws_,
+								building, recipe, slot) / out_yield * product_price;
 						}
 					}
 					const double margin = output_price + unit_byproduct_revenue
@@ -286,8 +298,8 @@ void SimCore::phase_production() {
 						margin_scale = 1.0
 							- (1.0 - kProductionMarginFloor) * severity;
 					}
-					const double batch = recipe.yield > 0.0
-						? desired_output * margin_scale / recipe.yield : 0.0;
+					const double batch = out_yield > 0.0
+						? desired_output * margin_scale / out_yield : 0.0;
 					double scale = 1.0;
 					for (int slot = 0; slot < recipe.input_count; ++slot) {
 						const int input = recipe.inputs[slot];
@@ -319,10 +331,11 @@ void SimCore::phase_production() {
 						building.input_value += used * input_market.price;
 						input_used += used;
 					}
-					output = batch * scale * recipe.yield;
+					output = batch * scale * out_yield;
 					for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
 						const int product = recipe.byproducts[slot];
-						const double amount = recipe.byproduct_qty[slot] * batch * scale;
+						const double amount = eff::byproduct_yield(ws_, building,
+							recipe, slot) * batch * scale;
 						if (amount <= 0.0) {
 							continue;
 						}
@@ -394,9 +407,16 @@ void SimCore::phase_production() {
 
 				city.markets[building.output_product].stock += output;
 				city.markets[building.output_product].supply += output;
+				// D-125: `utilization` publicado é produção ÷ capacidade
+				// (inclui a eficiência); `last_utilization` (base da folha/opex
+				// e do AI view) é a OPERAÇÃO sem eficiência — a planta emprega a
+				// equipe mesmo aprendendo.
 				building.utilization = building.capacity > 0.0
 					? output / building.capacity : 0.0;
-				building.last_utilization = building.utilization;
+				building.last_utilization = building.capacity > 0.0
+						&& efficiency > 1e-9
+					? std::clamp(output / (building.capacity * efficiency), 0.0, 1.0)
+					: building.utilization;
 				produced_scratch[static_cast<std::size_t>(bi) * n_products
 					+ static_cast<std::size_t>(building.output_product)] += output;
 				produced_today_scratch[static_cast<std::size_t>(bi) * n_products
