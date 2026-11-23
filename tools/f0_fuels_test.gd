@@ -41,6 +41,7 @@ var _failures: Array[String] = []
 
 func _init() -> void:
 	_test_refinery_coproduction()
+	_test_refinery_margin()
 	_test_fleet_grades()
 	_test_power_oil_burns_diesel()
 	_test_needs_mapping()
@@ -113,6 +114,47 @@ func _test_refinery_coproduction() -> void:
 				<= EPS * maxf(1.0, used_oil),
 			"saídas=%.6f petróleo=%.6f" % [
 				made_gasoline + made_diesel + made_jet, used_oil])
+
+
+# --- (6) margem da refinaria com co-produtos (D-123) ----------------------
+# A queixa t138: a IA comparava a refinaria pelo custo do lote dividido só pela
+# gasolina (100/t) e nunca a escolhia, embora a FIRMA a operasse com margem.
+# Aqui a conta é a mesma de `production.cpp` (D-092 + D-123), com os preços-base
+# declarados em goods.json: a receita das saídas extras tem de pagar o lote.
+func _test_refinery_margin() -> void:
+	var prices := _base_prices(_json(GOODS_PATH))
+	var recipe := _recipe(_json(RECIPES_PATH), "gasoline_a")
+	var main := "gasoline"
+	if recipe.is_empty() or not prices.has(main) or not prices.has("oil"):
+		_fail("(6) goods/recipes sem gasoline_a ou preços-base")
+		return
+	var yield_main := float(recipe.get("yield", 0.0))
+	if yield_main <= EPS:
+		_fail("(6) gasoline_a sem yield")
+		return
+	var unit_input := 0.0
+	for item in recipe.get("inputs", []):
+		unit_input += float(item.get("qty", 0.0)) / yield_main \
+				* float(prices.get(String(item.get("good", "")), 0.0))
+	var byproduct_revenue := 0.0
+	for item in recipe.get("byproducts", []):
+		byproduct_revenue += float(item.get("qty", 0.0)) / yield_main \
+				* float(prices.get(String(item.get("good", "")), 0.0))
+	# Custo de trabalho/opex por tonelada de produto principal (params da receita).
+	var labor_opex := float(recipe.get("jobs_per_ton", 0.0)) \
+			* float(recipe.get("wage", 0.0)) \
+			+ float(recipe.get("opex_per_ton", 0.0))
+	var net_cost := unit_input + labor_opex
+	var margin_with := float(prices[main]) + byproduct_revenue - net_cost
+	var margin_without := float(prices[main]) - net_cost
+	print(("[f0] margem refinaria: insumo=%.2f co-prod=%.2f trabalho/opex=%.2f "
+		+ "margem=%.2f (sem crédito=%.2f)") % [
+			unit_input, byproduct_revenue, labor_opex, margin_with,
+			margin_without])
+	_check("(6) com co-produtos a margem da refinaria é positiva",
+			margin_with > 0.0, "margem=%.2f" % margin_with)
+	_check("(6) sem o crédito a margem seria negativa (o defeito t138)",
+			margin_without < 0.0, "margem=%.2f" % margin_without)
 
 
 # --- (2) frota: cada modal exige o seu grau --------------------------------
@@ -411,6 +453,23 @@ func _array_value(status: Dictionary, key: String, index: int) -> float:
 	if index < 0 or index >= values.size():
 		return 0.0
 	return float(values[index])
+
+
+func _base_prices(goods: Variant) -> Dictionary:
+	var prices := {}
+	for good in Array(goods):
+		var entry: Dictionary = good
+		prices[String(entry.get("id", ""))] = float(
+				entry.get("base_price", 0.0))
+	return prices
+
+
+func _recipe(recipes: Variant, id: String) -> Dictionary:
+	for item in Array(recipes):
+		var entry: Dictionary = item
+		if String(entry.get("id", "")) == id:
+			return entry
+	return {}
 
 
 func _json(path: String) -> Variant:

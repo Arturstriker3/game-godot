@@ -403,6 +403,23 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 			unit_cost += recipe.input_qty[slot] / recipe.yield
 				* ai_market(view, city_index, recipe.inputs[slot], kAiPrice);
 		}
+		// F0 (D-123): a receita é um LOTE com co-produção — o valor de mercado
+		// de TODAS as saídas extras abate o custo, igual ao `pick_recipe` e à
+		// margem da firma. Era o defeito do diagnóstico t138: sem o crédito, a
+		// refinaria custava 45/0,45 = 100/t contra 78,61 da gasolina e a IA
+		// nunca a escolhia, então gasolina/diesel/querosene ficavam em 0.
+		for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+			const int byproduct = recipe.byproducts[slot];
+			if (byproduct < 0 || byproduct >= view.products) {
+				continue;
+			}
+			double price = ai_market(view, city_index, byproduct, kAiPrice);
+			if (price <= 0.0) {
+				price = 1.0;
+			}
+			unit_cost -= recipe.byproduct_qty[slot] * price / recipe.yield;
+		}
+		unit_cost = std::max(0.0, unit_cost);
 	} else if (context.input_product >= 0) {
 		unit_cost += context.input_ratio
 			* ai_market(view, city_index, context.input_product, kAiPrice);
