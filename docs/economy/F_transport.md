@@ -398,3 +398,103 @@ Essas mudanças são do **Game Systems Designer** (C++/economia) e não foram
 feitas aqui. O dado calibrado e o diagnóstico ficam versionados para a próxima
 rodada; a alternativa de marcar as refinarias como `strategic`/`state` para
 subsidiar o prejuízo **não** foi usada (seria amolecer o portão).
+
+As duas correções de núcleo pedidas acima foram implementadas e verificadas na
+§12; a leitura da §11 é a do **antes** (10 falências).
+
+## 12. F0 — verificação após as correções de núcleo (D-124)
+
+### 12.1 O que foi corrigido (4 commits, `feat/f1-fleet`)
+
+| Commit | Correção |
+|---|---|
+| `c08f859f` | `phase_accounting` credita a receita de **todas** as saídas do lote (gasolina + diesel + querosene) em `building.revenue`, a mesma conta da D-123. |
+| `4103c18e` | Indústria **sem venda** (`sold_prev <= 0`) não repõe a capacidade efetiva cheia todo dia; a planta encolhe com a demanda em vez de encher estoque e pagar folha/opex/insumo. |
+| `2e3c1c24` | Preço do co-produto pela **rota principal** e rateio do custo do lote por **valor de mercado** (EIA); `goods.json`: gasolina 78,61 → **81,08**, diesel 58,00 → **74,90**, querosene 78,61 → **78,22**. |
+| `b454cb97` | Fixture de multi-insumo mede o limitador na **1ª** oferta (teste do `production_chain_test`). |
+
+### 12.2 Testes (Godot 4.7.2, headless, exit 0)
+
+`f0_fuels_test`, `goods_data_test`, `e2e3_power_test`,
+`economy_save_load_roundtrip_test`, `production_chain_test` e
+`production_template_test`: **todos OK**, sem falha. O build-debug (ninja) já
+estava atualizado contra os fontes.
+
+### 12.3 Rodada de 365 dias
+
+`c1_world_ai_365.gd -- --days=365 --control=res://docs/economy/perf/c6_gate_base.json
+--refining-diag=1 --fuel-diag=1` (306,9 s), saída em
+`docs/economy/perf/f0_world_ai_365_coproducts.json`:
+
+| Braço | Falências | Comida (<0,975) | Violações | Travados |
+|---|---:|---:|---:|---:|
+| **Com refino** (corrigido) | **3** | **94/179** | 0 | 0 |
+| Sem refino (`--refining=0`) | 2 | 95/179 | 0 | 0 |
+| Sem energia (`--power=0`, com refino) | 4 | 96/179 | 0 | 0 |
+
+Saídas: `f0_world_ai_365_coproducts.json` (braço corrigido),
+`f0_verify_365_noref.json` e `f0_verify_365_nopower.json`.
+
+Falências do braço corrigido: `PRI-PON` cobre e ferro (dia 126, `loss_days=60`,
+as duas do controle) e **`MLT-VAL` trigo (dia 155)**. Mediana da comida 0,9729;
+drift de caixa 0,005504; trajetória `be98cd2f`.
+
+A comida passa (**94 ≤ 95**) e os invariantes passam (0 violações, 0 travados).
+As **falências não fecham** o teto de **≤2**: 3 > 2.
+
+### 12.4 Combustíveis (dia 1 → dia 365)
+
+Preço médio por nação (média simples das nações com preço; petróleo incluso):
+
+| Bem | Dia 1 | Dia 365 | × petróleo (dia 1 → 365) |
+|---|---:|---:|---:|
+| Petróleo | 45,05 | 48,01 | — |
+| Gasolina | 81,92 | **104,17** | 1,82 → **2,17** |
+| Diesel | 74,90 | **74,90** | 1,66 → **1,56** |
+| Querosene | 78,22 | **78,22** | 1,74 → **1,63** |
+
+O diesel e o querosene ficam no `base_price` derivado (rota principal) porque
+não têm escassez de mercado (oferta 214,7 contra venda 22,1 t/dia; querosene
+acumula 25 253 t em estoque). A gasolina sobe 27,2% no ano com a escassez de
+demanda efetiva contra oferta.
+
+Demanda efetiva ÷ desejo (mundo): gasolina **119,9 / 23 657,0** no dia 1
+(0,51%) e **360,0 / 23 864,2** no dia 365 (**1,51%**); diesel **0 / 0** no dia 1
+e **22,1 / 62,5** no fecho (**35,4%**); querosene **0 / 0** nos dois dias. O
+desejo de gasolina continua ~66× a venda: o limitador é a **afordabilidade**,
+não a oferta (333,1 t/dia ofertadas).
+
+### 12.5 Refino semeado
+
+| Métrica | Dia 1 | Dia 365 |
+|---|---:|---:|
+| Plantas semeadas | 122 | **122** (nenhuma fechou) |
+| Capacidade (t/dia) | 1 460,1 | 1 791,5 |
+| Utilização média | 0,229 | 0,186 |
+| Receita / custos / lucro do setor (por dia) | 9 720,7 / 51 238,2 / −41 517,5 | 60 887,6 / 41 569,9 / **+19 317,6** |
+| Plantas com lucro > 0 no fecho | — | **90/122** |
+
+A receita do dia 1 passou de 9 425 (antes, §11.2) para **9 720,7** — efeito
+conjunto do crédito dos co-produtos e dos novos preços-base; as seis refinarias
+que falhavam (`IRQ-BAG`, `IRQ-ERB`,
+`ZAF-CAP`, `ZAF-DUR`, `ARG-BUE`, `IND-MUM`) e a mina `usa_ren_oil_mine`
+**sobrevivem** ao ano. O setor fecha no azul no agregado, com 32 plantas ainda
+no vermelho (pior: `ARE-DUB`, −1 167/dia).
+
+### 12.6 A falência restante e a conclusão
+
+`MLT-VAL` **não** fecha por `loss_days` (o contador está em **0**): o banco
+executa o grupo por insolvência (`bank.cpp`, `credit_default_days >=
+default_days`). No fecho a fazenda está **parada** (receita = custos = lucro =
+0, utilização 0) com capacidade de 3,684 t/dia (semente de 2,0 t/dia), numa
+nação sem refinaria e com petróleo a 45,0. Ela **sobrevive sem o seed de
+refino** (braço de 2 falências) e **também morre sem a camada de energia**
+(dia 157), então o resíduo é **efeito de preço/mercado do seed**, não da
+contabilidade de co-produtos nem da regra de produção sem venda.
+
+As três correções resolveram **7 das 8** falências extras da §11.3 (as 6
+refinarias e `usa_ren`); resta **1** (`MLT-VAL`). O teto do portão **não foi
+movido** e a F0 **não fecha** o critério de falências (3 > 2). Próxima medição
+necessária: PL e dívida do grupo `national:G-MLT-food-157` ao longo do ano
+(hoje só o contador da planta é publicado) para dizer se a insolvência vem da
+folha atrasada na entressafra ou do crédito de safra.
