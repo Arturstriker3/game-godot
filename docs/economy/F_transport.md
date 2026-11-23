@@ -495,7 +495,16 @@ contabilidade de co-produtos nem da regra de produção sem venda.
 As três correções resolveram **7 das 8** falências extras da §11.3 (as 6
 refinarias e `usa_ren`); resta **1** (`MLT-VAL`). O **portão de falências 3/179 foi ACEITO pelo dono em 23/11/2026**
 (2 minas PRI-PON + fazenda de trigo `MLT-VAL` por insolvência bancária); o
-teto não foi movido. Próxima medição
+teto não foi movido.
+
+Depois da correção de preço dos subprodutos (t145: `producers` volta à
+saída principal; bran 5, sawdust 3,12, organic_fertilizer 24,17, meat
+11,32, canned_food 31,06, combat_ration 143,01), a MESMA rodada mede
+**5 falências** — as 3 acima + as minas de óleo USA `usa_ren` (dia 136)
+e `usa_bil` (dia 167), ambas com receita 0 e utilização 15-17% — e
+**comida 98/179** (0 violações). O controle roda com o `goods.json`
+anterior reproduz 3/94 e a trajetória `be98cd2f`, então o desvio vem
+da correção de DADOS, não do núcleo C++; decisão do dono pendente. Próxima medição
 necessária: PL e dívida do grupo `national:G-MLT-food-157` ao longo do ano
 (hoje só o contador da planta é publicado) para dizer se a insolvência vem da
 folha atrasada na entressafra ou do crédito de safra.
