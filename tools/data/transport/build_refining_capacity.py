@@ -23,10 +23,16 @@ Regras (declaradas, sem numero inventado):
   * conversao ``t/dia = mil_b/dia x 0,1364 t/barril x 1000`` -- 1 barril de
     petroleo cru = 0,1364 t (7,33 bbl/t), fator da U.S. EIA (Energy Explained,
     Units and calculators); fonte declarada em ``meta.conversion``;
-  * a capacidade de cada nacao e multiplicada pela FRACAO SIMULADA da nacao
-    (``sum(sim_population) / sum(population)`` das cidades dela), a mesma
-    razao que ``sim/power.cpp`` aplica ao parque eletrico (D-116/D-119), para
-    MW/t e dinheiro viverem na mesma escala da economia;
+  * CALIBRACAO (F0/D-124): a geografia e a share EI 2025 no mundo
+    (``thousand_bpd / 104523``); a escala vem do mundo simulado -- demanda
+    mundial de gasolina no dia 1 (23 656,925 t/dia, medido) dividida pela
+    utilizacao real de 0,80 (EI 2025), com TETO da oferta simulada de petroleo
+    (2 694,071 t/dia de capacidade de mina x 0,45 de yield). O teto impede que
+    a capacidade fique ~11x acima do insumo e as refinarias fechem por
+    ociosidade. Tudo em ``meta.calibration``;
+  * a FRACAO SIMULADA da nacao continua registrada como referencia, mas NAO e
+    mais aplicada: a ancora de demanda/oferta ja esta na escala do mundo
+    simulado (aplicar as duas descontaria a economia duas vezes);
   * a alocacao por cidade e do servico de seed (``core/economy/refining_service.gd``):
     cidades-porto do ``ports.json`` por populacao simulada; nacao sem porto usa
     a maior cidade. A regra fica em ``meta.allocation``.
@@ -70,6 +76,28 @@ ATTRIBUTION = ("Fonte: Energy Institute, Statistical Review of World Energy 2025
 # 1 barril de petroleo cru = 0,1364 t (7,33 bbl/t) -- U.S. EIA, Energy
 # Explained, "Units and calculators" (factores de conversao do petroleo cru).
 T_PER_BARREL = 0.1364
+
+# F0/D-124 -- CALIBRACAO DO ANO-BASE (mesmo principio da D-119/E2: o ano-base
+# fecha com o proprio mundo simulado).
+#   * GEOGRAFIA: o EI 2025 da a participacao de cada nacao no refino mundial
+#     (thousand_bpd / Total World).
+#   * DEMANDA: o mundo simulado, no dia 1, deseja 23 656,925 t/dia de gasolina
+#     (fuel_diag.day_1.world.gasoline.desired). Diesel e querosene tem desejo 0
+#     no dia 1 porque a frota gasta a reserva semeada; a demanda de mercado de
+#     diesel aparece ao longo do ano (~500 t/dia no dia 70). Nao se inventa
+#     consumo: o numero e medido, nao estimado.
+#   * UTILIZACAO: 0,80 -- throughput / capacidade de destilacao do EI 2025
+#     (~83 mil b/d contra 104,5 mil b/d em 2024).
+#   * TETO DE INSUMO: a demanda de gasolina a 80% exigiria 52 571 t/dia de
+#     petroleo, mas as minas de petroleo do cenario somam 2 694,071 t/dia de
+#     capacidade (medido em tools/f1_refining_measure.gd). Sem o teto a
+#     capacidade fica ~11x acima do insumo e as refinarias fecham por
+#     ociosidade (D-124). O teto e a propria oferta simulada, nao um numero
+#     de conforto.
+SIM_WORLD_GASOLINE_DEMAND_T_PER_DAY = 23656.9253478136
+SIM_WORLD_OIL_MINE_CAPACITY_T_PER_DAY = 2694.071
+REFINERY_UTILIZATION = 0.80
+REFINING_RECIPE_YIELD = 0.45
 B_CONVERSION_SOURCE = {
     "value": T_PER_BARREL,
     "unit": "t por barril de petroleo cru",
@@ -231,6 +259,16 @@ def main():
                  if str(nation.get("id", ""))}
     fractions = simulated_fractions(cities, game_tags)
 
+    world = next((row for row in aggregates if row["name"] == "Total World"),
+                 None)
+    world_bpd = world["thousand_bpd"] if world else 0
+    if not world_bpd:
+        raise SystemExit("Total World ausente: sem denominador para a share EI")
+    demand_capacity = SIM_WORLD_GASOLINE_DEMAND_T_PER_DAY / REFINERY_UTILIZATION
+    feedstock_capacity = (SIM_WORLD_OIL_MINE_CAPACITY_T_PER_DAY
+                          * REFINING_RECIPE_YIELD / REFINERY_UTILIZATION)
+    world_capacity = min(demand_capacity, feedstock_capacity)
+
     by_country = {}
     not_allocated = []
     unmapped = []
@@ -259,19 +297,21 @@ def main():
             })
             continue
         fraction = fractions.get(tag, 1.0)
-        capacity_t = kbpd * T_PER_BARREL * 1000.0
+        raw_capacity_t = kbpd * T_PER_BARREL * 1000.0
+        share = kbpd / world_bpd
         by_country[tag] = {
             "name": name,
             "country_iso3": tag,
             "thousand_bpd": kbpd,
             "year": 2024,
             "simulated_fraction": round(fraction, 6),
-            "capacity_unscaled_t_per_day": round(capacity_t, 3),
-            "capacity_t_per_day": round(capacity_t * fraction, 3),
+            "ei_share_world": round(share, 9),
+            "capacity_unscaled_t_per_day": round(raw_capacity_t, 3),
+            "capacidade_pela_demanda_t_per_day": round(
+                demand_capacity * share, 3),
+            "capacity_t_per_day": round(world_capacity * share, 3),
         }
 
-    world = next((row for row in aggregates if row["name"] == "Total World"),
-                 None)
     named_total = sum(row["thousand_bpd"] for row in by_country.values())
     other_total = sum(row["thousand_bpd"] or 0 for row in aggregates
                       if row["name"].startswith("Other "))
@@ -302,13 +342,81 @@ def main():
             },
             "conversion": {
                 "t_per_barrel": T_PER_BARREL,
-                "formula": "capacity_t_per_day = thousand_bpd * 0.1364 * 1000",
+                "formula": ("capacity_unscaled_t_per_day = thousand_bpd * "
+                            "0.1364 * 1000 (a capacidade calibrada esta em "
+                            "meta.calibration)"),
                 "source": B_CONVERSION_SOURCE,
             },
             "simulated_fraction": {
                 "rule": "sum(sim_population) / sum(population) das cidades da nacao",
                 "same_as": "D-116/D-119 - fracao simulada aplicada por sim/power.cpp ao parque eletrico",
-                "applied_to": "capacity_t_per_day (coluna derivada; thousand_bpd e o dado bruto)",
+                "applied_to": ("NAO aplicada a capacity_t_per_day (mantida como "
+                               "referencia; a ancora de demanda/oferta ja esta "
+                               "na escala do mundo simulado)"),
+            },
+            "calibration": {
+                "principle": ("o ano-base fecha com o proprio mundo simulado "
+                              "(mesmo principio da D-119/E2)"),
+                "geography": {
+                    "source": ("Energy Institute, Statistical Review of World "
+                               "Energy 2025 - Oil: Refining capacity (2024)"),
+                    "denominator": "Total World 104523 mil b/d",
+                    "rule": "share_nation = thousand_bpd_nation / 104523",
+                },
+                "demand_anchor": {
+                    "value_t_per_day": SIM_WORLD_GASOLINE_DEMAND_T_PER_DAY,
+                    "product": "gasoline",
+                    "day": 1,
+                    "scope": "world",
+                    "field": "fuel_diag.day_1.world.gasoline.desired",
+                    "measured_by": "tools/c1_world_ai_365.gd --fuel-diag=1",
+                    "evidence": "docs/economy/perf/f1_refining_measure.json",
+                    "note": ("diesel e jet_fuel desired = 0 no dia 1: a frota "
+                             "gasta a reserva semeada; a demanda de mercado de "
+                             "diesel aparece ao longo do ano (~500 t/dia no dia "
+                             "70). Nao se inventa consumo."),
+                },
+                "utilization": {
+                    "value": REFINERY_UTILIZATION,
+                    "definition": ("throughput / capacidade de destilacao "
+                                   "atmosferica, base dia-calendario"),
+                    "source": ("Energy Institute, Statistical Review of World "
+                               "Energy 2025 - Oil: Refining capacity e Oil: "
+                               "Refinery throughput (2024): ~83 mil b/d de "
+                               "throughput contra 104,5 mil b/d de capacidade "
+                               "= ~0,79-0,80"),
+                    "note": "fator real declarado, arredondado para 0,80",
+                },
+                "demand_capacity_t_per_day": round(demand_capacity, 3),
+                "feedstock_ceiling": {
+                    "oil_mine_capacity_t_per_day":
+                        SIM_WORLD_OIL_MINE_CAPACITY_T_PER_DAY,
+                    "recipe_yield": REFINING_RECIPE_YIELD,
+                    "capacity_t_per_day": round(feedstock_capacity, 3),
+                    "formula": ("oil_mine_capacity * recipe_yield / "
+                                "utilization"),
+                    "measured_by": "tools/f1_refining_measure.gd",
+                    "evidence": "docs/economy/perf/f1_refining_measure.json",
+                    "reason": ("a demanda simulada (23 656,9 t/dia de "
+                               "gasolina) exigiria ~52 571 t/dia de petroleo a "
+                               "80%; as minas de petroleo do cenario somam "
+                               "2 694,071 t/dia. Sem o teto a capacidade fica "
+                               "~11x acima do insumo e as refinarias fecham "
+                               "por ociosidade (D-124: 22 falencias). O teto e "
+                               "a propria oferta simulada, nao um numero de "
+                               "conforto."),
+                },
+                "world_capacity_t_per_day": round(world_capacity, 3),
+                "rule": "capacidade_nacao = world_capacity * share_nation",
+                "formula": ("world_capacity = min(demanda_sim / utilizacao, "
+                            "oferta_sim_petroleo * yield / utilizacao)"),
+                "missing_real_uses": [
+                    "petroquimica (nao modelada como setor)",
+                    "aviacao civil fora da frota aerea do cenario",
+                    "aquecimento residencial/comercial a oleo",
+                    "maquinario agricola e de construcao fora da frota",
+                    "consumo militar fora do exercito modelado",
+                ],
             },
             "allocation": {
                 "service": "core/economy/refining_service.gd",
@@ -330,6 +438,10 @@ def main():
             "unmapped_names": unmapped,
             "check": {
                 "countries_allocated": len(by_country),
+                "world_capacity_t_per_day": round(world_capacity, 3),
+                "allocated_capacity_t_per_day": round(
+                    sum(row["capacity_t_per_day"]
+                        for row in by_country.values()), 3),
                 "named_total_thousand_bpd": named_total,
                 "world_total_thousand_bpd": world_total,
                 "residual_thousand_bpd": residual,
@@ -411,6 +523,10 @@ def main():
           % (len(by_country), named_total,
              world_total if world_total is not None else "?",
              residual if residual is not None else "?"))
+    print("[refino] calibracao: demanda=%.1f t/dia, teto insumo=%.1f, "
+          "mundo=%.1f, alocado=%.1f t/dia"
+          % (demand_capacity, feedstock_capacity, world_capacity,
+             sum(row["capacity_t_per_day"] for row in by_country.values())))
     rounding = residual - other_total - non_game_total
     if rounding is None or abs(rounding) > 10:
         raise SystemExit("soma das linhas nao fecha com a Total World "

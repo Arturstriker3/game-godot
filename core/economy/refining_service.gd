@@ -7,11 +7,14 @@ class_name RefiningService
 ## armazenagem e energia), as construcoes `refinery` que representam a
 ## capacidade de refino do ano-base:
 ##
-##   * DADO: `data/definitions/transport/refining_capacity.json` — capacidade de
-##     destilacao atmosferica 2024 por nacao (Energy Institute, Statistical
-##     Review of World Energy 2025), ja convertida para t/dia (x 0,1364 t/barril
-##     da EIA) e multiplicada pela FRACAO SIMULADA da nacao (populacao simulada /
-##     exibida, a mesma razao do parque eletrico — D-116/D-119).
+##   * DADO: `data/definitions/transport/refining_capacity.json` — capacidade
+##     calibrada do ano-base (D-124): a GEOGRAFIA e a share de cada nacao no
+##     refino mundial (Energy Institute, Statistical Review of World Energy
+##     2025, 2024); a ESCALA vem do proprio mundo simulado — demanda mundial de
+##     gasolina no dia 1 / utilizacao real (0,80), com teto da oferta simulada
+##     de petroleo (capacidade das minas x yield 0,45). A fracao simulada
+##     continua no JSON como referencia, mas NAO e aplicada (a ancora ja esta na
+##     escala do mundo; aplicar as duas descontaria duas vezes).
 ##   * ALOCACAO (regra declarada no proprio JSON): ate 3 cidades-porto do
 ##     `ports.json` (host city) por nacao, peso = populacao simulada; nacao sem
 ##     porto usa a maior cidade. Cada cidade recebe uma `refinery` com a receita
@@ -79,6 +82,10 @@ func apply_to_sim(sim: Object, cities: Array, ports: Array = [],
 	for tag: Variant in options.get("only_nations", []):
 		only[String(tag)] = true
 	var port_cities := _port_cities(cities, ports)
+	# D-124: cidade com mina de petroleo tem prioridade (a refinaria nasce junto
+	# do insumo; sem isso a planta de cidade-porto sem petroleo local nunca
+	# comeca — o mercado de insumo nao abre demanda efetiva no dia 1).
+	var oil_cities := _oil_cities(sim)
 	var created: Array = []
 	var total_capacity := 0.0
 	var nations: Array[String] = []
@@ -92,7 +99,7 @@ func apply_to_sim(sim: Object, cities: Array, ports: Array = [],
 		var capacity := float(entry.get("capacity_t_per_day", 0.0))
 		if capacity <= 0.0:
 			continue
-		var targets := _targets(nation, cities, port_cities)
+		var targets := _targets(nation, cities, port_cities, oil_cities)
 		if targets.is_empty():
 			skipped.append(nation)
 			continue
@@ -188,9 +195,36 @@ func _port_cities(cities: Array, ports: Array) -> Dictionary:
 	return by_nation
 
 
-## Cidades-alvo da nacao (regra declarada): ate 3 cidades-porto, peso =
-## populacao simulada; sem porto, a maior cidade.
-func _targets(nation: String, cities: Array, port_cities: Dictionary) -> Array:
+## Cidades com mina de petroleo do mundo (id da cidade -> true). Leitura do
+## status; o seed roda antes do dia 1 e a mina ja existe na geografia.
+func _oil_cities(sim: Object) -> Dictionary:
+	var out: Dictionary = {}
+	if sim == null or not sim.has_method("get_status") \
+			or not sim.has_method("get_city_status"):
+		return out
+	var products: Array = Array(sim.get_products())
+	var oil_index := products.find("oil")
+	if oil_index < 0:
+		return out
+	var status: Dictionary = sim.get_status()
+	for city_row: Variant in status.get("cities", []):
+		var city: Dictionary = city_row
+		var city_id := String(city.get("id", ""))
+		var city_status: Dictionary = sim.get_city_status(city_id)
+		for building_row: Variant in city_status.get("buildings", []):
+			var building: Dictionary = building_row
+			if int(building.get("output_product", -1)) == oil_index \
+					and float(building.get("capacity", 0.0)) > 0.0:
+				out[city_id] = true
+				break
+	return out
+
+
+## Cidades-alvo da nacao (regra declarada): ate 3 cidades, peso = populacao
+## simulada; primeiro as que tem mina de petroleo (o insumo nasce junto), e
+## as vagas restantes vao para cidades-porto. Sem porto, a maior cidade.
+func _targets(nation: String, cities: Array, port_cities: Dictionary,
+		oil_cities: Dictionary) -> Array:
 	var own: Array = []
 	var port_ids: Dictionary = port_cities.get(nation, {})
 	for item: Variant in cities:
@@ -201,9 +235,21 @@ func _targets(nation: String, cities: Array, port_cities: Dictionary) -> Array:
 	if own.is_empty():
 		return []
 	var pool: Array = []
+	var seen: Dictionary = {}
 	for city: Dictionary in own:
-		if port_ids.has(String(city.get("id", ""))):
+		var city_id := String(city.get("id", ""))
+		if oil_cities.has(city_id):
 			pool.append(city)
+			seen[city_id] = true
+	for city: Dictionary in own:
+		if pool.size() >= MAX_CITIES_PER_NATION:
+			break
+		var city_id := String(city.get("id", ""))
+		if seen.has(city_id):
+			continue
+		if port_ids.has(city_id):
+			pool.append(city)
+			seen[city_id] = true
 	if pool.is_empty():
 		pool = own
 	pool.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
