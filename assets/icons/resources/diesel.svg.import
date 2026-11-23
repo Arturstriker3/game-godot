@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://40h0wdf7laqr"
-path="res://.godot/imported/fuel.svg-515be8f2032a0e7cecd5058adb0b71f3.ctex"
+uid="uid://dcw7k3pqouw1s"
+path="res://.godot/imported/diesel.svg-70a62c5947018d72b86f34da82c981a0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/resources/fuel.svg"
-dest_files=["res://.godot/imported/fuel.svg-515be8f2032a0e7cecd5058adb0b71f3.ctex"]
+source_file="res://assets/icons/resources/diesel.svg"
+dest_files=["res://.godot/imported/diesel.svg-70a62c5947018d72b86f34da82c981a0.ctex"]
 
 [params]
 
