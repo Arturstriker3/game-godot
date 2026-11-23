@@ -1071,6 +1071,8 @@ econ.tab.nations,Nações,Nations,Naciones
 econ.title,Economia do trigo,Wheat economy,Economía del trigo
 fleet.card.title,Frota da nação,National fleet,Flota de la nación
 fleet.count,{n} nações com frota,{n} nations with fleet,{n} naciones con flota
+fleet.diesel,Diesel,Diesel,Diésel
+fleet.jet,Querosene,Jet fuel,Queroseno
 fleet.fuel,Combustível,Fuel,Combustible
 fleet.missed_fleet,Sem frota,No fleet,Sin flota
 fleet.missed_fuel,Sem combustível,No fuel,Sin combustible

@@ -221,7 +221,7 @@ func _test_levels_by_income() -> void:
 	var stocks := {
 		"bread": 1000.0, "clothes": 100.0, "meat": 100.0, "canned_food": 100.0,
 		"shoes": 100.0, "medicine": 100.0, "furniture": 100.0, "phone": 100.0,
-		"alcohol": 100.0, "fuel": 100.0, "jewelry": 100.0, "computer": 100.0,
+		"alcohol": 100.0, "gasoline": 100.0, "jewelry": 100.0, "computer": 100.0,
 		"car": 100.0, "luxury_furniture": 100.0, "drone": 100.0,
 		"premium_spirits": 100.0,
 	}
