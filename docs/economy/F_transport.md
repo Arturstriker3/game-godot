@@ -574,3 +574,16 @@ colapso; TTO (cesta 0,844x, trigo 46,18/86,36, frete 12,08/t) e SUR (cesta
 limiar). Não é um erro do seed: o seed novo melhora 98->97 e sobe KWT/MEX
 para 0,976, mas SAH/TTO/SUR continuam abaixo. O alvo **comida <=95 não fecha**;
 decisão do dono.
+
+### 13.5 Aceite do dono (23/11/2026)
+
+O dono **aceitou** o resultado do §13.3 como portão da F0:
+
+- **Comida 97/179** aceita: entram `SAH` (0,456), `TTO` (0,959) e `SUR`
+  (0,959); sai `LVA`. A causa é o preço/frete do combustível (gasolina,
+  diesel e querosene separados no frete e na cesta) e o isolamento de SAH,
+  não o seed de refino — o §13.4 mostra o seed novo melhorando 98 -> 97.
+- **Falências 2** aceitas: apenas as do controle (`PRI-PON` cobre/ferro);
+  `MLT-VAL`, `usa_ren` e `usa_bil` sobrevivem.
+- O alvo anterior de comida <=95 fica **encerrado**; as próximas rodadas
+  medem contra **97/2**.
