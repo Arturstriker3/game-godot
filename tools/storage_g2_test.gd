@@ -6,7 +6,8 @@ extends SceneTree
 ## Uso: godot --headless --path . --script res://tools/storage_g2_test.gd
 ##
 ## Blocos:
-##   (1) StorageService: lê os três JSONs da G2, aplica 113/113 produtos,
+##   (1) StorageService: lê os três JSONs da G2, aplica todos os produtos do
+##       catálogo (F0/D-123: 115),
 ##       capacidade por país rateada por produção/população, reserva pública do
 ##       dia 1, ouro reportado e `only_missing` sem reescrever nada;
 ##   (2) conservação de DINHEIRO e de BENS na compra/liberação/guarda;
@@ -80,12 +81,16 @@ func _test_service() -> void:
 	]
 	var storage := StorageScript.new()
 	var report: Dictionary = storage.apply_to_sim(sim, cities, buildings)
+	# F0/D-123: a expectativa vem do catálogo (115 bens), não de um literal.
+	var goods_total := _load_array("res://data/definitions/economy/goods.json").size()
+	_check(goods_total > 0, "service: goods.json legível (%d bens)" % goods_total)
 	_check(bool(report.get("applied", false)), "service: aplicado no mundo demo")
-	_check(int(report.get("product_types_applied", 0)) == 113,
-		"service: 113/113 produtos mapeados (%d)"
-		% int(report.get("product_types_applied", 0)))
-	_check(int(report.get("product_types_total", 0)) == 113,
-		"service: total de produtos do mapa = 113")
+	_check(int(report.get("product_types_applied", 0)) == goods_total,
+		"service: %d/%d produtos mapeados"
+		% [int(report.get("product_types_applied", 0)), goods_total])
+	_check(int(report.get("product_types_total", 0)) == goods_total,
+		"service: total de produtos do mapa = %d (%d)"
+		% [goods_total, int(report.get("product_types_total", 0))])
 	_check(Array(report.get("product_types_skipped", [])).is_empty(),
 		"service: nenhum produto sem tipo")
 

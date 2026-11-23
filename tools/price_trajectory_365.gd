@@ -1,10 +1,12 @@
 extends SceneTree
 
+const TmpPaths := preload("res://tools/tmp_paths.gd")
+
 ## Trajetória de preço no mundo real (365 d, IA + urbano) — diagnóstico do
 ## equilíbrio de preço da D-092.
 ##
 ##   godot --headless --path . --script res://tools/price_trajectory_365.gd
-##     [--days=365] [--every=30] [--out=user://price_trajectory.csv]
+##     [--days=365] [--every=30] [--out=<$(OPENGS_TMP)/price_trajectory.csv>]
 ##
 ## - Monta o mundo como `tools/ore_price_365.gd` (geografia real, camada urbana,
 ##   IA de grupos ligada, threads = 1) e roda `--days` dias.
@@ -41,7 +43,7 @@ const FOOD_IDS := ["wheat", "rice", "maize", "potato", "soy", "bread", "meat",
 
 var _days := 365
 var _every := 30
-var _out := "user://price_trajectory.csv"
+var _out := TmpPaths.path("price_trajectory.csv")
 
 
 func _init() -> void:

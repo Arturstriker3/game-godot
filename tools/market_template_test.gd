@@ -1,14 +1,17 @@
 extends SceneTree
 
-## Mercado no T2: abas Bens/Ofertas, tabela dos 113 bens com ícone e preço na
+## Mercado no T2: abas Bens/Ofertas, tabela dos bens com ícone e preço na
 ## moeda local, filtro por setor, busca e detalhe do preço entregue.
 ##
 ##   godot --headless --path . --script res://tools/market_template_test.gd
 
 const HUD_PATH := "res://core/ui/hud.gd"
+const GOODS_PATH := "res://data/definitions/economy/goods.json"
 
 var _failures: Array[String] = []
 var _hud
+## Contagem esperada derivada da definição (F0/D-123: 115 bens).
+var _goods_expected := 0
 
 
 func _init() -> void:
@@ -26,6 +29,11 @@ func _run() -> void:
 	root.add_child(_hud)
 
 	print("=== market_template_test ===")
+	_goods_expected = _count_goods()
+	if _goods_expected <= 0:
+		_failures.append("goods.json ilegível")
+		_finish()
+		return
 	if not await _wait_for_summary():
 		_failures.append("economia não publicou resumo antes do teste")
 		_finish()
@@ -55,9 +63,9 @@ func _run() -> void:
 		print("cidades=%d primeira=%s" % [cities.rows.size(), _cell(cities, 0, 0)])
 
 	var goods: Variant = screen.get("_goods_table")
-	if goods == null or goods.rows.size() != 113:
-		_failures.append("tabela de bens com %d linhas (esperado 113)"
-				% (0 if goods == null else goods.rows.size()))
+	if goods == null or goods.rows.size() != _goods_expected:
+		_failures.append("tabela de bens com %d linhas (esperado %d)"
+				% [0 if goods == null else goods.rows.size(), _goods_expected])
 	else:
 		var first: Dictionary = goods.rows[0][0]
 		print("bens=%d primeiro=%s preço=%s" % [goods.rows.size(),
@@ -71,7 +79,7 @@ func _run() -> void:
 
 	screen.call("_set_sector", "food")
 	await _frames(3)
-	if goods != null and goods.rows.size() >= 113:
+	if goods != null and goods.rows.size() >= _goods_expected:
 		_failures.append("filtro de setor não reduziu a tabela")
 	else:
 		print("setor food=%d" % (0 if goods == null else goods.rows.size()))
@@ -214,6 +222,17 @@ func _text(slots: Dictionary, slot: String) -> String:
 	return node.text if node != null else ""
 
 
+## F0/D-123: o catálogo trocou o `fuel` genérico por gasoline/diesel/jet_fuel.
+## A expectativa sai da própria definição para não apodrecer a cada mudança.
+func _count_goods() -> int:
+	var file := FileAccess.open(GOODS_PATH, FileAccess.READ)
+	if file == null:
+		return 0
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return (parsed as Array).size() if typeof(parsed) == TYPE_ARRAY else 0
+
+
 func _slot_node(source: Node, slot: String) -> Control:
 	if source == null:
 		return null
@@ -244,7 +263,8 @@ func _wait_for_summary() -> bool:
 func _finish() -> void:
 	_hud.queue_free()
 	if _failures.is_empty():
-		print("PASS: mercado com 113 bens, ícones, moeda local e ofertas")
+		print("PASS: mercado com %d bens, ícones, moeda local e ofertas"
+				% _goods_expected)
 		quit(0)
 		return
 	for failure in _failures:

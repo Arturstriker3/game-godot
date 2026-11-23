@@ -372,19 +372,14 @@ void SimCore::phase_monetary() {
 void SimCore::phase_credit() {
 	// C3 (D-107): sem crédito e sem dívida o dia não muda (o default do jogo
 	// é desligado) - a fase sai sem tocar no estado.
-	// C4 (D-110): a variação dos depósitos é o dinheiro BANCÁRIO criado no dia
-	// (empréstimo e dividendo criam; principal, juro e calote destroem). O
-	// invariante da conservação soma este valor ao `emission_today` do BC.
-	double deposits_before = 0.0;
-	for (const auto& row : ws_.banks) {
-		deposits_before += row.second.deposits;
-	}
-	bank::phase(ws_);
-	double deposits_after = 0.0;
-	for (const auto& row : ws_.banks) {
-		deposits_after += row.second.deposits;
-	}
-	ws_.bank_money_today += deposits_after - deposits_before;
+	// C4 (D-110): o dinheiro BANCÁRIO criado/destruído no dia é o que a fase
+	// reporta (juro/amortização destroem, dividendo cria). O invariante da
+	// conservação soma exatamente esse valor ao `emission_today` do BC.
+	// A execução do calote NÃO entra: trocar depósito por caixa do banco não
+	// muda o `money_total` (bug de conservação corrigido na F0/t153).
+	double bank_money_delta = 0.0;
+	bank::phase(ws_, &bank_money_delta);
+	ws_.bank_money_today += bank_money_delta;
 }
 
 } // namespace ogs
