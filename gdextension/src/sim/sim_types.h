@@ -1886,11 +1886,14 @@ struct Region {
 		int arrival_day = 0;
 		// F4: frota reservada pelo pedido (liberada na chegada). O combustível
 		// já foi debitado no embarque; fica registrado para auditoria/save.
+		// F0: cada grau que o trecho queimou (diesel em caminhão/navio,
+		// jet_fuel em avião) fica no seu próprio campo.
 		std::string fleet_nation;
 		double fleet_trucks = 0.0;
 		double fleet_ships = 0.0;
 		double fleet_planes = 0.0;
-		double fuel = 0.0;
+		double diesel = 0.0;
+		double jet_fuel = 0.0;
 	};
 
 	// C2b1 (D-104) — estado da POLÍTICA MONETÁRIA de uma moeda: taxa básica

@@ -261,6 +261,34 @@ static Array remap_product_array(const Array& old,
 	return out;
 }
 
+// F0 (save v39) — o bem generico `fuel` virou gasoline/diesel/jet_fuel. Um
+// save anterior guarda o estoque no indice antigo de `fuel`; a migracao rateia
+// esse estoque pelas fracoes declaradas da refinaria (EIA 2024: 45/29/9 de
+// 83 t uteis). Sao constantes de MIGRACAO, nao de simulacao: nada no dia as
+// consulta.
+constexpr double kLegacyFuelGasolineShare = 45.0 / 83.0;
+constexpr double kLegacyFuelDieselShare = 29.0 / 83.0;
+constexpr double kLegacyFuelJetShare = 9.0 / 83.0;
+
+// F0: ids de receita do combustivel generico (saves v38 e anteriores) mapeados
+// para a receita que ocupa o lugar. O id novo vem de recipes.json; a receita
+// antiga continua valida para um snapshot antigo (que traz a propria lista).
+static const char* legacy_recipe_alias(const std::string& id) {
+	if (id == "fuel_a") {
+		return "gasoline_a";
+	}
+	if (id == "fuel_b") {
+		return "gasoline_b";
+	}
+	if (id == "fuel_c") {
+		return "diesel_a";
+	}
+	if (id == "fuel_d") {
+		return "diesel_b";
+	}
+	return nullptr;
+}
+
 } // namespace
 
 Value to_value(const WorldState& ws, const SimCore& core) {
@@ -1223,7 +1251,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["fleet_trucks"] = shipment.fleet_trucks;
 		entry["fleet_ships"] = shipment.fleet_ships;
 		entry["fleet_planes"] = shipment.fleet_planes;
-		entry["fuel"] = shipment.fuel;
+		entry["diesel"] = shipment.diesel;
+		entry["jet_fuel"] = shipment.jet_fuel;
 		transit.append(entry);
 	}
 	data["in_transit"] = transit;
@@ -1244,12 +1273,18 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["target_trucks"] = fleet.target_trucks;
 		entry["target_ships"] = fleet.target_ships;
 		entry["target_planes"] = fleet.target_planes;
-		entry["fuel"] = fleet.fuel;
-		entry["fuel_target"] = fleet.fuel_target;
+		entry["diesel"] = fleet.diesel;
+		entry["diesel_target"] = fleet.diesel_target;
+		entry["jet_fuel"] = fleet.jet_fuel;
+		entry["jet_target"] = fleet.jet_target;
 		entry["spare_parts"] = fleet.spare_parts;
 		entry["health"] = Array{fleet.health[0], fleet.health[1], fleet.health[2]};
 		entry["fuel_used_total"] = fleet.fuel_used_total;
 		entry["fuel_bought_total"] = fleet.fuel_bought_total;
+		entry["diesel_used_total"] = fleet.diesel_used_total;
+		entry["jet_used_total"] = fleet.jet_used_total;
+		entry["diesel_bought_total"] = fleet.diesel_bought_total;
+		entry["jet_bought_total"] = fleet.jet_bought_total;
 		entry["parts_used_total"] = fleet.parts_used_total;
 		entry["vehicles_bought_total"] = fleet.vehicles_bought_total;
 		entry["derived"] = fleet.derived;
@@ -1984,6 +2019,39 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	const Array saved_products = data.get("products", Array());
 	const bool has_saved_products = saved_products.size() > 0;
 	const bool needs_legacy_migration = !has_saved_products && version < 3;
+	// F0 (save v39): o bem generico `fuel` foi separado em gasoline/diesel/
+	// jet_fuel. No caminho normal o mundo ja veio com a lista NOVA de bens
+	// (set_goods antes do load), entao o indice antigo de `fuel` nao resolve:
+	// o estoque e rateado nas fracoes da refinaria e a frota pelo consumo de
+	// cada modal. Num snapshot antigo a lista de bens vem do proprio arquivo e
+	// `fuel` continua existindo — ai nada e migrado (o mundo antigo segue
+	// inteiro, com o seu proprio motor).
+	const int legacy_gasoline = core.product_index("gasoline");
+	const int legacy_diesel = core.product_index("diesel");
+	const int legacy_jet = core.product_index("jet_fuel");
+	const bool legacy_fuel_migration = version < 39
+		&& core.product_index("fuel") < 0
+		&& legacy_gasoline >= 0 && legacy_diesel >= 0 && legacy_jet >= 0;
+	int legacy_fuel_index = -1;
+	if (legacy_fuel_migration && has_saved_products) {
+		for (int index = 0; index < saved_products.size(); ++index) {
+			if (String(saved_products[index]) == "fuel") {
+				legacy_fuel_index = index;
+				break;
+			}
+		}
+	}
+	// Produto do save antigo que era `fuel`: vira gasoline (produto principal
+	// da refinaria). Usado por construcoes, obras e cargas; o estoque de
+	// mercado/armazem usa a divisao pelas fracoes, nao este substituto.
+	const auto legacy_substitute = [&](int old_index) -> int {
+		if (!legacy_fuel_migration || !has_saved_products
+				|| old_index < 0 || old_index >= saved_products.size()) {
+			return -1;
+		}
+		return String(saved_products[old_index]) == "fuel"
+			? legacy_gasoline : -1;
+	};
 	std::vector<int> product_remap;
 	if (has_saved_products) {
 		product_remap.resize(
@@ -3754,6 +3822,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		}
 
 		Array markets = entry.get("markets", Array());
+		// F0: estoque do combustivel generico no save antigo (indice antigo de
+		// `fuel` na lista salva). Rateado nas tres grades logo abaixo.
+		double legacy_fuel_stock = 0.0;
+		if (legacy_fuel_index >= 0 && legacy_fuel_index < markets.size()) {
+			const Dictionary legacy_market = markets[legacy_fuel_index];
+			legacy_fuel_stock = safe_nonneg(
+				double(legacy_market.get("stock", 0.0)));
+		}
 		if (has_saved_products || needs_legacy_migration) {
 			// Remapeia os mercados antigos por id (save v7 com 114 produtos,
 			// descartando `body_armor`) ou pelo deslocamento -2 (save v1/v2 com
@@ -3799,6 +3875,18 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			city.markets[product].shortage = double(market.get("shortage", 0.0));
 			city.markets[product].surplus = double(market.get("surplus", 0.0));
 		}
+		// F0: o estoque generico de `fuel` do save antigo entra nas tres
+		// grades pelas fracoes da refinaria. O preco local de cada grade comeca
+		// no preco-base declarado em goods.json (nao ha preco generico a
+		// herdar sem inventar conversao entre bens diferentes).
+		if (legacy_fuel_stock > 0.0) {
+			city.markets[legacy_gasoline].stock +=
+				legacy_fuel_stock * kLegacyFuelGasolineShare;
+			city.markets[legacy_diesel].stock +=
+				legacy_fuel_stock * kLegacyFuelDieselShare;
+			city.markets[legacy_jet].stock +=
+				legacy_fuel_stock * kLegacyFuelJetShare;
+		}
 		ws.cities.push_back(city);
 	}
 
@@ -3821,8 +3909,15 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		building.input_product = int(entry.get("input_product", -1));
 		building.output_product = int(entry.get("output_product", 0));
 		if (has_saved_products || needs_legacy_migration) {
+			const int legacy_output = legacy_substitute(building.output_product);
 			building.input_product = migrate_index(building.input_product);
 			building.output_product = migrate_index(building.output_product);
+			if (building.output_product < 0 && legacy_output >= 0) {
+				// F0: esta construcao produzia o `fuel` generico; passa a
+				// produzir gasoline (a refinaria entrega diesel e querosene
+				// por co-producao).
+				building.output_product = legacy_output;
+			}
 			if (building.output_product < 0) {
 				// Produto removido da cadeia (farinha/pão ou body_armor):
 				// construção descartada.
@@ -3833,8 +3928,18 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		building.input_per_output = double(entry.get("input_per_output", 0.0));
 		// Receita industrial: o id é resolvido na tabela carregada por
 		// set_recipes (v4). Save v3 não tem a chave -> produtor legado.
-		const String recipe_id = String(entry.get("recipe", ""));
-		building.recipe = recipe_id.is_empty() ? -1 : core.recipe_index(std::string(recipe_id.utf8().get_data()));
+		const std::string building_recipe_id =
+			std::string(String(entry.get("recipe", "")).utf8().get_data());
+		building.recipe = building_recipe_id.empty()
+			? -1 : core.recipe_index(building_recipe_id);
+		if (building.recipe < 0) {
+			// F0: receita do combustivel generico (fuel_a..fuel_d) de um save
+			// antigo -> a receita que ocupa o lugar hoje.
+			const char* alias = legacy_recipe_alias(building_recipe_id);
+			if (alias != nullptr) {
+				building.recipe = core.recipe_index(std::string(alias));
+			}
+		}
 		building.capital_per_capacity = std::max(1.0, safe_nonneg(
 			double(entry.get("capital_per_capacity", kCapitalPerCapacity))));
 		building.jobs = double(entry.get("jobs", 0.0));
@@ -3954,14 +4059,26 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			String(entry.get("resource", "")).utf8().get_data());
 		project.output_product = int(entry.get("output_product", -1));
 		if (!urban_project && (has_saved_products || needs_legacy_migration)) {
+			const int legacy_output = legacy_substitute(project.output_product);
 			project.output_product = migrate_index(project.output_product);
+			if (project.output_product < 0 && legacy_output >= 0) {
+				// F0: obra do `fuel` generico -> gasoline (ver save v39).
+				project.output_product = legacy_output;
+			}
 			if (project.output_product < 0) {
 				continue;  // produto removido: obra descartada
 			}
 		}
-		const String recipe_id = String(entry.get("recipe", ""));
-		project.recipe = recipe_id.is_empty()
-			? -1 : core.recipe_index(std::string(recipe_id.utf8().get_data()));
+		const std::string project_recipe_id =
+			std::string(String(entry.get("recipe", "")).utf8().get_data());
+		project.recipe = project_recipe_id.empty()
+			? -1 : core.recipe_index(project_recipe_id);
+		if (project.recipe < 0) {
+			const char* alias = legacy_recipe_alias(project_recipe_id);
+			if (alias != nullptr) {
+				project.recipe = core.recipe_index(std::string(alias));
+			}
+		}
 		project.input_product = int(entry.get("input_product", -1));
 		if (!urban_project && (has_saved_products || needs_legacy_migration)) {
 			project.input_product = migrate_index(project.input_product);
@@ -4050,13 +4167,21 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			std::string(String(entry.get("to_city", "")).utf8().get_data());
 		shipment.product = int(entry.get("product", 0));
 		if (has_saved_products || needs_legacy_migration) {
+			const int legacy_product = legacy_substitute(shipment.product);
 			const int migrated = migrate_index(shipment.product);
 			if (migrated < 0) {
-				// Produto removido da cadeia em trânsito (farinha/pão ou
-				// body_armor): carga descartada.
-				continue;
+				if (legacy_product >= 0) {
+					// F0: carga de `fuel` em transito -> gasoline (a tonelagem e
+					// preservada; a reserva de frota do pedido nao muda).
+					shipment.product = legacy_product;
+				} else {
+					// Produto removido da cadeia em trânsito (farinha/pão ou
+					// body_armor): carga descartada.
+					continue;
+				}
+			} else {
+				shipment.product = migrated;
 			}
-			shipment.product = migrated;
 		}
 		shipment.amount = double(entry.get("amount", 0.0));
 		shipment.arrival_day = int(entry.get("arrival_day", 0));
@@ -4066,7 +4191,22 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		shipment.fleet_trucks = double(entry.get("fleet_trucks", 0.0));
 		shipment.fleet_ships = double(entry.get("fleet_ships", 0.0));
 		shipment.fleet_planes = double(entry.get("fleet_planes", 0.0));
-		shipment.fuel = double(entry.get("fuel", 0.0));
+		// F0: combustivel do trecho por grau. Save v38 e anterior guardava um
+		// total (`fuel`): rateia pelo consumo diario que o modal declararia
+		// (avião -> querosene; caminhao/navio -> diesel) — campo de auditoria,
+		// nao afeta a reserva (ja debitada no embarque).
+		shipment.diesel = safe_nonneg(double(entry.get("diesel", 0.0)));
+		shipment.jet_fuel = safe_nonneg(double(entry.get("jet_fuel", 0.0)));
+		if (version < 39 && entry.has("fuel")) {
+			const double legacy_fuel = safe_nonneg(double(entry.get("fuel", 0.0)));
+			const double jet_day = shipment.fleet_planes * kFleetFuelPerPlaneDay;
+			const double diesel_day = shipment.fleet_trucks * kFleetFuelPerTruckDay
+				+ shipment.fleet_ships * kFleetFuelPerShipDay;
+			const double total_day = jet_day + diesel_day;
+			const double jet_share = total_day > 1e-12 ? jet_day / total_day : 0.0;
+			shipment.diesel += legacy_fuel * (1.0 - jet_share);
+			shipment.jet_fuel += legacy_fuel * jet_share;
+		}
 		ws.in_transit.push_back(shipment);
 	}
 
@@ -4405,8 +4545,30 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		fleet.target_trucks = safe_nonneg(double(entry.get("target_trucks", 0.0)));
 		fleet.target_ships = safe_nonneg(double(entry.get("target_ships", 0.0)));
 		fleet.target_planes = safe_nonneg(double(entry.get("target_planes", 0.0)));
-		fleet.fuel = safe_nonneg(double(entry.get("fuel", 0.0)));
-		fleet.fuel_target = safe_nonneg(double(entry.get("fuel_target", 0.0)));
+		// F0 (v39): estoque por grau. Save v38 e anterior guarda um `fuel`
+		// unico: rateia pelo consumo diario de cada modal (caminhao/navio ->
+		// diesel, aviao -> querosene), a mesma regra de init_fleets.
+		fleet.diesel = safe_nonneg(double(entry.get("diesel", 0.0)));
+		fleet.diesel_target = safe_nonneg(
+			double(entry.get("diesel_target", 0.0)));
+		fleet.jet_fuel = safe_nonneg(double(entry.get("jet_fuel", 0.0)));
+		fleet.jet_target = safe_nonneg(double(entry.get("jet_target", 0.0)));
+		const double legacy_diesel_day = fleet.trucks * kFleetFuelPerTruckDay
+			+ fleet.ships * kFleetFuelPerShipDay;
+		const double legacy_jet_day = fleet.planes * kFleetFuelPerPlaneDay;
+		const double legacy_total_day = legacy_diesel_day + legacy_jet_day;
+		const double legacy_jet_share = legacy_total_day > 1e-12
+			? legacy_jet_day / legacy_total_day : 0.0;
+		if (version < 39 && entry.has("fuel")) {
+			const double legacy_fuel = safe_nonneg(
+				double(entry.get("fuel", 0.0)));
+			const double legacy_target = safe_nonneg(
+				double(entry.get("fuel_target", 0.0)));
+			fleet.diesel += legacy_fuel * (1.0 - legacy_jet_share);
+			fleet.jet_fuel += legacy_fuel * legacy_jet_share;
+			fleet.diesel_target += legacy_target * (1.0 - legacy_jet_share);
+			fleet.jet_target += legacy_target * legacy_jet_share;
+		}
 		fleet.spare_parts = safe_nonneg(double(entry.get("spare_parts", 0.0)));
 		Array health = entry.get("health", Array());
 		for (int mode = 0; mode < 3; ++mode) {
@@ -4415,6 +4577,26 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		}
 		fleet.fuel_used_total = double(entry.get("fuel_used_total", 0.0));
 		fleet.fuel_bought_total = double(entry.get("fuel_bought_total", 0.0));
+		fleet.diesel_used_total =
+			double(entry.get("diesel_used_total", 0.0));
+		fleet.jet_used_total =
+			double(entry.get("jet_used_total", 0.0));
+		fleet.diesel_bought_total =
+			double(entry.get("diesel_bought_total", 0.0));
+		fleet.jet_bought_total =
+			double(entry.get("jet_bought_total", 0.0));
+		if (version < 39 && !entry.has("diesel_used_total")) {
+			// F0: contadores historicos do save antigo divididos pela mesma
+			// proporcao de consumo (auditoria; nao entra no dia).
+			fleet.diesel_used_total =
+				fleet.fuel_used_total * (1.0 - legacy_jet_share);
+			fleet.jet_used_total =
+				fleet.fuel_used_total * legacy_jet_share;
+			fleet.diesel_bought_total =
+				fleet.fuel_bought_total * (1.0 - legacy_jet_share);
+			fleet.jet_bought_total =
+				fleet.fuel_bought_total * legacy_jet_share;
+		}
 		fleet.parts_used_total = double(entry.get("parts_used_total", 0.0));
 		fleet.vehicles_bought_total =
 			double(entry.get("vehicles_bought_total", 0.0));
@@ -4443,7 +4625,8 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		core.init_fleets();
 	} else {
 		// Índices dos bens da frota (products já carregados antes do load).
-		ws.fleet_product_fuel = core.product_index(std::string(String("fuel").utf8().get_data()));
+		ws.fleet_product_diesel = core.product_index(std::string(String("diesel").utf8().get_data()));
+		ws.fleet_product_jet = core.product_index(std::string(String("jet_fuel").utf8().get_data()));
 		ws.fleet_product_truck = core.product_index(std::string(String("truck").utf8().get_data()));
 		ws.fleet_product_ship = core.product_index(std::string(String("cargo_ship").utf8().get_data()));
 		ws.fleet_product_plane = core.product_index(std::string(String("cargo_plane").utf8().get_data()));
@@ -4932,6 +5115,26 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				const Dictionary item = stock[slot];
 				const std::string product = std::string(
 					String(item.get("product", String())).utf8().get_data());
+				// F0: estoque do `fuel` generico no armazem de um save antigo:
+				// rateado nas tres grades (mesmas fracoes da refinaria).
+				if (legacy_fuel_migration && product == "fuel") {
+					const double tons = safe_nonneg(
+						double(item.get("tons", 0.0)));
+					const double inflow = std::min(tons,
+						safe_nonneg(double(item.get("inflow_t", 0.0))));
+					site.stock[legacy_gasoline] +=
+						tons * kLegacyFuelGasolineShare;
+					site.stock[legacy_diesel] +=
+						tons * kLegacyFuelDieselShare;
+					site.stock[legacy_jet] += tons * kLegacyFuelJetShare;
+					site.inflow_stock[legacy_gasoline] +=
+						inflow * kLegacyFuelGasolineShare;
+					site.inflow_stock[legacy_diesel] +=
+						inflow * kLegacyFuelDieselShare;
+					site.inflow_stock[legacy_jet] +=
+						inflow * kLegacyFuelJetShare;
+					continue;
+				}
 				const auto product_found = ws.product_lookup.find(product);
 				if (product_found == ws.product_lookup.end()) {
 					continue;
