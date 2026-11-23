@@ -1,5 +1,7 @@
 extends Node3D
 
+const TmpPaths := preload("res://tools/tmp_paths.gd")
+
 ## Benchmark oficial de escala mundial (sintético, em memória).
 ##
 ## Gera ~190 nações e N cidades (padrão 650) com portos e uma fazenda por
@@ -690,7 +692,7 @@ func _print_report() -> void:
 func _write_json() -> void:
 	var path := _out
 	if path.is_empty():
-		path = OS.get_environment("TEMP").path_join("world_scale_bench.json")
+		path = TmpPaths.path("world_scale_bench.json")
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return

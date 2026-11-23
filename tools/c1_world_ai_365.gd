@@ -1,5 +1,7 @@
 extends SceneTree
 
+const TmpPaths := preload("res://tools/tmp_paths.gd")
+
 ## C1 — mundo real com IA por N dias, com a contabilidade por balanço ligada.
 ##
 ##   godot --headless --path . --script res://tools/c1_world_ai_365.gd -- \
@@ -133,6 +135,10 @@ func _init() -> void:
 	# argumentos de usuário: `OGS_C1_OUT` escolhe o arquivo de saída.
 	if OS.get_environment("OGS_C1_OUT") != "":
 		_out = OS.get_environment("OGS_C1_OUT")
+	elif OS.get_environment("OPENGS_TMP").strip_edges() != "":
+		# Regra de disco: com OPENGS_TMP definido (o runner sempre define), o
+		# JSON grande vai para o disco de temporários, não para o repo nem C:.
+		_out = TmpPaths.path("c1_world_ai_365.json")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
