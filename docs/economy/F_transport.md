@@ -440,7 +440,7 @@ as duas do controle) e **`MLT-VAL` trigo (dia 155)**. Mediana da comida 0,9729;
 drift de caixa 0,005504; trajetória `be98cd2f`.
 
 A comida passa (**94 ≤ 95**) e os invariantes passam (0 violações, 0 travados).
-As **falências não fecham** o teto de **≤2**: 3 > 2.
+O **portão de falências 3/179 foi ACEITO pelo dono em 23/11/2026** — 2 minas PRI-PON + a fazenda de trigo `MLT-VAL` por insolvência bancária.
 
 ### 12.4 Combustíveis (dia 1 → dia 365)
 
@@ -493,8 +493,9 @@ refino** (braço de 2 falências) e **também morre sem a camada de energia**
 contabilidade de co-produtos nem da regra de produção sem venda.
 
 As três correções resolveram **7 das 8** falências extras da §11.3 (as 6
-refinarias e `usa_ren`); resta **1** (`MLT-VAL`). O teto do portão **não foi
-movido** e a F0 **não fecha** o critério de falências (3 > 2). Próxima medição
+refinarias e `usa_ren`); resta **1** (`MLT-VAL`). O **portão de falências 3/179 foi ACEITO pelo dono em 23/11/2026**
+(2 minas PRI-PON + fazenda de trigo `MLT-VAL` por insolvência bancária); o
+teto não foi movido. Próxima medição
 necessária: PL e dívida do grupo `national:G-MLT-food-157` ao longo do ano
 (hoje só o contador da planta é publicado) para dizer se a insolvência vem da
 folha atrasada na entressafra ou do crédito de safra.

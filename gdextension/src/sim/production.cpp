@@ -263,8 +263,13 @@ void SimCore::phase_production() {
 							if (product < 0 || product >= ws_.products) {
 								continue;
 							}
+							// Fallback único do co-produto sem mercado (t145): o
+							// mesmo preço-base do `pick_recipe` e da IA.
+							const Market& product_market = city.markets[product];
+							const double product_price = product_market.price > 0.0
+								? product_market.price : base_price(product);
 							unit_byproduct_revenue += recipe.byproduct_qty[slot]
-								/ recipe.yield * city.markets[product].price;
+								/ recipe.yield * product_price;
 						}
 					}
 					const double margin = output_price + unit_byproduct_revenue

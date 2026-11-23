@@ -415,7 +415,9 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 			}
 			double price = ai_market(view, city_index, byproduct, kAiPrice);
 			if (price <= 0.0) {
-				price = 1.0;
+				// Fallback único do co-produto sem mercado (t145): âncora
+				// do catálogo, o mesmo valor do `pick_recipe` e da margem.
+				price = ai_base_price(view, byproduct);
 			}
 			unit_cost -= recipe.byproduct_qty[slot] * price / recipe.yield;
 		}

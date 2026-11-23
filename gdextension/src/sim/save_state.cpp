@@ -289,6 +289,20 @@ static const char* legacy_recipe_alias(const std::string& id) {
 	return nullptr;
 }
 
+// F0 (t145): num snapshot v38 e anterior a lista de bens vem do PROPRIO arquivo
+// e o combustivel de referencia e o bem generico `fuel`. Sem o id moderno, o
+// papel volta ao antigo — senao `fleet_product_diesel`/`jet` e o insumo da
+// usina a oleo ficariam -1 e a frota/planta parariam em silencio.
+static int product_or_legacy(const SimCore& core, const char* modern,
+		const char* legacy) {
+	const int index = core.product_index(std::string(modern));
+	if (index >= 0) {
+		return index;
+	}
+	return legacy != nullptr
+		? core.product_index(std::string(legacy)) : -1;
+}
+
 } // namespace
 
 Value to_value(const WorldState& ws, const SimCore& core) {
@@ -4625,8 +4639,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		core.init_fleets();
 	} else {
 		// Índices dos bens da frota (products já carregados antes do load).
-		ws.fleet_product_diesel = core.product_index(std::string(String("diesel").utf8().get_data()));
-		ws.fleet_product_jet = core.product_index(std::string(String("jet_fuel").utf8().get_data()));
+		// F0 (t145): snapshot v38 e anterior usa o `fuel` genérico no lugar de
+		// diesel/querosene — o papel volta ao id antigo em vez de -1.
+		ws.fleet_product_diesel = product_or_legacy(core, "diesel", "fuel");
+		ws.fleet_product_jet = product_or_legacy(core, "jet_fuel", "fuel");
 		ws.fleet_product_truck = core.product_index(std::string(String("truck").utf8().get_data()));
 		ws.fleet_product_ship = core.product_index(std::string(String("cargo_ship").utf8().get_data()));
 		ws.fleet_product_plane = core.product_index(std::string(String("cargo_plane").utf8().get_data()));

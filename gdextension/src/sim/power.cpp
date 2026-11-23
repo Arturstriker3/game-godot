@@ -53,11 +53,14 @@ constexpr double kPowerHoursPerYear = 8760.0;
 // Produto de combustível de cada fonte térmica (-1 = sem compra de mercado).
 int fuel_product_of(const WorldState& ws, int fuel) {
 	const char* good = nullptr;
+	// F0: num snapshot v38 e anterior a lista de bens vem do próprio arquivo e o
+	// combustível ainda é o `fuel` genérico; o papel antigo é o fallback.
+	const char* legacy = nullptr;
 	switch (fuel) {
 	case POWER_COAL: good = "coal"; break;
 	case POWER_GAS: good = "gas"; break;
 	// F0: usina a óleo queima diesel refinado (não petróleo cru).
-	case POWER_OIL: good = "diesel"; break;
+	case POWER_OIL: good = "diesel"; legacy = "fuel"; break;
 	case POWER_NUCLEAR: good = "uranium"; break;
 	case POWER_BIOMASS: good = "wood"; break;
 	default: good = nullptr; break;
@@ -66,7 +69,16 @@ int fuel_product_of(const WorldState& ws, int fuel) {
 		return -1;
 	}
 	const auto found = ws.product_lookup.find(good);
-	return found == ws.product_lookup.end() ? -1 : found->second;
+	if (found != ws.product_lookup.end()) {
+		return found->second;
+	}
+	if (legacy != nullptr) {
+		const auto old = ws.product_lookup.find(legacy);
+		if (old != ws.product_lookup.end()) {
+			return old->second;
+		}
+	}
+	return -1;
 }
 
 } // namespace

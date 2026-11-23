@@ -116,6 +116,10 @@ struct AiView {
 	std::vector<AiCityRow> city_rows;
 	// Mercados cidade × produto: índice = city * products + product.
 	std::vector<AiMarketRow> markets;
+	// Preço-base (âncora) do catálogo, tamanho = products. Fallback documentado
+	// do co-produto sem preço de mercado (== `SimCore::base_price`): o mesmo
+	// valor que `pick_recipe` e a margem da firma já usam.
+	std::vector<double> base_price;
 	// Teto físico agrícola cidade × produto (`City::land_capacity`): área
 	// cultivável × produtividade FAO, o mesmo valor que
 	// `GeographyService.city_land_capacity_t_day` declara ao núcleo. 0 = a
@@ -232,6 +236,9 @@ enum AiPopField : int {
 // == `IndustryTemplates.market_field` / `.pop_field` (ramo leve).
 double ai_market(const AiView& view, int city, int product, AiMarketField field);
 double ai_pop(const AiView& view, int city, AiPopField field);
+// Preço-base do produto (âncora); 0 fora da faixa. Fallback único do
+// co-produto sem mercado, igual ao `pick_recipe` e à margem da firma.
+double ai_base_price(const AiView& view, int product);
 
 // Faixa [begin, end) da cidade nas tabelas planas (== `_building_range`,
 // `d_offset` e `c_offset` do `light`). Cidade sem contexto devolve 0/0.

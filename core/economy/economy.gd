@@ -387,6 +387,17 @@ func refresh_power() -> Dictionary:
 	return power.apply_to_sim(sim, _load_cities(), {"only_missing": true})
 
 
+## F0/D-124: reaplica no núcleo o refino que FALTAR depois de carregar um save.
+## Save v39 já traz as construções `refinery` no estado e o serviço para em
+## `world_already_has_refining` (save manda); save v38 e anterior não tem o
+## bloco e recebe a capacidade do dado aqui, como no dia 0.
+func refresh_refining() -> Dictionary:
+	if sim == null or not sim.has_method("build"):
+		return {}
+	var refining := RefiningServiceScript.new()
+	return refining.apply_to_sim(sim, _load_cities(), _load_ports())
+
+
 ## F9: nome da maior cidade de cada nacao (usado como {place} no nome dos
 ## grupos). Le as cidades do cenario; nao inventa nome onde nao ha dado.
 func _capital_names() -> Dictionary:

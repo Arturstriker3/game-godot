@@ -46,6 +46,8 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	// (p_*), na ordem cidade → produto.
 	view.city_rows.resize(cities);
 	view.markets.resize(cities * products);
+	// Preço-base (âncora) do catálogo: fallback único do co-produto sem mercado.
+	view.base_price.assign(products, 0.0);
 	view.c_land_capacity.assign(cities * products, 0.0);
 	view.pop.resize(cities);
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
@@ -116,6 +118,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 		}
 		view.product_food_calories[product] =
 			core.food_calories(static_cast<int>(product));
+		view.base_price[product] = core.base_price(static_cast<int>(product));
 	}
 	for (const StorageSite& site : ws.storage_sites) {
 		if (site.city_index < 0
@@ -367,6 +370,14 @@ double ai_market(const AiView& view, int city, int product, AiMarketField field)
 	case kAiDesired: return row.desired;
 	}
 	return 0.0;
+}
+
+double ai_base_price(const AiView& view, int product) {
+	if (product < 0
+			|| product >= static_cast<int>(view.base_price.size())) {
+		return 0.0;
+	}
+	return view.base_price[static_cast<std::size_t>(product)];
 }
 
 double ai_pop(const AiView& view, int city, AiPopField field) {
@@ -727,7 +738,9 @@ int ai_best_recipe(const AiView& view, const AiTemplates& templates, int city,
 			}
 			double price = ai_market(view, city, byproduct, kAiPrice);
 			if (price <= 0.0) {
-				price = 1.0;
+				// Fallback único do co-produto sem mercado (t145): âncora
+				// do catálogo, o mesmo valor do `pick_recipe` e da margem.
+				price = ai_base_price(view, byproduct);
 			}
 			cost -= recipe.byproduct_qty[slot] * price / recipe.yield;
 		}
@@ -765,7 +778,9 @@ double ai_variable_cost(const AiView& view, const AiTemplates& templates,
 			}
 			double price = ai_market(view, city, byproduct, kAiPrice);
 			if (price <= 0.0) {
-				price = 1.0;
+				// Fallback único do co-produto sem mercado (t145): âncora
+				// do catálogo, o mesmo valor do `pick_recipe` e da margem.
+				price = ai_base_price(view, byproduct);
 			}
 			unit -= recipe.byproduct_qty[slot] * price / recipe.yield;
 		}

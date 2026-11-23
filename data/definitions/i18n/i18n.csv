@@ -1073,7 +1073,6 @@ fleet.card.title,Frota da nação,National fleet,Flota de la nación
 fleet.count,{n} nações com frota,{n} nations with fleet,{n} naciones con flota
 fleet.diesel,Diesel,Diesel,Diésel
 fleet.jet,Querosene,Jet fuel,Queroseno
-fleet.fuel,Combustível,Fuel,Combustible
 fleet.missed_fleet,Sem frota,No fleet,Sin flota
 fleet.missed_fuel,Sem combustível,No fuel,Sin combustible
 fleet.note,"Veículos em uso, combustível e peças vêm do estoque nacional; sem frota ou combustível a carga não sai.","Vehicles in use, fuel and parts come from the national stock; without fleet or fuel, cargo does not leave.","Vehículos en uso, combustible y piezas vienen del stock nacional; sin flota o combustible, la carga no sale."
