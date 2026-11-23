@@ -110,6 +110,11 @@ var _control_path := ""
 # dia 1 e no fecho, oferta × demanda de gasolina/diesel/querosene, capacidade
 # de refino e frete da comida importada. Só medição: não muda regra nem mundo.
 var _fuel_diag := false
+# F0 (D-124 item 1): diagnostico de PETROLEO (--oil-diag=1). Mede oferta,
+# demanda, preco e compradores por cidade/rota nos dias 1, 135, 136, 167 e no
+# fecho, para separar mina sem comprador de preco de mercado. So medicao.
+var _oil_diag := false
+const OIL_SAMPLE_DAYS: Array[int] = [1, 135, 136, 167]
 # Receitas que produzem combustível: refinaria (co-produção) e as rotas
 # alternativas declaradas em recipes.json (GTL/CTL).
 const FUEL_RECIPES: Array[String] = ["gasoline_a", "diesel_a", "diesel_b"]
@@ -162,6 +167,11 @@ func _init() -> void:
 			if arg.contains("="):
 				fuel_value = arg.split("=", true, 1)[1]
 			_fuel_diag = fuel_value != "0"
+		elif arg.begins_with("--oil-diag"):
+			var oil_value := "1"
+			if arg.contains("="):
+				oil_value = arg.split("=", true, 1)[1]
+			_oil_diag = oil_value != "0"
 	_run()
 
 
@@ -931,6 +941,144 @@ func _print_refining_report(report: Dictionary) -> void:
 		float(report.get("oil_mine_capacity_t_per_day", 0.0))])
 
 
+## F0 (D-124 item 1): diagnostico de PETROLEO. Mede, no dia `day`, oferta,
+## demanda, desejo, vendido, estoque e preco do petroleo no mundo e por nacao;
+## o estado de cada mina de petroleo (capacidade, uso, receita, lucro,
+## loss_days); e os pedidos de comercio de petroleo por rota (origem ->
+## destino, quantidade, frete, preco entregue). So leitura.
+func _oil_report(sim: Object, status: Dictionary, day: int) -> Dictionary:
+	var products: PackedStringArray = sim.get_products()
+	var oil_index := products.find("oil")
+	if oil_index < 0:
+		return {"day": day, "reason": "core_without_oil"}
+	var world := {"supply": 0.0, "demand": 0.0, "desired": 0.0, "sold": 0.0,
+		"stock": 0.0, "price_sum": 0.0, "price_weight": 0.0}
+	var nations: Dictionary = {}
+	var cities: Array = []
+	for city_row: Dictionary in (status.get("cities", []) as Array):
+		var city_id := String(city_row.get("id", ""))
+		var nation := String(city_row.get("nation", ""))
+		var city_status: Dictionary = sim.get_city_status(city_id)
+		var market: Dictionary = {}
+		for market_row: Dictionary in (city_status.get("markets", []) as Array):
+			if int(market_row.get("product", -1)) == oil_index:
+				market = market_row
+				break
+		var mine_rows: Array = []
+		for building_row: Dictionary in (city_status.get("buildings", []) as Array):
+			if int(building_row.get("output_product", -1)) != oil_index:
+				continue
+			mine_rows.append({
+				"id": String(building_row.get("id", "")),
+				"capacity": float(building_row.get("capacity", 0.0)),
+				"utilization": float(building_row.get("utilization", 0.0)),
+				"revenue": float(building_row.get("revenue", 0.0)),
+				"profit": float(building_row.get("profit", 0.0)),
+				"loss_days": int(building_row.get("loss_days", 0)),
+			})
+		# Agregado do mundo/nação pelo mercado da cidade.
+		var stock := float(market.get("stock", 0.0))
+		var weight := maxf(1.0, stock)
+		for key in ["supply", "demand", "desired", "sold", "stock"]:
+			world[key] = float(world[key]) + float(market.get(key, 0.0))
+		world["price_sum"] = float(world["price_sum"]) \
+			+ float(market.get("price", 0.0)) * weight
+		world["price_weight"] = float(world["price_weight"]) + weight
+		var nation_row: Dictionary = nations.get(nation,
+			{"supply": 0.0, "demand": 0.0, "desired": 0.0, "sold": 0.0,
+			"stock": 0.0, "price_sum": 0.0, "price_weight": 0.0,
+			"mines": 0, "mine_capacity": 0.0})
+		for key in ["supply", "demand", "desired", "sold", "stock"]:
+			nation_row[key] = float(nation_row[key]) + float(market.get(key, 0.0))
+		nation_row["price_sum"] = float(nation_row["price_sum"]) \
+			+ float(market.get("price", 0.0)) * weight
+		nation_row["price_weight"] = float(nation_row["price_weight"]) + weight
+		nation_row["mines"] = int(nation_row["mines"]) + mine_rows.size()
+		for mine: Dictionary in mine_rows:
+			nation_row["mine_capacity"] = float(nation_row["mine_capacity"]) \
+				+ float(mine["capacity"])
+		nations[nation] = nation_row
+		# Cidade entra no retrato se tem mina de petroleo ou e dos EUA com
+		# refinaria (as duas minas que quebram e as plantas vizinhas).
+		var is_us := nation == "USA"
+		var has_refinery := false
+		if is_us:
+			for building_row: Dictionary in (city_status.get("buildings", []) as Array):
+				if String(building_row.get("id", "")).begins_with("SEED-REFINERY-"):
+					has_refinery = true
+					break
+		if mine_rows.is_empty() and not has_refinery:
+			continue
+		cities.append({
+			"city": city_id, "nation": nation,
+			"mine": mine_rows,
+			"oil": {
+				"supply": float(market.get("supply", 0.0)),
+				"demand": float(market.get("demand", 0.0)),
+				"desired": float(market.get("desired", 0.0)),
+				"sold": float(market.get("sold", 0.0)),
+				"stock": stock,
+				"price": float(market.get("price", 0.0)),
+			},
+		})
+	if float(world["price_weight"]) > 0.0:
+		world["price"] = float(world["price_sum"]) / float(world["price_weight"])
+	else:
+		world["price"] = 0.0
+	for tag: Variant in nations:
+		var row: Dictionary = nations[tag]
+		row["price"] = float(row["price_sum"]) / float(row["price_weight"]) \
+			if float(row["price_weight"]) > 0.0 else 0.0
+	# Pedidos de petroleo do ultimo tick: quem compra de quem e por quanto.
+	var routes: Dictionary = {}
+	var us_routes: Array = []
+	for order: Dictionary in sim.get_trade_orders():
+		if String(order.get("good", "")) != "oil":
+			continue
+		var key := "%s>%s" % [String(order.get("from_city", "")),
+			String(order.get("to_city", ""))]
+		var row: Dictionary = routes.get(key, {
+			"from_city": String(order.get("from_city", "")),
+			"to_city": String(order.get("to_city", "")),
+			"from_nation": String(order.get("from_nation", "")),
+			"to_nation": String(order.get("to_nation", "")),
+			"amount": 0.0, "freight": 0.0, "orders": 0,
+			"delivered_price": float(order.get("delivered_price", 0.0)),
+			"origin_price": float(order.get("origin_price", 0.0)),
+			"transit_hours": float(order.get("transit_hours", 0.0)),
+		})
+		row["amount"] = float(row["amount"]) + float(order.get("amount", 0.0))
+		row["freight"] = float(row["freight"]) + float(order.get("freight_cost", 0.0))
+		row["orders"] = int(row["orders"]) + 1
+		routes[key] = row
+		if String(order.get("from_nation", "")) == "USA" \
+				or String(order.get("to_nation", "")) == "USA":
+			us_routes.append(order)
+	return {
+		"day": day,
+		"world": world,
+		"nations": nations,
+		"cities": cities,
+		"routes": routes.values(),
+		"us_orders": us_routes,
+	}
+
+
+func _print_oil_report(report: Dictionary) -> void:
+	var world: Dictionary = report.get("world", {})
+	var usa: Dictionary = (report.get("nations", {}) as Dictionary).get("USA", {})
+	print(("[oleo] dia %d | mundo oferta=%.1f demanda=%.1f desejo=%.1f "
+		+ "vendido=%.1f estoque=%.1f preco=%.2f | USA oferta=%.1f demanda=%.1f "
+		+ "vendido=%.1f preco=%.2f minas=%d cap=%.1f") % [
+		int(report.get("day", 0)), float(world.get("supply", 0.0)),
+		float(world.get("demand", 0.0)), float(world.get("desired", 0.0)),
+		float(world.get("sold", 0.0)), float(world.get("stock", 0.0)),
+		float(world.get("price", 0.0)), float(usa.get("supply", 0.0)),
+		float(usa.get("demand", 0.0)), float(usa.get("sold", 0.0)),
+		float(usa.get("price", 0.0)), int(usa.get("mines", 0)),
+		float(usa.get("mine_capacity", 0.0))])
+
+
 func _food_gate(history: Array) -> Dictionary:
 	var tags: Dictionary = {}
 	for day_ratio in history:
@@ -1263,6 +1411,8 @@ func _run() -> void:
 	var fuel_reports: Dictionary = {}
 	# F0/D-124: diagnostico por refinaria semeada (so com --refining-diag=1).
 	var refining_reports: Dictionary = {}
+	# F0/D-124 item 1: diagnostico de petroleo (so com --oil-diag=1).
+	var oil_reports: Dictionary = {}
 	_load_goods_meta()
 
 	for day in _days:
@@ -1296,6 +1446,10 @@ func _run() -> void:
 			_print_fuel_report(fuel_day1)
 		if _refining_diag and day_now == 1:
 			refining_reports["day_1"] = _refining_report(sim, status, day_now)
+		if _oil_diag and OIL_SAMPLE_DAYS.has(day_now):
+			var oil_sample := _oil_report(sim, status, day_now)
+			oil_reports["day_%d" % day_now] = oil_sample
+			_print_oil_report(oil_sample)
 		# E2/E3/E5 (D-117): energia do dia — uma leitura por dia serve à
 		# amostra do ano, ao ledger por ligação e ao diagnóstico por nação.
 		var power_day: Dictionary = {}
@@ -1375,6 +1529,11 @@ func _run() -> void:
 			int(status_final.get("day", 0)))
 		refining_reports["final"] = refining_final
 		_print_refining_report(refining_final)
+	if _oil_diag:
+		var oil_final := _oil_report(sim, status_final,
+			int(status_final.get("day", 0)))
+		oil_reports["final"] = oil_final
+		_print_oil_report(oil_final)
 	var food := _food_gate(history)
 	var balance := _balance_report(sim, status_final)
 	var trajectory := TrajectoryDigest.sha256(hash_lines)
@@ -1437,6 +1596,7 @@ func _run() -> void:
 		"food_gate_control": _control_path,
 		"fuel_diag": fuel_reports,
 		"refining_diag": refining_reports,
+		"oil_diag": oil_reports,
 		"energy_economy": _energy_economy(energy_by_nation, power_final) \
 			if _power_on else {},
 		"interconnect_links": _link_report(link_flow, power_final) \
