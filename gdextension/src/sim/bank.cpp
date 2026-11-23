@@ -637,7 +637,17 @@ void distribute_dividends(WorldState& ws, const Policy& pol) {
 
 } // namespace
 
-int phase(WorldState& ws) {
+int phase(WorldState& ws, double* bank_money_delta) {
+	if (bank_money_delta != nullptr) {
+		*bank_money_delta = 0.0;
+	}
+	// Fluxo de dinheiro BANCÁRIO do dia (o que o invariante soma ao
+	// `money_total`): juro pago e amortização destroem depósito e caixa do
+	// tomador; o dividendo converte patrimônio do banco em depósito do dono.
+	// A execução do calote apenas troca depósito do grupo por caixa do banco
+	// (os dois já estão em `money_total`): não cria nem destrói dinheiro e
+	// fica FORA deste fluxo.
+	double money_delta = 0.0;
 	// Sem crédito e sem posição o dia não muda: o mundo default é o mesmo.
 	bool any = false;
 	for (const auto& row : ws.banks) {
@@ -690,6 +700,7 @@ int phase(WorldState& ws) {
 				group.cash -= paid_interest;
 				bank.deposits -= paid_interest;
 				bank.interest_income += paid_interest;
+				money_delta -= paid_interest;
 				// Reserva herdada da C3 (save migrado): se o banco ainda deve
 				// ao BC, paga a parcela da taxa básica em caixa — o M0
 				// correspondente é destruído e registrado na emissão do dia.
@@ -722,6 +733,7 @@ int phase(WorldState& ws) {
 				group.credit_repaid += repay;
 				bank.loans -= repay;
 				bank.deposits -= repay;
+				money_delta -= repay;
 			}
 			// 3. Insolvência: ativos reais + caixa não cobrem a dívida. Conta
 			// dias e, passado o prazo, o credor executa.
@@ -738,7 +750,9 @@ int phase(WorldState& ws) {
 				claim, std::max(0.0, bank.deposits) });
 			if (seized > 0.0) {
 				group.cash -= seized;
-				// O caixa tomado sai do depósito e vira caixa do banco.
+				// O caixa tomado sai do depósito e vira caixa do banco: os dois
+				// lados já estão em `money_total`, então não há criação nem
+				// destruição de dinheiro (por isso `money_delta` não muda).
 				bank.deposits -= seized;
 				bank.cash += seized;
 			}
@@ -771,7 +785,21 @@ int phase(WorldState& ws) {
 	}
 	// 4. Dividendo mensal ao dono (lucro retido × payout declarado).
 	if (ws.day > 0 && ws.day % kDividendPeriodDays == 0) {
+		double deposits_before = 0.0;
+		for (const auto& row : ws.banks) {
+			deposits_before += row.second.deposits;
+		}
 		distribute_dividends(ws, pol);
+		double deposits_after = 0.0;
+		for (const auto& row : ws.banks) {
+			deposits_after += row.second.deposits;
+		}
+		// O dividendo credita o dono (governo, famílias ou exterior) e cria o
+		// depósito correspondente: é criação de dinheiro bancário no dia.
+		money_delta += deposits_after - deposits_before;
+	}
+	if (bank_money_delta != nullptr) {
+		*bank_money_delta = money_delta;
 	}
 	return defaults;
 }
