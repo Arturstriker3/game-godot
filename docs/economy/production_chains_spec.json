@@ -669,6 +669,20 @@
       }
      ],
      "co_loss": 0.17,
+     "co_allocation": {
+      "method": "market_value",
+      "source": "EIA Spot Prices 2024, U.S. Gulf Coast, annual average (USD/gal): conventional gasoline regular 2.239; ultra-low-sulfur No. 2 diesel 2.365; kerosene-type jet fuel 2.338. EIA Crude Oil and Petroleum Product Conversion Factors (barrels per metric ton): motor gasoline 8.53; distillate fuel oil No. 2 7.46; kerosene-type jet fuel 7.88. USD/t = USD/gal x 42 gal/bbl x bbl/t.",
+      "usd_per_gallon": {
+       "gasoline": 2.239,
+       "diesel": 2.365,
+       "jet_fuel": 2.338
+      },
+      "barrels_per_tonne": {
+       "gasoline": 8.53,
+       "diesel": 7.46,
+       "jet_fuel": 7.88
+      }
+     },
      "note": "EIA Refinery yield (EUA, 2024): gasolina 45%, destilados 29% e querosene de aviação 9%; os 17% restantes são perdas/outros não modelados."
     },
     {
