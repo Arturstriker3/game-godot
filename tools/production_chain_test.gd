@@ -215,6 +215,10 @@ func _test_flour_bread_chain() -> void:
 
 ## 2. Receita de 4 insumos: o mais escasso limita a saída e cada insumo
 ## consumido é exatamente a saída (coeficiente 1:1 da receita engine_a).
+## Capacidade 20: sem dado de energia no fixture o fator industrial é 0,25,
+## então o lote do dia é 5 t — acima das 4 t de `mechanical_parts`, que é
+## quem limita (a F0 passou a produzir só a primeira oferta quando não há
+## venda; a capacidade 10 deixava o lote em 2,5 t e o limite não aparecia).
 func _test_multi_input_recipe() -> void:
 	var sim = _new_sim()
 	_fixture(sim, {
@@ -223,7 +227,7 @@ func _test_multi_input_recipe() -> void:
 	})
 	var engine := _product("engine")
 	var built: Dictionary = sim.build("AGRIA", "T-ENGINE", "engine", -1,
-		engine, 10.0, 0.0, 0.0, 0.0, 1.0, "private", 60000.0, "engine_a")
+		engine, 20.0, 0.0, 0.0, 0.0, 1.0, "private", 60000.0, "engine_a")
 	if not bool(built.get("created", false)):
 		_fail("multi: fabrica de motor nao criada (%s)" % String(built.get("error", "")))
 		return
