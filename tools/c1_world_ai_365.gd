@@ -29,6 +29,7 @@ const LandPropertyScript := preload("res://core/economy/land_property.gd")
 const AgriScript := preload("res://core/economy/agriculture_service.gd")
 const StorageScript := preload("res://core/economy/storage_service.gd")
 const PowerScript := preload("res://core/economy/power_service.gd")
+const RefiningScript := preload("res://core/economy/refining_service.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
 const TrajectoryDigest := preload("res://core/economy/trajectory_digest.gd")
 
@@ -537,6 +538,17 @@ func _make_world() -> Object:
 			(power_report.get("operator_nations", []) as Array).size(),
 			int(power_report.get("nations_with_demand_anchor", 0)),
 			int(power_report.get("nations_with_generation_calibration", 0))])
+	# F0/D-124: refino do dado (EI 2024) na fração simulada; mesma ordem do
+	# autoload (ENERGIA -> REFINO -> IA) e `seed_industry` ANTES do refino.
+	var refining := RefiningScript.new()
+	var refining_report := refining.apply_to_sim(sim, cities, ports)
+	print(("[c1] refino: nações=%d plantas=%d capacidade=%.0f t/dia "
+		+ "maduras=%d (%s)") % [
+		(refining_report.get("nations", []) as Array).size(),
+		int(refining_report.get("applied", 0)),
+		float(refining_report.get("capacity_t_per_day", 0.0)),
+		int(refining_report.get("matured", 0)),
+		String(refining_report.get("reason", "ok"))])
 	sim.set_ai_enabled(true)
 	# D-111: sem flag vale o default do jogo (LIGADO). Com flag, ela MANDA --
 	# inclusive `--credit=0`/`--harvest-rate=0` (braço "off" do A/B).

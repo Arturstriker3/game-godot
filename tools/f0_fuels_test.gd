@@ -21,6 +21,8 @@ const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const POWER_PARAMS_PATH := "res://data/definitions/energy/power_params.json"
+const REFINING_PATH := "res://data/definitions/transport/refining_capacity.json"
+const RefiningScript := preload("res://core/economy/refining_service.gd")
 
 const EPS := 1e-6
 const REFINERY_CAPACITY := 500.0
@@ -42,6 +44,7 @@ var _failures: Array[String] = []
 func _init() -> void:
 	_test_refinery_coproduction()
 	_test_refinery_margin()
+	_test_refining_seed()
 	_test_fleet_grades()
 	_test_power_oil_burns_diesel()
 	_test_needs_mapping()
@@ -155,6 +158,60 @@ func _test_refinery_margin() -> void:
 			margin_with > 0.0, "margem=%.2f" % margin_with)
 	_check("(6) sem o crédito a margem seria negativa (o defeito t138)",
 			margin_without < 0.0, "margem=%.2f" % margin_without)
+
+
+# --- (7) seed do refino do dado (EI 2024, D-124) ---------------------------
+# Prova que o servico cria a refinaria madura e que, no primeiro dia, os tres
+# graus tem oferta > 0 — o defeito t138 era oferta zero o ano inteiro.
+func _test_refining_seed() -> void:
+	var data: Dictionary = _json(REFINING_PATH)
+	var by_country: Dictionary = data.get("by_country", {})
+	var expected: Array[String] = ["KWT", "SAU", "USA", "CHN", "IND", "RUS"]
+	var with_data := 0
+	for tag in expected:
+		var row: Dictionary = by_country.get(tag, {})
+		if float(row.get("capacity_t_per_day", 0.0)) > 0.0:
+			with_data += 1
+	_check("(7) dado do EI tem refino para KWT/SAU/USA/CHN/IND/RUS",
+			with_data == expected.size(),
+			"%d/%d" % [with_data, expected.size()])
+	# A fixture demo so tem AGRIA/PORTUS: cada cidade empresta o id para uma
+	# nacao do dado (o servico so usa id/nation/populacao da lista).
+	var sim := _world()
+	sim.set_market_stock("AGRIA", "oil", 5000.0)
+	var service := RefiningScript.new()
+	var report: Dictionary = service.apply_to_sim(sim, [
+		{"id": "AGRIA", "nation": "KWT",
+			"population": 1000000.0, "sim_population": 500000.0},
+		{"id": "PORTUS", "nation": "USA",
+			"population": 1000000.0, "sim_population": 500000.0},
+	], [])
+	_check("(7) o seed cria as refinarias das nações",
+			int(report.get("applied", 0)) == 2,
+			"applied=%d (%s)" % [int(report.get("applied", 0)),
+				String(report.get("reason", ""))])
+	_check("(7) refinarias saem maduras (sem rampa)",
+			int(report.get("matured", 0)) == int(report.get("applied", 0)),
+			"matured=%d applied=%d" % [int(report.get("matured", 0)),
+				int(report.get("applied", 0))])
+	var refinery: Dictionary = {}
+	for building: Variant in sim.get_city_status("AGRIA").get("buildings", []):
+		var row: Dictionary = building
+		if String(row.get("recipe", "")) == "gasoline_a":
+			refinery = row
+	_check("(7) refinaria da AGRIA opera em escala 1,0 no dia 1",
+			not refinery.is_empty()
+				and absf(float(refinery.get("output_scale", 0.0)) - 1.0) <= EPS,
+			"output_scale=%.3f" % float(refinery.get("output_scale", 0.0)))
+	sim.tick_day()
+	for good: String in ["gasoline", "diesel", "jet_fuel"]:
+		var markets: Array = sim.get_city_status("AGRIA").get("markets", [])
+		var index := _product(sim, good)
+		var supply := 0.0
+		if index >= 0 and index < markets.size():
+			supply = float((markets[index] as Dictionary).get("supply", 0.0))
+		_check("(7) oferta de %s no dia 1 > 0" % good, supply > EPS,
+				"supply=%.6f" % supply)
 
 
 # --- (2) frota: cada modal exige o seu grau --------------------------------
