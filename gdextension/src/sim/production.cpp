@@ -200,17 +200,25 @@ void SimCore::phase_production() {
 				if (sold_prev <= 0.0) {
 					// Produtor novo (ou sem vendas) garante a PRIMEIRA oferta
 					// observável do produto — e SÓ ela. Industrial
-					// (receita/insumo) repõe a capacidade apenas quando o
-					// mercado está VAZIO; com estoque parado e venda zero a
-					// produção é zero, como manda o estoque-alvo das demais
-					// indústrias. Antes repunha a capacidade cheia TODO dia
-					// (mesmo com estoque formado), então a usina sem venda
-					// enchia o estoque pagando folha/opex/insumo até fechar
-					// (diagnóstico t141). A extração primária mantém o
-					// bootstrap legado: o minério parado no chão não tem custo
-					// de insumo comprado e é o que dá liquidez ao mercado.
+					// (receita/insumo) repõe a capacidade enquanto o estoque
+					// estiver abaixo do ALVO de bootstrap: menos que metade do
+					// mínimo que um dia de plena capacidade produz (o piso do
+					// corte por margem, kProductionMarginFloor, multiplicado
+					// pela energia servida). Como o dia de bootstrap produz ao
+					// menos esse mínimo, a oferta acontece UMA vez; com estoque
+					// acima do alvo e venda zero a produção é zero, como manda
+					// o estoque-alvo das demais indústrias. Antes repunha a
+					// capacidade cheia TODO dia (mesmo com estoque formado),
+					// então a usina sem venda enchia o estoque pagando
+					// folha/opex/insumo até fechar (diagnóstico t141). A
+					// extração primária mantém o bootstrap legado: o minério
+					// parado no chão não tem custo de insumo comprado e é o
+					// que dá liquidez ao mercado.
+					const double bootstrap_floor = 0.5 * kProductionMarginFloor
+						* effective_capacity * capacity_share * labor
+						* power_factor;
 					target = industrial
-						? (stock_before <= 1e-12 ? effective_capacity : 0.0)
+						? (stock_before < bootstrap_floor ? effective_capacity : 0.0)
 						: effective_capacity;
 				} else {
 					const double desired_stock = sold_prev * ws_.inventory_cover_days;
