@@ -357,15 +357,6 @@ def build_recipes(spec: dict) -> list[dict]:
 # --------------------------------------------------------------------------
 
 
-def recipe_output_items(recipe: dict) -> list[dict]:
-    """Saídas de uma receita já normalizada (outputs[] ou output/yield+byproducts)."""
-    if recipe.get("outputs"):
-        return recipe["outputs"]
-    items = [{"good": recipe["output"], "qty": float(recipe["yield"])}]
-    items.extend(recipe.get("byproducts", []))
-    return items
-
-
 def co_allocation_by_recipe(spec: dict) -> dict[str, dict]:
     """`recipe_id` → bloco `co_allocation` declarado na spec.
 
@@ -452,10 +443,19 @@ def price_order(spec: dict, producers: dict[str, list[dict]],
 
 
 def compute_prices(spec: dict, recipes: list[dict], primaries: dict[str, float]) -> dict[str, dict]:
+    # `producers` conta só a SAÍDA PRINCIPAL de cada receita. Subproduto e
+    # co-produto de `outputs[]` não podem entrar aqui: se entrarem, a regra
+    # `gid in byproduct_parent and gid not in producers` nunca vale e todo
+    # subproduto (farelo, serragem, adubo…) sai precificado pelo custo da
+    # receita em vez de 0,10 × preço do pai (t145).
     producers: dict[str, list[dict]] = {}
+    # Co-produtos de co-produção (`outputs[1:]`) ficam em tabela própria: eles
+    # têm preço pela rota principal, sem virar "produtor" para a regra acima.
+    co_producers: dict[str, list[dict]] = {}
     for recipe in recipes:
-        for item in recipe_output_items(recipe):
-            producers.setdefault(item["good"], []).append(recipe)
+        producers.setdefault(recipe["output"], []).append(recipe)
+        for item in recipe.get("outputs", [])[1:]:
+            co_producers.setdefault(item["good"], []).append(recipe)
     byproduct_parent = {}
     for good in spec["goods"]:
         for recipe in good["recipes"]:
@@ -491,7 +491,7 @@ def compute_prices(spec: dict, recipes: list[dict], primaries: dict[str, float])
                 "margin": None,
             }
             continue
-        if gid in byproduct_parent and gid not in producers:
+        if gid in byproduct_parent and gid not in producers and gid not in co_producers:
             parent = byproduct_parent[gid]
             price = MARGIN_BYPRODUCT * prices[parent]["price"]
             prices[gid] = {
@@ -502,7 +502,7 @@ def compute_prices(spec: dict, recipes: list[dict], primaries: dict[str, float])
             continue
         margin = margins[gid]
         candidates: list[tuple[float, str]] = []
-        route_recipes = producers.get(gid, [])
+        route_recipes = producers.get(gid, []) + co_producers.get(gid, [])
         if gid in co_product_parent:
             route_recipes = [recipe for recipe in route_recipes
                              if recipe["id"] == co_product_parent[gid]]
