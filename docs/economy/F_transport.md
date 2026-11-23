@@ -16,9 +16,10 @@
 | POP/passageiros/exército/frete consumiam `fuel` | POP e passageiros: **gasolina**; exército e frete: **diesel**; aviação: **jet_fuel** |
 
 Preços-base declarados (`goods.json`): gasoline **78,61**, jet_fuel **78,61**,
-diesel **58,00** por tonelada — contra 43,50 do antigo `fuel`. O aumento é
-esperado: a tonelada de combustível refinado agora carrega o custo do
-petróleo/gás/carvão dividido pelas frações úteis (83% no caso da refinaria).
+diesel **58,00** por tonelada — contra 43,50 do antigo `fuel`. O preço é
+**derivado do custo da rota mais barata**, não do rateio do lote: a refinaria
+(`45,00/0,83 × 1,45`) daria 78,61 às três saídas, mas o diesel é puxado para
+baixo pela rota CTL (`6,00/0,15 × 1,45 = 58,00`, ver §9.4).
 
 ## 2. Cadeia (dado, não motor)
 
@@ -125,6 +126,16 @@ Captura (`--phase=f0 --run=f0_fuels --sizes=1366x768,1920x1080`): as telas
 26–29 de logística saíram com `issues: []` nas duas resoluções em
 `docs/ui/captures/f0/f0_fuels/layout_report.json`.
 
+**Ícones (2026-11-23).** Os PNGs ilustrados aprovados pelo dono
+(`v3_extra/fuels/APPROVED.json`: gasoline=a, diesel=a, jet_fuel=c, refinery=a)
+entraram em `assets/icons/illustrated/` (128 px) e `illustrated/64/` (64 px);
+`refinery` vai em `illustrated/places/` porque é construção
+(`ProductIcons.place_texture`). `ProductIcons` resolve os bens pelo id do
+`goods.json`, sem mapa extra; o SVG do Icon Forge (`resource_icons.json` cita os
+três) continua como fallback. `fuel.svg`/`.import` foram removidos — o bem não
+existe e o id saiu do `resource_icons.json`. `batches_v3_production.json` ganhou
+o prompt de `refinery` como registro da arte.
+
 ## 8. Verificação
 
 | Verificação | Resultado |
@@ -137,7 +148,7 @@ Captura (`--phase=f0 --run=f0_fuels --sizes=1366x768,1920x1080`): as telas
 | `tools/logistics_template_test.gd` | PASS |
 | `tools/pop_needs_test.gd` | OK |
 | `ui_capture` (`--phase=f0 --run=f0_fuels --sizes=1366x768,1920x1080`) | telas 26–29 de logística com `issues: []` nas duas resoluções; o runner saiu com código 1 por exceções do próprio harness nas telas de serviços (a tela em si passa no `services_template_test`) |
-| Rodada 365 (`c1_world_ai_365.gd --control=c6_gate_base.json`) | ver §9 |
+| Rodada 365 com `--fuel-diag=1` (`c1_world_ai_365.gd --control=c6_gate_base.json`) | ver §9 — trajectory `50278f4f` idêntica à rodada sem o diagnóstico |
 
 ## 9. Rodada de 365 dias
 
@@ -145,9 +156,19 @@ Comando:
 
 ```powershell
 & $godot --headless --path . --script res://tools/c1_world_ai_365.gd -- `
-  --days=365 --out=res://docs/economy/perf/f0_world_ai_365.json `
+  --days=365 --fuel-diag=1 `
+  --out=res://docs/economy/perf/f0_world_ai_365_fuel.json `
   --control=res://docs/economy/perf/c6_gate_base.json
 ```
+
+`--fuel-diag=1` (novo, só leitura) fotografa no dia 1 e no fecho, por nação:
+oferta/demanda/desejo/estoque e preço de gasolina, diesel e querosene,
+capacidade instalada por receita (`gasoline_a`, `diesel_a`, `diesel_b`), frota
+por grau e o frete pago por tonelada de comida importada (ordens do dia).
+Também publica `food_gate.ratios` (média de 30 d de **todas** as nações no
+fecho); `food_chain.food_avg30` continua sendo o valor do dia em que a nação
+cruzou o portão (no dia 1 um importador sem estoque mede 0 — não é o número do
+portão).
 
 Medição e leitura dos portões (falências ≤ 2, comida ≤ 95/179, 0 violações):
 
@@ -159,41 +180,113 @@ Medição e leitura dos portões (falências ≤ 2, comida ≤ 95/179, 0 violaç
 | Comida (média 30 d, < 0,975) | **97/179** (mediana 0,9703; média 0,9058) | **≤ 95 — FALHOU** |
 | Extras vs controle | 5 (PRK, ATG, KNA, AUS, KWT) | — |
 | Drift de caixa | 0,567% | — |
-| Parede | 335,2 s (`threads=1`, DLL debug) | — |
+| Trajectory | `50278f4f` (idêntica à rodada anterior — o diagnóstico não muda o mundo) | — |
+| Parede | 339,3 s (`threads=1`, DLL debug, com o diagnóstico) | — |
 
-Saída: `docs/economy/perf/f0_world_ai_365.json` (trajectory `50278f4f`).
+Saída: `docs/economy/perf/f0_world_ai_365_fuel.json`.
 
-**Diagnóstico (não amolecido).** Contra a rodada D-122 (`c1_world_ai_365_renew.json`,
-95/179, extras CIV/ATG/PRK/AUS), esta rodada mantém falências (2), violações (0) e
-balanço praticamente idênticos (massa monetária 6,5606e9 × 6,5600e9; estoque das
-firmas dentro de 0,03%), mas a lista do portão muda: **KNA e KWT entram** e **CIV
-sai**. A média de consumo de comida do mundo **sobe** (0,9058 × 0,9051): não é
-queda global, é redistribuição em torno de 0,975.
+Contra a rodada D-122 (`c1_world_ai_365_renew.json`, 95/179), entram **KNA
+0,9722** e **KWT 0,9742**, sai **CIV 0,9828** (todos contra o limiar de 0,975);
+a média (0,9051 → 0,9058) e a mediana (0,9702 → 0,9703) **melhoram**. É
+redistribuição de margem, não queda global. Os 5 extras são os mesmos da rodada
+anterior (D-123); KNA e KWT cruzam por 0,003 e 0,001.
 
-Os dois que entram são importadores puros (KNA 12,9 mil hab. e 1 prédio de comida
-com saída 0; KWT 4,27 M hab. e 2 prédios com saída 0) e cruzam o portão já no dia
-1, com preço de comida acima do ano-base (`food_price_ratio` 1,05 e 1,10). A
-hipótese principal é o **preço/custo do frete**: o `fuel` genérico tinha receita
-de fábrica com rendimento 1,0 a partir de petróleo; hoje a gasolina vem da
-refinaria a 0,45 por lote e o diesel de gás/carvão a 0,30/0,15 — o diesel ficou
-mais caro de produzir (58,00/t contra os 43,50 do `fuel` no frete), encarecendo a
-carga de comida para quem não produz e depende de navio. Os preços de combustível
-declarados (78,61/78,61/58,00) amplificam esse canal.
+### 9.1 Combustível por nação (dia 1 → dia 365)
 
-**Próximo passo proposto (não executado):** medir oferta de diesel (produção por
-receita e estoque de mercado por nação) ao longo de 30–60 d e a taxa de construção
-de refinarias pela IA; se a oferta de diesel é o gargalo, o caminho é dado de
-produção/logística (ou a IA de obra), nunca o teto do portão.
+| Nação | Gasolina oferta/demanda/desejo (t/dia) | Diesel oferta/demanda (t/dia) | Preço local gasolina/diesel | Refino (`gasoline_a`/alt.) | Frota diesel (estoque/alvo) | Comida importada |
+|---|---|---|---|---:|---:|---:|
+| Mundo | 0/0 / **23 657 → 23 807** | 0/0 | 78,61 / 58,00 | **0 / 0** | — | — |
+| KNA | 0/0 / 0,15 | 0/0 | 78,61 / 58,00 | 0 / 0 | 2 048/2 048 → 2 040/2 048 | 12 t → 9 t; 76,93 → 26,48/t |
+| KWT | 0/0 / 47,64 → 48,02 | 0/0 | 78,61 / 58,00 | 0 / 0 | 40 194/40 194 → 39 495/40 513 | 0 → 1 858 t; 23,27/t |
+| CIV | 0/0 / 94,61 → 96,85 | 0/0 | 78,61 / 58,00 | 0 / 0 | 79 654/79 654 → 51 377/81 522 | 0 → 2 107 t; 29,92/t |
+| USA | 0/0 / 1 476,73 → 1 478,62 | 0/0 | 78,61 / 58,00 | 0 / 0 | 1 255 291/1 255 291 → 1 207 507/1 256 874 | 0 |
 
-**Resultado:** implementação funcional e testada; **portão de comida não aceito**
-(97 > 95), aguardando decisão do dono/Game Systems Designer.
+Querosene: oferta/demanda 0/0 no mundo, dia 1 e dia 365; as POPs não consomem
+querosene (o consumo é a frota aérea, que gasta a reserva interna).
+
+### 9.2 Capacidade de refino = 0 no mundo inteiro (erro de cadeia, não de migração)
+
+O seed não tem fábrica de combustível: `seed_industry` só semeia farinha/pão
+(6 maiores cidades), algodão→tecido→roupa e madeira→celulose→papel (3 cadeias).
+O mundo anterior à F0 também não tinha refinaria: a IA nunca abre uma porque
+`ai_group.cpp` avalia o candidato por **insumo÷yield sem creditar as saídas
+extras** — `45,00 / 0,45 = 100,00/t` contra a gasolina a 78,61 → margem
+negativa. É o mesmo defeito que a D-123 corrigiu em `pick_recipe`/margem da
+firma, mas **não** na avaliação de investimento da IA (C++) nem nas rotas
+alternativas (`diesel_a`: `30,00/0,30 = 100,00`; `diesel_b`: `6,00/0,15 = 40,00`
++ custo-base ≈ 58,00 → margem zero). Resultado: gasolina/diesel/querosene com
+**oferta 0 e vendido 0** o ano todo, apesar do desejo das POPs (23,8 mil t/dia de
+gasolina) — a satisfação do nível "life" fica 0. **Não é erro de migração de
+save:** `f0_fuels_test` cobre a conversão de construções `fuel`→`gasoline` e o
+mundo novo nunca teve essas construções.
+
+### 9.3 KWT
+
+KWT tem 0 de capacidade semeada e 0 construída o ano todo; a usina a óleo
+compra diesel **importado com prêmio 1,5×** (não há estoque local). O cenário
+não tem dado de capacidade de refino por país — semear KWT (ou qualquer país)
+exige fonte pública (EIA/OGJ) e decisão do Game Systems Designer; não se
+inventa o número.
+
+### 9.4 Preço do diesel: é a rota CTL, não o rateio da co-produção
+
+`tools/build_goods_chain.py` precifica cada bem pelo **custo da rota mais
+barata** (margem final 45%):
+
+| Rota | Custo antes da margem | Preço |
+|---|---:|---:|
+| Refinaria (co-produção) | `45,00 / 0,83 = 54,22` | 78,61 (gasolina, diesel, querosene) |
+| GTL (gás) | `30,00 / 0,30 = 100,00` | 145,00 |
+| **CTL (carvão)** | `6,00 / 0,15 = 40,00` | **58,00 ← escolhida para o diesel** |
+
+Ou seja: o rateio do lote **não** é a causa do 58,00 (a refinaria sozinha daria
+78,61 às três saídas). Se o rateio fosse por valor de mercado ou por energia, o
+diesel da refinaria ficaria em ~79,5 — e o `min` entre rotas continuaria
+escolhendo o CTL a 58,00. A razão diesel/gasolina do jogo (0,74/t) vem da rota
+mais barata. Para comparação real, a EIA (EUA, 2024: gasolina US$ 3,30/gal,
+diesel US$ 3,76/gal) dá diesel **+14% por galão** e **≈ igual por tonelada**
+(massas específicas 0,745 e 0,85 kg/L) — mas o modelo precifica **custo de
+produção**, não preço de bomba, e o CTL com carvão a 6,00/t é o produtor
+marginal. Mudar isso é decisão de dado/método do designer (rota CTL ou regra de
+preço), não um ajuste no número.
+
+### 9.5 O frete da comida não carrega combustível (hipótese anterior refutada)
+
+`freight.cpp` separa `leg_unit_freight` (tarifa + combustível + frota) de
+`leg_unit_freight_food`, que cobra **só a tarifa** (`distância × 0,02/t·km` no
+navio). O combustível físico continua exigido no embarque (`route_demand`), mas
+o preço do diesel não entra no custo da comida importada. No frete geral o
+termo de combustível é `0,000003 × 58,00 = 0,000174/t·km` — 0,9% da tarifa de
+0,02; trocar o diesel de 43,50 para 58,00 move o frete em ~0,3%. A hipótese
+"diesel caro encarece a comida" registrada na rodada anterior **não se
+sustenta** nos números nem no código.
+
+A frota nasce com reserva semeada e não a esgota em 365 d: KNA 2 040/2 048 t
+(−0,4%), KWT 39 495/40 513 (−2,5%) e CIV 51 377/81 522 (−37%, justamente a
+nação que **sai** do portão). O gargalo físico do diesel não explica as
+entradas.
+
+### 9.6 Conclusão e decisão pendente
+
+A implementação (co-produção, frota por grau, usina a óleo→diesel, save v39,
+UI, ícones) está funcional e testada. O portão de comida **continua 97/179**
+(limite 95) por duas nações que cruzam por 0,003 e 0,001, com médias melhores.
+A capacidade de refino zero é o defeito estrutural encontrado — e ele pede uma
+decisão de dado/método: **(a)** semear refino real por país com fonte pública
+(EIA/OGJ) ou **(b)** creditar a co-produção na avaliação de investimento da IA
+(`ai_group.cpp`, núcleo C++) e reabrir a rodada. O teto do portão não foi
+mexido.
 
 ## 10. Pendências
 
-* O portão de comida é sensível ao preço do combustível: a gasolina a 78,61
-  (contra 43,50 do `fuel`) encarece o transporte doméstico. Se o número do
-  portão piorar, o próximo passo é diagnosticar o consumo por nação (não
-  amolecer o portão).
-* `fuel.svg` continua em `assets/icons/resources/` (ícone do bem removido); a
-  limpeza fica para o `icon_forge` quando o `resource_icons.json` não citar
-  mais o id.
+* Capacidade de refino: semear por país (fonte pública) **ou** creditar a
+  co-produção na IA de investimento; hoje não existe nenhuma refinaria no mundo
+  novo, então gasolina/diesel/querosene nunca são produzidos e a satisfação do
+  nível "life" fica 0.
+* Preço do diesel 58,00 vs gasolina 78,61: a diferença vem da rota CTL, não do
+  rateio; se o dono quiser diesel ≈ gasolina por tonelada, a decisão é sobre a
+  rota CTL (yield/preço do carvão) ou sobre a regra de preço, não sobre o
+  número.
+* `fuel.svg` foi removido (o bem não existe mais e o id não está em
+  `resource_icons.json`); os SVGs do Icon Forge de gasoline/diesel/jet_fuel
+  continuam como fallback, coerentes com os demais bens.
