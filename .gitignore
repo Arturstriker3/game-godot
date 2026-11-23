@@ -32,6 +32,10 @@ tools/icon_gen/secrets/
 tools/data/*
 # exceção: fatos históricos documentados do câmbio (curadoria, versionada)
 !tools/data/fx_historical_facts.json
+# F0/D-124: construtores reproduzíveis do transporte ficam versionados; o cache
+# baixado (PDF do EI etc.) não.
+!tools/data/transport/
+tools/data/transport/refining/
 # caches brutos de construtores (baixados com --fetch; não versionar)
 tools/_tmp_*/
 

@@ -93,7 +93,7 @@
         },
         "transport": {
           "substitutes": [
-            "fuel"
+            "gasoline"
           ],
           "per_capita_t_month": 0.000337,
           "anchor": "estimated",
@@ -167,8 +167,8 @@
       "antibiotics",
       "appliances",
       "canned_food",
-      "fuel",
       "furniture",
+      "gasoline",
       "meat",
       "medicine",
       "phone",
@@ -181,7 +181,7 @@
       "artillery_ammo",
       "canned_food",
       "combat_ration",
-      "fuel",
+      "diesel",
       "infantry_gear",
       "military_drone",
       "small_arms",
@@ -208,13 +208,6 @@
     "port": [
       "pallets"
     ],
-    "vehicle_fleet": [
-      "cargo_plane",
-      "cargo_ship",
-      "fuel",
-      "spare_parts",
-      "truck"
-    ],
     "mine": [
       "explosives",
       "mining_machine"
@@ -232,6 +225,14 @@
       "industrial_machinery",
       "robots"
     ],
+    "vehicle_fleet": [
+      "cargo_plane",
+      "cargo_ship",
+      "diesel",
+      "jet_fuel",
+      "spare_parts",
+      "truck"
+    ],
     "machines": [
       "spare_parts"
     ],
@@ -247,7 +248,7 @@
     "minas consomem explosives para render mais",
     "governo e empresas consomem paper e computer",
     "veículos e máquinas consomem spare_parts por mês; fazendas/oficinas consomem tools",
-    "army consome uniforms, ammunition, combat_ration, fuel etc."
+    "army consome uniforms, ammunition, combat_ration, diesel etc."
   ],
   "pending": [
     "eletricidade",

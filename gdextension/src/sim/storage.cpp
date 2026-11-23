@@ -52,7 +52,7 @@ constexpr const char* kSiloProducts[] = {
 };
 constexpr const char* kColdProducts[] = {"meat", "potato", "bread"};
 constexpr const char* kFuelProducts[] = {
-	"oil", "fuel", "ethanol", "chemicals", "alcohol",
+	"oil", "gasoline", "diesel", "jet_fuel", "ethanol", "chemicals", "alcohol",
 };
 constexpr const char* kGasProducts[] = {"gas"};
 constexpr const char* kBulkProducts[] = {

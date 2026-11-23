@@ -1066,7 +1066,8 @@ void SimCore::trade_food() {
 			shipment.fleet_trucks = fleet_same_landmass ? transport.trucks : 0.0;
 			shipment.fleet_ships = transport.ships;
 			shipment.fleet_planes = transport.planes;
-			shipment.fuel = transport.fuel;
+			shipment.diesel = transport.diesel;
+			shipment.jet_fuel = transport.jet_fuel;
 			ws_.in_transit.push_back(std::move(shipment));
 
 			sellable_ge[si] -= ge;
@@ -1579,7 +1580,8 @@ void SimCore::trade_goods() {
 				shipment.fleet_trucks = fleet_same_landmass ? transport.trucks : 0.0;
 				shipment.fleet_ships = transport.ships;
 				shipment.fleet_planes = transport.planes;
-				shipment.fuel = transport.fuel;
+				shipment.diesel = transport.diesel;
+				shipment.jet_fuel = transport.jet_fuel;
 				ws_.in_transit.push_back(std::move(shipment));
 				in_transit[buyer_offset] += amount;
 				remaining -= amount;

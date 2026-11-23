@@ -206,7 +206,7 @@
       "government_share": 0.0,
       "input_goods": [
         {
-          "good": "fuel",
+          "good": "diesel",
           "per_unit": 0.002
         },
         {
@@ -250,7 +250,7 @@
       "government_share": 0.0,
       "input_goods": [
         {
-          "good": "fuel",
+          "good": "gasoline",
           "per_unit": 0.0006
         },
         {

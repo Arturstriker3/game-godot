@@ -380,7 +380,8 @@ func _refresh_fleet() -> void:
 			UiKit.number(float(fleet.get("trucks", 0.0))),
 			UiKit.number(float(fleet.get("ships", 0.0))),
 			UiKit.number(float(fleet.get("planes", 0.0))),
-			UiKit.number(float(fleet.get("fuel", 0.0))) + " t",
+			UiKit.number(float(fleet.get("diesel", 0.0))) + " t",
+			UiKit.number(float(fleet.get("jet_fuel", 0.0))) + " t",
 			UiKit.number(float(fleet.get("queue", 0.0))) + " t",
 		])
 	var index := _index_of(rows, "tag", _selected_nation)
@@ -401,7 +402,10 @@ func _refresh_fleet_detail() -> void:
 	_set_meter_text("fleet.trucks", fleet, live, "trucks", 0, health)
 	_set_meter_text("fleet.ships", fleet, live, "ships", 1, health)
 	_set_meter_text("fleet.planes", fleet, live, "planes", 2, health)
-	_set_text("fleet.fuel", UiKit.number(float(fleet.get("fuel", 0.0))) + " t")
+	_set_text("fleet.diesel",
+			UiKit.number(float(fleet.get("diesel", 0.0))) + " t")
+	_set_text("fleet.jet",
+			UiKit.number(float(fleet.get("jet_fuel", 0.0))) + " t")
 	_set_text("fleet.parts",
 			UiKit.number(float(fleet.get("spare_parts", 0.0))) + " t")
 	_set_text("fleet.queue", UiKit.number(float(fleet.get("queue", 0.0))) + " t")

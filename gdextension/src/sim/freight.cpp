@@ -131,7 +131,7 @@ double SimCore::leg_unit_freight(TransportMode mode,
 		double distance_km_value) const {
 	const ModeSpec& mode_spec = spec(mode);
 	return distance_km_value * (mode_spec.cost_per_ton_km
-		+ mode_spec.fuel_per_ton_km * fleet_fuel_price()
+		+ mode_spec.fuel_per_ton_km * fleet_fuel_price(mode)
 		+ mode_spec.fleet_cost_per_ton_km);
 }
 double SimCore::leg_unit_freight_food(TransportMode mode,

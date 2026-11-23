@@ -722,7 +722,9 @@ GOODS_MAP = {
     "canned_food": ("general_warehouse", [], "conserva estavel em prateleira"),
     # tanque
     "oil": ("fuel_tank", [], "petroleo cru"),
-    "fuel": ("fuel_tank", [], "combustivel refinado"),
+    "gasoline": ("fuel_tank", [], "gasolina refinada"),
+    "diesel": ("fuel_tank", [], "diesel refinado"),
+    "jet_fuel": ("fuel_tank", [], "querosene de aviacao"),
     "ethanol": ("fuel_tank", [], "etanol liquido"),
     "chemicals": ("fuel_tank", ["general_warehouse"], "quimicos liquidos a granel; parte ensacada"),
     # gas

@@ -935,14 +935,24 @@ namespace ogs {
 		double target_ships = 0.0;
 		double target_planes = 0.0;
 		double health[3] = {1.0, 1.0, 1.0};
-		double fuel = 0.0;         // t de combustível no estoque da nação
-		// Reserva-alvo de combustível (t), derivada de população/PIB na criação
-		// da frota; a compra mensal repõe o consumo até este nível.
-		double fuel_target = 0.0;
+		// F0: estoques separados por grau. Caminhão/navio queimam diesel;
+		// avião queima querosene de aviação (jet_fuel).
+		double diesel = 0.0;
+		double diesel_target = 0.0;
+		double jet_fuel = 0.0;
+		double jet_target = 0.0;
 		double spare_parts = 0.0;  // t de peças no estoque da nação
+		// Totais (soma dos dois graus) mantidos no status/save para a UI e o
+		// contrato anterior; os medidores por grau ficam ao lado.
 		double fuel_used_today = 0.0;
 		double fuel_used_total = 0.0;
 		double fuel_bought_total = 0.0;
+		double diesel_used_today = 0.0;
+		double diesel_used_total = 0.0;
+		double jet_used_today = 0.0;
+		double jet_used_total = 0.0;
+		double diesel_bought_total = 0.0;
+		double jet_bought_total = 0.0;
 		double parts_used_total = 0.0;
 		double vehicles_bought_total = 0.0;
 		// Carga (t) que não embarcou no dia por falta de veículo/combustível.
@@ -1269,12 +1279,14 @@ namespace ogs {
 		double subsidy = 0.0;          // incentivo pago ao grupo
 	};
 
-	// Necessidade de transporte de um pedido (por trecho): veículos e fuel.
+	// Necessidade de transporte de um pedido (por trecho): veículos e o
+	// combustível do modal (diesel em caminhão/navio; jet_fuel em avião).
 	struct TransportDemand {
 		double trucks = 0.0;
 		double ships = 0.0;
 		double planes = 0.0;
-		double fuel = 0.0;
+		double diesel = 0.0;
+		double jet_fuel = 0.0;
 		double distance_truck_km = 0.0;
 		double distance_ship_km = 0.0;
 	};
@@ -1874,11 +1886,14 @@ struct Region {
 		int arrival_day = 0;
 		// F4: frota reservada pelo pedido (liberada na chegada). O combustível
 		// já foi debitado no embarque; fica registrado para auditoria/save.
+		// F0: cada grau que o trecho queimou (diesel em caminhão/navio,
+		// jet_fuel em avião) fica no seu próprio campo.
 		std::string fleet_nation;
 		double fleet_trucks = 0.0;
 		double fleet_ships = 0.0;
 		double fleet_planes = 0.0;
-		double fuel = 0.0;
+		double diesel = 0.0;
+		double jet_fuel = 0.0;
 	};
 
 	// C2b1 (D-104) — estado da POLÍTICA MONETÁRIA de uma moeda: taxa básica

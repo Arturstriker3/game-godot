@@ -149,8 +149,11 @@ double receive_harvest_interest(WorldState& ws, const std::string& nation,
 	double amount);
 
 // Fase do dia: juros, atraso, amortização, calote e dividendo mensal.
-// Devolve o nº de calotes.
-int phase(WorldState& ws);
+// Devolve o nº de calotes. `bank_money_delta` (opcional) recebe a criação/
+// destruição de dinheiro bancário que o invariante soma ao `money_total`:
+// juro pago e amortização (−) e dividendo (+). O caixa tomado na execução
+// apenas troca depósito por caixa do banco e não entra nesse fluxo.
+int phase(WorldState& ws, double* bank_money_delta = nullptr);
 
 struct Totals {
 	double loans = 0.0;

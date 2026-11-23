@@ -1,0 +1,40 @@
+{
+ "meta": {
+  "generated_by": "tools/data/transport/build_refining_capacity.py",
+  "verified_on": "2026-11-23",
+  "rule": "toda fonte usada precisa de URL, edicao, data de acesso e licenca/termos verificados; fonte com licenca incompativel com uso comercial entra como used_restricted com blocker",
+  "counts": {
+   "used_restricted": 1
+  }
+ },
+ "sources": [
+  {
+   "id": "ei_stats_review_2025_refining",
+   "title": "Statistical Review of World Energy 2025 - Oil: Refining capacity (2024)",
+   "publisher": "Energy Institute (EI)",
+   "edition": "74a edicao (2025)",
+   "url": "https://www.energyinst.org/__data/assets/pdf_file/0007/1658077/Statistical-Review-of-World-Energy.pdf",
+   "landing_url": "https://www.energyinst.org/statistical-review/resources-and-data-downloads",
+   "accessed_at_utc": "2026-11-23T04:04:27Z",
+   "sha256": "95732ea8ad6d15e368f3b8cd040104844a997df2e0c8559ac250452cb4a8fdf0",
+   "reference_period": "2024 (capacidade de destilacao atmosferica no fim do ano, base dia-calendario)",
+   "unit": "mil barris/dia",
+   "license": {
+    "name": "Energy Institute Terms and Conditions - copyright; citacao obrigatoria, sem redistribuicao dos arquivos",
+    "url": "https://www.energyinst.org/terms",
+    "commercial_ok": false,
+    "verified_on": "2026-11-23",
+    "quote": "The EI is the owner or the licensee of all intellectual property rights in our Sites, and in the material published on it... All such rights are reserved.",
+    "evidence": "Termos do EI, secao Copyright: 'Copies of documents contained on the Sites may only be made available for information purposes and solely for the private use of the Sites' users. Any use or reproduction of such documents for any other purpose whatsoever is expressly forbidden without the written permission of the EI.' A secao de downloads tambem declara a citacao exigida: 'Energy Institute (2025), Statistical Review of World Energy 2025, Energy Institute, London.'",
+    "attribution_required": "Fonte: Energy Institute, Statistical Review of World Energy 2025 (74a edicao). (c) Energy Institute 2025."
+   },
+   "citation": "Energy Institute (2025), Statistical Review of World Energy 2025, Energy Institute, London.",
+   "used_in": [
+    "data/definitions/transport/refining_capacity.json"
+   ],
+   "transform": "capacidade 2024 (mil b/d) por pais; x 0,1364 t/barril (EIA) x 1000 e x fracao simulada da nacao (D-116/D-119); agregados regionais NAO rateados",
+   "status": "used_restricted",
+   "blocker": "termos do EI reservam direitos e proibem reproducao sem autorizacao escrita; so os numeros derivados por pais entram no jogo, com atribuicao obrigatoria, e o PDF/planilha nao sao redistribuidos"
+  }
+ ]
+}

@@ -1,0 +1,5694 @@
+{
+  "balance": {
+    "arrears": {
+      "plants": 615065.113854883,
+      "rural": 10498658623.9114,
+      "service": 28985412.3208216
+    },
+    "invariant": {
+      "arrears_plants": 615065.113854883,
+      "arrears_rural": 10498658623.9114,
+      "arrears_service": 28985412.3208216,
+      "cash_residual": 0.0000181198120117188,
+      "cash_total": 6559412071.79493,
+      "financial_sum": -0.0000123977661132813,
+      "monetary_base": 6523551982.90123,
+      "money_total": 6559412071.79491,
+      "ok": true,
+      "payables": 10528259101.3461,
+      "receivables": 10528259101.3461
+    },
+    "nations": 179,
+    "sample_nations": {
+      "BRA": {
+        "families_cash": 607447840.837378,
+        "families_net_worth": 776257690.827198,
+        "families_property": 0.0,
+        "families_receivables": 168809849.989819,
+        "firms_inventory": 10059547233.8502,
+        "firms_net_worth": 9964633699.38922,
+        "firms_payables": 168809849.989819,
+        "government_net_worth": 183735968.654313,
+        "net_worth_per_capita": 9.38051208199759
+      },
+      "CHN": {
+        "families_cash": 1983552723.75973,
+        "families_net_worth": 3641197301.41205,
+        "families_property": 0.0,
+        "families_receivables": 1657644577.65232,
+        "firms_inventory": 17583954435.2187,
+        "firms_net_worth": 16683146555.2463,
+        "firms_payables": 1657644577.65232,
+        "government_net_worth": 882832181.605685,
+        "net_worth_per_capita": 10.2040651089067
+      },
+      "DEU": {
+        "families_cash": 134266464.850363,
+        "families_net_worth": 245244644.566497,
+        "families_property": 0.0,
+        "families_receivables": 110978179.716133,
+        "firms_inventory": 624906238.600123,
+        "firms_net_worth": 540419793.173957,
+        "firms_payables": 110978179.716133,
+        "government_net_worth": 53521727.919428,
+        "net_worth_per_capita": 11.2396319606089
+      },
+      "IDN": {
+        "families_cash": 344284350.000336,
+        "families_net_worth": 717760398.353854,
+        "families_property": 0.0,
+        "families_receivables": 373476048.353518,
+        "firms_inventory": 865769266.036718,
+        "firms_net_worth": 561610105.700782,
+        "firms_payables": 373476048.353518,
+        "government_net_worth": 10164240.938486,
+        "net_worth_per_capita": 11.734146804527
+      },
+      "IND": {
+        "families_cash": 586629063.777488,
+        "families_net_worth": 3142477719.5573,
+        "families_property": 0.0,
+        "families_receivables": 2555848655.77981,
+        "firms_inventory": 6860461724.36382,
+        "firms_net_worth": 4569784685.18936,
+        "firms_payables": 2555848655.77981,
+        "government_net_worth": 733342863.211115,
+        "net_worth_per_capita": 17.5001352870134
+      },
+      "MEX": {
+        "families_cash": 293983010.559423,
+        "families_net_worth": 435606261.516913,
+        "families_property": 0.0,
+        "families_receivables": 141623250.95749,
+        "firms_inventory": 356153986.679365,
+        "firms_net_worth": 275554674.271227,
+        "firms_payables": 141623250.95749,
+        "government_net_worth": 17757169.82639,
+        "net_worth_per_capita": 8.38787118201963
+      },
+      "NGA": {
+        "families_cash": 103693914.568377,
+        "families_net_worth": 378111359.255165,
+        "families_property": 0.0,
+        "families_receivables": 274417444.686787,
+        "firms_inventory": 258645707.65456,
+        "firms_net_worth": 44420366.9058314,
+        "firms_payables": 274417444.686787,
+        "government_net_worth": 9513907.02522445,
+        "net_worth_per_capita": 7.78824402493092
+      },
+      "RUS": {
+        "families_cash": 332999495.96842,
+        "families_net_worth": 462058523.722143,
+        "families_property": 0.0,
+        "families_receivables": 129059027.753722,
+        "firms_inventory": 2531212019.93492,
+        "firms_net_worth": 2559229685.04104,
+        "firms_payables": 129059027.753722,
+        "government_net_worth": 44945523.5399605,
+        "net_worth_per_capita": 9.11454033928758
+      },
+      "USA": {
+        "families_cash": 795549335.671526,
+        "families_net_worth": 1087689178.42274,
+        "families_property": 0.0,
+        "families_receivables": 292139842.751215,
+        "firms_inventory": 8662509673.74127,
+        "firms_net_worth": 8460025739.00061,
+        "firms_payables": 292139842.751215,
+        "government_net_worth": 211950468.086013,
+        "net_worth_per_capita": 8.26334057652059
+      },
+      "ZAF": {
+        "families_cash": 99092740.1291001,
+        "families_net_worth": 160125573.001185,
+        "families_property": 0.0,
+        "families_receivables": 61032832.8720847,
+        "firms_inventory": 349616872.477778,
+        "firms_net_worth": 319814538.166694,
+        "firms_payables": 61032832.8720847,
+        "government_net_worth": 66727999.267128,
+        "net_worth_per_capita": 5.7714012906061
+      }
+    },
+    "world": {
+      "external_cash": -9488279250.34972,
+      "families_cash": 10643180054.4564,
+      "families_inventory": 0.0,
+      "families_net_worth": 21171439155.8025,
+      "families_property": 0.0,
+      "families_receivables": 10528259101.3461,
+      "firms_fixed_capital": 2939452602.24303,
+      "firms_inventory": 72859783475.9915,
+      "firms_net_worth": 65751534190.874,
+      "firms_payables": 10528259101.3461,
+      "firms_solvency": {
+        "count": 4305,
+        "illiquid": 2,
+        "insolvent": 0,
+        "liquid": 4303
+      },
+      "government_inventory": 367295405.589867,
+      "government_net_worth": 3516822598.38157
+    }
+  },
+  "bank_crisis": {
+    "bailin_cut": 0.0,
+    "capital_flight": 0.0,
+    "confidence_max": 0.964680902772623,
+    "confidence_min": 0.496222942198506,
+    "confidence_sum": 274.320916015255,
+    "crisis_events": 1,
+    "events": [
+      {
+        "bank": "MLT/foreign",
+        "capital_flight": 0.0,
+        "cause": "equity_negative",
+        "cost_depositors": 0.0,
+        "cost_fund": 43.0423287718197,
+        "cost_shareholders": 0.0,
+        "cost_takeover": 0.0,
+        "cost_treasury": 7406.73878060394,
+        "day": 156,
+        "emission": 0.0,
+        "gap": 7449.78110937576,
+        "kind": "resolution",
+        "lolr": 0.0,
+        "nation": "MLT"
+      }
+    ],
+    "fund": 205019.36727145,
+    "insurance": [
+      {
+        "fund": 730.26495112633,
+        "last_payout_day": -1,
+        "nation": "AFG",
+        "payouts": 0.0,
+        "premiums": 730.26495112633
+      },
+      {
+        "fund": 391.213966539199,
+        "last_payout_day": -1,
+        "nation": "AGO",
+        "payouts": 0.0,
+        "premiums": 391.213966539199
+      },
+      {
+        "fund": 560.586205539662,
+        "last_payout_day": -1,
+        "nation": "ALB",
+        "payouts": 0.0,
+        "premiums": 560.586205539662
+      },
+      {
+        "fund": 392.650081949841,
+        "last_payout_day": -1,
+        "nation": "ARE",
+        "payouts": 0.0,
+        "premiums": 392.650081949841
+      },
+      {
+        "fund": 2383.64780227996,
+        "last_payout_day": -1,
+        "nation": "ARG",
+        "payouts": 0.0,
+        "premiums": 2383.64780227996
+      },
+      {
+        "fund": 1128.84368465019,
+        "last_payout_day": -1,
+        "nation": "ARM",
+        "payouts": 0.0,
+        "premiums": 1128.84368465019
+      },
+      {
+        "fund": 210.77603137523,
+        "last_payout_day": -1,
+        "nation": "ATG",
+        "payouts": 0.0,
+        "premiums": 210.77603137523
+      },
+      {
+        "fund": 7590.48444340212,
+        "last_payout_day": -1,
+        "nation": "AUS",
+        "payouts": 0.0,
+        "premiums": 7590.48444340212
+      },
+      {
+        "fund": 876.006050380528,
+        "last_payout_day": -1,
+        "nation": "AUT",
+        "payouts": 0.0,
+        "premiums": 876.006050380528
+      },
+      {
+        "fund": 1085.36401958591,
+        "last_payout_day": -1,
+        "nation": "AZE",
+        "payouts": 0.0,
+        "premiums": 1085.36401958591
+      },
+      {
+        "fund": 228.755163413038,
+        "last_payout_day": -1,
+        "nation": "BDI",
+        "payouts": 0.0,
+        "premiums": 228.755163413038
+      },
+      {
+        "fund": 682.164498476903,
+        "last_payout_day": -1,
+        "nation": "BEL",
+        "payouts": 0.0,
+        "premiums": 682.164498476903
+      },
+      {
+        "fund": 174.419272560287,
+        "last_payout_day": -1,
+        "nation": "BEN",
+        "payouts": 0.0,
+        "premiums": 174.419272560287
+      },
+      {
+        "fund": 196.560704571988,
+        "last_payout_day": -1,
+        "nation": "BFA",
+        "payouts": 0.0,
+        "premiums": 196.560704571988
+      },
+      {
+        "fund": 1619.40391625063,
+        "last_payout_day": -1,
+        "nation": "BGD",
+        "payouts": 0.0,
+        "premiums": 1619.40391625063
+      },
+      {
+        "fund": 764.222295360245,
+        "last_payout_day": -1,
+        "nation": "BGR",
+        "payouts": 0.0,
+        "premiums": 764.222295360245
+      },
+      {
+        "fund": 52.0382396991538,
+        "last_payout_day": -1,
+        "nation": "BHR",
+        "payouts": 0.0,
+        "premiums": 52.0382396991538
+      },
+      {
+        "fund": 427.794064637549,
+        "last_payout_day": -1,
+        "nation": "BHS",
+        "payouts": 0.0,
+        "premiums": 427.794064637549
+      },
+      {
+        "fund": 635.148851996188,
+        "last_payout_day": -1,
+        "nation": "BIH",
+        "payouts": 0.0,
+        "premiums": 635.148851996188
+      },
+      {
+        "fund": 123.716208870244,
+        "last_payout_day": -1,
+        "nation": "BLR",
+        "payouts": 0.0,
+        "premiums": 123.716208870244
+      },
+      {
+        "fund": 0.000108970857495809,
+        "last_payout_day": -1,
+        "nation": "BLZ",
+        "payouts": 0.0,
+        "premiums": 0.000108970857495809
+      },
+      {
+        "fund": 1038.27914175286,
+        "last_payout_day": -1,
+        "nation": "BOL",
+        "payouts": 0.0,
+        "premiums": 1038.27914175286
+      },
+      {
+        "fund": 8911.5791146473,
+        "last_payout_day": -1,
+        "nation": "BRA",
+        "payouts": 0.0,
+        "premiums": 8911.5791146473
+      },
+      {
+        "fund": 205.112460628215,
+        "last_payout_day": -1,
+        "nation": "BRB",
+        "payouts": 0.0,
+        "premiums": 205.112460628215
+      },
+      {
+        "fund": 75.5701710083972,
+        "last_payout_day": -1,
+        "nation": "BRN",
+        "payouts": 0.0,
+        "premiums": 75.5701710083972
+      },
+      {
+        "fund": 230.945389025866,
+        "last_payout_day": -1,
+        "nation": "BTN",
+        "payouts": 0.0,
+        "premiums": 230.945389025866
+      },
+      {
+        "fund": 0.00529835660553139,
+        "last_payout_day": -1,
+        "nation": "BWA",
+        "payouts": 0.0,
+        "premiums": 0.00529835660553139
+      },
+      {
+        "fund": 558.868942858013,
+        "last_payout_day": -1,
+        "nation": "CAF",
+        "payouts": 0.0,
+        "premiums": 558.868942858013
+      },
+      {
+        "fund": 6527.75463574549,
+        "last_payout_day": -1,
+        "nation": "CAN",
+        "payouts": 0.0,
+        "premiums": 6527.75463574549
+      },
+      {
+        "fund": 663.863961300908,
+        "last_payout_day": -1,
+        "nation": "CHE",
+        "payouts": 0.0,
+        "premiums": 663.863961300908
+      },
+      {
+        "fund": 2531.84329956882,
+        "last_payout_day": -1,
+        "nation": "CHL",
+        "payouts": 0.0,
+        "premiums": 2531.84329956882
+      },
+      {
+        "fund": 15294.2745301312,
+        "last_payout_day": -1,
+        "nation": "CHN",
+        "payouts": 0.0,
+        "premiums": 15294.2745301312
+      },
+      {
+        "fund": 390.260121896825,
+        "last_payout_day": -1,
+        "nation": "CIV",
+        "payouts": 0.0,
+        "premiums": 390.260121896825
+      },
+      {
+        "fund": 937.302237688594,
+        "last_payout_day": -1,
+        "nation": "CMR",
+        "payouts": 0.0,
+        "premiums": 937.302237688594
+      },
+      {
+        "fund": 2832.38271042946,
+        "last_payout_day": -1,
+        "nation": "COD",
+        "payouts": 0.0,
+        "premiums": 2832.38271042946
+      },
+      {
+        "fund": 717.068356466611,
+        "last_payout_day": -1,
+        "nation": "COG",
+        "payouts": 0.0,
+        "premiums": 717.068356466611
+      },
+      {
+        "fund": 1233.02974136463,
+        "last_payout_day": -1,
+        "nation": "COL",
+        "payouts": 0.0,
+        "premiums": 1233.02974136463
+      },
+      {
+        "fund": 24.2621113563467,
+        "last_payout_day": -1,
+        "nation": "CRI",
+        "payouts": 0.0,
+        "premiums": 24.2621113563467
+      },
+      {
+        "fund": 298.637709971228,
+        "last_payout_day": -1,
+        "nation": "CUB",
+        "payouts": 0.0,
+        "premiums": 298.637709971228
+      },
+      {
+        "fund": 135.999979139389,
+        "last_payout_day": -1,
+        "nation": "CYP",
+        "payouts": 0.0,
+        "premiums": 135.999979139389
+      },
+      {
+        "fund": 698.390980971945,
+        "last_payout_day": -1,
+        "nation": "CZE",
+        "payouts": 0.0,
+        "premiums": 698.390980971945
+      },
+      {
+        "fund": 514.688456010939,
+        "last_payout_day": -1,
+        "nation": "DEU",
+        "payouts": 0.0,
+        "premiums": 514.688456010939
+      },
+      {
+        "fund": 66.6537451380236,
+        "last_payout_day": -1,
+        "nation": "DJI",
+        "payouts": 0.0,
+        "premiums": 66.6537451380236
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "DMA",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 288.611278371037,
+        "last_payout_day": -1,
+        "nation": "DNK",
+        "payouts": 0.0,
+        "premiums": 288.611278371037
+      },
+      {
+        "fund": 234.607634746832,
+        "last_payout_day": -1,
+        "nation": "DOM",
+        "payouts": 0.0,
+        "premiums": 234.607634746832
+      },
+      {
+        "fund": 1263.28546381163,
+        "last_payout_day": -1,
+        "nation": "DZA",
+        "payouts": 0.0,
+        "premiums": 1263.28546381163
+      },
+      {
+        "fund": 1436.14807170133,
+        "last_payout_day": -1,
+        "nation": "ECU",
+        "payouts": 0.0,
+        "premiums": 1436.14807170133
+      },
+      {
+        "fund": 962.41734865209,
+        "last_payout_day": -1,
+        "nation": "EGY",
+        "payouts": 0.0,
+        "premiums": 962.41734865209
+      },
+      {
+        "fund": 75.0731927926896,
+        "last_payout_day": -1,
+        "nation": "ERI",
+        "payouts": 0.0,
+        "premiums": 75.0731927926896
+      },
+      {
+        "fund": 1343.62171747926,
+        "last_payout_day": -1,
+        "nation": "ESP",
+        "payouts": 0.0,
+        "premiums": 1343.62171747926
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "EST",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 1357.59394186886,
+        "last_payout_day": -1,
+        "nation": "ETH",
+        "payouts": 0.0,
+        "premiums": 1357.59394186886
+      },
+      {
+        "fund": 244.530788623991,
+        "last_payout_day": -1,
+        "nation": "FIN",
+        "payouts": 0.0,
+        "premiums": 244.530788623991
+      },
+      {
+        "fund": 353.332980319106,
+        "last_payout_day": -1,
+        "nation": "FJI",
+        "payouts": 0.0,
+        "premiums": 353.332980319106
+      },
+      {
+        "fund": 2206.5256754947,
+        "last_payout_day": -1,
+        "nation": "FRA",
+        "payouts": 0.0,
+        "premiums": 2206.5256754947
+      },
+      {
+        "fund": 112.936761139164,
+        "last_payout_day": -1,
+        "nation": "GAB",
+        "payouts": 0.0,
+        "premiums": 112.936761139164
+      },
+      {
+        "fund": 1486.4475324325,
+        "last_payout_day": -1,
+        "nation": "GBR",
+        "payouts": 0.0,
+        "premiums": 1486.4475324325
+      },
+      {
+        "fund": 644.344186088142,
+        "last_payout_day": -1,
+        "nation": "GEO",
+        "payouts": 0.0,
+        "premiums": 644.344186088142
+      },
+      {
+        "fund": 227.508269272354,
+        "last_payout_day": -1,
+        "nation": "GHA",
+        "payouts": 0.0,
+        "premiums": 227.508269272354
+      },
+      {
+        "fund": 2728.85137891625,
+        "last_payout_day": -1,
+        "nation": "GIN",
+        "payouts": 0.0,
+        "premiums": 2728.85137891625
+      },
+      {
+        "fund": 52.1773427266577,
+        "last_payout_day": -1,
+        "nation": "GMB",
+        "payouts": 0.0,
+        "premiums": 52.1773427266577
+      },
+      {
+        "fund": 603.208508920492,
+        "last_payout_day": -1,
+        "nation": "GNB",
+        "payouts": 0.0,
+        "premiums": 603.208508920492
+      },
+      {
+        "fund": 515.978680529815,
+        "last_payout_day": -1,
+        "nation": "GNQ",
+        "payouts": 0.0,
+        "premiums": 515.978680529815
+      },
+      {
+        "fund": 1186.90502693817,
+        "last_payout_day": -1,
+        "nation": "GRC",
+        "payouts": 0.0,
+        "premiums": 1186.90502693817
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "GRD",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 715.653469034145,
+        "last_payout_day": -1,
+        "nation": "GTM",
+        "payouts": 0.0,
+        "premiums": 715.653469034145
+      },
+      {
+        "fund": 1560.57656901907,
+        "last_payout_day": -1,
+        "nation": "GUY",
+        "payouts": 0.0,
+        "premiums": 1560.57656901907
+      },
+      {
+        "fund": 622.112193929408,
+        "last_payout_day": -1,
+        "nation": "HND",
+        "payouts": 0.0,
+        "premiums": 622.112193929408
+      },
+      {
+        "fund": 575.27506605462,
+        "last_payout_day": -1,
+        "nation": "HRV",
+        "payouts": 0.0,
+        "premiums": 575.27506605462
+      },
+      {
+        "fund": 521.849034932048,
+        "last_payout_day": -1,
+        "nation": "HTI",
+        "payouts": 0.0,
+        "premiums": 521.849034932048
+      },
+      {
+        "fund": 528.933517766832,
+        "last_payout_day": -1,
+        "nation": "HUN",
+        "payouts": 0.0,
+        "premiums": 528.933517766832
+      },
+      {
+        "fund": 4747.14036337728,
+        "last_payout_day": -1,
+        "nation": "IDN",
+        "payouts": 0.0,
+        "premiums": 4747.14036337728
+      },
+      {
+        "fund": 10922.3397464147,
+        "last_payout_day": -1,
+        "nation": "IND",
+        "payouts": 0.0,
+        "premiums": 10922.3397464147
+      },
+      {
+        "fund": 892.628143487508,
+        "last_payout_day": -1,
+        "nation": "IRL",
+        "payouts": 0.0,
+        "premiums": 892.628143487508
+      },
+      {
+        "fund": 2026.92943903625,
+        "last_payout_day": -1,
+        "nation": "IRN",
+        "payouts": 0.0,
+        "premiums": 2026.92943903625
+      },
+      {
+        "fund": 279.984283959217,
+        "last_payout_day": -1,
+        "nation": "IRQ",
+        "payouts": 0.0,
+        "premiums": 279.984283959217
+      },
+      {
+        "fund": 449.968132209923,
+        "last_payout_day": -1,
+        "nation": "ISL",
+        "payouts": 0.0,
+        "premiums": 449.968132209923
+      },
+      {
+        "fund": 861.33772250327,
+        "last_payout_day": -1,
+        "nation": "ISR",
+        "payouts": 0.0,
+        "premiums": 861.33772250327
+      },
+      {
+        "fund": 1335.75859808779,
+        "last_payout_day": -1,
+        "nation": "ITA",
+        "payouts": 0.0,
+        "premiums": 1335.75859808779
+      },
+      {
+        "fund": 813.099837542803,
+        "last_payout_day": -1,
+        "nation": "JAM",
+        "payouts": 0.0,
+        "premiums": 813.099837542803
+      },
+      {
+        "fund": 442.277441651366,
+        "last_payout_day": -1,
+        "nation": "JOR",
+        "payouts": 0.0,
+        "premiums": 442.277441651366
+      },
+      {
+        "fund": 0.0225143778128813,
+        "last_payout_day": -1,
+        "nation": "JPN",
+        "payouts": 0.0,
+        "premiums": 0.0225143778128813
+      },
+      {
+        "fund": 2234.0069365662,
+        "last_payout_day": -1,
+        "nation": "KAZ",
+        "payouts": 0.0,
+        "premiums": 2234.0069365662
+      },
+      {
+        "fund": 1894.88248486957,
+        "last_payout_day": -1,
+        "nation": "KEN",
+        "payouts": 0.0,
+        "premiums": 1894.88248486957
+      },
+      {
+        "fund": 296.250683426165,
+        "last_payout_day": -1,
+        "nation": "KGZ",
+        "payouts": 0.0,
+        "premiums": 296.250683426165
+      },
+      {
+        "fund": 996.401048160788,
+        "last_payout_day": -1,
+        "nation": "KHM",
+        "payouts": 0.0,
+        "premiums": 996.401048160788
+      },
+      {
+        "fund": 47.6471053179894,
+        "last_payout_day": -1,
+        "nation": "KNA",
+        "payouts": 0.0,
+        "premiums": 47.6471053179894
+      },
+      {
+        "fund": 82.2305287369981,
+        "last_payout_day": -1,
+        "nation": "KOR",
+        "payouts": 0.0,
+        "premiums": 82.2305287369981
+      },
+      {
+        "fund": 88.8823932047011,
+        "last_payout_day": -1,
+        "nation": "KWT",
+        "payouts": 0.0,
+        "premiums": 88.8823932047011
+      },
+      {
+        "fund": 1195.84011816952,
+        "last_payout_day": -1,
+        "nation": "LAO",
+        "payouts": 0.0,
+        "premiums": 1195.84011816952
+      },
+      {
+        "fund": 517.458535386807,
+        "last_payout_day": -1,
+        "nation": "LBN",
+        "payouts": 0.0,
+        "premiums": 517.458535386807
+      },
+      {
+        "fund": 244.403213810346,
+        "last_payout_day": -1,
+        "nation": "LBR",
+        "payouts": 0.0,
+        "premiums": 244.403213810346
+      },
+      {
+        "fund": 850.012476055598,
+        "last_payout_day": -1,
+        "nation": "LBY",
+        "payouts": 0.0,
+        "premiums": 850.012476055598
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "LCA",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 1247.51456005025,
+        "last_payout_day": -1,
+        "nation": "LKA",
+        "payouts": 0.0,
+        "premiums": 1247.51456005025
+      },
+      {
+        "fund": 11.1400821494319,
+        "last_payout_day": -1,
+        "nation": "LSO",
+        "payouts": 0.0,
+        "premiums": 11.1400821494319
+      },
+      {
+        "fund": 1107.1094324415,
+        "last_payout_day": -1,
+        "nation": "LTU",
+        "payouts": 0.0,
+        "premiums": 1107.1094324415
+      },
+      {
+        "fund": 92.1585585664749,
+        "last_payout_day": -1,
+        "nation": "LUX",
+        "payouts": 0.0,
+        "premiums": 92.1585585664749
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "LVA",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 900.328391405052,
+        "last_payout_day": -1,
+        "nation": "MAR",
+        "payouts": 0.0,
+        "premiums": 900.328391405052
+      },
+      {
+        "fund": 579.147053782992,
+        "last_payout_day": -1,
+        "nation": "MDA",
+        "payouts": 0.0,
+        "premiums": 579.147053782992
+      },
+      {
+        "fund": 205.234257745371,
+        "last_payout_day": -1,
+        "nation": "MDG",
+        "payouts": 0.0,
+        "premiums": 205.234257745371
+      },
+      {
+        "fund": 4797.76633185385,
+        "last_payout_day": -1,
+        "nation": "MEX",
+        "payouts": 0.0,
+        "premiums": 4797.76633185385
+      },
+      {
+        "fund": 471.325336549715,
+        "last_payout_day": -1,
+        "nation": "MKD",
+        "payouts": 0.0,
+        "premiums": 471.325336549715
+      },
+      {
+        "fund": 243.495466171909,
+        "last_payout_day": -1,
+        "nation": "MLI",
+        "payouts": 0.0,
+        "premiums": 243.495466171909
+      },
+      {
+        "fund": 11.1093423128072,
+        "last_payout_day": 156,
+        "nation": "MLT",
+        "payouts": 43.0423287718197,
+        "premiums": 54.1516710846272
+      },
+      {
+        "fund": 1312.47273410337,
+        "last_payout_day": -1,
+        "nation": "MMR",
+        "payouts": 0.0,
+        "premiums": 1312.47273410337
+      },
+      {
+        "fund": 603.445943047098,
+        "last_payout_day": -1,
+        "nation": "MNE",
+        "payouts": 0.0,
+        "premiums": 603.445943047098
+      },
+      {
+        "fund": 23.9407894429617,
+        "last_payout_day": -1,
+        "nation": "MNG",
+        "payouts": 0.0,
+        "premiums": 23.9407894429617
+      },
+      {
+        "fund": 511.959424460906,
+        "last_payout_day": -1,
+        "nation": "MOZ",
+        "payouts": 0.0,
+        "premiums": 511.959424460906
+      },
+      {
+        "fund": 1115.2392231752,
+        "last_payout_day": -1,
+        "nation": "MRT",
+        "payouts": 0.0,
+        "premiums": 1115.2392231752
+      },
+      {
+        "fund": 444.52534444833,
+        "last_payout_day": -1,
+        "nation": "MWI",
+        "payouts": 0.0,
+        "premiums": 444.52534444833
+      },
+      {
+        "fund": 1655.75082072469,
+        "last_payout_day": -1,
+        "nation": "MYS",
+        "payouts": 0.0,
+        "premiums": 1655.75082072469
+      },
+      {
+        "fund": 62.1881797878939,
+        "last_payout_day": -1,
+        "nation": "NAM",
+        "payouts": 0.0,
+        "premiums": 62.1881797878939
+      },
+      {
+        "fund": 972.484856950873,
+        "last_payout_day": -1,
+        "nation": "NED",
+        "payouts": 0.0,
+        "premiums": 972.484856950873
+      },
+      {
+        "fund": 304.598720653146,
+        "last_payout_day": -1,
+        "nation": "NER",
+        "payouts": 0.0,
+        "premiums": 304.598720653146
+      },
+      {
+        "fund": 2057.41493324296,
+        "last_payout_day": -1,
+        "nation": "NGA",
+        "payouts": 0.0,
+        "premiums": 2057.41493324296
+      },
+      {
+        "fund": 410.15936575964,
+        "last_payout_day": -1,
+        "nation": "NIC",
+        "payouts": 0.0,
+        "premiums": 410.15936575964
+      },
+      {
+        "fund": 221.113568027354,
+        "last_payout_day": -1,
+        "nation": "NOR",
+        "payouts": 0.0,
+        "premiums": 221.113568027354
+      },
+      {
+        "fund": 1376.37718846916,
+        "last_payout_day": -1,
+        "nation": "NPL",
+        "payouts": 0.0,
+        "premiums": 1376.37718846916
+      },
+      {
+        "fund": 1154.37554091533,
+        "last_payout_day": -1,
+        "nation": "NZL",
+        "payouts": 0.0,
+        "premiums": 1154.37554091533
+      },
+      {
+        "fund": 164.979624896464,
+        "last_payout_day": -1,
+        "nation": "OMN",
+        "payouts": 0.0,
+        "premiums": 164.979624896464
+      },
+      {
+        "fund": 2260.99862956116,
+        "last_payout_day": -1,
+        "nation": "PAK",
+        "payouts": 0.0,
+        "premiums": 2260.99862956116
+      },
+      {
+        "fund": 567.300835976295,
+        "last_payout_day": -1,
+        "nation": "PAN",
+        "payouts": 0.0,
+        "premiums": 567.300835976295
+      },
+      {
+        "fund": 2536.93388504754,
+        "last_payout_day": -1,
+        "nation": "PER",
+        "payouts": 0.0,
+        "premiums": 2536.93388504754
+      },
+      {
+        "fund": 1833.72239985406,
+        "last_payout_day": -1,
+        "nation": "PHL",
+        "payouts": 0.0,
+        "premiums": 1833.72239985406
+      },
+      {
+        "fund": 3.78735012842044,
+        "last_payout_day": -1,
+        "nation": "PNG",
+        "payouts": 0.0,
+        "premiums": 3.78735012842044
+      },
+      {
+        "fund": 1635.34841351656,
+        "last_payout_day": -1,
+        "nation": "POL",
+        "payouts": 0.0,
+        "premiums": 1635.34841351656
+      },
+      {
+        "fund": 548.953614119275,
+        "last_payout_day": -1,
+        "nation": "PRK",
+        "payouts": 0.0,
+        "premiums": 548.953614119275
+      },
+      {
+        "fund": 439.807802855849,
+        "last_payout_day": -1,
+        "nation": "PRT",
+        "payouts": 0.0,
+        "premiums": 439.807802855849
+      },
+      {
+        "fund": 1198.69075864335,
+        "last_payout_day": -1,
+        "nation": "PRY",
+        "payouts": 0.0,
+        "premiums": 1198.69075864335
+      },
+      {
+        "fund": 9.0865618310424,
+        "last_payout_day": -1,
+        "nation": "PSX",
+        "payouts": 0.0,
+        "premiums": 9.0865618310424
+      },
+      {
+        "fund": 154.621188490899,
+        "last_payout_day": -1,
+        "nation": "QAT",
+        "payouts": 0.0,
+        "premiums": 154.621188490899
+      },
+      {
+        "fund": 861.011291442915,
+        "last_payout_day": -1,
+        "nation": "ROU",
+        "payouts": 0.0,
+        "premiums": 861.011291442915
+      },
+      {
+        "fund": 11204.7000765314,
+        "last_payout_day": -1,
+        "nation": "RUS",
+        "payouts": 0.0,
+        "premiums": 11204.7000765314
+      },
+      {
+        "fund": 927.529530805116,
+        "last_payout_day": -1,
+        "nation": "RWA",
+        "payouts": 0.0,
+        "premiums": 927.529530805116
+      },
+      {
+        "fund": 3.85356729767016,
+        "last_payout_day": -1,
+        "nation": "SAH",
+        "payouts": 0.0,
+        "premiums": 3.85356729767016
+      },
+      {
+        "fund": 515.347411141811,
+        "last_payout_day": -1,
+        "nation": "SAU",
+        "payouts": 0.0,
+        "premiums": 515.347411141811
+      },
+      {
+        "fund": 650.215428373854,
+        "last_payout_day": -1,
+        "nation": "SDN",
+        "payouts": 0.0,
+        "premiums": 650.215428373854
+      },
+      {
+        "fund": 18.6708886378101,
+        "last_payout_day": -1,
+        "nation": "SEN",
+        "payouts": 0.0,
+        "premiums": 18.6708886378101
+      },
+      {
+        "fund": 151.549005844796,
+        "last_payout_day": -1,
+        "nation": "SGP",
+        "payouts": 0.0,
+        "premiums": 151.549005844796
+      },
+      {
+        "fund": 3.80915032292519,
+        "last_payout_day": -1,
+        "nation": "SLB",
+        "payouts": 0.0,
+        "premiums": 3.80915032292519
+      },
+      {
+        "fund": 946.355562621671,
+        "last_payout_day": -1,
+        "nation": "SLE",
+        "payouts": 0.0,
+        "premiums": 946.355562621671
+      },
+      {
+        "fund": 414.610787607919,
+        "last_payout_day": -1,
+        "nation": "SLV",
+        "payouts": 0.0,
+        "premiums": 414.610787607919
+      },
+      {
+        "fund": 549.07432179149,
+        "last_payout_day": -1,
+        "nation": "SOL",
+        "payouts": 0.0,
+        "premiums": 549.07432179149
+      },
+      {
+        "fund": 223.42377084549,
+        "last_payout_day": -1,
+        "nation": "SOM",
+        "payouts": 0.0,
+        "premiums": 223.42377084549
+      },
+      {
+        "fund": 296.835204886816,
+        "last_payout_day": -1,
+        "nation": "SRB",
+        "payouts": 0.0,
+        "premiums": 296.835204886816
+      },
+      {
+        "fund": 142.579672432911,
+        "last_payout_day": -1,
+        "nation": "SSD",
+        "payouts": 0.0,
+        "premiums": 142.579672432911
+      },
+      {
+        "fund": 959.293469791625,
+        "last_payout_day": -1,
+        "nation": "SUR",
+        "payouts": 0.0,
+        "premiums": 959.293469791625
+      },
+      {
+        "fund": 801.758673755676,
+        "last_payout_day": -1,
+        "nation": "SVK",
+        "payouts": 0.0,
+        "premiums": 801.758673755676
+      },
+      {
+        "fund": 349.480300673371,
+        "last_payout_day": -1,
+        "nation": "SVN",
+        "payouts": 0.0,
+        "premiums": 349.480300673371
+      },
+      {
+        "fund": 1554.53152933616,
+        "last_payout_day": -1,
+        "nation": "SWE",
+        "payouts": 0.0,
+        "premiums": 1554.53152933616
+      },
+      {
+        "fund": 0.00000170391290451444,
+        "last_payout_day": -1,
+        "nation": "SWZ",
+        "payouts": 0.0,
+        "premiums": 0.00000170391290451444
+      },
+      {
+        "fund": 571.888740503246,
+        "last_payout_day": -1,
+        "nation": "SYR",
+        "payouts": 0.0,
+        "premiums": 571.888740503246
+      },
+      {
+        "fund": 221.774479292614,
+        "last_payout_day": -1,
+        "nation": "TCD",
+        "payouts": 0.0,
+        "premiums": 221.774479292614
+      },
+      {
+        "fund": 88.5237248658521,
+        "last_payout_day": -1,
+        "nation": "TGO",
+        "payouts": 0.0,
+        "premiums": 88.5237248658521
+      },
+      {
+        "fund": 1447.11013890959,
+        "last_payout_day": -1,
+        "nation": "THA",
+        "payouts": 0.0,
+        "premiums": 1447.11013890959
+      },
+      {
+        "fund": 1124.04955268007,
+        "last_payout_day": -1,
+        "nation": "TJK",
+        "payouts": 0.0,
+        "premiums": 1124.04955268007
+      },
+      {
+        "fund": 177.736350448289,
+        "last_payout_day": -1,
+        "nation": "TKM",
+        "payouts": 0.0,
+        "premiums": 177.736350448289
+      },
+      {
+        "fund": 812.333620977081,
+        "last_payout_day": -1,
+        "nation": "TLS",
+        "payouts": 0.0,
+        "premiums": 812.333620977081
+      },
+      {
+        "fund": 71.1618638517681,
+        "last_payout_day": -1,
+        "nation": "TTO",
+        "payouts": 0.0,
+        "premiums": 71.1618638517681
+      },
+      {
+        "fund": 361.799875923322,
+        "last_payout_day": -1,
+        "nation": "TUN",
+        "payouts": 0.0,
+        "premiums": 361.799875923322
+      },
+      {
+        "fund": 2075.16698635421,
+        "last_payout_day": -1,
+        "nation": "TUR",
+        "payouts": 0.0,
+        "premiums": 2075.16698635421
+      },
+      {
+        "fund": 909.036602759111,
+        "last_payout_day": -1,
+        "nation": "TWN",
+        "payouts": 0.0,
+        "premiums": 909.036602759111
+      },
+      {
+        "fund": 182.644010096539,
+        "last_payout_day": -1,
+        "nation": "TZA",
+        "payouts": 0.0,
+        "premiums": 182.644010096539
+      },
+      {
+        "fund": 1957.88836702971,
+        "last_payout_day": -1,
+        "nation": "UGA",
+        "payouts": 0.0,
+        "premiums": 1957.88836702971
+      },
+      {
+        "fund": 1484.82116042297,
+        "last_payout_day": -1,
+        "nation": "UKR",
+        "payouts": 0.0,
+        "premiums": 1484.82116042297
+      },
+      {
+        "fund": 1695.80815819604,
+        "last_payout_day": -1,
+        "nation": "URY",
+        "payouts": 0.0,
+        "premiums": 1695.80815819604
+      },
+      {
+        "fund": 11954.7402986207,
+        "last_payout_day": -1,
+        "nation": "USA",
+        "payouts": 0.0,
+        "premiums": 11954.7402986207
+      },
+      {
+        "fund": 1214.84033086468,
+        "last_payout_day": -1,
+        "nation": "UZB",
+        "payouts": 0.0,
+        "premiums": 1214.84033086468
+      },
+      {
+        "fund": 0.0,
+        "last_payout_day": -1,
+        "nation": "VCT",
+        "payouts": 0.0,
+        "premiums": 0.0
+      },
+      {
+        "fund": 1532.57450901934,
+        "last_payout_day": -1,
+        "nation": "VEN",
+        "payouts": 0.0,
+        "premiums": 1532.57450901934
+      },
+      {
+        "fund": 1579.91190992731,
+        "last_payout_day": -1,
+        "nation": "VNM",
+        "payouts": 0.0,
+        "premiums": 1579.91190992731
+      },
+      {
+        "fund": 208.716060024918,
+        "last_payout_day": -1,
+        "nation": "XKX",
+        "payouts": 0.0,
+        "premiums": 208.716060024918
+      },
+      {
+        "fund": 378.214806818777,
+        "last_payout_day": -1,
+        "nation": "YEM",
+        "payouts": 0.0,
+        "premiums": 378.214806818777
+      },
+      {
+        "fund": 1493.57460031591,
+        "last_payout_day": -1,
+        "nation": "ZAF",
+        "payouts": 0.0,
+        "premiums": 1493.57460031591
+      },
+      {
+        "fund": 2032.97769159217,
+        "last_payout_day": -1,
+        "nation": "ZMB",
+        "payouts": 0.0,
+        "premiums": 2032.97769159217
+      },
+      {
+        "fund": 411.996239943932,
+        "last_payout_day": -1,
+        "nation": "ZWE",
+        "payouts": 0.0,
+        "premiums": 411.996239943932
+      }
+    ],
+    "insured_payout": 43.0423287718197,
+    "lolr_borrowed": 0.0,
+    "lolr_interest": 0.0,
+    "payouts": 43.0423287718197,
+    "premiums": 205062.409600222,
+    "resolutions": 1,
+    "run_cash": 0.0,
+    "run_days": 0,
+    "run_public": 0.0,
+    "run_withdrawn": 0.0,
+    "runs": 0,
+    "treasury_rescue": 7406.73878060394
+  },
+  "bankruptcies": 4,
+  "bankruptcies_detail": [
+    {
+      "building_id": "usa_ren_oil_mine",
+      "capacity": 7.014,
+      "city": "USA-REN",
+      "costs": 13.2812610547996,
+      "counter_delta": 1,
+      "day": 109,
+      "last_seen_day": 105,
+      "loss_days": 57,
+      "nation": "USA",
+      "owner": "national:G-USA-energy-241",
+      "power_cost_industry": 0.0,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served_ratio": 1.0,
+      "profit": -13.2812610547996,
+      "revenue": 0.0,
+      "sector": "oil",
+      "utilization": 0.152999342763736
+    },
+    {
+      "building_id": "pri_pon_copper_mine",
+      "capacity": 2.249,
+      "city": "PRI-PON",
+      "costs": 1.1186526,
+      "counter_delta": 2,
+      "day": 126,
+      "last_seen_day": 125,
+      "loss_days": 60,
+      "nation": "USA",
+      "owner": "national:G-USA-mining-245",
+      "power_cost_industry": 0.0,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served_ratio": 1.0,
+      "profit": -1.1186526,
+      "revenue": 0.0,
+      "sector": "copper",
+      "utilization": 0.0
+    },
+    {
+      "building_id": "pri_pon_iron_mine",
+      "capacity": 4.501,
+      "city": "PRI-PON",
+      "costs": 1.66345144875,
+      "counter_delta": 2,
+      "day": 126,
+      "last_seen_day": 125,
+      "loss_days": 60,
+      "nation": "USA",
+      "owner": "national:G-USA-mining-245",
+      "power_cost_industry": 0.0,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served_ratio": 1.0,
+      "profit": -1.66345144875,
+      "revenue": 0.0,
+      "sector": "iron",
+      "utilization": 0.0
+    },
+    {
+      "building_id": "mlt_val_wheat",
+      "capacity": 3.68434619776174,
+      "city": "MLT-VAL",
+      "costs": 0.0,
+      "counter_delta": 1,
+      "day": 157,
+      "last_seen_day": 155,
+      "loss_days": 0,
+      "nation": "MLT",
+      "owner": "national:G-MLT-food-157",
+      "power_cost_industry": 0.0,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served_ratio": 1.0,
+      "profit": 0.0,
+      "revenue": 0.0,
+      "sector": "wheat",
+      "utilization": 0.0
+    }
+  ],
+  "banks": {
+    "capital": 0.0,
+    "cash": 2817270.68913278,
+    "defaults": 1,
+    "deposits": 35860088.8936769,
+    "dividends": 3124601.53588124,
+    "equity": 564656.142822732,
+    "harvest_interest": 8817.62895239206,
+    "interest_expense": 0.0,
+    "interest_income": 338965.489439181,
+    "loans": 33067024.1094557,
+    "loans_count": 2554,
+    "m0": 6523551982.90123,
+    "m1": 6556594801.10578,
+    "remittance": 265352.771400212,
+    "remittance_origin": 343421.285570319,
+    "retained": 564656.142822732,
+    "writeoffs": 7499.36818561809
+  },
+  "credit": {
+    "bc_borrowing": 0.0,
+    "capital": 0.0,
+    "defaults": 1,
+    "enabled": true,
+    "equity": 564656.142822732,
+    "group_debt": 33067024.1094557,
+    "loans": 33067024.1094557,
+    "loans_count": 2554,
+    "writeoffs": 7499.36818561809
+  },
+  "days": 365,
+  "drift": 0.00549701895361743,
+  "energy_economy": {},
+  "final_day": 365,
+  "food_chain": [
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.0,
+      "food_buildings": 1,
+      "food_final30": 0.858448904244008,
+      "food_output_t": 0.0,
+      "food_price": 57.9345569161478,
+      "food_price_ratio": 1.3295060794049,
+      "food_revenue": 110388.143966307,
+      "food_spend_per_capita": 0.0180034760107809,
+      "gate_day": 1,
+      "gdp": 247241.482712683,
+      "gdp_per_capita": 0.0403232262356573,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "SGP",
+      "population": 6131490.60215948,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 1.0,
+      "unemployment": 0.0410744382026306
+    },
+    {
+      "agro_output_t": 9.66905731084045,
+      "food_avg30": 0.00675033558245977,
+      "food_buildings": 3,
+      "food_final30": 0.852762073802385,
+      "food_output_t": 0.0,
+      "food_price": 51.6656202837185,
+      "food_price_ratio": 1.19045208027001,
+      "food_revenue": 12413.6371466431,
+      "food_spend_per_capita": 0.0112368265466195,
+      "gate_day": 1,
+      "gdp": 13247.7226681502,
+      "gdp_per_capita": 0.134404572062291,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BRB",
+      "population": 98566.0120402037,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.992701323993809,
+      "unemployment": 0.0400293229145299
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.00688336311404852,
+      "food_buildings": 1,
+      "food_final30": 0.9409902142166,
+      "food_output_t": 0.0,
+      "food_price": 49.5348679099006,
+      "food_price_ratio": 1.14135640345393,
+      "food_revenue": 37660.4280122625,
+      "food_spend_per_capita": 0.0127943527990865,
+      "gate_day": 1,
+      "gdp": 76397.7095166533,
+      "gdp_per_capita": 0.0478905877026709,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BHR",
+      "population": 1595255.20945721,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.897849293994771,
+      "unemployment": 0.0412998167976506
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.0142527522906612,
+      "food_buildings": 2,
+      "food_final30": 0.710169687671679,
+      "food_output_t": 0.0,
+      "food_price": 43.2139818590758,
+      "food_price_ratio": 0.984821829058244,
+      "food_revenue": 6940.03739313804,
+      "food_spend_per_capita": 0.00432960470364863,
+      "gate_day": 1,
+      "gdp": 7018.08484627934,
+      "gdp_per_capita": 0.0102414481478229,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "DJI",
+      "population": 685262.937914813,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.614405693884613,
+      "unemployment": 0.108918336568811
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.722401362977331,
+      "food_buildings": 3,
+      "food_final30": 0.806286664934573,
+      "food_output_t": 0.0,
+      "food_price": 39.9427830429585,
+      "food_price_ratio": 1.08711547710063,
+      "food_revenue": 133162.24295915,
+      "food_spend_per_capita": 0.0132946640042139,
+      "gate_day": 1,
+      "gdp": 190971.60691947,
+      "gdp_per_capita": 0.0411055697039075,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BEL",
+      "population": 4645881.52639851,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.784902041270966,
+      "unemployment": 0.0453398853295919
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.723999018639794,
+      "food_buildings": 11,
+      "food_final30": 0.764497939695219,
+      "food_output_t": 0.0,
+      "food_price": 43.2520353891002,
+      "food_price_ratio": 1.02433025315042,
+      "food_revenue": 623260.984858759,
+      "food_spend_per_capita": 0.00958811059611189,
+      "gate_day": 1,
+      "gdp": 853054.772248513,
+      "gdp_per_capita": 0.0465333080939208,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ITA",
+      "population": 18332132.5560337,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.759042829487393,
+      "unemployment": 0.0435094481174904
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.724055401094285,
+      "food_buildings": 14,
+      "food_final30": 0.50637142204562,
+      "food_output_t": 0.0,
+      "food_price": 53.0328074935547,
+      "food_price_ratio": 1.13879837449033,
+      "food_revenue": 258070.148351825,
+      "food_spend_per_capita": 0.00467858339906751,
+      "gate_day": 1,
+      "gdp": 1067436.36947058,
+      "gdp_per_capita": 0.014256368758131,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "JPN",
+      "population": 74874351.7778172,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.286759238165306,
+      "unemployment": 0.042370058269885
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.730730447053408,
+      "food_buildings": 11,
+      "food_final30": 0.888222020523655,
+      "food_output_t": 0.0,
+      "food_price": 51.3171598852482,
+      "food_price_ratio": 1.18859106281203,
+      "food_revenue": 661047.023829017,
+      "food_spend_per_capita": 0.0112119626608493,
+      "gate_day": 1,
+      "gdp": 1230199.40191337,
+      "gdp_per_capita": 0.0342100438590534,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "KOR",
+      "population": 35960181.9565575,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.793261512519445,
+      "unemployment": 0.0437299775502737
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.730879865590468,
+      "food_buildings": 5,
+      "food_final30": 0.777086712530012,
+      "food_output_t": 0.0,
+      "food_price": 43.7901151604571,
+      "food_price_ratio": 1.04087444396586,
+      "food_revenue": 80675.6910231561,
+      "food_spend_per_capita": 0.00972770590070659,
+      "gate_day": 1,
+      "gdp": 121293.004485291,
+      "gdp_per_capita": 0.0299582731504387,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "GRC",
+      "population": 4048731.50986391,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.776545320832618,
+      "unemployment": 0.0423794736260221
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.731511507882062,
+      "food_buildings": 34,
+      "food_final30": 0.752857399688774,
+      "food_output_t": 0.0,
+      "food_price": 43.4507930905731,
+      "food_price_ratio": 1.03630294319895,
+      "food_revenue": 631582.635805852,
+      "food_spend_per_capita": 0.00910932210770132,
+      "gate_day": 1,
+      "gdp": 1650765.52508529,
+      "gdp_per_capita": 0.0125411174592535,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "USA",
+      "population": 131628264.422901,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.751770560925301,
+      "unemployment": 0.0432542408405967
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.73725483859508,
+      "food_buildings": 55,
+      "food_final30": 0.758320805437101,
+      "food_output_t": 0.0,
+      "food_price": 45.8189394152468,
+      "food_price_ratio": 1.03018953547604,
+      "food_revenue": 1998292.24416913,
+      "food_spend_per_capita": 0.00939537651897667,
+      "gate_day": 1,
+      "gdp": 4796219.1979583,
+      "gdp_per_capita": 0.0134408901581839,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "CHN",
+      "population": 356837913.375698,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.758057860714928,
+      "unemployment": 0.0443318108565583
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.750209081560053,
+      "food_buildings": 2,
+      "food_final30": 0.740394635386985,
+      "food_output_t": 0.0,
+      "food_price": 42.0491543764075,
+      "food_price_ratio": 1.03871571649024,
+      "food_revenue": 34351.0173329637,
+      "food_spend_per_capita": 0.00914387528045139,
+      "gate_day": 1,
+      "gdp": 56523.2589464742,
+      "gdp_per_capita": 0.0209567378333829,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "AUT",
+      "population": 2697140.14632734,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.737621320786976,
+      "unemployment": 0.0452786404355285
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.753164047323313,
+      "food_buildings": 2,
+      "food_final30": 0.903492707304274,
+      "food_output_t": 0.0,
+      "food_price": 46.4725428152005,
+      "food_price_ratio": 0.9729059017556,
+      "food_revenue": 111.186361286833,
+      "food_spend_per_capita": 0.0100452855619262,
+      "gate_day": 1,
+      "gdp": 164917.207970231,
+      "gdp_per_capita": 0.0647250473389884,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "CRI",
+      "population": 2547965.81463278,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.960397685954659,
+      "unemployment": 0.0413253764788801
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.753415370669042,
+      "food_buildings": 9,
+      "food_final30": 0.827997904288341,
+      "food_output_t": 0.0,
+      "food_price": 56.0760450669927,
+      "food_price_ratio": 1.18971369704742,
+      "food_revenue": 179316.69207842,
+      "food_spend_per_capita": 0.0122952731801729,
+      "gate_day": 1,
+      "gdp": 574418.167201929,
+      "gdp_per_capita": 0.0419244229341132,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "MYS",
+      "population": 13701277.8471552,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.891032840049844,
+      "unemployment": 0.0407529046909971
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.757283057795342,
+      "food_buildings": 5,
+      "food_final30": 0.81359261094083,
+      "food_output_t": 0.0,
+      "food_price": 48.2031842547032,
+      "food_price_ratio": 1.08040895307456,
+      "food_revenue": 17367.7268589369,
+      "food_spend_per_capita": 0.00945655760506998,
+      "gate_day": 1,
+      "gdp": 26091.273943038,
+      "gdp_per_capita": 0.0134955290319088,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "URY",
+      "population": 1933327.24351508,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.810726918059288,
+      "unemployment": 0.0405231394315128
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.757652310006006,
+      "food_buildings": 10,
+      "food_final30": 0.849715562727606,
+      "food_output_t": 0.0,
+      "food_price": 46.9632718343766,
+      "food_price_ratio": 1.03292105848171,
+      "food_revenue": 129404.406088315,
+      "food_spend_per_capita": 0.00998655540300331,
+      "gate_day": 1,
+      "gdp": 1495586.73173531,
+      "gdp_per_capita": 0.0639039022231534,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "COL",
+      "population": 23403683.9645989,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.877419984622372,
+      "unemployment": 0.0403760317030627
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.760600558976397,
+      "food_buildings": 2,
+      "food_final30": 0.788485650393626,
+      "food_output_t": 0.0,
+      "food_price": 42.7173130530075,
+      "food_price_ratio": 1.02895535304739,
+      "food_revenue": 42617.5072603697,
+      "food_spend_per_capita": 0.00936467821156687,
+      "gate_day": 1,
+      "gdp": 60044.1490246114,
+      "gdp_per_capita": 0.0359430751066947,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "SRB",
+      "population": 1670534.55627751,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.787856540820721,
+      "unemployment": 0.0454684334261046
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.763474962337637,
+      "food_buildings": 26,
+      "food_final30": 0.743551965550962,
+      "food_output_t": 0.0,
+      "food_price": 42.0123936906244,
+      "food_price_ratio": 1.04360209003219,
+      "food_revenue": 144960.499265678,
+      "food_spend_per_capita": 0.00935215733096888,
+      "gate_day": 1,
+      "gdp": 588601.383664719,
+      "gdp_per_capita": 0.0278469405486645,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "CAN",
+      "population": 21137021.592591,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.794267000197436,
+      "unemployment": 0.0439093207024966
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.763635185718627,
+      "food_buildings": 8,
+      "food_final30": 0.92472126945642,
+      "food_output_t": 0.0,
+      "food_price": 44.9767743184767,
+      "food_price_ratio": 1.01501376875101,
+      "food_revenue": 55882.0989792704,
+      "food_spend_per_capita": 0.00897400969238826,
+      "gate_day": 1,
+      "gdp": 351613.207664177,
+      "gdp_per_capita": 0.0347688145264562,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "VEN",
+      "population": 10112890.3142967,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.816585617931672,
+      "unemployment": 0.0404917836062919
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.76609709155146,
+      "food_buildings": 16,
+      "food_final30": 0.813687780581767,
+      "food_output_t": 0.0,
+      "food_price": 42.5613217983737,
+      "food_price_ratio": 1.04199728236441,
+      "food_revenue": 440802.418163577,
+      "food_spend_per_capita": 0.0102598421939636,
+      "gate_day": 1,
+      "gdp": 635359.988494902,
+      "gdp_per_capita": 0.0365265776812453,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ESP",
+      "population": 17394457.1002372,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.810354738931116,
+      "unemployment": 0.0438150190636044
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.767550964157155,
+      "food_buildings": 5,
+      "food_final30": 0.925778482656862,
+      "food_output_t": 0.0,
+      "food_price": 32.7940605693154,
+      "food_price_ratio": 0.686717009567103,
+      "food_revenue": 0.00234923103501295,
+      "food_spend_per_capita": 0.00888462449526817,
+      "gate_day": 1,
+      "gdp": 19195.0533409427,
+      "gdp_per_capita": 0.0187620876883033,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "JAM",
+      "population": 1023076.62451175,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.921864262629748,
+      "unemployment": 0.0719824638314571
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.770283903816675,
+      "food_buildings": 18,
+      "food_final30": 0.83492686304477,
+      "food_output_t": 0.0,
+      "food_price": 42.3543110732138,
+      "food_price_ratio": 1.05864523740684,
+      "food_revenue": 298667.505476527,
+      "food_spend_per_capita": 0.0105079824421064,
+      "gate_day": 1,
+      "gdp": 477078.737530428,
+      "gdp_per_capita": 0.0226225052285271,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "FRA",
+      "population": 21088678.4072362,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.832519844263482,
+      "unemployment": 0.0480464898632226
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.771182270372545,
+      "food_buildings": 2,
+      "food_final30": 0.841416150800891,
+      "food_output_t": 0.0,
+      "food_price": 42.7751689945156,
+      "food_price_ratio": 1.07495434273507,
+      "food_revenue": 15845.4859709448,
+      "food_spend_per_capita": 0.0100745790583377,
+      "gate_day": 1,
+      "gdp": 20404.3776267663,
+      "gdp_per_capita": 0.0372784708746237,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "MKD",
+      "population": 547350.176872626,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.832282493739445,
+      "unemployment": 0.0456108815036999
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.772491405746403,
+      "food_buildings": 2,
+      "food_final30": 0.78742044444441,
+      "food_output_t": 0.0,
+      "food_price": 41.8487559631054,
+      "food_price_ratio": 1.03436641954755,
+      "food_revenue": 713.729030670917,
+      "food_spend_per_capita": 0.00949634908084647,
+      "gate_day": 1,
+      "gdp": 2086.36922458224,
+      "gdp_per_capita": 0.00567833199147161,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "SVN",
+      "population": 367426.425174822,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.785182425055823,
+      "unemployment": 0.0463759439745076
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.777022414729134,
+      "food_buildings": 9,
+      "food_final30": 0.849539624386274,
+      "food_output_t": 0.0,
+      "food_price": 55.7971208520005,
+      "food_price_ratio": 1.12059887733652,
+      "food_revenue": 84278.9672464787,
+      "food_spend_per_capita": 0.012821172381324,
+      "gate_day": 1,
+      "gdp": 390906.59878737,
+      "gdp_per_capita": 0.0159737725440031,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "THA",
+      "population": 24471776.9525349,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.855289565741437,
+      "unemployment": 0.0406167302827322
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.777499229901455,
+      "food_buildings": 3,
+      "food_final30": 0.934259929272543,
+      "food_output_t": 0.0,
+      "food_price": 50.1252003171169,
+      "food_price_ratio": 1.07835881265838,
+      "food_revenue": 6308.01127251221,
+      "food_spend_per_capita": 0.011750771882491,
+      "gate_day": 1,
+      "gdp": 202926.689859469,
+      "gdp_per_capita": 0.131008107405651,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "PAN",
+      "population": 1548962.83808704,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.974690281612849,
+      "unemployment": 0.0426277434021465
+    },
+    {
+      "agro_output_t": 44.3786558231463,
+      "food_avg30": 0.780431948781008,
+      "food_buildings": 4,
+      "food_final30": 0.883001511221499,
+      "food_output_t": 0.0,
+      "food_price": 35.7885831598166,
+      "food_price_ratio": 0.858508232987243,
+      "food_revenue": 2801.34235453877,
+      "food_spend_per_capita": 0.00972430875361128,
+      "gate_day": 1,
+      "gdp": 168694.084393068,
+      "gdp_per_capita": 0.0392720850054945,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "PRT",
+      "population": 4295521.47204476,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.88577861900642,
+      "unemployment": 0.0419065793677136
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.782527947248325,
+      "food_buildings": 7,
+      "food_final30": 0.768487903427375,
+      "food_output_t": 0.0,
+      "food_price": 38.0095224651605,
+      "food_price_ratio": 1.06621097410976,
+      "food_revenue": 143785.562745074,
+      "food_spend_per_capita": 0.0142826229246255,
+      "gate_day": 1,
+      "gdp": 240086.405668097,
+      "gdp_per_capita": 0.0344448674580082,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "NED",
+      "population": 6970164.88627186,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.755083425204891,
+      "unemployment": 0.0442847385182391
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.782660460287732,
+      "food_buildings": 2,
+      "food_final30": 0.861102047639667,
+      "food_output_t": 0.0,
+      "food_price": 37.9390692157622,
+      "food_price_ratio": 0.967331254411892,
+      "food_revenue": 23636.187410043,
+      "food_spend_per_capita": 0.0111681555393264,
+      "gate_day": 1,
+      "gdp": 59441.1331098172,
+      "gdp_per_capita": 0.0348606421618301,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "GEO",
+      "population": 1705107.23336304,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.904199144833417,
+      "unemployment": 0.0409440062490945
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.783960596947043,
+      "food_buildings": 2,
+      "food_final30": 0.764129851029716,
+      "food_output_t": 0.0,
+      "food_price": 42.7299320261911,
+      "food_price_ratio": 1.0402595955508,
+      "food_revenue": 23767.8846867657,
+      "food_spend_per_capita": 0.00933138197101538,
+      "gate_day": 1,
+      "gdp": 28804.1270750825,
+      "gdp_per_capita": 0.0356248788955185,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "HRV",
+      "population": 808539.648922314,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.763521266273455,
+      "unemployment": 0.0458707276171886
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.786335189489566,
+      "food_buildings": 4,
+      "food_final30": 0.845576506819173,
+      "food_output_t": 0.0,
+      "food_price": 42.9187770105761,
+      "food_price_ratio": 1.05061143764077,
+      "food_revenue": 83661.0438955038,
+      "food_spend_per_capita": 0.0104925784449277,
+      "gate_day": 1,
+      "gdp": 127816.687430114,
+      "gdp_per_capita": 0.0414012820136975,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ROU",
+      "population": 3087263.99795607,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.844459293080421,
+      "unemployment": 0.0454431816671545
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.788872522101632,
+      "food_buildings": 12,
+      "food_final30": 0.920630361786252,
+      "food_output_t": 0.0,
+      "food_price": 42.628640104572,
+      "food_price_ratio": 1.09636088029097,
+      "food_revenue": 570738.428389522,
+      "food_spend_per_capita": 0.0116506379184316,
+      "gate_day": 1,
+      "gdp": 778647.105045221,
+      "gdp_per_capita": 0.0356856187558009,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "DEU",
+      "population": 21819633.0116498,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.909381674237221,
+      "unemployment": 0.0459304435724076
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.792122304888302,
+      "food_buildings": 2,
+      "food_final30": 0.222319160008516,
+      "food_output_t": 0.0,
+      "food_price": 35.0693088519026,
+      "food_price_ratio": 0.959784362390624,
+      "food_revenue": 2462.81334400237,
+      "food_spend_per_capita": 0.00274879797692762,
+      "gate_day": 1,
+      "gdp": 3359.49772273998,
+      "gdp_per_capita": 0.00157501753474444,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "PSX",
+      "population": 2132990.68018636,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.252184205178909,
+      "unemployment": 0.138691806200583
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.794491877169046,
+      "food_buildings": 6,
+      "food_final30": 0.937726070277211,
+      "food_output_t": 0.0,
+      "food_price": 46.8981994689021,
+      "food_price_ratio": 1.04682671958643,
+      "food_revenue": 26897.237893166,
+      "food_spend_per_capita": 0.00948746054400278,
+      "gate_day": 1,
+      "gdp": 43723.3533526867,
+      "gdp_per_capita": 0.016120237413516,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "PRY",
+      "population": 2712326.8864531,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.943030914255916,
+      "unemployment": 0.0412973427049651
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.796146166048804,
+      "food_buildings": 2,
+      "food_final30": 0.835933616409611,
+      "food_output_t": 0.0,
+      "food_price": 42.1170034687639,
+      "food_price_ratio": 1.0573010101369,
+      "food_revenue": 13485.0581042967,
+      "food_spend_per_capita": 0.009755615692149,
+      "gate_day": 1,
+      "gdp": 19327.671157098,
+      "gdp_per_capita": 0.021185074627497,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BIH",
+      "population": 912324.903118905,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.832254701266725,
+      "unemployment": 0.04556472055912
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.802741580407545,
+      "food_buildings": 3,
+      "food_final30": 0.933269993565433,
+      "food_output_t": 0.0,
+      "food_price": 39.736191255162,
+      "food_price_ratio": 0.845781266367736,
+      "food_revenue": 0.16523059440912,
+      "food_spend_per_capita": 0.00885563118075276,
+      "gate_day": 1,
+      "gdp": 2609.89545348309,
+      "gdp_per_capita": 0.024738065666901,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "TTO",
+      "population": 105501.193530062,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.907605173942154,
+      "unemployment": 0.0458248056954489
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.805886710555553,
+      "food_buildings": 12,
+      "food_final30": 0.866874738118084,
+      "food_output_t": 0.0,
+      "food_price": 42.9347676243888,
+      "food_price_ratio": 1.06052718908529,
+      "food_revenue": 635619.07309499,
+      "food_spend_per_capita": 0.0115535043956308,
+      "gate_day": 1,
+      "gdp": 1168082.95603738,
+      "gdp_per_capita": 0.0328460113493434,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "TUR",
+      "population": 35562398.8439232,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.912022974817483,
+      "unemployment": 0.0456482034520438
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.811105708481089,
+      "food_buildings": 3,
+      "food_final30": 0.879796881866273,
+      "food_output_t": 0.0,
+      "food_price": 41.9048665647833,
+      "food_price_ratio": 1.08938250812936,
+      "food_revenue": 18578.7059471625,
+      "food_spend_per_capita": 0.0107363332850103,
+      "gate_day": 1,
+      "gdp": 41682.0318447021,
+      "gdp_per_capita": 0.0142379348432054,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BLR",
+      "population": 2927533.54357382,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.874415101657147,
+      "unemployment": 0.0449968755200048
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.814056230897644,
+      "food_buildings": 8,
+      "food_final30": 0.949683527934579,
+      "food_output_t": 0.0,
+      "food_price": 45.6144435707376,
+      "food_price_ratio": 1.22797154107001,
+      "food_revenue": 259529.993109945,
+      "food_spend_per_capita": 0.0147810815737271,
+      "gate_day": 1,
+      "gdp": 518058.951061974,
+      "gdp_per_capita": 0.0330952889303318,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "PER",
+      "population": 15653555.7720173,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.948812652491122,
+      "unemployment": 0.0403519656289444
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.81475019356817,
+      "food_buildings": 7,
+      "food_final30": 0.861485761351034,
+      "food_output_t": 0.0,
+      "food_price": 41.5422834215533,
+      "food_price_ratio": 0.970967138845437,
+      "food_revenue": 429099.09800345,
+      "food_spend_per_capita": 0.0115825499928703,
+      "gate_day": 1,
+      "gdp": 1676016.09502581,
+      "gdp_per_capita": 0.079888781173222,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "SAU",
+      "population": 20979367.4457459,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.87126148412122,
+      "unemployment": 0.0414024628005094
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.815252422981987,
+      "food_buildings": 7,
+      "food_final30": 0.887276396552508,
+      "food_output_t": 0.0,
+      "food_price": 45.1536175021747,
+      "food_price_ratio": 1.1076289896123,
+      "food_revenue": 537061.858406123,
+      "food_spend_per_capita": 0.0100282828586029,
+      "gate_day": 1,
+      "gdp": 1253839.23240721,
+      "gdp_per_capita": 0.0387394425651018,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "EGY",
+      "population": 32365959.5849921,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.881993998492643,
+      "unemployment": 0.040785396366545
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.817463981992176,
+      "food_buildings": 7,
+      "food_final30": 0.933933276130785,
+      "food_output_t": 0.0,
+      "food_price": 42.7092077750792,
+      "food_price_ratio": 1.14275211782974,
+      "food_revenue": 142238.815969337,
+      "food_spend_per_capita": 0.00961166138649073,
+      "gate_day": 1,
+      "gdp": 278632.396937812,
+      "gdp_per_capita": 0.0306689740192821,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "UKR",
+      "population": 9085155.46567132,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.932581871522123,
+      "unemployment": 0.0445845363488803
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.822599034779476,
+      "food_buildings": 9,
+      "food_final30": 0.973791960522095,
+      "food_output_t": 0.0,
+      "food_price": 44.3282224595285,
+      "food_price_ratio": 1.03894886198926,
+      "food_revenue": 1364502.71840552,
+      "food_spend_per_capita": 0.0107797674557762,
+      "gate_day": 1,
+      "gdp": 2299605.20477605,
+      "gdp_per_capita": 0.0701833856365082,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "IRN",
+      "population": 32765663.6099903,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.968898712291736,
+      "unemployment": 0.0428987845381888
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.824523834815147,
+      "food_buildings": 2,
+      "food_final30": 0.858685097502072,
+      "food_output_t": 0.0,
+      "food_price": 42.9841603864103,
+      "food_price_ratio": 1.05472102561393,
+      "food_revenue": 48182.2196407761,
+      "food_spend_per_capita": 0.0106055150619735,
+      "gate_day": 1,
+      "gdp": 56667.1453498388,
+      "gdp_per_capita": 0.0874956438444036,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "SVK",
+      "population": 647656.761639607,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.856095941800182,
+      "unemployment": 0.0459665717737307
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.838768973024204,
+      "food_buildings": 2,
+      "food_final30": 0.947950400758331,
+      "food_output_t": 0.0,
+      "food_price": 50.977519181106,
+      "food_price_ratio": 1.16349305599575,
+      "food_revenue": 1121.14935126411,
+      "food_spend_per_capita": 0.0124538241151009,
+      "gate_day": 1,
+      "gdp": 3242.64702516803,
+      "gdp_per_capita": 0.0255092138297972,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BTN",
+      "population": 127116.697786284,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.943638625297488,
+      "unemployment": 0.0403506325110319
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.841552496625128,
+      "food_buildings": 3,
+      "food_final30": 0.286821367539239,
+      "food_output_t": 0.0,
+      "food_price": 45.5213219977114,
+      "food_price_ratio": 0.999065769199038,
+      "food_revenue": 3683.47758703011,
+      "food_spend_per_capita": 0.00307879606705358,
+      "gate_day": 1,
+      "gdp": 23533.717683529,
+      "gdp_per_capita": 0.00827901362074077,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "SOM",
+      "population": 2842575.06529181,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.272674024861636,
+      "unemployment": 0.160837669446363
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.841723565037958,
+      "food_buildings": 2,
+      "food_final30": 0.812118087059679,
+      "food_output_t": 0.0,
+      "food_price": 42.8744925698062,
+      "food_price_ratio": 1.0478983521312,
+      "food_revenue": 23559.8146531132,
+      "food_spend_per_capita": 0.01003009332191,
+      "gate_day": 1,
+      "gdp": 61447.2149908459,
+      "gdp_per_capita": 0.02285635318936,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "HUN",
+      "population": 2688408.53489483,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.811784261500936,
+      "unemployment": 0.0440137668652091
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.843083741728257,
+      "food_buildings": 2,
+      "food_final30": 0.861253897250479,
+      "food_output_t": 0.0,
+      "food_price": 49.8484641208482,
+      "food_price_ratio": 0.970943500185223,
+      "food_revenue": 78678.7421590777,
+      "food_spend_per_capita": 0.0101771731091379,
+      "gate_day": 1,
+      "gdp": 148869.48389096,
+      "gdp_per_capita": 0.0286053029378537,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "DOM",
+      "population": 5204261.74875285,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.871996399284887,
+      "unemployment": 0.0406363644237024
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.850887118936363,
+      "food_buildings": 3,
+      "food_final30": 0.828425646310188,
+      "food_output_t": 0.0,
+      "food_price": 42.5363978645277,
+      "food_price_ratio": 1.09615210852782,
+      "food_revenue": 4134.80526007344,
+      "food_spend_per_capita": 0.00990745476878447,
+      "gate_day": 1,
+      "gdp": 12592.6734550016,
+      "gdp_per_capita": 0.0235733790778678,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ALB",
+      "population": 534190.427829858,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.827241179472363,
+      "unemployment": 0.0456921623156863
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.851733789217767,
+      "food_buildings": 4,
+      "food_final30": 0.971843639385436,
+      "food_output_t": 0.0,
+      "food_price": 49.809489069472,
+      "food_price_ratio": 1.08864108072552,
+      "food_revenue": 2844.23793613999,
+      "food_spend_per_capita": 0.0110223108981784,
+      "gate_day": 1,
+      "gdp": 282496.364496094,
+      "gdp_per_capita": 0.0715679448113445,
+      "in_control": false,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "PRK",
+      "population": 3947247.12636033,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.991409096654826,
+      "unemployment": 0.0455930776301487
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.85602140559499,
+      "food_buildings": 2,
+      "food_final30": 0.86433068431338,
+      "food_output_t": 0.0,
+      "food_price": 42.3406139246553,
+      "food_price_ratio": 1.11761598724578,
+      "food_revenue": 42127.9144786717,
+      "food_spend_per_capita": 0.0117507479825696,
+      "gate_day": 1,
+      "gdp": 56147.9988020005,
+      "gdp_per_capita": 0.0312118277613688,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "IRL",
+      "population": 1798933.37972009,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.882266112856192,
+      "unemployment": 0.0450004250964881
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.864844701683391,
+      "food_buildings": 4,
+      "food_final30": 0.969980521910235,
+      "food_output_t": 0.0,
+      "food_price": 43.1259845616519,
+      "food_price_ratio": 1.05518664823092,
+      "food_revenue": 49594.4556354475,
+      "food_spend_per_capita": 0.0119522854362342,
+      "gate_day": 1,
+      "gdp": 65951.8087276915,
+      "gdp_per_capita": 0.0385210263221548,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BGR",
+      "population": 1712098.95022346,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.963640969408776,
+      "unemployment": 0.0458859906278508
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.866054075256359,
+      "food_buildings": 2,
+      "food_final30": 0.856375437285659,
+      "food_output_t": 0.0,
+      "food_price": 48.0444494758027,
+      "food_price_ratio": 1.1950239800268,
+      "food_revenue": 4174.21201886039,
+      "food_spend_per_capita": 0.0124507978547241,
+      "gate_day": 1,
+      "gdp": 250787.710272119,
+      "gdp_per_capita": 0.0557134550175895,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ISR",
+      "population": 4501384.99206236,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.975435000587281,
+      "unemployment": 0.0417909039692078
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.870162107860645,
+      "food_buildings": 45,
+      "food_final30": 0.946106706399099,
+      "food_output_t": 0.0,
+      "food_price": 45.4914259945327,
+      "food_price_ratio": 1.02392311970133,
+      "food_revenue": 1296698.55028581,
+      "food_spend_per_capita": 0.0103973372133725,
+      "gate_day": 1,
+      "gdp": 3605159.01212146,
+      "gdp_per_capita": 0.0435657360569148,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BRA",
+      "population": 82752165.7710922,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.95036352231667,
+      "unemployment": 0.0418555990834451
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.875683844178189,
+      "food_buildings": 13,
+      "food_final30": 0.849513919118852,
+      "food_output_t": 0.0,
+      "food_price": 44.66508687944,
+      "food_price_ratio": 1.00866268287244,
+      "food_revenue": 20021.7951871192,
+      "food_spend_per_capita": 0.00885427210352899,
+      "gate_day": 1,
+      "gdp": 105874.170143354,
+      "gdp_per_capita": 0.00961562529011767,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ARG",
+      "population": 11010638.0967408,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.848565150081056,
+      "unemployment": 0.0445147862637846
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.875970107758641,
+      "food_buildings": 17,
+      "food_final30": 0.440910188656678,
+      "food_output_t": 0.0,
+      "food_price": 49.5973615495862,
+      "food_price_ratio": 1.05966706430393,
+      "food_revenue": 66210.68944007,
+      "food_spend_per_capita": 0.00483048959966139,
+      "gate_day": 1,
+      "gdp": 407476.074347413,
+      "gdp_per_capita": 0.0142449262338629,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "COD",
+      "population": 28604997.1518115,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.43424595021643,
+      "unemployment": 0.154446591622248
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.876191226494776,
+      "food_buildings": 6,
+      "food_final30": 0.848356635888977,
+      "food_output_t": 0.0,
+      "food_price": 42.7489797699695,
+      "food_price_ratio": 1.09443280589041,
+      "food_revenue": 226062.41119536,
+      "food_spend_per_capita": 0.0105698494809054,
+      "gate_day": 1,
+      "gdp": 309809.909380071,
+      "gdp_per_capita": 0.0577421312507555,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "POL",
+      "population": 5365404.8208693,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.842840071638255,
+      "unemployment": 0.0449056544248731
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.883568470933005,
+      "food_buildings": 3,
+      "food_final30": 0.787122814095213,
+      "food_output_t": 0.0,
+      "food_price": 41.8013057622499,
+      "food_price_ratio": 1.05967134233433,
+      "food_revenue": 1153.60750948721,
+      "food_spend_per_capita": 0.010612705928524,
+      "gate_day": 1,
+      "gdp": 12650.6114616861,
+      "gdp_per_capita": 0.00763323681138211,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "CHE",
+      "population": 1657306.3006276,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.736706257513204,
+      "unemployment": 0.0426923582215535
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.888788547608881,
+      "food_buildings": 2,
+      "food_final30": 0.924476500369186,
+      "food_output_t": 0.0,
+      "food_price": 39.9508687796087,
+      "food_price_ratio": 1.01975241155457,
+      "food_revenue": 244864.928292384,
+      "food_spend_per_capita": 0.0118919553513932,
+      "gate_day": 1,
+      "gdp": 435411.326239681,
+      "gdp_per_capita": 0.106871119705611,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "AZE",
+      "population": 4074172.0255114,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.953384018158567,
+      "unemployment": 0.040429155597549
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.897896483073963,
+      "food_buildings": 11,
+      "food_final30": 0.967530767478535,
+      "food_output_t": 0.0,
+      "food_price": 41.0180205939077,
+      "food_price_ratio": 1.04757014715021,
+      "food_revenue": 328777.949275161,
+      "food_spend_per_capita": 0.0121284386060156,
+      "gate_day": 1,
+      "gdp": 725015.059230791,
+      "gdp_per_capita": 0.0211348961949922,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "GBR",
+      "population": 34304169.3955696,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.958949990023488,
+      "unemployment": 0.044474664019196
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.908342182390058,
+      "food_buildings": 2,
+      "food_final30": 0.808403498517057,
+      "food_output_t": 0.0,
+      "food_price": 37.9411078529512,
+      "food_price_ratio": 0.987120655222805,
+      "food_revenue": 0.67835280525478,
+      "food_spend_per_capita": 0.0159991225745314,
+      "gate_day": 1,
+      "gdp": 3656.28701945953,
+      "gdp_per_capita": 0.0102843720334624,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "CYP",
+      "population": 355518.743153497,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.790864412478041,
+      "unemployment": 0.0402731867157628
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.912333510828783,
+      "food_buildings": 2,
+      "food_final30": 0.860257763063418,
+      "food_output_t": 0.0,
+      "food_price": 42.9548246936052,
+      "food_price_ratio": 1.09501162825022,
+      "food_revenue": 11809.4251441905,
+      "food_spend_per_capita": 0.00977139027343812,
+      "gate_day": 1,
+      "gdp": 36345.9160559323,
+      "gdp_per_capita": 0.021488152102207,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ARM",
+      "population": 1691439.81683745,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.845450338102085,
+      "unemployment": 0.0415070283725813
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.913881372455539,
+      "food_buildings": 4,
+      "food_final30": 0.917885587824839,
+      "food_output_t": 0.0,
+      "food_price": 32.1982604297525,
+      "food_price_ratio": 0.737725783883295,
+      "food_revenue": 2268.8525348336,
+      "food_spend_per_capita": 0.00764764975657762,
+      "gate_day": 1,
+      "gdp": 61166.718445989,
+      "gdp_per_capita": 0.0593510653866347,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "GAB",
+      "population": 1030591.75176598,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.857047325140059,
+      "unemployment": 0.0465448795618302
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.914381573233786,
+      "food_buildings": 2,
+      "food_final30": 0.881248510036596,
+      "food_output_t": 0.0,
+      "food_price": 42.1647280308375,
+      "food_price_ratio": 1.09543935873983,
+      "food_revenue": 12642.4785170352,
+      "food_spend_per_capita": 0.0112938523831832,
+      "gate_day": 1,
+      "gdp": 29289.8264182795,
+      "gdp_per_capita": 0.0204867774393288,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "TKM",
+      "population": 1429694.17737957,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.874517965004784,
+      "unemployment": 0.0405125364863389
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.92191989996535,
+      "food_buildings": 4,
+      "food_final30": 0.566288185091555,
+      "food_output_t": 0.0,
+      "food_price": 46.7441768908339,
+      "food_price_ratio": 1.12806998063397,
+      "food_revenue": 20420.5852726156,
+      "food_spend_per_capita": 0.00546315928425257,
+      "gate_day": 2,
+      "gdp": 211959.950812702,
+      "gdp_per_capita": 0.050331642456016,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "COG",
+      "population": 4211266.32213384,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.508817420018711,
+      "unemployment": 0.116740935376476
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.923771777245263,
+      "food_buildings": 19,
+      "food_final30": 0.947829848555669,
+      "food_output_t": 0.0,
+      "food_price": 46.5155212473814,
+      "food_price_ratio": 0.933501765696449,
+      "food_revenue": 399476.95213275,
+      "food_spend_per_capita": 0.00941842692957663,
+      "gate_day": 1,
+      "gdp": 1183243.18492014,
+      "gdp_per_capita": 0.0243721497369128,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "NGA",
+      "population": 48548987.1715363,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.948884281100489,
+      "unemployment": 0.100185428942952
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.928296783777568,
+      "food_buildings": 3,
+      "food_final30": 0.827652004155045,
+      "food_output_t": 0.0,
+      "food_price": 35.6510064347939,
+      "food_price_ratio": 0.889350119298507,
+      "food_revenue": 53514.4900539565,
+      "food_spend_per_capita": 0.0111261851876813,
+      "gate_day": 1,
+      "gdp": 370455.779036849,
+      "gdp_per_capita": 0.0802121994662672,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "YEM",
+      "population": 4618446.83853411,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.848269176021383,
+      "unemployment": 0.0414767846594116
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.929364032926488,
+      "food_buildings": 2,
+      "food_final30": 0.973308572650166,
+      "food_output_t": 0.0,
+      "food_price": 44.2213825975371,
+      "food_price_ratio": 1.08837712507068,
+      "food_revenue": 69003.3726106103,
+      "food_spend_per_capita": 0.0134283498260249,
+      "gate_day": 1,
+      "gdp": 167134.506211752,
+      "gdp_per_capita": 0.0390987639987265,
+      "in_control": false,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "KWT",
+      "population": 4274674.92878282,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.97465202210264,
+      "unemployment": 0.0410156486304154
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.932161444514322,
+      "food_buildings": 2,
+      "food_final30": 0.790168910475866,
+      "food_output_t": 0.0,
+      "food_price": 41.8881676801398,
+      "food_price_ratio": 0.813730869824573,
+      "food_revenue": 44756.2202467009,
+      "food_spend_per_capita": 0.0110493967087154,
+      "gate_day": 1,
+      "gdp": 121408.812098591,
+      "gdp_per_capita": 0.0206547367077898,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "SEN",
+      "population": 5878013.05899982,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.942607186651513,
+      "unemployment": 0.134411851718396
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.934384237964557,
+      "food_buildings": 20,
+      "food_final30": 0.97367580186366,
+      "food_output_t": 0.0,
+      "food_price": 44.8749867833884,
+      "food_price_ratio": 1.09471919319324,
+      "food_revenue": 317698.09282143,
+      "food_spend_per_capita": 0.0125762059086814,
+      "gate_day": 1,
+      "gdp": 5267981.82775751,
+      "gdp_per_capita": 0.26016782864945,
+      "in_control": false,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "AUS",
+      "population": 20248398.3323533,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.978871526510633,
+      "unemployment": 0.0465890857084384
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.938343700938591,
+      "food_buildings": 3,
+      "food_final30": 0.954770958499741,
+      "food_output_t": 0.0,
+      "food_price": 42.9317798481424,
+      "food_price_ratio": 1.05419850223745,
+      "food_revenue": 114655.314075069,
+      "food_spend_per_capita": 0.0132922978134103,
+      "gate_day": 1,
+      "gdp": 220428.075674696,
+      "gdp_per_capita": 0.107239954918356,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "OMN",
+      "population": 2055465.94869898,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.944305592696155,
+      "unemployment": 0.0425166462567242
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.953216893416957,
+      "food_buildings": 45,
+      "food_final30": 0.970448502355662,
+      "food_output_t": 0.0,
+      "food_price": 40.761829903328,
+      "food_price_ratio": 1.01249580534968,
+      "food_revenue": 213035.46937434,
+      "food_spend_per_capita": 0.0117935463882872,
+      "gate_day": 1,
+      "gdp": 824808.385005405,
+      "gdp_per_capita": 0.0162701236128157,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "RUS",
+      "population": 50694660.0181769,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.959623452331578,
+      "unemployment": 0.0447742629653187
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.956988825798179,
+      "food_buildings": 2,
+      "food_final30": 0.974607464165378,
+      "food_output_t": 0.0,
+      "food_price": 43.0703971349136,
+      "food_price_ratio": 1.0731052833663,
+      "food_revenue": 23909.2658961663,
+      "food_spend_per_capita": 0.0122432384769875,
+      "gate_day": 1,
+      "gdp": 99535.3226071552,
+      "gdp_per_capita": 0.0507971101309183,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "CZE",
+      "population": 1959468.21286929,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.968710580180808,
+      "unemployment": 0.0445403049391044
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.962502762088722,
+      "food_buildings": 6,
+      "food_final30": 0.962615385645212,
+      "food_output_t": 0.0,
+      "food_price": 42.5558742653404,
+      "food_price_ratio": 1.05806835403185,
+      "food_revenue": 236081.257066103,
+      "food_spend_per_capita": 0.0118785298830106,
+      "gate_day": 1,
+      "gdp": 556680.200427534,
+      "gdp_per_capita": 0.0785556596989523,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "KAZ",
+      "population": 7086442.94454266,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.965402506264101,
+      "unemployment": 0.0458409952873555
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.964121043862233,
+      "food_buildings": 5,
+      "food_final30": 0.889687891748745,
+      "food_output_t": 0.0,
+      "food_price": 55.2151649818625,
+      "food_price_ratio": 1.05450470018324,
+      "food_revenue": 32555.4684041634,
+      "food_spend_per_capita": 0.00850117369495661,
+      "gate_day": 357,
+      "gdp": 94681.9830788831,
+      "gdp_per_capita": 0.0109815570432215,
+      "in_control": false,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "CIV",
+      "population": 8621908.77907669,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.553554803982191,
+      "unemployment": 0.110562623701829
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.964224347417356,
+      "food_buildings": 1,
+      "food_final30": 0.898265522627177,
+      "food_output_t": 0.0,
+      "food_price": 50.3867421108156,
+      "food_price_ratio": 1.15629571577968,
+      "food_revenue": 49.3951558528141,
+      "food_spend_per_capita": 0.0119394840330094,
+      "gate_day": 1,
+      "gdp": 1453.07880302147,
+      "gdp_per_capita": 0.0725031692923424,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "LCA",
+      "population": 20041.5901429421,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.95262136578126,
+      "unemployment": 0.0439909271075994
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.965462408869447,
+      "food_buildings": 6,
+      "food_final30": 0.967079407307199,
+      "food_output_t": 0.0,
+      "food_price": 59.1617115180321,
+      "food_price_ratio": 1.07108216402416,
+      "food_revenue": 9313.70238330791,
+      "food_spend_per_capita": 0.0128337389240055,
+      "gate_day": 1,
+      "gdp": 34420.5475855183,
+      "gdp_per_capita": 0.199719007982029,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "GUY",
+      "population": 172344.8755995,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.802688716581502,
+      "unemployment": 0.0402438837234514
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.966472944149677,
+      "food_buildings": 2,
+      "food_final30": 0.898674305234082,
+      "food_output_t": 0.0,
+      "food_price": 46.7477231107048,
+      "food_price_ratio": 1.14877666986013,
+      "food_revenue": 147161.216528364,
+      "food_spend_per_capita": 0.0137067665025673,
+      "gate_day": 1,
+      "gdp": 584888.061509939,
+      "gdp_per_capita": 0.0672996969002369,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ARE",
+      "population": 8690797.85570149,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.985854154009508,
+      "unemployment": 0.041376921765401
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.966739778231891,
+      "food_buildings": 1,
+      "food_final30": 0.70658876367468,
+      "food_output_t": 0.0,
+      "food_price": 45.4266270978191,
+      "food_price_ratio": 0.835816929160685,
+      "food_revenue": 277.031789013581,
+      "food_spend_per_capita": 0.00973032431903378,
+      "gate_day": 137,
+      "gdp": 9418.94361896904,
+      "gdp_per_capita": 0.00762267033256923,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "GMB",
+      "population": 1235648.82226704,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.916946367428546,
+      "unemployment": 0.14840291290371
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.968322139419017,
+      "food_buildings": 4,
+      "food_final30": 0.245347935815241,
+      "food_output_t": 0.0,
+      "food_price": 43.0496925123623,
+      "food_price_ratio": 0.819684376130324,
+      "food_revenue": 45878.0041429766,
+      "food_spend_per_capita": 0.00147976222648425,
+      "gate_day": 164,
+      "gdp": 52932.6205738621,
+      "gdp_per_capita": 0.0151342091051925,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "HTI",
+      "population": 3497547.85373629,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.141092817951399,
+      "unemployment": 0.15426469482459
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.96946454484318,
+      "food_buildings": 2,
+      "food_final30": 0.973924208297131,
+      "food_output_t": 0.0,
+      "food_price": 42.7930023807805,
+      "food_price_ratio": 1.06981872247014,
+      "food_revenue": 114.665721178707,
+      "food_spend_per_capita": 0.0123186453399931,
+      "gate_day": 125,
+      "gdp": 1128.92401644779,
+      "gdp_per_capita": 0.00138605232258562,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "LVA",
+      "population": 814488.744798487,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.965260185556345,
+      "unemployment": 0.046249598323428
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.969628102554548,
+      "food_buildings": 3,
+      "food_final30": 0.913516059031192,
+      "food_output_t": 0.0,
+      "food_price": 54.5986201982482,
+      "food_price_ratio": 0.978003539111172,
+      "food_revenue": 2160.46101014088,
+      "food_spend_per_capita": 0.0113772377972092,
+      "gate_day": 19,
+      "gdp": 18250.5523283425,
+      "gdp_per_capita": 0.00855904114320243,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "LBR",
+      "population": 2132312.72323502,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.899948139368182,
+      "unemployment": 0.160260347557252
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.970225746608723,
+      "food_buildings": 3,
+      "food_final30": 0.956810984765875,
+      "food_output_t": 0.0,
+      "food_price": 45.1759855238753,
+      "food_price_ratio": 1.12939436335254,
+      "food_revenue": 44111.0413660289,
+      "food_spend_per_capita": 0.0127761004981444,
+      "gate_day": 171,
+      "gdp": 104412.109829492,
+      "gdp_per_capita": 0.0641173032975402,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "NOR",
+      "population": 1628454.48045376,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.958056118701458,
+      "unemployment": 0.0460002394231395
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.970557306698307,
+      "food_buildings": 2,
+      "food_final30": 0.827551198171484,
+      "food_output_t": 0.0,
+      "food_price": 42.2641994152013,
+      "food_price_ratio": 0.756619097054674,
+      "food_revenue": 418.240476442396,
+      "food_spend_per_capita": 0.0109758548654903,
+      "gate_day": 37,
+      "gdp": 2210.54977890137,
+      "gdp_per_capita": 0.0229627717192279,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BRN",
+      "population": 96266.6792114808,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.836705126586839,
+      "unemployment": 0.0411316686078736
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.970916545419096,
+      "food_buildings": 3,
+      "food_final30": 0.859840169993234,
+      "food_output_t": 0.0,
+      "food_price": 42.2387927678138,
+      "food_price_ratio": 1.05595843235645,
+      "food_revenue": 32462.1848015652,
+      "food_spend_per_capita": 0.0111267540992877,
+      "gate_day": 120,
+      "gdp": 97372.1473394492,
+      "gdp_per_capita": 0.0512510852334446,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "FIN",
+      "population": 1899904.1073165,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.852050762966099,
+      "unemployment": 0.0435676502551572
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.970991705759084,
+      "food_buildings": 5,
+      "food_final30": 0.56734422501961,
+      "food_output_t": 0.0,
+      "food_price": 47.3026637252336,
+      "food_price_ratio": 1.04884455602664,
+      "food_revenue": 35.7045675311082,
+      "food_spend_per_capita": 0.00298229129496531,
+      "gate_day": 178,
+      "gdp": 5435.18307059426,
+      "gdp_per_capita": 0.000792853568491152,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "MLI",
+      "population": 6855216.75955592,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.496319397378036,
+      "unemployment": 0.152274248545678
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.971337157644198,
+      "food_buildings": 2,
+      "food_final30": 0.966529189044014,
+      "food_output_t": 0.0,
+      "food_price": 47.3579918457531,
+      "food_price_ratio": 1.16930600312303,
+      "food_revenue": 1246.3660469919,
+      "food_spend_per_capita": 0.0101165857225107,
+      "gate_day": 245,
+      "gdp": 265852.472003394,
+      "gdp_per_capita": 0.0354045534123955,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "JOR",
+      "population": 7508990.97375187,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.948008115587119,
+      "unemployment": 0.0739889944418873
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.971841426570219,
+      "food_buildings": 2,
+      "food_final30": 0.909812762668063,
+      "food_output_t": 0.0,
+      "food_price": 44.7617638050001,
+      "food_price_ratio": 1.11902412126887,
+      "food_revenue": 453.194137380888,
+      "food_spend_per_capita": 0.0115438409600551,
+      "gate_day": 116,
+      "gdp": 2619.76988872955,
+      "gdp_per_capita": 0.00542260371041654,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "EST",
+      "population": 483120.29213883,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.899243754242884,
+      "unemployment": 0.0461982525090596
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.972109958311122,
+      "food_buildings": 2,
+      "food_final30": 0.143688231415925,
+      "food_output_t": 0.0,
+      "food_price": 54.883309633743,
+      "food_price_ratio": 0.968869622409796,
+      "food_revenue": 14.3335715045858,
+      "food_spend_per_capita": 0.00200594896685176,
+      "gate_day": 8,
+      "gdp": 160.335812137974,
+      "gdp_per_capita": 0.00247525173535855,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "SLB",
+      "population": 64775.5579150209,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.154761661072679,
+      "unemployment": 0.151727280890746
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.972709084153555,
+      "food_buildings": 2,
+      "food_final30": 0.575904272626318,
+      "food_output_t": 0.0,
+      "food_price": 43.4565018991026,
+      "food_price_ratio": 0.905315321803193,
+      "food_revenue": 0.0,
+      "food_spend_per_capita": 0.00275869424676456,
+      "gate_day": 178,
+      "gdp": 11752.0664977277,
+      "gdp_per_capita": 0.00245658421571584,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BFA",
+      "population": 4783905.40106243,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.503729371727116,
+      "unemployment": 0.156013024859491
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.973232402477463,
+      "food_buildings": 2,
+      "food_final30": 0.946594827128763,
+      "food_output_t": 0.0,
+      "food_price": 43.777240728924,
+      "food_price_ratio": 1.08472510111768,
+      "food_revenue": 10191.4140959728,
+      "food_spend_per_capita": 0.0119158081650446,
+      "gate_day": 97,
+      "gdp": 29123.8531183173,
+      "gdp_per_capita": 0.0445728756177677,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "ERI",
+      "population": 653398.568404411,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 1.0,
+      "unemployment": 0.141306248660612
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.973459644461582,
+      "food_buildings": 6,
+      "food_final30": 0.996794508604747,
+      "food_output_t": 0.0,
+      "food_price": 59.3587961180861,
+      "food_price_ratio": 1.06284067549054,
+      "food_revenue": 583.932790316756,
+      "food_spend_per_capita": 0.010217541825992,
+      "gate_day": 6,
+      "gdp": 7737.4657865995,
+      "gdp_per_capita": 0.0299793208468264,
+      "in_control": true,
+      "in_gate": false,
+      "isolated_cities": 0,
+      "nation": "SUR",
+      "population": 258093.431339976,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 1.0,
+      "unemployment": 0.0401791074034515
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.973483830754806,
+      "food_buildings": 4,
+      "food_final30": 0.839951319737884,
+      "food_output_t": 0.0,
+      "food_price": 40.3009603734284,
+      "food_price_ratio": 1.00405247764721,
+      "food_revenue": 54545.3496904211,
+      "food_spend_per_capita": 0.0108901398511621,
+      "gate_day": 15,
+      "gdp": 98825.8285885683,
+      "gdp_per_capita": 0.0462974243215631,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "DNK",
+      "population": 2134585.88758986,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.860162935476297,
+      "unemployment": 0.0450670466103839
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.973703510723368,
+      "food_buildings": 3,
+      "food_final30": 0.881705467724175,
+      "food_output_t": 0.0,
+      "food_price": 36.2399606858777,
+      "food_price_ratio": 0.835022135619303,
+      "food_revenue": 2836.29979020362,
+      "food_spend_per_capita": 0.00904416960473302,
+      "gate_day": 77,
+      "gdp": 5535.46927007207,
+      "gdp_per_capita": 0.0201370691479278,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "BHS",
+      "population": 274889.519890321,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.924445629676752,
+      "unemployment": 0.0461116179488547
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.973860287096965,
+      "food_buildings": 1,
+      "food_final30": 0.925668087406034,
+      "food_output_t": 0.0,
+      "food_price": 47.1437768054393,
+      "food_price_ratio": 1.08187481194785,
+      "food_revenue": 55.6270893074686,
+      "food_spend_per_capita": 0.0114988207070212,
+      "gate_day": 164,
+      "gdp": 774.868424921535,
+      "gdp_per_capita": 0.103106974587826,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "GRD",
+      "population": 7515.18922962389,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.863079804950602,
+      "unemployment": 0.0452552904304099
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.974130343595081,
+      "food_buildings": 1,
+      "food_final30": 0.935177285437362,
+      "food_output_t": 0.0,
+      "food_price": 46.3504899862643,
+      "food_price_ratio": 1.08097636499466,
+      "food_revenue": 98.4222135156749,
+      "food_spend_per_capita": 0.0115070625234353,
+      "gate_day": 165,
+      "gdp": 1735.1572719622,
+      "gdp_per_capita": 0.104895636830456,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "DMA",
+      "population": 16541.7487742294,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.97015320199946,
+      "unemployment": 0.0450686834181147
+    },
+    {
+      "agro_output_t": 0.0,
+      "food_avg30": 0.974604170968821,
+      "food_buildings": 2,
+      "food_final30": 0.89265813239683,
+      "food_output_t": 0.0,
+      "food_price": 45.9523222930106,
+      "food_price_ratio": 1.09606571404462,
+      "food_revenue": 6469.41912120053,
+      "food_spend_per_capita": 0.00929017731617653,
+      "gate_day": 76,
+      "gdp": 67135.1858419855,
+      "gdp_per_capita": 0.024602026927213,
+      "in_control": true,
+      "in_gate": true,
+      "isolated_cities": 0,
+      "nation": "QAT",
+      "population": 2728847.75065933,
+      "power_price": 0.0,
+      "power_ration_days": 0,
+      "power_served": 1.0,
+      "satisfaction": 0.781558736777744,
+      "unemployment": 0.0413905196527026
+    }
+  ],
+  "food_gate": {
+    "below": [
+      "SLB",
+      "PSX",
+      "HTI",
+      "SOM",
+      "COD",
+      "JPN",
+      "COG",
+      "MLI",
+      "BFA",
+      "GMB",
+      "DJI",
+      "AUT",
+      "CAN",
+      "USA",
+      "CHN",
+      "HRV",
+      "ITA",
+      "NED",
+      "GRC",
+      "CHE",
+      "SVN",
+      "SRB",
+      "SEN",
+      "BEL",
+      "CYP",
+      "HUN",
+      "URY",
+      "ESP",
+      "BRN",
+      "YEM",
+      "MYS",
+      "ALB",
+      "FRA",
+      "BIH",
+      "DNK",
+      "MKD",
+      "ROU",
+      "POL",
+      "ARG",
+      "THA",
+      "COL",
+      "BRB",
+      "ISR",
+      "SGP",
+      "SVK",
+      "FIN",
+      "ARM",
+      "GEO",
+      "DOM",
+      "SAU",
+      "IRL",
+      "TUR",
+      "BLR",
+      "TKM",
+      "BHS",
+      "PRT",
+      "EGY",
+      "KOR",
+      "CIV",
+      "QAT",
+      "LCA",
+      "ARE",
+      "CRI",
+      "EST",
+      "LBR",
+      "GAB",
+      "DEU",
+      "AZE",
+      "VEN",
+      "GRD",
+      "JAM",
+      "TTO",
+      "UKR",
+      "PAN",
+      "DMA",
+      "PRY",
+      "BHR",
+      "BRA",
+      "ERI",
+      "NGA",
+      "BTN",
+      "PER",
+      "OMN",
+      "NOR",
+      "KAZ",
+      "JOR",
+      "GUY",
+      "GBR",
+      "BGR",
+      "RUS",
+      "PRK",
+      "KWT",
+      "AUS",
+      "IRN",
+      "LVA",
+      "CZE"
+    ],
+    "below_gate": 96,
+    "mean": 0.907197875782775,
+    "median": 0.970448502355662,
+    "nations": 179,
+    "ratios": [
+      {
+        "food_avg30": 0.143688231415925,
+        "nation": "SLB"
+      },
+      {
+        "food_avg30": 0.222319160008516,
+        "nation": "PSX"
+      },
+      {
+        "food_avg30": 0.245347935815241,
+        "nation": "HTI"
+      },
+      {
+        "food_avg30": 0.286821367539239,
+        "nation": "SOM"
+      },
+      {
+        "food_avg30": 0.440910188656678,
+        "nation": "COD"
+      },
+      {
+        "food_avg30": 0.50637142204562,
+        "nation": "JPN"
+      },
+      {
+        "food_avg30": 0.566288185091555,
+        "nation": "COG"
+      },
+      {
+        "food_avg30": 0.56734422501961,
+        "nation": "MLI"
+      },
+      {
+        "food_avg30": 0.575904272626318,
+        "nation": "BFA"
+      },
+      {
+        "food_avg30": 0.70658876367468,
+        "nation": "GMB"
+      },
+      {
+        "food_avg30": 0.710169687671679,
+        "nation": "DJI"
+      },
+      {
+        "food_avg30": 0.740394635386985,
+        "nation": "AUT"
+      },
+      {
+        "food_avg30": 0.743551965550962,
+        "nation": "CAN"
+      },
+      {
+        "food_avg30": 0.752857399688774,
+        "nation": "USA"
+      },
+      {
+        "food_avg30": 0.758320805437101,
+        "nation": "CHN"
+      },
+      {
+        "food_avg30": 0.764129851029716,
+        "nation": "HRV"
+      },
+      {
+        "food_avg30": 0.764497939695219,
+        "nation": "ITA"
+      },
+      {
+        "food_avg30": 0.768487903427375,
+        "nation": "NED"
+      },
+      {
+        "food_avg30": 0.777086712530012,
+        "nation": "GRC"
+      },
+      {
+        "food_avg30": 0.787122814095213,
+        "nation": "CHE"
+      },
+      {
+        "food_avg30": 0.78742044444441,
+        "nation": "SVN"
+      },
+      {
+        "food_avg30": 0.788485650393626,
+        "nation": "SRB"
+      },
+      {
+        "food_avg30": 0.790168910475866,
+        "nation": "SEN"
+      },
+      {
+        "food_avg30": 0.806286664934573,
+        "nation": "BEL"
+      },
+      {
+        "food_avg30": 0.808403498517057,
+        "nation": "CYP"
+      },
+      {
+        "food_avg30": 0.812118087059679,
+        "nation": "HUN"
+      },
+      {
+        "food_avg30": 0.81359261094083,
+        "nation": "URY"
+      },
+      {
+        "food_avg30": 0.813687780581767,
+        "nation": "ESP"
+      },
+      {
+        "food_avg30": 0.827551198171484,
+        "nation": "BRN"
+      },
+      {
+        "food_avg30": 0.827652004155045,
+        "nation": "YEM"
+      },
+      {
+        "food_avg30": 0.827997904288341,
+        "nation": "MYS"
+      },
+      {
+        "food_avg30": 0.828425646310188,
+        "nation": "ALB"
+      },
+      {
+        "food_avg30": 0.83492686304477,
+        "nation": "FRA"
+      },
+      {
+        "food_avg30": 0.835933616409611,
+        "nation": "BIH"
+      },
+      {
+        "food_avg30": 0.839951319737884,
+        "nation": "DNK"
+      },
+      {
+        "food_avg30": 0.841416150800891,
+        "nation": "MKD"
+      },
+      {
+        "food_avg30": 0.845576506819173,
+        "nation": "ROU"
+      },
+      {
+        "food_avg30": 0.848356635888977,
+        "nation": "POL"
+      },
+      {
+        "food_avg30": 0.849513919118852,
+        "nation": "ARG"
+      },
+      {
+        "food_avg30": 0.849539624386274,
+        "nation": "THA"
+      },
+      {
+        "food_avg30": 0.849715562727606,
+        "nation": "COL"
+      },
+      {
+        "food_avg30": 0.852762073802385,
+        "nation": "BRB"
+      },
+      {
+        "food_avg30": 0.856375437285659,
+        "nation": "ISR"
+      },
+      {
+        "food_avg30": 0.858448904244008,
+        "nation": "SGP"
+      },
+      {
+        "food_avg30": 0.858685097502072,
+        "nation": "SVK"
+      },
+      {
+        "food_avg30": 0.859840169993234,
+        "nation": "FIN"
+      },
+      {
+        "food_avg30": 0.860257763063418,
+        "nation": "ARM"
+      },
+      {
+        "food_avg30": 0.861102047639667,
+        "nation": "GEO"
+      },
+      {
+        "food_avg30": 0.861253897250479,
+        "nation": "DOM"
+      },
+      {
+        "food_avg30": 0.861485761351034,
+        "nation": "SAU"
+      },
+      {
+        "food_avg30": 0.86433068431338,
+        "nation": "IRL"
+      },
+      {
+        "food_avg30": 0.866874738118084,
+        "nation": "TUR"
+      },
+      {
+        "food_avg30": 0.879796881866273,
+        "nation": "BLR"
+      },
+      {
+        "food_avg30": 0.881248510036596,
+        "nation": "TKM"
+      },
+      {
+        "food_avg30": 0.881705467724175,
+        "nation": "BHS"
+      },
+      {
+        "food_avg30": 0.883001511221499,
+        "nation": "PRT"
+      },
+      {
+        "food_avg30": 0.887276396552508,
+        "nation": "EGY"
+      },
+      {
+        "food_avg30": 0.888222020523655,
+        "nation": "KOR"
+      },
+      {
+        "food_avg30": 0.889687891748745,
+        "nation": "CIV"
+      },
+      {
+        "food_avg30": 0.89265813239683,
+        "nation": "QAT"
+      },
+      {
+        "food_avg30": 0.898265522627177,
+        "nation": "LCA"
+      },
+      {
+        "food_avg30": 0.898674305234082,
+        "nation": "ARE"
+      },
+      {
+        "food_avg30": 0.903492707304274,
+        "nation": "CRI"
+      },
+      {
+        "food_avg30": 0.909812762668063,
+        "nation": "EST"
+      },
+      {
+        "food_avg30": 0.913516059031192,
+        "nation": "LBR"
+      },
+      {
+        "food_avg30": 0.917885587824839,
+        "nation": "GAB"
+      },
+      {
+        "food_avg30": 0.920630361786252,
+        "nation": "DEU"
+      },
+      {
+        "food_avg30": 0.924476500369186,
+        "nation": "AZE"
+      },
+      {
+        "food_avg30": 0.92472126945642,
+        "nation": "VEN"
+      },
+      {
+        "food_avg30": 0.925668087406034,
+        "nation": "GRD"
+      },
+      {
+        "food_avg30": 0.925778482656862,
+        "nation": "JAM"
+      },
+      {
+        "food_avg30": 0.933269993565433,
+        "nation": "TTO"
+      },
+      {
+        "food_avg30": 0.933933276130785,
+        "nation": "UKR"
+      },
+      {
+        "food_avg30": 0.934259929272543,
+        "nation": "PAN"
+      },
+      {
+        "food_avg30": 0.935177285437362,
+        "nation": "DMA"
+      },
+      {
+        "food_avg30": 0.937726070277211,
+        "nation": "PRY"
+      },
+      {
+        "food_avg30": 0.9409902142166,
+        "nation": "BHR"
+      },
+      {
+        "food_avg30": 0.946106706399099,
+        "nation": "BRA"
+      },
+      {
+        "food_avg30": 0.946594827128763,
+        "nation": "ERI"
+      },
+      {
+        "food_avg30": 0.947829848555669,
+        "nation": "NGA"
+      },
+      {
+        "food_avg30": 0.947950400758331,
+        "nation": "BTN"
+      },
+      {
+        "food_avg30": 0.949683527934579,
+        "nation": "PER"
+      },
+      {
+        "food_avg30": 0.954770958499741,
+        "nation": "OMN"
+      },
+      {
+        "food_avg30": 0.956810984765875,
+        "nation": "NOR"
+      },
+      {
+        "food_avg30": 0.962615385645212,
+        "nation": "KAZ"
+      },
+      {
+        "food_avg30": 0.966529189044014,
+        "nation": "JOR"
+      },
+      {
+        "food_avg30": 0.967079407307199,
+        "nation": "GUY"
+      },
+      {
+        "food_avg30": 0.967530767478535,
+        "nation": "GBR"
+      },
+      {
+        "food_avg30": 0.969980521910235,
+        "nation": "BGR"
+      },
+      {
+        "food_avg30": 0.970448502355662,
+        "nation": "RUS"
+      },
+      {
+        "food_avg30": 0.971843639385436,
+        "nation": "PRK"
+      },
+      {
+        "food_avg30": 0.973308572650166,
+        "nation": "KWT"
+      },
+      {
+        "food_avg30": 0.97367580186366,
+        "nation": "AUS"
+      },
+      {
+        "food_avg30": 0.973791960522095,
+        "nation": "IRN"
+      },
+      {
+        "food_avg30": 0.973924208297131,
+        "nation": "LVA"
+      },
+      {
+        "food_avg30": 0.974607464165378,
+        "nation": "CZE"
+      },
+      {
+        "food_avg30": 0.976128188676903,
+        "nation": "TJK"
+      },
+      {
+        "food_avg30": 0.977277315390692,
+        "nation": "MEX"
+      },
+      {
+        "food_avg30": 0.978543518636362,
+        "nation": "ATG"
+      },
+      {
+        "food_avg30": 0.979342840761176,
+        "nation": "VCT"
+      },
+      {
+        "food_avg30": 0.980694419481667,
+        "nation": "LBN"
+      },
+      {
+        "food_avg30": 0.982075763457358,
+        "nation": "ECU"
+      },
+      {
+        "food_avg30": 0.983049377732096,
+        "nation": "LBY"
+      },
+      {
+        "food_avg30": 0.985060778937621,
+        "nation": "IDN"
+      },
+      {
+        "food_avg30": 0.985856644199662,
+        "nation": "KNA"
+      },
+      {
+        "food_avg30": 0.986377968187949,
+        "nation": "MLT"
+      },
+      {
+        "food_avg30": 0.987444016670206,
+        "nation": "MNE"
+      },
+      {
+        "food_avg30": 0.988407847458049,
+        "nation": "MDA"
+      },
+      {
+        "food_avg30": 0.988567556375393,
+        "nation": "CHL"
+      },
+      {
+        "food_avg30": 0.991331532052561,
+        "nation": "VNM"
+      },
+      {
+        "food_avg30": 0.99204371983971,
+        "nation": "PAK"
+      },
+      {
+        "food_avg30": 0.993591408037658,
+        "nation": "BWA"
+      },
+      {
+        "food_avg30": 0.995873721360177,
+        "nation": "GNQ"
+      },
+      {
+        "food_avg30": 0.99631029943522,
+        "nation": "PNG"
+      },
+      {
+        "food_avg30": 0.996525008010095,
+        "nation": "LUX"
+      },
+      {
+        "food_avg30": 0.996600965190354,
+        "nation": "SWE"
+      },
+      {
+        "food_avg30": 0.996794508604747,
+        "nation": "SUR"
+      },
+      {
+        "food_avg30": 0.996871177605291,
+        "nation": "NPL"
+      },
+      {
+        "food_avg30": 0.996918525192051,
+        "nation": "NIC"
+      },
+      {
+        "food_avg30": 0.997293752914717,
+        "nation": "MNG"
+      },
+      {
+        "food_avg30": 0.997389022894148,
+        "nation": "DZA"
+      },
+      {
+        "food_avg30": 0.997923209769882,
+        "nation": "ZAF"
+      },
+      {
+        "food_avg30": 0.997961162316729,
+        "nation": "NER"
+      },
+      {
+        "food_avg30": 0.99870621388896,
+        "nation": "BLZ"
+      },
+      {
+        "food_avg30": 0.998861231172526,
+        "nation": "CMR"
+      },
+      {
+        "food_avg30": 0.998951964717101,
+        "nation": "MAR"
+      },
+      {
+        "food_avg30": 0.999312229883531,
+        "nation": "GTM"
+      },
+      {
+        "food_avg30": 0.99933557108499,
+        "nation": "SLV"
+      },
+      {
+        "food_avg30": 0.999367461428955,
+        "nation": "TCD"
+      },
+      {
+        "food_avg30": 0.999390181372789,
+        "nation": "GHA"
+      },
+      {
+        "food_avg30": 0.9995091479755,
+        "nation": "TZA"
+      },
+      {
+        "food_avg30": 0.999734736042553,
+        "nation": "SYR"
+      },
+      {
+        "food_avg30": 0.999814220933655,
+        "nation": "IRQ"
+      },
+      {
+        "food_avg30": 0.99989854646005,
+        "nation": "MRT"
+      },
+      {
+        "food_avg30": 0.999989494768446,
+        "nation": "CUB"
+      },
+      {
+        "food_avg30": 0.999995974021144,
+        "nation": "HND"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "ZWE"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "ZMB"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "SWZ"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "TGO"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "AFG"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "CAF"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "XKX"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "TLS"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "BOL"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "AGO"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "TUN"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "BDI"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "TWN"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "UZB"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "UGA"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "BGD"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "BEN"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "MDG"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "MMR"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "MOZ"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "MWI"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "LTU"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "NAM"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "LSO"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "LKA"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "NZL"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "LAO"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "KHM"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "PHL"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "KGZ"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "KEN"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "ISL"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "IND"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "RWA"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "SAH"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "GNB"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "SDN"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "GIN"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "FJI"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "SLE"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "SOL"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "ETH"
+      },
+      {
+        "food_avg30": 1.0,
+        "nation": "SSD"
+      }
+    ],
+    "worst": [
+      {
+        "food_avg30": 0.143688231415925,
+        "nation": "SLB"
+      },
+      {
+        "food_avg30": 0.222319160008516,
+        "nation": "PSX"
+      },
+      {
+        "food_avg30": 0.245347935815241,
+        "nation": "HTI"
+      },
+      {
+        "food_avg30": 0.286821367539239,
+        "nation": "SOM"
+      },
+      {
+        "food_avg30": 0.440910188656678,
+        "nation": "COD"
+      },
+      {
+        "food_avg30": 0.50637142204562,
+        "nation": "JPN"
+      },
+      {
+        "food_avg30": 0.566288185091555,
+        "nation": "COG"
+      },
+      {
+        "food_avg30": 0.56734422501961,
+        "nation": "MLI"
+      },
+      {
+        "food_avg30": 0.575904272626318,
+        "nation": "BFA"
+      },
+      {
+        "food_avg30": 0.70658876367468,
+        "nation": "GMB"
+      }
+    ]
+  },
+  "food_gate_control": "res://docs/economy/perf/c6_gate_base.json",
+  "food_gate_extras": [
+    "CIV",
+    "PRK",
+    "KWT",
+    "AUS"
+  ],
+  "fuel_diag": {},
+  "fx": {
+    "by_anchor": {
+      "<null>": 57,
+      "EUR": 10,
+      "INR": 2,
+      "SGD": 1,
+      "USD": 58,
+      "ZAR": 3
+    },
+    "by_regime": {
+      "band": 64,
+      "floating": 44,
+      "peg": 27
+    },
+    "devaluations": 0,
+    "devalued_currencies": [],
+    "locked_currencies": 7,
+    "source": "Regime Cambial de Facto por Moeda (FMI/AREAER 2026) (2026-04-30)"
+  },
+  "harvest_credit_rate": true,
+  "interconnect_links": {},
+  "invariant_violation_samples": [],
+  "invariant_violations": 0,
+  "max_daily_drift": 0.00549701895361743,
+  "monetary": {
+    "controlled": 0,
+    "currencies": 135,
+    "currencies_with_inflation": 135,
+    "emission_today": 0.0,
+    "emission_total": 0.0,
+    "government_debt": 0.0,
+    "inflation_12m_pct": {
+      "median": 1.33664849277777,
+      "n": 179,
+      "p10": -0.866182941545623,
+      "p90": 4.1613842264284
+    },
+    "inflation_annualized_pct": {
+      "median": 1.33664849277777,
+      "n": 179,
+      "p10": -0.866182941545623,
+      "p90": 4.1613842264284
+    },
+    "nations_annualized": 179,
+    "nations_has_12m": 179,
+    "rate_pct": {
+      "median": 1.34245665269659,
+      "n": 135,
+      "p10": 0.0147422380406468,
+      "p90": 4.7526711312972
+    },
+    "securities": 0.0
+  },
+  "monetary_timeline": [
+    {
+      "day": 7,
+      "gap_pp": {
+        "median": 0.0,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      },
+      "target_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      }
+    },
+    {
+      "day": 15,
+      "gap_pp": {
+        "median": 0.0,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      },
+      "target_pct": {
+        "median": 2.5,
+        "n": 135,
+        "p10": 2.5,
+        "p90": 2.5
+      }
+    },
+    {
+      "day": 30,
+      "gap_pp": {
+        "median": -2.06474656330519,
+        "n": 135,
+        "p10": -12.4910504505913,
+        "p90": -1.50980598474052
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.47642056165941,
+        "n": 135,
+        "p10": 2.44289992108562,
+        "p90": 2.48275799182518
+      },
+      "target_pct": {
+        "median": 1.4676267183474,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 1.74509700762974
+      }
+    },
+    {
+      "day": 45,
+      "gap_pp": {
+        "median": -0.909989748267607,
+        "n": 135,
+        "p10": -11.7144651815426,
+        "p90": -0.42372795114286
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.3036700100889,
+        "n": 135,
+        "p10": 1.72739109995972,
+        "p90": 2.37199655165816
+      },
+      "target_pct": {
+        "median": 2.0450051258662,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.28813602442857
+      }
+    },
+    {
+      "day": 60,
+      "gap_pp": {
+        "median": -0.662107002784927,
+        "n": 135,
+        "p10": -11.5048993448572,
+        "p90": -0.152661963561491
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.254604629434,
+        "n": 135,
+        "p10": 1.22144996054281,
+        "p90": 2.37550823975407
+      },
+      "target_pct": {
+        "median": 2.16894649860754,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.42366901821925
+      }
+    },
+    {
+      "day": 63,
+      "gap_pp": {
+        "median": -0.648025567568746,
+        "n": 135,
+        "p10": -11.4868523245235,
+        "p90": -0.133596770835929
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.24633993053006,
+        "n": 135,
+        "p10": 1.13965311069777,
+        "p90": 2.3774164188705
+      },
+      "target_pct": {
+        "median": 2.17598721621563,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.43320161458204
+      }
+    },
+    {
+      "day": 90,
+      "gap_pp": {
+        "median": -0.604906701959006,
+        "n": 135,
+        "p10": -11.4072150991306,
+        "p90": -0.0642682622431483
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_used_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.22699778523682,
+        "n": 135,
+        "p10": 0.610724980271402,
+        "p90": 2.408015560583
+      },
+      "target_pct": {
+        "median": 2.1975466490205,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 2.46786586887843
+      }
+    },
+    {
+      "day": 120,
+      "gap_pp": {
+        "median": -0.589923565251255,
+        "n": 135,
+        "p10": -11.352599937687,
+        "p90": -0.0687357682471459
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.47406371221102,
+        "n": 179,
+        "p10": 1.58593268645255,
+        "p90": 8.89028112974895
+      },
+      "inflation_used_pct": {
+        "median": 3.59378229683635,
+        "n": 135,
+        "p10": 2.20603114527402,
+        "p90": 8.89028112974895
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.2786037929847,
+        "n": 135,
+        "p10": 0.3053624901357,
+        "p90": 6.96472072283721
+      },
+      "target_pct": {
+        "median": 4.51876505888504,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 12.0128867355172
+      }
+    },
+    {
+      "day": 150,
+      "gap_pp": {
+        "median": -0.585780611504496,
+        "n": 135,
+        "p10": -11.2982776997196,
+        "p90": -0.0662455573863783
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.0065963683682,
+        "n": 179,
+        "p10": 1.31681366222132,
+        "p90": 8.6437411650788
+      },
+      "inflation_used_pct": {
+        "median": 3.1239883573724,
+        "n": 135,
+        "p10": 1.82141030417908,
+        "p90": 8.65144908959954
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.41954337095216,
+        "n": 135,
+        "p10": 0.440888621780128,
+        "p90": 8.88116676696344
+      },
+      "target_pct": {
+        "median": 3.45663017265581,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 11.3884707082889
+      }
+    },
+    {
+      "day": 180,
+      "gap_pp": {
+        "median": -0.568038661470432,
+        "n": 135,
+        "p10": -11.2275386636636,
+        "p90": -0.0649877242080835
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 3.22249134270511,
+        "n": 179,
+        "p10": 1.08364222121906,
+        "p90": 9.37262399769963
+      },
+      "inflation_used_pct": {
+        "median": 3.22249134270511,
+        "n": 135,
+        "p10": 1.41096518723351,
+        "p90": 9.42271185714523
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.38016904953099,
+        "n": 135,
+        "p10": 0.363682963856936,
+        "p90": 9.67224449173279
+      },
+      "target_pct": {
+        "median": 3.51889279272896,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 10.6669114338685
+      }
+    },
+    {
+      "day": 210,
+      "gap_pp": {
+        "median": -0.448013067442371,
+        "n": 135,
+        "p10": -11.1592633138329,
+        "p90": -0.0492228792907236
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 2.86730466702771,
+        "n": 179,
+        "p10": 0.643583181331175,
+        "p90": 8.20601664965432
+      },
+      "inflation_used_pct": {
+        "median": 2.86730466702771,
+        "n": 135,
+        "p10": 1.00193255977026,
+        "p90": 8.13380121341218
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 3.430173134733,
+        "n": 135,
+        "p10": 0.245381395959478,
+        "p90": 9.40182028375099
+      },
+      "target_pct": {
+        "median": 2.89776714569383,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 9.45808908288463
+      }
+    },
+    {
+      "day": 240,
+      "gap_pp": {
+        "median": -0.526840875880936,
+        "n": 135,
+        "p10": -11.093580948078,
+        "p90": -0.0534437604147693
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 1.94870902871638,
+        "n": 179,
+        "p10": -0.477445276609412,
+        "p90": 5.45106891034117
+      },
+      "inflation_used_pct": {
+        "median": 2.00754286296294,
+        "n": 135,
+        "p10": 0.306523038691342,
+        "p90": 4.86879680068881
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.59331542826945,
+        "n": 135,
+        "p10": 0.122690697979739,
+        "p90": 7.75766401489894
+      },
+      "target_pct": {
+        "median": 2.03702055253803,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 5.60201738742934
+      }
+    },
+    {
+      "day": 270,
+      "gap_pp": {
+        "median": -0.539253303906048,
+        "n": 135,
+        "p10": -11.0308986835485,
+        "p90": -0.044528744669205
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 1.57746440081468,
+        "n": 179,
+        "p10": -0.568909566792597,
+        "p90": 4.54783325443944
+      },
+      "inflation_used_pct": {
+        "median": 1.7913761960048,
+        "n": 135,
+        "p10": -0.285982254799244,
+        "p90": 4.21739586981233
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 2.09583174540954,
+        "n": 135,
+        "p10": 0.0613453489898693,
+        "p90": 6.81934087656512
+      },
+      "target_pct": {
+        "median": 1.43833633095759,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 4.84348022565823
+      }
+    },
+    {
+      "day": 300,
+      "gap_pp": {
+        "median": -0.331084928979084,
+        "n": 135,
+        "p10": -10.9709353038742,
+        "p90": -0.0396506070909906
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 1.49832305910933,
+        "n": 179,
+        "p10": -0.620326105314106,
+        "p90": 4.21418751921414
+      },
+      "inflation_used_pct": {
+        "median": 1.64800561323319,
+        "n": 135,
+        "p10": -0.468033255398304,
+        "p90": 4.06449992687499
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 1.82717354519685,
+        "n": 135,
+        "p10": 0.0306726744949346,
+        "p90": 5.21591832704598
+      },
+      "target_pct": {
+        "median": 1.33948375886175,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 4.58897184901505
+      }
+    },
+    {
+      "day": 330,
+      "gap_pp": {
+        "median": -0.545923100912083,
+        "n": 135,
+        "p10": -10.9130228930616,
+        "p90": -0.0529143017918655
+      },
+      "inflation_12m_pct": {
+        "median": 0.0,
+        "n": 0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "inflation_annualized_pct": {
+        "median": 1.36425321822338,
+        "n": 179,
+        "p10": -1.02189502923564,
+        "p90": 3.94852408836035
+      },
+      "inflation_used_pct": {
+        "median": 1.45694053291781,
+        "n": 135,
+        "p10": -0.643896997817284,
+        "p90": 3.66460417214762
+      },
+      "nations_has_12m": 0,
+      "rate_pct": {
+        "median": 1.57344809982678,
+        "n": 135,
+        "p10": 0.0330952054155377,
+        "p90": 4.94366434617197
+      },
+      "target_pct": {
+        "median": 0.979582042833995,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 4.30925381781351
+      }
+    },
+    {
+      "day": 365,
+      "gap_pp": {
+        "median": -0.569200594882048,
+        "n": 135,
+        "p10": -11.1015055135159,
+        "p90": -0.051268150916334
+      },
+      "inflation_12m_pct": {
+        "median": 1.33664849277777,
+        "n": 179,
+        "p10": -0.866182941545623,
+        "p90": 4.1613842264284
+      },
+      "inflation_annualized_pct": {
+        "median": 1.33664849277777,
+        "n": 179,
+        "p10": -0.866182941545623,
+        "p90": 4.1613842264284
+      },
+      "inflation_used_pct": {
+        "median": 1.44819983953834,
+        "n": 135,
+        "p10": -0.532726731220623,
+        "p90": 4.15549093534398
+      },
+      "nations_has_12m": 179,
+      "rate_pct": {
+        "median": 1.34245665269659,
+        "n": 135,
+        "p10": 0.0147422380406468,
+        "p90": 4.7526711312972
+      },
+      "target_pct": {
+        "median": 1.12001089332812,
+        "n": 135,
+        "p10": 0.0,
+        "p90": 5.3063710395968
+      }
+    }
+  ],
+  "money_end": 6559412071.79491,
+  "money_start": 6523551982.9,
+  "power": {},
+  "power_off": true,
+  "power_timeline": [],
+  "property": false,
+  "refining_diag": {},
+  "service_bankruptcies": 9273,
+  "stalled_days": 0,
+  "stock": {
+    "bankruptcies": 4,
+    "book_equity": 26386828548.2506,
+    "confidence_p10": 0.918833813957803,
+    "confidence_p50": 1.00136367318527,
+    "confidence_p90": 1.06738872487766,
+    "dividends_paid": 15030328.4433562,
+    "equity_identity": 0.0,
+    "exchange_changes": 148,
+    "exchanges": 179,
+    "formation_earnings_pct": {
+      "p1": 2477.09591880886,
+      "p10": 522528.694936711,
+      "p25": 3334830.70171398,
+      "p5": 124346.380374642,
+      "p50": 13325710.4466756,
+      "p90": 119203786.904744,
+      "p99": 564750153.058727
+    },
+    "formation_papers": 250,
+    "formation_price_pct": {
+      "p1": 0.0,
+      "p10": 3.83546149369606,
+      "p25": 25.308972107815,
+      "p5": 0.508191212803443,
+      "p50": 106.375627538834,
+      "p90": 953.007338526298,
+      "p99": 4241.22582001144
+    },
+    "index_global": 91.4216507849806,
+    "investment_capex_total": 19372859.5343637,
+    "listed": 251,
+    "market_cap": 91143124020.5513,
+    "paper_base_floor": 1.0,
+    "paper_below_base": 0,
+    "paper_changes": 236,
+    "paper_extremes": [
+      {
+        "change": 15.5050957863831,
+        "confidence_change": 0.151170857301506,
+        "confidence_end": 1.04805739898889,
+        "confidence_start": 0.910427320446307,
+        "group_id": "G-BHR-food-22",
+        "nation": "BHR",
+        "pe": 7.81331838853005,
+        "price_end": 33.3338521040919,
+        "price_start": 2.01960973359468,
+        "profit_change": 13.8830752053306,
+        "profit_ema_end": 11688.4552326778,
+        "profit_ema_start": 785.352158167648,
+        "q": 1643.08041562879,
+        "rate_end": 0.0210904609453459,
+        "rate_start": 0.0234432109945843
+      },
+      {
+        "change": 14.6791470764052,
+        "confidence_change": 0.0812774243408807,
+        "confidence_end": 1.02615633446376,
+        "confidence_start": 0.949022250315895,
+        "group_id": "G-SDN-food-207",
+        "nation": "SDN",
+        "pe": 8.41127150221814,
+        "price_end": 399.585695077574,
+        "price_start": 25.4851678557753,
+        "profit_change": 13.3592773368754,
+        "profit_ema_end": 130153.369641077,
+        "profit_ema_start": 9064.06127464616,
+        "q": 4.30367063466716,
+        "rate_end": 0.0000106268379308607,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 6.15919086580344,
+        "confidence_change": 0.105912215050736,
+        "confidence_end": 1.03205777165627,
+        "confidence_start": 0.933218530015895,
+        "group_id": "G-CAF-food-38",
+        "nation": "CAF",
+        "pe": 8.11466192044723,
+        "price_end": 52.6829129347454,
+        "price_start": 7.35878033178168,
+        "profit_change": 5.68301245131278,
+        "profit_ema_end": 17787.154804654,
+        "profit_ema_start": 2661.54745846089,
+        "q": 55.0914598650037,
+        "rate_end": 0.000223686294610254,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 4.25846386958979,
+        "confidence_change": 0.0886184201690357,
+        "confidence_end": 0.989096585114474,
+        "confidence_start": 0.908579688520144,
+        "group_id": "G-TCD-food-224",
+        "nation": "TCD",
+        "pe": 8.22292380577999,
+        "price_end": 124.691283986882,
+        "price_start": 23.712492294182,
+        "profit_change": 3.71618745122886,
+        "profit_ema_end": 41544.8281167723,
+        "profit_ema_start": 8808.9857636908,
+        "q": 1.22740069582475,
+        "rate_end": 0.000223686294610254,
+        "rate_start": 0.0113965311069777
+      },
+      {
+        "change": 3.08646199577628,
+        "confidence_change": 0.082000192837115,
+        "confidence_end": 0.998108200859679,
+        "confidence_start": 0.922465825299474,
+        "group_id": "G-GHA-food-91",
+        "nation": "GHA",
+        "pe": 7.53211920291907,
+        "price_end": 126.609571362708,
+        "price_start": 30.9826866109535,
+        "profit_change": 3.06233721988219,
+        "profit_ema_end": 46052.8476296009,
+        "profit_ema_start": 11336.5398136338,
+        "q": 23.0067331510074,
+        "rate_end": 0.00964278244574975,
+        "rate_start": 0.0113965311069777
+      }
+    ],
+    "paper_variation_p10": -0.365133571571762,
+    "paper_variation_p50": -0.0160609849838391,
+    "paper_variation_p90": 0.593216746353236,
+    "q_p50": 15.3272063947642,
+    "remittance": 901788.569775597,
+    "remittance_origin": 1259946.45293611,
+    "variation_p10": -0.368490814408261,
+    "variation_p50": -0.0916654736850735,
+    "variation_p90": 0.549284678390551
+  },
+  "stock_timeline": [
+    {
+      "book_equity": 12824470396.219,
+      "confidence_median": 0.961142807850643,
+      "day": 63,
+      "earnings_daily_sum": 35132909.3555949,
+      "index_global": 100.0,
+      "listed": 237,
+      "market_cap": 99628920059.041,
+      "rate_median": 0.0225665702478435
+    },
+    {
+      "book_equity": 15694483019.5573,
+      "confidence_median": 0.957686742803564,
+      "day": 120,
+      "earnings_daily_sum": 34231662.2505752,
+      "index_global": 93.4174676685415,
+      "listed": 238,
+      "market_cap": 93072623958.0721,
+      "rate_median": 0.0334192202821534
+    },
+    {
+      "book_equity": 20238394490.5101,
+      "confidence_median": 0.961900155718646,
+      "day": 200,
+      "earnings_daily_sum": 33338914.869659,
+      "index_global": 85.6403333483698,
+      "listed": 242,
+      "market_cap": 85375147911.625,
+      "rate_median": 0.0314342712152245
+    },
+    {
+      "book_equity": 25668454315.8113,
+      "confidence_median": 0.995770307774912,
+      "day": 300,
+      "earnings_daily_sum": 32684518.0446363,
+      "index_global": 89.4526257601753,
+      "listed": 252,
+      "market_cap": 89179075758.3175,
+      "rate_median": 0.0139027806450148
+    },
+    {
+      "book_equity": 26386828548.2506,
+      "confidence_median": 1.00136367318527,
+      "day": 365,
+      "earnings_daily_sum": 32133503.768382,
+      "index_global": 91.4216507849806,
+      "listed": 251,
+      "market_cap": 91143124020.5513,
+      "rate_median": 0.0076208752166862
+    }
+  ],
+  "threads": 1,
+  "trajectory_end": {
+    "bank_capital_flight": 0.0,
+    "bank_confidence_sum": 274.320916015255,
+    "bank_crisis_events": 1,
+    "bank_fund": 205019.36727145,
+    "credit_capacity": 178.459789689252,
+    "m0": 14342758904.4712,
+    "power_cash": 0.0,
+    "power_generation_mwh": 0.0,
+    "power_import_mwh": 0.0,
+    "power_rationed_mwh": 0.0,
+    "power_served_mwh": 0.0,
+    "power_tariff_sum": 0.0,
+    "private_stock_t": 59707225.9026334
+  },
+  "trajectory_fields": [
+    "day",
+    "money_total(6)",
+    "bankruptcies",
+    "food_ratio_sum(9)",
+    "m0_total(6)",
+    "private_stock_t(6)",
+    "credit_capacity(9)",
+    "bank_confidence_sum(9)",
+    "bank_crisis_events",
+    "bank_fund(6)",
+    "bank_capital_flight(6)",
+    "power_generation_mwh(6)",
+    "power_served_mwh(6)",
+    "power_rationed_mwh(6)",
+    "power_cash(6)",
+    "power_tariff_sum(9)",
+    "power_import_mwh(6)"
+  ],
+  "trajectory_sha256": "c6d6170a5c98632dc8b02c04848c40e45743ad34db25d0d03ce5340ee7f4cb92",
+  "wall_s": 265.448
+}

@@ -145,6 +145,7 @@
         "ranch": "a miniature ranch: a wooden corral fence enclosing a feeding trough beside a small stable, whole structure, no ground plane",
         "mine": "a miniature mine entrance: a timber-framed tunnel mouth with a rail track and a mine cart, whole structure, no ground plane",
         "oil_well": "a miniature oil pumpjack (nodding donkey) on a small steel base, whole structure, no ground plane",
+        "refinery": "a miniature oil refinery: two tall distillation columns with piping beside a cluster of white storage tanks, whole plant, no ground plane",
         "gas_field": "a miniature gas extraction derrick with a flare stack burning at the top, whole structure, no ground plane",
         "factory_food": "a miniature food factory: a long warehouse with a grain silo and a short chimney, whole building, no ground plane",
         "factory_textile": "a miniature textile mill: a long brick shed with a sawtooth roof and rows of windows, whole building, no ground plane",

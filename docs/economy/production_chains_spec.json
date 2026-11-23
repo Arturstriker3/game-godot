@@ -306,11 +306,9 @@
     }
    ],
    "byproducts": [],
-   "use": [
-    "fuel"
-   ],
+   "use": [],
    "durable": false,
-   "note": ""
+   "note": "mistura E10 na gasolina"
   },
   {
    "id": "fertilizer",
@@ -649,8 +647,8 @@
    "note": "produz o MESMO item coal"
   },
   {
-   "id": "fuel",
-   "name": "Combustível",
+   "id": "gasoline",
+   "name": "Gasolina",
    "sector": "chemical",
    "kind": "final",
    "recipes": [
@@ -658,35 +656,50 @@
      "inputs": [
       "oil"
      ],
-     "yield": 1.0
+     "yield": 0.45,
+     "building": "refinery",
+     "co_outputs": [
+      {
+       "id": "diesel",
+       "qty": 0.29
+      },
+      {
+       "id": "jet_fuel",
+       "qty": 0.09
+      }
+     ],
+     "co_loss": 0.17,
+     "co_allocation": {
+      "method": "market_value",
+      "source": "EIA Spot Prices 2024, U.S. Gulf Coast, annual average (USD/gal): conventional gasoline regular 2.239; ultra-low-sulfur No. 2 diesel 2.365; kerosene-type jet fuel 2.338. EIA Crude Oil and Petroleum Product Conversion Factors (barrels per metric ton): motor gasoline 8.53; distillate fuel oil No. 2 7.46; kerosene-type jet fuel 7.88. USD/t = USD/gal x 42 gal/bbl x bbl/t.",
+      "usd_per_gallon": {
+       "gasoline": 2.239,
+       "diesel": 2.365,
+       "jet_fuel": 2.338
+      },
+      "barrels_per_tonne": {
+       "gasoline": 8.53,
+       "diesel": 7.46,
+       "jet_fuel": 7.88
+      }
+     },
+     "note": "EIA Refinery yield (EUA, 2024): gasolina 45%, destilados 29% e querosene de aviação 9%; os 17% restantes são perdas/outros não modelados."
     },
     {
      "inputs": [
       "ethanol"
      ],
-     "yield": 0.8
-    },
-    {
-     "inputs": [
-      "gas"
-     ],
-     "yield": 0.4
-    },
-    {
-     "inputs": [
-      "coal"
-     ],
-     "yield": 0.2
+     "yield": 0.8,
+     "building": "chemical_plant",
+     "note": "mistura E10: 1 t de etanol rende 0,8 t de gasolina equivalente (declarado)."
     }
    ],
    "byproducts": [],
    "use": [
-    "vehicle_fleet",
-    "army",
     "pop_life"
    ],
    "durable": false,
-   "note": ""
+   "note": "combustível de ciclo Otto: carros e POPs; produzida na refinaria a partir de petróleo ou por mistura de etanol."
   },
   {
    "id": "plastic",
@@ -2212,6 +2225,50 @@
    ],
    "durable": false,
    "note": ""
+  },
+  {
+   "id": "diesel",
+   "name": "Diesel",
+   "sector": "chemical",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "gas"
+     ],
+     "yield": 0.3,
+     "building": "refinery",
+     "note": "GTL de baixo rendimento: 1 t de gás natural rende 0,3 t de diesel equivalente (declarado)."
+    },
+    {
+     "inputs": [
+      "coal"
+     ],
+     "yield": 0.15,
+     "building": "chemical_plant",
+     "note": "CTL de baixo rendimento: 1 t de carvão rende 0,15 t de diesel equivalente (declarado)."
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "vehicle_fleet",
+    "army"
+   ],
+   "durable": false,
+   "note": "combustível de ciclo diesel: caminhão, trem, trator, navio, exército e usinas a óleo."
+  },
+  {
+   "id": "jet_fuel",
+   "name": "Querosene de aviação",
+   "sector": "chemical",
+   "kind": "final",
+   "recipes": [],
+   "byproducts": [],
+   "use": [
+    "vehicle_fleet"
+   ],
+   "durable": false,
+   "note": "co-produto da refinaria (EIA: 9% do rendimento de petróleo); aviação de carga."
   }
  ],
  "pop_needs": {
@@ -2255,7 +2312,7 @@
     "alcohol"
    ],
    "transport": [
-    "fuel"
+    "gasoline"
    ]
   },
   "luxury": {
@@ -2280,11 +2337,11 @@
   "minas consomem explosives para render mais",
   "governo e empresas consomem paper e computer",
   "veículos e máquinas consomem spare_parts por mês; fazendas/oficinas consomem tools",
-  "army consome uniforms, ammunition, combat_ration, fuel etc."
+  "army consome uniforms, ammunition, combat_ration, diesel etc."
  ],
  "market": {
   "delivered_price": "origem + frete + tarifa, convertido pela moeda do comprador",
-  "freight": "exige frota (truck/cargo_ship/cargo_plane) e fuel; sem frota/combustível a carga não sai",
+  "freight": "exige frota (truck/cargo_ship/cargo_plane) e diesel/querosene de aviação; sem frota/combustível a carga não sai",
   "currency": "cada nação tem moeda própria e câmbio",
   "layers": [
    "local",

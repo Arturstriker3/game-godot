@@ -3,8 +3,8 @@ extends SceneTree
 ## F4 — frete exige frota e combustível.
 ##
 ## Cenário mínimo AGRIA/PORTUS (determinístico, 2 cidades, 1 nação DEMO), com os
-## 113 bens carregados para os estoques de fuel/truck/spare_parts existirem.
-## Valida o contrato da frota nacional:
+## 115 bens carregados para os estoques de diesel/jet_fuel/truck/spare_parts
+## existirem. Valida o contrato da frota nacional:
 ##   - frota inicial é derivada de população/PIB (`source: derived`);
 ##   - sem caminhão, nenhum pedido terrestre embarca;
 ##   - com caminhão e sem combustível, nenhum pedido embarca;
@@ -43,13 +43,14 @@ func _init() -> void:
 			String(derived.get("source", "?"))])
 	if float(derived.get("trucks", 0.0)) <= 0.0:
 		_fail("frota inicial derivada sem caminhões")
-	print("[fleet] derivada: trucks=%.0f ships=%.0f planes=%.0f fuel=%.1f parts=%.1f" % [
+	print("[fleet] derivada: trucks=%.0f ships=%.0f planes=%.0f diesel=%.1f jet=%.1f parts=%.1f" % [
 		float(derived.get("trucks", 0.0)), float(derived.get("ships", 0.0)),
-		float(derived.get("planes", 0.0)), float(derived.get("fuel", 0.0)),
+		float(derived.get("planes", 0.0)), float(derived.get("diesel", 0.0)),
+		float(derived.get("jet_fuel", 0.0)),
 		float(derived.get("spare_parts", 0.0))])
 
-	# 1. Sem frota: nenhum pedido terrestre sai (fuel disponível).
-	sim.set_fleet(SCENARIO_NATION, 0.0, 0.0, 0.0, 100000.0, 100.0)
+	# 1. Sem frota: nenhum pedido terrestre sai (combustível disponível).
+	sim.set_fleet(SCENARIO_NATION, 0.0, 0.0, 0.0, 100000.0, 100000.0, 100.0)
 	var no_fleet: Dictionary = sim.tick_day()
 	if _order_count(no_fleet) > 0:
 		_fail("embarcou %d pedidos sem frota" % _order_count(no_fleet))
@@ -61,19 +62,19 @@ func _init() -> void:
 		float(fleet_after_block.get("missed_no_fleet", 0.0))])
 
 	# 2. Frota, mas sem combustível: não embarca.
-	sim.set_fleet(SCENARIO_NATION, 50.0, 5.0, 5.0, 0.0, 100.0)
+	sim.set_fleet(SCENARIO_NATION, 50.0, 5.0, 5.0, 0.0, 0.0, 100.0)
 	var no_fuel: Dictionary = sim.tick_day()
 	if _order_count(no_fuel) > 0:
 		_fail("embarcou %d pedidos sem combustível" % _order_count(no_fuel))
 	var fleet_no_fuel: Dictionary = sim.get_fleet(SCENARIO_NATION)
 	if float(fleet_no_fuel.get("missed_no_fuel", 0.0)) <= 0.0:
 		_fail("fila não registrou a carga barrada por falta de combustível")
-	print("[fleet] sem fuel: pedidos=%d fila=%.1f t (sem_fuel=%.1f)" % [
+	print("[fleet] sem combustivel: pedidos=%d fila=%.1f t (sem_fuel=%.1f)" % [
 		_order_count(no_fuel), float(fleet_no_fuel.get("queue_today", 0.0)),
 		float(fleet_no_fuel.get("missed_no_fuel", 0.0))])
 
 	# 3. Frota + combustível: o pedido volta a embarcar.
-	sim.set_fleet(SCENARIO_NATION, 50.0, 5.0, 5.0, 100000.0, 100.0)
+	sim.set_fleet(SCENARIO_NATION, 50.0, 5.0, 5.0, 100000.0, 100000.0, 100.0)
 	var with_fleet: Dictionary = sim.tick_day()
 	if _order_count(with_fleet) <= 0:
 		_fail("não embarcou com frota e combustível disponíveis")
@@ -99,7 +100,7 @@ func _init() -> void:
 		_fail("compra de truck não apareceu como demanda no mercado")
 
 	# 5. Desgaste: um mês sem peças reduz a saúde/capacidade efetiva.
-	sim.set_fleet(SCENARIO_NATION, 100.0, 10.0, 2.0, 100000.0, 0.0)
+	sim.set_fleet(SCENARIO_NATION, 100.0, 10.0, 2.0, 100000.0, 100000.0, 0.0)
 	var before_wear: Dictionary = sim.get_fleet(SCENARIO_NATION)
 	for _day in 30:
 		sim.tick_day()

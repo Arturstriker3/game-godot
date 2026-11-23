@@ -2,10 +2,12 @@
 
 Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 
-- Bens: **113** (21 primários em `order` 0..20, 92 novos em 21..112)
+- Bens: **115** (21 primários em `order` 0..20, 94 novos em 21..114)
 - Receitas: **114** (coeficiente unitário padrão onde a spec não traz qty)
 - Preços: primários = `calibrated:legacy` (dado já calibrado); novos = `derived:v1`
   pela fórmula `min_receita(Σ qty × preço_insumo / yield) × (1 + margem)`.
+- Co-produtos: preço da ROTA PRINCIPAL (a receita de co-produção), com o
+  custo do lote rateado por valor de mercado declarado (EIA) — não por tonelada.
 - Margens: raw 0 · byproduct 0,10 · intermediate 0,25 · final 0,45 · durável/luxo 0,80.
 - Subprodutos sem receita própria: 0,10 × preço do bem que os gera.
 - `charcoal` é alias de `coal` (a spec diz que produz o MESMO item).
@@ -62,7 +64,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 44 | `paper` | final | final | wood | 8.08 | `derived:v1` |
 | 45 | `pallets` | final | final | wood | 6.46 | `derived:v1` |
 | 46 | `charcoal` | semi | intermediate | wood | 6.00 | `alias:coal` |
-| 47 | `fuel` | final | final | chemical | 43.50 | `derived:v1` |
+| 47 | `gasoline` | final | final | chemical | 81.08 | `derived:co_product_market_value:v2` |
 | 48 | `plastic` | semi | intermediate | chemical | 56.25 | `derived:v1` |
 | 49 | `chemicals` | semi | intermediate | chemical | 37.50 | `derived:v1` |
 | 50 | `rubber` | semi | intermediate | chemical | 79.69 | `derived:v1` |
@@ -128,6 +130,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 110 | `artillery` | final | final | military | 37348.56 | `derived:v1` |
 | 111 | `military_drone` | final | final | military | 93771.35 | `derived:v1` |
 | 112 | `infantry_gear` | final | final | military | 7422.19 | `derived:v1` |
+| 113 | `diesel` | final | final | chemical | 74.90 | `derived:co_product_market_value:v2` |
+| 114 | `jet_fuel` | final | final | chemical | 78.22 | `derived:co_product_market_value:v2` |
 
 ## Receitas normalizadas
 
@@ -168,10 +172,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `pallets_a` â†’ `pallets` (yield 1): 1× `planks`
 - `pallets_b` â†’ `pallets` (yield 0.7): 1× `sawdust`
 - `charcoal` â†’ `coal` (yield 1): 1× `wood`
-- `fuel_a` â†’ `fuel` (yield 1): 1× `oil`
-- `fuel_b` â†’ `fuel` (yield 0.8): 1× `ethanol`
-- `fuel_c` â†’ `fuel` (yield 0.4): 1× `gas`
-- `fuel_d` â†’ `fuel` (yield 0.2): 1× `coal`
+- `gasoline_a` â†’ `gasoline` (yield 0.45): 1× `oil` + subproduto 0.29× `diesel`, 0.09× `jet_fuel`
+- `gasoline_b` â†’ `gasoline` (yield 0.8): 1× `ethanol`
 - `plastic_a` â†’ `plastic` (yield 1): 1× `oil`
 - `plastic_b` â†’ `plastic` (yield 0.5): 1× `gas`
 - `chemicals_a` â†’ `chemicals` (yield 1): 1× `oil`, 1× `refined_sulfur`
@@ -245,3 +247,20 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `artillery` â†’ `artillery` (yield 1): 1× `steel`, 1× `special_alloy`, 1× `industrial_tools`, 1× `cast_parts`, 1× `sensors`
 - `military_drone` â†’ `military_drone` (yield 1): 1× `drone`, 1× `ammunition`, 1× `carbon_fiber`
 - `infantry_gear` â†’ `infantry_gear` (yield 1): 1× `fabric`, 1× `hardware`, 1× `electronic_components`, 1× `batteries`
+- `diesel_a` â†’ `diesel` (yield 0.3): 1× `gas`
+- `diesel_b` â†’ `diesel` (yield 0.15): 1× `coal`
+
+## Co-produtos: rota principal rateada por valor de mercado
+
+O custo do lote é rateado pelo valor de mercado de cada saída (`qty × USD/t`), não por tonelada. USD/t = preço da fonte (USD/gal) × 42 gal/barril × barris por tonelada.
+
+### `gasoline_a` — custo do lote 45.00 (insumos a preço-base)
+
+Fonte: EIA Spot Prices 2024, U.S. Gulf Coast, annual average (USD/gal): conventional gasoline regular 2.239; ultra-low-sulfur No. 2 diesel 2.365; kerosene-type jet fuel 2.338. EIA Crude Oil and Petroleum Product Conversion Factors (barrels per metric ton): motor gasoline 8.53; distillate fuel oil No. 2 7.46; kerosene-type jet fuel 7.88. USD/t = USD/gal x 42 gal/bbl x bbl/t.
+
+| saída | qty/lote | USD/t | valor no lote | custo unitário | preço-base |
+|---|---:|---:|---:|---:|---:|
+| `gasoline` | 0.45 | 802.14 | 360.96 | 55.92 | 81.08 |
+| `diesel` | 0.29 | 741.00 | 214.89 | 51.66 | 74.90 |
+| `jet_fuel` | 0.09 | 773.78 | 69.64 | 53.94 | 78.22 |
+

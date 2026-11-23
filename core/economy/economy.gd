@@ -66,6 +66,9 @@ const StorageServiceScript := preload("res://core/economy/storage_service.gd")
 ## PARTE E (D-116): energia — acesso/perdas, parque, potencial e o PVOUT mensal
 ## do dado público; declarados antes do primeiro dia e reaplicados no load.
 const PowerServiceScript := preload("res://core/economy/power_service.gd")
+## F0/D-124: refino — capacidade real do EI 2024 por país; semeia as refinarias
+## do dia 1 (depois de `seed_industry`, para não bloquear farinha/pão).
+const RefiningServiceScript := preload("res://core/economy/refining_service.gd")
 ## 1º de janeiro de 2027, 00:00 UTC (D-084). 1798761600 = 2027-01-01T00:00:00Z.
 ## A base de dados (WPP/WorldPop 2026, extração 2025) NÃO é reprojetada: o
 ## calendário do jogo começa em 2027 e a projeção da base é dívida de calibração.
@@ -294,6 +297,20 @@ func _ready() -> void:
 			int(power_report.get("nations", 0)),
 			(power_report.get("operator_nations", []) as Array).size(),
 			int(power_report.get("cities_with_solar_month", 0))])
+	# F0/D-124: REFINO — capacidade de destilação 2024 do EI por nação, na
+	# fração simulada da economia. DEPOIS da energia (a cidade já existe com
+	# parque) e ANTES da IA. O serviço chama `seed_industry` primeiro: sem essa
+	# ordem a refinaria faria o bootstrap achar que o mundo já tem indústria e
+	# pular a farinha/pão.
+	if sim.has_method("build") and sim.has_method("get_products"):
+		var refining := RefiningServiceScript.new()
+		var refining_report := refining.apply_to_sim(sim, cities, _load_ports())
+		print("[refino] nações=%d plantas=%d capacidade=%.0f t/dia maduras=%d (%s)" % [
+			(refining_report.get("nations", []) as Array).size(),
+			int(refining_report.get("applied", 0)),
+			float(refining_report.get("capacity_t_per_day", 0.0)),
+			int(refining_report.get("matured", 0)),
+			String(refining_report.get("reason", "ok"))])
 	# A IA econômica (privado, governo, grupos) roda no núcleo, na virada do dia
 	# (A5). Ligada aqui: o primeiro `tick_day` já decide.
 	sim.set_ai_enabled(true)
@@ -368,6 +385,17 @@ func refresh_power() -> Dictionary:
 		return {}
 	var power := PowerServiceScript.new()
 	return power.apply_to_sim(sim, _load_cities(), {"only_missing": true})
+
+
+## F0/D-124: reaplica no núcleo o refino que FALTAR depois de carregar um save.
+## Save v39 já traz as construções `refinery` no estado e o serviço para em
+## `world_already_has_refining` (save manda); save v38 e anterior não tem o
+## bloco e recebe a capacidade do dado aqui, como no dia 0.
+func refresh_refining() -> Dictionary:
+	if sim == null or not sim.has_method("build"):
+		return {}
+	var refining := RefiningServiceScript.new()
+	return refining.apply_to_sim(sim, _load_cities(), _load_ports())
 
 
 ## F9: nome da maior cidade de cada nacao (usado como {place} no nome dos

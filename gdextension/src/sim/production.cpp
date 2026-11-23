@@ -71,6 +71,19 @@ int SimCore::pick_recipe(const City& city, int output_product) const {
 		if (!available) {
 			continue;
 		}
+		// F0 (co-produção): o custo por tonelada do produto principal é
+		// abatido pelo valor das saídas extras, na mesma base por lote.
+		for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+			const int product = recipe.byproducts[slot];
+			if (product < 0 || product >= ws_.products) {
+				continue;
+			}
+			const Market& market = city.markets[product];
+			const double price = market.price > 0.0
+				? market.price : base_price(product);
+			cost -= recipe.byproduct_qty[slot] * price / recipe.yield;
+		}
+		cost = std::max(0.0, cost);
 		if (best < 0 || cost < best_cost) {
 			best = static_cast<int>(index);
 			best_cost = cost;
@@ -185,10 +198,28 @@ void SimCore::phase_production() {
 				// parada brusca quando o estoque está acima do necessário.
 				double target = sold_prev;
 				if (sold_prev <= 0.0) {
-					// Produtor novo (ou sem vendas) enche o mercado com a capacidade
-					// EFETIVA (output_scale), o que dá ao produto a primeira oferta
-					// observável — é o que permite o comércio/consumo começar.
-					target = effective_capacity;
+					// Produtor novo (ou sem vendas) garante a PRIMEIRA oferta
+					// observável do produto — e SÓ ela. Industrial
+					// (receita/insumo) repõe a capacidade enquanto o estoque
+					// estiver abaixo do ALVO de bootstrap: menos que metade do
+					// mínimo que um dia de plena capacidade produz (o piso do
+					// corte por margem, kProductionMarginFloor, multiplicado
+					// pela energia servida). Como o dia de bootstrap produz ao
+					// menos esse mínimo, a oferta acontece UMA vez; com estoque
+					// acima do alvo e venda zero a produção é zero, como manda
+					// o estoque-alvo das demais indústrias. Antes repunha a
+					// capacidade cheia TODO dia (mesmo com estoque formado),
+					// então a usina sem venda enchia o estoque pagando
+					// folha/opex/insumo até fechar (diagnóstico t141). A
+					// extração primária mantém o bootstrap legado: o minério
+					// parado no chão não tem custo de insumo comprado e é o
+					// que dá liquidez ao mercado.
+					const double bootstrap_floor = 0.5 * kProductionMarginFloor
+						* effective_capacity * capacity_share * labor
+						* power_factor;
+					target = industrial
+						? (stock_before < bootstrap_floor ? effective_capacity : 0.0)
+						: effective_capacity;
 				} else {
 					const double desired_stock = sold_prev * ws_.inventory_cover_days;
 					target = sold_prev
@@ -229,7 +260,28 @@ void SimCore::phase_production() {
 					const double unit_cost = unit_input_cost + unit_labor_opex
 						+ (industrial ? city.power_cost_per_value
 							* base_price(building.output_product) : 0.0);
-					const double margin = output_price - unit_cost;
+					// F0 (co-produção): a margem da firma soma o valor das
+					// saídas extras. Sem isso a refinaria pareceria deficitária
+					// (o custo do petróleo é dividido só pela gasolina) e
+					// cortaria produção mesmo com diesel/querosene vendáveis.
+					double unit_byproduct_revenue = 0.0;
+					if (recipe.yield > 0.0) {
+						for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+							const int product = recipe.byproducts[slot];
+							if (product < 0 || product >= ws_.products) {
+								continue;
+							}
+							// Fallback único do co-produto sem mercado (t145): o
+							// mesmo preço-base do `pick_recipe` e da IA.
+							const Market& product_market = city.markets[product];
+							const double product_price = product_market.price > 0.0
+								? product_market.price : base_price(product);
+							unit_byproduct_revenue += recipe.byproduct_qty[slot]
+								/ recipe.yield * product_price;
+						}
+					}
+					const double margin = output_price + unit_byproduct_revenue
+						- unit_cost;
 					double margin_scale = 1.0;
 					if (unit_cost > 0.0 && margin < 0.0) {
 						// Só corta com prejuízo PROFUNDO (> 25% do custo); em

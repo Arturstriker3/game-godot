@@ -1,0 +1,965 @@
+{
+ "meta": {
+  "generated_by": "tools/data/transport/build_refining_capacity.py",
+  "dataset": "Energy Institute, Statistical Review of World Energy 2025",
+  "edition": "74a edicao (2025)",
+  "table": "Oil: Refining capacity",
+  "reference_year": 2024,
+  "unit": "mil barris/dia (capacidade de destilacao atmosferica no fim do ano, dia-calendario)",
+  "source": {
+   "url": "https://www.energyinst.org/__data/assets/pdf_file/0007/1658077/Statistical-Review-of-World-Energy.pdf",
+   "landing_url": "https://www.energyinst.org/statistical-review/resources-and-data-downloads",
+   "accessed_at_utc": "2026-11-23T04:04:27Z",
+   "sha256": "95732ea8ad6d15e368f3b8cd040104844a997df2e0c8559ac250452cb4a8fdf0",
+   "citation": "Energy Institute (2025), Statistical Review of World Energy 2025, Energy Institute, London.",
+   "attribution": "Fonte: Energy Institute, Statistical Review of World Energy 2025 (74a edicao). (c) Energy Institute 2025.",
+   "terms_url": "https://www.energyinst.org/terms",
+   "note": "o PDF NAO e versionado; tools/data/refining/ e cache local (gitignored)"
+  },
+  "conversion": {
+   "t_per_barrel": 0.1364,
+   "formula": "capacity_unscaled_t_per_day = thousand_bpd * 0.1364 * 1000 (a capacidade calibrada esta em meta.calibration)",
+   "source": {
+    "value": 0.1364,
+    "unit": "t por barril de petroleo cru",
+    "barrels_per_tonne": 7.33,
+    "publisher": "U.S. Energy Information Administration (EIA)",
+    "dataset": "Energy Explained - Units and calculators",
+    "url": "https://www.eia.gov/energyexplained/units-and-calculators/",
+    "note": "fator de conversao de volume para massa do petroleo cru; a densidade do barril depende do grau API, 0,1364 t e o fator medio declarado pela EIA"
+   }
+  },
+  "simulated_fraction": {
+   "rule": "sum(sim_population) / sum(population) das cidades da nacao",
+   "same_as": "D-116/D-119 - fracao simulada aplicada por sim/power.cpp ao parque eletrico",
+   "applied_to": "NAO aplicada a capacity_t_per_day (mantida como referencia; a ancora de demanda/oferta ja esta na escala do mundo simulado)"
+  },
+  "calibration": {
+   "principle": "o ano-base fecha com o proprio mundo simulado (mesmo principio da D-119/E2)",
+   "geography": {
+    "source": "Energy Institute, Statistical Review of World Energy 2025 - Oil: Refining capacity (2024)",
+    "denominator": "Total World 104523 mil b/d",
+    "rule": "share_nation = thousand_bpd_nation / 104523"
+   },
+   "demand_anchor": {
+    "value_t_per_day": 23656.9253478136,
+    "product": "gasoline",
+    "day": 1,
+    "scope": "world",
+    "field": "fuel_diag.day_1.world.gasoline.desired",
+    "measured_by": "tools/c1_world_ai_365.gd --fuel-diag=1",
+    "evidence": "docs/economy/perf/f1_refining_measure.json",
+    "note": "diesel e jet_fuel desired = 0 no dia 1: a frota gasta a reserva semeada; a demanda de mercado de diesel aparece ao longo do ano (~500 t/dia no dia 70). Nao se inventa consumo."
+   },
+   "utilization": {
+    "value": 0.8,
+    "definition": "throughput / capacidade de destilacao atmosferica, base dia-calendario",
+    "source": "Energy Institute, Statistical Review of World Energy 2025 - Oil: Refining capacity e Oil: Refinery throughput (2024): ~83 mil b/d de throughput contra 104,5 mil b/d de capacidade = ~0,79-0,80",
+    "note": "fator real declarado, arredondado para 0,80"
+   },
+   "demand_capacity_t_per_day": 29571.157,
+   "feedstock_ceiling": {
+    "oil_mine_capacity_t_per_day": 2694.071,
+    "recipe_yield": 0.45,
+    "capacity_t_per_day": 1515.415,
+    "formula": "oil_mine_capacity * recipe_yield / utilization",
+    "measured_by": "tools/f1_refining_measure.gd",
+    "evidence": "docs/economy/perf/f1_refining_measure.json",
+    "reason": "a demanda simulada (23 656,9 t/dia de gasolina) exigiria ~52 571 t/dia de petroleo a 80%; as minas de petroleo do cenario somam 2 694,071 t/dia. Sem o teto a capacidade fica ~11x acima do insumo e as refinarias fecham por ociosidade (D-124: 22 falencias). O teto e a propria oferta simulada, nao um numero de conforto."
+   },
+   "world_capacity_t_per_day": 1515.415,
+   "rule": "capacidade_nacao = world_capacity * share_nation",
+   "formula": "world_capacity = min(demanda_sim / utilizacao, oferta_sim_petroleo * yield / utilizacao)",
+   "missing_real_uses": [
+    "petroquimica (nao modelada como setor)",
+    "aviacao civil fora da frota aerea do cenario",
+    "aquecimento residencial/comercial a oleo",
+    "maquinario agricola e de construcao fora da frota",
+    "consumo militar fora do exercito modelado"
+   ]
+  },
+  "allocation": {
+   "service": "core/economy/refining_service.gd",
+   "rule": "cada cidade com mina de petroleo recebe uma refinaria (o insumo nasce junto), peso = capacidade de petroleo local (t/dia); nacao sem mina usa ate 3 cidades-porto do ports.json (host city), peso = populacao simulada. Comecam como construcoes 'refinery' com a receita gasoline_a, operando no dia 1 (output_scale 1, sem rampa).",
+   "owner": "private",
+   "order": "seed_industry() ANTES do refino (farinha/pao nao bloqueiam)"
+  },
+  "regional_aggregates_not_allocated": [
+   {
+    "name": "Total North America",
+    "thousand_bpd": 21928,
+    "year": 2024
+   },
+   {
+    "name": "Other S. & Cent. America",
+    "thousand_bpd": 384,
+    "year": 2024
+   },
+   {
+    "name": "Total S. & Cent. America",
+    "thousand_bpd": 6294,
+    "year": 2024
+   },
+   {
+    "name": "Other Europe",
+    "thousand_bpd": 337,
+    "year": 2024
+   },
+   {
+    "name": "Total Europe",
+    "thousand_bpd": 15015,
+    "year": 2024
+   },
+   {
+    "name": "Other CIS",
+    "thousand_bpd": 67,
+    "year": 2024
+   },
+   {
+    "name": "Total CIS",
+    "thousand_bpd": 8391,
+    "year": 2024
+   },
+   {
+    "name": "Other Middle East",
+    "thousand_bpd": 496,
+    "year": 2024
+   },
+   {
+    "name": "Total Middle East",
+    "thousand_bpd": 11719,
+    "year": 2024
+   },
+   {
+    "name": "Other Africa",
+    "thousand_bpd": 759,
+    "year": 2024
+   },
+   {
+    "name": "Total Africa",
+    "thousand_bpd": 3486,
+    "year": 2024
+   },
+   {
+    "name": "Other Asia Pacific",
+    "thousand_bpd": 341,
+    "year": 2024
+   },
+   {
+    "name": "Total Asia Pacific",
+    "thousand_bpd": 37690,
+    "year": 2024
+   }
+  ],
+  "world": {
+   "name": "Total World",
+   "thousand_bpd": 104523,
+   "year": 2024
+  },
+  "not_allocated": [
+   {
+    "name": "Curaçao",
+    "country_iso3": "CUW",
+    "thousand_bpd": 320,
+    "reason": "pais nao existe como nacao no cenario do jogo"
+   },
+   {
+    "name": "Netherlands Antilles",
+    "country_iso3": "ANT",
+    "thousand_bpd": null,
+    "reason": "pais nao existe como nacao no cenario do jogo"
+   },
+   {
+    "name": "Morocco",
+    "country_iso3": "MAR",
+    "thousand_bpd": null,
+    "reason": "tabela sem valor para 2024 (marcador de ausencia)"
+   }
+  ],
+  "unmapped_names": [],
+  "check": {
+   "countries_allocated": 70,
+   "world_capacity_t_per_day": 1515.415,
+   "allocated_capacity_t_per_day": 1476.256,
+   "named_total_thousand_bpd": 101822,
+   "world_total_thousand_bpd": 104523,
+   "residual_thousand_bpd": 2701,
+   "residual_other_aggregates_thousand_bpd": 2384,
+   "residual_non_game_nations_thousand_bpd": 320,
+   "residual_source_rounding_thousand_bpd": -3,
+   "residual_explained": "agregados 'Other ...' regionais nao rateados + nacoes fora do cenario (Curacao); a diferenca restante e o arredondamento da propria tabela"
+  }
+ },
+ "by_country": {
+  "ARE": {
+   "name": "United Arab Emirates",
+   "country_iso3": "ARE",
+   "thousand_bpd": 1271,
+   "year": 2024,
+   "simulated_fraction": 0.48614,
+   "ei_share_world": 0.012160003,
+   "capacity_unscaled_t_per_day": 173364.4,
+   "capacidade_pela_demanda_t_per_day": 359.585,
+   "capacity_t_per_day": 18.427
+  },
+  "ARG": {
+   "name": "Argentina",
+   "country_iso3": "ARG",
+   "thousand_bpd": 600,
+   "year": 2024,
+   "simulated_fraction": 0.190007,
+   "ei_share_world": 0.005740363,
+   "capacity_unscaled_t_per_day": 81840,
+   "capacidade_pela_demanda_t_per_day": 169.749,
+   "capacity_t_per_day": 8.699
+  },
+  "AUS": {
+   "name": "Australia",
+   "country_iso3": "AUS",
+   "thousand_bpd": 235,
+   "year": 2024,
+   "simulated_fraction": 0.73683,
+   "ei_share_world": 0.002248309,
+   "capacity_unscaled_t_per_day": 32054,
+   "capacidade_pela_demanda_t_per_day": 66.485,
+   "capacity_t_per_day": 3.407
+  },
+  "AUT": {
+   "name": "Austria",
+   "country_iso3": "AUT",
+   "thousand_bpd": 193,
+   "year": 2024,
+   "simulated_fraction": 0.216627,
+   "ei_share_world": 0.001846484,
+   "capacity_unscaled_t_per_day": 26325.2,
+   "capacidade_pela_demanda_t_per_day": 54.603,
+   "capacity_t_per_day": 2.798
+  },
+  "AZE": {
+   "name": "Azerbaijan",
+   "country_iso3": "AZE",
+   "thousand_bpd": 120,
+   "year": 2024,
+   "simulated_fraction": 0.261732,
+   "ei_share_world": 0.001148073,
+   "capacity_unscaled_t_per_day": 16368,
+   "capacidade_pela_demanda_t_per_day": 33.95,
+   "capacity_t_per_day": 1.74
+  },
+  "BEL": {
+   "name": "Belgium",
+   "country_iso3": "BEL",
+   "thousand_bpd": 645,
+   "year": 2024,
+   "simulated_fraction": 0.294548,
+   "ei_share_world": 0.006170891,
+   "capacity_unscaled_t_per_day": 87978,
+   "capacidade_pela_demanda_t_per_day": 182.48,
+   "capacity_t_per_day": 9.351
+  },
+  "BGD": {
+   "name": "Bangladesh",
+   "country_iso3": "BGD",
+   "thousand_bpd": 43,
+   "year": 2024,
+   "simulated_fraction": 0.103516,
+   "ei_share_world": 0.000411393,
+   "capacity_unscaled_t_per_day": 5865.2,
+   "capacidade_pela_demanda_t_per_day": 12.165,
+   "capacity_t_per_day": 0.623
+  },
+  "BGR": {
+   "name": "Bulgaria",
+   "country_iso3": "BGR",
+   "thousand_bpd": 195,
+   "year": 2024,
+   "simulated_fraction": 0.249511,
+   "ei_share_world": 0.001865618,
+   "capacity_unscaled_t_per_day": 26598,
+   "capacidade_pela_demanda_t_per_day": 55.168,
+   "capacity_t_per_day": 2.827
+  },
+  "BHR": {
+   "name": "Bahrain",
+   "country_iso3": "BHR",
+   "thousand_bpd": 260,
+   "year": 2024,
+   "simulated_fraction": 0.0919,
+   "ei_share_world": 0.002487491,
+   "capacity_unscaled_t_per_day": 35464,
+   "capacidade_pela_demanda_t_per_day": 73.558,
+   "capacity_t_per_day": 3.77
+  },
+  "BLR": {
+   "name": "Belarus",
+   "country_iso3": "BLR",
+   "thousand_bpd": 520,
+   "year": 2024,
+   "simulated_fraction": 0.284811,
+   "ei_share_world": 0.004974982,
+   "capacity_unscaled_t_per_day": 70928,
+   "capacidade_pela_demanda_t_per_day": 147.116,
+   "capacity_t_per_day": 7.539
+  },
+  "BRA": {
+   "name": "Brazil",
+   "country_iso3": "BRA",
+   "thousand_bpd": 2290,
+   "year": 2024,
+   "simulated_fraction": 0.22308,
+   "ei_share_world": 0.021909054,
+   "capacity_unscaled_t_per_day": 312356,
+   "capacidade_pela_demanda_t_per_day": 647.876,
+   "capacity_t_per_day": 33.201
+  },
+  "CAN": {
+   "name": "Canada",
+   "country_iso3": "CAN",
+   "thousand_bpd": 1954,
+   "year": 2024,
+   "simulated_fraction": 0.268937,
+   "ei_share_world": 0.01869445,
+   "capacity_unscaled_t_per_day": 266525.6,
+   "capacidade_pela_demanda_t_per_day": 552.817,
+   "capacity_t_per_day": 28.33
+  },
+  "CHE": {
+   "name": "Switzerland",
+   "country_iso3": "CHE",
+   "thousand_bpd": 68,
+   "year": 2024,
+   "simulated_fraction": 0.059631,
+   "ei_share_world": 0.000650575,
+   "capacity_unscaled_t_per_day": 9275.2,
+   "capacidade_pela_demanda_t_per_day": 19.238,
+   "capacity_t_per_day": 0.986
+  },
+  "CHL": {
+   "name": "Chile",
+   "country_iso3": "CHL",
+   "thousand_bpd": 242,
+   "year": 2024,
+   "simulated_fraction": 0.282062,
+   "ei_share_world": 0.00231528,
+   "capacity_unscaled_t_per_day": 33008.8,
+   "capacidade_pela_demanda_t_per_day": 68.466,
+   "capacity_t_per_day": 3.509
+  },
+  "CHN": {
+   "name": "China",
+   "country_iso3": "CHN",
+   "thousand_bpd": 18514,
+   "year": 2024,
+   "simulated_fraction": 0.213433,
+   "ei_share_world": 0.177128479,
+   "capacity_unscaled_t_per_day": 2525309.6,
+   "capacidade_pela_demanda_t_per_day": 5237.894,
+   "capacity_t_per_day": 268.423
+  },
+  "COL": {
+   "name": "Colombia",
+   "country_iso3": "COL",
+   "thousand_bpd": 501,
+   "year": 2024,
+   "simulated_fraction": 0.296925,
+   "ei_share_world": 0.004793203,
+   "capacity_unscaled_t_per_day": 68336.4,
+   "capacidade_pela_demanda_t_per_day": 141.741,
+   "capacity_t_per_day": 7.264
+  },
+  "CZE": {
+   "name": "Czech Republic",
+   "country_iso3": "CZE",
+   "thousand_bpd": 175,
+   "year": 2024,
+   "simulated_fraction": 0.144199,
+   "ei_share_world": 0.001674273,
+   "capacity_unscaled_t_per_day": 23870,
+   "capacidade_pela_demanda_t_per_day": 49.51,
+   "capacity_t_per_day": 2.537
+  },
+  "DEU": {
+   "name": "Germany",
+   "country_iso3": "DEU",
+   "thousand_bpd": 2076,
+   "year": 2024,
+   "simulated_fraction": 0.223275,
+   "ei_share_world": 0.019861657,
+   "capacity_unscaled_t_per_day": 283166.4,
+   "capacidade_pela_demanda_t_per_day": 587.332,
+   "capacity_t_per_day": 30.099
+  },
+  "DNK": {
+   "name": "Denmark",
+   "country_iso3": "DNK",
+   "thousand_bpd": 181,
+   "year": 2024,
+   "simulated_fraction": 0.242646,
+   "ei_share_world": 0.001731676,
+   "capacity_unscaled_t_per_day": 24688.4,
+   "capacidade_pela_demanda_t_per_day": 51.208,
+   "capacity_t_per_day": 2.624
+  },
+  "DZA": {
+   "name": "Algeria",
+   "country_iso3": "DZA",
+   "thousand_bpd": 657,
+   "year": 2024,
+   "simulated_fraction": 0.089615,
+   "ei_share_world": 0.006285698,
+   "capacity_unscaled_t_per_day": 89614.8,
+   "capacidade_pela_demanda_t_per_day": 185.875,
+   "capacity_t_per_day": 9.525
+  },
+  "ECU": {
+   "name": "Ecuador",
+   "country_iso3": "ECU",
+   "thousand_bpd": 196,
+   "year": 2024,
+   "simulated_fraction": 0.301697,
+   "ei_share_world": 0.001875185,
+   "capacity_unscaled_t_per_day": 26734.4,
+   "capacidade_pela_demanda_t_per_day": 55.451,
+   "capacity_t_per_day": 2.842
+  },
+  "EGY": {
+   "name": "Egypt",
+   "country_iso3": "EGY",
+   "thousand_bpd": 825,
+   "year": 2024,
+   "simulated_fraction": 0.145315,
+   "ei_share_world": 0.007893,
+   "capacity_unscaled_t_per_day": 112530,
+   "capacidade_pela_demanda_t_per_day": 233.405,
+   "capacity_t_per_day": 11.961
+  },
+  "ESP": {
+   "name": "Spain",
+   "country_iso3": "ESP",
+   "thousand_bpd": 1591,
+   "year": 2024,
+   "simulated_fraction": 0.187896,
+   "ei_share_world": 0.01522153,
+   "capacity_unscaled_t_per_day": 217012.4,
+   "capacidade_pela_demanda_t_per_day": 450.118,
+   "capacity_t_per_day": 23.067
+  },
+  "FIN": {
+   "name": "Finland",
+   "country_iso3": "FIN",
+   "thousand_bpd": 206,
+   "year": 2024,
+   "simulated_fraction": 0.174478,
+   "ei_share_world": 0.001970858,
+   "capacity_unscaled_t_per_day": 28098.4,
+   "capacidade_pela_demanda_t_per_day": 58.281,
+   "capacity_t_per_day": 2.987
+  },
+  "FRA": {
+   "name": "France",
+   "country_iso3": "FRA",
+   "thousand_bpd": 1145,
+   "year": 2024,
+   "simulated_fraction": 0.291475,
+   "ei_share_world": 0.010954527,
+   "capacity_unscaled_t_per_day": 156178,
+   "capacidade_pela_demanda_t_per_day": 323.938,
+   "capacity_t_per_day": 16.601
+  },
+  "GBR": {
+   "name": "United Kingdom",
+   "country_iso3": "GBR",
+   "thousand_bpd": 1219,
+   "year": 2024,
+   "simulated_fraction": 0.314971,
+   "ei_share_world": 0.011662505,
+   "capacity_unscaled_t_per_day": 166271.6,
+   "capacidade_pela_demanda_t_per_day": 344.874,
+   "capacity_t_per_day": 17.674
+  },
+  "GRC": {
+   "name": "Greece",
+   "country_iso3": "GRC",
+   "thousand_bpd": 528,
+   "year": 2024,
+   "simulated_fraction": 0.111497,
+   "ei_share_world": 0.00505152,
+   "capacity_unscaled_t_per_day": 72019.2,
+   "capacidade_pela_demanda_t_per_day": 149.379,
+   "capacity_t_per_day": 7.655
+  },
+  "HUN": {
+   "name": "Hungary",
+   "country_iso3": "HUN",
+   "thousand_bpd": 165,
+   "year": 2024,
+   "simulated_fraction": 0.204267,
+   "ei_share_world": 0.0015786,
+   "capacity_unscaled_t_per_day": 22506,
+   "capacidade_pela_demanda_t_per_day": 46.681,
+   "capacity_t_per_day": 2.392
+  },
+  "IDN": {
+   "name": "Indonesia",
+   "country_iso3": "IDN",
+   "thousand_bpd": 1259,
+   "year": 2024,
+   "simulated_fraction": 0.10695,
+   "ei_share_world": 0.012045196,
+   "capacity_unscaled_t_per_day": 171727.6,
+   "capacidade_pela_demanda_t_per_day": 356.19,
+   "capacity_t_per_day": 18.253
+  },
+  "IND": {
+   "name": "India",
+   "country_iso3": "IND",
+   "thousand_bpd": 5172,
+   "year": 2024,
+   "simulated_fraction": 0.058807,
+   "ei_share_world": 0.049481932,
+   "capacity_unscaled_t_per_day": 705460.8,
+   "capacidade_pela_demanda_t_per_day": 1463.238,
+   "capacity_t_per_day": 74.986
+  },
+  "IRL": {
+   "name": "Ireland",
+   "country_iso3": "IRL",
+   "thousand_bpd": 75,
+   "year": 2024,
+   "simulated_fraction": 0.227562,
+   "ei_share_world": 0.000717545,
+   "capacity_unscaled_t_per_day": 10230,
+   "capacidade_pela_demanda_t_per_day": 21.219,
+   "capacity_t_per_day": 1.087
+  },
+  "IRN": {
+   "name": "Iran",
+   "country_iso3": "IRN",
+   "thousand_bpd": 2460,
+   "year": 2024,
+   "simulated_fraction": 0.180859,
+   "ei_share_world": 0.02353549,
+   "capacity_unscaled_t_per_day": 335544,
+   "capacidade_pela_demanda_t_per_day": 695.972,
+   "capacity_t_per_day": 35.666
+  },
+  "IRQ": {
+   "name": "Iraq",
+   "country_iso3": "IRQ",
+   "thousand_bpd": 1219,
+   "year": 2024,
+   "simulated_fraction": 0.231691,
+   "ei_share_world": 0.011662505,
+   "capacity_unscaled_t_per_day": 166271.6,
+   "capacidade_pela_demanda_t_per_day": 344.874,
+   "capacity_t_per_day": 17.674
+  },
+  "ISR": {
+   "name": "Israel",
+   "country_iso3": "ISR",
+   "thousand_bpd": 301,
+   "year": 2024,
+   "simulated_fraction": 0.438833,
+   "ei_share_world": 0.002879749,
+   "capacity_unscaled_t_per_day": 41056.4,
+   "capacidade_pela_demanda_t_per_day": 85.158,
+   "capacity_t_per_day": 4.364
+  },
+  "ITA": {
+   "name": "Italy",
+   "country_iso3": "ITA",
+   "thousand_bpd": 1803,
+   "year": 2024,
+   "simulated_fraction": 0.139248,
+   "ei_share_world": 0.017249792,
+   "capacity_unscaled_t_per_day": 245929.2,
+   "capacidade_pela_demanda_t_per_day": 510.096,
+   "capacity_t_per_day": 26.141
+  },
+  "JPN": {
+   "name": "Japan",
+   "country_iso3": "JPN",
+   "thousand_bpd": 2955,
+   "year": 2024,
+   "simulated_fraction": 0.198495,
+   "ei_share_world": 0.02827129,
+   "capacity_unscaled_t_per_day": 403062,
+   "capacidade_pela_demanda_t_per_day": 836.015,
+   "capacity_t_per_day": 42.843
+  },
+  "KAZ": {
+   "name": "Kazakhstan",
+   "country_iso3": "KAZ",
+   "thousand_bpd": 400,
+   "year": 2024,
+   "simulated_fraction": 0.279781,
+   "ei_share_world": 0.003826909,
+   "capacity_unscaled_t_per_day": 54560,
+   "capacidade_pela_demanda_t_per_day": 113.166,
+   "capacity_t_per_day": 5.799
+  },
+  "KOR": {
+   "name": "South Korea",
+   "country_iso3": "KOR",
+   "thousand_bpd": 3363,
+   "year": 2024,
+   "simulated_fraction": 0.381053,
+   "ei_share_world": 0.032174737,
+   "capacity_unscaled_t_per_day": 458713.2,
+   "capacidade_pela_demanda_t_per_day": 951.444,
+   "capacity_t_per_day": 48.758
+  },
+  "KWT": {
+   "name": "Kuwait",
+   "country_iso3": "KWT",
+   "thousand_bpd": 1430,
+   "year": 2024,
+   "simulated_fraction": 0.143357,
+   "ei_share_world": 0.013681199,
+   "capacity_unscaled_t_per_day": 195052,
+   "capacidade_pela_demanda_t_per_day": 404.569,
+   "capacity_t_per_day": 20.733
+  },
+  "LTU": {
+   "name": "Lithuania",
+   "country_iso3": "LTU",
+   "thousand_bpd": 240,
+   "year": 2024,
+   "simulated_fraction": 0.287924,
+   "ei_share_world": 0.002296145,
+   "capacity_unscaled_t_per_day": 32736,
+   "capacidade_pela_demanda_t_per_day": 67.9,
+   "capacity_t_per_day": 3.48
+  },
+  "MEX": {
+   "name": "Mexico",
+   "country_iso3": "MEX",
+   "thousand_bpd": 1558,
+   "year": 2024,
+   "simulated_fraction": 0.221656,
+   "ei_share_world": 0.01490581,
+   "capacity_unscaled_t_per_day": 212511.2,
+   "capacidade_pela_demanda_t_per_day": 440.782,
+   "capacity_t_per_day": 22.588
+  },
+  "MYS": {
+   "name": "Malaysia",
+   "country_iso3": "MYS",
+   "thousand_bpd": 1155,
+   "year": 2024,
+   "simulated_fraction": 0.147737,
+   "ei_share_world": 0.011050199,
+   "capacity_unscaled_t_per_day": 157542,
+   "capacidade_pela_demanda_t_per_day": 326.767,
+   "capacity_t_per_day": 16.746
+  },
+  "NED": {
+   "name": "Netherlands",
+   "country_iso3": "NED",
+   "thousand_bpd": 1241,
+   "year": 2024,
+   "simulated_fraction": 0.214427,
+   "ei_share_world": 0.011872985,
+   "capacity_unscaled_t_per_day": 169272.4,
+   "capacidade_pela_demanda_t_per_day": 351.098,
+   "capacity_t_per_day": 17.992
+  },
+  "NGA": {
+   "name": "Nigeria",
+   "country_iso3": "NGA",
+   "thousand_bpd": 1030,
+   "year": 2024,
+   "simulated_fraction": 0.165757,
+   "ei_share_world": 0.00985429,
+   "capacity_unscaled_t_per_day": 140492,
+   "capacidade_pela_demanda_t_per_day": 291.403,
+   "capacity_t_per_day": 14.933
+  },
+  "NOR": {
+   "name": "Norway",
+   "country_iso3": "NOR",
+   "thousand_bpd": 226,
+   "year": 2024,
+   "simulated_fraction": 0.252816,
+   "ei_share_world": 0.002162204,
+   "capacity_unscaled_t_per_day": 30826.4,
+   "capacidade_pela_demanda_t_per_day": 63.939,
+   "capacity_t_per_day": 3.277
+  },
+  "NZL": {
+   "name": "New Zealand",
+   "country_iso3": "NZL",
+   "thousand_bpd": 30,
+   "year": 2024,
+   "simulated_fraction": 0.44102,
+   "ei_share_world": 0.000287018,
+   "capacity_unscaled_t_per_day": 4092,
+   "capacidade_pela_demanda_t_per_day": 8.487,
+   "capacity_t_per_day": 0.435
+  },
+  "OMN": {
+   "name": "Oman",
+   "country_iso3": "OMN",
+   "thousand_bpd": 564,
+   "year": 2024,
+   "simulated_fraction": 0.204491,
+   "ei_share_world": 0.005395942,
+   "capacity_unscaled_t_per_day": 76929.6,
+   "capacidade_pela_demanda_t_per_day": 159.564,
+   "capacity_t_per_day": 8.177
+  },
+  "PAK": {
+   "name": "Pakistan",
+   "country_iso3": "PAK",
+   "thousand_bpd": 450,
+   "year": 2024,
+   "simulated_fraction": 0.173295,
+   "ei_share_world": 0.004305273,
+   "capacity_unscaled_t_per_day": 61380,
+   "capacidade_pela_demanda_t_per_day": 127.312,
+   "capacity_t_per_day": 6.524
+  },
+  "PER": {
+   "name": "Peru",
+   "country_iso3": "PER",
+   "thousand_bpd": 283,
+   "year": 2024,
+   "simulated_fraction": 0.318365,
+   "ei_share_world": 0.002707538,
+   "capacity_unscaled_t_per_day": 38601.2,
+   "capacidade_pela_demanda_t_per_day": 80.065,
+   "capacity_t_per_day": 4.103
+  },
+  "PHL": {
+   "name": "Philippines",
+   "country_iso3": "PHL",
+   "thousand_bpd": 180,
+   "year": 2024,
+   "simulated_fraction": 0.063778,
+   "ei_share_world": 0.001722109,
+   "capacity_unscaled_t_per_day": 24552,
+   "capacidade_pela_demanda_t_per_day": 50.925,
+   "capacity_t_per_day": 2.61
+  },
+  "POL": {
+   "name": "Poland",
+   "country_iso3": "POL",
+   "thousand_bpd": 583,
+   "year": 2024,
+   "simulated_fraction": 0.126518,
+   "ei_share_world": 0.00557772,
+   "capacity_unscaled_t_per_day": 79521.2,
+   "capacidade_pela_demanda_t_per_day": 164.94,
+   "capacity_t_per_day": 8.453
+  },
+  "PRT": {
+   "name": "Portugal",
+   "country_iso3": "PRT",
+   "thousand_bpd": 225,
+   "year": 2024,
+   "simulated_fraction": 0.071309,
+   "ei_share_world": 0.002152636,
+   "capacity_unscaled_t_per_day": 30690,
+   "capacidade_pela_demanda_t_per_day": 63.656,
+   "capacity_t_per_day": 3.262
+  },
+  "QAT": {
+   "name": "Qatar",
+   "country_iso3": "QAT",
+   "thousand_bpd": 429,
+   "year": 2024,
+   "simulated_fraction": 0.117827,
+   "ei_share_world": 0.00410436,
+   "capacity_unscaled_t_per_day": 58515.6,
+   "capacidade_pela_demanda_t_per_day": 121.371,
+   "capacity_t_per_day": 6.22
+  },
+  "ROU": {
+   "name": "Romania",
+   "country_iso3": "ROU",
+   "thousand_bpd": 252,
+   "year": 2024,
+   "simulated_fraction": 0.143311,
+   "ei_share_world": 0.002410953,
+   "capacity_unscaled_t_per_day": 34372.8,
+   "capacidade_pela_demanda_t_per_day": 71.295,
+   "capacity_t_per_day": 3.654
+  },
+  "RUS": {
+   "name": "Russian Federation",
+   "country_iso3": "RUS",
+   "thousand_bpd": 6781,
+   "year": 2024,
+   "simulated_fraction": 0.272988,
+   "ei_share_world": 0.064875673,
+   "capacity_unscaled_t_per_day": 924928.4,
+   "capacidade_pela_demanda_t_per_day": 1918.449,
+   "capacity_t_per_day": 98.314
+  },
+  "SAU": {
+   "name": "Saudi Arabia",
+   "country_iso3": "SAU",
+   "thousand_bpd": 3289,
+   "year": 2024,
+   "simulated_fraction": 0.38105,
+   "ei_share_world": 0.031466759,
+   "capacity_unscaled_t_per_day": 448619.6,
+   "capacidade_pela_demanda_t_per_day": 930.508,
+   "capacity_t_per_day": 47.685
+  },
+  "SGP": {
+   "name": "Singapore",
+   "country_iso3": "SGP",
+   "thousand_bpd": 1302,
+   "year": 2024,
+   "simulated_fraction": 0.922687,
+   "ei_share_world": 0.012456589,
+   "capacity_unscaled_t_per_day": 177592.8,
+   "capacidade_pela_demanda_t_per_day": 368.356,
+   "capacity_t_per_day": 18.877
+  },
+  "SVK": {
+   "name": "Slovakia",
+   "country_iso3": "SVK",
+   "thousand_bpd": 122,
+   "year": 2024,
+   "simulated_fraction": 0.119838,
+   "ei_share_world": 0.001167207,
+   "capacity_unscaled_t_per_day": 16640.8,
+   "capacidade_pela_demanda_t_per_day": 34.516,
+   "capacity_t_per_day": 1.769
+  },
+  "SWE": {
+   "name": "Sweden",
+   "country_iso3": "SWE",
+   "thousand_bpd": 454,
+   "year": 2024,
+   "simulated_fraction": 0.212681,
+   "ei_share_world": 0.004343542,
+   "capacity_unscaled_t_per_day": 61925.6,
+   "capacidade_pela_demanda_t_per_day": 128.444,
+   "capacity_t_per_day": 6.582
+  },
+  "THA": {
+   "name": "Thailand",
+   "country_iso3": "THA",
+   "thousand_bpd": 1242,
+   "year": 2024,
+   "simulated_fraction": 0.081144,
+   "ei_share_world": 0.011882552,
+   "capacity_unscaled_t_per_day": 169408.8,
+   "capacidade_pela_demanda_t_per_day": 351.381,
+   "capacity_t_per_day": 18.007
+  },
+  "TKM": {
+   "name": "Turkmenistan",
+   "country_iso3": "TKM",
+   "thousand_bpd": 271,
+   "year": 2024,
+   "simulated_fraction": 0.165501,
+   "ei_share_world": 0.002592731,
+   "capacity_unscaled_t_per_day": 36964.4,
+   "capacidade_pela_demanda_t_per_day": 76.67,
+   "capacity_t_per_day": 3.929
+  },
+  "TTO": {
+   "name": "Trinidad & Tobago",
+   "country_iso3": "TTO",
+   "thousand_bpd": 175,
+   "year": 2024,
+   "simulated_fraction": 0.077068,
+   "ei_share_world": 0.001674273,
+   "capacity_unscaled_t_per_day": 23870,
+   "capacidade_pela_demanda_t_per_day": 49.51,
+   "capacity_t_per_day": 2.537
+  },
+  "TUR": {
+   "name": "Türkiye",
+   "country_iso3": "TUR",
+   "thousand_bpd": 822,
+   "year": 2024,
+   "simulated_fraction": 0.404298,
+   "ei_share_world": 0.007864298,
+   "capacity_unscaled_t_per_day": 112120.8,
+   "capacidade_pela_demanda_t_per_day": 232.556,
+   "capacity_t_per_day": 11.918
+  },
+  "TWN": {
+   "name": "Taiwan",
+   "country_iso3": "TWN",
+   "thousand_bpd": 1083,
+   "year": 2024,
+   "simulated_fraction": 0.57378,
+   "ei_share_world": 0.010361356,
+   "capacity_unscaled_t_per_day": 147721.2,
+   "capacidade_pela_demanda_t_per_day": 306.397,
+   "capacity_t_per_day": 15.702
+  },
+  "UKR": {
+   "name": "Ukraine",
+   "country_iso3": "UKR",
+   "thousand_bpd": 250,
+   "year": 2024,
+   "simulated_fraction": 0.206743,
+   "ei_share_world": 0.002391818,
+   "capacity_unscaled_t_per_day": 34100,
+   "capacidade_pela_demanda_t_per_day": 70.729,
+   "capacity_t_per_day": 3.625
+  },
+  "USA": {
+   "name": "US",
+   "country_iso3": "USA",
+   "thousand_bpd": 18416,
+   "year": 2024,
+   "simulated_fraction": 0.143406,
+   "ei_share_world": 0.176190886,
+   "capacity_unscaled_t_per_day": 2511942.4,
+   "capacidade_pela_demanda_t_per_day": 5210.168,
+   "capacity_t_per_day": 267.002
+  },
+  "UZB": {
+   "name": "Uzbekistan",
+   "country_iso3": "UZB",
+   "thousand_bpd": 232,
+   "year": 2024,
+   "simulated_fraction": 0.107124,
+   "ei_share_world": 0.002219607,
+   "capacity_unscaled_t_per_day": 31644.8,
+   "capacidade_pela_demanda_t_per_day": 65.636,
+   "capacity_t_per_day": 3.364
+  },
+  "VEN": {
+   "name": "Venezuela",
+   "country_iso3": "VEN",
+   "thousand_bpd": 1303,
+   "year": 2024,
+   "simulated_fraction": 0.266145,
+   "ei_share_world": 0.012466156,
+   "capacity_unscaled_t_per_day": 177729.2,
+   "capacidade_pela_demanda_t_per_day": 368.639,
+   "capacity_t_per_day": 18.891
+  },
+  "VNM": {
+   "name": "Vietnam",
+   "country_iso3": "VNM",
+   "thousand_bpd": 367,
+   "year": 2024,
+   "simulated_fraction": 0.292274,
+   "ei_share_world": 0.003511189,
+   "capacity_unscaled_t_per_day": 50058.8,
+   "capacidade_pela_demanda_t_per_day": 103.83,
+   "capacity_t_per_day": 5.321
+  },
+  "ZAF": {
+   "name": "South Africa",
+   "country_iso3": "ZAF",
+   "thousand_bpd": 215,
+   "year": 2024,
+   "simulated_fraction": 0.32068,
+   "ei_share_world": 0.002056964,
+   "capacity_unscaled_t_per_day": 29326,
+   "capacidade_pela_demanda_t_per_day": 60.827,
+   "capacity_t_per_day": 3.117
+  }
+ }
+}

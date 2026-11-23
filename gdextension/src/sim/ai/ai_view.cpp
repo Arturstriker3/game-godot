@@ -46,6 +46,8 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	// (p_*), na ordem cidade → produto.
 	view.city_rows.resize(cities);
 	view.markets.resize(cities * products);
+	// Preço-base (âncora) do catálogo: fallback único do co-produto sem mercado.
+	view.base_price.assign(products, 0.0);
 	view.c_land_capacity.assign(cities * products, 0.0);
 	view.pop.resize(cities);
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
@@ -116,6 +118,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 		}
 		view.product_food_calories[product] =
 			core.food_calories(static_cast<int>(product));
+		view.base_price[product] = core.base_price(static_cast<int>(product));
 	}
 	for (const StorageSite& site : ws.storage_sites) {
 		if (site.city_index < 0
@@ -367,6 +370,14 @@ double ai_market(const AiView& view, int city, int product, AiMarketField field)
 	case kAiDesired: return row.desired;
 	}
 	return 0.0;
+}
+
+double ai_base_price(const AiView& view, int product) {
+	if (product < 0
+			|| product >= static_cast<int>(view.base_price.size())) {
+		return 0.0;
+	}
+	return view.base_price[static_cast<std::size_t>(product)];
 }
 
 double ai_pop(const AiView& view, int city, AiPopField field) {
@@ -714,6 +725,26 @@ int ai_best_recipe(const AiView& view, const AiTemplates& templates, int city,
 			}
 			cost += recipe.input_qty[slot] * price / recipe.yield;
 		}
+		// F0 (D-123): a receita é um LOTE com co-produção — o custo comparável
+		// do produto principal é abatido pelo valor de mercado de TODAS as
+		// saídas extras, na mesma base por lote do `pick_recipe` do núcleo.
+		// Sem isso, a refinaria (1 t de petróleo -> 0,45 gasolina + 0,29 diesel
+		// + 0,09 querosene) parecia custar 100/t contra 78,61 de gasolina e a
+		// IA nunca a escolhia, embora a firma a operasse com margem.
+		for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+			const int byproduct = recipe.byproducts[slot];
+			if (byproduct < 0 || byproduct >= view.products) {
+				continue;
+			}
+			double price = ai_market(view, city, byproduct, kAiPrice);
+			if (price <= 0.0) {
+				// Fallback único do co-produto sem mercado (t145): âncora
+				// do catálogo, o mesmo valor do `pick_recipe` e da margem.
+				price = ai_base_price(view, byproduct);
+			}
+			cost -= recipe.byproduct_qty[slot] * price / recipe.yield;
+		}
+		cost = std::max(0.0, cost);
 		// Empate fica com a PRIMEIRA receita da ordem do arquivo (cost strict).
 		if (available && (best < 0 || cost < best_cost)) {
 			best_cost = cost;
@@ -737,7 +768,23 @@ double ai_variable_cost(const AiView& view, const AiTemplates& templates,
 			unit += recipe.input_qty[slot] / recipe.yield
 				* ai_market(view, city, recipe.inputs[slot], kAiPrice);
 		}
-		return unit;
+		// F0 (D-123): mesma conta do `pick_recipe`/margem da firma — as saídas
+		// extras do lote pagam parte do insumo, então entram no custo unitário
+		// da IA (privado, governo e avaliação de obra).
+		for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+			const int byproduct = recipe.byproducts[slot];
+			if (byproduct < 0 || byproduct >= view.products) {
+				continue;
+			}
+			double price = ai_market(view, city, byproduct, kAiPrice);
+			if (price <= 0.0) {
+				// Fallback único do co-produto sem mercado (t145): âncora
+				// do catálogo, o mesmo valor do `pick_recipe` e da margem.
+				price = ai_base_price(view, byproduct);
+			}
+			unit -= recipe.byproduct_qty[slot] * price / recipe.yield;
+		}
+		return std::max(0.0, unit);
 	}
 	if (tmpl.input >= 0) {
 		unit += tmpl.input_ratio

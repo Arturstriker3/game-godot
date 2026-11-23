@@ -12,6 +12,13 @@ alerts.subtitle,{count} alertas ativos,{count} active alerts,{count} alertas act
 alerts.tag.deficit,Déficit,Deficit,Déficit
 alerts.tag.low_stock,Estoque baixo,Low stock,Reserva baja
 alerts.tag.no_production,Sem produção,No production,Sin producción
+banks.central,Banco central,Central bank,Banco central
+banks.foreign,Banco estrangeiro,Foreign bank,Banco extranjero
+banks.origin,Origem: {country},Origin: {country},Origen: {country}
+banks.private,Banco privado nacional,Domestic private bank,Banco privado nacional
+banks.public,Banco público,State-owned bank,Banco público
+building.chemical_plant,Planta química,Chemical plant,Planta química
+building.refinery,Refinaria,Refinery,Refinería
 chain.col.byproducts,Subprodutos,Byproducts,Subproductos
 chain.col.consumers,Quem consome,Who consumes,Quién consume
 chain.col.inputs,Insumos,Inputs,Insumos
@@ -253,6 +260,8 @@ city.name.CHL-PUE,Puerto Montt,Puerto Montt,Puerto Montt
 city.name.CHL-PUN,Punta Arenas,Punta Arenas,Punta Arenas
 city.name.CHL-SAN,Santiago,Santiago,Santiago de Chile
 city.name.CHN-BEI,Pequim,Beijing,Pekín
+city.name.CHN-CHA,Changsha,Changsha,Changsha
+city.name.CHN-CHAN,Changchun,Changchun,Changchun
 city.name.CHN-CHE,Chengdu,Chengdu,Chengdu
 city.name.CHN-CHO,Chongqing,Chongqing,Chongqing
 city.name.CHN-DAL,Dalian,Dalian,Dalian
@@ -260,17 +269,23 @@ city.name.CHN-DAX,Daxing’anling,Daxing’anling,Daxing’anling
 city.name.CHN-DON,Dongguan,Dongguan,Dongguan
 city.name.CHN-GAR,Lepisosteidae,Gar,Lepisosteidae
 city.name.CHN-GUA,Cantão,Guangzhou,Cantón
+city.name.CHN-GUI,Guiyang,Guiyang,Guiyang
 city.name.CHN-HAN,Hangzhou,Hangzhou,Hangzhou
 city.name.CHN-HAR,Harbin,Harbin,Harbin
 city.name.CHN-HEF,Hefei,Hefei,Hefei
+city.name.CHN-HOH,Hohhot,Hohhot,Hohhot
 city.name.CHN-JIN,Jinan,Jinan,Jinan
 city.name.CHN-JIU,Jiuquan,Jiuquan,Jiuquan
 city.name.CHN-KAS,Kashgar,Kashgar,Kasgar
 city.name.CHN-KUN,Kunming,Kunming,Kunming
 city.name.CHN-LHA,Chéngguān,Lhasa,Chengguan
 city.name.CHN-NAN,Nanquim,Nanjing,Nankín
+city.name.CHN-NANC,Nanchang,Nanchang,Nanchang
+city.name.CHN-NANN,Nanning,Nanning,Nanning
 city.name.CHN-SHA,Xangai,Shanghai,Shanghái
 city.name.CHN-SHE,Shenyang,Shenyang,Shenyang
+city.name.CHN-SHI,Shijiazhuang,Shijiazhuang,Shijiazhuang
+city.name.CHN-TAI,Taiyuan,Taiyuan,Taiyuan
 city.name.CHN-TIA,Tianjin,Tianjin,Tianjin
 city.name.CHN-URU,Ürümqi,Ürümqi,Urumqi
 city.name.CHN-WEI,Weifang,Weifang,Weifang
@@ -278,21 +293,7 @@ city.name.CHN-WUH,Wuhan,Wuhan,Wuhan
 city.name.CHN-WUW,Wuwei,Wuwei,Wuwei
 city.name.CHN-XIA,Xiamen,Xiamen,Xiamen
 city.name.CHN-XIAN,Xiam,Xi’an,Xi'an
-city.name.CHN-CHA,Changsha,Changsha,Changsha
-city.name.CHN-CHAN,Changchun,Changchun,Changchun
-city.name.CHN-GUI,Guiyang,Guiyang,Guiyang
-city.name.CHN-HOH,Hohhot,Hohhot,Hohhot
-city.name.CHN-NANC,Nanchang,Nanchang,Nanchang
-city.name.CHN-NANN,Nanning,Nanning,Nanning
-city.name.CHN-SHI,Shijiazhuang,Shijiazhuang,Shijiazhuang
-city.name.CHN-TAI,Taiyuan,Taiyuan,Taiyuan
 city.name.CHN-ZHE,Zhengzhou,Zhengzhou,Zhengzhou
-city.name.IND-BHU,Bhubaneswar,Bhubaneswar,Bhubaneswar
-city.name.IND-CHA,Chandigarh,Chandigarh,Chandigarh
-city.name.IND-GUW,Guwahati,Guwahati,Guwahati
-city.name.IND-RAI,Raipur,Raipur,Raipur
-city.name.IND-RAN,Ranchi,Ranchi,Ranchi
-city.name.IND-THI,Thiruvananthapuram,Thiruvananthapuram,Thiruvananthapuram
 city.name.CIV-ABI,Abidjã,Abidjan,Abiyán
 city.name.CIV-BOU,Bouaké,Bouaké,Bouaké
 city.name.CIV-YAM,Iamussucro,Yamoussoukro,Yamusukro
@@ -467,10 +468,13 @@ city.name.IDN-WAM,Wamena,Wamena,Wamena
 city.name.IND-AHM,Ahmedabad,Ahmedabad,Ahmedabad
 city.name.IND-BAN,Bengalúru,Bengaluru,Bangalore
 city.name.IND-BHO,Bhopal,Bhopal,Bhopal
+city.name.IND-BHU,Bhubaneswar,Bhubaneswar,Bhubaneswar
 city.name.IND-CAM,Campbell Bay,Campbell Bay,Campbell Bay
+city.name.IND-CHA,Chandigarh,Chandigarh,Chandigarh
 city.name.IND-CHE,Chennai,Chennai,Chennai
 city.name.IND-COI,Coimbatore,Coimbatore,Coimbatore
 city.name.IND-DEL,Nova Deli,New Delhi,Nueva Delhi
+city.name.IND-GUW,Guwahati,Guwahati,Guwahati
 city.name.IND-HYD,Hyderabad,Hyderabad,Haidrābād
 city.name.IND-IMP,Imphal,Imphal,Imfal
 city.name.IND-INDO,Indore,Indore,Indore
@@ -486,8 +490,11 @@ city.name.IND-NAG,Nagpur,Nagpur,Nagpur
 city.name.IND-NAS,Nashik,Nashik,Nashik
 city.name.IND-PAT,Patna,Patna,Patna
 city.name.IND-PUN,Pune,Pune,Pune
+city.name.IND-RAI,Raipur,Raipur,Raipur
+city.name.IND-RAN,Ranchi,Ranchi,Ranchi
 city.name.IND-RAS,Rasapūdipalem,Rasapūdipalem,Rasapūdipalem
 city.name.IND-SUR,Surate,Surat,Surat
+city.name.IND-THI,Thiruvananthapuram,Thiruvananthapuram,Thiruvananthapuram
 city.name.IND-VAD,Vadodara,Vadodara,Vadodara
 city.name.IRL-COR,Cork,Cork,Cork
 city.name.IRL-DUB,Dublin,Dublin,Dublín
@@ -1064,7 +1071,8 @@ econ.tab.nations,Nações,Nations,Naciones
 econ.title,Economia do trigo,Wheat economy,Economía del trigo
 fleet.card.title,Frota da nação,National fleet,Flota de la nación
 fleet.count,{n} nações com frota,{n} nations with fleet,{n} naciones con flota
-fleet.fuel,Combustível,Fuel,Combustible
+fleet.diesel,Diesel,Diesel,Diésel
+fleet.jet,Querosene,Jet fuel,Queroseno
 fleet.missed_fleet,Sem frota,No fleet,Sin flota
 fleet.missed_fuel,Sem combustível,No fuel,Sin combustible
 fleet.note,"Veículos em uso, combustível e peças vêm do estoque nacional; sem frota ou combustível a carga não sai.","Vehicles in use, fuel and parts come from the national stock; without fleet or fuel, cargo does not leave.","Vehículos en uso, combustible y piezas vienen del stock nacional; sin flota o combustible, la carga no sale."
@@ -1119,6 +1127,23 @@ hud.tip.population,Soma da população das suas cidades.,Sum of your cities' pop
 hud.tip.stock,Estoque de trigo disponível nas cidades.,Wheat stockpile available in the cities.,Reserva de trigo disponible en las ciudades.
 hud.tip.transit,Carga em trânsito entre cidades.,Cargo currently moving between cities.,Carga en tránsito entre ciudades.
 hud.transit,Em trânsito,In transit,En tránsito
+informal.category.day_labor,Jornal diário e trabalho casual,Casual day labour,Jornal diario y trabajo casual
+informal.category.domestic_work,Serviço doméstico,Domestic work,Trabajo doméstico
+informal.category.home_production,Produção domiciliar e artesanato,Home-based production and handicrafts,Producción domiciliaria y artesanía
+informal.category.informal_construction,Construção e reforma informal,Informal construction and repair,Construcción y reforma informal
+informal.category.informal_freight,Transporte informal de carga,Informal goods haulage,Transporte informal de carga
+informal.category.informal_repair,Reparos e manutenção informal,Informal repair and maintenance,Reparaciones informales
+informal.category.informal_retail_kiosk,Pequeno comércio e quiosque,Informal shops and kiosks,Comercio en quioscos y tiendas
+informal.category.informal_transport,Transporte informal de passageiros,Informal passenger transport,Transporte informal de pasajeros
+informal.category.personal_services,Serviços pessoais de rua,Street personal services,Servicios personales en la calle
+informal.category.street_food,Comida de rua,Street food,Comida callejera
+informal.category.street_parking_guarding,Guarda de carros e estacionamento de rua,Street parking and car guarding,Cuidado de autos en la calle
+informal.category.street_vending,Comércio ambulante,Street vending,Comercio ambulante
+informal.category.subsistence_farming,Agricultura de subsistência,Subsistence farming,Agricultura de subsistencia
+informal.category.waste_picking,Catação e reciclagem,Waste picking and recycling,Reciclaje y recolección de residuos
+informal.empty,Sem dado de informalidade para esta cidade.,No informality data for this city.,Sin datos de informalidad para esta ciudad.
+informal.share,{pct} da força de trabalho,{pct} of the workforce,{pct} de la fuerza laboral
+informal.title,Serviços informais,Informal services,Servicios informales
 lang.en,Inglês,English,Inglés
 lang.es,Espanhol,Spanish,Español
 lang.pt_BR,Português (Brasil),Portuguese (Brazil),Portugués (Brasil)
@@ -1876,6 +1901,7 @@ product.copper,Cobre,Copper,Cobre
 product.copper_ingot,Lingote de cobre,Copper ingot,Lingote de cobre
 product.cotton,Algodão,Cotton,Algodón
 product.diamond,Diamante,Diamond,Diamante
+product.diesel,Diesel,Diesel,Diésel
 product.drone,Drone,Drone,Dron
 product.electrical_material,Material elétrico,Electrical material,Material elÃ©ctrico
 product.electronic_components,Componentes eletrônicos,Electronic components,Componentes electrÃ³nicos
@@ -1886,10 +1912,10 @@ product.fabric,Tecido,Fabric,Tejido
 product.feed,Ração,Animal feed,Pienso
 product.fertilizer,Fertilizante,Fertilizer,Fertilizante
 product.flour,Farinha,Flour,Harina
-product.fuel,Combustível,Fuel,Combustible
 product.furniture,Móveis,Furniture,Muebles
 product.fuselage,Fuselagem,Fuselage,Fuselaje
 product.gas,Gás,Gas,Gas
+product.gasoline,Gasolina,Gasoline,Gasolina
 product.gold,Ouro,Gold,Oro
 product.gold_bar,Barra de ouro,Gold bar,Barra de oro
 product.gunpowder,Pólvora,Gunpowder,PÃ³lvora
@@ -1899,6 +1925,7 @@ product.industrial_tools,Ferramentas industriais,Industrial tools,Herramientas i
 product.infantry_gear,Equipamento de infantaria,Infantry gear,Equipo de infanterÃ­a
 product.iron,Ferro,Iron,Hierro
 product.iron_ingot,Lingote de ferro,Iron ingot,Lingote de hierro
+product.jet_fuel,Querosene de aviação,Jet fuel,Queroseno de aviación
 product.jewelry,Joias,Jewelry,Joyas
 product.lead,Chumbo,Lead,Plomo
 product.lead_ingot,Lingote de chumbo,Lead ingot,Lingote de plomo
@@ -1992,6 +2019,7 @@ resource.copper,Cobre,Copper,Cobre
 resource.copper_ingot,Lingote de cobre,Copper ingot,Lingote de cobre
 resource.cotton,Algodão,Cotton,Algodón
 resource.diamond,Diamante,Diamond,Diamante
+resource.diesel,Diesel,Diesel,Diésel
 resource.drone,Drone,Drone,Dron
 resource.electrical_material,Material elétrico,Electrical material,Material elÃ©ctrico
 resource.electronic_components,Componentes eletrônicos,Electronic components,Componentes electrÃ³nicos
@@ -2002,10 +2030,10 @@ resource.fabric,Tecido,Fabric,Tejido
 resource.feed,Ração,Animal feed,Pienso
 resource.fertilizer,Fertilizante,Fertilizer,Fertilizante
 resource.flour,Farinha,Flour,Harina
-resource.fuel,Combustível,Fuel,Combustible
 resource.furniture,Móveis,Furniture,Muebles
 resource.fuselage,Fuselagem,Fuselage,Fuselaje
 resource.gas,Gás,Gas,Gas
+resource.gasoline,Gasolina,Gasoline,Gasolina
 resource.gold,Ouro,Gold,Oro
 resource.gold_bar,Barra de ouro,Gold bar,Barra de oro
 resource.gunpowder,Pólvora,Gunpowder,PÃ³lvora
@@ -2015,6 +2043,7 @@ resource.industrial_tools,Ferramentas industriais,Industrial tools,Herramientas 
 resource.infantry_gear,Equipamento de infantaria,Infantry gear,Equipo de infanterÃ­a
 resource.iron,Ferro,Iron,Hierro
 resource.iron_ingot,Lingote de ferro,Iron ingot,Lingote de hierro
+resource.jet_fuel,Querosene de aviação,Jet fuel,Queroseno de aviación
 resource.jewelry,Joias,Jewelry,Joyas
 resource.lead,Chumbo,Lead,Plomo
 resource.lead_ingot,Lingote de chumbo,Lead ingot,Lingote de plomo
@@ -2127,25 +2156,3 @@ trade.tab.orders,Pedidos,Orders,Pedidos
 trade.tab.routes,Rotas,Routes,Rutas
 trade.title,Comércio e logística,Trade and logistics,Comercio y logística
 trade.today,Pedidos do dia,Today's orders,Pedidos del día
-banks.central,Banco central,Central bank,Banco central
-banks.public,Banco público,State-owned bank,Banco público
-banks.private,Banco privado nacional,Domestic private bank,Banco privado nacional
-banks.foreign,Banco estrangeiro,Foreign bank,Banco extranjero
-banks.origin,Origem: {country},Origin: {country},Origen: {country}
-informal.title,Serviços informais,Informal services,Servicios informales
-informal.share,{pct} da força de trabalho,{pct} of the workforce,{pct} de la fuerza laboral
-informal.empty,Sem dado de informalidade para esta cidade.,No informality data for this city.,Sin datos de informalidad para esta ciudad.
-informal.category.street_vending,Comércio ambulante,Street vending,Comercio ambulante
-informal.category.street_food,Comida de rua,Street food,Comida callejera
-informal.category.informal_transport,Transporte informal de passageiros,Informal passenger transport,Transporte informal de pasajeros
-informal.category.informal_freight,Transporte informal de carga,Informal goods haulage,Transporte informal de carga
-informal.category.informal_construction,Construção e reforma informal,Informal construction and repair,Construcción y reforma informal
-informal.category.domestic_work,Serviço doméstico,Domestic work,Trabajo doméstico
-informal.category.personal_services,Serviços pessoais de rua,Street personal services,Servicios personales en la calle
-informal.category.street_parking_guarding,Guarda de carros e estacionamento de rua,Street parking and car guarding,Cuidado de autos en la calle
-informal.category.waste_picking,Catação e reciclagem,Waste picking and recycling,Reciclaje y recolección de residuos
-informal.category.subsistence_farming,Agricultura de subsistência,Subsistence farming,Agricultura de subsistencia
-informal.category.informal_repair,Reparos e manutenção informal,Informal repair and maintenance,Reparaciones informales
-informal.category.home_production,Produção domiciliar e artesanato,Home-based production and handicrafts,Producción domiciliaria y artesanía
-informal.category.informal_retail_kiosk,Pequeno comércio e quiosque,Informal shops and kiosks,Comercio en quioscos y tiendas
-informal.category.day_labor,Jornal diário e trabalho casual,Casual day labour,Jornal diario y trabajo casual

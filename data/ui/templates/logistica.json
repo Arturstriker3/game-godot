@@ -114,7 +114,12 @@
                               "align": "right"
                             },
                             {
-                              "label": "@fleet.fuel",
+                              "label": "@fleet.diesel",
+                              "weight": 0.9,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@fleet.jet",
                               "weight": 0.9,
                               "align": "right"
                             },
@@ -191,9 +196,16 @@
                             },
                             {
                               "type": "kv_row",
-                              "key": "@fleet.fuel",
+                              "key": "@fleet.diesel",
                               "value": "—",
-                              "value_slot": "fleet.fuel",
+                              "value_slot": "fleet.diesel",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fleet.jet",
+                              "value": "—",
+                              "value_slot": "fleet.jet",
                               "size": 15
                             },
                             {

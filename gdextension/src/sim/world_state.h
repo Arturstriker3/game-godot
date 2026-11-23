@@ -340,11 +340,12 @@ struct WorldState {
 	std::vector<double> government_per_capita_day;
 	// Bootstrap industrial já executado neste mundo.
 	bool industry_seeded = false;
-	// F4: frota por nação (ordem determinística em fleet_order) e índices
-	// dos bens da frota (fuel/truck/cargo_ship/cargo_plane/spare_parts).
+	// F4/F0: frota por nação (ordem determinística em fleet_order) e índices
+	// dos bens da frota (diesel/jet_fuel/truck/cargo_ship/cargo_plane/spare_parts).
 	std::unordered_map<std::string, Fleet> fleets;
 	std::vector<std::string> fleet_order;
-	int fleet_product_fuel = -1;
+	int fleet_product_diesel = -1;
+	int fleet_product_jet = -1;
 	int fleet_product_truck = -1;
 	int fleet_product_ship = -1;
 	int fleet_product_plane = -1;

@@ -1,5 +1,7 @@
 extends SceneTree
 
+const TmpPaths := preload("res://tools/tmp_paths.gd")
+
 ## Testes da IA econômica — agora lida pelo LOG DE COMANDOS da A3, porque a IA
 ## decidiu mudar de casa: privado, governo e grupos rodam no núcleo C++, dentro
 ## do `tick_day()` (A5). O teste continua com três cenários do mundo demo:
@@ -304,6 +306,10 @@ func _city(status: Dictionary, city_id: String) -> Dictionary:
 ## fica como evidência local da rodada.
 func _write_logs(food: Array, glut: Array, iron: Array, loop: Array) -> void:
 	var directory := "res://docs/economy_ai"
+	if OS.get_environment("OPENGS_TMP").strip_edges() != "":
+		# Regra de disco: a evidência local da rodada vai para o tmp (G: por
+		# padrão), não para o repo.
+		directory = TmpPaths.dir("economy_ai")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
 	var payload := {
 		"food_scarcity": food,

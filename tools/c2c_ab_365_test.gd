@@ -1,5 +1,7 @@
 extends SceneTree
 
+const TmpPaths := preload("res://tools/tmp_paths.gd")
+
 ## C2c (D-108) — A/B POR CANAL, 365 d com IA (threads=1), tres mundos em
 ## sequencia NO MESMO processo (1 Godot por vez, nada em paralelo).
 ##
@@ -16,7 +18,8 @@ extends SceneTree
 ##
 ##   powershell -File tools/run_tests.ps1 -List c2c_ab_365_test -TimeoutSec 1500
 ##
-## Saida: `--out=` / `OGS_C2C_AB_OUT` (default `docs/economy/perf/c2c_ab_365.json`).
+## Saida: `--out=` / `OGS_C2C_AB_OUT`; com `OPENGS_TMP` (o runner define) vai
+## para `$OPENGS_TMP/c2c_ab_365.json`; senao `docs/economy/perf/c2c_ab_365.json`.
 ## O teste FALHA (exit 1) so se um mundo nao fechar integro (violacao do
 ## invariante, dia travado ou numero nao finito): e medicao, nao criterio de
 ## aceite.
@@ -71,6 +74,9 @@ var _failures: Array[String] = []
 func _init() -> void:
 	if OS.get_environment("OGS_C2C_AB_OUT") != "":
 		_out = OS.get_environment("OGS_C2C_AB_OUT")
+	elif OS.get_environment("OPENGS_TMP").strip_edges() != "":
+		# Regra de disco: o runner define OPENGS_TMP; o JSON grande sai do repo.
+		_out = TmpPaths.path("c2c_ab_365.json")
 	if OS.get_environment("OGS_C2C_AB_DAYS") != "":
 		_days = maxi(1, int(OS.get_environment("OGS_C2C_AB_DAYS")))
 	for arg in OS.get_cmdline_user_args():

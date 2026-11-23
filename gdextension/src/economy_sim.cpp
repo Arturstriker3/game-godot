@@ -455,7 +455,7 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_balance", "values"),
 	                     &EconomySim::set_balance);
 	ClassDB::bind_method(D_METHOD("set_fleet", "nation", "trucks", "ships",
-	                     "planes", "fuel", "spare_parts"),
+	                     "planes", "diesel", "jet_fuel", "spare_parts"),
 	                     &EconomySim::set_fleet);
 	ClassDB::bind_method(D_METHOD("get_fleet", "nation"),
 	                     &EconomySim::get_fleet);
@@ -1100,7 +1100,8 @@ void EconomySim::set_goods(const Array& goods) {
 	// F4: os Ã­ndices dos bens da frota dependem dos ids carregados. Se o mundo
 	// jÃ¡ existe e ainda nÃ£o tem frota (set_goods chamado depois da
 	// inicializaÃ§Ã£o, como no autoload), deriva agora.
-	ws_.fleet_product_fuel = product_index(String("fuel"));
+	ws_.fleet_product_diesel = product_index(String("diesel"));
+	ws_.fleet_product_jet = product_index(String("jet_fuel"));
 	ws_.fleet_product_truck = product_index(String("truck"));
 	ws_.fleet_product_ship = product_index(String("cargo_ship"));
 	ws_.fleet_product_plane = product_index(String("cargo_plane"));
@@ -1424,11 +1425,22 @@ Dictionary EconomySim::get_fleet(const String& nation) const {
 	out["capacity_tons"] = fleet.trucks * fleet.health[0] * 25.0
 		+ fleet.ships * fleet.health[1] * 2000.0
 		+ fleet.planes * fleet.health[2] * 20.0;
-	out["fuel"] = fleet.fuel;
-	out["fuel_target"] = fleet.fuel_target;
+	// F0: estoque e alvo por grau. Os totais `fuel_*` continuam no contrato
+	// (soma dos dois graus) para auditoria e testes de conservacao.
+	out["diesel"] = fleet.diesel;
+	out["diesel_target"] = fleet.diesel_target;
+	out["jet_fuel"] = fleet.jet_fuel;
+	out["jet_target"] = fleet.jet_target;
 	out["spare_parts"] = fleet.spare_parts;
 	out["fuel_used_today"] = fleet.fuel_used_today;
 	out["fuel_used_total"] = fleet.fuel_used_total;
+	out["diesel_used_today"] = fleet.diesel_used_today;
+	out["diesel_used_total"] = fleet.diesel_used_total;
+	out["jet_used_today"] = fleet.jet_used_today;
+	out["jet_used_total"] = fleet.jet_used_total;
+	out["fuel_bought_total"] = fleet.fuel_bought_total;
+	out["diesel_bought_total"] = fleet.diesel_bought_total;
+	out["jet_bought_total"] = fleet.jet_bought_total;
 	out["parts_used_total"] = fleet.parts_used_total;
 	out["vehicles_bought_total"] = fleet.vehicles_bought_total;
 	out["queue_today"] = fleet.queue_today;
@@ -1443,7 +1455,7 @@ Dictionary EconomySim::get_fleet(const String& nation) const {
 }
 
 void EconomySim::set_fleet(const String& nation, double trucks, double ships,
-		double planes, double fuel, double spare_parts) {
+		double planes, double diesel, double jet_fuel, double spare_parts) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string tag(nation.utf8().get_data());
 	Fleet fleet = Fleet{};
@@ -1456,8 +1468,10 @@ void EconomySim::set_fleet(const String& nation, double trucks, double ships,
 	fleet.health[0] = 1.0;
 	fleet.health[1] = 1.0;
 	fleet.health[2] = 1.0;
-	fleet.fuel = std::max(0.0, fuel);
-	fleet.fuel_target = fleet.fuel;
+	fleet.diesel = std::max(0.0, diesel);
+	fleet.diesel_target = fleet.diesel;
+	fleet.jet_fuel = std::max(0.0, jet_fuel);
+	fleet.jet_target = fleet.jet_fuel;
 	fleet.spare_parts = std::max(0.0, spare_parts);
 	fleet.derived = false;
 	ws_.fleets[tag] = fleet;
@@ -2214,6 +2228,12 @@ EconomySim::StatusKeys::StatusKeys() :
 		planes("planes"),
 		fleet("fleet"),
 		fuel("fuel"),
+		diesel("diesel"),
+		diesel_target("diesel_target"),
+		jet_fuel("jet_fuel"),
+		jet_target("jet_target"),
+		diesel_used("diesel_used"),
+		jet_used("jet_used"),
 		spare_parts("spare_parts"),
 		health("health"),
 		fuel_used("fuel_used"),
@@ -3880,7 +3900,11 @@ void EconomySim::build_nations(StatusCache& cache,
 			fleet_dict[k.trucks] = fleet.trucks;
 			fleet_dict[k.ships] = fleet.ships;
 			fleet_dict[k.planes] = fleet.planes;
-			fleet_dict[k.fuel] = fleet.fuel;
+			fleet_dict[k.fuel] = fleet.diesel + fleet.jet_fuel;
+			fleet_dict[k.diesel] = fleet.diesel;
+			fleet_dict[k.diesel_target] = fleet.diesel_target;
+			fleet_dict[k.jet_fuel] = fleet.jet_fuel;
+			fleet_dict[k.jet_target] = fleet.jet_target;
 			fleet_dict[k.spare_parts] = fleet.spare_parts;
 			if (!slot.fleet_built) {
 				slot.fleet_health.resize(3);
@@ -3891,6 +3915,8 @@ void EconomySim::build_nations(StatusCache& cache,
 			slot.fleet_health[1] = fleet.health[1];
 			slot.fleet_health[2] = fleet.health[2];
 			fleet_dict[k.fuel_used] = fleet.fuel_used_today;
+			fleet_dict[k.diesel_used] = fleet.diesel_used_today;
+			fleet_dict[k.jet_used] = fleet.jet_used_today;
 			fleet_dict[k.queue] = fleet.queue_today;
 			fleet_dict[k.missed_no_fleet] = fleet.missed_no_fleet;
 			fleet_dict[k.missed_no_fuel] = fleet.missed_no_fuel;
@@ -4774,16 +4800,30 @@ void EconomySim::set_recipes(const Array& recipes) {
 	ws_.recipes.reserve(static_cast<std::size_t>(recipes.size()));
 	for (int index = 0; index < recipes.size(); ++index) {
 		const Dictionary entry = recipes[index];
-		const String output_id = String(entry.get("output", ""));
-		const int output = product_index(output_id);
+		// Co-produção (F0): `outputs[]` declara todas as saídas do lote, com a
+		// quantidade de cada uma. A primeira é o produto principal (capacity,
+		// demanda e preço de referência); as demais viram byproducts com a
+		// quantidade do próprio dado — o motor já produzia múltiplas saídas,
+		// isso só preserva a fração declarada em vez do coeficiente unitário.
+		const Array outputs = entry.get("outputs", Array());
+		const bool has_outputs = outputs.size() > 0;
+		Dictionary first_output;
+		if (has_outputs) {
+			first_output = outputs[0];
+		}
+		const int output = has_outputs
+			? product_index(String(first_output.get("good", "")))
+			: product_index(String(entry.get("output", "")));
 		if (output < 0) {
 			continue;  // receita de bem que nÃ£o existe no goods.json carregado
 		}
 		Recipe recipe;
 		recipe.id = std::string(String(entry.get("id", "")).utf8().get_data());
 		recipe.output = output;
-		recipe.yield = std::max(1e-9, safe_nonneg(
-			static_cast<double>(entry.get("yield", 1.0))));
+		const double declared_yield = has_outputs
+			? static_cast<double>(first_output.get("qty", 1.0))
+			: static_cast<double>(entry.get("yield", 1.0));
+		recipe.yield = std::max(1e-9, safe_nonneg(declared_yield));
 		recipe.capital_per_capacity = std::max(1.0, safe_nonneg(
 			static_cast<double>(entry.get("capital_per_capacity", 2000.0))));
 		recipe.jobs_per_ton = safe_nonneg(
@@ -4840,12 +4880,17 @@ void EconomySim::set_recipes(const Array& recipes) {
 		if (recipe.input_count <= 0) {
 			continue;
 		}
-		Array byproducts = entry.get("byproducts", Array());
-		for (int slot = 0; slot < byproducts.size() && slot < kMaxRecipeInputs; ++slot) {
+		// Com `outputs[]`, as saídas extras vêm da própria lista (qty do dado);
+		// sem ele, o caminho legado lê `byproducts` (coeficiente unitário).
+		Array byproducts = has_outputs
+			? outputs : Array(entry.get("byproducts", Array()));
+		const int first_byproduct = has_outputs ? 1 : 0;
+		for (int slot = first_byproduct;
+				slot < byproducts.size() && slot < kMaxRecipeInputs; ++slot) {
 			const Dictionary item = byproducts[slot];
 			const int product = product_index(String(item.get("good", "")));
 			const double qty = safe_nonneg(static_cast<double>(item.get("qty", 1.0)));
-			if (product < 0 || qty <= 0.0) {
+			if (product < 0 || product == recipe.output || qty <= 0.0) {
 				continue;
 			}
 			recipe.byproducts[recipe.byproduct_count] = product;
