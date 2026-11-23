@@ -4,7 +4,7 @@
     "building": "factory",
     "sector": "food",
     "output": "flour",
-    "yield": 1.0,
+    "yield": 0.75,
     "inputs": [
       {
         "good": "wheat",
@@ -14,7 +14,7 @@
     "byproducts": [
       {
         "good": "bran",
-        "qty": 1.0
+        "qty": 0.25
       }
     ],
     "jobs_per_ton": 6.0,
@@ -23,8 +23,8 @@
     "capital_per_capacity": 4000.0,
     "coef_source": "spec",
     "params_source": "estimated:order_of_magnitude",
-    "byproduct_coef_source": "default_unit",
-    "note": "subproduto com coeficiente unitário padrão (spec sem qty)"
+    "byproduct_coef_source": "spec_qty",
+    "note": "Moagem: 1 t de trigo → 0,75 t de farinha + 0,25 t de farelo (taxa de extração ~75%; USDA ERS, FAO). Sem perda declarada. | subproduto com quantidade por lote declarada na spec"
   },
   {
     "id": "bread",
@@ -629,7 +629,7 @@
     "building": "factory",
     "sector": "wood",
     "output": "planks",
-    "yield": 1.0,
+    "yield": 0.55,
     "inputs": [
       {
         "good": "wood",
@@ -639,7 +639,7 @@
     "byproducts": [
       {
         "good": "sawdust",
-        "qty": 1.0
+        "qty": 0.12
       }
     ],
     "jobs_per_ton": 6.0,
@@ -648,8 +648,9 @@
     "capital_per_capacity": 3500.0,
     "coef_source": "spec",
     "params_source": "estimated:order_of_magnitude",
-    "byproduct_coef_source": "default_unit",
-    "note": "subproduto com coeficiente unitário padrão (spec sem qty)"
+    "co_loss": 0.33,
+    "byproduct_coef_source": "spec_qty",
+    "note": "Serraria: 1 t de tora → 0,55 t de tábua + 0,12 t de serragem; 0,33 t de casca/cavaco/umidade é PERDA declarada (co_loss). Rendimento de serraria 50–60% em tábua (FAO Forest Product Conversion Factors; USDA Forest Service FPL). | subproduto com quantidade por lote declarada na spec | a fração co_loss é perda declarada"
   },
   {
     "id": "furniture",
@@ -720,7 +721,7 @@
     "building": "factory",
     "sector": "wood",
     "output": "cellulose",
-    "yield": 0.7,
+    "yield": 0.4545,
     "inputs": [
       {
         "good": "sawdust",
@@ -733,7 +734,8 @@
     "opex_per_ton": 4.0,
     "capital_per_capacity": 3500.0,
     "coef_source": "spec",
-    "params_source": "estimated:order_of_magnitude"
+    "params_source": "estimated:order_of_magnitude",
+    "note": "Serragem → celulose: 2,2 t de serragem por 1 t de celulose (rendimento ~45%; FAO/indústria de polpa e painéis)."
   },
   {
     "id": "paper",
@@ -781,7 +783,7 @@
     "building": "factory",
     "sector": "wood",
     "output": "pallets",
-    "yield": 0.7,
+    "yield": 0.8696,
     "inputs": [
       {
         "good": "sawdust",
@@ -795,7 +797,7 @@
     "capital_per_capacity": 3500.0,
     "coef_source": "spec",
     "params_source": "estimated:order_of_magnitude",
-    "note": "porto consome por tonelada embarcada"
+    "note": "porto consome por tonelada embarcada | Serragem → palete aglomerado: 1,15 t de serragem por 1 t de palete (rendimento ~87%)."
   },
   {
     "id": "charcoal",

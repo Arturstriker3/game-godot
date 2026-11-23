@@ -35,17 +35,20 @@
      "inputs": [
       "wheat"
      ],
-     "yield": 1.0
+     "yield": 0.75
     }
    ],
    "byproducts": [
-    "bran"
+    {
+     "id": "bran",
+     "qty": 0.25
+    }
    ],
    "use": [
     "bread"
    ],
    "durable": false,
-   "note": ""
+   "note": "Moagem: 1 t de trigo → 0,75 t de farinha + 0,25 t de farelo (taxa de extração ~75%; USDA ERS, FAO). Sem perda declarada."
   },
   {
    "id": "bran",
@@ -481,11 +484,16 @@
      "inputs": [
       "wood"
      ],
-     "yield": 1.0
+     "yield": 0.55,
+     "co_loss": 0.33,
+     "note": "Serraria: 1 t de tora → 0,55 t de tábua + 0,12 t de serragem; 0,33 t de casca/cavaco/umidade é PERDA declarada (co_loss). Rendimento de serraria 50–60% em tábua (FAO Forest Product Conversion Factors; USDA Forest Service FPL)."
     }
    ],
    "byproducts": [
-    "sawdust"
+    {
+     "id": "sawdust",
+     "qty": 0.12
+    }
    ],
    "use": [
     "furniture",
@@ -570,7 +578,8 @@
      "inputs": [
       "sawdust"
      ],
-     "yield": 0.7
+     "yield": 0.4545,
+     "note": "Serragem → celulose: 2,2 t de serragem por 1 t de celulose (rendimento ~45%; FAO/indústria de polpa e painéis)."
     }
    ],
    "byproducts": [],
@@ -618,7 +627,8 @@
      "inputs": [
       "sawdust"
      ],
-     "yield": 0.7
+     "yield": 0.8696,
+     "note": "Serragem → palete aglomerado: 1,15 t de serragem por 1 t de palete (rendimento ~87%)."
     }
    ],
    "byproducts": [],
