@@ -194,10 +194,25 @@ func _test_refinery_accounting() -> void:
 	# diesel e querosene do estoque da refinaria no mercado.
 	sim.set_fleet("DEMO", 50.0, 5.0, 5.0, 0.0, 0.0, 100.0)
 	var co_day: Dictionary = {}
+	# t141 (bug 2): com estoque formado e venda zero, a indústria NÃO pode
+	# repor a capacidade cheia (era o que enchia o estoque pagando insumo).
+	var prev_sold := 0.0
+	var dumped := 0.0
+	var dumped_detail := ""
 	for _day in 30:
+		var before_markets: Array = sim.get_city_status("AGRIA").get("markets", [])
+		var prev_stock := float(
+				(before_markets[gasoline] as Dictionary).get("stock", 0.0))
 		sim.tick_day()
 		var status: Dictionary = sim.get_city_status("AGRIA")
 		var markets: Array = status.get("markets", [])
+		var gasoline_supply := float(
+				(markets[gasoline] as Dictionary).get("supply", 0.0))
+		if prev_sold <= EPS and prev_stock > EPS and gasoline_supply > EPS:
+			dumped += gasoline_supply
+			dumped_detail += "[estoque=%.1f venda=0 sup=%.1f] " % [
+				prev_stock, gasoline_supply]
+		prev_sold = float((markets[gasoline] as Dictionary).get("sold", 0.0))
 		var diesel_sold := float(
 				(markets[diesel] as Dictionary).get("sold", 0.0))
 		var jet_sold := float((markets[jet] as Dictionary).get("sold", 0.0))
@@ -211,6 +226,8 @@ func _test_refinery_accounting() -> void:
 					(markets[jet] as Dictionary).get("price", 0.0)),
 				"row": _recipe_row(status, "gasoline_a"),
 			}
+	_check("(6b) indústria com estoque e venda zero não repõe a capacidade",
+			dumped <= EPS, dumped_detail)
 	if co_day.is_empty():
 		_fail("(6b) a frota não comprou diesel E querosene da refinaria")
 		return
