@@ -290,3 +290,111 @@ mexido.
 * `fuel.svg` foi removido (o bem não existe mais e o id não está em
   `resource_icons.json`); os SVGs do Icon Forge de gasoline/diesel/jet_fuel
   continuam como fallback, coerentes com os demais bens.
+
+## 11. F0 — refino: calibração do ano-base e diagnóstico das falências (D-124)
+
+### 11.1 O que mudou
+
+O seed de refino deixou de aplicar a fração simulada ao dado do EI e passou a
+ser calibrado pelo **próprio mundo simulado**, no mesmo princípio da D-119/E2:
+
+1. **Geografia** — Energy Institute 2025, *Oil: Refining capacity* (2024):
+   `share_nação = thousand_bpd_nação / 104 523` (Total World).
+2. **Demanda** — `fuel_diag.day_1.world.gasoline.desired` = **23 656,925
+   t/dia** (medido no dia 1 pelo `c1_world_ai_365.gd --fuel-diag=1`).
+   Diesel e querosene têm desejo 0 no dia 1 porque a frota gasta a reserva
+   semeada; a demanda de mercado de diesel aparece ao longo do ano (~500 t/dia
+   no dia 70). Não se inventa consumo.
+3. **Utilização** — **0,80** (throughput ÷ capacidade de destilação; EI 2025:
+   ~83 mil b/d de throughput contra 104,5 mil b/d de capacidade em 2024).
+4. **Teto de insumo** — a demanda acima exigiria ~52 571 t/dia de petróleo a
+   80%; as minas de petróleo do cenário somam **2 694,071 t/dia** de capacidade
+   (medido em `f1_refining_measure.json`). O mundo semeado usa
+   `min(23 656,925 / 0,80, 2 694,071 × 0,45 / 0,80)` = **1 515,415 t/dia** de
+   capacidade principal; alocado nas 66 nações do dado = **1 476,256 t/dia**.
+5. **Alocação** — primeiro as cidades com **mina de petróleo** (a refinaria
+   nasce junto do insumo); as vagas restantes vão para cidades-porto. Sem
+   isso, a planta de porto sem petróleo local não abre demanda efetiva no dia
+   1 e nunca começa.
+
+A fração simulada continua registrada no JSON como referência, mas **não é mais
+aplicada**: a âncora de demanda/oferta já está na escala do mundo simulado.
+
+**Usos reais que o cenário não modela** (declarados no `meta.calibration`):
+petroquímica, aviação civil fora da frota aérea, aquecimento residencial e
+comercial a óleo, maquinário agrícola/de construção fora da frota e consumo
+militar fora do exército modelado. Por isso a demanda medida é menor que a
+real; o número não foi inflado para caber.
+
+### 11.2 Medição (dia 1 → dia 365)
+
+Fonte: `docs/economy/perf/f1_refining_measure.json` (blocos `day_1` e `final`,
+gerados por `--refining-diag=1`).
+
+| Métrica | Dia 1 | Dia 365 |
+|---|---:|---:|
+| Plantas semeadas | 122 | 116 |
+| Capacidade semeada (t/dia) | 1 460,1 | 1 522,1 |
+| Utilização média | 0,229 | 0,222 |
+| Receita / custos / lucro do setor (por dia) | 9 425 / 51 238 / −41 814 | 70 417 / 41 628 / **+28 789** |
+| Gasolina: desejado / vendido / oferta (t/dia) | 23 657 / 120 / 334 | 23 854 / 421 / 338 |
+| Diesel vendido (t/dia) | 0 | 30,6 |
+| Petróleo: capacidade das minas (t/dia) | 2 694,1 | 2 882,9 |
+
+O setor **no agregado** fecha o ano no azul (a receita dos exportadores cobre
+os custos); as falências são localizadas em plantas de baixa venda.
+
+### 11.3 A/B de 365 dias (mesmo código, só o seed muda)
+
+| Braço | Falências | Comida (<0,975) | Violações | Travados |
+|---|---:|---:|---:|---:|
+| **Sem refino** (`--refining=0`) | **2** (PRI-PON cobre/ferro, as do controle) | 97/179 | 0 | 0 |
+| **Com refino** (calibrado) | **10** | **94/179** | 0 | 0 |
+
+O refino **melhora a comida** (97 → 94) e não cria violação, mas **piora as
+falências**: 8 entidades extras. O teto do portão (≤2) **não foi movido**; a
+rodada **não fecha** o critério de falências.
+
+Extras: 6 refinarias (`IRQ-BAG`, `IRQ-ERB`, `ZAF-CAP`, `ZAF-DUR`, `ARG-BUE`,
+`IND-MUM`), a fazenda `MLT-VAL` (dia 154) e a mina `usa_ren_oil_mine` (dia
+289). Sem refino, `MLT-VAL` e `usa_ren` não falham — são efeito de mercado do
+seed, não causas pré-existentes.
+
+### 11.4 Cadeia causal das 8 falências extras
+
+1. **Contabilidade da construção ignora os co-produtos.** `phase_accounting`
+   (`gdextension/src/sim/sim_core.cpp`) credita `building.revenue` só com o
+   produto principal (gasolina). O diesel e o querosene do mesmo lote vão para
+   `city.revenue_by_product[diesel/jet]` e não voltam para a refinaria. Com os
+   preços-base, o lucro contábil por tonelada de gasolina é **−39,39**
+   (78,61 − 100 de petróleo − 18 de folha/opex); com o crédito dos co-produtos
+   seria **+13,71**. A D-123 corrigiu esse crédito no **motor de produção**
+   (`pick_recipe`/margem), mas **não** na contabilidade.
+2. **Demanda efetiva << desejo.** O desejo de gasolina é 23 854 t/dia, mas o
+   vendido no fecho é 421 t/dia (1,8%): o combustível é necessidade de baixa
+   prioridade e as POPs não têm caixa para ele. A capacidade calibrada (1 460
+   t/dia principal) ainda é ~3,5× a venda efetiva.
+3. **Regra do produtor sem venda.** Quando `sold_prev <= 0`, `production.cpp`
+   repõe a **capacidade efetiva** cheia, todo dia, não só no primeiro dia. A
+   refinaria de cidade com pouca venda enche o estoque, vende quase nada e paga
+   folha/opex/insumo — o `loss_days` chega a 60 e a planta fecha.
+4. **Efeito de mercado nas primárias.** A mudança de preço/frete/óleo do seed
+   leva `MLT-VAL` (trigo) e `usa_ren_oil_mine` (óleo remoto, sem refinaria
+   local) ao mesmo `loss_days`; o A/B sem refino mostra que elas sobrevivem.
+
+### 11.5 Conclusão e próximo passo
+
+A **calibração** (share EI × demanda do dia 1 ÷ 0,80, com teto da oferta
+simulada) e a **alocação no insumo** reduziram as falências de **29 → 10** e
+mantiveram comida e invariantes; o teto do portão **não** foi alterado. O
+critério de falências **não fecha** (10 > 2) porque o problema restante é de
+**regra do núcleo**, não de dado:
+
+* creditar os co-produtos em `phase_accounting` (mesma conta da D-123) e
+* não repor capacidade cheia quando `sold_prev <= 0` em planta secundária,
+  ou revisar a prioridade/afordabilidade do combustível no consumo.
+
+Essas mudanças são do **Game Systems Designer** (C++/economia) e não foram
+feitas aqui. O dado calibrado e o diagnóstico ficam versionados para a próxima
+rodada; a alternativa de marcar as refinarias como `strategic`/`state` para
+subsidiar o prejuízo **não** foi usada (seria amolecer o portão).
