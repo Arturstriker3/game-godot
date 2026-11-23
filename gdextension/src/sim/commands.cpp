@@ -56,6 +56,10 @@ constexpr TypeName kTypeNames[] = {
 	// C3 (D-107): crédito de empresa (banco agregado como credor).
 	{CommandType::SetBankCredit, "set_bank_credit"},
 	{CommandType::GroupBorrow, "group_borrow"},
+	// D-125: eficiência de produção (troca de produto, modo e equipamento).
+	{CommandType::ChangeProduct, "change_product"},
+	{CommandType::SetRefineryMode, "set_refinery_mode"},
+	{CommandType::SetBuildingEquipment, "set_building_equipment"},
 };
 
 } // namespace

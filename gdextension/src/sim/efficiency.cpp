@@ -330,8 +330,14 @@ void SimCore::phase_efficiency() {
 			const double rate = eff::step(ws_, building, cls,
 				building.equipment_active);
 			const double ceiling = eff::cap(ws_, building, cls);
-			building.production_efficiency = std::min(ceiling,
-				building.production_efficiency + rate);
+			// A eficiência conquistada NUNCA cai: o teto sem equipamento só
+			// impede a maturação SEGUINTE (trator parado não apaga o que a
+			// planta já aprendeu). Planta madura com o trator sem diesel segue
+			// em 1,0; planta nova para em `cap_without`.
+			if (building.production_efficiency < ceiling) {
+				building.production_efficiency = std::min(ceiling,
+					building.production_efficiency + rate);
+			}
 		}
 	}
 }

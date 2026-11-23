@@ -295,11 +295,19 @@ func _has_refining(sim: Object) -> bool:
 	return false
 
 
-## Eficiencia madura: rampa de planta nova (0,25) vira 1,0 e o capital por
-## capacidade volta ao valor da receita (o seed nao e investimento novo).
+## Eficiencia madura: o seed do refino e estoque do ano-base, nao planta nova.
+## D-125: a API do nucleo marca so as refinarias criadas (`efficiency = 1`,
+## trator/maquina do ano-base), sem tocar em obra nova de save carregado.
 func _mature(sim: Object, created: Array) -> int:
-	if created.is_empty() or not sim.has_method("to_dict") \
-			or not sim.has_method("from_dict"):
+	if created.is_empty():
+		return 0
+	if sim.has_method("mature_world_efficiency"):
+		var ids: Array = []
+		for entry: Variant in created:
+			ids.append(String((entry as Dictionary).get("id", "")))
+		sim.mature_world_efficiency(ids)
+		return created.size()
+	if not sim.has_method("to_dict") or not sim.has_method("from_dict"):
 		return 0
 	var ids: Dictionary = {}
 	for entry: Variant in created:

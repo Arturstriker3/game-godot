@@ -1035,6 +1035,64 @@ public:
 	void set_market_price(const String& city_id, const String& product,
 		double price);
 
+	// ------------------------------------------------------------------
+	// D-125 — EFICIÊNCIA DE PRODUÇÃO (estilo HOI4; ver
+	// docs/economy/D125_efficiency.md). Nada produz no máximo de imediato: a
+	// planta nova (ou que troca de produto) começa baixa e cresce com os dias
+	// de operação. A eficiência multiplica a PRODUÇÃO; folha/opex continuam
+	// cheios. Os parâmetros são defaults de balanceamento declarados em
+	// data/definitions/production/efficiency.json.
+	// ------------------------------------------------------------------
+
+	/**
+	 * Troca o produto de uma construção (comando A3 `change_product`). A planta
+	 * fica `transition_days` sem produzir (refinaria/fábrica 7, militar 14,
+	 * semicondutor 30, lavoura = próxima janela de plantio) e a eficiência é
+	 * retida em 60% na mesma família (`goods.json.sector`) ou reinicia na
+	 * inicial da classe. Mina não troca de produto: a API recusa.
+	 * Devolve {changed, efficiency, transition_days, error}.
+	 */
+	Dictionary change_product(const String& city_id, const String& building_id,
+		const String& product, const String& recipe_id = "");
+
+	/**
+	 * Modo da refinaria (comando A3 `set_refinery_mode`): `standard`
+	 * (gasolina 45 / diesel 29 / querosene 9), `diesel` (38/36/9) ou `jet`
+	 * (40/28/15), ou ainda 0..2. A troca leva `transition_mode_days` (3) sem
+	 * produção; a eficiência conquistada é preservada. Devolve
+	 * {changed, mode, transition_days, error}.
+	 */
+	Dictionary set_refinery_mode(const String& city_id,
+		const String& building_id, const String& mode);
+
+	/**
+	 * Nível do equipamento (trator/máquina) de lavoura, pecuária ou mina, em
+	 * 0..1 (comando A3 `set_building_equipment`). Sem equipamento o teto de
+	 * maturação é 85%; com equipamento, 100% e crescimento acelerado. O
+	 * equipamento sem diesel no mercado da cidade fica parado no dia (medido no
+	 * `phase_efficiency`). Devolve {set, level, error}.
+	 */
+	Dictionary set_building_equipment(const String& city_id,
+		const String& building_id, double level);
+
+	/**
+	 * Aplica os parâmetros de balanceamento da eficiência a partir do JSON
+	 * `data/definitions/production/efficiency.json` (mesma estrutura do
+	 * arquivo: curvas por classe, equipment, transitions, retention,
+	 * refinery_modes e ai). Campo ausente mantém o default compilado; o bloco
+	 * `definitions.efficiency` do save preserva o que foi aplicado.
+	 */
+	void set_efficiency_params(const Dictionary& values);
+
+	/**
+	 * Marca o mundo SEMEADO (ano-base) como maduro: eficiência 1.0, 9999 dias
+	 * de operação e trator/máquina ligados. Chamado depois do seed inicial (as
+	 * plantas do ano-base já existiam) — nunca depois de obra nova.
+	 * `buildings` opcional limita aos ids listados (o seed do refino matura só
+	 * as refinarias que acabou de criar; vazio = todas).
+	 */
+	void mature_world_efficiency(const Array& buildings = Array());
+
 	/**
 	 * F5: carrega as moedas (currencies.json). Cada item traz `code`,
 	 * `nations[]`, `rate_per_anchor` (valor em XGS de 1 unidade local) e
@@ -1285,6 +1343,14 @@ private:
 		double stock);
 	void apply_set_market_price(const String& city_id, const String& product,
 		double price);
+	// D-125: eficiência de produção (troca de produto/modo/equipamento).
+	Dictionary apply_change_product(const String& city_id,
+		const String& building_id, const String& product,
+		const String& recipe_id);
+	Dictionary apply_set_refinery_mode(const String& city_id,
+		const String& building_id, const String& mode);
+	Dictionary apply_set_building_equipment(const String& city_id,
+		const String& building_id, double level);
 	Dictionary apply_fleet_buy(const String& nation, const String& product,
 		double amount, double budget_share);
 	Dictionary apply_fund_group(const String& group_id, double amount);
@@ -1459,6 +1525,11 @@ private:
 			int stage = -1;
 			double stage_factor = -1.0, stage_reserve_kt = -1.0;
 			double stage_mined_kt = -1.0, next_deepen_cost = -1.0;
+			// D-125: eficiência de produção (produção ÷ capacidade), dias de
+			// operação, transição, equipamento e modo da refinaria.
+			double production_efficiency = -1.0, equipment = -1.0;
+			int efficiency_days = -1, transition_days = -1;
+			int refinery_mode = -1;
 		};
 		std::vector<BuildingCache> building_cache;
 		Array imported, exported, import_value, export_value;
@@ -1486,7 +1557,10 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct StatusKeys {
-		StringName age_bands, amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, income_strata, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, migration, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, diesel, diesel_target, jet_fuel, jet_target, diesel_used, jet_used, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups, stage, stage_factor, stage_reserve_kt, stage_mined_kt, next_deepen_cost;
+		StringName age_bands, amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, income_strata, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, migration, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, diesel, diesel_target, jet_fuel, jet_target, diesel_used, jet_used, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups, stage, stage_factor, stage_reserve_kt, stage_mined_kt, next_deepen_cost,
+		// D-125: eficiência de produção publicada por construção.
+		production_efficiency, efficiency_days, transition_days, equipment,
+		refinery_mode;
 		StringName light, product_count, m_price, m_stock, m_supply, m_surplus,
 			m_sold, m_shortage, m_desired, p_need, p_consumed, p_satisfaction,
 			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group,
