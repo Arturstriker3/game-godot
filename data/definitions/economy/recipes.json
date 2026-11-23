@@ -427,7 +427,8 @@
     "opex_per_ton": 6.0,
     "capital_per_capacity": 4000.0,
     "coef_source": "spec",
-    "params_source": "estimated:order_of_magnitude"
+    "params_source": "estimated:order_of_magnitude",
+    "note": "mistura E10 na gasolina"
   },
   {
     "id": "fertilizer",
@@ -818,30 +819,56 @@
     "note": "produz o MESMO item coal"
   },
   {
-    "id": "fuel_a",
-    "building": "factory",
+    "id": "gasoline_a",
+    "building": "refinery",
     "sector": "chemical",
-    "output": "fuel",
-    "yield": 1.0,
+    "output": "gasoline",
+    "yield": 0.45,
     "inputs": [
       {
         "good": "oil",
         "qty": 1.0
       }
     ],
-    "byproducts": [],
+    "byproducts": [
+      {
+        "good": "diesel",
+        "qty": 0.29
+      },
+      {
+        "good": "jet_fuel",
+        "qty": 0.09
+      }
+    ],
     "jobs_per_ton": 3.0,
     "wage": 2.0,
     "opex_per_ton": 12.0,
     "capital_per_capacity": 12000.0,
     "coef_source": "spec",
-    "params_source": "estimated:order_of_magnitude"
+    "params_source": "estimated:order_of_magnitude",
+    "outputs": [
+      {
+        "good": "gasoline",
+        "qty": 0.45
+      },
+      {
+        "good": "diesel",
+        "qty": 0.29
+      },
+      {
+        "good": "jet_fuel",
+        "qty": 0.09
+      }
+    ],
+    "co_loss": 0.17,
+    "byproduct_coef_source": "spec_qty",
+    "note": "combustível de ciclo Otto: carros e POPs; produzida na refinaria a partir de petróleo ou por mistura de etanol. | EIA Refinery yield (EUA, 2024): gasolina 45%, destilados 29% e querosene de aviação 9%; os 17% restantes são perdas/outros não modelados. | co-produção: saídas em outputs[] com quantidade por lote; a fração co_loss é perda/outros não modelados"
   },
   {
-    "id": "fuel_b",
-    "building": "factory",
+    "id": "gasoline_b",
+    "building": "chemical_plant",
     "sector": "chemical",
-    "output": "fuel",
+    "output": "gasoline",
     "yield": 0.8,
     "inputs": [
       {
@@ -855,47 +882,8 @@
     "opex_per_ton": 12.0,
     "capital_per_capacity": 12000.0,
     "coef_source": "spec",
-    "params_source": "estimated:order_of_magnitude"
-  },
-  {
-    "id": "fuel_c",
-    "building": "factory",
-    "sector": "chemical",
-    "output": "fuel",
-    "yield": 0.4,
-    "inputs": [
-      {
-        "good": "gas",
-        "qty": 1.0
-      }
-    ],
-    "byproducts": [],
-    "jobs_per_ton": 3.0,
-    "wage": 2.0,
-    "opex_per_ton": 12.0,
-    "capital_per_capacity": 12000.0,
-    "coef_source": "spec",
-    "params_source": "estimated:order_of_magnitude"
-  },
-  {
-    "id": "fuel_d",
-    "building": "factory",
-    "sector": "chemical",
-    "output": "fuel",
-    "yield": 0.2,
-    "inputs": [
-      {
-        "good": "coal",
-        "qty": 1.0
-      }
-    ],
-    "byproducts": [],
-    "jobs_per_ton": 3.0,
-    "wage": 2.0,
-    "opex_per_ton": 12.0,
-    "capital_per_capacity": 12000.0,
-    "coef_source": "spec",
-    "params_source": "estimated:order_of_magnitude"
+    "params_source": "estimated:order_of_magnitude",
+    "note": "combustível de ciclo Otto: carros e POPs; produzida na refinaria a partir de petróleo ou por mistura de etanol. | mistura E10: 1 t de etanol rende 0,8 t de gasolina equivalente (declarado)."
   },
   {
     "id": "plastic_a",
@@ -2737,5 +2725,47 @@
     "capital_per_capacity": 12000.0,
     "coef_source": "default_unit",
     "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "diesel_a",
+    "building": "refinery",
+    "sector": "chemical",
+    "output": "diesel",
+    "yield": 0.3,
+    "inputs": [
+      {
+        "good": "gas",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "combustível de ciclo diesel: caminhão, trem, trator, navio, exército e usinas a óleo. | GTL de baixo rendimento: 1 t de gás natural rende 0,3 t de diesel equivalente (declarado)."
+  },
+  {
+    "id": "diesel_b",
+    "building": "chemical_plant",
+    "sector": "chemical",
+    "output": "diesel",
+    "yield": 0.15,
+    "inputs": [
+      {
+        "good": "coal",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "combustível de ciclo diesel: caminhão, trem, trator, navio, exército e usinas a óleo. | CTL de baixo rendimento: 1 t de carvão rende 0,15 t de diesel equivalente (declarado)."
   }
 ]

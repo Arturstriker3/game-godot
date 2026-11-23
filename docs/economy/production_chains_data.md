@@ -2,7 +2,7 @@
 
 Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 
-- Bens: **113** (21 primários em `order` 0..20, 92 novos em 21..112)
+- Bens: **115** (21 primários em `order` 0..20, 94 novos em 21..114)
 - Receitas: **114** (coeficiente unitário padrão onde a spec não traz qty)
 - Preços: primários = `calibrated:legacy` (dado já calibrado); novos = `derived:v1`
   pela fórmula `min_receita(Σ qty × preço_insumo / yield) × (1 + margem)`.
@@ -37,32 +37,32 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 19 | `wood` | raw | raw | wood | 25.00 | `calibrated:legacy` |
 | 20 | `uranium` | raw | raw | energy | 500.00 | `calibrated:legacy` |
 | 21 | `flour` | semi | intermediate | food | 50.00 | `derived:v1` |
-| 22 | `bran` | semi | byproduct | food | 5.00 | `derived:byproduct_of:flour:v1` |
+| 22 | `bran` | semi | byproduct | food | 44.00 | `derived:v1` |
 | 23 | `bread` | final | final | food | 72.50 | `derived:v1` |
-| 24 | `bagged_rice` | final | final | food | 91.47 | `derived:v1` |
-| 25 | `feed` | semi | intermediate | food | 7.81 | `derived:v1` |
-| 26 | `meat` | final | final | food | 11.32 | `derived:v1` |
-| 27 | `canned_food` | final | final | food | 31.06 | `derived:v1` |
-| 28 | `combat_ration` | final | final | food | 143.01 | `derived:v1` |
-| 29 | `alcohol` | final | final | food | 65.39 | `derived:v1` |
-| 30 | `premium_spirits` | final | final | food | 140.13 | `derived:v1` |
+| 24 | `bagged_rice` | final | final | food | 145.45 | `derived:v1` |
+| 25 | `feed` | semi | intermediate | food | 52.50 | `derived:v1` |
+| 26 | `meat` | final | final | food | 76.12 | `derived:v1` |
+| 27 | `canned_food` | final | final | food | 144.36 | `derived:v1` |
+| 28 | `combat_ration` | final | final | food | 401.26 | `derived:v1` |
+| 29 | `alcohol` | final | final | food | 84.74 | `derived:v1` |
+| 30 | `premium_spirits` | final | final | food | 168.19 | `derived:v1` |
 | 31 | `ethanol` | semi | intermediate | food | 52.50 | `derived:v1` |
 | 32 | `fertilizer` | final | final | agro | 58.00 | `derived:v1` |
-| 33 | `organic_fertilizer` | final | final | agro | 24.17 | `derived:v1` |
+| 33 | `organic_fertilizer` | final | final | agro | 212.67 | `derived:v1` |
 | 34 | `fabric` | semi | intermediate | textile | 87.50 | `derived:v1` |
 | 35 | `synthetic_fabric` | semi | intermediate | textile | 117.19 | `derived:v1` |
 | 36 | `clothes` | final | final | textile | 126.88 | `derived:v1` |
 | 37 | `uniforms` | final | final | textile | 126.88 | `derived:v1` |
 | 38 | `shoes` | final | final | textile | 208.44 | `derived:v1` |
 | 39 | `planks` | semi | intermediate | wood | 31.25 | `derived:v1` |
-| 40 | `sawdust` | semi | byproduct | wood | 3.12 | `derived:byproduct_of:planks:v1` |
+| 40 | `sawdust` | semi | byproduct | wood | 27.50 | `derived:v1` |
 | 41 | `furniture` | final | final | wood | 56.25 | `derived:v1` |
 | 42 | `luxury_furniture` | final | final | wood | 213.75 | `derived:v1` |
-| 43 | `cellulose` | semi | intermediate | wood | 5.57 | `derived:v1` |
-| 44 | `paper` | final | final | wood | 8.08 | `derived:v1` |
-| 45 | `pallets` | final | final | wood | 6.46 | `derived:v1` |
+| 43 | `cellulose` | semi | intermediate | wood | 31.25 | `derived:v1` |
+| 44 | `paper` | final | final | wood | 45.31 | `derived:v1` |
+| 45 | `pallets` | final | final | wood | 45.31 | `derived:v1` |
 | 46 | `charcoal` | semi | intermediate | wood | 6.00 | `alias:coal` |
-| 47 | `fuel` | final | final | chemical | 43.50 | `derived:v1` |
+| 47 | `gasoline` | final | final | chemical | 78.61 | `derived:co_product:v1` |
 | 48 | `plastic` | semi | intermediate | chemical | 56.25 | `derived:v1` |
 | 49 | `chemicals` | semi | intermediate | chemical | 37.50 | `derived:v1` |
 | 50 | `rubber` | semi | intermediate | chemical | 79.69 | `derived:v1` |
@@ -118,7 +118,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 100 | `computer` | final | final | electronics | 38760.62 | `derived:v1` |
 | 101 | `phone` | final | final | electronics | 38915.32 | `derived:v1` |
 | 102 | `drone` | final | final | electronics | 64307.77 | `derived:v1` |
-| 103 | `containers` | semi | intermediate | packaging | 10.10 | `derived:v1` |
+| 103 | `containers` | semi | intermediate | packaging | 23.44 | `derived:v1` |
 | 104 | `jewelry` | final | final | luxury | 15750.00 | `derived:v1` |
 | 105 | `casing` | semi | intermediate | military | 93.75 | `derived:v1` |
 | 106 | `projectile` | semi | intermediate | military | 39.06 | `derived:v1` |
@@ -128,6 +128,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 110 | `artillery` | final | final | military | 37348.56 | `derived:v1` |
 | 111 | `military_drone` | final | final | military | 93771.35 | `derived:v1` |
 | 112 | `infantry_gear` | final | final | military | 7422.19 | `derived:v1` |
+| 113 | `diesel` | final | final | chemical | 58.00 | `derived:v1` |
+| 114 | `jet_fuel` | final | final | chemical | 78.61 | `derived:co_product:v1` |
 
 ## Receitas normalizadas
 
@@ -168,10 +170,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `pallets_a` â†’ `pallets` (yield 1): 1× `planks`
 - `pallets_b` â†’ `pallets` (yield 0.7): 1× `sawdust`
 - `charcoal` â†’ `coal` (yield 1): 1× `wood`
-- `fuel_a` â†’ `fuel` (yield 1): 1× `oil`
-- `fuel_b` â†’ `fuel` (yield 0.8): 1× `ethanol`
-- `fuel_c` â†’ `fuel` (yield 0.4): 1× `gas`
-- `fuel_d` â†’ `fuel` (yield 0.2): 1× `coal`
+- `gasoline_a` â†’ `gasoline` (yield 0.45): 1× `oil` + subproduto 0.29× `diesel`, 0.09× `jet_fuel`
+- `gasoline_b` â†’ `gasoline` (yield 0.8): 1× `ethanol`
 - `plastic_a` â†’ `plastic` (yield 1): 1× `oil`
 - `plastic_b` â†’ `plastic` (yield 0.5): 1× `gas`
 - `chemicals_a` â†’ `chemicals` (yield 1): 1× `oil`, 1× `refined_sulfur`
@@ -245,3 +245,5 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `artillery` â†’ `artillery` (yield 1): 1× `steel`, 1× `special_alloy`, 1× `industrial_tools`, 1× `cast_parts`, 1× `sensors`
 - `military_drone` â†’ `military_drone` (yield 1): 1× `drone`, 1× `ammunition`, 1× `carbon_fiber`
 - `infantry_gear` â†’ `infantry_gear` (yield 1): 1× `fabric`, 1× `hardware`, 1× `electronic_components`, 1× `batteries`
+- `diesel_a` â†’ `diesel` (yield 0.3): 1× `gas`
+- `diesel_b` â†’ `diesel` (yield 0.15): 1× `coal`

@@ -1,1180 +1,1198 @@
 {
-  "_meta": {
-    "dataset": "goods_storage_map",
-    "generated_by": "tools/build_storage_g2.py",
-    "goods": 113,
-    "no_data_rule": "todo bem tem armazem primario; bem sem regra propria cai em general_warehouse (declarado)",
-    "retrieved": "2026-11-19",
-    "source": "docs/plans/perf_pop_financas_plano.md secao PARTE G2 (tabela de armazens)",
-    "version": "g2"
+ "_meta": {
+  "dataset": "goods_storage_map",
+  "generated_by": "tools/build_storage_g2.py",
+  "goods": 115,
+  "no_data_rule": "todo bem tem armazem primario; bem sem regra propria cai em general_warehouse (declarado)",
+  "retrieved": "2026-11-19",
+  "source": "docs/plans/perf_pop_financas_plano.md secao PARTE G2 (tabela de armazens)",
+  "version": "g2"
+ },
+ "coverage": {
+  "by_primary": {
+   "bulk_yard": 14,
+   "cold_room": 3,
+   "fuel_tank": 6,
+   "gas_storage": 1,
+   "general_warehouse": 66,
+   "military_depot": 11,
+   "silo": 7,
+   "vault": 7
   },
-  "coverage": {
-    "by_primary": {
-      "bulk_yard": 14,
-      "cold_room": 3,
-      "fuel_tank": 4,
-      "gas_storage": 1,
-      "general_warehouse": 66,
-      "military_depot": 11,
-      "silo": 7,
-      "vault": 7
-    },
-    "explicit": 49,
-    "fallback_general_warehouse": [
-      "alcohol",
-      "aluminum_ingot",
-      "antibiotics",
-      "appliances",
-      "batteries",
-      "bread",
-      "car",
-      "carbon_fiber",
-      "cargo_plane",
-      "cargo_ship",
-      "cast_parts",
-      "cellulose",
-      "chassis",
-      "chips",
-      "circuit_board",
-      "clothes",
-      "computer",
-      "construction_material",
-      "containers",
-      "copper_ingot",
-      "drone",
-      "electrical_material",
-      "electronic_components",
-      "engine",
-      "fabric",
-      "furniture",
-      "fuselage",
-      "hardware",
-      "industrial_machinery",
-      "industrial_tools",
-      "iron_ingot",
-      "lead_ingot",
-      "luxury_furniture",
-      "mechanical_parts",
-      "medicine",
-      "micromotor",
-      "mining_machine",
-      "naval_hull",
-      "pallets",
-      "paper",
-      "phone",
-      "planks",
-      "plastic",
-      "plastic_parts",
-      "precision_tools",
-      "premium_spirits",
-      "refined_sulfur",
-      "robots",
-      "rubber",
-      "sensors",
-      "shoes",
-      "spare_parts",
-      "special_alloy",
-      "steel",
-      "steel_sheet",
-      "steel_structure",
-      "synthetic_fabric",
-      "tires",
-      "tools",
-      "tractor",
-      "truck",
-      "tungsten_ingot",
-      "uniforms",
-      "wires"
-    ],
-    "goods_total": 113
+  "explicit": 51,
+  "fallback_general_warehouse": [
+   "alcohol",
+   "aluminum_ingot",
+   "antibiotics",
+   "appliances",
+   "batteries",
+   "bread",
+   "car",
+   "carbon_fiber",
+   "cargo_plane",
+   "cargo_ship",
+   "cast_parts",
+   "cellulose",
+   "chassis",
+   "chips",
+   "circuit_board",
+   "clothes",
+   "computer",
+   "construction_material",
+   "containers",
+   "copper_ingot",
+   "drone",
+   "electrical_material",
+   "electronic_components",
+   "engine",
+   "fabric",
+   "furniture",
+   "fuselage",
+   "hardware",
+   "industrial_machinery",
+   "industrial_tools",
+   "iron_ingot",
+   "lead_ingot",
+   "luxury_furniture",
+   "mechanical_parts",
+   "medicine",
+   "micromotor",
+   "mining_machine",
+   "naval_hull",
+   "pallets",
+   "paper",
+   "phone",
+   "planks",
+   "plastic",
+   "plastic_parts",
+   "precision_tools",
+   "premium_spirits",
+   "refined_sulfur",
+   "robots",
+   "rubber",
+   "sensors",
+   "shoes",
+   "spare_parts",
+   "special_alloy",
+   "steel",
+   "steel_sheet",
+   "steel_structure",
+   "synthetic_fabric",
+   "tires",
+   "tools",
+   "tractor",
+   "truck",
+   "tungsten_ingot",
+   "uniforms",
+   "wires"
+  ],
+  "goods_total": 115
+ },
+ "goods": {
+  "alcohol": {
+   "kind": "final",
+   "name": "Bebida alcoólica",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "food",
+   "tier": "final"
   },
-  "goods": {
-    "alcohol": {
-      "kind": "final",
-      "name": "Bebida alcoólica",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "food",
-      "tier": "final"
-    },
-    "aluminum_ingot": {
-      "kind": "intermediate",
-      "name": "Lingote de alumínio",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "ammunition": {
-      "kind": "final",
-      "name": "Munição",
-      "primary": "military_depot",
-      "reason": "municao leve",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "military",
-      "tier": "final"
-    },
-    "antibiotics": {
-      "kind": "final",
-      "name": "Antibióticos",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "final"
-    },
-    "appliances": {
-      "kind": "final",
-      "name": "Eletrodomésticos",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "final"
-    },
-    "artillery": {
-      "kind": "final",
-      "name": "Artilharia",
-      "primary": "military_depot",
-      "reason": "artilharia",
-      "secondary": [],
-      "sector": "military",
-      "tier": "final"
-    },
-    "artillery_ammo": {
-      "kind": "final",
-      "name": "Munição de artilharia",
-      "primary": "military_depot",
-      "reason": "municao de artilharia",
-      "secondary": [],
-      "sector": "military",
-      "tier": "final"
-    },
-    "bagged_rice": {
-      "kind": "final",
-      "name": "Arroz ensacado",
-      "primary": "general_warehouse",
-      "reason": "arroz ja ensacado; guardado tambem em silo",
-      "secondary": [
-        "silo"
-      ],
-      "sector": "food",
-      "tier": "final"
-    },
-    "batteries": {
-      "kind": "intermediate",
-      "name": "Baterias",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "semi"
-    },
-    "bauxite": {
-      "kind": "raw",
-      "name": "Bauxita",
-      "primary": "bulk_yard",
-      "reason": "minerio de bauxita",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "bran": {
-      "kind": "byproduct",
-      "name": "Farelo",
-      "primary": "silo",
-      "reason": "farelo a granel",
-      "secondary": [],
-      "sector": "food",
-      "tier": "semi"
-    },
-    "bread": {
-      "kind": "final",
-      "name": "Pão",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "food",
-      "tier": "final"
-    },
-    "canned_food": {
-      "kind": "final",
-      "name": "Comida enlatada",
-      "primary": "general_warehouse",
-      "reason": "conserva estavel em prateleira",
-      "secondary": [],
-      "sector": "food",
-      "tier": "final"
-    },
-    "car": {
-      "kind": "final",
-      "name": "Automóvel",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "transport",
-      "tier": "final"
-    },
-    "carbon_fiber": {
-      "kind": "intermediate",
-      "name": "Fibra de carbono",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "semi"
-    },
-    "cargo_plane": {
-      "kind": "final",
-      "name": "Avião de carga",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "transport",
-      "tier": "final"
-    },
-    "cargo_ship": {
-      "kind": "final",
-      "name": "Navio de carga",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "transport",
-      "tier": "final"
-    },
-    "casing": {
-      "kind": "intermediate",
-      "name": "Estojo",
-      "primary": "military_depot",
-      "reason": "estojo de municao",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "military",
-      "tier": "semi"
-    },
-    "cast_parts": {
-      "kind": "intermediate",
-      "name": "Peças fundidas",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "cellulose": {
-      "kind": "intermediate",
-      "name": "Celulose",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "wood",
-      "tier": "semi"
-    },
-    "charcoal": {
-      "kind": "intermediate",
-      "name": "Carvão vegetal",
-      "primary": "bulk_yard",
-      "reason": "carvao vegetal ensacado",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "wood",
-      "tier": "semi"
-    },
-    "chassis": {
-      "kind": "intermediate",
-      "name": "Chassi",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "semi"
-    },
-    "chemicals": {
-      "kind": "intermediate",
-      "name": "Químicos",
-      "primary": "fuel_tank",
-      "reason": "quimicos liquidos a granel; parte ensacada",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "chemical",
-      "tier": "semi"
-    },
-    "chips": {
-      "kind": "intermediate",
-      "name": "Chips",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "semi"
-    },
-    "circuit_board": {
-      "kind": "intermediate",
-      "name": "Placa de circuito",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "semi"
-    },
-    "clothes": {
-      "kind": "final",
-      "name": "Roupas",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "textile",
-      "tier": "final"
-    },
-    "coal": {
-      "kind": "raw",
-      "name": "Carvão",
-      "primary": "bulk_yard",
-      "reason": "carvao mineral a granel",
-      "secondary": [],
-      "sector": "energy",
-      "tier": "raw"
-    },
-    "combat_ration": {
-      "kind": "final",
-      "name": "Ração de combate",
-      "primary": "military_depot",
-      "reason": "racao de combate",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "food",
-      "tier": "final"
-    },
-    "computer": {
-      "kind": "final",
-      "name": "Computador",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "final"
-    },
-    "construction_material": {
-      "kind": "final",
-      "name": "Material de construção",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "construction",
-      "tier": "final"
-    },
-    "containers": {
-      "kind": "intermediate",
-      "name": "Recipientes",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "packaging",
-      "tier": "semi"
-    },
-    "copper": {
-      "kind": "raw",
-      "name": "Cobre",
-      "primary": "bulk_yard",
-      "reason": "minerio de cobre",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "copper_ingot": {
-      "kind": "intermediate",
-      "name": "Lingote de cobre",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "cotton": {
-      "kind": "raw",
-      "name": "Algodão",
-      "primary": "bulk_yard",
-      "reason": "algodao em fardos",
-      "secondary": [],
-      "sector": "textile",
-      "tier": "raw"
-    },
-    "diamond": {
-      "kind": "raw",
-      "name": "Diamante",
-      "primary": "vault",
-      "reason": "pedra preciosa",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "drone": {
-      "kind": "final",
-      "name": "Drone",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "final"
-    },
-    "electrical_material": {
-      "kind": "intermediate",
-      "name": "Material elétrico",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "construction",
-      "tier": "semi"
-    },
-    "electronic_components": {
-      "kind": "intermediate",
-      "name": "Componentes eletrônicos",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "semi"
-    },
-    "engine": {
-      "kind": "intermediate",
-      "name": "Motor",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "semi"
-    },
-    "ethanol": {
-      "kind": "intermediate",
-      "name": "Etanol",
-      "primary": "fuel_tank",
-      "reason": "etanol liquido",
-      "secondary": [],
-      "sector": "food",
-      "tier": "semi"
-    },
-    "explosives": {
-      "kind": "intermediate",
-      "name": "Explosivos",
-      "primary": "military_depot",
-      "reason": "explosivo",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "semi"
-    },
-    "fabric": {
-      "kind": "intermediate",
-      "name": "Tecido",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "textile",
-      "tier": "semi"
-    },
-    "feed": {
-      "kind": "intermediate",
-      "name": "Ração",
-      "primary": "silo",
-      "reason": "racao a granel",
-      "secondary": [],
-      "sector": "food",
-      "tier": "semi"
-    },
-    "fertilizer": {
-      "kind": "final",
-      "name": "Fertilizante",
-      "primary": "bulk_yard",
-      "reason": "fertilizante granulado/ensacado",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "agro",
-      "tier": "final"
-    },
-    "flour": {
-      "kind": "intermediate",
-      "name": "Farinha",
-      "primary": "silo",
-      "reason": "farinha ensacada circula entre silo e armazem",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "food",
-      "tier": "semi"
-    },
-    "fuel": {
-      "kind": "final",
-      "name": "Combustível",
-      "primary": "fuel_tank",
-      "reason": "combustivel refinado",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "final"
-    },
-    "furniture": {
-      "kind": "final",
-      "name": "Móveis",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "wood",
-      "tier": "final"
-    },
-    "fuselage": {
-      "kind": "intermediate",
-      "name": "Fuselagem",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "transport",
-      "tier": "semi"
-    },
-    "gas": {
-      "kind": "raw",
-      "name": "Gás",
-      "primary": "gas_storage",
-      "reason": "gas natural",
-      "secondary": [],
-      "sector": "energy",
-      "tier": "raw"
-    },
-    "gold": {
-      "kind": "raw",
-      "name": "Ouro",
-      "primary": "vault",
-      "reason": "ouro em barra/lingote bruto",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "gold_bar": {
-      "kind": "intermediate",
-      "name": "Barra de ouro",
-      "primary": "vault",
-      "reason": "barra de ouro acabada",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "gunpowder": {
-      "kind": "intermediate",
-      "name": "Pólvora",
-      "primary": "military_depot",
-      "reason": "polvora",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "semi"
-    },
-    "hardware": {
-      "kind": "intermediate",
-      "name": "Ferragens",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "industrial_machinery": {
-      "kind": "final",
-      "name": "Maquinário industrial",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "final"
-    },
-    "industrial_tools": {
-      "kind": "intermediate",
-      "name": "Ferramentas industriais",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "semi"
-    },
-    "infantry_gear": {
-      "kind": "final",
-      "name": "Equipamento de infantaria",
-      "primary": "military_depot",
-      "reason": "equipamento de infantaria",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "military",
-      "tier": "final"
-    },
-    "iron": {
-      "kind": "raw",
-      "name": "Ferro",
-      "primary": "bulk_yard",
-      "reason": "minerio de ferro",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "iron_ingot": {
-      "kind": "intermediate",
-      "name": "Lingote de ferro",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "jewelry": {
-      "kind": "final",
-      "name": "Joias",
-      "primary": "vault",
-      "reason": "joia de alto valor",
-      "secondary": [],
-      "sector": "luxury",
-      "tier": "final"
-    },
-    "lead": {
-      "kind": "raw",
-      "name": "Chumbo",
-      "primary": "bulk_yard",
-      "reason": "minerio de chumbo",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "lead_ingot": {
-      "kind": "intermediate",
-      "name": "Lingote de chumbo",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "luxury_furniture": {
-      "kind": "final",
-      "name": "Móveis de luxo",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "wood",
-      "tier": "final"
-    },
-    "maize": {
-      "kind": "raw",
-      "name": "Milho",
-      "primary": "silo",
-      "reason": "grao a granel",
-      "secondary": [],
-      "sector": "food",
-      "tier": "raw"
-    },
-    "meat": {
-      "kind": "final",
-      "name": "Carne",
-      "primary": "cold_room",
-      "reason": "carne exige cadeia de frio",
-      "secondary": [],
-      "sector": "food",
-      "tier": "final"
-    },
-    "mechanical_parts": {
-      "kind": "intermediate",
-      "name": "Peças mecânicas",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "medicine": {
-      "kind": "final",
-      "name": "Remédios",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "final"
-    },
-    "micromotor": {
-      "kind": "intermediate",
-      "name": "Micromotor e bobinas",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "semi"
-    },
-    "military_drone": {
-      "kind": "final",
-      "name": "Drone militar",
-      "primary": "military_depot",
-      "reason": "drone militar",
-      "secondary": [],
-      "sector": "military",
-      "tier": "final"
-    },
-    "mining_machine": {
-      "kind": "final",
-      "name": "Máquina de mineração",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "final"
-    },
-    "naval_hull": {
-      "kind": "intermediate",
-      "name": "Casco naval",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "transport",
-      "tier": "semi"
-    },
-    "oil": {
-      "kind": "raw",
-      "name": "Petróleo",
-      "primary": "fuel_tank",
-      "reason": "petroleo cru",
-      "secondary": [],
-      "sector": "energy",
-      "tier": "raw"
-    },
-    "organic_fertilizer": {
-      "kind": "final",
-      "name": "Adubo orgânico",
-      "primary": "bulk_yard",
-      "reason": "adubo organico a granel",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "agro",
-      "tier": "final"
-    },
-    "pallets": {
-      "kind": "final",
-      "name": "Pallets",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "wood",
-      "tier": "final"
-    },
-    "paper": {
-      "kind": "final",
-      "name": "Papel",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "wood",
-      "tier": "final"
-    },
-    "phone": {
-      "kind": "final",
-      "name": "Celular",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "final"
-    },
-    "phosphate": {
-      "kind": "raw",
-      "name": "Fosfato",
-      "primary": "bulk_yard",
-      "reason": "fosfato a granel",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "planks": {
-      "kind": "intermediate",
-      "name": "Tábuas",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "wood",
-      "tier": "semi"
-    },
-    "plastic": {
-      "kind": "intermediate",
-      "name": "Plástico",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "semi"
-    },
-    "plastic_parts": {
-      "kind": "intermediate",
-      "name": "Peças plásticas",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "semi"
-    },
-    "potato": {
-      "kind": "raw",
-      "name": "Batata",
-      "primary": "cold_room",
-      "reason": "tuberculo perecivel",
-      "secondary": [],
-      "sector": "food",
-      "tier": "raw"
-    },
-    "precision_tools": {
-      "kind": "intermediate",
-      "name": "Ferramentas de precisão",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "semi"
-    },
-    "premium_spirits": {
-      "kind": "final",
-      "name": "Destilado premium",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "food",
-      "tier": "final"
-    },
-    "processed_rare_earths": {
-      "kind": "intermediate",
-      "name": "Terras raras processadas",
-      "primary": "vault",
-      "reason": "oxidos processados",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "projectile": {
-      "kind": "intermediate",
-      "name": "Projétil",
-      "primary": "military_depot",
-      "reason": "projetil",
-      "secondary": [],
-      "sector": "military",
-      "tier": "semi"
-    },
-    "rare_earths": {
-      "kind": "raw",
-      "name": "Terras raras",
-      "primary": "vault",
-      "reason": "terras raras (alto valor)",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "refined_sulfur": {
-      "kind": "intermediate",
-      "name": "Enxofre refinado",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "semi"
-    },
-    "rice": {
-      "kind": "raw",
-      "name": "Arroz",
-      "primary": "silo",
-      "reason": "grao a granel",
-      "secondary": [],
-      "sector": "food",
-      "tier": "raw"
-    },
-    "robots": {
-      "kind": "final",
-      "name": "Robôs industriais",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "final"
-    },
-    "rubber": {
-      "kind": "intermediate",
-      "name": "Borracha",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "chemical",
-      "tier": "semi"
-    },
-    "sawdust": {
-      "kind": "byproduct",
-      "name": "Serragem",
-      "primary": "bulk_yard",
-      "reason": "serragem a granel",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "wood",
-      "tier": "semi"
-    },
-    "sensors": {
-      "kind": "intermediate",
-      "name": "Sensores e óptica",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "electronics",
-      "tier": "semi"
-    },
-    "shoes": {
-      "kind": "final",
-      "name": "Calçados",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "textile",
-      "tier": "final"
-    },
-    "small_arms": {
-      "kind": "final",
-      "name": "Armas leves",
-      "primary": "military_depot",
-      "reason": "arma leve",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "military",
-      "tier": "final"
-    },
-    "soy": {
-      "kind": "raw",
-      "name": "Soja",
-      "primary": "silo",
-      "reason": "oleaginosa a granel",
-      "secondary": [],
-      "sector": "food",
-      "tier": "raw"
-    },
-    "spare_parts": {
-      "kind": "final",
-      "name": "Peças de reposição",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "final"
-    },
-    "special_alloy": {
-      "kind": "intermediate",
-      "name": "Liga especial",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "steel": {
-      "kind": "intermediate",
-      "name": "Aço",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "steel_sheet": {
-      "kind": "intermediate",
-      "name": "Chapas de aço",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "steel_structure": {
-      "kind": "intermediate",
-      "name": "Estrutura metálica",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "construction",
-      "tier": "semi"
-    },
-    "sulfur": {
-      "kind": "raw",
-      "name": "Enxofre",
-      "primary": "bulk_yard",
-      "reason": "enxofre a granel",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "synthetic_fabric": {
-      "kind": "intermediate",
-      "name": "Tecido sintético",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "textile",
-      "tier": "semi"
-    },
-    "tires": {
-      "kind": "intermediate",
-      "name": "Pneus",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "semi"
-    },
-    "tools": {
-      "kind": "final",
-      "name": "Ferramentas",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "final"
-    },
-    "tractor": {
-      "kind": "final",
-      "name": "Trator",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "machinery",
-      "tier": "final"
-    },
-    "truck": {
-      "kind": "final",
-      "name": "Caminhão",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "transport",
-      "tier": "final"
-    },
-    "tungsten": {
-      "kind": "raw",
-      "name": "Tungstênio",
-      "primary": "bulk_yard",
-      "reason": "minerio de tungstenio",
-      "secondary": [],
-      "sector": "mining",
-      "tier": "raw"
-    },
-    "tungsten_ingot": {
-      "kind": "intermediate",
-      "name": "Lingote de tungstênio",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "uniforms": {
-      "kind": "final",
-      "name": "Uniformes",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "textile",
-      "tier": "final"
-    },
-    "uranium": {
-      "kind": "raw",
-      "name": "Urânio",
-      "primary": "vault",
-      "reason": "material nuclear",
-      "secondary": [],
-      "sector": "energy",
-      "tier": "raw"
-    },
-    "vaccines": {
-      "kind": "final",
-      "name": "Vacinas",
-      "primary": "cold_room",
-      "reason": "vacina exige cadeia de frio",
-      "secondary": [
-        "general_warehouse"
-      ],
-      "sector": "chemical",
-      "tier": "final"
-    },
-    "wheat": {
-      "kind": "raw",
-      "name": "Trigo",
-      "primary": "silo",
-      "reason": "grao a granel",
-      "secondary": [],
-      "sector": "food",
-      "tier": "raw"
-    },
-    "wires": {
-      "kind": "intermediate",
-      "name": "Fios e cabos",
-      "primary": "general_warehouse",
-      "reason": "semiprocessado/final padrao",
-      "secondary": [],
-      "sector": "metal",
-      "tier": "semi"
-    },
-    "wood": {
-      "kind": "raw",
-      "name": "Madeira",
-      "primary": "bulk_yard",
-      "reason": "madeira em toras",
-      "secondary": [],
-      "sector": "wood",
-      "tier": "raw"
-    }
+  "aluminum_ingot": {
+   "kind": "intermediate",
+   "name": "Lingote de alumínio",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
   },
-  "warehouses": {
-    "bulk_yard": {
-      "guards": "carvao, minerios, fosfato, enxofre, madeira, algodao",
-      "name": "Patio de granéis",
-      "where": "regiao (mina) + porto"
-    },
-    "cold_room": {
-      "guards": "carne, pereciveis e cadeia de frio (exige energia)",
-      "name": "Camara fria / frigorifico",
-      "where": "cidade + porto"
-    },
-    "fuel_tank": {
-      "guards": "petroleo, combustiveis, etanol e quimicos liquidos",
-      "name": "Tanque de petroleo/combustiveis",
-      "where": "regiao (campo/refinaria) + porto"
-    },
-    "gas_storage": {
-      "guards": "gas natural",
-      "name": "Armazenagem de gas",
-      "where": "regiao"
-    },
-    "general_warehouse": {
-      "guards": "semiprocessados e finais",
-      "name": "Armazem geral",
-      "where": "cidade"
-    },
-    "military_depot": {
-      "guards": "municao, explosivos e racao de combate",
-      "name": "Paiol militar",
-      "where": "economia de guerra"
-    },
-    "silo": {
-      "guards": "graos e farinaceos a granel",
-      "name": "Silo graneleiro",
-      "where": "regiao + porto"
-    },
-    "vault": {
-      "guards": "ouro, diamante, uranio, terras raras (liga as reservas do BC)",
-      "name": "Cofre",
-      "where": "cidade"
-    }
+  "ammunition": {
+   "kind": "final",
+   "name": "Munição",
+   "primary": "military_depot",
+   "reason": "municao leve",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "military",
+   "tier": "final"
+  },
+  "antibiotics": {
+   "kind": "final",
+   "name": "Antibióticos",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "final"
+  },
+  "appliances": {
+   "kind": "final",
+   "name": "Eletrodomésticos",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "final"
+  },
+  "artillery": {
+   "kind": "final",
+   "name": "Artilharia",
+   "primary": "military_depot",
+   "reason": "artilharia",
+   "secondary": [],
+   "sector": "military",
+   "tier": "final"
+  },
+  "artillery_ammo": {
+   "kind": "final",
+   "name": "Munição de artilharia",
+   "primary": "military_depot",
+   "reason": "municao de artilharia",
+   "secondary": [],
+   "sector": "military",
+   "tier": "final"
+  },
+  "bagged_rice": {
+   "kind": "final",
+   "name": "Arroz ensacado",
+   "primary": "general_warehouse",
+   "reason": "arroz ja ensacado; guardado tambem em silo",
+   "secondary": [
+    "silo"
+   ],
+   "sector": "food",
+   "tier": "final"
+  },
+  "batteries": {
+   "kind": "intermediate",
+   "name": "Baterias",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "semi"
+  },
+  "bauxite": {
+   "kind": "raw",
+   "name": "Bauxita",
+   "primary": "bulk_yard",
+   "reason": "minerio de bauxita",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "bran": {
+   "kind": "byproduct",
+   "name": "Farelo",
+   "primary": "silo",
+   "reason": "farelo a granel",
+   "secondary": [],
+   "sector": "food",
+   "tier": "semi"
+  },
+  "bread": {
+   "kind": "final",
+   "name": "Pão",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "food",
+   "tier": "final"
+  },
+  "canned_food": {
+   "kind": "final",
+   "name": "Comida enlatada",
+   "primary": "general_warehouse",
+   "reason": "conserva estavel em prateleira",
+   "secondary": [],
+   "sector": "food",
+   "tier": "final"
+  },
+  "car": {
+   "kind": "final",
+   "name": "Automóvel",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "transport",
+   "tier": "final"
+  },
+  "carbon_fiber": {
+   "kind": "intermediate",
+   "name": "Fibra de carbono",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "semi"
+  },
+  "cargo_plane": {
+   "kind": "final",
+   "name": "Avião de carga",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "transport",
+   "tier": "final"
+  },
+  "cargo_ship": {
+   "kind": "final",
+   "name": "Navio de carga",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "transport",
+   "tier": "final"
+  },
+  "casing": {
+   "kind": "intermediate",
+   "name": "Estojo",
+   "primary": "military_depot",
+   "reason": "estojo de municao",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "military",
+   "tier": "semi"
+  },
+  "cast_parts": {
+   "kind": "intermediate",
+   "name": "Peças fundidas",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "cellulose": {
+   "kind": "intermediate",
+   "name": "Celulose",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "wood",
+   "tier": "semi"
+  },
+  "charcoal": {
+   "kind": "intermediate",
+   "name": "Carvão vegetal",
+   "primary": "bulk_yard",
+   "reason": "carvao vegetal ensacado",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "wood",
+   "tier": "semi"
+  },
+  "chassis": {
+   "kind": "intermediate",
+   "name": "Chassi",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "semi"
+  },
+  "chemicals": {
+   "kind": "intermediate",
+   "name": "Químicos",
+   "primary": "fuel_tank",
+   "reason": "quimicos liquidos a granel; parte ensacada",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "chemical",
+   "tier": "semi"
+  },
+  "chips": {
+   "kind": "intermediate",
+   "name": "Chips",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "semi"
+  },
+  "circuit_board": {
+   "kind": "intermediate",
+   "name": "Placa de circuito",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "semi"
+  },
+  "clothes": {
+   "kind": "final",
+   "name": "Roupas",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "textile",
+   "tier": "final"
+  },
+  "coal": {
+   "kind": "raw",
+   "name": "Carvão",
+   "primary": "bulk_yard",
+   "reason": "carvao mineral a granel",
+   "secondary": [],
+   "sector": "energy",
+   "tier": "raw"
+  },
+  "combat_ration": {
+   "kind": "final",
+   "name": "Ração de combate",
+   "primary": "military_depot",
+   "reason": "racao de combate",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "food",
+   "tier": "final"
+  },
+  "computer": {
+   "kind": "final",
+   "name": "Computador",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "final"
+  },
+  "construction_material": {
+   "kind": "final",
+   "name": "Material de construção",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "construction",
+   "tier": "final"
+  },
+  "containers": {
+   "kind": "intermediate",
+   "name": "Recipientes",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "packaging",
+   "tier": "semi"
+  },
+  "copper": {
+   "kind": "raw",
+   "name": "Cobre",
+   "primary": "bulk_yard",
+   "reason": "minerio de cobre",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "copper_ingot": {
+   "kind": "intermediate",
+   "name": "Lingote de cobre",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "cotton": {
+   "kind": "raw",
+   "name": "Algodão",
+   "primary": "bulk_yard",
+   "reason": "algodao em fardos",
+   "secondary": [],
+   "sector": "textile",
+   "tier": "raw"
+  },
+  "diamond": {
+   "kind": "raw",
+   "name": "Diamante",
+   "primary": "vault",
+   "reason": "pedra preciosa",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "drone": {
+   "kind": "final",
+   "name": "Drone",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "final"
+  },
+  "electrical_material": {
+   "kind": "intermediate",
+   "name": "Material elétrico",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "construction",
+   "tier": "semi"
+  },
+  "electronic_components": {
+   "kind": "intermediate",
+   "name": "Componentes eletrônicos",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "semi"
+  },
+  "engine": {
+   "kind": "intermediate",
+   "name": "Motor",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "semi"
+  },
+  "ethanol": {
+   "kind": "intermediate",
+   "name": "Etanol",
+   "primary": "fuel_tank",
+   "reason": "etanol liquido",
+   "secondary": [],
+   "sector": "food",
+   "tier": "semi"
+  },
+  "explosives": {
+   "kind": "intermediate",
+   "name": "Explosivos",
+   "primary": "military_depot",
+   "reason": "explosivo",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "semi"
+  },
+  "fabric": {
+   "kind": "intermediate",
+   "name": "Tecido",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "textile",
+   "tier": "semi"
+  },
+  "feed": {
+   "kind": "intermediate",
+   "name": "Ração",
+   "primary": "silo",
+   "reason": "racao a granel",
+   "secondary": [],
+   "sector": "food",
+   "tier": "semi"
+  },
+  "fertilizer": {
+   "kind": "final",
+   "name": "Fertilizante",
+   "primary": "bulk_yard",
+   "reason": "fertilizante granulado/ensacado",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "agro",
+   "tier": "final"
+  },
+  "flour": {
+   "kind": "intermediate",
+   "name": "Farinha",
+   "primary": "silo",
+   "reason": "farinha ensacada circula entre silo e armazem",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "food",
+   "tier": "semi"
+  },
+  "furniture": {
+   "kind": "final",
+   "name": "Móveis",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "wood",
+   "tier": "final"
+  },
+  "fuselage": {
+   "kind": "intermediate",
+   "name": "Fuselagem",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "transport",
+   "tier": "semi"
+  },
+  "gas": {
+   "kind": "raw",
+   "name": "Gás",
+   "primary": "gas_storage",
+   "reason": "gas natural",
+   "secondary": [],
+   "sector": "energy",
+   "tier": "raw"
+  },
+  "gold": {
+   "kind": "raw",
+   "name": "Ouro",
+   "primary": "vault",
+   "reason": "ouro em barra/lingote bruto",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "gold_bar": {
+   "kind": "intermediate",
+   "name": "Barra de ouro",
+   "primary": "vault",
+   "reason": "barra de ouro acabada",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "gunpowder": {
+   "kind": "intermediate",
+   "name": "Pólvora",
+   "primary": "military_depot",
+   "reason": "polvora",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "semi"
+  },
+  "hardware": {
+   "kind": "intermediate",
+   "name": "Ferragens",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "industrial_machinery": {
+   "kind": "final",
+   "name": "Maquinário industrial",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "final"
+  },
+  "industrial_tools": {
+   "kind": "intermediate",
+   "name": "Ferramentas industriais",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "semi"
+  },
+  "infantry_gear": {
+   "kind": "final",
+   "name": "Equipamento de infantaria",
+   "primary": "military_depot",
+   "reason": "equipamento de infantaria",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "military",
+   "tier": "final"
+  },
+  "iron": {
+   "kind": "raw",
+   "name": "Ferro",
+   "primary": "bulk_yard",
+   "reason": "minerio de ferro",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "iron_ingot": {
+   "kind": "intermediate",
+   "name": "Lingote de ferro",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "jewelry": {
+   "kind": "final",
+   "name": "Joias",
+   "primary": "vault",
+   "reason": "joia de alto valor",
+   "secondary": [],
+   "sector": "luxury",
+   "tier": "final"
+  },
+  "lead": {
+   "kind": "raw",
+   "name": "Chumbo",
+   "primary": "bulk_yard",
+   "reason": "minerio de chumbo",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "lead_ingot": {
+   "kind": "intermediate",
+   "name": "Lingote de chumbo",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "luxury_furniture": {
+   "kind": "final",
+   "name": "Móveis de luxo",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "wood",
+   "tier": "final"
+  },
+  "maize": {
+   "kind": "raw",
+   "name": "Milho",
+   "primary": "silo",
+   "reason": "grao a granel",
+   "secondary": [],
+   "sector": "food",
+   "tier": "raw"
+  },
+  "meat": {
+   "kind": "final",
+   "name": "Carne",
+   "primary": "cold_room",
+   "reason": "carne exige cadeia de frio",
+   "secondary": [],
+   "sector": "food",
+   "tier": "final"
+  },
+  "mechanical_parts": {
+   "kind": "intermediate",
+   "name": "Peças mecânicas",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "medicine": {
+   "kind": "final",
+   "name": "Remédios",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "final"
+  },
+  "micromotor": {
+   "kind": "intermediate",
+   "name": "Micromotor e bobinas",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "semi"
+  },
+  "military_drone": {
+   "kind": "final",
+   "name": "Drone militar",
+   "primary": "military_depot",
+   "reason": "drone militar",
+   "secondary": [],
+   "sector": "military",
+   "tier": "final"
+  },
+  "mining_machine": {
+   "kind": "final",
+   "name": "Máquina de mineração",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "final"
+  },
+  "naval_hull": {
+   "kind": "intermediate",
+   "name": "Casco naval",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "transport",
+   "tier": "semi"
+  },
+  "oil": {
+   "kind": "raw",
+   "name": "Petróleo",
+   "primary": "fuel_tank",
+   "reason": "petroleo cru",
+   "secondary": [],
+   "sector": "energy",
+   "tier": "raw"
+  },
+  "organic_fertilizer": {
+   "kind": "final",
+   "name": "Adubo orgânico",
+   "primary": "bulk_yard",
+   "reason": "adubo organico a granel",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "agro",
+   "tier": "final"
+  },
+  "pallets": {
+   "kind": "final",
+   "name": "Pallets",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "wood",
+   "tier": "final"
+  },
+  "paper": {
+   "kind": "final",
+   "name": "Papel",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "wood",
+   "tier": "final"
+  },
+  "phone": {
+   "kind": "final",
+   "name": "Celular",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "final"
+  },
+  "phosphate": {
+   "kind": "raw",
+   "name": "Fosfato",
+   "primary": "bulk_yard",
+   "reason": "fosfato a granel",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "planks": {
+   "kind": "intermediate",
+   "name": "Tábuas",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "wood",
+   "tier": "semi"
+  },
+  "plastic": {
+   "kind": "intermediate",
+   "name": "Plástico",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "semi"
+  },
+  "plastic_parts": {
+   "kind": "intermediate",
+   "name": "Peças plásticas",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "semi"
+  },
+  "potato": {
+   "kind": "raw",
+   "name": "Batata",
+   "primary": "cold_room",
+   "reason": "tuberculo perecivel",
+   "secondary": [],
+   "sector": "food",
+   "tier": "raw"
+  },
+  "precision_tools": {
+   "kind": "intermediate",
+   "name": "Ferramentas de precisão",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "semi"
+  },
+  "premium_spirits": {
+   "kind": "final",
+   "name": "Destilado premium",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "food",
+   "tier": "final"
+  },
+  "processed_rare_earths": {
+   "kind": "intermediate",
+   "name": "Terras raras processadas",
+   "primary": "vault",
+   "reason": "oxidos processados",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "projectile": {
+   "kind": "intermediate",
+   "name": "Projétil",
+   "primary": "military_depot",
+   "reason": "projetil",
+   "secondary": [],
+   "sector": "military",
+   "tier": "semi"
+  },
+  "rare_earths": {
+   "kind": "raw",
+   "name": "Terras raras",
+   "primary": "vault",
+   "reason": "terras raras (alto valor)",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "refined_sulfur": {
+   "kind": "intermediate",
+   "name": "Enxofre refinado",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "semi"
+  },
+  "rice": {
+   "kind": "raw",
+   "name": "Arroz",
+   "primary": "silo",
+   "reason": "grao a granel",
+   "secondary": [],
+   "sector": "food",
+   "tier": "raw"
+  },
+  "robots": {
+   "kind": "final",
+   "name": "Robôs industriais",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "final"
+  },
+  "rubber": {
+   "kind": "intermediate",
+   "name": "Borracha",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "semi"
+  },
+  "sawdust": {
+   "kind": "byproduct",
+   "name": "Serragem",
+   "primary": "bulk_yard",
+   "reason": "serragem a granel",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "wood",
+   "tier": "semi"
+  },
+  "sensors": {
+   "kind": "intermediate",
+   "name": "Sensores e óptica",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "semi"
+  },
+  "shoes": {
+   "kind": "final",
+   "name": "Calçados",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "textile",
+   "tier": "final"
+  },
+  "small_arms": {
+   "kind": "final",
+   "name": "Armas leves",
+   "primary": "military_depot",
+   "reason": "arma leve",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "military",
+   "tier": "final"
+  },
+  "soy": {
+   "kind": "raw",
+   "name": "Soja",
+   "primary": "silo",
+   "reason": "oleaginosa a granel",
+   "secondary": [],
+   "sector": "food",
+   "tier": "raw"
+  },
+  "spare_parts": {
+   "kind": "final",
+   "name": "Peças de reposição",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "final"
+  },
+  "special_alloy": {
+   "kind": "intermediate",
+   "name": "Liga especial",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "steel": {
+   "kind": "intermediate",
+   "name": "Aço",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "steel_sheet": {
+   "kind": "intermediate",
+   "name": "Chapas de aço",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "steel_structure": {
+   "kind": "intermediate",
+   "name": "Estrutura metálica",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "construction",
+   "tier": "semi"
+  },
+  "sulfur": {
+   "kind": "raw",
+   "name": "Enxofre",
+   "primary": "bulk_yard",
+   "reason": "enxofre a granel",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "synthetic_fabric": {
+   "kind": "intermediate",
+   "name": "Tecido sintético",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "textile",
+   "tier": "semi"
+  },
+  "tires": {
+   "kind": "intermediate",
+   "name": "Pneus",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "semi"
+  },
+  "tools": {
+   "kind": "final",
+   "name": "Ferramentas",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "final"
+  },
+  "tractor": {
+   "kind": "final",
+   "name": "Trator",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "machinery",
+   "tier": "final"
+  },
+  "truck": {
+   "kind": "final",
+   "name": "Caminhão",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "transport",
+   "tier": "final"
+  },
+  "tungsten": {
+   "kind": "raw",
+   "name": "Tungstênio",
+   "primary": "bulk_yard",
+   "reason": "minerio de tungstenio",
+   "secondary": [],
+   "sector": "mining",
+   "tier": "raw"
+  },
+  "tungsten_ingot": {
+   "kind": "intermediate",
+   "name": "Lingote de tungstênio",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "uniforms": {
+   "kind": "final",
+   "name": "Uniformes",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "textile",
+   "tier": "final"
+  },
+  "uranium": {
+   "kind": "raw",
+   "name": "Urânio",
+   "primary": "vault",
+   "reason": "material nuclear",
+   "secondary": [],
+   "sector": "energy",
+   "tier": "raw"
+  },
+  "vaccines": {
+   "kind": "final",
+   "name": "Vacinas",
+   "primary": "cold_room",
+   "reason": "vacina exige cadeia de frio",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "chemical",
+   "tier": "final"
+  },
+  "wheat": {
+   "kind": "raw",
+   "name": "Trigo",
+   "primary": "silo",
+   "reason": "grao a granel",
+   "secondary": [],
+   "sector": "food",
+   "tier": "raw"
+  },
+  "wires": {
+   "kind": "intermediate",
+   "name": "Fios e cabos",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "metal",
+   "tier": "semi"
+  },
+  "wood": {
+   "kind": "raw",
+   "name": "Madeira",
+   "primary": "bulk_yard",
+   "reason": "madeira em toras",
+   "secondary": [],
+   "sector": "wood",
+   "tier": "raw"
+  },
+  "gasoline": {
+   "kind": "final",
+   "name": "Gasolina",
+   "primary": "fuel_tank",
+   "reason": "gasolina refinada",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "final"
+  },
+  "diesel": {
+   "kind": "final",
+   "name": "Diesel",
+   "primary": "fuel_tank",
+   "reason": "diesel refinado",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "final"
+  },
+  "jet_fuel": {
+   "kind": "final",
+   "name": "Querosene de aviação",
+   "primary": "fuel_tank",
+   "reason": "querosene de aviação refinado",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "final"
   }
+ },
+ "warehouses": {
+  "bulk_yard": {
+   "guards": "carvao, minerios, fosfato, enxofre, madeira, algodao",
+   "name": "Patio de granéis",
+   "where": "regiao (mina) + porto"
+  },
+  "cold_room": {
+   "guards": "carne, pereciveis e cadeia de frio (exige energia)",
+   "name": "Camara fria / frigorifico",
+   "where": "cidade + porto"
+  },
+  "fuel_tank": {
+   "guards": "petroleo, combustiveis, etanol e quimicos liquidos",
+   "name": "Tanque de petroleo/combustiveis",
+   "where": "regiao (campo/refinaria) + porto"
+  },
+  "gas_storage": {
+   "guards": "gas natural",
+   "name": "Armazenagem de gas",
+   "where": "regiao"
+  },
+  "general_warehouse": {
+   "guards": "semiprocessados e finais",
+   "name": "Armazem geral",
+   "where": "cidade"
+  },
+  "military_depot": {
+   "guards": "municao, explosivos e racao de combate",
+   "name": "Paiol militar",
+   "where": "economia de guerra"
+  },
+  "silo": {
+   "guards": "graos e farinaceos a granel",
+   "name": "Silo graneleiro",
+   "where": "regiao + porto"
+  },
+  "vault": {
+   "guards": "ouro, diamante, uranio, terras raras (liga as reservas do BC)",
+   "name": "Cofre",
+   "where": "cidade"
+  }
+ }
 }

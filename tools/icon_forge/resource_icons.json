@@ -1187,34 +1187,6 @@
     }
    ]
   },
-  "fuel": {
-   "label": "Combustível",
-   "color": "#C4552F",
-   "tier": "final",
-   "layers": [
-    {
-     "el": "rect",
-     "x": 6,
-     "y": 6,
-     "width": 9,
-     "height": 15,
-     "mode": "fill",
-     "rx": 1.4
-    },
-    {
-     "el": "path",
-     "d": "M15 9h3.5v5.5a2.5 2.5 0 0 1-2.5 2.5",
-     "mode": "stroke",
-     "w": 1.8
-    },
-    {
-     "el": "path",
-     "d": "M8.5 10h4M8.5 13h4",
-     "mode": "cut",
-     "w": 1.0
-    }
-   ]
-  },
   "plastic": {
    "label": "Plástico",
    "color": "#4E8FB8",
@@ -3137,6 +3109,90 @@
      "d": "M6 10.5H4M18 10.5h2",
      "mode": "cut",
      "w": 1.2
+    }
+   ]
+  },
+  "gasoline": {
+   "label": "Gasolina",
+   "color": "#C4552F",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 6,
+     "width": 9,
+     "height": 15,
+     "mode": "fill",
+     "rx": 1.4
+    },
+    {
+     "el": "path",
+     "d": "M15 9h3.5v5.5a2.5 2.5 0 0 1-2.5 2.5",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M8.5 10h4M8.5 13h4",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "diesel": {
+   "label": "Diesel",
+   "color": "#D08A2E",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 6,
+     "width": 9,
+     "height": 15,
+     "mode": "fill",
+     "rx": 1.4
+    },
+    {
+     "el": "path",
+     "d": "M15 9h3.5v5.5a2.5 2.5 0 0 1-2.5 2.5",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M8.5 10h4M8.5 13h4",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "jet_fuel": {
+   "label": "Querosene de aviação",
+   "color": "#7FA8C9",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 6,
+     "width": 9,
+     "height": 15,
+     "mode": "fill",
+     "rx": 1.4
+    },
+    {
+     "el": "path",
+     "d": "M15 9h3.5v5.5a2.5 2.5 0 0 1-2.5 2.5",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M8.5 10h4M8.5 13h4",
+     "mode": "cut",
+     "w": 1.0
     }
    ]
   }

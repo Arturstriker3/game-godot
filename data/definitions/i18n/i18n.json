@@ -1853,7 +1853,6 @@
   "product.feed": "Ração",
   "product.fertilizer": "Fertilizante",
   "product.flour": "Farinha",
-  "product.fuel": "Combustível",
   "product.furniture": "Móveis",
   "product.fuselage": "Fuselagem",
   "product.gas": "Gás",
@@ -1960,7 +1959,6 @@
   "resource.feed": "Ração",
   "resource.fertilizer": "Fertilizante",
   "resource.flour": "Farinha",
-  "resource.fuel": "Combustível",
   "resource.furniture": "Móveis",
   "resource.fuselage": "Fuselagem",
   "resource.gold_bar": "Barra de ouro",
@@ -2319,7 +2317,15 @@
   "city.name.IND-GUW": "Guwahati",
   "city.name.IND-RAI": "Raipur",
   "city.name.IND-RAN": "Ranchi",
-  "city.name.IND-THI": "Thiruvananthapuram"
+  "city.name.IND-THI": "Thiruvananthapuram",
+  "building.refinery": "Refinaria",
+  "building.chemical_plant": "Planta química",
+  "product.gasoline": "Gasolina",
+  "resource.gasoline": "Gasolina",
+  "product.diesel": "Diesel",
+  "resource.diesel": "Diesel",
+  "product.jet_fuel": "Querosene de aviação",
+  "resource.jet_fuel": "Querosene de aviação"
  },
  "en": {
   "banks.central": "Central bank",
@@ -4175,7 +4181,6 @@
   "product.feed": "Animal feed",
   "product.fertilizer": "Fertilizer",
   "product.flour": "Flour",
-  "product.fuel": "Fuel",
   "product.furniture": "Furniture",
   "product.fuselage": "Fuselage",
   "product.gas": "Gas",
@@ -4282,7 +4287,6 @@
   "resource.feed": "Animal feed",
   "resource.fertilizer": "Fertilizer",
   "resource.flour": "Flour",
-  "resource.fuel": "Fuel",
   "resource.furniture": "Furniture",
   "resource.fuselage": "Fuselage",
   "resource.gold_bar": "Gold bar",
@@ -4641,7 +4645,15 @@
   "city.name.IND-GUW": "Guwahati",
   "city.name.IND-RAI": "Raipur",
   "city.name.IND-RAN": "Ranchi",
-  "city.name.IND-THI": "Thiruvananthapuram"
+  "city.name.IND-THI": "Thiruvananthapuram",
+  "building.refinery": "Refinery",
+  "building.chemical_plant": "Chemical plant",
+  "product.gasoline": "Gasoline",
+  "resource.gasoline": "Gasoline",
+  "product.diesel": "Diesel",
+  "resource.diesel": "Diesel",
+  "product.jet_fuel": "Jet fuel",
+  "resource.jet_fuel": "Jet fuel"
  },
  "es": {
   "banks.central": "Banco central",
@@ -6497,7 +6509,6 @@
   "product.feed": "Pienso",
   "product.fertilizer": "Fertilizante",
   "product.flour": "Harina",
-  "product.fuel": "Combustible",
   "product.furniture": "Muebles",
   "product.fuselage": "Fuselaje",
   "product.gas": "Gas",
@@ -6604,7 +6615,6 @@
   "resource.feed": "Pienso",
   "resource.fertilizer": "Fertilizante",
   "resource.flour": "Harina",
-  "resource.fuel": "Combustible",
   "resource.furniture": "Muebles",
   "resource.fuselage": "Fuselaje",
   "resource.gold_bar": "Barra de oro",
@@ -6963,6 +6973,14 @@
   "city.name.IND-GUW": "Guwahati",
   "city.name.IND-RAI": "Raipur",
   "city.name.IND-RAN": "Ranchi",
-  "city.name.IND-THI": "Thiruvananthapuram"
+  "city.name.IND-THI": "Thiruvananthapuram",
+  "building.refinery": "Refinería",
+  "building.chemical_plant": "Planta química",
+  "product.gasoline": "Gasolina",
+  "resource.gasoline": "Gasolina",
+  "product.diesel": "Diésel",
+  "resource.diesel": "Diésel",
+  "product.jet_fuel": "Queroseno de aviación",
+  "resource.jet_fuel": "Queroseno de aviación"
  }
 }

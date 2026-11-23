@@ -200,7 +200,8 @@ bool SimCore::nation_food_secure(const std::string& nation) const {
 	return stock_ge >= need * kFleetFoodSecureDays;
 }
 void SimCore::init_fleets() {
-	ws_.fleet_product_fuel = product_index(std::string("fuel"));
+	ws_.fleet_product_diesel = product_index(std::string("diesel"));
+	ws_.fleet_product_jet = product_index(std::string("jet_fuel"));
 	ws_.fleet_product_truck = product_index(std::string("truck"));
 	ws_.fleet_product_ship = product_index(std::string("cargo_ship"));
 	ws_.fleet_product_plane = product_index(std::string("cargo_plane"));
@@ -231,12 +232,21 @@ void SimCore::init_fleets() {
 		fleet.target_trucks = fleet.trucks;
 		fleet.target_ships = fleet.ships;
 		fleet.target_planes = fleet.planes;
-		const double fuel_day = fleet.trucks * kFleetFuelPerTruckDay
-			+ fleet.ships * kFleetFuelPerShipDay
-			+ fleet.planes * kFleetFuelPerPlaneDay;
-		fleet.fuel_target = std::max(fuel_day * kFleetFuelDays,
-			population * kFleetFuelPerCapita);
-		fleet.fuel = fleet.fuel_target;
+		// F0: reserva por grau. O piso per capita antigo era um único colchão
+		// para todos os modais; aqui ele é rateado pela participação de cada
+		// grau no consumo diário (nada de constante nova).
+		const double diesel_day = fleet.trucks * kFleetFuelPerTruckDay
+			+ fleet.ships * kFleetFuelPerShipDay;
+		const double jet_day = fleet.planes * kFleetFuelPerPlaneDay;
+		const double total_day = diesel_day + jet_day;
+		const double diesel_share = total_day > 1e-12 ? diesel_day / total_day : 1.0;
+		const double jet_share = total_day > 1e-12 ? jet_day / total_day : 0.0;
+		fleet.diesel_target = std::max(diesel_day * kFleetFuelDays,
+			population * kFleetFuelPerCapita * diesel_share);
+		fleet.jet_target = std::max(jet_day * kFleetFuelDays,
+			population * kFleetFuelPerCapita * jet_share);
+		fleet.diesel = fleet.diesel_target;
+		fleet.jet_fuel = fleet.jet_target;
 		fleet.spare_parts = kFleetPartsReserveMonths * (fleet.trucks * kFleetPartsPerTruckMonth
 			+ fleet.ships * kFleetPartsPerShipMonth
 			+ fleet.planes * kFleetPartsPerPlaneMonth);
@@ -258,17 +268,20 @@ TransportDemand SimCore::route_demand(const City& seller,
 		const ModeSpec& mode_spec = spec(mode);
 		const double vehicles = std::ceil(tons
 			/ std::max(1e-9, mode_spec.batch_capacity_tons));
-		demand.fuel += tons * km * mode_spec.fuel_per_ton_km;
+		const double fuel = tons * km * mode_spec.fuel_per_ton_km;
 		switch (mode) {
 			case TransportMode::Ship:
+				demand.diesel += fuel;
 				demand.ships += vehicles;
 				demand.distance_ship_km += km;
 				break;
 			case TransportMode::Plane:
+				demand.jet_fuel += fuel;
 				demand.planes += vehicles;
 				break;
 			case TransportMode::Truck:
 			default:
+				demand.diesel += fuel;
 				demand.trucks += vehicles;
 				demand.distance_truck_km += km;
 				break;
@@ -297,7 +310,8 @@ double SimCore::fleet_capacity_scale(const std::string& nation,
 		const TransportDemand& demand, bool& fuel_limited) const {
 	fuel_limited = false;
 	if (demand.trucks <= 1e-9 && demand.ships <= 1e-9
-			&& demand.planes <= 1e-9 && demand.fuel <= 1e-9) {
+			&& demand.planes <= 1e-9 && demand.diesel <= 1e-9
+			&& demand.jet_fuel <= 1e-9) {
 		return 1.0;
 	}
 	const auto found = ws_.fleets.find(nation);
@@ -316,10 +330,17 @@ double SimCore::fleet_capacity_scale(const std::string& nation,
 	apply(fleet.trucks * fleet.health[0] - fleet.trucks_busy, demand.trucks);
 	apply(fleet.ships * fleet.health[1] - fleet.ships_busy, demand.ships);
 	apply(fleet.planes * fleet.health[2] - fleet.planes_busy, demand.planes);
-	if (demand.fuel > 1e-9) {
-		const double fuel_scale = std::max(0.0, fleet.fuel) / demand.fuel;
-		if (fuel_scale < scale) {
-			scale = fuel_scale;
+	if (demand.diesel > 1e-9) {
+		const double diesel_scale = std::max(0.0, fleet.diesel) / demand.diesel;
+		if (diesel_scale < scale) {
+			scale = diesel_scale;
+			fuel_limited = true;
+		}
+	}
+	if (demand.jet_fuel > 1e-9) {
+		const double jet_scale = std::max(0.0, fleet.jet_fuel) / demand.jet_fuel;
+		if (jet_scale < scale) {
+			scale = jet_scale;
 			fuel_limited = true;
 		}
 	}
@@ -335,16 +356,25 @@ void SimCore::fleet_reserve(const std::string& nation,
 	fleet.trucks_busy += demand.trucks;
 	fleet.ships_busy += demand.ships;
 	fleet.planes_busy += demand.planes;
-	fleet.fuel = std::max(0.0, fleet.fuel - demand.fuel);
-	fleet.fuel_used_today += demand.fuel;
-	fleet.fuel_used_total += demand.fuel;
+	fleet.diesel = std::max(0.0, fleet.diesel - demand.diesel);
+	fleet.jet_fuel = std::max(0.0, fleet.jet_fuel - demand.jet_fuel);
+	fleet.diesel_used_today += demand.diesel;
+	fleet.diesel_used_total += demand.diesel;
+	fleet.jet_used_today += demand.jet_fuel;
+	fleet.jet_used_total += demand.jet_fuel;
+	fleet.fuel_used_today += demand.diesel + demand.jet_fuel;
+	fleet.fuel_used_total += demand.diesel + demand.jet_fuel;
 }
-double SimCore::fleet_fuel_price() const {
-	if (ws_.fleet_product_fuel >= 0
-			&& ws_.fleet_product_fuel < ws_.products) {
-		return base_price(ws_.fleet_product_fuel);
+double SimCore::fleet_fuel_price(TransportMode mode) const {
+	// F0: o custo do trecho usa o grau que o modal queima — avião paga
+	// querosene de aviação; caminhão/navio pagam diesel.
+	const int product = mode == TransportMode::Plane
+		? ws_.fleet_product_jet : ws_.fleet_product_diesel;
+	if (product >= 0 && product < ws_.products) {
+		return base_price(product);
 	}
-	// goods.json: base_price do fuel (fallback antes de set_goods).
+	// Fallback antes de set_goods (goods.json não carregado): o preço do antigo
+	// combustível genérico, mantido só para não inventar valor no bootstrap.
 	return 43.5;
 }
 double SimCore::fleet_buy_core(const std::string& nation, int product_index,
@@ -432,8 +462,13 @@ double SimCore::fleet_buy_core(const std::string& nation, int product_index,
 		remaining -= quantity;
 	}
 	const double bought = amount - remaining;
-	if (product_index == ws_.fleet_product_fuel) {
-		fleet.fuel += bought;
+	if (product_index == ws_.fleet_product_diesel) {
+		fleet.diesel += bought;
+		fleet.diesel_bought_total += bought;
+		fleet.fuel_bought_total += bought;
+	} else if (product_index == ws_.fleet_product_jet) {
+		fleet.jet_fuel += bought;
+		fleet.jet_bought_total += bought;
 		fleet.fuel_bought_total += bought;
 	} else if (product_index == ws_.fleet_product_parts) {
 		fleet.spare_parts += bought;
@@ -546,12 +581,18 @@ void SimCore::phase_fleet() {
 			// acelera a reposição: +50% no alvo e os veículos necessários para
 			// escoar a carga barrada em ~10 dias.
 			const bool food_secure = nation_food_secure(nation);
-			const double fuel_day = fleet.trucks * kFleetFuelPerTruckDay
-				+ fleet.ships * kFleetFuelPerShipDay
-				+ fleet.planes * kFleetFuelPerPlaneDay;
-			fleet.fuel_target = std::max(fleet.fuel_target,
-				std::max(fuel_day * kFleetFuelDays,
-					nation_sim_population(nation) * kFleetFuelPerCapita));
+			const double diesel_day = fleet.trucks * kFleetFuelPerTruckDay
+				+ fleet.ships * kFleetFuelPerShipDay;
+			const double jet_day = fleet.planes * kFleetFuelPerPlaneDay;
+			const double total_day = diesel_day + jet_day;
+			const double diesel_share = total_day > 1e-12 ? diesel_day / total_day : 1.0;
+			const double jet_share = total_day > 1e-12 ? jet_day / total_day : 0.0;
+			const double per_capita_floor =
+				nation_sim_population(nation) * kFleetFuelPerCapita;
+			fleet.diesel_target = std::max(fleet.diesel_target,
+				std::max(diesel_day * kFleetFuelDays, per_capita_floor * diesel_share));
+			fleet.jet_target = std::max(fleet.jet_target,
+				std::max(jet_day * kFleetFuelDays, per_capita_floor * jet_share));
 			const double parts_target = kFleetPartsTargetMonths * parts_need;
 			const double urgency = fleet.queue_today > 1e-9 ? 1.5 : 1.0;
 			const double queued_trucks = fleet.queue_today / (25.0 * 10.0);
@@ -559,14 +600,21 @@ void SimCore::phase_fleet() {
 			double spent = 0.0;
 			double unfilled = 0.0;
 			// Sem folga alimentar, o orçamento público fica com a comida: só
-			// repõe em emergência (fuel abaixo de 20% do alvo, peças abaixo de
-			// um mês). Com folga, a reposição segue o alvo normal.
-			const bool fuel_emergency = fleet.fuel < fleet.fuel_target * 0.20;
+			// repõe em emergência (cada grau abaixo de 20% do alvo, peças
+			// abaixo de um mês). Com folga, a reposição segue o alvo normal.
+			const bool diesel_emergency = fleet.diesel < fleet.diesel_target * 0.20;
+			const bool jet_emergency = fleet.jet_fuel < fleet.jet_target * 0.20;
 			const bool parts_emergency = fleet.spare_parts < parts_need;
-			if (ws_.fleet_product_fuel >= 0 && fleet.fuel < fleet.fuel_target
-					&& (food_secure || fuel_emergency)) {
-				fleet_buy_core(nation, ws_.fleet_product_fuel,
-					fleet.fuel_target - fleet.fuel, kFleetBudgetShare,
+			if (ws_.fleet_product_diesel >= 0 && fleet.diesel < fleet.diesel_target
+					&& (food_secure || diesel_emergency)) {
+				fleet_buy_core(nation, ws_.fleet_product_diesel,
+					fleet.diesel_target - fleet.diesel, kFleetBudgetShare,
+					spent, unfilled);
+			}
+			if (ws_.fleet_product_jet >= 0 && fleet.jet_fuel < fleet.jet_target
+					&& (food_secure || jet_emergency)) {
+				fleet_buy_core(nation, ws_.fleet_product_jet,
+					fleet.jet_target - fleet.jet_fuel, kFleetBudgetShare,
 					spent, unfilled);
 			}
 			if (ws_.fleet_product_parts >= 0 && fleet.spare_parts < parts_target
@@ -609,6 +657,8 @@ void SimCore::phase_fleet() {
 	// seguem reservados até a chegada.
 	for (auto& entry : ws_.fleets) {
 		entry.second.fuel_used_today = 0.0;
+		entry.second.diesel_used_today = 0.0;
+		entry.second.jet_used_today = 0.0;
 		entry.second.queue_today = 0.0;
 		entry.second.missed_no_fleet = 0.0;
 		entry.second.missed_no_fuel = 0.0;

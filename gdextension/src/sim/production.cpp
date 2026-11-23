@@ -71,6 +71,19 @@ int SimCore::pick_recipe(const City& city, int output_product) const {
 		if (!available) {
 			continue;
 		}
+		// F0 (co-produção): o custo por tonelada do produto principal é
+		// abatido pelo valor das saídas extras, na mesma base por lote.
+		for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+			const int product = recipe.byproducts[slot];
+			if (product < 0 || product >= ws_.products) {
+				continue;
+			}
+			const Market& market = city.markets[product];
+			const double price = market.price > 0.0
+				? market.price : base_price(product);
+			cost -= recipe.byproduct_qty[slot] * price / recipe.yield;
+		}
+		cost = std::max(0.0, cost);
 		if (best < 0 || cost < best_cost) {
 			best = static_cast<int>(index);
 			best_cost = cost;
@@ -229,7 +242,23 @@ void SimCore::phase_production() {
 					const double unit_cost = unit_input_cost + unit_labor_opex
 						+ (industrial ? city.power_cost_per_value
 							* base_price(building.output_product) : 0.0);
-					const double margin = output_price - unit_cost;
+					// F0 (co-produção): a margem da firma soma o valor das
+					// saídas extras. Sem isso a refinaria pareceria deficitária
+					// (o custo do petróleo é dividido só pela gasolina) e
+					// cortaria produção mesmo com diesel/querosene vendáveis.
+					double unit_byproduct_revenue = 0.0;
+					if (recipe.yield > 0.0) {
+						for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+							const int product = recipe.byproducts[slot];
+							if (product < 0 || product >= ws_.products) {
+								continue;
+							}
+							unit_byproduct_revenue += recipe.byproduct_qty[slot]
+								/ recipe.yield * city.markets[product].price;
+						}
+					}
+					const double margin = output_price + unit_byproduct_revenue
+						- unit_cost;
 					double margin_scale = 1.0;
 					if (unit_cost > 0.0 && margin < 0.0) {
 						// Só corta com prejuízo PROFUNDO (> 25% do custo); em

@@ -6,7 +6,7 @@ extends SceneTree
 ## é o runner correto (`& $godot --headless --path . --script
 ## res://tools/goods_data_test.gd`). Sai com código != 0 em qualquer falha.
 ##
-## Cobre: contagem e ordem canônica dos 113 bens, preço/procedência, receitas sem
+## Cobre: contagem e ordem canônica dos 115 bens, preço/procedência, receitas sem
 ## insumo órfão nem ciclo, todo bem com produtor e consumidor, necessidades,
 ## moedas, i18n × 3 e ícone (manifesto + SVG) de cada bem.
 
@@ -26,8 +26,8 @@ const CANONICAL_PRIMARIES: Array[String] = [
 	"sulfur", "diamond", "coal", "copper", "gas",
 	"oil", "potato", "soy", "cotton", "wood", "uranium",
 ]
-const EXPECTED_GOODS := 113
-const EXPECTED_NEW_GOODS := 92
+const EXPECTED_GOODS := 115
+const EXPECTED_NEW_GOODS := 94
 const KIND_TO_TIER := {
 	"raw": "raw", "intermediate": "semi", "byproduct": "semi", "final": "final",
 }

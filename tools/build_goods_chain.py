@@ -2,11 +2,11 @@
 """Gera e valida os dados das cadeias de produção (Fase F1 do plano).
 
 Fontes de verdade:
-  - docs/economy/production_chains_spec.json  (92 bens, receitas, necessidades)
+  - docs/economy/production_chains_spec.json  (94 bens, receitas, necessidades)
   - data/definitions/scenario/nations.json    (PIB PPP e moeda por nação)
 
 Saídas (nada aqui toca a simulação C++; o núcleo ignora os bens que não conhece):
-  - data/definitions/economy/goods.json       (113 bens, ordem canônica 0..112)
+  - data/definitions/economy/goods.json       (115 bens, ordem canônica 0..114)
   - data/definitions/economy/recipes.json     (receitas normalizadas)
   - data/definitions/economy/needs.json       (necessidades das POPs)
   - data/definitions/economy/currencies.json  (moeda por nação e câmbio derivado)
@@ -148,7 +148,7 @@ EQUIVALENCE = {
     "protein": {"meat": 1.0, "canned_food": 0.8},
 }
 
-# Traduções en/es dos 92 bens novos (pt-BR vem do `name` da spec).
+# Traduções en/es dos 94 bens novos (pt-BR vem do `name` da spec).
 TRANSLATIONS = {
     "flour": ("Flour", "Harina"),
     "bran": ("Bran", "Salvado"),
@@ -176,7 +176,9 @@ TRANSLATIONS = {
     "paper": ("Paper", "Papel"),
     "pallets": ("Pallets", "Palés"),
     "charcoal": ("Charcoal", "Carbón vegetal"),
-    "fuel": ("Fuel", "Combustible"),
+    "gasoline": ("Gasoline", "Gasolina"),
+    "diesel": ("Diesel", "Diésel"),
+    "jet_fuel": ("Jet fuel", "Queroseno de aviación"),
     "plastic": ("Plastic", "Plástico"),
     "chemicals": ("Chemicals", "Productos químicos"),
     "rubber": ("Rubber", "Caucho"),
@@ -275,6 +277,24 @@ def margin_for(good: dict) -> float:
 # --------------------------------------------------------------------------
 
 
+def recipe_outputs(good: dict, recipe: dict) -> list[dict]:
+    """Saídas explícitas de uma receita de co-produção (`outputs[]`).
+
+    A primeira saída é a principal (define `output`/`yield` para o núcleo
+    legado e para a IA); as demais são co-produtos com quantidade por lote de
+    insumo. `co_loss` é a fração declarada que vira perda/outros não modelados
+    e não entra em `outputs`.
+    """
+    co_outputs = recipe.get("co_outputs", [])
+    if not co_outputs:
+        return []
+    main = GOOD_ALIASES.get(good["id"], good["id"])
+    outputs = [{"good": main, "qty": float(recipe["yield"])}]
+    for item in co_outputs:
+        outputs.append({"good": item["id"], "qty": float(item["qty"])})
+    return outputs
+
+
 def build_recipes(spec: dict) -> list[dict]:
     recipes: list[dict] = []
     for good in spec["goods"]:
@@ -286,10 +306,18 @@ def build_recipes(spec: dict) -> list[dict]:
             if len(alternatives) > 1:
                 suffix = "_" + chr(ord("a") + index)
             inputs = [{"good": name, "qty": 1.0} for name in recipe["inputs"]]
-            byproducts = [{"good": name, "qty": 1.0} for name in good.get("byproducts", [])]
+            outputs = recipe_outputs(good, recipe)
+            if outputs:
+                # Co-produção: `byproducts` repete as saídas extras para o
+                # núcleo atual (output + byproducts) e `outputs` documenta a
+                # lista completa e conserva a quantidade de cada fração.
+                byproducts = [dict(item) for item in outputs[1:]]
+            else:
+                byproducts = [{"good": name, "qty": 1.0}
+                              for name in good.get("byproducts", [])]
             entry = {
                 "id": good["id"] + suffix,
-                "building": "factory",
+                "building": recipe.get("building", "factory"),
                 "sector": sector,
                 # `charcoal` produz o MESMO item `coal` (§4.2 do plano).
                 "output": GOOD_ALIASES.get(good["id"], good["id"]),
@@ -303,10 +331,21 @@ def build_recipes(spec: dict) -> list[dict]:
                 "coef_source": "default_unit" if len(inputs) > 1 else "spec",
                 "params_source": "estimated:order_of_magnitude",
             }
-            note = good.get("note", "")
-            if byproducts:
+            if outputs:
+                entry["outputs"] = outputs
+                if recipe.get("co_loss", 0.0) > 0.0:
+                    entry["co_loss"] = float(recipe["co_loss"])
+                entry["byproduct_coef_source"] = "spec_qty"
+            note_parts = [good.get("note", ""), recipe.get("note", "")]
+            if outputs:
+                note_parts.append(
+                    "co-produção: saídas em outputs[] com quantidade por lote; "
+                    "a fração co_loss é perda/outros não modelados")
+            elif byproducts:
                 entry["byproduct_coef_source"] = "default_unit"
-                note = (note + " | subproduto com coeficiente unitário padrão (spec sem qty)").strip(" |")
+                note_parts.append(
+                    "subproduto com coeficiente unitário padrão (spec sem qty)")
+            note = " | ".join(part for part in note_parts if part).strip(" |")
             if note:
                 entry["note"] = note
             recipes.append(entry)
@@ -318,7 +357,17 @@ def build_recipes(spec: dict) -> list[dict]:
 # --------------------------------------------------------------------------
 
 
-def price_order(spec: dict, producers: dict[str, list[dict]], byproduct_parent: dict[str, str]) -> list[str]:
+def recipe_output_items(recipe: dict) -> list[dict]:
+    """Saídas de uma receita já normalizada (outputs[] ou output/yield+byproducts)."""
+    if recipe.get("outputs"):
+        return recipe["outputs"]
+    items = [{"good": recipe["output"], "qty": float(recipe["yield"])}]
+    items.extend(recipe.get("byproducts", []))
+    return items
+
+
+def price_order(spec: dict, producers: dict[str, list[dict]],
+                byproduct_parent: dict[str, str]) -> list[str]:
     """Ordem topológica determinística (empate pela ordem da spec)."""
     ids = [g["id"] for g in spec["goods"]]
     rank = {gid: i for i, gid in enumerate(ids)}
@@ -328,6 +377,12 @@ def price_order(spec: dict, producers: dict[str, list[dict]], byproduct_parent: 
             for item in recipe["inputs"]:
                 if item["good"] in deps and item["good"] != gid:
                     deps[gid].add(item["good"])
+            # Co-produto é precificado depois do produto principal (só quando o
+            # gid iterado é o próprio principal; senão cria ciclo entre irmãos).
+            if recipe.get("outputs") and gid == recipe["output"]:
+                for item in recipe["outputs"][1:]:
+                    if item["good"] in deps and item["good"] != gid:
+                        deps[item["good"]].add(gid)
     for child, parent in byproduct_parent.items():
         if child in deps and parent in deps and child != parent:
             deps[child].add(parent)
@@ -349,7 +404,8 @@ def price_order(spec: dict, producers: dict[str, list[dict]], byproduct_parent: 
 def compute_prices(spec: dict, recipes: list[dict], primaries: dict[str, float]) -> dict[str, dict]:
     producers: dict[str, list[dict]] = {}
     for recipe in recipes:
-        producers.setdefault(recipe["output"], []).append(recipe)
+        for item in recipe_output_items(recipe):
+            producers.setdefault(item["good"], []).append(recipe)
     byproduct_parent = {}
     for good in spec["goods"]:
         for recipe in good["recipes"]:
@@ -371,7 +427,7 @@ def compute_prices(spec: dict, recipes: list[dict], primaries: dict[str, float])
                 "margin": None,
             }
             continue
-        if gid in byproduct_parent:
+        if gid in byproduct_parent and gid not in producers:
             parent = byproduct_parent[gid]
             price = MARGIN_BYPRODUCT * prices[parent]["price"]
             prices[gid] = {
@@ -381,16 +437,27 @@ def compute_prices(spec: dict, recipes: list[dict], primaries: dict[str, float])
             }
             continue
         margin = margin_for(good)
-        costs = []
+        candidates: list[tuple[float, str]] = []
         for recipe in producers.get(gid, []):
-            total = sum(item["qty"] * prices[item["good"]]["price"] for item in recipe["inputs"])
-            costs.append(total / recipe["yield"])
-        if not costs:
+            if recipe.get("outputs"):
+                total_output = sum(item["qty"] for item in recipe["outputs"])
+            else:
+                total_output = float(recipe["yield"])
+            if total_output <= 0.0:
+                continue
+            total_input = sum(item["qty"] * prices[item["good"]]["price"]
+                              for item in recipe["inputs"])
+            # Co-produção: o custo do lote é rateado por tonelada de TODAS as
+            # saídas. Sem outputs[], o denominador é só o yield (regra antiga).
+            unit_cost = total_input / total_output
+            source = "derived:co_product:v1" if recipe.get("outputs") else "derived:v1"
+            candidates.append((unit_cost * (1.0 + margin), source))
+        if not candidates:
             raise ValueError(f"bem sem receita nem subproduto nem alias: {gid}")
-        price = min(costs) * (1.0 + margin)
+        price, source = min(candidates, key=lambda item: item[0])
         prices[gid] = {
             "price": max(0.01, round(price, 2)),
-            "source": "derived:v1",
+            "source": source,
             "margin": margin,
         }
     return prices
@@ -651,7 +718,7 @@ def write_report(goods: list[dict], recipes: list[dict]) -> None:
         "",
         "Gerado por `tools/build_goods_chain.py report`. Não editar à mão.",
         "",
-        f"- Bens: **{len(goods)}** (21 primários em `order` 0..20, 92 novos em 21..112)",
+        f"- Bens: **{len(goods)}** (21 primários em `order` 0..20, 94 novos em 21..114)",
         f"- Receitas: **{len(recipes)}** (coeficiente unitário padrão onde a spec não traz qty)",
         "- Preços: primários = `calibrated:legacy` (dado já calibrado); novos = `derived:v1`",
         "  pela fórmula `min_receita(Σ qty × preço_insumo / yield) × (1 + margem)`.",
@@ -699,10 +766,10 @@ def check_all() -> list[str]:
     spec_ids = [g["id"] for g in spec["goods"]]
 
     # --- goods
-    if len(goods) != 113:
-        problems.append(f"goods.json: {len(goods)} bens (esperado 113)")
-    if len(spec_ids) != 92:
-        problems.append(f"spec: {len(spec_ids)} bens novos (esperado 92)")
+    if len(goods) != 115:
+        problems.append(f"goods.json: {len(goods)} bens (esperado 115)")
+    if len(spec_ids) != 94:
+        problems.append(f"spec: {len(spec_ids)} bens novos (esperado 94)")
     ids = [g.get("id", "") for g in goods]
     if len(set(ids)) != len(ids):
         problems.append("goods.json: ids repetidos")
@@ -771,18 +838,48 @@ def check_all() -> list[str]:
             problems.append(f"{label}: yield deve ser > 0")
         if not recipe.get("inputs"):
             problems.append(f"{label}: sem insumos")
+        input_mass = 0.0
         for item in recipe.get("inputs", []):
             if item.get("good") not in by_id:
                 problems.append(f"{label}: insumo '{item.get('good')}' não existe")
             if not isinstance(item.get("qty"), (int, float)) or item["qty"] <= 0:
                 problems.append(f"{label}: qty inválida em '{item.get('good')}'")
+            else:
+                input_mass += float(item["qty"])
             inputs_used.add(item.get("good"))
-        for item in recipe.get("byproducts", []):
-            if item.get("good") not in by_id:
-                problems.append(f"{label}: subproduto '{item.get('good')}' não existe")
-            if item.get("good") == output:
-                problems.append(f"{label}: subproduto igual ao output")
-            produced_by_byproduct.setdefault(item.get("good"), rid)
+        outputs = recipe.get("outputs", [])
+        if outputs:
+            if outputs[0].get("good") != output:
+                problems.append(f"{label}: outputs[0] difere do output")
+            if abs(float(outputs[0].get("qty", -1)) - float(recipe["yield"])) > 1e-9:
+                problems.append(f"{label}: outputs[0].qty difere do yield")
+            output_mass = 0.0
+            for item in outputs:
+                if item.get("good") not in by_id:
+                    problems.append(f"{label}: saída '{item.get('good')}' não existe")
+                if not isinstance(item.get("qty"), (int, float)) or item["qty"] <= 0:
+                    problems.append(f"{label}: qty inválida em saída '{item.get('good')}'")
+                else:
+                    output_mass += float(item["qty"])
+                if item.get("good") != output:
+                    produced_by_byproduct.setdefault(item.get("good"), rid)
+            co_loss = float(recipe.get("co_loss", 0.0))
+            if co_loss < 0.0:
+                problems.append(f"{label}: co_loss não pode ser negativo")
+            if input_mass > 0.0 and output_mass + co_loss > input_mass + 1e-9:
+                problems.append(
+                    f"{label}: conservação — saídas {output_mass:g} + perda {co_loss:g} "
+                    f"> insumos {input_mass:g}")
+            for item in recipe.get("byproducts", []):
+                if item.get("good") not in {out.get("good") for out in outputs[1:]}:
+                    problems.append(f"{label}: byproducts e outputs divergem em '{item.get('good')}'")
+        else:
+            for item in recipe.get("byproducts", []):
+                if item.get("good") not in by_id:
+                    problems.append(f"{label}: subproduto '{item.get('good')}' não existe")
+                if item.get("good") == output:
+                    problems.append(f"{label}: subproduto igual ao output")
+                produced_by_byproduct.setdefault(item.get("good"), rid)
         for key in ("jobs_per_ton", "wage", "capital_per_capacity"):
             if not isinstance(recipe.get(key), (int, float)) or recipe[key] <= 0:
                 problems.append(f"{label}: {key} deve ser > 0")
@@ -794,9 +891,13 @@ def check_all() -> list[str]:
     # ciclo (por insumo; subproduto não fecha ciclo econômico porque não é insumo de si)
     graph: dict[str, set[str]] = {gid: set() for gid in by_id}
     for recipe in recipes:
-        for item in recipe.get("inputs", []):
-            if item.get("good") in graph and recipe.get("output") in graph:
-                graph[recipe["output"]].add(item["good"])
+        output_ids = [item["good"] for item in recipe.get("outputs", [])]
+        if not output_ids and recipe.get("output"):
+            output_ids = [recipe["output"]]
+        for output_id in output_ids:
+            for item in recipe.get("inputs", []):
+                if item.get("good") in graph and output_id in graph:
+                    graph[output_id].add(item["good"])
     state: dict[str, int] = {}
 
     def visit(node: str, trail: list[str]) -> None:

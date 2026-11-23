@@ -56,7 +56,8 @@ int fuel_product_of(const WorldState& ws, int fuel) {
 	switch (fuel) {
 	case POWER_COAL: good = "coal"; break;
 	case POWER_GAS: good = "gas"; break;
-	case POWER_OIL: good = "oil"; break;
+	// F0: usina a óleo queima diesel refinado (não petróleo cru).
+	case POWER_OIL: good = "diesel"; break;
 	case POWER_NUCLEAR: good = "uranium"; break;
 	case POWER_BIOMASS: good = "wood"; break;
 	default: good = nullptr; break;

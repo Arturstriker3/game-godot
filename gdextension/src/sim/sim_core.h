@@ -608,7 +608,7 @@ public:
 		const TransportDemand& demand, bool& fuel_limited) const;
 	void fleet_reserve(const std::string& nation,
 		const TransportDemand& demand);
-	double fleet_fuel_price() const;
+	double fleet_fuel_price(TransportMode mode) const;
 	double leg_unit_freight(TransportMode mode,
 		double distance_km_value) const;
 	double leg_unit_freight_food(TransportMode mode,

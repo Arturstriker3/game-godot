@@ -4774,16 +4774,30 @@ void EconomySim::set_recipes(const Array& recipes) {
 	ws_.recipes.reserve(static_cast<std::size_t>(recipes.size()));
 	for (int index = 0; index < recipes.size(); ++index) {
 		const Dictionary entry = recipes[index];
-		const String output_id = String(entry.get("output", ""));
-		const int output = product_index(output_id);
+		// Co-produção (F0): `outputs[]` declara todas as saídas do lote, com a
+		// quantidade de cada uma. A primeira é o produto principal (capacity,
+		// demanda e preço de referência); as demais viram byproducts com a
+		// quantidade do próprio dado — o motor já produzia múltiplas saídas,
+		// isso só preserva a fração declarada em vez do coeficiente unitário.
+		const Array outputs = entry.get("outputs", Array());
+		const bool has_outputs = outputs.size() > 0;
+		Dictionary first_output;
+		if (has_outputs) {
+			first_output = outputs[0];
+		}
+		const int output = has_outputs
+			? product_index(String(first_output.get("good", "")))
+			: product_index(String(entry.get("output", "")));
 		if (output < 0) {
 			continue;  // receita de bem que nÃ£o existe no goods.json carregado
 		}
 		Recipe recipe;
 		recipe.id = std::string(String(entry.get("id", "")).utf8().get_data());
 		recipe.output = output;
-		recipe.yield = std::max(1e-9, safe_nonneg(
-			static_cast<double>(entry.get("yield", 1.0))));
+		const double declared_yield = has_outputs
+			? static_cast<double>(first_output.get("qty", 1.0))
+			: static_cast<double>(entry.get("yield", 1.0));
+		recipe.yield = std::max(1e-9, safe_nonneg(declared_yield));
 		recipe.capital_per_capacity = std::max(1.0, safe_nonneg(
 			static_cast<double>(entry.get("capital_per_capacity", 2000.0))));
 		recipe.jobs_per_ton = safe_nonneg(
@@ -4840,12 +4854,16 @@ void EconomySim::set_recipes(const Array& recipes) {
 		if (recipe.input_count <= 0) {
 			continue;
 		}
-		Array byproducts = entry.get("byproducts", Array());
-		for (int slot = 0; slot < byproducts.size() && slot < kMaxRecipeInputs; ++slot) {
+		// Com `outputs[]`, as saídas extras vêm da própria lista (qty do dado);
+		// sem ele, o caminho legado lê `byproducts` (coeficiente unitário).
+		Array byproducts = has_outputs ? outputs : entry.get("byproducts", Array());
+		const int first_byproduct = has_outputs ? 1 : 0;
+		for (int slot = first_byproduct;
+				slot < byproducts.size() && slot < kMaxRecipeInputs; ++slot) {
 			const Dictionary item = byproducts[slot];
 			const int product = product_index(String(item.get("good", "")));
 			const double qty = safe_nonneg(static_cast<double>(item.get("qty", 1.0)));
-			if (product < 0 || qty <= 0.0) {
+			if (product < 0 || product == recipe.output || qty <= 0.0) {
 				continue;
 			}
 			recipe.byproducts[recipe.byproduct_count] = product;
