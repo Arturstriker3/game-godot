@@ -44,6 +44,7 @@ var _failures: Array[String] = []
 func _init() -> void:
 	_test_refinery_coproduction()
 	_test_refinery_margin()
+	_test_refinery_accounting()
 	_test_refining_seed()
 	_test_fleet_grades()
 	_test_power_oil_burns_diesel()
@@ -158,6 +159,83 @@ func _test_refinery_margin() -> void:
 			margin_with > 0.0, "margem=%.2f" % margin_with)
 	_check("(6) sem o crédito a margem seria negativa (o defeito t138)",
 			margin_without < 0.0, "margem=%.2f" % margin_without)
+
+
+# --- (6b) contabilidade: a receita das TRÊS saídas volta à refinaria ------
+# A queixa t141: `phase_accounting` creditava a firma só pelo produto principal
+# (gasolina). A frota DEMO compra diesel/querosene do estoque da refinaria no
+# fechamento mensal (dia 30); antes da correção a refinaria aparecia com receita
+# zero e prejuízo puro nesse dia, acumulando `loss_days` até falir.
+func _test_refinery_accounting() -> void:
+	var sim := _world()
+	sim.set_ai_enabled(false)
+	sim.set_instant_construction(true)
+	var gasoline := _product(sim, "gasoline")
+	var diesel := _product(sim, "diesel")
+	var jet := _product(sim, "jet_fuel")
+	if gasoline < 0 or diesel < 0 or jet < 0:
+		_fail("(6b) goods.json sem gasoline/diesel/jet_fuel")
+		return
+	sim.set_market_stock("AGRIA", "oil", 5000.0)
+	var built: Dictionary = sim.build("AGRIA", "F0-REF-ACC", "oil", -1,
+			gasoline, REFINERY_CAPACITY, 200.0, 2.0, 12.0, 0.0,
+			"private", 10000.0, "gasoline_a")
+	if not bool(built.get("created", false)):
+		_fail("(6b) refinaria não foi construída: %s" % built)
+		return
+	# Dia 1: mercado vazio -> primeira oferta observável do produto.
+	sim.tick_day()
+	var first_markets: Array = sim.get_city_status("AGRIA").get("markets", [])
+	var bootstrap := float(
+			(first_markets[gasoline] as Dictionary).get("supply", 0.0))
+	_check("(6b) primeira oferta no mercado vazio", bootstrap > EPS,
+			"supply=%.6f" % bootstrap)
+	# Frota DEMO com tanque vazio: no fechamento mensal (dia 30) compra
+	# diesel e querosene do estoque da refinaria no mercado.
+	sim.set_fleet("DEMO", 50.0, 5.0, 5.0, 0.0, 0.0, 100.0)
+	var co_day: Dictionary = {}
+	for _day in 30:
+		sim.tick_day()
+		var status: Dictionary = sim.get_city_status("AGRIA")
+		var markets: Array = status.get("markets", [])
+		var diesel_sold := float(
+				(markets[diesel] as Dictionary).get("sold", 0.0))
+		var jet_sold := float((markets[jet] as Dictionary).get("sold", 0.0))
+		if diesel_sold > EPS and jet_sold > EPS:
+			co_day = {
+				"diesel": diesel_sold,
+				"jet": jet_sold,
+				"diesel_price": float(
+					(markets[diesel] as Dictionary).get("price", 0.0)),
+				"jet_price": float(
+					(markets[jet] as Dictionary).get("price", 0.0)),
+				"row": _recipe_row(status, "gasoline_a"),
+			}
+	if co_day.is_empty():
+		_fail("(6b) a frota não comprou diesel E querosene da refinaria")
+		return
+	var row: Dictionary = co_day["row"]
+	if row.is_empty():
+		_fail("(6b) refinaria sumiu do status antes da conta")
+		return
+	var co_value := float(co_day["diesel"]) * float(co_day["diesel_price"]) \
+			+ float(co_day["jet"]) * float(co_day["jet_price"])
+	var revenue := float(row.get("revenue", 0.0))
+	var costs := float(row.get("costs", 0.0))
+	var profit := float(row.get("profit", 0.0))
+	print(("[f0] contabilidade co-produtos: diesel=%.3f t × %.2f + querosene="
+		+ "%.3f t × %.2f = %.2f; receita=%.2f custos=%.2f lucro=%.2f") % [
+			float(co_day["diesel"]), float(co_day["diesel_price"]),
+			float(co_day["jet"]), float(co_day["jet_price"]), co_value,
+			revenue, costs, profit])
+	_check("(6b) a receita da refinaria inclui as saídas extras", revenue
+			>= co_value * 0.98,
+			"receita=%.2f vendas co-produto=%.2f" % [revenue, co_value])
+	_check("(6b) lucro = receita − custos (contabilidade conservada)",
+			absf(profit - (revenue - costs)) <= 1e-4 * maxf(1.0, absf(revenue)),
+			"lucro=%.6f receita-custos=%.6f" % [profit, revenue - costs])
+	_check("(6b) refinaria com vendas das três saídas tem lucro positivo",
+			profit > 0.0, "lucro=%.2f" % profit)
 
 
 # --- (7) seed do refino do dado (EI 2024, D-124) ---------------------------
@@ -510,6 +588,14 @@ func _array_value(status: Dictionary, key: String, index: int) -> float:
 	if index < 0 or index >= values.size():
 		return 0.0
 	return float(values[index])
+
+
+func _recipe_row(city_status: Dictionary, recipe_id: String) -> Dictionary:
+	for building in city_status.get("buildings", []):
+		var row: Dictionary = building
+		if String(row.get("recipe", "")) == recipe_id:
+			return row
+	return {}
 
 
 func _base_prices(goods: Variant) -> Dictionary:

@@ -548,19 +548,76 @@ void SimCore::phase_accounting() {
 			return building.capacity * building.output_scale
 				* mine_stage_factor(city, building);
 		};
+		// D-124 (F0): a co-produção também OFERTA o produto extra, então a
+		// receita do lote tem de ser rateada entre o produtor principal e o
+		// co-produtor. A capacidade é declarada em toneladas do produto
+		// PRINCIPAL; a capacidade equivalente da saída extra é a mesma fração
+		// do lote (`byproduct_qty / yield`). Antes, diesel/querosene vendidos
+		// ficavam sem dono e a refinaria aparecia com prejuízo de −39,39/t
+		// (diagnóstico t141): ela fechava mesmo com os três graus vendáveis.
+		std::array<double, kMaxProducts> revenue_capacity_by_output{};
 		for (const int bi : local_buildings) {
 			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
-			capacity_by_output[building.output_product] +=
-				effective_capacity(building);
+			const double effective = effective_capacity(building);
+			capacity_by_output[building.output_product] += effective;
+			revenue_capacity_by_output[building.output_product] += effective;
+			if (building.recipe < 0
+					|| building.recipe >= static_cast<int>(ws_.recipes.size())) {
+				continue;
+			}
+			const Recipe& recipe =
+				ws_.recipes[static_cast<std::size_t>(building.recipe)];
+			if (recipe.yield <= 0.0) {
+				continue;
+			}
+			for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+				const int product = recipe.byproducts[slot];
+				if (product < 0 || product >= ws_.products
+						|| product == building.output_product) {
+					continue;
+				}
+				revenue_capacity_by_output[product] += effective
+					* recipe.byproduct_qty[slot] / recipe.yield;
+			}
 		}
 		for (const int bi : local_buildings) {
 			Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			const double effective = effective_capacity(building);
-			const double share = capacity_by_output[building.output_product] > 0.0
-				? effective / capacity_by_output[building.output_product] : 0.0;
+			const double main_capacity =
+				revenue_capacity_by_output[building.output_product];
+			const double share = main_capacity > 0.0
+				? effective / main_capacity : 0.0;
 			building.revenue = city.revenue_by_product[building.output_product] * share;
+			// D-124 (F0): a receita das saídas extras do MESMO lote pertence à
+			// firma que produziu o lote, na proporção do que ela ofertou do
+			// produto (a mesma regra de capacidade acima). É reatribuição de
+			// receita já recebida pela cidade — nenhum dinheiro é criado.
+			if (building.recipe >= 0
+					&& building.recipe < static_cast<int>(ws_.recipes.size())) {
+				const Recipe& recipe =
+					ws_.recipes[static_cast<std::size_t>(building.recipe)];
+				if (recipe.yield > 0.0) {
+					for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+						const int product = recipe.byproducts[slot];
+						if (product < 0 || product >= ws_.products
+								|| product == building.output_product) {
+							continue;
+						}
+						const double product_capacity =
+							revenue_capacity_by_output[product];
+						if (product_capacity <= 0.0) {
+							continue;
+						}
+						const double co_share = effective
+							* recipe.byproduct_qty[slot] / recipe.yield
+							/ product_capacity;
+						building.revenue +=
+							city.revenue_by_product[product] * co_share;
+					}
+				}
+			}
 			building.costs = building.paid_wages + building.paid_opex
 				+ building.input_value;
 			building.profit = building.revenue - building.costs;
