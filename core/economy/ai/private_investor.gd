@@ -46,11 +46,20 @@ const MIN_SUITABILITY_EXPORT := 0.30
 
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
+## D-125: espelho de balanceamento lido do núcleo (`get_efficiency_params`) e,
+## se o binário for anterior, do próprio JSON. A IA estima a rampa da planta
+## nova com a MESMA curva que o núcleo aplica — não duplica a tabela.
+const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
+
 var _sim: Object
 var _geo: Object
 var _decisions: Array[Dictionary] = []
 var _history: Dictionary = {}
 var _id_counter := 1
+## Parâmetros de eficiência aplicados (lazy) e cache da média por (classe,
+## horizonte, partida, equipamento). O horizonte só assume 150/730 d.
+var _eff_params: Dictionary = {}
+var _eff_mean_cache: Dictionary = {}
 
 ## Totais do sistema, medidos UMA vez por dia no `plan()` do escalonador (ver
 ## `prepare_totals`). Antes, cada cidade varria todas as cidades por produto
@@ -545,22 +554,28 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 	if capacity < MIN_CAPACITY:
 		return false
 	var cost := capacity * unit_capital
-	var daily_profit := margin * capacity
-	var payback := cost / maxf(daily_profit, 0.001)
-	var risk := _price_risk(city_id, product, reference_price)
-	var adjusted_payback := payback / maxf(0.5, 1.0 - risk)
+	# D-125: o horizonte do gate decide a expectativa de eficiência. O retorno
+	# diário é a margem × capacidade × eficiência MÉDIA da rampa no horizonte —
+	# a planta nova não produz cheio no dia 1 (folha/opex, esses, são cheios).
 	var payback_limit := MIN_PAYBACK_DAYS
 	if is_recipe:
 		payback_limit = MIN_PAYBACK_DAYS_INDUSTRY
 	elif Templates.BULK_LOW_VALUE_RESOURCES.has(resource_name):
 		payback_limit = MIN_PAYBACK_DAYS_BULK
+	var existing := _find_producer(city, product)
+	var expected_efficiency := _expected_efficiency(city, resource_name,
+			template, existing, int(payback_limit))
+	var daily_profit := margin * capacity * expected_efficiency
+	var payback := expected_payback_days(cost, margin, capacity,
+			expected_efficiency)
+	var risk := _price_risk(city_id, product, reference_price)
+	var adjusted_payback := payback / maxf(0.5, 1.0 - risk)
 	if adjusted_payback > payback_limit:
 		_log(day, city_id, "avoid", resource_name,
 			"payback ajustado %.0f d > %.0f d" % [adjusted_payback, payback_limit],
 			cost, daily_profit, risk)
 		return false
 
-	var existing := _find_producer(city, product)
 	var result: Dictionary
 	var action := "build"
 	var target := ""
@@ -747,6 +762,113 @@ func _find_producer(city: Dictionary, product: int) -> Dictionary:
 	if id == "":
 		return {}
 	return {"id": id}
+
+
+## D-125: payback em dias com a eficiência ESPERADA — custo ÷ retorno diário
+## médio no horizonte. Exposto (estático) para o teste do gate.
+static func expected_payback_days(cost: float, margin: float,
+		capacity: float, mean_efficiency: float) -> float:
+	return cost / maxf(margin * capacity * mean_efficiency, 0.001)
+
+
+## Classe de eficiência que o núcleo vai gravar na construção nova
+## (`eff::classify`): receita → fábrica; jazida → mina; carne → pecuária; o
+## resto é lavoura.
+static func efficiency_class(resource_name: String,
+		template: Dictionary) -> String:
+	if template.has("recipes"):
+		return "factory"
+	if Templates.MINERAL_RESOURCES.has(resource_name):
+		return "mine"
+	if resource_name == "meat":
+		return "ranch"
+	return "farm"
+
+
+## Parâmetros de eficiência EFETIVAMENTE aplicados no núcleo (JSON carregado
+## ou espelho compilado). Binário anterior ao getter: lê o próprio JSON, a
+## mesma fonte que o autoload `Economy` usa.
+func _efficiency_params() -> Dictionary:
+	if not _eff_params.is_empty():
+		return _eff_params
+	if _sim != null and _sim.has_method("get_efficiency_params"):
+		var applied: Variant = _sim.get_efficiency_params()
+		if applied is Dictionary:
+			_eff_params = applied
+	if _eff_params.is_empty():
+		var file := FileAccess.open(EFFICIENCY_PATH, FileAccess.READ)
+		if file != null:
+			var data: Variant = JSON.parse_string(file.get_as_text())
+			file.close()
+			if data is Dictionary:
+				_eff_params = data
+	return _eff_params
+
+
+## Eficiência MÉDIA esperada da curva nos próximos `days` dias de operação.
+## Repete o passo diário do núcleo (linear em dias de operação; teto 85% sem
+## equipamento; ×1,5 com equipamento ligado). Planta nova parte do início da
+## curva (`from < 0`).
+func expected_efficiency_mean(kind: String, days: int, from: float = -1.0,
+		equipment_active: bool = false) -> float:
+	if days <= 0:
+		return clampf(from if from >= 0.0 else 0.0, 0.0, 1.0)
+	var powered := equipment_active and kind != "factory" and kind != "refinery"
+	var cacheable := from < 0.0
+	var key := "%s|%d|%s" % [kind, days, powered]
+	if cacheable and _eff_mean_cache.has(key):
+		return float(_eff_mean_cache[key])
+	var params := _efficiency_params()
+	var curve: Dictionary = params.get(kind, {})
+	var start := clampf(float(curve.get("start", 0.30)), 0.0, 1.0)
+	var mid := clampf(float(curve.get("mid", 0.90)), start, 1.0)
+	var mid_days := maxf(1.0, float(curve.get("mid_days", 90.0)))
+	var full_days := maxf(mid_days, float(curve.get("full_days", 180.0)))
+	var phase_one := (mid - start) / mid_days
+	var phase_two := (1.0 - mid) / maxf(1e-9, full_days - mid_days)
+	var boost := maxf(1.0, float(params.get("equipment_rate_boost", 1.5)))
+	var ceiling := 1.0
+	if kind != "factory" and kind != "refinery":
+		ceiling = 1.0 if powered else clampf(
+			float(params.get("equipment_cap_without", 0.85)), 0.0, 1.0)
+	var value := clampf(from if from >= 0.0 else start, 0.0, 1.0)
+	var total := 0.0
+	for _day in days:
+		var rate := phase_one if value < mid else phase_two
+		if powered:
+			rate *= boost
+		if value < ceiling:
+			value = minf(ceiling, value + rate)
+		total += value
+	var mean := total / float(days)
+	if cacheable:
+		_eff_mean_cache[key] = mean
+	return mean
+
+
+## Eficiência esperada do investimento em (cidade, recurso): a planta existente
+## continua a própria rampa a partir da eficiência corrente; a planta nova
+## parte do início da curva da classe (sem equipamento no dia 1).
+func _expected_efficiency(city: Dictionary, resource_name: String,
+		template: Dictionary, existing: Dictionary, horizon_days: int) -> float:
+	var kind := efficiency_class(resource_name, template)
+	if not existing.is_empty():
+		var row := _building_row(city, String(existing.get("id", "")))
+		if not row.is_empty():
+			return expected_efficiency_mean(kind, horizon_days,
+				float(row.get("production_efficiency", 1.0)),
+				float(row.get("equipment", 0.0)) > 0.0)
+	return expected_efficiency_mean(kind, horizon_days)
+
+
+## Linha completa da construção no status (o bloco leve não traz eficiência).
+func _building_row(city: Dictionary, building_id: String) -> Dictionary:
+	if building_id.is_empty():
+		return {}
+	for row: Variant in city.get("buildings", []):
+		if row is Dictionary and String(row.get("id", "")) == building_id:
+			return row
+	return {}
 
 
 func _system_demand(status: Dictionary, product: int) -> float:

@@ -479,6 +479,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_building_equipment);
 	ClassDB::bind_method(D_METHOD("set_efficiency_params", "values"),
 	                     &EconomySim::set_efficiency_params);
+	ClassDB::bind_method(D_METHOD("get_efficiency_params"),
+	                     &EconomySim::get_efficiency_params);
 	ClassDB::bind_method(D_METHOD("mature_world_efficiency", "buildings"),
 	                     &EconomySim::mature_world_efficiency,
 	                     DEFVAL(Array()));
@@ -11798,6 +11800,43 @@ void EconomySim::set_efficiency_params(const Dictionary& values) {
 			p.ai_mode_min_gain), 0.0, 1.0);
 	}
 	status_invalidate();
+}
+
+// D-125: leitura dos parâmetros aplicados (JSON ou espelho compilado). Mesmas
+// chaves numéricas do bloco `definitions.efficiency` do save; a IA em GDScript
+// usa para estimar a rampa sem duplicar a tabela de balanceamento.
+Dictionary EconomySim::get_efficiency_params() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const EfficiencyParams& p = ws_.efficiency;
+	Dictionary out;
+	auto curve_dict = [](const EfficiencyCurve& curve) {
+		Dictionary row;
+		row["start"] = curve.start;
+		row["mid"] = curve.mid;
+		row["mid_days"] = curve.mid_days;
+		row["full_days"] = curve.full_days;
+		return row;
+	};
+	out["factory"] = curve_dict(p.factory);
+	out["refinery"] = curve_dict(p.refinery);
+	out["mine"] = curve_dict(p.mine);
+	out["farm"] = curve_dict(p.farm);
+	out["ranch"] = curve_dict(p.ranch);
+	out["equipment_cap_without"] = p.equipment_cap_without;
+	out["equipment_rate_boost"] = p.equipment_rate_boost;
+	out["equipment_fuel_per_capacity_day"] =
+		p.equipment_fuel_per_capacity_day;
+	out["transition_factory_days"] = p.transition_factory_days;
+	out["transition_refinery_days"] = p.transition_refinery_days;
+	out["transition_military_days"] = p.transition_military_days;
+	out["transition_semiconductor_days"] = p.transition_semiconductor_days;
+	out["transition_mode_days"] = p.transition_mode_days;
+	out["retention_same_family"] = p.retention_same_family;
+	out["retention_other"] = p.retention_other;
+	out["ai_mode_cooldown_days"] = p.ai_mode_cooldown_days;
+	out["ai_mode_payback_days"] = p.ai_mode_payback_days;
+	out["ai_mode_min_gain"] = p.ai_mode_min_gain;
+	return out;
 }
 
 void EconomySim::mature_world_efficiency(const Array& buildings) {

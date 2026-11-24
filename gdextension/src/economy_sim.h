@@ -1085,6 +1085,16 @@ public:
 	void set_efficiency_params(const Dictionary& values);
 
 	/**
+	 * D-125: parâmetros de eficiência EFETIVAMENTE aplicados (JSON carregado ou
+	 * espelho compilado quando o arquivo não carregou). Formato plano, com as
+	 * mesmas chaves numéricas do `definitions.efficiency` do save: curvas
+	 * `factory|refinery|mine|farm|ranch` (start, mid, mid_days, full_days),
+	 * `equipment_*`, `transition_*_days`, `retention_*` e `ai_*`. A IA em
+	 * GDScript usa isto para estimar a rampa sem duplicar a tabela.
+	 */
+	Dictionary get_efficiency_params() const;
+
+	/**
 	 * Marca o mundo SEMEADO (ano-base) como maduro: eficiência 1.0, 9999 dias
 	 * de operação e trator/máquina ligados. Chamado depois do seed inicial (as
 	 * plantas do ano-base já existiam) — nunca depois de obra nova.

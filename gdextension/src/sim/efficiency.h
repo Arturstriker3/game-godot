@@ -27,6 +27,23 @@ namespace eff {
 EfficiencyClass classify(const WorldState& ws, const City& city,
 	const Building& building);
 
+// Classe de uma construção HIPOTÉTICA do template (mesma regra do `classify`,
+// com os campos que o build vai gravar): usada pela IA para estimar a rampa
+// antes de abrir a planta. `recipe` = -1 fora de receita; `input_product` = -1
+// na extração primária.
+EfficiencyClass classify_new(const WorldState& ws, const City& city,
+	int output_product, int recipe, int input_product);
+
+// Eficiência MÉDIA esperada nos próximos `days` dias de operação, partindo de
+// `from` (planta nova = início da curva da classe). Repete o passo diário da
+// fase de eficiência (`step`/`cap`) sem tocar no estado: é a expectativa
+// determinística usada pelo gate de payback da IA para não valorar a planta
+// pela capacidade cheia. `idle_days` = dias de transição sem produção (troca
+// de produto); não contam receita nem maturação. `equipment_active` assume o
+// trator/máquina ligado (diesel disponível) no futuro.
+double mean_efficiency(const WorldState& ws, EfficiencyClass cls, double from,
+	bool equipment_active, int days, int idle_days = 0);
+
 // Curva da classe no estado atual.
 const EfficiencyCurve& curve(const WorldState& ws, EfficiencyClass cls);
 

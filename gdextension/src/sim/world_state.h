@@ -106,6 +106,11 @@ struct CadenceState {
 // para 1.0.
 // ---------------------------------------------------------------------------
 struct EfficiencyCurve {
+	EfficiencyCurve() = default;
+	EfficiencyCurve(double first, double middle, double middle_days,
+			double maturity_days)
+		: start(first), mid(middle), mid_days(middle_days),
+		  full_days(maturity_days) {}
 	double start = 0.30;
 	double mid = 0.90;
 	double mid_days = 90.0;
@@ -113,11 +118,13 @@ struct EfficiencyCurve {
 };
 
 struct EfficiencyParams {
-	EfficiencyCurve factory;
-	EfficiencyCurve refinery;
-	EfficiencyCurve mine;
-	EfficiencyCurve farm;
-	EfficiencyCurve ranch;
+	// Espelho EXATO de data/definitions/production/efficiency.json: se o JSON
+	// não carregar, a simulação usa estes valores e não diverge do arquivo.
+	EfficiencyCurve factory{0.30, 0.90, 90.0, 180.0};
+	EfficiencyCurve refinery{0.30, 0.90, 90.0, 180.0};
+	EfficiencyCurve mine{0.25, 1.0, 240.0, 240.0};
+	EfficiencyCurve farm{0.20, 1.0, 365.0, 365.0};
+	EfficiencyCurve ranch{0.20, 1.0, 540.0, 540.0};
 	// Equipamento (trator / máquina de mineração).
 	double equipment_cap_without = 0.85;
 	double equipment_rate_boost = 1.5;

@@ -24,6 +24,8 @@ const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
+const PrivateInvestorScript := preload(
+	"res://core/economy/ai/private_investor.gd")
 
 const EPS := 1e-6
 ## Defaults de balanceamento declarados em efficiency.json (não são dado
@@ -55,6 +57,8 @@ func _init() -> void:
 	_test_equipment()
 	_test_save_load_v40()
 	_test_determinism()
+	_test_fallback_matches_json()
+	_test_investor_ramp()
 	_finish()
 
 
@@ -355,6 +359,100 @@ func _test_determinism() -> void:
 	var second := _deterministic_run()
 	_check("(7) mesma sequência de comandos = mesmo save",
 			first == second, "primeiro=%s segundo=%s" % [first, second])
+
+
+# --- (8) espelho compilado == JSON -----------------------------------------
+## Se o efficiency.json não carregar, o núcleo usa o espelho compilado. O
+## espelho tem de ser EXATAMENTE o arquivo — senão o mesmo save roda diferente
+## conforme o arquivo esteja legível.
+func _test_fallback_matches_json() -> void:
+	var json: Dictionary = _json(EFFICIENCY_PATH)
+	var sim = EconomySim.new()
+	sim.set_sim_threads(1)
+	sim.set_goods(_json(GOODS_PATH))
+	if not sim.has_method("get_efficiency_params"):
+		_fail("(8) binário sem get_efficiency_params")
+		return
+	var got: Dictionary = sim.get_efficiency_params()
+	for cls in ["factory", "refinery", "mine", "farm", "ranch"]:
+		var want: Dictionary = json.get(cls, {})
+		var row: Dictionary = got.get(cls, {})
+		for field in ["start", "mid", "mid_days", "full_days"]:
+			_check("(8) fallback %s.%s == JSON" % [cls, field],
+					absf(float(row.get(field, -999.0))
+						- float(want.get(field, -999.0))) <= EPS,
+					"fallback=%s json=%s" % [row.get(field), want.get(field)])
+	var equipment: Dictionary = json.get("equipment", {})
+	_check("(8) fallback equipment.cap_without == JSON",
+			absf(float(got.get("equipment_cap_without", -1.0))
+				- float(equipment.get("cap_without", -2.0))) <= EPS,
+			"fallback=%s json=%s" % [got.get("equipment_cap_without"),
+				equipment.get("cap_without")])
+	_check("(8) fallback equipment.rate_boost == JSON",
+			absf(float(got.get("equipment_rate_boost", -1.0))
+				- float(equipment.get("rate_boost", -2.0))) <= EPS,
+			"fallback=%s json=%s" % [got.get("equipment_rate_boost"),
+				equipment.get("rate_boost")])
+	_check("(8) fallback equipment.fuel_per_capacity_day == JSON",
+			absf(float(got.get("equipment_fuel_per_capacity_day", -1.0))
+				- float(equipment.get("fuel_per_capacity_day", -2.0))) <= EPS,
+			"fallback=%s json=%s" % [got.get("equipment_fuel_per_capacity_day"),
+				equipment.get("fuel_per_capacity_day")])
+	var transitions: Dictionary = json.get("transitions", {})
+	for pair in [["factory_days", "transition_factory_days"],
+			["refinery_days", "transition_refinery_days"],
+			["military_days", "transition_military_days"],
+			["semiconductor_days", "transition_semiconductor_days"],
+			["mode_days", "transition_mode_days"]]:
+		_check("(8) fallback transitions.%s == JSON" % pair[0],
+				int(got.get(pair[1], -1)) == int(transitions.get(pair[0], -2)),
+				"fallback=%s json=%s" % [got.get(pair[1]),
+					transitions.get(pair[0])])
+	var retention: Dictionary = json.get("retention", {})
+	_check("(8) fallback retention.same_family == JSON",
+			absf(float(got.get("retention_same_family", -1.0))
+				- float(retention.get("same_family", -2.0))) <= EPS,
+			"fallback=%s json=%s" % [got.get("retention_same_family"),
+				retention.get("same_family")])
+	_check("(8) fallback retention.other == JSON",
+			absf(float(got.get("retention_other", -1.0))
+				- float(retention.get("other", -2.0))) <= EPS,
+			"fallback=%s json=%s" % [got.get("retention_other"),
+				retention.get("other")])
+	var ai: Dictionary = json.get("ai", {})
+	_check("(8) fallback ai.mode_payback_days == JSON",
+			int(got.get("ai_mode_payback_days", -1))
+				== int(ai.get("mode_payback_days", -2)),
+			"fallback=%s json=%s" % [got.get("ai_mode_payback_days"),
+				ai.get("mode_payback_days")])
+
+
+# --- (9) IA: o payback usa a rampa, não a capacidade cheia ------------------
+func _test_investor_ramp() -> void:
+	var sim := _world()
+	var investor: Object = PrivateInvestorScript.new()
+	investor.setup(sim, null)
+	var horizon := int(PrivateInvestorScript.MIN_PAYBACK_DAYS)
+	var mean := float(investor.expected_efficiency_mean("farm", horizon))
+	# Curva da lavoura no horizonte de 150 d: 0,20 + (0,80/365)×75,5.
+	_check("(9) média da rampa da fazenda em 150 d (~0,3655)",
+			absf(mean - 0.3654794) <= 1e-4, "média=%.6f" % mean)
+	# Aceite: capacidade 10 t/d, margem 5/t e custo 6000 — a 100% o payback é
+	# 120 d (passa o limite de 150 d); com a rampa passa de 300 d.
+	var full := PrivateInvestorScript.expected_payback_days(6000.0, 5.0, 10.0,
+			1.0)
+	var ramp := PrivateInvestorScript.expected_payback_days(6000.0, 5.0, 10.0,
+			mean)
+	_check("(9) fazenda a 100% fecharia o gate (payback %.1f d)" % full,
+			full <= PrivateInvestorScript.MIN_PAYBACK_DAYS,
+			"payback=%.1f d" % full)
+	_check("(9) investidor REJEITA a fazenda com a rampa (payback %.1f d)"
+			% ramp, ramp > PrivateInvestorScript.MIN_PAYBACK_DAYS,
+			"payback=%.1f d" % ramp)
+	# Fábrica: o horizonte de 730 d cobre a rampa de 180 d (~94,5% médio).
+	var factory := float(investor.expected_efficiency_mean("factory", 730))
+	_check("(9) fábrica no horizonte de 730 d ~0,945",
+			absf(factory - 0.945) <= 0.005, "média=%.4f" % factory)
 
 
 func _deterministic_run() -> String:

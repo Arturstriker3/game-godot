@@ -83,6 +83,15 @@ EfficiencyClass classify(const WorldState& ws, const City& city,
 	return EfficiencyClass::kFarm;
 }
 
+EfficiencyClass classify_new(const WorldState& ws, const City& city,
+		int output_product, int recipe, int input_product) {
+	Building probe;
+	probe.output_product = output_product;
+	probe.recipe = recipe;
+	probe.input_product = input_product;
+	return classify(ws, city, probe);
+}
+
 const EfficiencyCurve& curve(const WorldState& ws, EfficiencyClass cls) {
 	switch (cls) {
 	case EfficiencyClass::kRefinery:
@@ -109,6 +118,35 @@ double cap(const WorldState& ws, const Building& building, EfficiencyClass cls) 
 		&& building.equipment_active;
 	return powered ? 1.0
 		: std::clamp(ws.efficiency.equipment_cap_without, 0.0, 1.0);
+}
+
+double mean_efficiency(const WorldState& ws, EfficiencyClass cls, double from,
+		bool equipment_active, int days, int idle_days) {
+	const double initial = std::clamp(from, 0.0, 1.0);
+	if (days <= 0) {
+		return initial;
+	}
+	// Sonda: só os campos que `step`/`cap` leem. A produção do dia usa a
+	// eficiência DEPOIS do passo diário (a fase roda antes da produção).
+	Building probe;
+	probe.production_efficiency = initial;
+	probe.equipment = equipment_active ? 1.0 : 0.0;
+	probe.equipment_active = equipment_active;
+	const double ceiling = cap(ws, probe, cls);
+	const int idle = std::clamp(idle_days, 0, days);
+	double total = 0.0;
+	for (int day = 0; day < days; ++day) {
+		if (day < idle) {
+			continue;  // transição sem produção e sem maturação
+		}
+		const double rate = step(ws, probe, cls, equipment_active);
+		if (probe.production_efficiency < ceiling) {
+			probe.production_efficiency = std::min(ceiling,
+				probe.production_efficiency + rate);
+		}
+		total += probe.production_efficiency;
+	}
+	return total / days;
 }
 
 double step(const WorldState& ws, const Building& building,
