@@ -37,7 +37,7 @@ Não existe efetivo militar no modelo nem âncora observada de consumo por solda
 ## 3. IA, armazenagem e listas fixas
 
 - `gdextension/src/sim/storage.cpp`: os sete bens militares novos entram em `kMagazineProducts` (paiol). A aramida fica no armazém geral (química).
-- `data/definitions/economy/goods_storage_map.json`: `military_depot` para placa, equipamento tático, comando, bloqueador, lançadores e foguete; `aramid` e `ballistic_ceramic_plate` caem no `general_warehouse` declarado. O mapa é gerado por `tools/build_storage_g2.py`, que também ganhou as regras explícitas.
+- `data/definitions/economy/goods_storage_map.json`: `military_depot` para a placa, os três equipamentos e os três lançadores/foguetes (a placa e o equipamento tático têm `general_warehouse` como secundário); apenas `aramid` cai no `general_warehouse` declarado. O mapa é gerado por `tools/build_storage_g2.py`, que também ganhou as regras explícitas.
 - `needs.json` institucional `army` é a lista que a IA de importação/consumo consulta quando a cesta for ligada; os novos ids já estão nela.
 
 ## 4. Ícones
@@ -70,4 +70,18 @@ Cada destino tem **128×128 RGBA** e **64×64 RGBA**; os 1.024 px originais não
 
 ## 6. Rodada de 90 dias (`-Tier pr`)
 
-_Pendente de execução no fechamento._
+Comando: `tools/run_tests.ps1 -Tier pr -Base balance/global-resources` (lock `G:\opengs_tmp\opengs_godot_test.lock`, tmp `G:\opengs_tmp`). Run `20261124_181633`: **45/45 OK**, 0 falhas/crash/timeout; parede **1.849,8 s** (~30,8 min). `sim_unit_tests` 0,48 s; `c1_world_ai_90` 116,1 s no runner (72,9 s de simulação).
+
+Rodada `c1_world_ai_90` (JSON `G:\opengs_tmp\c1_world_ai_365.json`, digest `80cdb41f…`):
+
+| métrica | valor |
+|---|---:|
+| comida abaixo de 0,975 | **85/179** (média 0,9316; mediana 0,9777) |
+| falências industriais | **0** |
+| negócios de serviços fechados | 596 |
+| violações do invariante | **0** |
+| dias travados | 0 |
+| drift | 0,001321 |
+| dinheiro (início → fim) | 6.523.551.982,90 → 6.532.167.346,88 |
+
+Nota de escopo: a lista de paiol (`storage.cpp`) foi compilada no `sim_unit_tests`; a DLL do GDExtension usada pela rodada Godot é o build local já existente em `bin/` (artefato ignorado pelo Git), então a rodada mede o dado novo e o efeito econômico dos bens, não a classificação de armazém deles. O fonte da lista está no commit e será compilado no próximo build da extensão.

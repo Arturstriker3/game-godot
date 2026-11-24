@@ -104,7 +104,7 @@ TEST_CASE("minha regra") {
 6. Rode `sim_unit_tests.exe` e depois `run_tests.ps1 -Tier quick` se quiser
    exercitar a integração do runner.
 
-## Cobertura atual (36 casos, 195 asserções)
+## Cobertura atual (40 casos, 344 asserções)
 
 | área | casos | o que cobre |
 |---|---:|---|
@@ -112,9 +112,10 @@ TEST_CASE("minha regra") {
 | Crise (D-126) | 5 | rescisão reduz caixa e trabalhadores com dinheiro conservado; crédito de giro só com banco existente (sem banco ⇒ sem crédito); renegociação cobra a multa uma vez e capitaliza o resto; hibernação de usina pela necessidade de pico × 1,15 (necessária não hiberna, excedente sim); leilão transfere o prédio com conservação |
 | Eficiência (D-125) | 13 | rampa fábrica 30→90→100 % (90/180 d); mina 25→100 % em 240 d; fazenda 20→100 % em 365 d (85 % sem trator); pecuária 540 d; teto/equipamento (1,5x); média esperada; dias de transição por setor; retenção por família; refinaria só petróleo; modos 45/29/9, 38/36/9, 40/28/15; espelho do `efficiency.json` |
 | Massa (D-127) | 5 | serraria 0,55/0,12/0,33; moagem 0,75/0,25; refinaria 0,45/0,29/0,09/0,17; dado real `recipes.json` |
+| Produtos militares (D-130) | 4 | catálogo dos 8 bens; insumos das receitas; cadeia aramida → placa → equipamento tático; parâmetros iguais a `small_arms`/`infantry_gear` com `params_source` |
 | Save/load | 4 | roundtrip bit-exato do documento; dinheiro/dia/entidades; catálogo/receitas; load idempotente |
 | Determinismo | 3 | mesma semente ⇒ mesmo digest (sem e com tick); dias andados mudam o digest |
-| **Total** | **36** | |
+| **Total** | **40** | |
 
 Os casos da **D-126** (bateria Godot `tools/d126_crisis_test.gd`) estão portados
 em `tests/test_crisis.cpp` (mundo de bolso, sem godot-cpp). As usinas do caso de
@@ -127,7 +128,7 @@ parque); não são dado de simulação.
 |---|---:|
 | build completo pós-merge D-126 (46 TUs do núcleo + 8 TUs de teste, `-j4`, Release) | **43,5 s** |
 | build incremental (1 arquivo de teste alterado) | **~2,6 s** |
-| execução dos 36 casos | **0,04 s** (5 execuções: 0,039–0,046 s) |
+| execução dos 40 casos | **344 asserções**, 0,48 s no runner (processo completo) |
 | passos: `tools/run_tests.ps1 -Tier quick` | primeiro, antes do Godot |
 
 ## Limites (declarados)
