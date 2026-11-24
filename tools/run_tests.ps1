@@ -31,7 +31,7 @@
 #   ... -Tier pr                    # quick + rodada c1 de 90 dias com digest
 #   ... -Tier nightly               # -All + rodada c1 de 365 dias
 #   ... -Tier quick -Base main      # diff contra outra ref (padrao: balance/global-resources)
-#   ... -Tier quick -DryRun         # so mostra o que rodaria (nao pega lock, nao abre Godot)
+#   ... -Tier quick -DryRun         # so mostra o que rodaria; lista as checagens
 #   ... -Parallel 3                 # checagens de CLI em paralelo (nunca Godot; padrao 3)
 # -Tier usa tools/test_impact_map.json (caminho alterado -> testes) e sempre inclui as
 # sentinelas declaradas la. -List/-Pattern continuam funcionando e, com -Tier, sao somados
@@ -1372,6 +1372,36 @@ function Invoke-Main {
     }
 
     if ($DryRun) {
+        # CLI checks (sem Godot) que rodariam antes do lock: fail-fast primeiro,
+        # ou seja, `sim_unit_tests` antes de qualquer outra checagem de CLI.
+        $cliDry = @()
+        if ($tierMode) {
+            $cliDry = @(Get-CliChecks -Map $map -TierName $tierMode)
+        }
+        if ($cliDry.Count -gt 0) {
+            $cliFast = @($cliDry | Where-Object { $_.fail_fast })
+            $cliRest = @($cliDry | Where-Object { -not $_.fail_fast })
+            $cliDry = @($cliFast + $cliRest)
+            Write-Host ("[dry-run] {0} checagem(ns) de CLI (antes do lock, sem Godot):" -f $cliDry.Count)
+            foreach ($c in $cliDry) {
+                $cmd = [string]$c.command
+                $argText = (@($c.args) -join " ")
+                if ($argText) { $cmd = "$cmd $argText" }
+                $tag = ""
+                if ($c.fail_fast) { $tag = " fail-fast" }
+                $missing = @()
+                foreach ($req in @($c.requires)) {
+                    if (-not $req) { continue }
+                    if (-not (Test-Path -LiteralPath (Join-Path $root ([string]$req)))) {
+                        $missing += [string]$req
+                    }
+                }
+                if ($missing.Count -gt 0) {
+                    $tag += " [SKIP: falta " + ($missing -join ", ") + "]"
+                }
+                Write-Host ("  cli     {0}{1} ({2})" -f $c.name, $tag, $cmd)
+            }
+        }
         Write-Host ("[dry-run] {0} entrada(s); nenhum Godot sera aberto." -f $selected.Count)
         foreach ($t in $selected) {
             if ($t.Mode -eq "run") {
@@ -1386,6 +1416,7 @@ function Invoke-Main {
             base = $Base
             changed_files = @($script:ChangedFiles)
             selected = @($selected | ForEach-Object { $_.Name })
+            cli_checks = @($cliDry | ForEach-Object { [string]$_.name })
             reasons = $script:SelectionReasons
             needs_nightly = $script:SelectionNeedsNightly
             core_touched = $script:SelectionCoreTouched

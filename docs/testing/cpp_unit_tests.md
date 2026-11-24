@@ -104,28 +104,30 @@ TEST_CASE("minha regra") {
 6. Rode `sim_unit_tests.exe` e depois `run_tests.ps1 -Tier quick` se quiser
    exercitar a integração do runner.
 
-## Cobertura atual (31 casos, 138 asserções)
+## Cobertura atual (36 casos, 195 asserções)
 
 | área | casos | o que cobre |
 |---|---:|---|
 | Banco (D-128) | 6 | posição vazia; calote/seizure conserva dinheiro e `bank_money_delta == 0`; amortização destrói depósito e fecha `money_after = money_before + delta`; patrimônio/lucro retido; credor estatal; somas |
-| Eficiência (D-125) | 10 | rampa fábrica 30→90→100 % (90/180 d); mina 25→100 % em 240 d; fazenda 20→100 % em 365 d (85 % sem trator); pecuária 540 d; teto/equipamento (1,5x); média esperada; dias de transição por setor; retenção por família; refinaria só petróleo; modos 45/29/9, 38/36/9, 40/28/15; espelho do `efficiency.json` |
+| Crise (D-126) | 5 | rescisão reduz caixa e trabalhadores com dinheiro conservado; crédito de giro só com banco existente (sem banco ⇒ sem crédito); renegociação cobra a multa uma vez e capitaliza o resto; hibernação de usina pela necessidade de pico × 1,15 (necessária não hiberna, excedente sim); leilão transfere o prédio com conservação |
+| Eficiência (D-125) | 13 | rampa fábrica 30→90→100 % (90/180 d); mina 25→100 % em 240 d; fazenda 20→100 % em 365 d (85 % sem trator); pecuária 540 d; teto/equipamento (1,5x); média esperada; dias de transição por setor; retenção por família; refinaria só petróleo; modos 45/29/9, 38/36/9, 40/28/15; espelho do `efficiency.json` |
 | Massa (D-127) | 5 | serraria 0,55/0,12/0,33; moagem 0,75/0,25; refinaria 0,45/0,29/0,09/0,17; dado real `recipes.json` |
 | Save/load | 4 | roundtrip bit-exato do documento; dinheiro/dia/entidades; catálogo/receitas; load idempotente |
 | Determinismo | 3 | mesma semente ⇒ mesmo digest (sem e com tick); dias andados mudam o digest |
-| **Total** | **31** | |
+| **Total** | **36** | |
 
-TODO declarado: portar os casos da **D-126** (bateria/rodadas) quando a branch
-`feat/d126-*` entrar em `balance/global-resources`; ver o comentário em
-`test_determinism.cpp`.
+Os casos da **D-126** (bateria Godot `tools/d126_crisis_test.gd`) estão portados
+em `tests/test_crisis.cpp` (mundo de bolso, sem godot-cpp). As usinas do caso de
+pico × reserva são estado de teste montado no próprio caso (o fixture não tem
+parque); não são dado de simulação.
 
 ## Medição (24/11/2026, worktree `opengs-wt-cpptests`)
 
 | item | valor |
 |---|---:|
-| build completo (configure + 46 TUs do núcleo + 7 TUs de teste, `-j4`, Release) | **52,9 s** |
-| build incremental (1 arquivo de teste alterado) | **~2,4 s** |
-| execução dos 31 casos | **0,04 s** (5 execuções: 0,039–0,082 s) |
+| build completo pós-merge D-126 (46 TUs do núcleo + 8 TUs de teste, `-j4`, Release) | **43,5 s** |
+| build incremental (1 arquivo de teste alterado) | **~2,6 s** |
+| execução dos 36 casos | **0,04 s** (5 execuções: 0,039–0,046 s) |
 | passos: `tools/run_tests.ps1 -Tier quick` | primeiro, antes do Godot |
 
 ## Limites (declarados)

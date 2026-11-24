@@ -187,6 +187,7 @@ if(OPENGS_BUILD_UNIT_TESTS)
         tests/test_mass_balance.cpp
         tests/test_roundtrip.cpp
         tests/test_determinism.cpp
+        tests/test_crisis.cpp
     )
 
     target_link_libraries(sim_unit_tests PRIVATE opengs_sim)

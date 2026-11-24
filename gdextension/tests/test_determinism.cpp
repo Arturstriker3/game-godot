@@ -1,8 +1,8 @@
 // Determinismo: mesma semente (mesmo fixture) -> mesmo digest do save. Sem
 // tick e com tick (o dia e deterministico: nenhuma decisao fora da ordem).
 //
-// TODO(D-126): portar os casos da D-126 (bateria/rodadas) quando a branch
-// feat/d126 entrar em balance/global-resources. Nao foi feito aqui.
+// D-126: os casos da bateria de crise foram portados em tests/test_crisis.cpp
+// (mundo de bolso; sem godot-cpp).
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 

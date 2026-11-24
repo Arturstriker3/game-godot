@@ -21,7 +21,8 @@ powershell ... -Tier nightly
 - `nightly` = `-All` + rodada c1 de 365 dias.
 - `-Base <ref>` escolhe a referência do diff (padrão `balance/global-resources`).
 - `-Parallel N` (padrão 3) só vale para as checagens de CLI (`cli_checks`), nunca
-  para Godot. Hoje a lista está vazia; o porquê está em `docs/testing/tiers.md`.
+  para Godot. Hoje a lista tem `sim_unit_tests` (testes unitários C++ do núcleo);
+  o porquê está em `docs/testing/tiers.md`.
 - `-All` sem `-Tier` mantém o comportamento antigo.
 
 
