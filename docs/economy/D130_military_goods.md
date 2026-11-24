@@ -42,21 +42,21 @@ Não existe efetivo militar no modelo nem âncora observada de consumo por solda
 
 ## 4. Ícones
 
-Fontes aprovadas (repo privado `G:/projetos/opengs-icons-private/gemini_weapons/products/`), arte processada localmente (fundo cinza `#D9D9D9` aproximado → alfa, borda suavizada, recorte ao objeto com ~10% de margem, centralização):
+Fontes aprovadas (repo privado `G:/projetos/opengs-icons-private/gemini_weapons/products/`). A primeira leva foi processada localmente (fundo cinza `#D9D9D9` aproximado → alfa, borda suavizada, recorte ao objeto com ~10% de margem, centralização); os **ícones finais aprovados pelo dono** vieram depois de `products/ingame_v2/` e `ingame_v2/64/` e foram copiados **byte a byte**, sem reprocessar:
 
-| origem | destino |
+| origem (final, `ingame_v2`) | destino |
 |---|---|
 | `aramid.png` | `assets/icons/illustrated/aramid.png` |
 | `ballistic_ceramic_plate.png` | `assets/icons/illustrated/ballistic_ceramic_plate.png` |
-| `tactical_kit.png` | `assets/icons/illustrated/tactical_equipment.png` |
+| `tactical_equipment.png` | `assets/icons/illustrated/tactical_equipment.png` |
 | `command_equipment.png` | `assets/icons/illustrated/command_equipment.png` |
 | `drone_jammer.png` | `assets/icons/illustrated/drone_jammer.png` |
-| `at_weapon.png` | `assets/icons/illustrated/at_launcher.png` |
+| `at_launcher.png` | `assets/icons/illustrated/at_launcher.png` |
 | `at_rocket.png` | `assets/icons/illustrated/at_rocket.png` |
-| `anti_air_launcher.png` | `assets/icons/illustrated/aa_launcher.png` |
-| `support_equipment.png` | `assets/icons/illustrated/infantry_gear.png` |
-| `tactical_uniform.png` | `assets/icons/illustrated/uniforms.png` |
-| `civil_shoes.png` | `assets/icons/illustrated/shoes.png` |
+| `aa_launcher.png` | `assets/icons/illustrated/aa_launcher.png` |
+| `infantry_gear.png` | `assets/icons/illustrated/infantry_gear.png` |
+| `uniforms.png` | `assets/icons/illustrated/uniforms.png` |
+| `shoes.png` | `assets/icons/illustrated/shoes.png` |
 
 Cada destino tem **128×128 RGBA** e **64×64 RGBA**; os 1.024 px originais não entram no repositório. O fallback SVG do Icon Forge (`assets/icons/resources/<id>.svg`) também foi gerado para os oito ids novos, com `resource_icons.json` sincronizado (label/cor/tier).
 
@@ -70,18 +70,20 @@ Cada destino tem **128×128 RGBA** e **64×64 RGBA**; os 1.024 px originais não
 
 ## 6. Rodada de 90 dias (`-Tier pr`)
 
-Comando: `tools/run_tests.ps1 -Tier pr -Base balance/global-resources` (lock `G:\opengs_tmp\opengs_godot_test.lock`, tmp `G:\opengs_tmp`). Run `20261124_181633`: **45/45 OK**, 0 falhas/crash/timeout; parede **1.849,8 s** (~30,8 min). `sim_unit_tests` 0,48 s; `c1_world_ai_90` 116,1 s no runner (72,9 s de simulação).
+Comando: `tools/run_tests.ps1 -Tier pr -Base balance/global-resources` (lock `G:\opengs_tmp\opengs_godot_test.lock`, tmp `G:\opengs_tmp`), com a extensão Debug recompilada (`-j4`, inclui `storage.cpp`). Run `20261124_190224`: **45/45 OK**, 0 falhas/crash/timeout; parede **1.859,7 s** (~31,0 min). `sim_unit_tests` 0,28 s; `c1_world_ai_90` 120,9 s no runner.
 
-Rodada `c1_world_ai_90` (JSON `G:\opengs_tmp\c1_world_ai_365.json`, digest `80cdb41f…`):
+Rodada `c1_world_ai_90` (JSON `G:\opengs_tmp\c1_world_ai_90_d130_dllnew.json`):
 
 | métrica | valor |
 |---|---:|
-| comida abaixo de 0,975 | **85/179** (média 0,9316; mediana 0,9777) |
+| comida abaixo de 0,975 | **83/179** (média 0,9313; mediana 0,9778) |
 | falências industriais | **0** |
-| negócios de serviços fechados | 596 |
+| negócios de serviços fechados | 582 |
 | violações do invariante | **0** |
 | dias travados | 0 |
-| drift | 0,001321 |
-| dinheiro (início → fim) | 6.523.551.982,90 → 6.532.167.346,88 |
+| drift | 0,011852 |
+| dinheiro (início → fim) | 6.523.551.982,90 → 6.600.868.292,74 |
 
-Nota de escopo: a lista de paiol (`storage.cpp`) foi compilada no `sim_unit_tests`; a DLL do GDExtension usada pela rodada Godot é o build local já existente em `bin/` (artefato ignorado pelo Git), então a rodada mede o dado novo e o efeito econômico dos bens, não a classificação de armazém deles. O fonte da lista está no commit e será compilado no próximo build da extensão.
+Comparação com a main (controle): a mesma ferramenta e os mesmos argumentos em `balance/global-resources` `ca783dba`, com a DLL de `bin/` também recompilada em Debug, produzem **a mesma rodada** — todos os campos do JSON batem e só `wall_s` difere (`G:\opengs_tmp\c1_world_ai_90_main.json`). A D-130, portanto, **não altera** o resultado de 90 d: a cesta `army` é declaração (o núcleo não a consome), nenhum bem novo é produzido no horizonte e a lista de paiol só muda a classificação de armazém.
+
+Nota de escopo: a rodada anterior (`20261124_181633`, 596 fechamentos, drift 0,001321) usou uma DLL de `bin/` mais velha que o fonte da main; depois da recompilação dos dois lados, os números são 582 e 0,011852 em ambos. A diferença era da DLL defasada, não da D-130.
