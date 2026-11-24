@@ -119,6 +119,11 @@ cenário de escassez (2× o preço de partida, sustentado): com a rampa, a
 fazenda nova rende ~36% da capacidade média no horizonte de payback de 150 d,
 e o gate da IA desconta essa média. Asserções e demais cenários não mudaram.
 
+Ressalvas do QA (24/11/2026, `8cac8516`): a rodada 365 base foi reexecutada e
+reproduziu o mesmo resultado — **3 falências**, **comida 92/179**, **0
+violações**, 0 travados, drift 0,005610, digest `6ae5b3e8`; a troca do 0,5 do
+investidor de grupo pela média da rampa não moveu a trajetória do mundo base.
+
 ## API (sem UI)
 
 * `change_product(city_id, building_id, product, recipe_id="")`
