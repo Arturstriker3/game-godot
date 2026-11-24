@@ -45,6 +45,9 @@ const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+## D-125: defaults de balanceamento da eficiência de produção (mesmo caminho
+## do autoload; o espelho C++ é o fallback).
+const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
@@ -511,6 +514,11 @@ func _make_world() -> Object:
 	var sim = EconomySim.new()
 	sim.set_goods(goods)
 	sim.set_recipes(_load(RECIPES_PATH))
+	# D-125: parâmetros da eficiência de produção (mesma ordem do autoload).
+	if sim.has_method("set_efficiency_params"):
+		var efficiency: Variant = _load(EFFICIENCY_PATH)
+		if efficiency is Dictionary:
+			sim.set_efficiency_params(efficiency)
 	sim.set_needs(_load(NEEDS_PATH))
 	sim.set_services(_load(SERVICES_PATH))
 	# C2c (D-108): regime real por moeda ANTES do carregamento das moedas.
