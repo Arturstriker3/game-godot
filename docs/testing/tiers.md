@@ -76,8 +76,8 @@ Núcleo recompilado nesse commit (`RelWithDebInfo`) — o `gdextension/bin` não
 versionado e o binário copiado do repo principal era de 22/11 (anterior a D-125/D-127).
 
 - Entradas: **13** (12 testes + `c1_world_ai_90`), todas **OK**.
-- Parede total: **252,6 s** (4,2 min), incluindo ~30 s esperando o lock de outro
-  runner e a importação já quente. Soma dos testes: 247 s.
+- Parede total: **252,6 s** (4,2 min), incluindo a espera curta pelo lock de outro
+  runner e a importação já quente (overhead de ~5 s). Soma dos testes: 247 s.
 - Testes: `c1_balance`, `c3_bank_seizure_conservation`, `d125_efficiency`,
   `d127_byproducts`, `economy_integration`, `economy_long_run`,
   `economy_save_load_roundtrip`, `economy_world`, `goods_data`,
