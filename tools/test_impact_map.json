@@ -1,0 +1,328 @@
+{
+  "version": 1,
+  "base": "balance/global-resources",
+  "description": "Mapa de impacto: caminho alterado -> testes que devem rodar no -Tier quick/pr. Conservador: core central -> conjunto amplo; caminho desconhecido -> broad_economy. Editado a mao; validado por tools/run_tests.ps1 (nomes fora do catalogo geram aviso).",
+  "sentinels": {
+    "cheap": [
+      "economy_save_load_roundtrip_test",
+      "c3_bank_seizure_conservation_test",
+      "c1_balance_test"
+    ],
+    "runs": [
+      {
+        "name": "c1_world_ai_90",
+        "script": "res://tools/c1_world_ai_365.gd",
+        "args": ["--days=90"],
+        "tier": "pr",
+        "timeout_s": 1200
+      },
+      {
+        "name": "c1_world_ai_365",
+        "script": "res://tools/c1_world_ai_365.gd",
+        "args": ["--days=365"],
+        "tier": "nightly",
+        "timeout_s": 3600
+      }
+    ]
+  },
+  "test_sets": {
+    "broad_economy": [
+      "economy_integration_test",
+      "economy_world_test",
+      "economy_ai_test",
+      "status_query_test",
+      "economy_save_load_roundtrip_test",
+      "c1_balance_test",
+      "c3_bank_seizure_conservation_test",
+      "price_formation_test",
+      "production_chain_test",
+      "pop_needs_test",
+      "services_business_audit_test",
+      "labor_market_test",
+      "investment_test",
+      "storage_g2_test",
+      "construction_project_test",
+      "economy_tick_async_test",
+      "goods_data_test",
+      "population_demo_test",
+      "d125_efficiency_test",
+      "d127_byproducts_test"
+    ],
+    "bank_fast": [
+      "c2_central_bank_test",
+      "c2b1_monetary_test",
+      "c2b2_fx_gold_test",
+      "c2c_real_fx_test",
+      "c2c_p1_fx_passthrough_test",
+      "c3_bank_credit_test",
+      "c3_group_balance_test",
+      "c3_bank_seizure_conservation_test",
+      "c4_banks_test",
+      "c5_stock_exchange_test",
+      "c6_bank_crisis_test",
+      "currency_trade_test"
+    ],
+    "bank_fx_heavy": [
+      "c2b2_fx_stress_test"
+    ],
+    "production": [
+      "production_chain_test",
+      "d125_efficiency_test",
+      "d127_byproducts_test",
+      "goods_data_test",
+      "economy_integration_test",
+      "price_formation_test",
+      "population_demo_test",
+      "economy_long_run_test",
+      "economy_world_test"
+    ],
+    "agriculture": [
+      "agri_calendar_owner_test",
+      "agriculture_seasonal_test",
+      "pop_needs_test",
+      "b6_property_test"
+    ],
+    "services": [
+      "services_test",
+      "services_business_audit_test",
+      "services_template_test"
+    ],
+    "energy": [
+      "e2e3_power_test",
+      "e5_interconnect_test",
+      "e6_energy_map_test",
+      "e7_tariff_test",
+      "f0_fuels_test",
+      "renewables_balance_test",
+      "fleet_fuel_test"
+    ],
+    "urban_full": [
+      "construction_queue_test",
+      "construction_project_test",
+      "city_gov_test",
+      "urban_land_test",
+      "urban_load_test",
+      "housing_market_test",
+      "b6_property_test"
+    ],
+    "population_full": [
+      "population_age_test",
+      "population_demo_test",
+      "pop_needs_test",
+      "labor_market_test",
+      "b4_migration_test",
+      "b7_informality_test",
+      "strata_test",
+      "b3_region_test"
+    ],
+    "property": [
+      "b6_property_test",
+      "strata_test",
+      "b3_region_test",
+      "b4_migration_test",
+      "b7_informality_test"
+    ],
+    "world_data": [
+      "economy_world_test",
+      "economy_integration_test",
+      "population_demo_test",
+      "economy_live_path_test",
+      "economy_deposit_ownership_test",
+      "mine_stage_test",
+      "map_frame_test",
+      "label_layout_test"
+    ],
+    "ui": [
+      "alerts_nav_test",
+      "city_tooltip_test",
+      "cursor_hover_test",
+      "logistics_template_test",
+      "market_template_test",
+      "minimap_view_test",
+      "nation_city_list_test",
+      "politics_dossier_test",
+      "population_template_test",
+      "production_template_test",
+      "services_template_test",
+      "statistics_template_test",
+      "trade_template_test",
+      "business_name_test",
+      "label_layout_test",
+      "minimap_territory_test",
+      "nation_highlight_test"
+    ],
+    "map": [
+      "map_pick_test",
+      "map_frame_test",
+      "label_layout_test",
+      "minimap_territory_test",
+      "minimap_view_test",
+      "nation_highlight_test",
+      "nav_strait_test",
+      "convoy_lifecycle_test",
+      "vehicle_spacing_test",
+      "e6_energy_map_test",
+      "territory_test",
+      "deposit_pick_test",
+      "deposit_ring_test",
+      "cursor_hover_test",
+      "trade_flow_tooltip_test"
+    ],
+    "game": [
+      "menu_smoke_test",
+      "camera_limit_test",
+      "map_pick_test",
+      "status_query_test",
+      "economy_live_path_test",
+      "wheat_card_test",
+      "wheat_info_test",
+      "territory_test",
+      "deposit_pick_test"
+    ],
+    "core_set": [
+      "broad_economy",
+      "bank_fast",
+      "bank_fx_heavy",
+      "production",
+      "storage_g2_test",
+      "construction_project_test",
+      "urban_land_test",
+      "urban_load_test",
+      "housing_market_test",
+      "e2e3_power_test",
+      "f0_fuels_test",
+      "fleet_fuel_test"
+    ]
+  },
+  "default_tests": ["broad_economy"],
+  "rules": [
+    {
+      "match": "^gdextension/src/(sim/(sim_core|sim_day|world_state|commands|actions|save_value|save_state|save_definitions|balance)\\.|economy_sim\\.|register_types\\.|edge/)",
+      "tests": ["ALL"],
+      "requires_nightly": true,
+      "note": "nucleo central: qualquer mudanca pode alterar qualquer mundo; quick roda a bateria inteira, considere nightly"
+    },
+    {
+      "match": "^gdextension/src/",
+      "tests": ["core_set"],
+      "requires_nightly": true,
+      "note": "qualquer fonte do nucleo (nao so os 9 arquivos centrais): conjunto amplo de nucleo; o runner avisa para rodar -Tier nightly antes do merge"
+    },
+    {
+      "match": "^core/economy/(economy_sim|tick_scheduler|turbo_config|trajectory_digest|command_log|save)[A-Za-z0-9_]*\\.gd$",
+      "tests": ["ALL"],
+      "requires_nightly": true,
+      "note": "fachada/save/agendador: idem"
+    },
+    {
+      "match": "^core/economy/(bank|central_bank|fx|monetary|exchange|stock)",
+      "tests": ["bank_fast", "bank_fx_heavy", "c1_balance_test"]
+    },
+    {
+      "match": "^core/economy/(production|efficien|recipe|balance|byproduct)",
+      "tests": ["production", "d127_byproducts_test", "d125_efficiency_test"]
+    },
+    {
+      "match": "^core/economy/agriculture",
+      "tests": ["agriculture"]
+    },
+    {
+      "match": "^core/economy/(storage|warehouse)",
+      "tests": ["storage_g2_test", "c1_balance_test"]
+    },
+    {
+      "match": "^core/economy/services?",
+      "tests": ["services"]
+    },
+    {
+      "match": "^core/economy/(power|energy|fuel|refining)",
+      "tests": ["energy"]
+    },
+    {
+      "match": "^core/economy/(urban|housing|property|construction|city_gov|land)",
+      "tests": ["urban_full"]
+    },
+    {
+      "match": "^core/economy/(labor|population|demography|migration|strata|informality|region)",
+      "tests": ["population_full"]
+    },
+    {
+      "match": "^core/economy/geography",
+      "tests": ["broad_economy", "economy_city_catchment_test", "economy_deposit_ownership_test", "population_age_test"]
+    },
+    {
+      "match": "^core/economy/",
+      "tests": ["broad_economy"]
+    },
+    {
+      "match": "^data/definitions/economy/(recipes|goods|production|byproducts)",
+      "tests": ["production", "d127_byproducts_test", "d125_efficiency_test"]
+    },
+    {
+      "match": "^data/definitions/economy/",
+      "tests": ["broad_economy"]
+    },
+    {
+      "match": "^data/definitions/(scenario|natural)/",
+      "tests": ["world_data"]
+    },
+    {
+      "match": "^data/definitions/population/",
+      "tests": ["population_age_test", "population_demo_test", "pop_needs_test", "b7_informality_test"]
+    },
+    {
+      "match": "^data/definitions/energy/",
+      "tests": ["energy"]
+    },
+    {
+      "match": "^data/definitions/agriculture/",
+      "tests": ["agriculture"]
+    },
+    {
+      "match": "^data/definitions/(i18n|culture)/",
+      "tests": ["goods_data_test", "culture_db_test", "business_name_test", "population_template_test", "services_template_test"]
+    },
+    {
+      "match": "^core/ui/",
+      "tests": ["ui"]
+    },
+    {
+      "match": "^ui/",
+      "tests": ["ui"]
+    },
+    {
+      "match": "^map/",
+      "tests": ["map"]
+    },
+    {
+      "match": "^game/",
+      "tests": ["game"]
+    },
+    {
+      "match": "^gdextension/economy\\.gdextension$",
+      "tests": ["ALL"],
+      "requires_nightly": true
+    },
+    {
+      "match": "^project\\.godot$",
+      "tests": ["ALL"],
+      "requires_nightly": true
+    },
+    {
+      "match": "^(docs/|\\.md$|[A-Za-z0-9_./-]+\\.md$)",
+      "tests": [],
+      "note": "documentacao: so as sentinelas"
+    },
+    {
+      "match": "^(tools/run_tests\\.ps1|tools/test_impact_map\\.json|tools/tmp_paths\\.gd)$",
+      "tests": ["ALL"],
+      "note": "infra de testes alterada: a propria selecao deixa de ser confiavel, roda a bateria inteira (equivale a -All)"
+    },
+    {
+      "match": "^tools/",
+      "tests": [],
+      "note": "ferramenta/teste: o proprio teste e selecionado pelo nome; helper puro roda so as sentinelas"
+    }
+  ],
+  "cli_checks": []
+}
