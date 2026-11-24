@@ -97,6 +97,9 @@ var _refining_on := true
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
 var _refining_diag := false
+# D-125: override de laboratorio dos parametros de eficiencia (JSON com merge
+# profundo sobre o arquivo commitado). Nao existe no jogo: serve so ao A/B.
+var _eff_override_path := ""
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 var _fx_seed_days := 0
 # C3 (D-107) + D-111: forçar o crédito de empresa por flag. Desde a D-111 o
@@ -171,6 +174,8 @@ func _init() -> void:
 			_fx_seed_days = maxi(0, int(arg.split("=", true, 1)[1]))
 		elif arg.begins_with("--control="):
 			_control_path = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--eff-override="):
+			_eff_override_path = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--fuel-diag"):
 			var fuel_value := "1"
 			if arg.contains("="):
@@ -502,6 +507,16 @@ func _load(path: String) -> Variant:
 	return data
 
 
+## Merge profundo de dicionários (override de laboratório sobre o JSON base).
+func _merge_dict(base: Dictionary, extra: Dictionary) -> void:
+	for key: Variant in extra:
+		var value: Variant = extra[key]
+		if value is Dictionary and base.get(key) is Dictionary:
+			_merge_dict(base[key], value)
+		else:
+			base[key] = value
+
+
 func _make_world() -> Object:
 	var cities: Array = _load(CITIES_PATH)
 	var ports: Array = _load(PORTS_PATH)
@@ -518,7 +533,16 @@ func _make_world() -> Object:
 	if sim.has_method("set_efficiency_params"):
 		var efficiency: Variant = _load(EFFICIENCY_PATH)
 		if efficiency is Dictionary:
-			sim.set_efficiency_params(efficiency)
+			var params: Dictionary = efficiency
+			if not _eff_override_path.is_empty():
+				var override: Variant = _load(_eff_override_path)
+				if override is Dictionary:
+					_merge_dict(params, override)
+				else:
+					print("[c1] FALHA: override de eficiência ilegível: "
+						+ _eff_override_path)
+					return null
+			sim.set_efficiency_params(params)
 	sim.set_needs(_load(NEEDS_PATH))
 	sim.set_services(_load(SERVICES_PATH))
 	# C2c (D-108): regime real por moeda ANTES do carregamento das moedas.
@@ -1608,6 +1632,7 @@ func _run() -> void:
 		"food_chain": food_chain,
 		"food_gate_extras": gate_extras,
 		"food_gate_control": _control_path,
+		"efficiency_override": _eff_override_path,
 		"fuel_diag": fuel_reports,
 		"refining_diag": refining_reports,
 		"oil_diag": oil_reports,
