@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -345,6 +347,21 @@ void pay_auction_proceeds(WorldState& ws, SimCore& core, City& city,
 
 // Venda imediata do prédio. Sem comprador marca `bankrupt` (remoção no
 // início do próximo tick, regra existente).
+// D-126 (lab): `OGS_CRISIS_TRACE=1` imprime o leilão SEM comprador com
+// cidade/nação e bem — só mede o mundo real; não muda estado nem regra.
+void trace_unsold_auction(const WorldState& ws, const char* kind,
+		const City& city, const std::string& id, const char* detail,
+		double price) {
+	if (std::getenv("OGS_CRISIS_TRACE") == nullptr) {
+		return;
+	}
+	std::fprintf(stdout,
+		"[crisis-auction-unsold] day=%d kind=%s city=%s nation=%s id=%s "
+		"detail=%s price=%.2f gov=%.2f\n",
+		ws.day, kind, city.id.c_str(), city.nation.c_str(), id.c_str(),
+		detail, price, city.government_budget);
+}
+
 bool auction_building(WorldState& ws, SimCore& core, Building& building,
 		double* bank_money_delta, std::string* error) {
 	City* city = find_city(ws, building.city);
@@ -369,6 +386,17 @@ bool auction_building(WorldState& ws, SimCore& core, Building& building,
 	if (buyer_index < 0 && !state_buyer) {
 		building.bankrupt = true;
 		ws.crisis_auctions_unsold += 1;
+		const int output = building.output_product;
+		const char* detail = output >= 0
+			&& output < static_cast<int>(ws.product_names.size())
+			? ws.product_names[static_cast<std::size_t>(output)].c_str()
+			: (building.input_product >= 0
+				&& building.input_product
+					< static_cast<int>(ws.product_names.size())
+				? ws.product_names[static_cast<std::size_t>(
+					building.input_product)].c_str() : "-");
+		trace_unsold_auction(ws, "building", *city, building.id, detail,
+			price);
 		if (error != nullptr) {
 			*error = "sem comprador no leilao";
 		}
@@ -437,6 +465,8 @@ bool auction_power_plant(WorldState& ws, PowerPlant& plant,
 		plant.bankrupt = true;
 		plant.mothballed = false;
 		ws.crisis_auctions_unsold += 1;
+		trace_unsold_auction(ws, "plant", city, plant.id,
+			power_fuel_name(plant.fuel), price);
 		if (error != nullptr) {
 			*error = "sem comprador no leilao da usina";
 		}
@@ -531,8 +561,131 @@ double plant_unit_cost(const PowerPlant& plant) {
 			: 0.0);
 }
 
+// D-126 (correção): energia que a usina consegue entregar no pico, na escala
+// do dia. Ativa = a disponibilidade que o mérito usou hoje (`day_avail_mw`,
+// já com CF/calibração/eficiência). Hibernada = o potencial que ela teria ao
+// reabrir (CF declarado × calibração × eficiência retida) — é o que entra na
+// decisão de reabertura quando a rede fica curta.
+double plant_potential_mwh(const WorldState& ws, const PowerPlant& plant) {
+	if (plant.city_index < 0
+			|| plant.city_index >= static_cast<int>(ws.cities.size())) {
+		return 0.0;
+	}
+	if (!plant.mothballed && plant.day_avail_mw > 0.0) {
+		return std::max(0.0, plant.day_avail_mw) * 24.0;
+	}
+	if (plant.city_index >= static_cast<int>(ws.power_cities.size())) {
+		return 0.0;
+	}
+	const double mw = std::max(0.0, plant.mw);
+	if (mw <= 0.0 || plant.fuel < 0 || plant.fuel >= kPowerFuelCount) {
+		return 0.0;
+	}
+	const PowerCityState& state = ws.power_cities[
+		static_cast<std::size_t>(plant.city_index)];
+	double cf = std::clamp(ws.power_params.cf[plant.fuel], 0.0, 1.0);
+	const double scale = std::clamp(state.cf_scale[plant.fuel], 0.0, 5.0);
+	const double efficiency = std::clamp(plant.production_efficiency, 0.0,
+		1.0);
+	return mw * 24.0 * std::clamp(cf * scale, 0.0, 1.0) * efficiency;
+}
+
+// D-126 (correção): capacidade FIRME que a crise tem de manter por rede/nacão.
+// A demanda do dia (`PowerGridState::demand_mwh`) é o único sinal de carga que
+// o despacho E2/E3 modela, então o pico é a própria demanda diária; a margem
+// de reserva é declarada em `crisis.power_reserve_margin`. Usinas ATIVAS mais
+// baratas por custo marginal formam o prefixo necessário; se elas não cobrem
+// o pico × (1 + margem), as hibernadas mais baratas são necessárias e podem
+// reabrir. Só o que está fora do prefixo é excedente (candidato a demitir,
+// hibernar e ir a leilão).
+std::vector<char> plant_necessity(const WorldState& ws) {
+	std::vector<char> needed(ws.power_plants.size(), 0);
+	std::map<std::string, std::vector<std::size_t>> by_nation;
+	for (std::size_t index = 0; index < ws.power_plants.size(); ++index) {
+		const PowerPlant& plant = ws.power_plants[index];
+		if (plant.bankrupt || plant.city_index < 0
+				|| plant.city_index >= static_cast<int>(ws.cities.size())) {
+			continue;
+		}
+		by_nation[ws.cities[static_cast<std::size_t>(plant.city_index)].nation]
+			.push_back(index);
+	}
+	const double margin = std::clamp(ws.crisis.power_reserve_margin, 0.0, 1.0);
+	const auto by_cost = [&ws](const std::vector<std::size_t>& pool) {
+		std::vector<std::size_t> sorted = pool;
+		std::stable_sort(sorted.begin(), sorted.end(),
+			[&ws](std::size_t a, std::size_t b) {
+				const PowerPlant& pa = ws.power_plants[a];
+				const PowerPlant& pb = ws.power_plants[b];
+				// Ordem de mérito ESTRUTURAL: o custo marginal declarado
+				// (O&M por MWh; o termo de combustível do dia vive no despacho
+				// E2/E3 e não muda o prefixo de capacidade). Não usar a folha:
+				// demitir reduziria o custo unitário e mudaria a ordem, o que
+				// inverteria a histerese.
+				const double ca = std::max(0.0, pa.opex_per_mwh);
+				const double cb = std::max(0.0, pb.opex_per_mwh);
+				if (ca != cb) {
+					return ca < cb;
+				}
+				if (pa.fuel != pb.fuel) {
+					return pa.fuel < pb.fuel;
+				}
+				if (pa.city_index != pb.city_index) {
+					return pa.city_index < pb.city_index;
+				}
+				return pa.id < pb.id;
+			});
+		return sorted;
+	};
+	for (const auto& row : by_nation) {
+		const std::vector<std::size_t>& pool = row.second;
+		const auto grid = ws.power_grids.find(row.first);
+		const double demand = grid == ws.power_grids.end()
+			? 0.0 : std::max(0.0, grid->second.demand_mwh);
+		if (!(demand > 0.0)) {
+			// Sem carga medida (ausência declarada): não se hiberna nada por
+			// falta de necessidade — o comportamento conservador é manter.
+			for (const std::size_t index : pool) {
+				needed[index] = 1;
+			}
+			continue;
+		}
+		const double required = demand * (1.0 + margin);
+		std::vector<std::size_t> active;
+		std::vector<std::size_t> mothballed;
+		for (const std::size_t index : pool) {
+			if (ws.power_plants[index].mothballed) {
+				mothballed.push_back(index);
+			} else {
+				active.push_back(index);
+			}
+		}
+		double covered = 0.0;
+		for (const std::size_t index : by_cost(active)) {
+			if (covered + 1e-9 >= required) {
+				break;
+			}
+			needed[index] = 1;
+			covered += plant_potential_mwh(ws, ws.power_plants[index]);
+		}
+		if (covered + 1e-9 < required) {
+			// A rede está curta com o parque ativo: as hibernadas mais baratas
+			// são necessárias e reabrem (sujeitas à histerese do sinal).
+			for (const std::size_t index : by_cost(mothballed)) {
+				if (covered + 1e-9 >= required) {
+					break;
+				}
+				needed[index] = 1;
+				covered += plant_potential_mwh(ws,
+					ws.power_plants[index]);
+			}
+		}
+	}
+	return needed;
+}
+
 void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
-		double* bank_money_delta) {
+		bool needed, double* bank_money_delta) {
 	if (plant.bankrupt) {
 		return;
 	}
@@ -549,12 +702,11 @@ void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
 		return std::max(0.0, city.power_price);
 	}();
 	const double gen = std::max(0.0, plant.generated_mwh);
-	const double cost = gen * std::max(0.0, plant.opex_per_mwh)
-		+ std::max(0.0, plant.jobs) * std::max(0.0, plant.wage);
 	const double revenue = gen * price;
+	const double payroll = std::max(0.0, plant.jobs)
+		* std::max(0.0, plant.wage);
 	if (plant.mothballed) {
-		const double maintenance = std::max(0.0, plant.jobs)
-			* std::max(0.0, plant.wage)
+		const double maintenance = payroll
 			* std::clamp(ws.crisis.mothball_opex_share, 0.0, 1.0);
 		const double paid = debit_plant_owner(ws, city, plant, maintenance);
 		if (paid > 0.0) {
@@ -566,7 +718,10 @@ void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
 			plant.mothball_unpaid_days = 0;
 		}
 		const double unit = plant_unit_cost(plant);
-		if (price > unit * 1.05 && unit > 0.0) {
+		// D-126 (correção): reabre pelo sinal de preço que já existia OU
+		// porque a rede voltou a precisar da usina (pico × reserva). O mesmo
+		// contador de dias dá a histerese nos dois casos.
+		if (needed || (price > unit * 1.05 && unit > 0.0)) {
 			plant.reopen_signal_days += 1;
 		} else {
 			plant.reopen_signal_days = 0;
@@ -583,6 +738,10 @@ void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
 				plant.mothballed = false;
 				plant.mothball_day = -1;
 				plant.reopen_signal_days = 0;
+				// Histerese: zerar os dias de prejuízo evita que a usina
+				// hiberne de novo no dia seguinte só por herdar o contador.
+				plant.loss_days = 0;
+				plant.crisis_stage = 0;
 				ws.crisis_reopens += 1;
 				ws.crisis_reopen_paid += paid_reopen;
 			}
@@ -593,10 +752,36 @@ void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
 		}
 		return;
 	}
+	// D-126 (correção): a usina paga só o custo de caixa do dia (`day_cost`,
+	// o mesmo de `phase_power_settle`: combustível + O&M + salários
+	// proporcionais à geração). A folha parada de uma usina ociosa não é
+	// prejuízo de operação — é custo de RESERVA. Para a usina NECESSÁRIA ao
+	// pico da rede (pico × (1 + margem)) esse custo não vira gatilho de
+	// demissão/hibernação/leilão: sem pagamento de capacidade, apenas se
+	// registra o prejuízo. Só a usina EXCEDENTE é candidata, comparando a
+	// receita com o custo cheio (reserva desperdiçada).
+	const double avail_mw = std::max(0.0, plant.day_avail_mw);
+	const double operating = avail_mw > 1e-9
+		? std::clamp((gen / 24.0) / avail_mw, 0.0, 1.0)
+		: (gen > 0.0 ? 1.0 : 0.0);
+	double variable_cost = gen > 0.0
+		? std::max(0.0, plant.day_cost) : 0.0;
+	if (variable_cost <= 0.0 && gen > 0.0) {
+		// Fallback quando a liquidação do dia não rodou (sem energia pronta):
+		// O&M + salários proporcionais, sem inventar combustível.
+		variable_cost = gen * std::max(0.0, plant.opex_per_mwh)
+			+ payroll * operating;
+	}
+	const double idle_fixed = payroll * (1.0 - operating);
+	const double cost = needed ? variable_cost
+		: variable_cost + idle_fixed;
 	if (revenue + 1e-9 < cost) {
 		plant.loss_days += 1;
 	} else {
 		plant.loss_days = 0;
+	}
+	if (needed) {
+		return;
 	}
 	if (plant.loss_days >= std::max(1, ws.crisis.layoff_days)
 			&& ws.day - plant.last_layoff_day
@@ -705,6 +890,8 @@ void apply_params(WorldState& ws, const std::map<std::string, double>& values) {
 		get("farm_area_reduction", p.farm_area_reduction), 0.0, 1.0);
 	p.farm_area_reduction_days = std::max(0,
 		int(get("farm_area_reduction_days", p.farm_area_reduction_days)));
+	p.power_reserve_margin = std::clamp(
+		get("power_reserve_margin", p.power_reserve_margin), 0.0, 1.0);
 }
 
 std::map<std::string, double> params_map(const WorldState& ws) {
@@ -738,6 +925,7 @@ std::map<std::string, double> params_map(const WorldState& ws) {
 		{"auction_state_share", p.auction_state_share},
 		{"farm_area_reduction", p.farm_area_reduction},
 		{"farm_area_reduction_days", double(p.farm_area_reduction_days)},
+		{"power_reserve_margin", p.power_reserve_margin},
 	};
 }
 
@@ -1158,9 +1346,14 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 		}
 	}
 	// 3. Usinas (mesmas regras das construções: corte, demissão, hibernação e
-	// leilão; sem estoque de produto para liquidar).
-	for (PowerPlant& plant : ws.power_plants) {
-		react_power(ws, core, plant, bank_money_delta);
+	// leilão; sem estoque de produto para liquidar). D-126 (correção): a
+	// necessidade é calculada UMA vez por rede, antes do laço, e só a usina
+	// excedente ao pico × (1 + margem de reserva) é candidata.
+	const std::vector<char> power_needed = plant_necessity(ws);
+	for (std::size_t index = 0; index < ws.power_plants.size(); ++index) {
+		react_power(ws, core, ws.power_plants[index],
+			index < power_needed.size() && power_needed[index] != 0,
+			bank_money_delta);
 	}
 	// Remove usinas sem comprador no leilão (regra antiga de falência).
 	for (auto it = ws.power_plants.begin(); it != ws.power_plants.end();) {

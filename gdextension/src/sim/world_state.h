@@ -216,6 +216,12 @@ struct CrisisParams {
 	double auction_state_share = 0.5;
 	double farm_area_reduction = 0.25;
 	int farm_area_reduction_days = 30;
+	// D-126 (correção): margem de reserva de pico da REDE. O despacho E2/E3
+	// não declara margem de reserva (o mérito só cobre a demanda do dia);
+	// este default de balanceamento é o que define a capacidade FIRME que a
+	// crise deve manter ativa: pico × (1 + margem). Usinas além desse prefixo
+	// por custo marginal são excedentes e podem hibernar; as necessárias não.
+	double power_reserve_margin = 0.15;
 };
 
 struct WorldState {

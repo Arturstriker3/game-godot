@@ -34,6 +34,7 @@ func _init() -> void:
 	_test_auction()
 	_test_farm_area()
 	_test_refinery_and_power()
+	_test_power_necessity()
 	_test_ai_ladder()
 	_test_save_load_v41()
 	_test_v40_migration()
@@ -296,14 +297,21 @@ func _test_refinery_and_power() -> void:
 			and bool(_crisis_row(sim, "D126-REF").get("mothballed", false)),
 		str(moth))
 	# Usina: mesmo gatilho de perda (loss_days), mesa de demissão/hibernação e
-	# leilão por manutenção impaga.
-	var power := _power_world()
+	# leilão por manutenção impaga. A usina-alvo é a EXCEDENTE (óleo): a de
+	# carvão cobre sozinha o pico da rede e não é candidata (ver teste (11)).
+	var power := _crisis_grid_world()
 	var plants: Array = power.get_crisis_status().get("power_plants", [])
 	if plants.is_empty():
 		_fail("(9) fixture sem usina")
 		return
-	var plant_id := String((plants[0] as Dictionary).get("id", ""))
-	var jobs_before := float((plants[0] as Dictionary).get("jobs", 0.0))
+	var plant_id := "PWR-AGRIA-oil"
+	if _plant_row(power, plant_id).is_empty():
+		_fail("(9) fixture sem usina excedente de óleo")
+		return
+	# Um dia roda o despacho: a rede precisa ter demanda medida para a regra
+	# de necessidade valer (o estado de stress vem pelo save, como nos prédios).
+	_tick(power)
+	var jobs_before := float(_plant_row(power, plant_id).get("jobs", 0.0))
 	var layoffs_before := int(power.get_crisis_status().get("layoffs", 0))
 	power = _load(_plant_stress(power, plant_id, 25))
 	power.crisis_step()
@@ -337,6 +345,59 @@ func _test_refinery_and_power() -> void:
 	_check("(9) usina sem comprador sai do parque",
 		not unsold or _plant_row(power, plant_id).is_empty(),
 		str(_plant_row(power, plant_id)))
+
+
+# --- (11) necessidade de pico: necessária não hiberna, excedente sim --------
+func _test_power_necessity() -> void:
+	# (a) Usina despachada ABAIXO da capacidade com receita cobrindo o custo
+	# variável (o caixa do despacho: combustível + O&M + salários proporcionais)
+	# não soma loss_days. A folha parada não é prejuízo de operação. O preço é
+	# parâmetro de teste (price_scale) só para a receita ficar acima do custo
+	# variável; o mecanismo medido é o contador.
+	var partial := _crisis_grid_world()
+	partial.set_power_params({"price_scale": 60.0})
+	_tick(partial)
+	var coal_row := _plant_row(partial, "PWR-AGRIA-coal")
+	_check("(11) despacho parcial com receita >= custo variavel nao soma loss_days",
+		int(coal_row.get("loss_days", -1)) == 0
+			and not bool(coal_row.get("mothballed", true)),
+		str(coal_row))
+	# (b) Com o mesmo loss_days forçado, a usina NECESSÁRIA ao pico × reserva
+	# não é candidata; a EXCEDENTE hiberna. Um dia roda o despacho para a rede
+	# ter demanda medida (o estado vem do save, como nos testes de prédio).
+	var base := _crisis_grid_world()
+	_tick(base)
+	var gate := _load(_plant_stress_many(base,
+		["PWR-AGRIA-coal", "PWR-AGRIA-oil"], 55))
+	var mothballs_before := int(gate.get_crisis_status().get("mothballs", 0))
+	gate.crisis_step()
+	coal_row = _plant_row(gate, "PWR-AGRIA-coal")
+	var oil_row := _plant_row(gate, "PWR-AGRIA-oil")
+	_check("(11) usina necessaria ao pico NAO hiberna",
+		not coal_row.is_empty()
+			and not bool(coal_row.get("mothballed", true)),
+		str(coal_row))
+	_check("(11) usina excedente hiberna",
+		not oil_row.is_empty() and bool(oil_row.get("mothballed", false))
+			and int(gate.get_crisis_status().get("mothballs", 0))
+				> mothballs_before,
+		str(oil_row))
+	# (c) A demanda sobe (população de simulação maior): a usina hibernada
+	# passa a ser necessária e reabre depois da histerese, pagando o custo.
+	var raised: Dictionary = gate.to_dict()
+	for city: Dictionary in raised.get("cities", []):
+		city["sim_population"] = 2000000.0
+	var grown := _load(raised)
+	var reopens_before := int(grown.get_crisis_status().get("reopens", 0))
+	for _day in 12:
+		_tick(grown)
+	oil_row = _plant_row(grown, "PWR-AGRIA-oil")
+	_check("(11) usina hibernada reabre quando a demanda sobe",
+		not oil_row.is_empty() and not bool(oil_row.get("mothballed", true))
+			and int(grown.get_crisis_status().get("reopens", 0))
+				> reopens_before,
+		str(oil_row) + " reopens=" + str(
+			grown.get_crisis_status().get("reopens", 0)))
 
 
 # --- (10) escada automática da IA num cenário de crise ----------------------
@@ -521,6 +582,24 @@ func _power_world() -> Object:
 	return sim
 
 
+## Mundo de teste da correção D-126: carvão de 500 MW cobre sozinho o pico da
+## rede e é a usina NECESSÁRIA; óleo de 50 MW (mais caro no mérito) é a
+## EXCEDENTE. Os parques são dado de teste, não número de simulação do jogo.
+func _crisis_grid_world() -> Object:
+	var sim := _world()
+	var nations := {"DEMO": {
+		"access_pct": 100.0, "access_urban_pct": 100.0,
+		"access_rural_pct": 100.0, "loss_pct": 4.0,
+	}}
+	var cities := {"AGRIA": {
+		"access_pct": 100.0, "loss_pct": 4.0,
+		"park": {"coal": 500.0, "oil": 50.0}, "cap": {}, "solar_month": [],
+	}}
+	sim.set_power_definitions(nations, cities, {}, true)
+	sim.set_power_city("AGRIA", 0, 0.0, 100.0)
+	return sim
+
+
 func _build(sim: Object, id: String, jobs: float, output: String,
 		input: String, capacity: float = 10.0, opex: float = 10.0,
 		recipe_override: String = "") -> bool:
@@ -656,6 +735,18 @@ func _plant_stress(sim: Object, plant_id: String, loss_days: int) -> Dictionary:
 	for entry: Dictionary in (data.get("power", {}) as Dictionary).get(
 			"plants", []):
 		if String(entry.get("id", "")) == plant_id:
+			entry["loss_days"] = loss_days
+	return data
+
+
+## Mesmo estado de teste para várias usinas (o mecanismo é por rede: o teste
+## precisa da necessária e da excedente no mesmo dia).
+func _plant_stress_many(sim: Object, plant_ids: Array,
+		loss_days: int) -> Dictionary:
+	var data: Dictionary = sim.to_dict()
+	for entry: Dictionary in (data.get("power", {}) as Dictionary).get(
+			"plants", []):
+		if plant_ids.has(String(entry.get("id", ""))):
 			entry["loss_days"] = loss_days
 	return data
 

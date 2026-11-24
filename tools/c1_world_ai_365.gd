@@ -165,7 +165,8 @@ var _goods_kind: Dictionary = {}
 
 func _init() -> void:
 	# Permite rodar pelo runner canônico (tools/run_tests.ps1), que não passa
-	# argumentos de usuário: `OGS_C1_OUT` escolhe o arquivo de saída.
+	# argumentos de usuário: `OGS_C1_OUT` escolhe o arquivo de saída e
+	# `OGS_C1_CONTROL` o JSON de controle (o runner de testes não passa args).
 	if OS.get_environment("OGS_C1_OUT") != "":
 		_out = OS.get_environment("OGS_C1_OUT")
 	elif OS.get_environment("OPENGS_TMP").strip_edges() != "":
@@ -220,6 +221,8 @@ func _init() -> void:
 			if arg.contains("="):
 				cotton_value = arg.split("=", true, 1)[1]
 			_cotton_diag = cotton_value != "0"
+	if _control_path.is_empty() and OS.get_environment("OGS_C1_CONTROL") != "":
+		_control_path = OS.get_environment("OGS_C1_CONTROL")
 	_run()
 
 

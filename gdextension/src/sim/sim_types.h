@@ -1645,6 +1645,13 @@ struct Region {
 		double cf_base = 0.0;
 		// Geração do dia (derivada do despacho; NÃO persistida).
 		double generated_mwh = 0.0;
+		// D-126: disponibilidade usada pelo mérito hoje e o custo de caixa do
+		// dia (combustível + O&M + salários proporcionais à geração, o mesmo
+		// que `phase_power_settle` paga). Derivados do despacho; NÃO
+		// persistidos (zerados no início do dia). A crise compara a receita do
+		// despacho com `day_cost`, não com a folha cheia de uma usina ociosa.
+		double day_avail_mw = 0.0;
+		double day_cost = 0.0;
 		// D-126 (save v41) — MESMAS REGRAS DAS CONSTRUÇÕES: dias de prejuízo,
 		// hibernação, eficiência inicial na reabertura e falência/leilão.
 		int loss_days = 0;
