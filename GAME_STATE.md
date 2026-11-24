@@ -456,7 +456,30 @@ soja 123→346, batata 71→19. Preço por hemisfério: nenhuma cultura sai de �
 da base no ano — **a sazonalidade de preço não aparece no mundo publicado**
 (o 1,86 do trigo do sul no 2a era mercado fino). Causa das 15 piores medida com
 os escores (estoque do dia 1, importação, perda ÷ demanda, demanda sem plano).
-Falências 322 × teto 28 seguem abertas (decisão de núcleo, não da G).
+Falências 322 × teto 28: fechadas na D-099 (abaixo).
+
+**Liquidez × solvência da fazenda (D-099, 2026-11-19):** depois da folha
+sazonal, a fazenda ainda dimensionava a folha para a produção **diária** de
+antes da G e falia com o celeiro cheio (soja colhida e sem comprador local) ou
+com lavoura pequena para a folha herdada. O núcleo passou a **avaliar o ativo
+da safra** (`crop_standing_value`: lavoura em pé + colheita em curso, a preço
+de mercado) e a limitar o custo do dia da fazenda **primária com plano** ao que
+o ativo cobre, rateado em `kLossDaysBeforeClose` dias (`crop_liquidity_factor`).
+O que não se paga é **folha/opex reduzidos** (`paid_wages`/`paid_opex`), nunca
+dinheiro criado; se o ativo não cobre, `loss_days` volta a acumular e a firma
+fecha. Falências: **322 → 28** (todas com `with_crop_plan = 0`), portão
+**105 → 93/179**, drift **+0,002581 → +0,001452**; `get_bankruptcy_diag()`
+expõe `{total, with_crop_plan, by_product}` com contadores de runtime **fora**
+do `get_status()` e do save (rodada idêntica antes/depois). O fallback
+declarado do `AgricultureService` (`_declare_fallback_plans`) dá plano a
+**toda** fazenda primária: **78** planos novos (66 `no_yield`, 7
+`no_calendar`, 5 `all_year`), orçamento anual = capacidade que a fazenda já
+declarava (não cria safra nova) e janela contínua de ano inteiro quando o dado
+não publica calendário; o censo fecha **115/115** milho, **197/197** arroz,
+**4/4** batata, **347/347** trigo e **186/186** soja. Resultado final em 365 d
+com IA: **2 falências** (1 mina de ferro, 1 de cobre; **0 fazendas**), portão
+**84/179** (mediana 0,9832), drift **+0,000811**, **0 violações**, hash
+`80d7dc1c…` byte-idêntico em 2 rodadas.
 
 ---
 
