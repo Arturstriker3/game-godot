@@ -38,31 +38,31 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 18 | `cotton` | raw | raw | textile | 70.00 | `calibrated:legacy` |
 | 19 | `wood` | raw | raw | wood | 25.00 | `calibrated:legacy` |
 | 20 | `uranium` | raw | raw | energy | 500.00 | `calibrated:legacy` |
-| 21 | `flour` | semi | intermediate | food | 50.00 | `derived:v1` |
-| 22 | `bran` | semi | byproduct | food | 5.00 | `derived:byproduct_of:flour:v1` |
-| 23 | `bread` | final | final | food | 72.50 | `derived:v1` |
-| 24 | `bagged_rice` | final | final | food | 91.47 | `derived:v1` |
-| 25 | `feed` | semi | intermediate | food | 7.81 | `derived:v1` |
-| 26 | `meat` | final | final | food | 11.32 | `derived:v1` |
-| 27 | `canned_food` | final | final | food | 31.06 | `derived:v1` |
-| 28 | `combat_ration` | final | final | food | 143.01 | `derived:v1` |
-| 29 | `alcohol` | final | final | food | 65.39 | `derived:v1` |
-| 30 | `premium_spirits` | final | final | food | 140.13 | `derived:v1` |
+| 21 | `flour` | semi | intermediate | food | 66.67 | `derived:v1` |
+| 22 | `bran` | semi | byproduct | food | 6.67 | `derived:byproduct_of:flour:v1` |
+| 23 | `bread` | final | final | food | 96.67 | `derived:v1` |
+| 24 | `bagged_rice` | final | final | food | 112.59 | `derived:v1` |
+| 25 | `feed` | semi | intermediate | food | 10.42 | `derived:v1` |
+| 26 | `meat` | final | final | food | 15.11 | `derived:v1` |
+| 27 | `canned_food` | final | final | food | 55.90 | `derived:v1` |
+| 28 | `combat_ration` | final | final | food | 184.53 | `derived:v1` |
+| 29 | `alcohol` | final | final | food | 84.74 | `derived:v1` |
+| 30 | `premium_spirits` | final | final | food | 205.26 | `derived:v1` |
 | 31 | `ethanol` | semi | intermediate | food | 52.50 | `derived:v1` |
 | 32 | `fertilizer` | final | final | agro | 58.00 | `derived:v1` |
-| 33 | `organic_fertilizer` | final | final | agro | 24.17 | `derived:v1` |
+| 33 | `organic_fertilizer` | final | final | agro | 32.24 | `derived:v1` |
 | 34 | `fabric` | semi | intermediate | textile | 87.50 | `derived:v1` |
 | 35 | `synthetic_fabric` | semi | intermediate | textile | 117.19 | `derived:v1` |
 | 36 | `clothes` | final | final | textile | 126.88 | `derived:v1` |
 | 37 | `uniforms` | final | final | textile | 126.88 | `derived:v1` |
 | 38 | `shoes` | final | final | textile | 208.44 | `derived:v1` |
-| 39 | `planks` | semi | intermediate | wood | 31.25 | `derived:v1` |
-| 40 | `sawdust` | semi | byproduct | wood | 3.12 | `derived:byproduct_of:planks:v1` |
-| 41 | `furniture` | final | final | wood | 56.25 | `derived:v1` |
-| 42 | `luxury_furniture` | final | final | wood | 213.75 | `derived:v1` |
-| 43 | `cellulose` | semi | intermediate | wood | 5.57 | `derived:v1` |
-| 44 | `paper` | final | final | wood | 8.08 | `derived:v1` |
-| 45 | `pallets` | final | final | wood | 6.46 | `derived:v1` |
+| 39 | `planks` | semi | intermediate | wood | 56.82 | `derived:v1` |
+| 40 | `sawdust` | semi | byproduct | wood | 5.68 | `derived:byproduct_of:planks:v1` |
+| 41 | `furniture` | final | final | wood | 102.28 | `derived:v1` |
+| 42 | `luxury_furniture` | final | final | wood | 259.78 | `derived:v1` |
+| 43 | `cellulose` | semi | intermediate | wood | 15.62 | `derived:v1` |
+| 44 | `paper` | final | final | wood | 22.65 | `derived:v1` |
+| 45 | `pallets` | final | final | wood | 9.47 | `derived:v1` |
 | 46 | `charcoal` | semi | intermediate | wood | 6.00 | `alias:coal` |
 | 47 | `gasoline` | final | final | chemical | 81.08 | `derived:co_product_market_value:v2` |
 | 48 | `plastic` | semi | intermediate | chemical | 56.25 | `derived:v1` |
@@ -90,7 +90,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 70 | `tungsten_ingot` | semi | intermediate | metal | 250.00 | `derived:v1` |
 | 71 | `gold_bar` | semi | intermediate | metal | 3750.00 | `derived:v1` |
 | 72 | `processed_rare_earths` | semi | intermediate | metal | 500.00 | `derived:v1` |
-| 73 | `tools` | final | final | machinery | 154.06 | `derived:v1` |
+| 73 | `tools` | final | final | machinery | 191.14 | `derived:v1` |
 | 74 | `industrial_tools` | semi | intermediate | machinery | 439.06 | `derived:v1` |
 | 75 | `precision_tools` | semi | intermediate | machinery | 6798.83 | `derived:v1` |
 | 76 | `engine` | semi | intermediate | machinery | 257.53 | `derived:v1` |
@@ -102,7 +102,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 82 | `robots` | final | final | machinery | 75313.17 | `derived:v1` |
 | 83 | `industrial_machinery` | final | final | machinery | 13459.54 | `derived:v1` |
 | 84 | `spare_parts` | final | final | machinery | 492.78 | `derived:v1` |
-| 85 | `construction_material` | final | final | construction | 181.25 | `derived:v1` |
+| 85 | `construction_material` | final | final | construction | 218.33 | `derived:v1` |
 | 86 | `steel_structure` | semi | intermediate | construction | 243.75 | `derived:v1` |
 | 87 | `electrical_material` | semi | intermediate | construction | 6176.61 | `derived:v1` |
 | 88 | `truck` | final | final | transport | 1556.93 | `derived:v1` |
@@ -120,7 +120,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 100 | `computer` | final | final | electronics | 38760.62 | `derived:v1` |
 | 101 | `phone` | final | final | electronics | 38915.32 | `derived:v1` |
 | 102 | `drone` | final | final | electronics | 64307.77 | `derived:v1` |
-| 103 | `containers` | semi | intermediate | packaging | 10.10 | `derived:v1` |
+| 103 | `containers` | semi | intermediate | packaging | 23.44 | `derived:v1` |
 | 104 | `jewelry` | final | final | luxury | 15750.00 | `derived:v1` |
 | 105 | `casing` | semi | intermediate | military | 93.75 | `derived:v1` |
 | 106 | `projectile` | semi | intermediate | military | 39.06 | `derived:v1` |
@@ -135,7 +135,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 
 ## Receitas normalizadas
 
-- `flour` â†’ `flour` (yield 1): 1× `wheat` + subproduto 1× `bran`
+- `flour` â†’ `flour` (yield 0.75): 1× `wheat` + subproduto 0.25× `bran`
 - `bread` â†’ `bread` (yield 1): 1× `flour`
 - `bagged_rice_a` â†’ `bagged_rice` (yield 1): 1× `rice`, 1× `plastic`
 - `bagged_rice_b` â†’ `bagged_rice` (yield 1): 1× `rice`, 1× `paper`
@@ -163,14 +163,14 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `uniforms_a` â†’ `uniforms` (yield 1): 1× `fabric`
 - `uniforms_b` â†’ `uniforms` (yield 1): 1× `synthetic_fabric`
 - `shoes` â†’ `shoes` (yield 1): 1× `fabric`, 1× `plastic`
-- `planks` â†’ `planks` (yield 1): 1× `wood` + subproduto 1× `sawdust`
+- `planks` â†’ `planks` (yield 0.55): 1× `wood` + subproduto 0.12× `sawdust`
 - `furniture` â†’ `furniture` (yield 1): 1× `planks`
 - `luxury_furniture` â†’ `luxury_furniture` (yield 1): 1× `planks`, 1× `fabric`
 - `cellulose_a` â†’ `cellulose` (yield 1): 1× `wood`
-- `cellulose_b` â†’ `cellulose` (yield 0.7): 1× `sawdust`
+- `cellulose_b` â†’ `cellulose` (yield 0.4545): 1× `sawdust`
 - `paper` â†’ `paper` (yield 1): 1× `cellulose`
 - `pallets_a` â†’ `pallets` (yield 1): 1× `planks`
-- `pallets_b` â†’ `pallets` (yield 0.7): 1× `sawdust`
+- `pallets_b` â†’ `pallets` (yield 0.8696): 1× `sawdust`
 - `charcoal` â†’ `coal` (yield 1): 1× `wood`
 - `gasoline_a` â†’ `gasoline` (yield 0.45): 1× `oil` + subproduto 0.29× `diesel`, 0.09× `jet_fuel`
 - `gasoline_b` â†’ `gasoline` (yield 0.8): 1× `ethanol`

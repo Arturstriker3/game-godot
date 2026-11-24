@@ -295,6 +295,21 @@ def recipe_outputs(good: dict, recipe: dict) -> list[dict]:
     return outputs
 
 
+def byproduct_decl(item) -> dict:
+    """Normaliza a declaração de subproduto da spec.
+
+    Forma legada: string (`"bran"`) = 1 t por lote de insumo. Forma com
+    quantidade real: `{"id": "sawdust", "qty": 0.12}`. A quantidade é por
+    lote de insumo, igual ao `yield` da saída principal.
+    """
+    if isinstance(item, str):
+        return {"good": item, "qty": 1.0}
+    if isinstance(item, dict):
+        good_id = item.get("id") or item.get("good")
+        return {"good": good_id, "qty": float(item.get("qty", 1.0))}
+    raise ValueError(f"subproduto inválido: {item!r}")
+
+
 def build_recipes(spec: dict) -> list[dict]:
     recipes: list[dict] = []
     for good in spec["goods"]:
@@ -312,9 +327,12 @@ def build_recipes(spec: dict) -> list[dict]:
                 # núcleo atual (output + byproducts) e `outputs` documenta a
                 # lista completa e conserva a quantidade de cada fração.
                 byproducts = [dict(item) for item in outputs[1:]]
+                spec_qty = True
             else:
-                byproducts = [{"good": name, "qty": 1.0}
-                              for name in good.get("byproducts", [])]
+                byproducts = [byproduct_decl(item)
+                              for item in good.get("byproducts", [])]
+                spec_qty = any(abs(item["qty"] - 1.0) > 1e-9
+                               for item in byproducts)
             entry = {
                 "id": good["id"] + suffix,
                 "building": recipe.get("building", "factory"),
@@ -333,8 +351,9 @@ def build_recipes(spec: dict) -> list[dict]:
             }
             if outputs:
                 entry["outputs"] = outputs
-                if recipe.get("co_loss", 0.0) > 0.0:
-                    entry["co_loss"] = float(recipe["co_loss"])
+            if recipe.get("co_loss", 0.0) > 0.0:
+                entry["co_loss"] = float(recipe["co_loss"])
+            if outputs:
                 entry["byproduct_coef_source"] = "spec_qty"
             note_parts = [good.get("note", ""), recipe.get("note", "")]
             if outputs:
@@ -342,9 +361,17 @@ def build_recipes(spec: dict) -> list[dict]:
                     "co-produção: saídas em outputs[] com quantidade por lote; "
                     "a fração co_loss é perda/outros não modelados")
             elif byproducts:
-                entry["byproduct_coef_source"] = "default_unit"
-                note_parts.append(
-                    "subproduto com coeficiente unitário padrão (spec sem qty)")
+                if spec_qty:
+                    entry["byproduct_coef_source"] = "spec_qty"
+                    note_parts.append(
+                        "subproduto com quantidade por lote declarada na spec")
+                else:
+                    entry["byproduct_coef_source"] = "default_unit"
+                    note_parts.append(
+                        "subproduto com coeficiente unitário padrão (spec sem qty)")
+                if recipe.get("co_loss", 0.0) > 0.0:
+                    note_parts.append(
+                        "a fração co_loss é perda declarada")
             note = " | ".join(part for part in note_parts if part).strip(" |")
             if note:
                 entry["note"] = note
@@ -460,7 +487,7 @@ def compute_prices(spec: dict, recipes: list[dict], primaries: dict[str, float])
     for good in spec["goods"]:
         for recipe in good["recipes"]:
             for child in good.get("byproducts", []):
-                byproduct_parent[child] = good["id"]
+                byproduct_parent[byproduct_decl(child)["good"]] = good["id"]
 
     spec_by_id = {g["id"]: g for g in spec["goods"]}
     margins = {gid: margin_for(good) for gid, good in spec_by_id.items()}
@@ -973,6 +1000,7 @@ def check_all() -> list[str]:
                 input_mass += float(item["qty"])
             inputs_used.add(item.get("good"))
         outputs = recipe.get("outputs", [])
+        output_mass = float(recipe.get("yield", 0.0))
         if outputs:
             if outputs[0].get("good") != output:
                 problems.append(f"{label}: outputs[0] difere do output")
@@ -988,13 +1016,6 @@ def check_all() -> list[str]:
                     output_mass += float(item["qty"])
                 if item.get("good") != output:
                     produced_by_byproduct.setdefault(item.get("good"), rid)
-            co_loss = float(recipe.get("co_loss", 0.0))
-            if co_loss < 0.0:
-                problems.append(f"{label}: co_loss não pode ser negativo")
-            if input_mass > 0.0 and output_mass + co_loss > input_mass + 1e-9:
-                problems.append(
-                    f"{label}: conservação — saídas {output_mass:g} + perda {co_loss:g} "
-                    f"> insumos {input_mass:g}")
             for item in recipe.get("byproducts", []):
                 if item.get("good") not in {out.get("good") for out in outputs[1:]}:
                     problems.append(f"{label}: byproducts e outputs divergem em '{item.get('good')}'")
@@ -1004,7 +1025,20 @@ def check_all() -> list[str]:
                     problems.append(f"{label}: subproduto '{item.get('good')}' não existe")
                 if item.get("good") == output:
                     problems.append(f"{label}: subproduto igual ao output")
+                if not isinstance(item.get("qty"), (int, float)) or item["qty"] <= 0:
+                    problems.append(f"{label}: qty inválida em subproduto '{item.get('good')}'")
+                else:
+                    output_mass += float(item["qty"])
                 produced_by_byproduct.setdefault(item.get("good"), rid)
+        # Conservação de massa vale para TODA receita, não só co-produção:
+        # saída principal + subprodutos + perda declarada ≤ insumos.
+        co_loss = float(recipe.get("co_loss", 0.0))
+        if co_loss < 0.0:
+            problems.append(f"{label}: co_loss não pode ser negativo")
+        if input_mass > 0.0 and output_mass + co_loss > input_mass + 1e-9:
+            problems.append(
+                f"{label}: conservação — saídas {output_mass:g} + perda {co_loss:g} "
+                f"> insumos {input_mass:g}")
         for key in ("jobs_per_ton", "wage", "capital_per_capacity"):
             if not isinstance(recipe.get(key), (int, float)) or recipe[key] <= 0:
                 problems.append(f"{label}: {key} deve ser > 0")
