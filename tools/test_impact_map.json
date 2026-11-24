@@ -197,22 +197,16 @@
   "default_tests": ["broad_economy"],
   "rules": [
     {
-      "match": "^gdextension/src/(sim/(sim_core|sim_day|world_state|commands|actions|save_value|save_state|save_definitions|balance)\\.|economy_sim\\.|register_types\\.|edge/)",
-      "tests": ["ALL"],
-      "requires_nightly": true,
-      "note": "nucleo central: qualquer mudanca pode alterar qualquer mundo; quick roda a bateria inteira, considere nightly"
-    },
-    {
       "match": "^gdextension/src/",
       "tests": ["core_set"],
       "requires_nightly": true,
-      "note": "qualquer fonte do nucleo (nao so os 9 arquivos centrais): conjunto amplo de nucleo; o runner avisa para rodar -Tier nightly antes do merge"
+      "note": "qualquer fonte do nucleo: conjunto amplo de nucleo (core_set); o runner avisa para rodar -Tier nightly antes do merge. ALL fica reservado a infra de teste."
     },
     {
       "match": "^core/economy/(economy_sim|tick_scheduler|turbo_config|trajectory_digest|command_log|save)[A-Za-z0-9_]*\\.gd$",
-      "tests": ["ALL"],
+      "tests": ["core_set"],
       "requires_nightly": true,
-      "note": "fachada/save/agendador: idem"
+      "note": "fachada/save/agendador: conjunto amplo de nucleo"
     },
     {
       "match": "^core/economy/(bank|central_bank|fx|monetary|exchange|stock)",
@@ -300,12 +294,12 @@
     },
     {
       "match": "^gdextension/economy\\.gdextension$",
-      "tests": ["ALL"],
+      "tests": ["core_set"],
       "requires_nightly": true
     },
     {
       "match": "^project\\.godot$",
-      "tests": ["ALL"],
+      "tests": ["core_set"],
       "requires_nightly": true
     },
     {
