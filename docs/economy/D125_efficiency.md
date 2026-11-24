@@ -1,7 +1,8 @@
 # D-125 — Eficiência de produção (estilo HOI4)
 
-Status: implementação em curso. Spec aprovada pelo dono em 23/11/2026
-(`specs/D-125_eficiencia_producao.md`).
+Status: **implementada** (núcleo, IA e save; UI pendente). Spec aprovada pelo
+dono em 23/11/2026 (`specs/D-125_eficiencia_producao.md`). Rodada de 365 d
+dentro do portão em 23/11/2026 (ver "Verificação").
 
 ## Regra
 
@@ -16,9 +17,19 @@ começa com eficiência baixa e cresce com os dias de operação até o teto:
 | Pecuária | 20% | ciclo dos animais (540 d) |
 
 A eficiência **multiplica a produção** (principal, insumos e subprodutos na
-mesma proporção); folha e opex continuam cheios — a planta emprega a equipe
+mesma proporção), mas **uma única vez**: ela entra como teto da capacidade da
+construção, `capacity × output_scale × aptidão × trabalho × energia ×
+eficiência`. Folha e opex continuam cheios — a planta emprega a equipe
 enquanto aprende. `last_utilization` (base da folha) é a operação SEM
 eficiência; `utilization` publicado é a produção ÷ capacidade.
+
+> **Correção (commit `e468836c`, 23/11/2026):** o alvo de vendas era
+> multiplicado pela eficiência *e* o teto por construção já a aplicava — dupla
+> penalidade. Com a rampa, o alvo encolhia a cada dia (venda < alvo ×
+> eficiência), o estoque não repunha e a planta zerava antes da primeira
+> reposição, falindo com folha cheia (algodão e minas). O alvo agora é
+> toneladas de mercado (`sold_prev` + reposição do estoque-alvo) e a eficiência
+> entra só no teto de capacidade.
 
 ## Troca de produto
 
@@ -72,12 +83,22 @@ existente continua a rampa a partir da eficiência corrente.
 
 Ver `GAME_STATE.md` (D-125) para os números da rodada de 365 d.
 
-Rodada 365 base de 23/11/2026 (commit 27f355c3, `efficiency.json` real, sem
-override, `--control=res://docs/economy/perf/c6_gate_base.json`): portão
-94/179 nações abaixo de 0,975 (mediana 0,9705; controle c6 93/179),
-**20 falências** (controle 2), 0 violações, 0 dias travados, drift 0,0056.
-A variante A (`fuel_per_capacity_day=0`) **não** foi rodada: o critério
-(falências ≤ 3) não foi atendido.
+Rodada 365 base de 23/11/2026 (`e468836c` + fixture do teste em
+`b25d1b27`, `efficiency.json` real, sem override,
+`--control=res://docs/economy/perf/c6_gate_base.json`, 391 s): portão
+**92/179** nações abaixo de 0,975 (controle c6 93; mediana 0,9735; média
+0,9065), **3 falências** (as 2 minas PRI-PON do controle + `MLT-VAL` de trigo
+por insolvência bancária; eram **20** de algodão antes da correção da dupla
+penalidade), **0 violações**, **0 dias travados**, drift 0,005610, digest
+`6ae5b3e8`. A variante A (`equipment.fuel_per_capacity_day=0`, só como
+referência) deu **2 falências**, comida **94/179** (mediana 0,9711), 0
+violações, drift 0,005596, digest `cdda1daf`. Critério do gate — falências
+≤ 3, comida ≤ 97/179, 0 violações — **atendido**.
+
+O `economy_ai_test` usa um **choque de preço do trigo** como fixture do
+cenário de escassez (2× o preço de partida, sustentado): com a rampa, a
+fazenda nova rende ~36% da capacidade média no horizonte de payback de 150 d,
+e o gate da IA desconta essa média. Asserções e demais cenários não mudaram.
 
 ## API (sem UI)
 
