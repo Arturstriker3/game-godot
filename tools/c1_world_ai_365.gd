@@ -122,6 +122,21 @@ var _fuel_diag := false
 # demanda, preco e compradores por cidade/rota nos dias 1, 135, 136, 167 e no
 # fecho, para separar mina sem comprador de preco de mercado. So medicao.
 var _oil_diag := false
+# D-125 (diagnóstico do algodão, só medição): por fazenda de algodão, o retrato
+# a cada snapshot de falência (5 d e dia de mudança do contador), o preço do
+# algodão no mundo e a contagem de fazendas de algodão/têxteis por nação.
+# Não existe no jogo: serve só para explicar as falências da rodada base.
+var _cotton_diag := false
+var _cotton_farms: Dictionary = {}
+var _cotton_counts: Array = []
+var _cotton_prices: Array = []
+var _cotton_last_day := 0
+var _cotton_index := -1
+var _products: PackedStringArray = PackedStringArray()
+# Agregado do mercado de algodão do snapshot corrente (medido dentro da mesma
+# passada pesada de `_buildings_snapshot` — sem uma segunda varredura).
+var _cotton_day_prices: Array = []
+var _cotton_day_sums: Dictionary = {}
 const OIL_SAMPLE_DAYS: Array[int] = [1, 30, 60, 90, 120, 135, 136, 167]
 # Receitas que produzem combustível: refinaria (co-produção) e as rotas
 # alternativas declaradas em recipes.json (GTL/CTL).
@@ -186,6 +201,11 @@ func _init() -> void:
 			if arg.contains("="):
 				oil_value = arg.split("=", true, 1)[1]
 			_oil_diag = oil_value != "0"
+		elif arg.begins_with("--cotton-diag"):
+			var cotton_value := "1"
+			if arg.contains("="):
+				cotton_value = arg.split("=", true, 1)[1]
+			_cotton_diag = cotton_value != "0"
 	_run()
 
 
@@ -1417,6 +1437,9 @@ func _run() -> void:
 	if sim == null:
 		quit(1)
 		return
+	# D-125: índice do algodão no mundo (diagnóstico do algodão).
+	_products = sim.get_products()
+	_cotton_index = _products.find("cotton")
 	if _fx_seed_days > 0 and sim.has_method("seed_central_bank_reserves"):
 		# C2b2 (D-106): o cenário funda as reservas DEPOIS de 30 dias de comércio
 		# (no dia 0 não há importação medida); o laço abaixo faz a chamada.
@@ -1527,6 +1550,8 @@ func _run() -> void:
 			buildings_prev = snapshot
 			buildings_prev_day = day_now
 			bankrupt_counter = bankrupt_now
+			if _cotton_diag:
+				_cotton_accumulate(day_now, snapshot, status)
 		if day_now == 1:
 			# Preço-base da comida para medir o repasse no ano (uma passada
 			# pesada no começo; o resto lê só mercados das nações do portão).
@@ -1644,6 +1669,9 @@ func _run() -> void:
 	}
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
+	if _cotton_diag:
+		# D-125: diagnóstico do algodão (só medição).
+		out["cotton_diag"] = _cotton_report(sim)
 	# C3/D-111: o bloco do crédito é medido sempre que o mundo tem crédito
 	# ligado — por flag de laboratório OU por default do jogo (D-111).
 	var credit := _credit_report(sim)
@@ -1670,6 +1698,8 @@ func _run() -> void:
 				String(record.get("sector", "")), String(record.get("building_id", "")),
 				int(record.get("day", 0))])
 		print("[c1] D-117 falências: " + " | ".join(lines))
+	if _cotton_diag:
+		print(_cotton_summary(out.get("cotton_diag", {}), bankruptcies_detail))
 	var crisis_report: Dictionary = out.get("bank_crisis", {})
 	print("[c1] C6: corridas=%d resoluções=%d eventos=%d fundo=%.2f prêmios=%.2f "
 		% [int(crisis_report.get("runs", 0)),
@@ -2001,15 +2031,25 @@ func _buildings_snapshot(sim: Object, cities: Array, power: Dictionary) -> Dicti
 	var products: PackedStringArray = sim.get_products()
 	var power_cities: Dictionary = power.get("cities", {})
 	var out: Dictionary = {}
+	if _cotton_diag:
+		_cotton_day_prices = []
+		_cotton_day_sums = {"sold": 0.0, "supply": 0.0, "demand": 0.0,
+			"stock": 0.0, "shortage": 0.0, "surplus": 0.0}
 	for city_row: Dictionary in cities:
 		var cid := String(city_row.get("id", ""))
 		var city_status: Dictionary = sim.get_city_status(cid)
 		var grid_row: Dictionary = power_cities.get(cid, {})
+		var markets: Array = city_status.get("markets", [])
+		if _cotton_diag and _cotton_index >= 0 and _cotton_index < markets.size():
+			_cotton_market_add(markets[_cotton_index])
 		for building_row: Dictionary in (city_status.get("buildings", []) as Array):
 			var output_index := int(building_row.get("output_product", -1))
 			var output_name := ""
 			if output_index >= 0 and output_index < products.size():
 				output_name = products[output_index]
+			var market_row: Dictionary = {}
+			if output_index >= 0 and output_index < markets.size():
+				market_row = markets[output_index]
 			var building_id := String(building_row.get("id", ""))
 			out[building_id] = {
 				"building_id": building_id,
@@ -2023,6 +2063,22 @@ func _buildings_snapshot(sim: Object, cities: Array, power: Dictionary) -> Dicti
 				"loss_days": int(building_row.get("loss_days", 0)),
 				"capacity": float(building_row.get("capacity", 0.0)),
 				"utilization": float(building_row.get("utilization", 0.0)),
+				# D-125 (diagnóstico do algodão): equipe, eficiência e mercado
+				# do produto da própria construção.
+				"jobs": float(building_row.get("jobs", 0.0)),
+				"workers": float(building_row.get("workers", 0.0)),
+				"efficiency": float(building_row.get(
+					"production_efficiency", -1.0)),
+				"equipment": float(building_row.get("equipment", -1.0)),
+				"last_utilization": float(building_row.get(
+					"last_utilization", -1.0)),
+				"market_price": float(market_row.get("price", 0.0)),
+				"market_sold": float(market_row.get("sold", 0.0)),
+				"market_stock": float(market_row.get("stock", 0.0)),
+				"market_supply": float(market_row.get("supply", 0.0)),
+				"market_demand": float(market_row.get("demand", 0.0)),
+				"market_shortage": float(market_row.get("shortage", 0.0)),
+				"market_surplus": float(market_row.get("surplus", 0.0)),
 				"power_price": float(grid_row.get("price", 0.0)),
 				"power_cost_industry": float(
 					grid_row.get("power_cost_industry", 0.0)),
@@ -2031,6 +2087,186 @@ func _buildings_snapshot(sim: Object, cities: Array, power: Dictionary) -> Dicti
 				"power_ration_days": int(grid_row.get("ration_days", 0)),
 			}
 	return out
+
+
+# --- D-125: diagnóstico do algodão (só medição) ------------------------------
+## Retrato por snapshot de falência: cada fazenda de algodão com equipe,
+## eficiência, produção, receita/custo e mercado; a oferta/demanda de algodão
+## no mundo; e a contagem de algodão/têxteis por nação. Nada muda o mundo.
+func _cotton_accumulate(day_now: int, snapshot: Dictionary,
+		status: Dictionary) -> void:
+	var firm_cash: Dictionary = {}
+	for city_row: Dictionary in (status.get("cities", []) as Array):
+		firm_cash[String(city_row.get("id", ""))] = float(
+			city_row.get("firm_cash", 0.0))
+	var counts := {"day": day_now, "cotton_world": 0, "cotton_by_nation": {},
+		"fabric_world": 0, "fabric_by_nation": {},
+		"clothes_world": 0, "clothes_by_nation": {}}
+	for building_id: Variant in snapshot:
+		var record: Dictionary = snapshot[building_id]
+		var sector := String(record.get("sector", ""))
+		var nation := String(record.get("nation", ""))
+		if sector == "fabric":
+			counts["fabric_world"] = int(counts["fabric_world"]) + 1
+			(counts["fabric_by_nation"] as Dictionary)[nation] = int(
+				(counts["fabric_by_nation"] as Dictionary).get(nation, 0)) + 1
+		elif sector == "clothes":
+			counts["clothes_world"] = int(counts["clothes_world"]) + 1
+			(counts["clothes_by_nation"] as Dictionary)[nation] = int(
+				(counts["clothes_by_nation"] as Dictionary).get(nation, 0)) + 1
+		elif sector != "cotton":
+			continue
+		counts["cotton_world"] = int(counts["cotton_world"]) + 1
+		(counts["cotton_by_nation"] as Dictionary)[nation] = int(
+			(counts["cotton_by_nation"] as Dictionary).get(nation, 0)) + 1
+		var entry: Dictionary = _cotton_farms.get(String(building_id), {})
+		if entry.is_empty():
+			entry = {
+				"building_id": String(building_id),
+				"city": String(record.get("city", "")),
+				"nation": nation,
+				"owner": String(record.get("owner", "")),
+				"ai_built": String(building_id).begins_with("AI-"),
+				"first_seen_day": day_now,
+				# Janela honesta do nascimento: entre o snapshot anterior e este.
+				"born_after_day": _cotton_last_day,
+				"rows": [],
+			}
+			_cotton_farms[String(building_id)] = entry
+		(entry["rows"] as Array).append({
+			"day": day_now,
+			"firm_cash": float(firm_cash.get(String(record.get("city", "")),
+				0.0)),
+			"jobs": float(record.get("jobs", 0.0)),
+			"workers": float(record.get("workers", 0.0)),
+			"capacity": float(record.get("capacity", 0.0)),
+			"efficiency": float(record.get("efficiency", -1.0)),
+			"equipment": float(record.get("equipment", -1.0)),
+			"utilization": float(record.get("utilization", 0.0)),
+			"last_utilization": float(record.get("last_utilization", -1.0)),
+			"revenue": float(record.get("revenue", 0.0)),
+			"costs": float(record.get("costs", 0.0)),
+			"profit": float(record.get("profit", 0.0)),
+			"loss_days": int(record.get("loss_days", 0)),
+			"price": float(record.get("market_price", 0.0)),
+			"sold": float(record.get("market_sold", 0.0)),
+			"stock": float(record.get("market_stock", 0.0)),
+			"supply": float(record.get("market_supply", 0.0)),
+			"demand": float(record.get("market_demand", 0.0)),
+			"shortage": float(record.get("market_shortage", 0.0)),
+			"surplus": float(record.get("market_surplus", 0.0)),
+		})
+	_cotton_last_day = day_now
+	_cotton_counts.append(counts)
+	_cotton_prices.append(_cotton_market_row(day_now))
+
+
+## Soma o mercado de algodão de uma cidade (dentro de `_buildings_snapshot`).
+func _cotton_market_add(market: Dictionary) -> void:
+	var price := float(market.get("price", 0.0))
+	if price > 0.0:
+		_cotton_day_prices.append(price)
+	for field: String in ["sold", "supply", "demand", "stock", "shortage",
+			"surplus"]:
+		_cotton_day_sums[field] = float(_cotton_day_sums.get(field, 0.0)) \
+			+ float(market.get(field, 0.0))
+
+
+## Oferta/demanda/preço do algodão no mundo no dia (mercados das cidades).
+func _cotton_market_row(day_now: int) -> Dictionary:
+	if _cotton_index < 0:
+		return {"day": day_now}
+	var prices: Array = _cotton_day_prices.duplicate()
+	prices.sort()
+	var median := 0.0
+	if not prices.is_empty():
+		median = float(prices[prices.size() / 2])
+	var mean := 0.0
+	if not prices.is_empty():
+		for price: Variant in prices:
+			mean += float(price)
+		mean /= float(prices.size())
+	return {"day": day_now, "cities": prices.size(), "mean": mean,
+		"median": median, "min": float(prices[0]) if not prices.is_empty() else 0.0,
+		"max": float(prices[-1]) if not prices.is_empty() else 0.0,
+		"sold": float(_cotton_day_sums.get("sold", 0.0)),
+		"supply": float(_cotton_day_sums.get("supply", 0.0)),
+		"demand": float(_cotton_day_sums.get("demand", 0.0)),
+		"stock": float(_cotton_day_sums.get("stock", 0.0)),
+		"shortage": float(_cotton_day_sums.get("shortage", 0.0)),
+		"surplus": float(_cotton_day_sums.get("surplus", 0.0))}
+
+
+## Fecha o bloco do diagnóstico: planos de safra de algodão (definições do
+## núcleo) para dizer se a cidade da fazenda tem plano sazonal fixo.
+func _cotton_report(sim: Object) -> Dictionary:
+	var plan_cities: Array = []
+	var plan_rows: Array = []
+	var snapshot: Dictionary = {}
+	if sim.has_method("to_snapshot"):
+		snapshot = sim.to_snapshot()
+	var definitions: Dictionary = snapshot.get("definitions", {})
+	for plan: Variant in (definitions.get("crop_plans", []) as Array):
+		if typeof(plan) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = plan
+		if String(row.get("product", "")) != "cotton":
+			continue
+		var city := String(row.get("city", ""))
+		if not plan_cities.has(city):
+			plan_cities.append(city)
+		plan_rows.append({"city": city,
+			"area_ha": float(row.get("area_ha", 0.0)),
+			"yield_t_ha": float(row.get("yield_t_ha", 0.0))})
+	for building_id: Variant in _cotton_farms:
+		var entry: Dictionary = _cotton_farms[building_id]
+		entry["has_crop_plan"] = plan_cities.has(String(entry.get("city", "")))
+	return {"farms": _cotton_farms, "prices": _cotton_prices,
+		"counts": _cotton_counts, "cotton_plan_cities": plan_cities,
+		"cotton_plans": plan_rows}
+
+
+## Resumo impresso do diagnóstico do algodão: as fazendas fechadas, o último
+## retrato antes da falência e a trajetória do preço.
+func _cotton_summary(diag: Dictionary, bankruptcies: Array) -> String:
+	var farms: Dictionary = diag.get("farms", {})
+	var counts: Array = diag.get("counts", [])
+	var lines := PackedStringArray()
+	var last_count: Dictionary = counts[counts.size() - 1] if not counts.is_empty() else {}
+	lines.append("[c1] D-125 algodão: fazendas=%d planos=%d fechadas=%d %s" % [
+		farms.size(), (diag.get("cotton_plan_cities", []) as Array).size(),
+		bankruptcies.size(),
+		"mundo=%d" % int(last_count.get("cotton_world", 0))])
+	for record: Dictionary in bankruptcies:
+		var id := String(record.get("building_id", ""))
+		if not id.begins_with("AI-COTTON"):
+			continue
+		var entry: Dictionary = farms.get(id, {})
+		var rows: Array = entry.get("rows", [])
+		var last: Dictionary = rows[rows.size() - 1] if not rows.is_empty() else {}
+		lines.append(("  %s %s/%s nasceu>%d fechou=%d plano=%s "
+			+ "eff=%.3f workers=%.1f/%.1f util=%.3f preço=%.2f "
+			+ "rev=%.2f custo=%.2f loss=%d") % [
+			id, String(entry.get("nation", "")),
+			String(entry.get("city", "")),
+			int(entry.get("born_after_day", 0)), int(record.get("day", 0)),
+			"sim" if bool(entry.get("has_crop_plan", false)) else "nao",
+			float(last.get("efficiency", -1.0)),
+			float(last.get("workers", 0.0)), float(last.get("jobs", 0.0)),
+			float(last.get("utilization", 0.0)), float(last.get("price", 0.0)),
+			float(last.get("revenue", 0.0)), float(last.get("costs", 0.0)),
+			int(last.get("loss_days", 0))])
+	var price_lines := PackedStringArray()
+	for row: Variant in (diag.get("prices", []) as Array):
+		var price_row: Dictionary = row
+		var day := int(price_row.get("day", 0))
+		if day in [5, 90, 180, 270, 365]:
+			price_lines.append("d%d mediana=%.3f min=%.2f max=%.2f sold=%.1f stock=%.0f" % [
+				day, float(price_row.get("median", 0.0)),
+				float(price_row.get("min", 0.0)), float(price_row.get("max", 0.0)),
+				float(price_row.get("sold", 0.0)), float(price_row.get("stock", 0.0))])
+	lines.append("  preço: " + " | ".join(price_lines))
+	return "\n".join(lines)
 
 
 ## Acumula, por nação, a conta de energia e o PIB do dia (mesma unidade XGS:
