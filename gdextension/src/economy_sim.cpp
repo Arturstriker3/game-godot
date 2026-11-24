@@ -2132,6 +2132,7 @@ void EconomySim::tick_core() {
 EconomySim::StatusKeys::StatusKeys() :
 		age_bands("age_bands"),
 		amount("amount"),
+		bank_money_delta_total("bank_money_delta_total"),
 		bankruptcies("bankruptcies"),
 		buildings("buildings"),
 		calendar_day("calendar_day"),
@@ -4203,6 +4204,10 @@ Dictionary EconomySim::get_status() {
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
 	root[k.money_total] = money_total();
+	// D-126: dinheiro bancário criado/destruído (M1) acumulado nos dias válidos.
+	// `money_total` pode crescer por crédito legítimo; os guardas de conservação
+	// somam este contador ao total inicial em vez de exigir constância.
+	root[k.bank_money_delta_total] = ws_.bank_money_delta_total;
 	root[k.transport_cash] = ws_.transport_cash;
 	root[k.foreign_cash] = ws_.foreign_cash;
 	root[k.construction_cash] = ws_.construction_cash;
@@ -4481,6 +4486,10 @@ Dictionary EconomySim::get_day_summary() {
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
 	root[k.money_total] = money_total();
+	// D-126: dinheiro bancário criado/destruído (M1) acumulado nos dias válidos.
+	// `money_total` pode crescer por crédito legítimo; os guardas de conservação
+	// somam este contador ao total inicial em vez de exigir constância.
+	root[k.bank_money_delta_total] = ws_.bank_money_delta_total;
 	root[k.transport_cash] = ws_.transport_cash;
 	root[k.foreign_cash] = ws_.foreign_cash;
 	root[k.construction_cash] = ws_.construction_cash;

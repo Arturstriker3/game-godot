@@ -156,12 +156,15 @@ func _run_audit() -> void:
 		_collect_day(sim, status, day)
 
 	var money_final := float(status.get("money_total", 0.0))
-	var drift := money_final - money_initial
-	print("[services-audit] dinheiro inicial=%.2f final=%.2f drift=%.4f" % [
-		money_initial, money_final, drift])
+	# D-126: a criação de M1 pelo crédito de giro é registrada; o guarda compara
+	# com o inicial + essa criação (mesmo padrão de `bank_money_delta`).
+	var bank_created := float(status.get("bank_money_delta_total", 0.0))
+	var drift := money_final - money_initial - bank_created
+	print("[services-audit] dinheiro inicial=%.2f final=%.2f M1 criado=%.2f drift=%.4f" % [
+		money_initial, money_final, bank_created, drift])
 	if absf(drift) > MONEY_DRIFT_TOLERANCE:
-		_fail("dinheiro não conservado em %d dias: %.2f -> %.2f (drift %.4f)" % [
-			_days, money_initial, money_final, drift])
+		_fail("dinheiro não conservado em %d dias: %.2f -> %.2f (M1 criado %.2f, drift %.4f)" % [
+			_days, money_initial, money_final, bank_created, drift])
 
 	var bankruptcies := int(sim.get_service_bankruptcies())
 	var business_count := int(sim.get_service_business_count())

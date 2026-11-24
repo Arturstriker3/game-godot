@@ -547,6 +547,11 @@ struct WorldState {
 	// principal/juro e no calote). O BC só cria M0: a conservação do dia vira
 	// `money_after = money_before + emission_today + bank_money_today`.
 	double bank_money_today = 0.0;
+	// D-126: soma ASSINADA do dinheiro bancário criado/destruído (M1) em todos
+	// os dias VÁLIDOS desde o dia 0. `money_total` pode crescer legitimamente
+	// pelo crédito de giro; os guardas de conservação comparam o fim com
+	// `inicial + emissão + bank_money_delta_total`, não com o inicial puro.
+	double bank_money_delta_total = 0.0;
 	// C3 (D-107) - CRÉDITO DE EMPRESA: banco agregado por nação e as regras do
 	// crédito. `bank_credit_enabled` é ESTADO (vai ao save: pode ser ligado por
 	// comando A3); os parâmetros abaixo são REGRA (vêm de

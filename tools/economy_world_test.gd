@@ -387,13 +387,17 @@ func _test_world() -> void:
 				_fail("Cayenne não sustentada no fim (satisfação %.2f)" % satisfaction)
 
 	var money_final := float(status["money_total"])
-	print("[world] dinheiro inicial=%.2f final=%.2f drift=%.4f" % [
-		money_initial, money_final, money_final - money_initial])
+	# D-126: o crédito de giro cria M1 registrado (`bank_money_delta_total`);
+	# a conservação vale contra o inicial + a criação bancária do período.
+	var bank_created := float(status.get("bank_money_delta_total", 0.0))
+	print("[world] dinheiro inicial=%.2f final=%.2f M1 criado=%.4f drift=%.4f" % [
+		money_initial, money_final, bank_created,
+		money_final - money_initial - bank_created])
 	# F9: conservação explícita no fim da corrida (os invariantes por tick já
 	# revertem violações; este guarda pega drift acumulado silencioso).
-	if absf(money_final - money_initial) > MONEY_DRIFT_TOLERANCE:
-		_fail("dinheiro não conservado em %d dias: %.2f -> %.2f" % [
-			_days, money_initial, money_final])
+	if absf(money_final - money_initial - bank_created) > MONEY_DRIFT_TOLERANCE:
+		_fail("dinheiro não conservado em %d dias: %.2f -> %.2f (M1 criado %.2f)" % [
+			_days, money_initial, money_final, bank_created])
 	# Falências: o cenário sem IA exige zero. Com baseline (F2), o teto é o
 	# número medido no baseline — a coorte da IA pode falir firmas que o F2 já
 	# falia, mas não pode piorar o total. Sem baseline, o guarda antigo (0).

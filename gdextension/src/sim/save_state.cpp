@@ -323,6 +323,10 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	data["transport_cash"] = ws.transport_cash;
 	data["foreign_cash"] = ws.foreign_cash;
 	data["construction_cash"] = ws.construction_cash;
+	// D-126: contador diagnóstico do dinheiro bancário criado/destruído (M1).
+	// Assinado; entra no save para que um load no meio da corrida não zere a
+	// contabilidade dos guardas de conservação.
+	data["bank_money_delta_total"] = ws.bank_money_delta_total;
 	// Contadores de encerramento de construções (falidas/esgotadas) e a marca de
 	// bootstrap industrial. São ESTADO VERDADEIRO (não cache): sem eles, o load
 	// re-semeava a indústria (24 plantas extras) e perdia o histórico de
@@ -2188,6 +2192,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	ws.transport_cash = double(data.get("transport_cash", 0.0));
 	ws.foreign_cash = double(data.get("foreign_cash", 0.0));
 	ws.construction_cash = double(data.get("construction_cash", 0.0));
+	// D-126: contador do M1 criado pelo crédito. Ausente em save v40 e em
+	// fixtures antigas: 0 (nada inventado para trás).
+	ws.bank_money_delta_total =
+		double(data.get("bank_money_delta_total", 0.0));
 	ws.bankruptcies = int(data.get("bankruptcies", 0));
 	// D-099: a composição das falências é diagnóstico de RUNTIME, não vai ao
 	// save/fluxo de dicionário — carregar um mundo zera os contadores.
