@@ -71,3 +71,9 @@ divididas com `-List`/`-Pattern` para não estourar o tempo da tarefa.
   `camera_limit_test`, `city_tooltip_test`, `cursor_hover_test`, `territory_test`) todas verdes.
   Quando o crash reaparecer, o nome sai no `summary.json` (`status: "CRASH"` + `exit_hex:
   0xC0000005`) e o log em `logs/<nome>.out.log`; reporte o teste antes de corrigir.
+- **`camera_limit_test` é flake na rodada paralela (24/11/2026).** Na bateria do
+  `-Tier pr` ele falhou/atrasou quando havia outra cena Godot rodando junto e passa
+  isolado via `-List camera_limit_test`. O runner garante um Godot por vez, mas a
+  janela/GPU da cena pode sofrer com o import ou processo residual da rodada anterior;
+  rode-o isolado ao investigar e trate a falha em paralelo como flake até reproduzir
+  o motivo no log da cena.

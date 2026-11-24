@@ -225,10 +225,14 @@ func _test_rent_and_owners() -> void:
 		_fail("sobra: vacância do padrão popular não ficou positiva")
 
 	# --- (4) dinheiro conservado: o status já checa por dia; confirma o total.
+	# D-126: o crédito de giro cria M1 registrado (`bank_money_delta_total`);
+	# a conservação vale contra o inicial + a criação bancária, não contra o
+	# inicial puro.
 	var money_after := float(sim.get_status().get("money_total", 0.0))
-	if absf(money_after - money_before) > 0.01:
-		_fail("conservação: dinheiro total %.2f -> %.2f" % [
-			money_before, money_after])
+	var bank_created := float(sim.get_status().get("bank_money_delta_total", 0.0))
+	if absf(money_after - (money_before + bank_created)) > 0.01:
+		_fail("conservação: dinheiro total %.2f -> %.2f (M1 criado %.2f)" % [
+			money_before, money_after, bank_created])
 
 
 func _test_slum_last_resort() -> void:

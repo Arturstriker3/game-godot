@@ -240,11 +240,14 @@ func _check_conservation() -> void:
 	for day in days:
 		sim.tick_day()
 	var money_end := float(sim.get_status().get("money_total", 0.0))
-	var drift := absf(money_end - money_start) / maxf(absf(money_start), 1.0)
+	# D-126: o crédito de giro cria M1 registrado; a conservação é contra o
+	# inicial + a criação bancária (`bank_money_delta_total`).
+	var bank_created := float(sim.get_status().get("bank_money_delta_total", 0.0))
+	var drift := absf(money_end - money_start - bank_created) / maxf(absf(money_start), 1.0)
 	if drift > 1e-6:
-		_fail("conservação: drift de dinheiro %.9f > 1e-6 em %d dias" % [drift, days])
+		_fail("conservação: drift de dinheiro %.9f > 1e-6 em %d dias (M1 criado %.2f)" % [drift, days, bank_created])
 	else:
-		print("[b4] conservação: drift=%.9f em %d dias." % [drift, days])
+		print("[b4] conservação: drift=%.9f em %d dias (M1 criado %.2f)." % [drift, days, bank_created])
 	# Pessoas: Σ urbano + Σ interior == Σ população exibida, em todos os dias.
 	var save: Dictionary = sim.to_dict()
 	var urban := 0.0

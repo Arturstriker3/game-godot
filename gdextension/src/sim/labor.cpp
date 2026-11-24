@@ -37,6 +37,9 @@ void SimCore::phase_labor() {
 	// quebrava a firma sem que houvesse defeito de preço. O piso do estágio
 	// continua garantindo a equipe mínima do poço parado.
 	auto operating_of = [this](const City& owner_city, const Building& building) {
+		if (building.mothballed) {
+			return 0.0;
+		}
 		if (building.recipe >= 0 || building.input_product >= 0) {
 			return std::clamp(building.last_utilization, 0.05, 1.0);
 		}
@@ -526,6 +529,9 @@ double SimCore::labor_day(City& city) {
 			const double seasonal = crop_working_at(city_index,
 				building.output_product) ? 1.0 : 0.0;
 			building.workers = building.jobs * workers_fraction * seasonal;
+			if (building.mothballed) {
+				building.workers = 0.0;
+			}
 			building.wage = contract_wage;
 			// D-086: mina no último estágio opera no piso — a folha acompanha a
 			// taxa de operação (mesma regra do opex em phase_labor).

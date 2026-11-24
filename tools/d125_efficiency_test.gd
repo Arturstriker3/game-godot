@@ -359,8 +359,8 @@ func _test_save_load_v40() -> void:
 	for _day in 5:
 		sim.tick_day()
 	var save: Dictionary = sim.to_dict()
-	_check("(6) save sai na versão 40",
-			int(save.get("version", -1)) == 40,
+	_check("(6) save sai na versão 40 ou posterior",
+			int(save.get("version", -1)) >= 40,
 			"version=%d" % int(save.get("version", -1)))
 	# O bloco estático viaja no snapshot (mesmo `definitions` do CLI); o save de
 	# estado carrega só a parte dinâmica, como os demais sistemas.

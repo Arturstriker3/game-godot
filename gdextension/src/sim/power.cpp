@@ -1251,6 +1251,8 @@ void SimCore::phase_power() {
 	std::vector<PlantDay> days(ws.power_plants.size());
 	for (PowerPlant& plant : ws.power_plants) {
 		plant.generated_mwh = 0.0;
+		plant.day_avail_mw = 0.0;
+		plant.day_cost = 0.0;
 	}
 	std::vector<std::vector<int>> plants_by_city(city_count);
 	for (std::size_t p = 0; p < ws.power_plants.size(); ++p) {
@@ -1295,7 +1297,9 @@ void SimCore::phase_power() {
 				southern);
 		}
 		day.avail_mw = std::max(0.0, plant.mw)
-			* std::clamp(cf * cf_scale, 0.0, 1.0);
+			* std::clamp(cf * cf_scale, 0.0, 1.0)
+			* (plant.mothballed ? 0.0
+				: std::clamp(plant.production_efficiency, 0.0, 1.0));
 		if (plant.fuel != POWER_SOLAR && plant.fuel != POWER_NUCLEAR
 				&& power_fuel_is_thermal(plant.fuel)) {
 			const auto found = season.find(city.nation);
@@ -1305,6 +1309,9 @@ void SimCore::phase_power() {
 					std::max(0.0, plant.mw));
 			}
 		}
+		// D-126: a crise (fim do dia) lê a disponibilidade que o mérito usou
+		// hoje para decidir se a usina é necessária ao pico da rede.
+		plant.day_avail_mw = day.avail_mw;
 		double fuel_cost = 0.0;
 		if (power_fuel_is_thermal(plant.fuel)
 				&& params.fuel_t_per_mwh[plant.fuel] > 0.0) {
@@ -2465,6 +2472,7 @@ void SimCore::phase_power_settle() {
 	const int month = month_of_day(ws.day);
 	for (std::size_t p = 0; p < plant_count; ++p) {
 		PowerPlant& plant = ws.power_plants[p];
+		plant.day_cost = 0.0;
 		const double gen = plant.generated_mwh;
 		if (gen <= 0.0 || !plant_city_in_range(ws, plant)) {
 			continue;
@@ -2509,6 +2517,10 @@ void SimCore::phase_power_settle() {
 		opex[p] = gen * plant.opex_per_mwh;
 		wages[p] = plant.jobs * plant.wage * operating;
 		total_cost += fuel_local[p] + fuel_import[p] + opex[p] + wages[p];
+		// D-126: custo de caixa do dia da usina (o que a crise compara com a
+		// receita do despacho; não inclui o custo fixo da capacidade ociosa).
+		plant.day_cost = fuel_local[p] + fuel_import[p] + opex[p]
+			+ wages[p];
 	}
 	// 3. Paga o custo até o caixa (parcial = perda declarada do setor):
 	// combustível aos produtores (ou ao exterior), O&M/salários na cidade.

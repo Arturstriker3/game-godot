@@ -589,9 +589,13 @@ func _check_money_conservation() -> void:
 	for day in days:
 		sim.tick_day()
 	var money_end := float(sim.get_status().get("money_total", 0.0))
-	var drift := absf(money_end - money_start) / maxf(absf(money_start), 1.0)
+	# D-126: crédito de giro cria M1 registrado; conservação contra inicial +
+	# `bank_money_delta_total`, não contra o inicial puro.
+	var bank_created := float(sim.get_status().get("bank_money_delta_total", 0.0))
+	var drift := absf(money_end - money_start - bank_created) / maxf(absf(money_start), 1.0)
 	_check(drift <= 1e-6,
-		"(e) dinheiro não conservado: drift %.9f em %d dias" % [drift, days])
+		"(e) dinheiro não conservado: drift %.9f em %d dias (M1 criado %.2f)" % [
+			drift, days, bank_created])
 	_check(sim.get_status().get("invariant_violations", []).is_empty(),
 		"(e) invariantes violados: %s" % str(
 			sim.get_status().get("invariant_violations", [])))

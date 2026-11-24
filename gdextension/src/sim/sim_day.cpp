@@ -181,6 +181,15 @@ void tick_day(WorldState& ws, SimCore& core) {
 		bank_crisis::phase(ws);
 	}
 
+	// 9h. D-126: sobrevivência em crise. Reação determinística (corte já no
+	// accounting, demissão, crédito de giro, liquidação, hibernação e leilão)
+	// depois do crédito bancário e antes dos invariantes. O dinheiro bancário
+	// criado pelos empréstimos do dia entra em `bank_money_today`.
+	{
+		OGS_SIM_ZONE(kPhaseCrisis);
+		core.phase_crisis();
+	}
+
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra
 	// e reverte. O log fica na fachada.
