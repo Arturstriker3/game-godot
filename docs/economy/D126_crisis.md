@@ -112,7 +112,30 @@ Save **v41 aditivo**: campos por construção (`crisis_stage`, `mothballed`,
 `mothball_day`, dias sem manutenção, último layoff/crédito/liquidação), crédito
 de giro por cidade, área/eficiência por estação de safra, campos das usinas e
 contadores. Save v40 e anteriores carregam sem crise em curso (estado neutro);
-nada é inventado para trás.
+nada é inventado para trás. O crédito de giro da cidade é lido pela **presença
+da chave** (não pela versão): `banks[].loans` é lido em qualquer versão, e zerar
+a dívida de um save reconstruído abriria o gap crédito × passivo. O topo do save
+leva também `bank_money_delta_total` (aditivo, ausente em v40 = 0): soma assinada
+do M1 criado/destruído nos dias válidos, usada pelos guardas de conservação.
+
+## Correções do QA (24/11/2026)
+
+* Crédito de giro usa o banco público **existente** (`find_mut`); sem banco na
+  nação não há crédito e a escada pula para o próximo degrau. Nenhum banco é
+  criado para emprestar (C4: sem banco ⇒ M1 = M0).
+* Manutenção da usina hibernada = `mothball_opex_share` do **O&M diário**
+  (`opex_per_mwh` × capacidade × 24 h), não da folha parada.
+* `credit_rate_add` entra **uma vez**, na concessão; a renegociação capitaliza
+  a multa mas não soma o prêmio de novo (antes o tomador pagava 4 p.p.).
+* O teste A5 do `c3_bank_credit_test` passou a aceitar falência como
+  leilão/hibernação (spec item 5): baixa, calote e dívida zero continuam
+  obrigatórios; os bens precisam estar fechados, marcados para leilão ou já
+  vendidos.
+* `bank_money_delta_total` fecha a conta de conservação dos testes de mundo,
+  migração, moradia, população e serviços sem desligar a crise no fixture.
+* O mapa de impacto deixou de mandar ALL para qualquer fonte de
+  `gdextension/src/` (agora `core_set`); ALL fica reservado à infra de teste.
+
 
 ## Verificação
 

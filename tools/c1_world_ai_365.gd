@@ -1652,6 +1652,11 @@ func _run() -> void:
 		"bankruptcies": int(status_final.get("bankruptcies", -1)),
 		"money_start": money_start,
 		"money_end": money_end,
+		# D-126: soma assinada do M1 criado/destruido nos dias validos. O
+		# invariante fecha `money_end - money_start = emission_total + este
+		# contador`; o drift de credito e' este valor / money_start.
+		"bank_money_delta_total": float(
+			status_final.get("bank_money_delta_total", 0.0)),
 		"drift": (money_end - money_start) / money_start if money_start > 0.0 else 0.0,
 		"max_daily_drift": max_drift,
 		"food_gate": food,
