@@ -37,6 +37,14 @@ const INSTITUTIONAL_TAGS: Array[String] = [
 	"vehicle_fleet", "machines", "workshop", "construction", "treasury",
 	"pop_basic", "pop_life", "pop_luxury",
 ]
+## D-130b: demanda militar adiada por decisão do dono (não há sistema militar
+## no jogo). Os bens ficam no catálogo/receitas, mas fora da cesta `army` e
+## sem o bloco `military_demand` em needs.json.
+const POSTPONED_MILITARY_GOODS: Array[String] = [
+	"aramid", "ballistic_ceramic_plate", "tactical_equipment",
+	"command_equipment", "drone_jammer", "at_launcher", "at_rocket",
+	"aa_launcher",
+]
 
 var _failures: Array[String] = []
 
@@ -277,6 +285,14 @@ func _check_needs(needs: Dictionary, by_id: Dictionary) -> void:
 	var replacement := float(needs.get("durable_replacement_per_year", 0.0))
 	if replacement <= 0.0 or replacement > 1.0:
 		_fail("needs.json: durable_replacement_per_year fora de (0, 1]")
+
+	# D-130b: demanda militar adiada por decisão do dono.
+	if needs.has("military_demand"):
+		_fail("needs.json: military_demand presente (demanda militar adiada por decisão do dono)")
+	var army: Array = (needs.get("institutional", {}) as Dictionary).get("army", [])
+	for id in POSTPONED_MILITARY_GOODS:
+		if army.has(id):
+			_fail("needs.json: '%s' na cesta army (demanda militar adiada por decisão do dono)" % id)
 
 
 # --- moedas ----------------------------------------------------------------

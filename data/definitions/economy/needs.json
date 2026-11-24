@@ -176,21 +176,15 @@
       "vaccines"
     ],
     "army": [
-      "aa_launcher",
       "ammunition",
       "artillery",
       "artillery_ammo",
-      "at_launcher",
-      "at_rocket",
       "canned_food",
       "combat_ration",
-      "command_equipment",
       "diesel",
-      "drone_jammer",
       "infantry_gear",
       "military_drone",
       "small_arms",
-      "tactical_equipment",
       "uniforms"
     ],
     "pop_luxury": [
@@ -263,22 +257,5 @@
     "projétil perfurante",
     "blindado",
     "preferências culturais"
-  ],
-  "military_demand": {
-    "unit": "unidade de referencia por soldado/ano",
-    "params_source": "declared:unit_reference",
-    "note": "Sem efetivo militar no modelo: default declarado de 1 unidade de referencia por soldado/ano por item, proporcional 1:1 a uniforms/infantry_gear/small_arms/ammunition. Nao e dado observado.",
-    "per_soldier_unit_year": {
-      "uniforms": 1.0,
-      "infantry_gear": 1.0,
-      "small_arms": 1.0,
-      "ammunition": 1.0,
-      "tactical_equipment": 1.0,
-      "command_equipment": 1.0,
-      "drone_jammer": 1.0,
-      "at_launcher": 1.0,
-      "at_rocket": 1.0,
-      "aa_launcher": 1.0
-    }
-  }
+  ]
 }
