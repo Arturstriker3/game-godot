@@ -59,6 +59,50 @@ struct DeepenResult {
 Building* find_building(WorldState& ws, const std::string& city_id,
 		const std::string& id);
 
+// ---------------------------------------------------------------------------
+// D-125 — eficiência de produção (estilo HOI4). Resultados das ações que
+// mudam a planta fora do tick; a fachada converte para Dictionary.
+// ---------------------------------------------------------------------------
+struct ChangeProductResult {
+	bool changed = false;
+	double efficiency = 0.0;
+	int transition_days = 0;
+	std::string error;
+};
+
+struct RefineryModeResult {
+	bool changed = false;
+	int mode = 0;
+	int transition_days = 0;
+	std::string error;
+};
+
+struct EquipmentResult {
+	bool set = false;
+	double level = 0.0;
+	std::string error;
+};
+
+// Troca o produto de uma construção: transição sem produção (dias da classe;
+// fazenda espera a próxima janela de plantio) e retenção de 60% na mesma
+// família (goods.json.sector) / reinício na eficiência inicial na outra. Mina
+// não troca de produto (a jazida manda) e a API recusa.
+ChangeProductResult action_change_product(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		const std::string& product, const std::string& recipe_id);
+
+// Modo da refinaria: `standard` (45/29/9), `diesel` (38/36/9) ou `jet`
+// (40/28/15). A troca leva `transition_mode_days` sem produção.
+RefineryModeResult action_set_refinery_mode(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		const std::string& mode);
+
+// Equipamento da fazenda/mina (trator/máquina) em 0..1. Sem diesel no mercado
+// da cidade o equipamento fica parado no dia (o `phase_efficiency` mede).
+EquipmentResult action_set_building_equipment(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		double level);
+
 // §15: custo ainda não pago das obras de uma cidade para um dono ("state",
 // "private" ou o id de um grupo). Base do limite de comprometimento: o dono não
 // inicia obra nova cujo custo, somado ao já comprometido, estoura o caixa atual.

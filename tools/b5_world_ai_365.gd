@@ -73,7 +73,10 @@ func _init() -> void:
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
 		elif arg.begins_with("--out="):
 			_out = arg.split("=", true, 1)[1]
-			if not _out.begins_with("res://") and not _out.begins_with("user://"):
+			# Caminho absoluto do SO (ex.: G:/opengs_tmp/...) passa direto; so o
+			# relativo vira res://, como antes.
+			if not _out.begins_with("res://") and not _out.begins_with("user://") \
+					and not _out.is_absolute_path():
 				_out = "res://" + _out
 		elif arg.begins_with("--infra="):
 			_infra = arg.split("=", true, 1)[1]

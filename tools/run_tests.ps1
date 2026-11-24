@@ -7,7 +7,14 @@
 #   - free RAM/disk floor checked before every test
 #   - `--script` only for SceneTree/MainLoop scripts; scenes run as scenes
 #   - hard timeout, process-tree kill, WerFault cleanup, exit-code recording
-#   - JSON + per-test logs in a private temp folder
+#   - JSON + per-test logs in a private temp folder on G: (never C:)
+#
+# TEMP ROOT (disk rule): every run artifact lives under -TmpRoot, whose default
+# is G:\opengs_tmp -- runs (opengs_test_run_*), the lock, per-test logs and the
+# summary. Each Godot child gets TEMP/TMP = <TmpRoot>\godot_tmp and
+# OPENGS_TMP = <TmpRoot>, so the engine and the test scripts do not spill big
+# files on C:. If the tmp drive/dir is not usable the runner falls back to
+# $env:TEMP with a warning. Override per invocation: -TmpRoot "D:\somewhere".
 #
 # The file is intentionally ASCII-only: accented Windows paths (OneDrive
 # "Area de Trabalho") must not break parsing/encoding on PowerShell 5.1.
@@ -17,6 +24,7 @@
 #   ... -List services_test,economy_integration_test
 #   ... -Pattern "*economy*" -TimeoutSec 1200
 #   ... -TimeoutOverrides "economy_long_run_test=3600,world_equivalence_test=1800"
+#   ... -TmpRoot "G:\opengs_tmp"
 #
 # Exit codes:
 #   0 all green
@@ -26,7 +34,7 @@
 #   4 resource floor not reached within ResourceWaitSec
 #
 # Never run this in parallel with itself or with another Godot test process.
-# The lock file is %TEMP%\opengs_godot_test.lock (PID inside) and is always
+# The lock file is <TmpRoot>\opengs_godot_test.lock (PID inside) and is always
 # released in the finally block.
 
 [CmdletBinding()]
@@ -43,6 +51,7 @@ param(
     [double]$MinFreeDiskGB = 10.0,
     [string]$Godot = "",
     [string]$ProjectRoot = "",
+    [string]$TmpRoot = "G:\opengs_tmp",
     [string]$OutDir = "",
     [switch]$KeepLogs
 )
@@ -51,12 +60,15 @@ $ErrorActionPreference = "Stop"
 
 $script:Root = ""
 $script:GodotExe = ""
-$script:LockPath = Join-Path $env:TEMP "opengs_godot_test.lock"
+$script:TmpRoot = ""
+$script:GodotTmpDir = ""
+$script:LockPath = ""
 $script:LockStream = $null
 $script:LockOwned = $false
 $script:OutDir = ""
 $script:LogDir = ""
 $script:Results = @()
+$script:SystemDiskWarned = $false
 
 # ---------------------------------------------------------------------------
 # Small helpers
@@ -70,6 +82,88 @@ function Quote-Arg([string]$value) {
 function Write-Utf8NoBom([string]$Path, [string]$Text) {
     $enc = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($Path, $Text, $enc)
+}
+
+function Get-DriveRoot([string]$Path) {
+    try {
+        $root = [System.IO.Path]::GetPathRoot($Path)
+        if ($root) { return $root }
+    } catch {
+    }
+    return "C:\"
+}
+
+function Get-FreeDiskGB([string]$Path) {
+    $root = Get-DriveRoot $Path
+    try {
+        $di = New-Object System.IO.DriveInfo($root)
+        return [math]::Round(($di.AvailableFreeSpace / 1GB), 2)
+    } catch {
+        $name = $root.TrimEnd('\', '/').TrimEnd(':')
+        if (-not $name) { $name = "C" }
+        try {
+            $d = Get-PSDrive -Name $name -ErrorAction Stop
+            return [math]::Round(($d.Free / 1GB), 2)
+        } catch {
+            return 0.0
+        }
+    }
+}
+
+# The tmp root is where EVERY run artifact goes. Default G:\opengs_tmp; if the
+# disk/dir is not writable (G: missing on another machine) fall back to
+# $env:TEMP with a warning instead of failing the battery.
+function Resolve-TmpRoot([string]$Requested) {
+    $candidate = $Requested
+    if (-not $candidate) { $candidate = "G:\opengs_tmp" }
+    try {
+        if (-not (Test-Path -LiteralPath $candidate)) {
+            New-Item -ItemType Directory -Path $candidate -Force -ErrorAction Stop | Out-Null
+        }
+        $probe = Join-Path $candidate (".write_probe_" + $PID + ".tmp")
+        [System.IO.File]::WriteAllText($probe, "ok")
+        Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue
+        return (Resolve-Path -LiteralPath $candidate).Path
+    } catch {
+        $fallback = Join-Path $env:TEMP "opengs_test_tmp"
+        Write-Host ("[tmp] aviso: nao consegui usar '{0}' ({1}); usando '{2}'." -f `
+            $candidate, $_.Exception.Message, $fallback)
+        if (-not (Test-Path -LiteralPath $fallback)) {
+            New-Item -ItemType Directory -Path $fallback -Force | Out-Null
+        }
+        return $fallback
+    }
+}
+
+# Every Godot child runs with TEMP/TMP on the tmp drive and OPENGS_TMP set, so
+# engine scratch files and the test scripts' own artifacts leave C: alone.
+function Start-GodotProcess {
+    param([string[]]$Arguments, [string]$OutLog, [string]$ErrLog)
+    $prevTemp = $env:TEMP
+    $prevTmp = $env:TMP
+    $prevOpenGsTmp = $env:OPENGS_TMP
+    try {
+        if ($script:GodotTmpDir) {
+            $env:TEMP = $script:GodotTmpDir
+            $env:TMP = $script:GodotTmpDir
+            $env:OPENGS_TMP = $script:TmpRoot
+        }
+        $proc = Start-Process -FilePath $script:GodotExe -ArgumentList $Arguments `
+            -RedirectStandardOutput $OutLog -RedirectStandardError $ErrLog `
+            -NoNewWindow -PassThru -ErrorAction Stop
+        # Keep the OS handle: without it PowerShell 5.1 can report ExitCode as
+        # $null for a redirected process that exits quickly.
+        $null = $proc.Handle
+        return $proc
+    } finally {
+        $env:TEMP = $prevTemp
+        $env:TMP = $prevTmp
+        if ($null -eq $prevOpenGsTmp) {
+            Remove-Item Env:\OPENGS_TMP -ErrorAction SilentlyContinue
+        } else {
+            $env:OPENGS_TMP = $prevOpenGsTmp
+        }
+    }
 }
 
 function Convert-ToUInt32([int]$code) {
@@ -400,7 +494,7 @@ function Wait-ForForeignGodotTests {
 }
 
 # ---------------------------------------------------------------------------
-# Resources (free RAM and C: free space)
+# Resources (free RAM, free space on the tmp root and a C: floor warning)
 # ---------------------------------------------------------------------------
 
 function Get-FreeRamGB {
@@ -408,34 +502,38 @@ function Get-FreeRamGB {
     return [math]::Round(($os.FreePhysicalMemory / 1MB), 2)
 }
 
-function Get-FreeSystemDriveGB {
-    try {
-        $d = Get-PSDrive -Name C -ErrorAction Stop
-        return [math]::Round(($d.Free / 1GB), 2)
-    } catch {
-        $ld = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'" -ErrorAction SilentlyContinue
-        if ($ld) { return [math]::Round(($ld.FreeSpace / 1GB), 2) }
-        return 0.0
-    }
-}
-
 function Wait-ForResources {
-    param([double]$MinRam, [double]$MinDisk, [int]$MaxWaitSec)
+    param([double]$MinRam, [double]$MinDisk, [int]$MaxWaitSec, [double]$MinSystemDisk = 2.0)
     $start = Get-Date
     $announced = $false
+    $diskPath = $script:TmpRoot
+    $diskLabel = (Get-DriveRoot $diskPath).TrimEnd('\')
+    if (-not $diskLabel) { $diskLabel = $diskPath }
     while ($true) {
         $ram = Get-FreeRamGB
-        $disk = Get-FreeSystemDriveGB
+        $disk = Get-FreeDiskGB $diskPath
+        # C: keeps its own floor, but only as a warning: a full C: is no reason
+        # to abort a battery whose artifacts now live on the tmp drive.
+        $system = Get-FreeDiskGB "C:\"
+        if ($system -lt $MinSystemDisk -and -not $script:SystemDiskWarned) {
+            Write-Host ("[recursos] aviso: C: livre {0} GB (< {1}); a rodada grava em {2}, mas C: pode acabar." -f `
+                $system, $MinSystemDisk, $diskPath)
+            $script:SystemDiskWarned = $true
+        }
         if ($ram -ge $MinRam -and $disk -ge $MinDisk) {
-            if ($announced) { Write-Host ("[recursos] ok: RAM livre {0} GB, C: livre {1} GB." -f $ram, $disk) }
-            return [pscustomobject]@{ Ok = $true; Ram = $ram; Disk = $disk }
+            if ($announced) {
+                Write-Host ("[recursos] ok: RAM livre {0} GB, {1} livre {2} GB (C: {3} GB)." -f `
+                    $ram, $diskLabel, $disk, $system)
+            }
+            return [pscustomobject]@{ Ok = $true; Ram = $ram; Disk = $disk; System = $system }
         }
         if (-not $announced) {
-            Write-Host ("[recursos] abaixo do piso: RAM livre {0} GB (< {1}) / C: livre {2} GB (< {3}); aguardando ate {4}s." -f $ram, $MinRam, $disk, $MinDisk, $MaxWaitSec)
+            Write-Host ("[recursos] abaixo do piso: RAM livre {0} GB (< {1}) / {2} livre {3} GB (< {4}); aguardando ate {5}s." -f `
+                $ram, $MinRam, $diskLabel, $disk, $MinDisk, $MaxWaitSec)
             $announced = $true
         }
         if (((Get-Date) - $start).TotalSeconds -ge $MaxWaitSec) {
-            return [pscustomobject]@{ Ok = $false; Ram = $ram; Disk = $disk }
+            return [pscustomobject]@{ Ok = $false; Ram = $ram; Disk = $disk; System = $system }
         }
         Start-Sleep -Seconds 10
     }
@@ -535,10 +633,7 @@ function Ensure-ProjectImported {
 
     $proc = $null
     try {
-        $proc = Start-Process -FilePath $script:GodotExe -ArgumentList $godotArgs `
-            -RedirectStandardOutput $outLog -RedirectStandardError $errLog `
-            -NoNewWindow -PassThru -ErrorAction Stop
-        $null = $proc.Handle
+        $proc = Start-GodotProcess -Arguments $godotArgs -OutLog $outLog -ErrLog $errLog
     } catch {
         return "import: falha ao iniciar Godot ($($_.Exception.Message))"
     }
@@ -597,12 +692,7 @@ function Invoke-TestRun {
     $started = Get-Date
     $proc = $null
     try {
-        $proc = Start-Process -FilePath $script:GodotExe -ArgumentList $godotArgs `
-            -RedirectStandardOutput $outLog -RedirectStandardError $errLog `
-            -NoNewWindow -PassThru -ErrorAction Stop
-        # Keep the OS handle: without it PowerShell 5.1 can report ExitCode as
-        # $null for a redirected process that exits quickly.
-        $null = $proc.Handle
+        $proc = Start-GodotProcess -Arguments $godotArgs -OutLog $outLog -ErrLog $errLog
     } catch {
         $record.status = "FAIL"
         $record.exit_hex = "start-error"
@@ -746,11 +836,18 @@ function Invoke-Main {
     $script:Root = $root
     $script:GodotExe = Find-GodotExe -Explicit $Godot
 
+    $script:TmpRoot = Resolve-TmpRoot -Requested $TmpRoot
+    $script:GodotTmpDir = Join-Path $script:TmpRoot "godot_tmp"
+    if (-not (Test-Path -LiteralPath $script:GodotTmpDir)) {
+        New-Item -ItemType Directory -Path $script:GodotTmpDir -Force | Out-Null
+    }
+    $script:LockPath = Join-Path $script:TmpRoot "opengs_godot_test.lock"
+
     $runId = (Get-Date).ToString("yyyyMMdd_HHmmss")
     if ($OutDir) {
         $script:OutDir = $OutDir
     } else {
-        $script:OutDir = Join-Path $env:TEMP ("opengs_test_run_" + $runId)
+        $script:OutDir = Join-Path $script:TmpRoot ("opengs_test_run_" + $runId)
     }
     if (-not (Test-Path -LiteralPath $script:OutDir)) {
         New-Item -ItemType Directory -Path $script:OutDir -Force | Out-Null
@@ -792,6 +889,7 @@ function Invoke-Main {
 
     Write-Host "[runner] godot:   $($script:GodotExe)"
     Write-Host "[runner] projeto: $root"
+    Write-Host "[runner] tmp:     $($script:TmpRoot) (TEMP/TMP do Godot: $($script:GodotTmpDir))"
     Write-Host "[runner] testes:  $($selected.Count) (timeout padrao ${TimeoutSec}s)"
     Write-Host "[runner] saida:   $($script:OutDir)"
 
@@ -848,8 +946,8 @@ function Invoke-Main {
 
             $res = Wait-ForResources -MinRam $MinFreeRamGB -MinDisk $MinFreeDiskGB -MaxWaitSec $ResourceWaitSec
             if (-not $res.Ok) {
-                $aborted = ("recursos: RAM livre {0} GB (< {1}) / C: livre {2} GB (< {3}) apos {4}s" -f `
-                    $res.Ram, $MinFreeRamGB, $res.Disk, $MinFreeDiskGB, $ResourceWaitSec)
+                $aborted = ("recursos: RAM livre {0} GB (< {1}) / disco de {2} livre {3} GB (< {4}) apos {5}s" -f `
+                    $res.Ram, $MinFreeRamGB, $script:TmpRoot, $res.Disk, $MinFreeDiskGB, $ResourceWaitSec)
                 Write-Host "[recursos] $aborted. Abortando a bateria."
                 $setupCode = 4
                 break

@@ -75,6 +75,11 @@ public:
 	// armazenagem mensal e perecibilidade dos bens da cadeia. Roda antes da
 	// produção: a safra do dia já está no estoque quando o comércio abre.
 	void phase_agriculture();
+	// D-125: eficiência de produção (transição sem produção, combustível do
+	// equipamento e maturação da planta). Roda depois do reset e antes da
+	// agricultura/produção: a safra e a produção do dia já usam a eficiência
+	// atualizada.
+	void phase_efficiency();
 	// 2a. B1: demografia — cadência mensal (A6) por cidade. Move as coortes
 	// etárias um mês (nascimentos, mortes e envelhecimento) e reaplica o perfil
 	// que depende da idade. Laço SERIAL (determinístico).

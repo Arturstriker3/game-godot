@@ -3,6 +3,8 @@
 // C++ puro (STL): nada de godot_cpp aqui.
 #include "actions.h"
 
+#include "efficiency.h"
+
 #include "sim_constants.h"
 #include "sim_core.h"
 #include "storage.h"
@@ -259,11 +261,18 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 		building.jobs = jobs;
 		building.wage = wage;
 		building.opex = opex;
-		// Fábrica nova começa em rampa (25% da capacidade): evita o pico de
-		// produção/oferta no primeiro dia e deixa a curva de preço reagir.
-		if (recipe >= 0 || input_product >= 0) {
-			building.output_scale = 0.25;
-			building.last_utilization = 0.25;
+		// D-125: eficiência de produção por construção. Planta de BOOTSTRAP é
+		// estoque pré-existente do ano-base (nasce madura, com equipamento);
+		// construção instantânea de teste/obra nova nasce com a curva baixa da
+		// classe. `output_scale` deixa de começar em 0,25: a rampa agora é a
+		// eficiência (uma única curva, não duas penalidades somadas).
+		if (bootstrap_construction) {
+			eff::mature(building, true);
+		} else if (city != nullptr) {
+			eff::init_new(ws, *city, building);
+		} else {
+			building.production_efficiency = 0.30;
+			building.efficiency_days = 0;
 		}
 		ws.buildings.push_back(building);
 		// D-086: mina nova abre o estágio 0 reivindicando uma fatia da reserva da
@@ -555,10 +564,9 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 		}
 		building.local_share = local_share;
 		building.partner_group = partner != nullptr ? partner->id : std::string();
-		if (recipe >= 0) {
-			building.output_scale = 0.25;
-			building.last_utilization = 0.25;
-		}
+		// D-125: obra nova nasce na eficiência inicial da classe (a rampa é a
+		// curva de eficiência; `output_scale` fica 1,0).
+		eff::init_new(ws, *city, building);
 		ws.buildings.push_back(building);
 		// D-086: mina nova abre o estágio 0 (mesma regra do build do Estado).
 		if (SimCore::is_mine_building(*city, ws.buildings.back())) {
@@ -1152,6 +1160,177 @@ StorageTradeResult action_storage_trade(WorldState& ws, SimCore& core,
 	result.tons = qty;
 	result.value = value;
 	result.free_tons = relief ? qty - paid_qty : 0.0;
+	return result;
+}
+
+// ---------------------------------------------------------------------------
+// D-125 — eficiência de produção (estilo HOI4). A planta começa baixa e cresce
+// com os dias de operação; trocar de produto abre uma transição sem produção e
+// aplica a retenção (60% na mesma família, reinício na outra). Os números são
+// os defaults declarados em data/definitions/production/efficiency.json
+// (espelho C++ em EfficiencyParams); nada aqui é dado observado.
+// ---------------------------------------------------------------------------
+namespace {
+
+// Cidade dona da construção (-1 quando não existe).
+int city_index_of(const WorldState& ws, const std::string& city_id) {
+	const auto found = ws.city_lookup.find(city_id);
+	return found == ws.city_lookup.end() ? -1 : found->second;
+}
+
+// Primeira receita (ordem determinística de `ws.recipes`) cujo produto
+// principal é `product`; -1 quando não existe.
+int first_recipe_for(const WorldState& ws, int product) {
+	for (std::size_t index = 0; index < ws.recipes.size(); ++index) {
+		if (ws.recipes[index].output == product) {
+			return static_cast<int>(index);
+		}
+	}
+	return -1;
+}
+
+} // namespace
+
+ChangeProductResult action_change_product(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		const std::string& product, const std::string& recipe_id) {
+	ChangeProductResult result;
+	Building* building = find_building(ws, city_id, building_id);
+	if (building == nullptr) {
+		result.error = "construção inexistente";
+		return result;
+	}
+	const int city_index = city_index_of(ws, city_id);
+	if (city_index < 0 || city_index >= static_cast<int>(ws.cities.size())) {
+		result.error = "cidade inexistente";
+		return result;
+	}
+	City& city = ws.cities[static_cast<std::size_t>(city_index)];
+	const int target = core.product_index(product);
+	if (target < 0) {
+		result.error = "produto desconhecido";
+		return result;
+	}
+	const EfficiencyClass cls = eff::classify(ws, city, *building);
+	if (cls == EfficiencyClass::kMine) {
+		result.error = "mina não troca de produto (a jazida manda)";
+		return result;
+	}
+	const int days = eff::transition_days(ws, city, *building, target);
+	if (days < 0) {
+		result.error = "sem janela de plantio para o produto-alvo";
+		return result;
+	}
+	// Receita nova: explícita quando veio; senão a primeira da ordem do
+	// catálogo que produz o bem. Fazenda/pecuária não têm receita.
+	int recipe = -1;
+	if (!recipe_id.empty()) {
+		recipe = core.recipe_index(recipe_id);
+		if (recipe < 0) {
+			result.error = "receita desconhecida";
+			return result;
+		}
+		if (ws.recipes[static_cast<std::size_t>(recipe)].output != target) {
+			result.error = "receita não produz o produto pedido";
+			return result;
+		}
+	} else if (building->recipe >= 0) {
+		recipe = first_recipe_for(ws, target);
+		if (recipe < 0) {
+			result.error = "sem receita para o produto pedido";
+			return result;
+		}
+	}
+	// Retenção: mesma família (goods.json.sector) guarda 60%; família
+	// diferente zera e recomeça na eficiência inicial da classe.
+	const bool same = eff::same_family(ws, building->output_product, target);
+	const double retention = same ? ws.efficiency.retention_same_family
+		: ws.efficiency.retention_other;
+	const double start = std::clamp(
+		eff::curve(ws, cls).start, 0.0, 1.0);
+	const double kept = building->production_efficiency * retention;
+	building->production_efficiency = std::clamp(
+		retention > 0.0 ? std::max(start, kept) : start, 0.0, 1.0);
+	building->output_product = target;
+	if (recipe >= 0 || building->recipe >= 0) {
+		building->recipe = recipe;
+	}
+	building->transition_days = days;
+	building->efficiency_days = 0;
+	building->idle_today = false;
+	result.changed = true;
+	result.efficiency = building->production_efficiency;
+	result.transition_days = days;
+	return result;
+}
+
+RefineryModeResult action_set_refinery_mode(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		const std::string& mode) {
+	(void)core;
+	RefineryModeResult result;
+	Building* building = find_building(ws, city_id, building_id);
+	if (building == nullptr) {
+		result.error = "construção inexistente";
+		return result;
+	}
+	if (!eff::is_refinery(ws, *building)) {
+		result.error = "construção não é refinaria";
+		return result;
+	}
+	int value = -1;
+	if (mode == "standard" || mode == "0") {
+		value = 0;
+	} else if (mode == "diesel" || mode == "1") {
+		value = 1;
+	} else if (mode == "jet" || mode == "2") {
+		value = 2;
+	}
+	if (value < 0) {
+		result.error = "modo desconhecido (standard|diesel|jet)";
+		return result;
+	}
+	result.mode = value;
+	if (building->refinery_mode == value) {
+		result.changed = false;
+		return result;
+	}
+	building->refinery_mode = value;
+	// A troca de modo leva `transition_mode_days` sem produção; a eficiência
+	// conquistada é preservada (não é troca de produto).
+	building->transition_days = std::max(0, ws.efficiency.transition_mode_days);
+	building->idle_today = false;
+	result.changed = true;
+	result.transition_days = building->transition_days;
+	return result;
+}
+
+EquipmentResult action_set_building_equipment(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		double level) {
+	(void)core;
+	EquipmentResult result;
+	Building* building = find_building(ws, city_id, building_id);
+	if (building == nullptr) {
+		result.error = "construção inexistente";
+		return result;
+	}
+	const int city_index = city_index_of(ws, city_id);
+	if (city_index < 0) {
+		result.error = "cidade inexistente";
+		return result;
+	}
+	const City& city = ws.cities[static_cast<std::size_t>(city_index)];
+	const EfficiencyClass cls = eff::classify(ws, city, *building);
+	if (cls != EfficiencyClass::kMine && cls != EfficiencyClass::kFarm
+			&& cls != EfficiencyClass::kRanch) {
+		result.error = "equipamento só existe em lavoura, pecuária e mina";
+		return result;
+	}
+	building->equipment = std::clamp(level, 0.0, 1.0);
+	building->equipment_active = building->equipment > 0.0;
+	result.set = true;
+	result.level = building->equipment;
 	return result;
 }
 

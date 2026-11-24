@@ -1,5 +1,7 @@
 extends SceneTree
 
+const TmpPaths := preload("res://tools/tmp_paths.gd")
+
 ## F5 — critério de aceite do preço na ÂNCORA (opção c, GAME_STATE §15).
 ##
 ## O preço interno é XGS e a moeda local é só exibição (`price_local`), então
@@ -17,7 +19,7 @@ extends SceneTree
 ## Passa quando, em TODAS as variações, nenhuma nação piora a comida além de
 ## FOOD_TOLERANCE vs. o baseline (f4) e as falências ficam em baseline + 2.
 ## Escreve o relatório agregado (`--out=`) e um JSON por variação em
-## `user://world_sweep/`.
+## `$OPENGS_TMP/world_sweep/` (default `G:/opengs_tmp/world_sweep/`).
 ##
 ##   godot --headless --path . --script res://tools/economy_world_sweep.gd
 ##     [--days=365] [--baseline=res://docs/economy/perf/f4_world_ai_365.json]
@@ -85,8 +87,7 @@ func _sweep() -> void:
 	var limit := baseline_bankruptcies + BANKRUPTCY_TOLERANCE
 	var project := ProjectSettings.globalize_path("res://").trim_suffix("/").trim_suffix("\\")
 	var godot := OS.get_executable_path()
-	var sweep_dir := ProjectSettings.globalize_path("user://world_sweep")
-	DirAccess.make_dir_recursive_absolute(sweep_dir)
+	var sweep_dir := TmpPaths.dir("world_sweep")
 
 	# pior queda por nação em todas as variações: {tag: {delta, food, variant}}
 	var worst: Dictionary = {}
@@ -99,7 +100,7 @@ func _sweep() -> void:
 	var failed_variants: Dictionary = {}
 	for variant: Dictionary in VARIANTS:
 		var name := String(variant["name"])
-		var out_path := "user://world_sweep/%s_%d.json" % [name, _days]
+		var out_path := sweep_dir.path_join("%s_%d.json" % [name, _days])
 		var args: Array = ["--headless", "--path", project, "--script", TEST_SCRIPT, "--",
 			"--ai=1", "--days=%d" % _days, "--baseline=" + _baseline_path, "--out=" + out_path]
 		args.append_array(variant["args"])

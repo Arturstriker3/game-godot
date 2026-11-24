@@ -1,5 +1,7 @@
 extends Node3D
 
+const TmpPaths := preload("res://tools/tmp_paths.gd")
+
 ## Harness de escala da IA (economia): mede o custo do `plan()` e de cada
 ## `pump()` da IA escalonada, além do LOD de comboios, num mundo sintético.
 ##
@@ -156,7 +158,7 @@ func _run() -> void:
 		result["convoys"]["orders_per_day"], result["convoys"]["queued"],
 		result["convoys"]["active_max"], result["convoys"]["aggregated_per_day"],
 		result["convoys"]["pump_max_ms"]])
-	var path := OS.get_environment("TEMP").path_join("ai_scale_bench.json")
+	var path := TmpPaths.path("ai_scale_bench.json")
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(result, "  "))

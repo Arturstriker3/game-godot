@@ -7,6 +7,7 @@
 #include "sim/bank.h"
 #include "sim/bank_crisis.h"
 #include "sim/central_bank.h"
+#include "sim/efficiency.h"
 #include "sim/exchange.h"
 #include "sim/monetary.h"
 #include "sim/power.h"
@@ -466,6 +467,23 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_market_stock);
 	ClassDB::bind_method(D_METHOD("set_market_price", "city_id", "product", "price"),
 	                     &EconomySim::set_market_price);
+	// D-125: eficiência de produção (API sem UI; comandos A3).
+	ClassDB::bind_method(D_METHOD("change_product", "city_id", "building_id",
+	                     "product", "recipe_id"),
+	                     &EconomySim::change_product, DEFVAL(""));
+	ClassDB::bind_method(D_METHOD("set_refinery_mode", "city_id",
+	                     "building_id", "mode"),
+	                     &EconomySim::set_refinery_mode);
+	ClassDB::bind_method(D_METHOD("set_building_equipment", "city_id",
+	                     "building_id", "level"),
+	                     &EconomySim::set_building_equipment);
+	ClassDB::bind_method(D_METHOD("set_efficiency_params", "values"),
+	                     &EconomySim::set_efficiency_params);
+	ClassDB::bind_method(D_METHOD("get_efficiency_params"),
+	                     &EconomySim::get_efficiency_params);
+	ClassDB::bind_method(D_METHOD("mature_world_efficiency", "buildings"),
+	                     &EconomySim::mature_world_efficiency,
+	                     DEFVAL(Array()));
 	ClassDB::bind_method(D_METHOD("set_currencies", "currencies"),
 	                     &EconomySim::set_currencies);
 	ClassDB::bind_method(D_METHOD("get_currency", "nation"),
@@ -1084,6 +1102,13 @@ void EconomySim::set_goods(const Array& goods) {
 	ws_.product_durable = std::move(durable);
 	ws_.product_sectors = std::move(sectors);
 	ws_.product_sectors.resize(static_cast<std::size_t>(product_count));
+	// D-125: índices dos bens do equipamento e dos três graus do refino. A
+	// resolução é aqui (o catálogo é a fonte); produto ausente = -1 e a regra
+	// fica inerte (ausência explícita).
+	ws_.efficiency.equipment_fuel_product = product_index(String("diesel"));
+	ws_.efficiency.refinery_gasoline = product_index(String("gasoline"));
+	ws_.efficiency.refinery_diesel = product_index(String("diesel"));
+	ws_.efficiency.refinery_jet = product_index(String("jet_fuel"));
 
 	// Mundo jÃ¡ inicializado: os produtos novos entram com o preÃ§o-base e sem
 	// estoque. Os Ã­ndices existentes (0..previous_products-1) nÃ£o mudam.
@@ -1357,6 +1382,10 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		building.jobs = capacity * aptitude * jobs_per_ton;
 		building.wage = wage_in;
 		building.opex = capacity * aptitude * opex_per_ton;
+		// D-125: o mundo inicial é o ano-base — a fazenda/mina já existe
+		// madura (eficiência 1, trator/máquina ligados). Construção nova via
+		// obra/projeto nasce na curva baixa.
+		ogs::eff::mature(building, true);
 		ws_.buildings.push_back(std::move(building));
 	}
 
@@ -1555,6 +1584,55 @@ void EconomySim::apply_set_market_price(const String& city_id,
 	const double base = base_price(product_slot);
 	city->markets[product_slot].price = std::clamp(
 		std::max(1e-6, price), base * 0.1, base * 10.0);
+}
+
+// ---------------------------------------------------------------------------
+// D-125 — eficiência de produção: aplicação dos comandos (quem aplica é o
+// escritor único; o mutex recursivo aqui é o mesmo padrão dos demais apply_*).
+// ---------------------------------------------------------------------------
+Dictionary EconomySim::apply_change_product(const String& city_id,
+		const String& building_id, const String& product,
+		const String& recipe_id) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::ChangeProductResult outcome = ogs::action_change_product(ws_,
+		sim_core_, std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()),
+		std::string(product.utf8().get_data()),
+		std::string(recipe_id.utf8().get_data()));
+	Dictionary result;
+	result["changed"] = outcome.changed;
+	result["efficiency"] = outcome.efficiency;
+	result["transition_days"] = outcome.transition_days;
+	result["error"] = String(outcome.error.c_str());
+	return result;
+}
+
+Dictionary EconomySim::apply_set_refinery_mode(const String& city_id,
+		const String& building_id, const String& mode) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::RefineryModeResult outcome = ogs::action_set_refinery_mode(ws_,
+		sim_core_, std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()),
+		std::string(mode.utf8().get_data()));
+	Dictionary result;
+	result["changed"] = outcome.changed;
+	result["mode"] = outcome.mode;
+	result["transition_days"] = outcome.transition_days;
+	result["error"] = String(outcome.error.c_str());
+	return result;
+}
+
+Dictionary EconomySim::apply_set_building_equipment(const String& city_id,
+		const String& building_id, double level) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::EquipmentResult outcome = ogs::action_set_building_equipment(ws_,
+		sim_core_, std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()), level);
+	Dictionary result;
+	result["set"] = outcome.set;
+	result["level"] = outcome.level;
+	result["error"] = String(outcome.error.c_str());
+	return result;
 }
 
 Dictionary EconomySim::apply_expand_port(const String& port_id, double t_per_day) {
@@ -2273,6 +2351,11 @@ EconomySim::StatusKeys::StatusKeys() :
 		stage_reserve_kt("stage_reserve_kt"),
 		stage_mined_kt("stage_mined_kt"),
 		next_deepen_cost("next_deepen_cost"),
+		production_efficiency("production_efficiency"),
+		efficiency_days("efficiency_days"),
+		transition_days("transition_days"),
+		equipment("equipment"),
+		refinery_mode("refinery_mode"),
 		light("light"),
 		product_count("product_count"),
 		m_price("m_price"),
@@ -3293,6 +3376,22 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			}
 		};
 		sync_double(k.last_utilization, cached.last_utilization, building.last_utilization);
+		// D-125: eficiência de produção, dias, transição, equipamento e modo.
+		sync_double(k.production_efficiency, cached.production_efficiency,
+			building.production_efficiency);
+		sync_double(k.equipment, cached.equipment, building.equipment);
+		if (cached.efficiency_days != building.efficiency_days) {
+			entry[k.efficiency_days] = building.efficiency_days;
+			cached.efficiency_days = building.efficiency_days;
+		}
+		if (cached.transition_days != building.transition_days) {
+			entry[k.transition_days] = building.transition_days;
+			cached.transition_days = building.transition_days;
+		}
+		if (cached.refinery_mode != building.refinery_mode) {
+			entry[k.refinery_mode] = building.refinery_mode;
+			cached.refinery_mode = building.refinery_mode;
+		}
 		sync_double(k.capacity, cached.capacity, building.capacity);
 		sync_double(k.jobs, cached.jobs, building.jobs);
 		sync_double(k.wage, cached.wage, building.wage);
@@ -8784,6 +8883,17 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			apply_set_market_price(String(cmd.s[0].c_str()),
 				String(cmd.s[1].c_str()), cmd.v[0]);
 			return result;
+		// D-125: eficiência de produção (troca de produto/modo/equipamento).
+		case ogs::CommandType::ChangeProduct:
+			return apply_change_product(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), String(cmd.s[2].c_str()),
+				String(cmd.s[3].c_str()));
+		case ogs::CommandType::SetRefineryMode:
+			return apply_set_refinery_mode(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), String(cmd.s[2].c_str()));
+		case ogs::CommandType::SetBuildingEquipment:
+			return apply_set_building_equipment(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0]);
 		case ogs::CommandType::FleetBuy:
 			return apply_fleet_buy(String(cmd.s[0].c_str()),
 				String(cmd.s[1].c_str()), cmd.v[0], cmd.v[1]);
@@ -11554,6 +11664,216 @@ void EconomySim::set_market_price(const String& city_id,
 	cmd.s[1] = to_std(product);
 	cmd.v[0] = price;
 	dispatch_command(cmd);
+}
+
+// ---------------------------------------------------------------------------
+// D-125 — API da eficiência de produção. Os comandos entram na fila A3 como
+// qualquer mutação; os parâmetros e o "mundo maduro" são setup (aplicam na
+// hora, como set_balance/set_goods).
+// ---------------------------------------------------------------------------
+Dictionary EconomySim::change_product(const String& city_id,
+		const String& building_id, const String& product,
+		const String& recipe_id) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::ChangeProduct;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
+	cmd.s[2] = to_std(product);
+	cmd.s[3] = to_std(recipe_id);
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::set_refinery_mode(const String& city_id,
+		const String& building_id, const String& mode) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetRefineryMode;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
+	cmd.s[2] = to_std(mode);
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::set_building_equipment(const String& city_id,
+		const String& building_id, double level) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetBuildingEquipment;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
+	cmd.v[0] = level;
+	return dispatch_command(cmd);
+}
+
+void EconomySim::set_efficiency_params(const Dictionary& values) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	EfficiencyParams& p = ws_.efficiency;
+	auto number = [](const Dictionary& block, const char* key,
+			double fallback) -> double {
+		return block.has(key) ? double(block.get(key, fallback)) : fallback;
+	};
+	auto read_curve = [&number](const Dictionary& block, const String& key,
+			EfficiencyCurve& curve) {
+		if (!block.has(key)) {
+			return;
+		}
+		const Dictionary row = block.get(key, Dictionary());
+		if (row.is_empty()) {
+			return;
+		}
+		curve.start = std::clamp(number(row, "start", curve.start), 0.0, 1.0);
+		curve.mid = std::clamp(number(row, "mid", curve.mid),
+			curve.start, 1.0);
+		curve.mid_days = std::max(1.0, number(row, "mid_days",
+			curve.mid_days));
+		curve.full_days = std::max(curve.mid_days, number(row, "full_days",
+			curve.full_days));
+	};
+	read_curve(values, "factory", p.factory);
+	read_curve(values, "refinery", p.refinery);
+	read_curve(values, "mine", p.mine);
+	read_curve(values, "farm", p.farm);
+	read_curve(values, "ranch", p.ranch);
+	if (values.has("equipment")) {
+		const Dictionary block = values.get("equipment", Dictionary());
+		p.equipment_cap_without = std::clamp(number(block,
+			"cap_without", p.equipment_cap_without), 0.0, 1.0);
+		p.equipment_rate_boost = std::max(1.0, number(block,
+			"rate_boost", p.equipment_rate_boost));
+		p.equipment_fuel_per_capacity_day = std::max(0.0, number(block,
+			"fuel_per_capacity_day", p.equipment_fuel_per_capacity_day));
+		if (block.has("fuel_product")) {
+			const int fuel = product_index(String(block.get("fuel_product",
+				String())));
+			if (fuel >= 0) {
+				p.equipment_fuel_product = fuel;
+			}
+		}
+	}
+	if (values.has("transitions")) {
+		const Dictionary block = values.get("transitions", Dictionary());
+		p.transition_factory_days = std::max(0, int(number(block,
+			"factory_days", p.transition_factory_days)));
+		p.transition_refinery_days = std::max(0, int(number(block,
+			"refinery_days", p.transition_refinery_days)));
+		p.transition_military_days = std::max(0, int(number(block,
+			"military_days", p.transition_military_days)));
+		p.transition_semiconductor_days = std::max(0, int(number(block,
+			"semiconductor_days", p.transition_semiconductor_days)));
+		p.transition_mode_days = std::max(0, int(number(block,
+			"mode_days", p.transition_mode_days)));
+	}
+	if (values.has("retention")) {
+		const Dictionary block = values.get("retention", Dictionary());
+		p.retention_same_family = std::clamp(number(block, "same_family",
+			p.retention_same_family), 0.0, 1.0);
+		p.retention_other = std::clamp(number(block, "other",
+			p.retention_other), 0.0, 1.0);
+	}
+	// Modos da refinaria: o JSON nomeia os produtos (`gasoline`, `diesel`,
+	// `jet_fuel`); a resolução para índice usa o catálogo carregado.
+	if (values.has("refinery_modes")) {
+		const Dictionary block = values.get("refinery_modes", Dictionary());
+		const String order[3] = {String("standard"), String("diesel"),
+			String("jet")};
+		const String goods[3] = {String("gasoline"), String("diesel"),
+			String("jet_fuel")};
+		for (int mode = 0; mode < 3; ++mode) {
+			if (!block.has(order[mode])) {
+				continue;
+			}
+			const Dictionary row = block.get(order[mode], Dictionary());
+			for (int slot = 0; slot < 3; ++slot) {
+				if (row.has(goods[slot])) {
+					p.mode_shares[mode][slot] = std::clamp(double(
+						row.get(goods[slot], p.mode_shares[mode][slot])),
+						0.0, 1.0);
+				}
+			}
+		}
+	}
+	if (values.has("ai")) {
+		const Dictionary block = values.get("ai", Dictionary());
+		p.ai_mode_cooldown_days = std::max(0, int(number(block,
+			"mode_cooldown_days", p.ai_mode_cooldown_days)));
+		p.ai_mode_payback_days = std::max(1, int(number(block,
+			"mode_payback_days", p.ai_mode_payback_days)));
+		p.ai_mode_min_gain = std::clamp(number(block, "mode_min_gain",
+			p.ai_mode_min_gain), 0.0, 1.0);
+	}
+	status_invalidate();
+}
+
+// D-125: leitura dos parâmetros aplicados (JSON ou espelho compilado). Mesmas
+// chaves numéricas do bloco `definitions.efficiency` do save; a IA em GDScript
+// usa para estimar a rampa sem duplicar a tabela de balanceamento.
+Dictionary EconomySim::get_efficiency_params() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const EfficiencyParams& p = ws_.efficiency;
+	Dictionary out;
+	auto curve_dict = [](const EfficiencyCurve& curve) {
+		Dictionary row;
+		row["start"] = curve.start;
+		row["mid"] = curve.mid;
+		row["mid_days"] = curve.mid_days;
+		row["full_days"] = curve.full_days;
+		return row;
+	};
+	out["factory"] = curve_dict(p.factory);
+	out["refinery"] = curve_dict(p.refinery);
+	out["mine"] = curve_dict(p.mine);
+	out["farm"] = curve_dict(p.farm);
+	out["ranch"] = curve_dict(p.ranch);
+	out["equipment_cap_without"] = p.equipment_cap_without;
+	out["equipment_rate_boost"] = p.equipment_rate_boost;
+	out["equipment_fuel_per_capacity_day"] =
+		p.equipment_fuel_per_capacity_day;
+	out["transition_factory_days"] = p.transition_factory_days;
+	out["transition_refinery_days"] = p.transition_refinery_days;
+	out["transition_military_days"] = p.transition_military_days;
+	out["transition_semiconductor_days"] = p.transition_semiconductor_days;
+	out["transition_mode_days"] = p.transition_mode_days;
+	out["retention_same_family"] = p.retention_same_family;
+	out["retention_other"] = p.retention_other;
+	// D-125: modos da refinaria na ordem de `refinery_modes.order`
+	// (standard, diesel, jet) × (gasoline, diesel, jet_fuel); a MESMA matriz
+	// do bloco `definitions.efficiency.mode_shares` do save.
+	Array modes;
+	for (int mode = 0; mode < 3; ++mode) {
+		Array row;
+		row.append(p.mode_shares[mode][0]);
+		row.append(p.mode_shares[mode][1]);
+		row.append(p.mode_shares[mode][2]);
+		modes.append(row);
+	}
+	out["mode_shares"] = modes;
+	out["ai_mode_cooldown_days"] = p.ai_mode_cooldown_days;
+	out["ai_mode_payback_days"] = p.ai_mode_payback_days;
+	out["ai_mode_min_gain"] = p.ai_mode_min_gain;
+	return out;
+}
+
+void EconomySim::mature_world_efficiency(const Array& buildings) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::set<std::string> filter;
+	for (int index = 0; index < buildings.size(); ++index) {
+		filter.insert(std::string(String(buildings[index]).utf8().get_data()));
+	}
+	for (Building& building : ws_.buildings) {
+		if (!filter.empty() && filter.find(building.id) == filter.end()) {
+			continue;
+		}
+		const auto found = ws_.city_lookup.find(building.city);
+		if (found == ws_.city_lookup.end()) {
+			ogs::eff::mature(building, true);
+			continue;
+		}
+		const City& city = ws_.cities[static_cast<std::size_t>(found->second)];
+		const ogs::EfficiencyClass cls = ogs::eff::classify(ws_, city,
+			building);
+		const bool powered = cls != ogs::EfficiencyClass::kFactory
+			&& cls != ogs::EfficiencyClass::kRefinery;
+		ogs::eff::mature(building, powered);
+	}
+	status_invalidate();
 }
 
 Dictionary EconomySim::fleet_buy(const String& nation, const String& product,

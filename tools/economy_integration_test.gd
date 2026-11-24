@@ -67,7 +67,7 @@ func _test_geography() -> void:
 
 ## Bens, receitas e cesta alimentar carregados antes de criar o mundo (F2): o
 ## núcleo resolve os ids de insumo na carga e os arrays por produto passam a
-## ter a contagem do goods.json (113). Sem isso o C++ mantém os 21 primários.
+## ter a contagem do goods.json (F0/D-123: 115). Sem isso o C++ mantém os 21 primários.
 var _expected_products := 21
 
 

@@ -11,7 +11,7 @@ extends Control
 ## PNG de evidência. O `seal` de 16 px é o mesmo das tabelas; o de 32 px mostra
 ## a variante de 128 px do PNG.
 ##
-## Layout: três faixas com os 113 bens (16/24/32 px), uma faixa com as
+## Layout: três faixas com os bens do catálogo (F0/D-123: 115) a 16/24/32 px, uma faixa com as
 ## construções em 32 px e uma tira sobre carvão para o caso de fundo escuro.
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"

@@ -93,6 +93,67 @@ struct CadenceState {
 	int monthly_period = 30;
 };
 
+// ---------------------------------------------------------------------------
+// D-125 — EFICIÊNCIA DE PRODUÇÃO (estilo HOI4). Espelho C++ dos defaults de
+// balanceamento declarados em data/definitions/production/efficiency.json.
+// NÃO são dado observado: são regras do jogo (ajustáveis pelo dono). O JSON é
+// a fonte de balanceamento; `set_efficiency_params` sobrescreve estes campos e
+// o bloco `definitions.efficiency` do save preserva o que foi aplicado.
+//
+// Curva por classe: linear em dias de operação, `start` no dia 1, `mid` em
+// `mid_days` e 1.0 em `full_days` (>= mid_days). Equipamento multiplica o
+// passo diário por `equipment_rate_boost` e eleva o teto de `cap_without`
+// para 1.0.
+// ---------------------------------------------------------------------------
+struct EfficiencyCurve {
+	EfficiencyCurve() = default;
+	EfficiencyCurve(double first, double middle, double middle_days,
+			double maturity_days)
+		: start(first), mid(middle), mid_days(middle_days),
+		  full_days(maturity_days) {}
+	double start = 0.30;
+	double mid = 0.90;
+	double mid_days = 90.0;
+	double full_days = 180.0;
+};
+
+struct EfficiencyParams {
+	// Espelho EXATO de data/definitions/production/efficiency.json: se o JSON
+	// não carregar, a simulação usa estes valores e não diverge do arquivo.
+	EfficiencyCurve factory{0.30, 0.90, 90.0, 180.0};
+	EfficiencyCurve refinery{0.30, 0.90, 90.0, 180.0};
+	EfficiencyCurve mine{0.25, 1.0, 240.0, 240.0};
+	EfficiencyCurve farm{0.20, 1.0, 365.0, 365.0};
+	EfficiencyCurve ranch{0.20, 1.0, 540.0, 540.0};
+	// Equipamento (trator / máquina de mineração).
+	double equipment_cap_without = 0.85;
+	double equipment_rate_boost = 1.5;
+	double equipment_fuel_per_capacity_day = 0.0002;
+	int equipment_fuel_product = -1;  // resolvido no set_goods (diesel)
+	// Dias de transição sem produção na troca de produto.
+	int transition_factory_days = 7;
+	int transition_refinery_days = 7;
+	int transition_military_days = 14;
+	int transition_semiconductor_days = 30;
+	int transition_mode_days = 3;
+	// Retenção da eficiência antiga (mesma família = goods.json.sector).
+	double retention_same_family = 0.60;
+	double retention_other = 0.0;
+	// Modos da refinaria (frações do lote de petróleo: gasolina, diesel, querosene).
+	double mode_shares[3][3] = {
+		{0.45, 0.29, 0.09},
+		{0.38, 0.36, 0.09},
+		{0.40, 0.28, 0.15},
+	};
+	int refinery_gasoline = -1;
+	int refinery_diesel = -1;
+	int refinery_jet = -1;
+	// IA: só troca de modo quando o ganho cobre a transição.
+	int ai_mode_cooldown_days = 30;
+	int ai_mode_payback_days = 90;
+	double ai_mode_min_gain = 0.05;
+};
+
 // B1 — estrutura etária observada por nação (age_structure_2026.json). É uma
 // DEFINIÇÃO estática (não entra no save nem no tick): a demografia por coortes
 // vem depois. Os cinco `band` seguem a ordem do arquivo:
@@ -120,6 +181,9 @@ struct CpiHistory {
 struct WorldState {
 	int day = 0;
 	CadenceState cadence;
+	// D-125: parâmetros de balanceamento da eficiência de produção (defaults
+	// declarados no JSON de produção; o save preserva o que foi aplicado).
+	EfficiencyParams efficiency;
 
 	// Estado do cenário de validação de duas cidades.
 	bool active = false;

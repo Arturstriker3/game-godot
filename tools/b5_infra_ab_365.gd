@@ -1,5 +1,7 @@
 extends SceneTree
 
+const TmpPaths := preload("res://tools/tmp_paths.gd")
+
 ## B5 (D-089) — A/B obrigatório da INFRAESTRUTURA INICIAL em 365 d com IA.
 ##
 ## Roda `tools/b5_world_ai_365.gd` três vezes, um processo por variante (como o
@@ -59,13 +61,12 @@ func _load_json(path: String) -> Variant:
 func _ab() -> void:
 	var project := ProjectSettings.globalize_path("res://").trim_suffix("/").trim_suffix("\\")
 	var godot := OS.get_executable_path()
-	var work_dir := ProjectSettings.globalize_path("user://b5_infra_ab")
-	DirAccess.make_dir_recursive_absolute(work_dir)
+	var work_dir := TmpPaths.dir("b5_infra_ab")
 
 	var rows: Array = []
 	for variant: Dictionary in VARIANTS:
 		var name := String(variant["name"])
-		var out_path := "user://b5_infra_ab/%s_%d.json" % [name, _days]
+		var out_path := work_dir.path_join("%s_%d.json" % [name, _days])
 		var args: Array = ["--headless", "--path", project, "--script", HARNESS,
 			"--", "--days=%d" % _days, "--tag=" + name, "--out=" + out_path]
 		for extra in variant["args"]:

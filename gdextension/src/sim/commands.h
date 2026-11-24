@@ -83,6 +83,13 @@ enum class CommandType : int {
 	// grupo — sempre pela fila A3, como todo comando de política.
 	SetBankCredit,
 	GroupBorrow,
+	// D-125: eficiência de produção. `ChangeProduct` troca o produto da planta
+	// (transição sem produção + retenção), `SetRefineryMode` troca o modo da
+	// refinaria (padrão/diesel/querosene) e `SetBuildingEquipment` liga/ajusta o
+	// trator/máquina (0..1). Sempre pela fila A3, como toda mutação.
+	ChangeProduct,
+	SetRefineryMode,
+	SetBuildingEquipment,
 };
 
 // Nome estavel do tipo (log/replay em JSON). `nullptr` para tipo invalido.

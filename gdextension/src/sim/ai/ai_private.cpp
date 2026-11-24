@@ -15,6 +15,7 @@
 
 #include "ai_phase.h"
 #include "ai_view.h"
+#include "../efficiency.h"
 #include "../sim_constants.h"
 
 #include <algorithm>
@@ -59,6 +60,48 @@ std::string ascii_upper(const std::string& text) {
 		}
 	}
 	return out;
+}
+
+// D-125 — EFICIÊNCIA ESPERADA DO INVESTIMENTO. Planta nova nasce no início da
+// curva da classe e só chega ao teto meses depois, mas folha/opex são cheios
+// desde o dia 1: o retorno do gate é a MÉDIA da eficiência no horizonte de
+// payback, não a capacidade cheia. Planta existente (expansão) parte da
+// eficiência corrente e continua a própria rampa. `idle_days` cobre os dias de
+// transição de uma troca de produto (a planta não produz).
+double ai_expected_efficiency(const AiContext& ctx, int city_index,
+		const AiTemplate& tmpl, const std::string& existing, int horizon_days) {
+	const WorldState& ws = ctx.ws;
+	if (city_index < 0
+			|| static_cast<std::size_t>(city_index) >= ws.cities.size()) {
+		return 1.0;
+	}
+	const City& city = ws.cities[static_cast<std::size_t>(city_index)];
+	if (!existing.empty()
+			&& static_cast<std::size_t>(city_index)
+				< ws.buildings_by_city.size()) {
+		for (const int bi :
+				ws.buildings_by_city[static_cast<std::size_t>(city_index)]) {
+			if (bi < 0 || bi >= static_cast<int>(ws.buildings.size())) {
+				continue;
+			}
+			const Building& building =
+				ws.buildings[static_cast<std::size_t>(bi)];
+			if (building.id != existing) {
+				continue;
+			}
+			// Equipamento presente assume diesel disponível no futuro (a
+			// expectativa é do retorno, não do dia de hoje).
+			const bool powered = building.equipment > 0.0;
+			return eff::mean_efficiency(ws, eff::classify(ws, city, building),
+				building.production_efficiency, powered, horizon_days);
+		}
+	}
+	const int recipe = tmpl.is_recipe && !tmpl.recipes.empty()
+		? tmpl.recipes.front() : -1;
+	const EfficiencyClass cls = eff::classify_new(ws, city, tmpl.product, recipe,
+		tmpl.input);
+	return eff::mean_efficiency(ws, cls, eff::curve(ws, cls).start, false,
+		horizon_days);
 }
 
 // Conjunto O(1) dos produtos produzidos por construções locais
@@ -109,6 +152,25 @@ double caloric_factor_of(const AiContext& ctx, const std::string& resource) {
 }
 
 } // namespace
+
+// D-125: eficiência MÉDIA esperada da rampa de uma planta NOVA do template no
+// horizonte de decisão do investidor — a mesma regra de `AiPrivateInvestor`
+// (receita/bem bulk 730 d, primário/extrator 150 d), compartilhada com o
+// investidor de grupo (`ai_group.cpp`) para o retorno não ser valorado pela
+// capacidade cheia. Planta nova: parte do início da curva e sem equipamento
+// (o teto `cap_without` das classes que dependem de trator/máquina entra na
+// média, como no privado).
+double ai_expected_new_efficiency(const AiContext& ctx, int city_index,
+		const AiTemplate& tmpl) {
+	double horizon = kMinPaybackDays;
+	if (tmpl.is_recipe) {
+		horizon = kMinPaybackDaysIndustry;
+	} else if (ctx.templates.is_bulk_low_value(tmpl.resource)) {
+		horizon = kMinPaybackDaysBulk;
+	}
+	return ai_expected_efficiency(ctx, city_index, tmpl, std::string(),
+		static_cast<int>(horizon));
+}
 
 void AiPrivateInvestor::prepare(const AiContext& ctx) {
 	// Ordem de `prepare_totals`: comida, obras em andamento e grupos. Os totais
@@ -475,22 +537,26 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		return false;
 	}
 	const double cost = capacity * unit_capital;
-	const double daily_profit = margin * capacity;
-	const double payback = cost / std::max(daily_profit, 0.001);
-	const double risk = price_risk(ctx, city_index, product, reference_price);
-	const double adjusted_payback = payback / std::max(0.5, 1.0 - risk);
+	// D-125: o horizonte do gate decide a expectativa de eficiência; o retorno
+	// diário é a margem × capacidade × eficiência MÉDIA da rampa no horizonte.
 	double payback_limit = kMinPaybackDays;
 	if (is_recipe) {
 		payback_limit = kMinPaybackDaysIndustry;
 	} else if (ctx.templates.is_bulk_low_value(resource)) {
 		payback_limit = kMinPaybackDaysBulk;
 	}
+	const std::string city_id = city.id;
+	const std::string existing = find_producer(ctx, city_index, product);
+	const double expected_efficiency = ai_expected_efficiency(ctx, city_index,
+		tmpl, existing, static_cast<int>(payback_limit));
+	const double daily_profit = margin * capacity * expected_efficiency;
+	const double payback = cost / std::max(daily_profit, 0.001);
+	const double risk = price_risk(ctx, city_index, product, reference_price);
+	const double adjusted_payback = payback / std::max(0.5, 1.0 - risk);
 	if (adjusted_payback > payback_limit) {
 		return false;
 	}
 
-	const std::string city_id = city.id;
-	const std::string existing = find_producer(ctx, city_index, product);
 	AiActionResult result;
 	if (!existing.empty()) {
 		// D-086: mina existente é APROFUNDADA (obra que abre o estágio seguinte e

@@ -389,6 +389,35 @@ namespace ogs {
 		// (`EconomySim::apply_set_deposit`). Não vai ao save: depois do dia 0 a
 		// reserva está no próprio `stage_reserve_kt`.
 		bool stage_pending = false;
+		// -------------------------------------------------------------------
+		// D-125 (save v40) — EFICIÊNCIA DE PRODUÇÃO (estilo HOI4).
+		// `production_efficiency` multiplica a produção da planta (principal,
+		// insumos e subprodutos na mesma proporção); a folha/opex continuam
+		// cheios — o operador emprega a equipe enquanto aprende. Cresce com
+		// `efficiency_days` (dias de operação desde a construção ou a última
+		// troca de produto), por classe: fábrica/refinaria 30% -> 90% em 90 d
+		// -> 100% em 180 d; mina 25% -> 100% em 240 d; fazenda 20% -> 100% em
+		// 365 d; pecuária 20% -> 100% em 540 d. Parâmetros declarados em
+		// `data/definitions/production/efficiency.json` (espelho C++:
+		// EfficiencyParams).
+		double production_efficiency = 1.0;
+		int efficiency_days = 9999;
+		// Dias restantes de TRANSIÇÃO sem produção depois de trocar produto ou
+		// modo da refinaria (7 refinaria/fábrica, 14 militar, 30 semicondutor;
+		// fazenda = próxima janela de plantio). `idle_today` é derivado do dia
+		// corrente e NÃO vai ao save.
+		int transition_days = 0;
+		bool idle_today = false;
+		// Equipamento (trator/máquina) 0..1. Sem equipamento o teto de
+		// maturação é `cap_without` (85%); com equipamento, 100% e crescimento
+		// acelerado. Equipamento sem diesel no mercado da cidade fica parado
+		// no dia (não acelera, não consome); a eficiência já conquistada não
+		// cai. `equipment_active` é derivado do dia e NÃO vai ao save.
+		double equipment = 0.0;
+		bool equipment_active = false;
+		// Modo da refinaria: 0 padrão (45/29/9), 1 foco diesel (38/36/9),
+		// 2 foco querosene (40/28/15). Fora da refinaria fica 0 e é inerte.
+		int refinery_mode = 0;
 	};
 
 	// ------------------------------------------------------------------

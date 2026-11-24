@@ -84,6 +84,10 @@ const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 ## Receitas industriais (1..6 insumos, alternativas e subprodutos).
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+## D-125: eficiência de produção (curva por classe, transições, equipamento,
+## modos da refinaria e custo de troca da IA). Defaults de balanceamento
+## declarados; o espelho compilado em `sim/efficiency.h` é o fallback.
+const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
 ## Necessidades das POPs (cesta básica data-driven; níveis completos em F3).
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 ## Serviços (F8): 20 setores, compradores, insumos e mistura de escolaridade.
@@ -169,6 +173,12 @@ func _ready() -> void:
 	# dos produtos/insumos e as receitas no momento em que cria as construções.
 	sim.set_goods(_load_goods())
 	sim.set_recipes(_load_json_array(RECIPES_PATH))
+	# D-125: parâmetros da eficiência de produção (defaults declarados). Antes
+	# do mundo: a planta nova e o seed maduro leem a curva já aplicada.
+	if sim.has_method("set_efficiency_params"):
+		var efficiency := _load_json_dict_optional(EFFICIENCY_PATH)
+		if not efficiency.is_empty():
+			sim.set_efficiency_params(efficiency)
 	sim.set_needs(_load_json_dict(NEEDS_PATH))
 	# F8: serviços (catálogo). Antes do mundo: os negócios iniciais e o preço-âncora
 	# dos 20 setores dependem dele.
