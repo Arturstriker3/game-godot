@@ -6,7 +6,7 @@ Fontes de verdade:
   - data/definitions/scenario/nations.json    (PIB PPP e moeda por nação)
 
 Saídas (nada aqui toca a simulação C++; o núcleo ignora os bens que não conhece):
-  - data/definitions/economy/goods.json       (115 bens, ordem canônica 0..114)
+  - data/definitions/economy/goods.json       (123 bens, ordem canônica 0..122)
   - data/definitions/economy/recipes.json     (receitas normalizadas)
   - data/definitions/economy/needs.json       (necessidades das POPs)
   - data/definitions/economy/currencies.json  (moeda por nação e câmbio derivado)
@@ -148,7 +148,7 @@ EQUIVALENCE = {
     "protein": {"meat": 1.0, "canned_food": 0.8},
 }
 
-# Traduções en/es dos 94 bens novos (pt-BR vem do `name` da spec).
+# Traduções en/es dos 102 bens novos (pt-BR vem do `name` da spec).
 TRANSLATIONS = {
     "flour": ("Flour", "Harina"),
     "bran": ("Bran", "Salvado"),
@@ -243,7 +243,15 @@ TRANSLATIONS = {
     "small_arms": ("Small arms", "Armas ligeras"),
     "artillery": ("Artillery", "Artillería"),
     "military_drone": ("Military drone", "Dron militar"),
-    "infantry_gear": ("Infantry gear", "Equipo de infantería"),
+    "infantry_gear": ("Support equipment", "Equipo de apoyo"),
+    "aramid": ("Aramid", "Aramida"),
+    "ballistic_ceramic_plate": ("Ballistic ceramic plate", "Placa cerámica balística"),
+    "tactical_equipment": ("Tactical equipment", "Equipo táctico"),
+    "command_equipment": ("Command equipment", "Equipo de mando"),
+    "drone_jammer": ("Drone jammer", "Inhibidor de drones"),
+    "at_launcher": ("Anti-tank rocket launcher", "Lanzacohetes antitanque"),
+    "at_rocket": ("Anti-tank rocket", "Cohete antitanque"),
+    "aa_launcher": ("Man-portable air-defense launcher", "Lanzador antiaéreo portátil"),
 }
 
 COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -317,6 +325,17 @@ def build_recipes(spec: dict) -> list[dict]:
         jobs, wage, opex, capital = BUILDING_PARAMS.get(sector, BUILDING_PARAMS["machinery"])
         alternatives = good["recipes"]
         for index, recipe in enumerate(alternatives):
+            # Parâmetros explícitos da spec (D-130): bem novo reaproveita os
+            # números declarados de outro bem em vez de herdar o setor.
+            params = recipe.get("params") or good.get("params")
+            if params:
+                jobs = float(params["jobs_per_ton"])
+                wage = float(params["wage"])
+                opex = float(params["opex_per_ton"])
+                capital = float(params["capital_per_capacity"])
+            params_source = (recipe.get("params_source")
+                             or good.get("params_source")
+                             or "estimated:order_of_magnitude")
             suffix = ""
             if len(alternatives) > 1:
                 suffix = "_" + chr(ord("a") + index)
@@ -347,7 +366,7 @@ def build_recipes(spec: dict) -> list[dict]:
                 "opex_per_ton": opex,
                 "capital_per_capacity": capital,
                 "coef_source": "default_unit" if len(inputs) > 1 else "spec",
-                "params_source": "estimated:order_of_magnitude",
+                "params_source": params_source,
             }
             if outputs:
                 entry["outputs"] = outputs
@@ -680,7 +699,7 @@ def build_needs(spec: dict, goods: list[dict]) -> dict:
     for tag in institutional:
         institutional[tag].sort()
 
-    return {
+    built = {
         "version": 1,
         "note": (
             "Necessidades das POPs. Só basic/food tem âncora física no núcleo "
@@ -700,6 +719,9 @@ def build_needs(spec: dict, goods: list[dict]) -> dict:
         "consumption_rules": list(spec["consumption_rules"]),
         "pending": list(spec.get("pending", [])),
     }
+    if spec.get("military_demand"):
+        built["military_demand"] = spec["military_demand"]
+    return built
 
 
 # --------------------------------------------------------------------------
@@ -828,7 +850,8 @@ def write_report(goods: list[dict], recipes: list[dict], spec: dict) -> None:
         "",
         "Gerado por `tools/build_goods_chain.py report`. Não editar à mão.",
         "",
-        f"- Bens: **{len(goods)}** (21 primários em `order` 0..20, 94 novos em 21..114)",
+        f"- Bens: **{len(goods)}** (21 primários em `order` 0..20, "
+        f"{len(spec['goods'])} novos em 21..{len(goods) - 1})",
         f"- Receitas: **{len(recipes)}** (coeficiente unitário padrão onde a spec não traz qty)",
         "- Preços: primários = `calibrated:legacy` (dado já calibrado); novos = `derived:v1`",
         "  pela fórmula `min_receita(Σ qty × preço_insumo / yield) × (1 + margem)`.",
@@ -918,10 +941,10 @@ def check_all() -> list[str]:
     spec_ids = [g["id"] for g in spec["goods"]]
 
     # --- goods
-    if len(goods) != 115:
-        problems.append(f"goods.json: {len(goods)} bens (esperado 115)")
-    if len(spec_ids) != 94:
-        problems.append(f"spec: {len(spec_ids)} bens novos (esperado 94)")
+    if len(goods) != 123:
+        problems.append(f"goods.json: {len(goods)} bens (esperado 123)")
+    if len(spec_ids) != 102:
+        problems.append(f"spec: {len(spec_ids)} bens novos (esperado 102)")
     ids = [g.get("id", "") for g in goods]
     if len(set(ids)) != len(ids):
         problems.append("goods.json: ids repetidos")

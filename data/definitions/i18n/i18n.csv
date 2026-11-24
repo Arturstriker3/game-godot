@@ -1866,14 +1866,19 @@ prod.hint,Clique numa cidade para ver a produção local.,Click a city to inspec
 prod.tab.chain,Cadeia,Chain,Cadena
 prod.tab.cities,Cidades,Cities,Ciudades
 prod.title,Produção e cadeia produtiva,Production and supply chain,Producción y cadena productiva
+product.aa_launcher,Lançador antiaéreo portátil,Man-portable air-defense launcher,Lanzador antiaéreo portátil
 product.alcohol,Bebida alcoólica,Alcoholic beverage,Bebida alcohÃ³lica
 product.aluminum_ingot,Lingote de alumínio,Aluminum ingot,Lingote de aluminio
 product.ammunition,Munição,Ammunition,MuniciÃ³n
 product.antibiotics,Antibióticos,Antibiotics,AntibiÃ³ticos
 product.appliances,Eletrodomésticos,Home appliances,ElectrodomÃ©sticos
+product.aramid,Aramida,Aramid,Aramida
 product.artillery,Artilharia,Artillery,ArtillerÃ­a
 product.artillery_ammo,Munição de artilharia,Artillery ammunition,MuniciÃ³n de artillerÃ­a
+product.at_launcher,Lança-foguetes anti-tanque,Anti-tank rocket launcher,Lanzacohetes antitanque
+product.at_rocket,Foguete anti-tanque,Anti-tank rocket,Cohete antitanque
 product.bagged_rice,Arroz ensacado,Bagged rice,Arroz envasado
+product.ballistic_ceramic_plate,Placa cerâmica balística,Ballistic ceramic plate,Placa cerámica balística
 product.batteries,Baterias,Batteries,BaterÃ­as
 product.bauxite,Bauxita,Bauxite,Bauxita
 product.bran,Farelo,Bran,Salvado
@@ -1894,6 +1899,7 @@ product.circuit_board,Placa de circuito,Circuit board,Placa de circuito
 product.clothes,Roupas,Clothes,Ropa
 product.coal,Carvão,Coal,Carbón
 product.combat_ration,Ração de combate,Combat ration,RaciÃ³n de combate
+product.command_equipment,Equipamento de comando,Command equipment,Equipo de mando
 product.computer,Computador,Computer,Computadora
 product.construction_material,Material de construção,Construction material,Material de construcciÃ³n
 product.containers,Recipientes,Containers,Recipientes
@@ -1903,6 +1909,7 @@ product.cotton,Algodão,Cotton,Algodón
 product.diamond,Diamante,Diamond,Diamante
 product.diesel,Diesel,Diesel,Diésel
 product.drone,Drone,Drone,Dron
+product.drone_jammer,Bloqueador de drones,Drone jammer,Inhibidor de drones
 product.electrical_material,Material elétrico,Electrical material,Material elÃ©ctrico
 product.electronic_components,Componentes eletrônicos,Electronic components,Componentes electrÃ³nicos
 product.engine,Motor,Engine,Motor
@@ -1922,7 +1929,7 @@ product.gunpowder,Pólvora,Gunpowder,PÃ³lvora
 product.hardware,Ferragens,Hardware,FerreterÃ­a
 product.industrial_machinery,Maquinário industrial,Industrial machinery,Maquinaria industrial
 product.industrial_tools,Ferramentas industriais,Industrial tools,Herramientas industriales
-product.infantry_gear,Equipamento de infantaria,Infantry gear,Equipo de infanterÃ­a
+product.infantry_gear,Equipamento de apoio,Support equipment,Equipo de apoyo
 product.iron,Ferro,Iron,Hierro
 product.iron_ingot,Lingote de ferro,Iron ingot,Lingote de hierro
 product.jet_fuel,Querosene de aviação,Jet fuel,Queroseno de aviación
@@ -1969,6 +1976,7 @@ product.steel_sheet,Chapas de aço,Steel sheet,Chapas de acero
 product.steel_structure,Estrutura metálica,Steel structure,Estructura metÃ¡lica
 product.sulfur,Enxofre,Sulfur,Azufre
 product.synthetic_fabric,Tecido sintético,Synthetic fabric,Tejido sintÃ©tico
+product.tactical_equipment,Equipamento tático,Tactical equipment,Equipo táctico
 product.tires,Pneus,Tires,NeumÃ¡ticos
 product.tools,Ferramentas,Tools,Herramientas
 product.tractor,Trator,Tractor,Tractor
@@ -1984,14 +1992,19 @@ product.wood,Madeira,Wood,Madera
 relief.hills,Colinas,Hills,Colinas
 relief.mountain,Montanha,Mountain,Montaña
 relief.plain,Planície,Plain,Llanura
+resource.aa_launcher,Lançador antiaéreo portátil,Man-portable air-defense launcher,Lanzador antiaéreo portátil
 resource.alcohol,Bebida alcoólica,Alcoholic beverage,Bebida alcohÃ³lica
 resource.aluminum_ingot,Lingote de alumínio,Aluminum ingot,Lingote de aluminio
 resource.ammunition,Munição,Ammunition,MuniciÃ³n
 resource.antibiotics,Antibióticos,Antibiotics,AntibiÃ³ticos
 resource.appliances,Eletrodomésticos,Home appliances,ElectrodomÃ©sticos
+resource.aramid,Aramida,Aramid,Aramida
 resource.artillery,Artilharia,Artillery,ArtillerÃ­a
 resource.artillery_ammo,Munição de artilharia,Artillery ammunition,MuniciÃ³n de artillerÃ­a
+resource.at_launcher,Lança-foguetes anti-tanque,Anti-tank rocket launcher,Lanzacohetes antitanque
+resource.at_rocket,Foguete anti-tanque,Anti-tank rocket,Cohete antitanque
 resource.bagged_rice,Arroz ensacado,Bagged rice,Arroz envasado
+resource.ballistic_ceramic_plate,Placa cerâmica balística,Ballistic ceramic plate,Placa cerámica balística
 resource.batteries,Baterias,Batteries,BaterÃ­as
 resource.bauxite,Bauxita,Bauxite,Bauxita
 resource.bran,Farelo,Bran,Salvado
@@ -2012,6 +2025,7 @@ resource.circuit_board,Placa de circuito,Circuit board,Placa de circuito
 resource.clothes,Roupas,Clothes,Ropa
 resource.coal,Carvão,Coal,Carbón
 resource.combat_ration,Ração de combate,Combat ration,RaciÃ³n de combate
+resource.command_equipment,Equipamento de comando,Command equipment,Equipo de mando
 resource.computer,Computador,Computer,Computadora
 resource.construction_material,Material de construção,Construction material,Material de construcciÃ³n
 resource.containers,Recipientes,Containers,Recipientes
@@ -2021,6 +2035,7 @@ resource.cotton,Algodão,Cotton,Algodón
 resource.diamond,Diamante,Diamond,Diamante
 resource.diesel,Diesel,Diesel,Diésel
 resource.drone,Drone,Drone,Dron
+resource.drone_jammer,Bloqueador de drones,Drone jammer,Inhibidor de drones
 resource.electrical_material,Material elétrico,Electrical material,Material elÃ©ctrico
 resource.electronic_components,Componentes eletrônicos,Electronic components,Componentes electrÃ³nicos
 resource.engine,Motor,Engine,Motor
@@ -2040,7 +2055,7 @@ resource.gunpowder,Pólvora,Gunpowder,PÃ³lvora
 resource.hardware,Ferragens,Hardware,FerreterÃ­a
 resource.industrial_machinery,Maquinário industrial,Industrial machinery,Maquinaria industrial
 resource.industrial_tools,Ferramentas industriais,Industrial tools,Herramientas industriales
-resource.infantry_gear,Equipamento de infantaria,Infantry gear,Equipo de infanterÃ­a
+resource.infantry_gear,Equipamento de apoio,Support equipment,Equipo de apoyo
 resource.iron,Ferro,Iron,Hierro
 resource.iron_ingot,Lingote de ferro,Iron ingot,Lingote de hierro
 resource.jet_fuel,Querosene de aviação,Jet fuel,Queroseno de aviación
@@ -2092,6 +2107,7 @@ resource.steel_sheet,Chapas de aço,Steel sheet,Chapas de acero
 resource.steel_structure,Estrutura metálica,Steel structure,Estructura metÃ¡lica
 resource.sulfur,Enxofre,Sulfur,Azufre
 resource.synthetic_fabric,Tecido sintético,Synthetic fabric,Tejido sintÃ©tico
+resource.tactical_equipment,Equipamento tático,Tactical equipment,Equipo táctico
 resource.tires,Pneus,Tires,NeumÃ¡ticos
 resource.tools,Ferramentas,Tools,Herramientas
 resource.tractor,Trator,Tractor,Tractor

@@ -2215,7 +2215,7 @@
   },
   {
    "id": "infantry_gear",
-   "name": "Equipamento de infantaria",
+   "name": "Equipamento de apoio",
    "sector": "military",
    "kind": "final",
    "recipes": [
@@ -2279,6 +2279,241 @@
    ],
    "durable": false,
    "note": "co-produto da refinaria (EIA: 9% do rendimento de petróleo); aviação de carga."
+  },
+  {
+   "id": "aramid",
+   "name": "Aramida",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "chemicals",
+      "refined_sulfur"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "ballistic_ceramic_plate",
+    "tactical_equipment"
+   ],
+   "durable": false,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "Fibra aramida (fábrica química): químicos + enxofre refinado, coeficiente unitário. D-130."
+  },
+  {
+   "id": "ballistic_ceramic_plate",
+   "name": "Placa cerâmica balística",
+   "sector": "military",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "bauxite",
+      "aramid"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "tactical_equipment"
+   ],
+   "durable": false,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "Placa balística: bauxita + aramida, coeficiente unitário. D-130."
+  },
+  {
+   "id": "tactical_equipment",
+   "name": "Equipamento tático",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "aramid",
+      "ballistic_ceramic_plate",
+      "rubber",
+      "synthetic_fabric"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": false,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "Equipamento tático individual: aramida + placa cerâmica balística + borracha + tecido sintético. D-130."
+  },
+  {
+   "id": "command_equipment",
+   "name": "Equipamento de comando",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "computer",
+      "electronic_components",
+      "batteries",
+      "wires"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": true,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "Equipamento de comando: computador + componentes eletrônicos + baterias + fios. D-130."
+  },
+  {
+   "id": "drone_jammer",
+   "name": "Bloqueador de drones",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "circuit_board",
+      "electronic_components",
+      "batteries",
+      "plastic"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": true,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "Bloqueador de drones: placa de circuito + componentes eletrônicos + baterias + plástico. D-130."
+  },
+  {
+   "id": "at_launcher",
+   "name": "Lança-foguetes anti-tanque",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "steel",
+      "hardware",
+      "planks"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": true,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "Lança-foguetes anti-tanque: aço + ferragens + tábuas. D-130."
+  },
+  {
+   "id": "at_rocket",
+   "name": "Foguete anti-tanque",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "explosives",
+      "gunpowder",
+      "steel_sheet"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": false,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "Foguete anti-tanque (munição): explosivos + pólvora + chapa de aço. D-130."
+  },
+  {
+   "id": "aa_launcher",
+   "name": "Lançador antiaéreo portátil",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "sensors",
+      "electronic_components",
+      "explosives",
+      "aluminum_ingot"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": true,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "Lançador antiaéreo portátil (inclui o míssil): sensores + componentes eletrônicos + explosivos + lingote de alumínio. D-130."
   }
  ],
  "pop_needs": {
@@ -2374,5 +2609,22 @@
   "projétil perfurante",
   "blindado",
   "preferências culturais"
- ]
+ ],
+ "military_demand": {
+  "unit": "unidade de referencia por soldado/ano",
+  "params_source": "declared:unit_reference",
+  "note": "Sem efetivo militar no modelo: default declarado de 1 unidade de referencia por soldado/ano por item, proporcional 1:1 a uniforms/infantry_gear/small_arms/ammunition. Nao e dado observado.",
+  "per_soldier_unit_year": {
+   "uniforms": 1.0,
+   "infantry_gear": 1.0,
+   "small_arms": 1.0,
+   "ammunition": 1.0,
+   "tactical_equipment": 1.0,
+   "command_equipment": 1.0,
+   "drone_jammer": 1.0,
+   "at_launcher": 1.0,
+   "at_rocket": 1.0,
+   "aa_launcher": 1.0
+  }
+ }
 }

@@ -66,7 +66,9 @@ constexpr const char* kVaultProducts[] = {
 constexpr const char* kMagazineProducts[] = {
 	"ammunition", "artillery_ammo", "explosives", "gunpowder",
 	"combat_ration", "small_arms", "artillery", "casing", "projectile",
-	"military_drone", "infantry_gear",
+	"military_drone", "infantry_gear", "ballistic_ceramic_plate",
+	"tactical_equipment", "command_equipment", "drone_jammer", "at_launcher",
+	"at_rocket", "aa_launcher",
 };
 
 template <std::size_t N>
