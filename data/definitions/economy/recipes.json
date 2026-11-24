@@ -2769,5 +2769,245 @@
     "coef_source": "spec",
     "params_source": "estimated:order_of_magnitude",
     "note": "combustível de ciclo diesel: caminhão, trem, trator, navio, exército e usinas a óleo. | CTL de baixo rendimento: 1 t de carvão rende 0,15 t de diesel equivalente (declarado)."
+  },
+  {
+    "id": "aramid",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "aramid",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      },
+      {
+        "good": "refined_sulfur",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "Fibra aramida (fábrica química): químicos + enxofre refinado, coeficiente unitário. D-130."
+  },
+  {
+    "id": "ballistic_ceramic_plate",
+    "building": "factory",
+    "sector": "military",
+    "output": "ballistic_ceramic_plate",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "bauxite",
+        "qty": 1.0
+      },
+      {
+        "good": "aramid",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "Placa balística: bauxita + aramida, coeficiente unitário. D-130."
+  },
+  {
+    "id": "tactical_equipment",
+    "building": "factory",
+    "sector": "military",
+    "output": "tactical_equipment",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "aramid",
+        "qty": 1.0
+      },
+      {
+        "good": "ballistic_ceramic_plate",
+        "qty": 1.0
+      },
+      {
+        "good": "rubber",
+        "qty": 1.0
+      },
+      {
+        "good": "synthetic_fabric",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "Equipamento tático individual: aramida + placa cerâmica balística + borracha + tecido sintético. D-130."
+  },
+  {
+    "id": "command_equipment",
+    "building": "factory",
+    "sector": "military",
+    "output": "command_equipment",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "computer",
+        "qty": 1.0
+      },
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      },
+      {
+        "good": "wires",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "Equipamento de comando: computador + componentes eletrônicos + baterias + fios. D-130."
+  },
+  {
+    "id": "drone_jammer",
+    "building": "factory",
+    "sector": "military",
+    "output": "drone_jammer",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "circuit_board",
+        "qty": 1.0
+      },
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "Bloqueador de drones: placa de circuito + componentes eletrônicos + baterias + plástico. D-130."
+  },
+  {
+    "id": "at_launcher",
+    "building": "factory",
+    "sector": "military",
+    "output": "at_launcher",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "hardware",
+        "qty": 1.0
+      },
+      {
+        "good": "planks",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "Lança-foguetes anti-tanque: aço + ferragens + tábuas. D-130."
+  },
+  {
+    "id": "at_rocket",
+    "building": "factory",
+    "sector": "military",
+    "output": "at_rocket",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "explosives",
+        "qty": 1.0
+      },
+      {
+        "good": "gunpowder",
+        "qty": 1.0
+      },
+      {
+        "good": "steel_sheet",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "Foguete anti-tanque (munição): explosivos + pólvora + chapa de aço. D-130."
+  },
+  {
+    "id": "aa_launcher",
+    "building": "factory",
+    "sector": "military",
+    "output": "aa_launcher",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "sensors",
+        "qty": 1.0
+      },
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "explosives",
+        "qty": 1.0
+      },
+      {
+        "good": "aluminum_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "Lançador antiaéreo portátil (inclui o míssil): sensores + componentes eletrônicos + explosivos + lingote de alumínio. D-130."
   }
 ]

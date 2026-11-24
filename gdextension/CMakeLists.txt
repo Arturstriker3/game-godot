@@ -185,6 +185,7 @@ if(OPENGS_BUILD_UNIT_TESTS)
         tests/test_bank.cpp
         tests/test_efficiency.cpp
         tests/test_mass_balance.cpp
+        tests/test_military_goods.cpp
         tests/test_roundtrip.cpp
         tests/test_determinism.cpp
         tests/test_crisis.cpp

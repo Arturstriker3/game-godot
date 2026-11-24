@@ -2,9 +2,9 @@
  "_meta": {
   "dataset": "goods_storage_map",
   "generated_by": "tools/build_storage_g2.py",
-  "goods": 115,
+  "goods": 123,
   "no_data_rule": "todo bem tem armazem primario; bem sem regra propria cai em general_warehouse (declarado)",
-  "retrieved": "2026-11-19",
+  "retrieved": "2026-11-24",
   "source": "docs/plans/perf_pop_financas_plano.md secao PARTE G2 (tabela de armazens)",
   "version": "g2"
  },
@@ -14,17 +14,18 @@
    "cold_room": 3,
    "fuel_tank": 6,
    "gas_storage": 1,
-   "general_warehouse": 66,
-   "military_depot": 11,
+   "general_warehouse": 67,
+   "military_depot": 18,
    "silo": 7,
    "vault": 7
   },
-  "explicit": 51,
+  "explicit": 58,
   "fallback_general_warehouse": [
    "alcohol",
    "aluminum_ingot",
    "antibiotics",
    "appliances",
+   "aramid",
    "batteries",
    "bread",
    "car",
@@ -86,9 +87,18 @@
    "uniforms",
    "wires"
   ],
-  "goods_total": 115
+  "goods_total": 123
  },
  "goods": {
+  "aa_launcher": {
+   "kind": "final",
+   "name": "Lançador antiaéreo portátil",
+   "primary": "military_depot",
+   "reason": "lancador antiaereo",
+   "secondary": [],
+   "sector": "military",
+   "tier": "final"
+  },
   "alcohol": {
    "kind": "final",
    "name": "Bebida alcoólica",
@@ -136,6 +146,15 @@
    "sector": "electronics",
    "tier": "final"
   },
+  "aramid": {
+   "kind": "intermediate",
+   "name": "Aramida",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "semi"
+  },
   "artillery": {
    "kind": "final",
    "name": "Artilharia",
@@ -154,6 +173,24 @@
    "sector": "military",
    "tier": "final"
   },
+  "at_launcher": {
+   "kind": "final",
+   "name": "Lança-foguetes anti-tanque",
+   "primary": "military_depot",
+   "reason": "lancador antitanque",
+   "secondary": [],
+   "sector": "military",
+   "tier": "final"
+  },
+  "at_rocket": {
+   "kind": "final",
+   "name": "Foguete anti-tanque",
+   "primary": "military_depot",
+   "reason": "foguete antitanque",
+   "secondary": [],
+   "sector": "military",
+   "tier": "final"
+  },
   "bagged_rice": {
    "kind": "final",
    "name": "Arroz ensacado",
@@ -164,6 +201,17 @@
    ],
    "sector": "food",
    "tier": "final"
+  },
+  "ballistic_ceramic_plate": {
+   "kind": "intermediate",
+   "name": "Placa cerâmica balística",
+   "primary": "military_depot",
+   "reason": "placa balistica",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "military",
+   "tier": "semi"
   },
   "batteries": {
    "kind": "intermediate",
@@ -353,6 +401,15 @@
    "sector": "food",
    "tier": "final"
   },
+  "command_equipment": {
+   "kind": "final",
+   "name": "Equipamento de comando",
+   "primary": "military_depot",
+   "reason": "equipamento de comando",
+   "secondary": [],
+   "sector": "military",
+   "tier": "final"
+  },
   "computer": {
    "kind": "final",
    "name": "Computador",
@@ -416,6 +473,15 @@
    "sector": "mining",
    "tier": "raw"
   },
+  "diesel": {
+   "kind": "final",
+   "name": "Diesel",
+   "primary": "fuel_tank",
+   "reason": "diesel refinado",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "final"
+  },
   "drone": {
    "kind": "final",
    "name": "Drone",
@@ -423,6 +489,15 @@
    "reason": "semiprocessado/final padrao",
    "secondary": [],
    "sector": "electronics",
+   "tier": "final"
+  },
+  "drone_jammer": {
+   "kind": "final",
+   "name": "Bloqueador de drones",
+   "primary": "military_depot",
+   "reason": "bloqueador de drones",
+   "secondary": [],
+   "sector": "military",
    "tier": "final"
   },
   "electrical_material": {
@@ -537,6 +612,15 @@
    "sector": "energy",
    "tier": "raw"
   },
+  "gasoline": {
+   "kind": "final",
+   "name": "Gasolina",
+   "primary": "fuel_tank",
+   "reason": "gasolina refinada",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "final"
+  },
   "gold": {
    "kind": "raw",
    "name": "Ouro",
@@ -593,9 +677,9 @@
   },
   "infantry_gear": {
    "kind": "final",
-   "name": "Equipamento de infantaria",
+   "name": "Equipamento de apoio",
    "primary": "military_depot",
-   "reason": "equipamento de infantaria",
+   "reason": "equipamento de apoio",
    "secondary": [
     "general_warehouse"
    ],
@@ -619,6 +703,15 @@
    "secondary": [],
    "sector": "metal",
    "tier": "semi"
+  },
+  "jet_fuel": {
+   "kind": "final",
+   "name": "Querosene de aviação",
+   "primary": "fuel_tank",
+   "reason": "querosene de aviacao",
+   "secondary": [],
+   "sector": "chemical",
+   "tier": "final"
   },
   "jewelry": {
    "kind": "final",
@@ -1015,6 +1108,17 @@
    "sector": "textile",
    "tier": "semi"
   },
+  "tactical_equipment": {
+   "kind": "final",
+   "name": "Equipamento tático",
+   "primary": "military_depot",
+   "reason": "equipamento tatico",
+   "secondary": [
+    "general_warehouse"
+   ],
+   "sector": "military",
+   "tier": "final"
+  },
   "tires": {
    "kind": "intermediate",
    "name": "Pneus",
@@ -1124,33 +1228,6 @@
    "secondary": [],
    "sector": "wood",
    "tier": "raw"
-  },
-  "gasoline": {
-   "kind": "final",
-   "name": "Gasolina",
-   "primary": "fuel_tank",
-   "reason": "gasolina refinada",
-   "secondary": [],
-   "sector": "chemical",
-   "tier": "final"
-  },
-  "diesel": {
-   "kind": "final",
-   "name": "Diesel",
-   "primary": "fuel_tank",
-   "reason": "diesel refinado",
-   "secondary": [],
-   "sector": "chemical",
-   "tier": "final"
-  },
-  "jet_fuel": {
-   "kind": "final",
-   "name": "Querosene de aviação",
-   "primary": "fuel_tank",
-   "reason": "querosene de aviação refinado",
-   "secondary": [],
-   "sector": "chemical",
-   "tier": "final"
   }
  },
  "warehouses": {

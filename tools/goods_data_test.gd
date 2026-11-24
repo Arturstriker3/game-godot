@@ -6,9 +6,9 @@ extends SceneTree
 ## é o runner correto (`& $godot --headless --path . --script
 ## res://tools/goods_data_test.gd`). Sai com código != 0 em qualquer falha.
 ##
-## Cobre: contagem e ordem canônica dos 115 bens, preço/procedência, receitas sem
+## Cobre: contagem e ordem canônica dos 123 bens, preço/procedência, receitas sem
 ## insumo órfão nem ciclo, todo bem com produtor e consumidor, necessidades,
-## moedas, i18n × 3 e ícone (manifesto + SVG) de cada bem.
+## moedas, i18n × 3 e ícone (manifesto + SVG + PNG 128/64) de cada bem.
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
@@ -18,6 +18,7 @@ const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 const I18N_PATH := "res://data/definitions/i18n/i18n.csv"
 const ICON_MANIFEST_PATH := "res://tools/icon_forge/resource_icons.json"
 const ICON_DIR := "res://assets/icons/resources/"
+const ILLUSTRATED_DIR := "res://assets/icons/illustrated/"
 
 ## Ordem canônica do núcleo C++ (enum DemoProduct / kDemoProductNames).
 const CANONICAL_PRIMARIES: Array[String] = [
@@ -26,8 +27,8 @@ const CANONICAL_PRIMARIES: Array[String] = [
 	"sulfur", "diamond", "coal", "copper", "gas",
 	"oil", "potato", "soy", "cotton", "wood", "uranium",
 ]
-const EXPECTED_GOODS := 115
-const EXPECTED_NEW_GOODS := 94
+const EXPECTED_GOODS := 123
+const EXPECTED_NEW_GOODS := 102
 const KIND_TO_TIER := {
 	"raw": "raw", "intermediate": "semi", "byproduct": "semi", "final": "final",
 }
@@ -338,3 +339,18 @@ func _check_icons(icons: Dictionary, goods: Array) -> void:
 		var path := ICON_DIR + id + ".svg"
 		if not FileAccess.file_exists(path):
 			_fail("ícone %s: SVG ausente em %s" % [id, path])
+		# D-130: o PNG ilustrado é a arte ativa; todo bem tem 128 e 64 com alfa.
+		var illustrated := {
+			ILLUSTRATED_DIR + id + ".png": Vector2i(128, 128),
+			ILLUSTRATED_DIR + "64/" + id + ".png": Vector2i(64, 64),
+		}
+		for illustrated_path: String in illustrated:
+			var image := Image.new()
+			var load_error := image.load(illustrated_path)
+			if load_error != OK:
+				_fail("ícone %s: PNG ausente/ilegível em %s" % [id, illustrated_path])
+			elif image.get_size() != illustrated[illustrated_path]:
+				_fail("ícone %s: %s tem %s (esperado %s)" % [
+					id, illustrated_path, image.get_size(), illustrated[illustrated_path]])
+			elif image.detect_alpha() == Image.ALPHA_NONE:
+				_fail("ícone %s: PNG sem canal alfa em %s" % [id, illustrated_path])

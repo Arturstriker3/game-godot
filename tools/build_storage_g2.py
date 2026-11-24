@@ -6,14 +6,14 @@ Entradas:
   data/definitions/scenario/nations.json        as 179 nacoes do jogo
   data/definitions/agriculture/crop_yields.json producao de graos (regra de capacidade)
   data/definitions/world/nations_source.csv     ISO2/ISO3/populacao (para mapear fontes)
-  data/definitions/economy/goods.json           os 113 bens do jogo
+  data/definitions/economy/goods.json           os 123 bens do jogo
   tools/storage_g2_reference.json               valores publicados (curados, com citacao)
   tools/_tmp_storage_raw/                       cache bruto (IMF, Eurostat, EIA)
 
 Saidas (UTF-8 sem BOM, LF, indent=2, chaves ordenadas):
   data/definitions/economy/storage_capacity.json     graos (Mt), frio (m3), gas (TWh)
   data/definitions/economy/strategic_reserves.json   petroleo publico, graos publicos, ouro
-  data/definitions/economy/goods_storage_map.json    113 bens -> tipo de armazem
+  data/definitions/economy/goods_storage_map.json    123 bens -> tipo de armazem
 
 Uso:
     py -3 tools/fetch_storage_g2.py --fetch
@@ -762,8 +762,16 @@ GOODS_MAP = {
     "small_arms": ("military_depot", ["general_warehouse"], "arma leve"),
     "artillery": ("military_depot", [], "artilharia"),
     "military_drone": ("military_depot", [], "drone militar"),
-    "infantry_gear": ("military_depot", ["general_warehouse"], "equipamento de infantaria"),
+    "infantry_gear": ("military_depot", ["general_warehouse"], "equipamento de apoio"),
     "combat_ration": ("military_depot", ["general_warehouse"], "racao de combate"),
+    # D-130: itens militares novos (aramida e placa ficam no armazem geral).
+    "ballistic_ceramic_plate": ("military_depot", ["general_warehouse"], "placa balistica"),
+    "tactical_equipment": ("military_depot", ["general_warehouse"], "equipamento tatico"),
+    "command_equipment": ("military_depot", [], "equipamento de comando"),
+    "drone_jammer": ("military_depot", [], "bloqueador de drones"),
+    "at_launcher": ("military_depot", [], "lancador antitanque"),
+    "at_rocket": ("military_depot", [], "foguete antitanque"),
+    "aa_launcher": ("military_depot", [], "lancador antiaereo"),
 }
 
 

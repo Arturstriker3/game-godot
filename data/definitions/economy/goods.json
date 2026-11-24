@@ -1980,7 +1980,7 @@
   {
     "order": 112,
     "id": "infantry_gear",
-    "name": "Equipamento de infantaria",
+    "name": "Equipamento de apoio",
     "sector": "military",
     "kind": "final",
     "tier": "final",
@@ -2030,5 +2030,150 @@
       "vehicle_fleet"
     ],
     "note": "co-produto da refinaria (EIA: 9% do rendimento de petróleo); aviação de carga."
+  },
+  {
+    "order": 115,
+    "id": "aramid",
+    "name": "Aramida",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 70.31,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7A6FA8",
+    "food": false,
+    "use": [
+      "ballistic_ceramic_plate",
+      "tactical_equipment"
+    ],
+    "note": "Fibra aramida (fábrica química): químicos + enxofre refinado, coeficiente unitário. D-130."
+  },
+  {
+    "order": 116,
+    "id": "ballistic_ceramic_plate",
+    "name": "Placa cerâmica balística",
+    "sector": "military",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 106.64,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8C8F86",
+    "food": false,
+    "use": [
+      "tactical_equipment"
+    ],
+    "note": "Placa balística: bauxita + aramida, coeficiente unitário. D-130."
+  },
+  {
+    "order": 117,
+    "id": "tactical_equipment",
+    "name": "Equipamento tático",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 542.05,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5F6B4A",
+    "food": false,
+    "use": [
+      "army"
+    ],
+    "note": "Equipamento tático individual: aramida + placa cerâmica balística + borracha + tecido sintético. D-130."
+  },
+  {
+    "order": 118,
+    "id": "command_equipment",
+    "name": "Equipamento de comando",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 78716.88,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#4E6B7A",
+    "food": false,
+    "use": [
+      "army"
+    ],
+    "note": "Equipamento de comando: computador + componentes eletrônicos + baterias + fios. D-130."
+  },
+  {
+    "order": 119,
+    "id": "drone_jammer",
+    "name": "Bloqueador de drones",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 20200.07,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5A6470",
+    "food": false,
+    "use": [
+      "army"
+    ],
+    "note": "Bloqueador de drones: placa de circuito + componentes eletrônicos + baterias + plástico. D-130."
+  },
+  {
+    "order": 120,
+    "id": "at_launcher",
+    "name": "Lança-foguetes anti-tanque",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 453.28,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6A5A3C",
+    "food": false,
+    "use": [
+      "army"
+    ],
+    "note": "Lança-foguetes anti-tanque: aço + ferragens + tábuas. D-130."
+  },
+  {
+    "order": 121,
+    "id": "at_rocket",
+    "name": "Foguete anti-tanque",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 352.42,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#A0522D",
+    "food": false,
+    "use": [
+      "army"
+    ],
+    "note": "Foguete anti-tanque (munição): explosivos + pólvora + chapa de aço. D-130."
+  },
+  {
+    "order": 122,
+    "id": "aa_launcher",
+    "name": "Lançador antiaéreo portátil",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 44323.99,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#556B5A",
+    "food": false,
+    "use": [
+      "army"
+    ],
+    "note": "Lançador antiaéreo portátil (inclui o míssil): sensores + componentes eletrônicos + explosivos + lingote de alumínio. D-130."
   }
 ]

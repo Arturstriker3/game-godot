@@ -2,8 +2,8 @@
 
 Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 
-- Bens: **115** (21 primários em `order` 0..20, 94 novos em 21..114)
-- Receitas: **114** (coeficiente unitário padrão onde a spec não traz qty)
+- Bens: **123** (21 primários em `order` 0..20, 102 novos em 21..122)
+- Receitas: **122** (coeficiente unitário padrão onde a spec não traz qty)
 - Preços: primários = `calibrated:legacy` (dado já calibrado); novos = `derived:v1`
   pela fórmula `min_receita(Σ qty × preço_insumo / yield) × (1 + margem)`.
 - Co-produtos: preço da ROTA PRINCIPAL (a receita de co-produção), com o
@@ -132,6 +132,14 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 112 | `infantry_gear` | final | final | military | 7422.19 | `derived:v1` |
 | 113 | `diesel` | final | final | chemical | 74.90 | `derived:co_product_market_value:v2` |
 | 114 | `jet_fuel` | final | final | chemical | 78.22 | `derived:co_product_market_value:v2` |
+| 115 | `aramid` | semi | intermediate | chemical | 70.31 | `derived:v1` |
+| 116 | `ballistic_ceramic_plate` | semi | intermediate | military | 106.64 | `derived:v1` |
+| 117 | `tactical_equipment` | final | final | military | 542.05 | `derived:v1` |
+| 118 | `command_equipment` | final | final | military | 78716.88 | `derived:v1` |
+| 119 | `drone_jammer` | final | final | military | 20200.07 | `derived:v1` |
+| 120 | `at_launcher` | final | final | military | 453.28 | `derived:v1` |
+| 121 | `at_rocket` | final | final | military | 352.42 | `derived:v1` |
+| 122 | `aa_launcher` | final | final | military | 44323.99 | `derived:v1` |
 
 ## Receitas normalizadas
 
@@ -249,6 +257,14 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `infantry_gear` â†’ `infantry_gear` (yield 1): 1× `fabric`, 1× `hardware`, 1× `electronic_components`, 1× `batteries`
 - `diesel_a` â†’ `diesel` (yield 0.3): 1× `gas`
 - `diesel_b` â†’ `diesel` (yield 0.15): 1× `coal`
+- `aramid` â†’ `aramid` (yield 1): 1× `chemicals`, 1× `refined_sulfur`
+- `ballistic_ceramic_plate` â†’ `ballistic_ceramic_plate` (yield 1): 1× `bauxite`, 1× `aramid`
+- `tactical_equipment` â†’ `tactical_equipment` (yield 1): 1× `aramid`, 1× `ballistic_ceramic_plate`, 1× `rubber`, 1× `synthetic_fabric`
+- `command_equipment` â†’ `command_equipment` (yield 1): 1× `computer`, 1× `electronic_components`, 1× `batteries`, 1× `wires`
+- `drone_jammer` â†’ `drone_jammer` (yield 1): 1× `circuit_board`, 1× `electronic_components`, 1× `batteries`, 1× `plastic`
+- `at_launcher` â†’ `at_launcher` (yield 1): 1× `steel`, 1× `hardware`, 1× `planks`
+- `at_rocket` â†’ `at_rocket` (yield 1): 1× `explosives`, 1× `gunpowder`, 1× `steel_sheet`
+- `aa_launcher` â†’ `aa_launcher` (yield 1): 1× `sensors`, 1× `electronic_components`, 1× `explosives`, 1× `aluminum_ingot`
 
 ## Co-produtos: rota principal rateada por valor de mercado
 
