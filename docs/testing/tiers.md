@@ -39,6 +39,13 @@ powershell ... -List economy_integration_test
 - Caminho desconhecido cai em `broad_economy` (conservador). Núcleo central
   (`sim_core`, `sim_day`, `world_state`, `save_*`, `commands`, `actions`,
   `economy_sim`) seleciona tudo e avisa que a cobertura completa pede `nightly`.
+- Qualquer arquivo em `gdextension/src/` (não só os 9 centrais) seleciona o conjunto
+  amplo de núcleo (`core_set`) e imprime
+  `[tier] aviso: mudança no núcleo: rode -Tier nightly antes do merge se possível`.
+- Alterar a própria infra de testes (`tools/run_tests.ps1`, `tools/test_impact_map.json`
+  ou `tools/tmp_paths.gd`) invalida a seleção: o mapa devolve `ALL`, ou seja, a bateria
+  inteira, equivalente a `-All` (vale também no `quick`). Editar qualquer outro
+  `tools/<nome>_test.gd` continua selecionando só aquele teste.
 - O `summary.json` ganhou `tier`, `base`, `changed_files` e `selection`
   (teste → arquivos que o selecionaram). Campos antigos não mudaram.
 
@@ -61,6 +68,8 @@ dias é a sentinela de `nightly`. A lista fica em `sentinels` no mapa.
   com referência entre conjuntos.
 - `rules`: primeira regra que casa com o caminho vence. Exemplos conservadores:
   - `gdextension/src/sim/(save|sim_core|sim_day|...)` → `ALL`;
+  - qualquer outro `gdextension/src/**` → conjunto amplo de núcleo (`core_set`) + aviso de `nightly`;
+  - `tools/run_tests.ps1|tools/test_impact_map.json|tools/tmp_paths.gd` → `ALL`;
   - `core/economy/bank|fx|monetary|exchange|stock` → bancos rápidos + estresse de câmbio + C1;
   - `data/definitions/economy/(recipes|goods|production)` → cadeia de produção + D-125/D-127;
   - `^docs/` e `*.md` → só sentinelas.
@@ -82,8 +91,7 @@ versionado e o binário copiado do repo principal era de 22/11 (anterior a D-125
   `d127_byproducts`, `economy_integration`, `economy_long_run`,
   `economy_save_load_roundtrip`, `economy_world`, `goods_data`,
   `population_demo`, `price_formation`, `production_chain` + `c1_world_ai_90`.
-- O diff também continha `docs/testing/test_inventory.md`, `tools/run_tests.ps1` e
-  `tools/test_impact_map.json` (rodam só sentinelas) e dois JSON/CSV em `docs/`
+- O diff também continha `docs/testing/test_inventory.md` e dois JSON/CSV em `docs/`
   que os próprios testes regravam (ruído; foram restaurados depois).
 - Worktree novo (sem `.godot`): some ~2–4 min de `--import` na primeira execução.
 

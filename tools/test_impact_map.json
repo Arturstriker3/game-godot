@@ -203,6 +203,12 @@
       "note": "nucleo central: qualquer mudanca pode alterar qualquer mundo; quick roda a bateria inteira, considere nightly"
     },
     {
+      "match": "^gdextension/src/",
+      "tests": ["core_set"],
+      "requires_nightly": true,
+      "note": "qualquer fonte do nucleo (nao so os 9 arquivos centrais): conjunto amplo de nucleo; o runner avisa para rodar -Tier nightly antes do merge"
+    },
+    {
       "match": "^core/economy/(economy_sim|tick_scheduler|turbo_config|trajectory_digest|command_log|save)[A-Za-z0-9_]*\\.gd$",
       "tests": ["ALL"],
       "requires_nightly": true,
@@ -306,6 +312,11 @@
       "match": "^(docs/|\\.md$|[A-Za-z0-9_./-]+\\.md$)",
       "tests": [],
       "note": "documentacao: so as sentinelas"
+    },
+    {
+      "match": "^(tools/run_tests\\.ps1|tools/test_impact_map\\.json|tools/tmp_paths\\.gd)$",
+      "tests": ["ALL"],
+      "note": "infra de testes alterada: a propria selecao deixa de ser confiavel, roda a bateria inteira (equivale a -All)"
     },
     {
       "match": "^tools/",

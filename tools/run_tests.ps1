@@ -36,6 +36,10 @@
 # -Tier usa tools/test_impact_map.json (caminho alterado -> testes) e sempre inclui as
 # sentinelas declaradas la. -List/-Pattern continuam funcionando e, com -Tier, sao somados
 # as sentinelas. -All sem -Tier mantem exatamente o comportamento antigo.
+# Mudar a propria infra de testes (tools/run_tests.ps1, tools/test_impact_map.json,
+# tools/tmp_paths.gd) invalida a selecao: o mapa manda rodar a bateria inteira (-All).
+# Qualquer arquivo em gdextension/src/ seleciona o conjunto amplo de nucleo (core_set)
+# e imprime o aviso de -Tier nightly antes do merge.
 #
 # Exit codes:
 #   0 all green
@@ -482,10 +486,13 @@ function Get-ImpactSelection {
     $names = New-Object System.Collections.Generic.List[string]
     $reasons = [ordered]@{}
     $needsNightly = $false
+    $coreTouched = $false
     foreach ($raw in $Changed) {
         $p = ([string]$raw).Trim()
         if (-not $p) { continue }
         $p = $p -replace '\\', '/'
+        # Any C++/core source under gdextension/src/ earns an explicit nightly hint.
+        if ($p -match '^gdextension/src/') { $coreTouched = $true }
         $matched = @()
         $ruleMatched = $false
         if ($p -match '^tools/([A-Za-z0-9_]+)_test\.(gd|tscn)$') {
@@ -518,6 +525,7 @@ function Get-ImpactSelection {
         Names = @($names)
         Reasons = $reasons
         NeedsNightly = $needsNightly
+        CoreTouched = $coreTouched
     }
 }
 
@@ -1235,6 +1243,7 @@ function Invoke-Main {
         $impact = Get-ImpactSelection -Map $map -Changed $script:ChangedFiles
         $script:SelectionReasons = $impact.Reasons
         $script:SelectionNeedsNightly = $impact.NeedsNightly
+        $script:SelectionCoreTouched = $impact.CoreTouched
 
         $impactNames = @($impact.Names)
         $allRequested = ($tierMode -eq "nightly") -or ($impactNames -contains "__ALL__") -or $All
@@ -1301,8 +1310,14 @@ function Invoke-Main {
 
         $selected = @($selected | Sort-Object Name -Unique)
         if ($runs.Count -gt 0) { $selected += $runs }
-        if ($script:SelectionNeedsNightly -and $tierMode -ne "nightly") {
-            Write-Host "[tier] aviso: caminho central alterado; a cobertura completa pede -Tier nightly."
+        if ($tierMode -ne "nightly") {
+            if ($script:SelectionCoreTouched) {
+                # File stays ASCII-only: build the accented warning from code points.
+                $coreMsg = "mudan" + [char]0x00E7 + "a no n" + [char]0x00FA + "cleo: rode -Tier nightly antes do merge se poss" + [char]0x00ED + "vel"
+                Write-Host ("[tier] aviso: " + $coreMsg)
+            } elseif ($script:SelectionNeedsNightly) {
+                Write-Host "[tier] aviso: caminho central alterado; a cobertura completa pede -Tier nightly."
+            }
         }
     } else {
         $selected = @(Select-Tests -Catalog $catalog -Names $listItems -NamePattern $Pattern)
@@ -1351,6 +1366,7 @@ function Invoke-Main {
             selected = @($selected | ForEach-Object { $_.Name })
             reasons = $script:SelectionReasons
             needs_nightly = $script:SelectionNeedsNightly
+            core_touched = $script:SelectionCoreTouched
         }
         Write-Utf8NoBom -Path $selectionPath -Text (ConvertTo-Json -InputObject $payload -Depth 6)
         Write-Host "[dry-run] selecao: $selectionPath"
