@@ -57,9 +57,27 @@ Save **v40 aditivo**: por construção `production_efficiency`,
 eficiência madura (o estoque existente do ano-base) — nada inventado no passado.
 
 Parâmetros em `data/definitions/production/efficiency.json` (defaults de
-balanceamento declarados), espelhados em `sim/efficiency.h`. A IA usa a API
+balanceamento declarados), espelhados em `sim/efficiency.h` — o espelho
+compilado é **idêntico** ao JSON (teste `d125_efficiency_test` item 8), para o
+mundo não mudar se o arquivo não carregar. A IA usa a API
 com custo de transição declarado (`ai.*` no JSON): só troca quando o ganho de
 receita do modo cobre a produção perdida na transição.
+
+O gate de payback do investidor privado (`private_investor.gd` e o porte
+`ai_private.cpp`) usa a eficiência **esperada** — a média da curva no horizonte
+de payback, não a capacidade cheia. Folha/opex continuam cheios; a planta
+existente continua a rampa a partir da eficiência corrente.
+
+## Verificação
+
+Ver `GAME_STATE.md` (D-125) para os números da rodada de 365 d.
+
+Rodada 365 base de 23/11/2026 (commit 27f355c3, `efficiency.json` real, sem
+override, `--control=res://docs/economy/perf/c6_gate_base.json`): portão
+94/179 nações abaixo de 0,975 (mediana 0,9705; controle c6 93/179),
+**20 falências** (controle 2), 0 violações, 0 dias travados, drift 0,0056.
+A variante A (`fuel_per_capacity_day=0`) **não** foi rodada: o critério
+(falências ≤ 3) não foi atendido.
 
 ## API (sem UI)
 
@@ -67,8 +85,5 @@ receita do modo cobre a produção perdida na transição.
 * `set_refinery_mode(city_id, building_id, mode)` (`standard|diesel|jet` ou 0..2)
 * `set_building_equipment(city_id, building_id, level)`
 * `set_efficiency_params(values)` — JSON de defaults
+* `get_efficiency_params()` — parâmetros aplicados (JSON ou espelho)
 * `mature_world_efficiency()` — marca o mundo semeado como maduro (ano-base)
-
-## Verificação
-
-Ver `GAME_STATE.md` (D-125) para os números da rodada de 365 d.
