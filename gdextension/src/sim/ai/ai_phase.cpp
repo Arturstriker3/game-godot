@@ -14,9 +14,11 @@
 #include "../actions.h"
 #include "../balance.h"
 #include "../bank.h"
+#include "../efficiency.h"
 #include "../profiling.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -33,6 +35,102 @@ namespace {
 // aqui, para não duplicar o efeito.
 bool take_own(CommandQueue& queue, uint64_t seq, Command& out) {
 	return queue.take_by_seq(seq, out);
+}
+
+// D-125 — MODOS DA REFINARIA. A IA só troca o modo quando o ganho de receita
+// por lote cobre a produção perdida na transição (`ai.*` do
+// efficiency.json): ganho relativo >= `mode_min_gain`, cooldown entre trocas e
+// payback de `mode_payback_days` dias. Só leitura da view/preços do mercado da
+// cidade; a mutação vai pelo comando A3 `set_refinery_mode`.
+const char* refinery_mode_name(int mode) {
+	return mode == 1 ? "diesel" : mode == 2 ? "jet" : "standard";
+}
+
+void run_refinery_modes(AiContext& ctx) {
+	WorldState& ws = ctx.ws;
+	const EfficiencyParams& params = ws.efficiency;
+	const int oil = ctx.core.product_index(std::string("oil"));
+	const int products[3] = {params.refinery_gasoline,
+		params.refinery_diesel, params.refinery_jet};
+	if (oil < 0 || products[0] < 0 || products[1] < 0 || products[2] < 0) {
+		return;  // catálogo sem os três graus: a regra fica inerte
+	}
+	for (std::size_t ci = 0; ci < ws.cities.size(); ++ci) {
+		City& city = ws.cities[ci];
+		if (ci >= ws.buildings_by_city.size()) {
+			continue;
+		}
+		for (const int bi : ws.buildings_by_city[ci]) {
+			Building& building = ws.buildings[static_cast<std::size_t>(bi)];
+			if (!eff::is_refinery(ws, building)
+					|| building.transition_days > 0) {
+				continue;
+			}
+			const auto seen = ctx.state.last_refinery_mode_day.find(building.id);
+			if (seen != ctx.state.last_refinery_mode_day.end()
+					&& ctx.day - seen->second < params.ai_mode_cooldown_days) {
+				continue;
+			}
+			// Receita por tonelada de petróleo em cada modo, com os preços de
+			// HOJE do mercado da cidade. Sem preço para um grau, não decide.
+			double revenue[3] = {0.0, 0.0, 0.0};
+			bool priced = true;
+			for (int mode = 0; mode < 3 && priced; ++mode) {
+				for (int slot = 0; slot < 3; ++slot) {
+					const double price = city.markets[
+						static_cast<std::size_t>(products[slot])].price;
+					if (!(price > 0.0)) {
+						priced = false;
+						break;
+					}
+					revenue[mode] += params.mode_shares[mode][slot] * price;
+				}
+			}
+			if (!priced) {
+				continue;
+			}
+			int best = 0;
+			for (int mode = 1; mode < 3; ++mode) {
+				if (revenue[mode] > revenue[best]) {
+					best = mode;
+				}
+			}
+			const int current = std::clamp(building.refinery_mode, 0, 2);
+			if (best == current) {
+				continue;
+			}
+			const double gain = revenue[best] - revenue[current];
+			const double base = std::max(revenue[current], 1e-9);
+			if (gain <= 0.0 || gain / base < params.ai_mode_min_gain) {
+				continue;
+			}
+			const double oil_price = city.markets[
+				static_cast<std::size_t>(oil)].price;
+			if (!(oil_price > 0.0)) {
+				continue;
+			}
+			// Produção efetiva (t/dia do produto principal) convertida em lotes
+			// de petróleo pela fração do modo corrente.
+			const double main_share = std::max(0.01,
+				params.mode_shares[current][0]);
+			const double batch = std::max(0.0, building.capacity)
+				* std::clamp(building.production_efficiency, 0.0, 1.0)
+				/ main_share;
+			const double daily_gain = gain * batch;
+			const double current_margin = std::max(0.0,
+				(revenue[current] - oil_price) * batch);
+			const double lost = current_margin
+				* std::max(0, params.transition_mode_days);
+			if (daily_gain * params.ai_mode_payback_days < lost) {
+				continue;
+			}
+			const AiActionResult result = ai_emit_refinery_mode(ctx, building.city,
+				building.id, refinery_mode_name(best));
+			if (result.created) {
+				ctx.state.last_refinery_mode_day[building.id] = ctx.day;
+			}
+		}
+	}
 }
 
 } // namespace
@@ -312,6 +410,35 @@ AiActionResult ai_emit_group_invest(AiContext& ctx, const std::string& group,
 	return out;
 }
 
+// D-125: troca de modo da refinaria. A decisão é da IA, mas a mutação vem
+// pelo mesmo caminho A3 das demais (emite, retira só o próprio comando e
+// aplica no escritor único).
+AiActionResult ai_emit_refinery_mode(AiContext& ctx, const std::string& city,
+		const std::string& building, const std::string& mode) {
+	Command cmd;
+	cmd.type = CommandType::SetRefineryMode;
+	cmd.day = ctx.day;
+	cmd.s[0] = city;
+	cmd.s[1] = building;
+	cmd.s[2] = mode;
+	const uint64_t seq = ctx.queue.push(cmd);
+
+	AiActionResult out;
+	Command taken;
+	if (!take_own(ctx.queue, seq, taken)) {
+		out.error = "comando perdido na fila";
+		return out;
+	}
+	const RefineryModeResult result = action_set_refinery_mode(ctx.ws, ctx.core,
+		city, building, mode);
+	taken.apply_day = ctx.day;
+	ctx.queue.log(taken);
+
+	out.created = result.changed;
+	out.error = result.error;
+	return out;
+}
+
 void AiPhase::reset() {
 	// `templates_products_ = -1` força `build_ai_templates` de novo no próximo
 	// `run` (o catálogo de produtos do mundo novo pode ter outro tamanho).
@@ -374,6 +501,11 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 	// 4c. Grupos (F9): a decisão do dia vem ANTES das cidades e na ordem do
 	// ranking, como no `plan()` do `economic_ai.gd` (grupos → cidades).
 	group_investor_.run(ctx);
+
+	// 4d. D-125: modo das refinarias existentes. Roda em toda cidade (as
+	// refinarias do ano-base já estão no mundo) e só troca quando o ganho paga
+	// a transição; o comando entra no mesmo log A3.
+	run_refinery_modes(ctx);
 
 	// 5. Agenda: `dia % período` escolhe as cidades da vez (A6: período no
 	// estado `cadence` do mundo; antes era o literal 7). Cenário menor que um

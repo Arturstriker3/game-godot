@@ -28,6 +28,13 @@ const FOOD_RESOURCES := ["wheat", "rice", "maize", "potato", "soy"]
 const FOOD_PRODUCTS := [0, 2, 3, 16, 17]
 ## Produto `wheat` no núcleo (entrada 0 de `products`).
 const WHEAT_PRODUCT := 0
+## D-125: choque de preço do trigo do fixture de escassez (× preço de
+## partida), sustentado dia a dia. A rampa da fazenda (0,20 -> 1,0 em 365 d)
+## faz o gate de payback da IA descontar a eficiência MÉDIA do horizonte
+## (150 d ≈ 0,36); com o preço de equilíbrio a expansão fica no limite do
+## gate e o cenário deixa de exercitar a decisão. O choque é fixture, não
+## regra: asserções e demais cenários não mudam.
+const WHEAT_PRICE_SHOCK := 2.0
 
 ## Número máximo de prédios ociosos (utilização < 10%) aceito por cidade após
 ## 730 dias. Sem o anti-loop (B5), o governo empilha uma estatal a cada ciclo e
@@ -66,7 +73,12 @@ func _scenario_food_scarcity() -> Array:
 	_inject_stock(sim, "AGRIA", 0, 0.0)
 	_boost_cash(sim, "AGRIA", 80000.0, 100000.0)
 	var capacity_before := _food_capacity(sim, "AGRIA")
-	_run(world, 60)
+	# D-125: o choque de preço do trigo (× 2, sustentado) mantém a expansão
+	# lucrativa descontada a rampa de eficiência — ver `WHEAT_PRICE_SHOCK`.
+	var shock_price := _wheat_price(sim, "AGRIA") * WHEAT_PRICE_SHOCK
+	for _index in 60:
+		sim.set_market_price("AGRIA", "wheat", shock_price)
+		sim.tick_day()
 
 	var command_log: Array = sim.get_command_log()
 	# `build` carrega o recurso em `s[2]`; `invest` só a cidade (`s[0]`).
@@ -260,6 +272,14 @@ func _inject_stock(sim, city_id: String, product: int, amount: float) -> void:
 		if String(city["id"]) == city_id:
 			city["markets"][product]["stock"] = amount
 	sim.from_dict(snapshot)
+
+
+## Preço corrente do trigo no mercado da cidade (o fixture do choque parte dele).
+func _wheat_price(sim, city_id: String) -> float:
+	var markets: Array = sim.get_city_status(city_id).get("markets", [])
+	if markets.is_empty():
+		return 0.0
+	return float(markets[WHEAT_PRODUCT].get("price", 0.0))
 
 
 func _food_capacity(sim, city_id: String) -> float:

@@ -34,6 +34,11 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// 2. Zera os fluxos do dia.
 	core.phase_reset();
 
+	// D-125: eficiência de produção do dia (transição sem produção,
+	// combustível do trator/máquina e maturação). Antes da agricultura: a
+	// safra e a produção do dia já saem com a eficiência atualizada.
+	core.phase_efficiency();
+
 	// 2b-G. Agricultura sazonal: plantio/fertilizante, colheita DENTRO da
 	// janela (zero fora), perda de armazenagem e perecibilidade. Antes da
 	// produção: a safra do dia já está no estoque quando a cidade compra.

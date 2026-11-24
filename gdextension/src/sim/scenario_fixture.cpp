@@ -1,6 +1,7 @@
 #include "scenario_fixture.h"
 
 #include "sim_constants.h"
+#include "efficiency.h"
 
 namespace ogs {
 
@@ -91,6 +92,8 @@ void initialize_scenario_fixture(WorldState& ws, SimCore& core) {
 		farm.jobs = 150.0;
 		farm.wage = 2.0;
 		farm.opex = 50.0;
+		// D-125: fazenda do cenário de validação é pré-existente (madura).
+		eff::mature(farm, true);
 		ws.buildings.push_back(farm);
 	}
 
@@ -109,6 +112,7 @@ void initialize_scenario_fixture(WorldState& ws, SimCore& core) {
 		farm.jobs = 150.0;
 		farm.wage = 2.0;
 		farm.opex = 50.0;
+		eff::mature(farm, true);
 		ws.buildings.push_back(farm);
 	}
 	for (City& city : ws.cities) {

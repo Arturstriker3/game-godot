@@ -78,6 +78,10 @@ struct AiState {
 	// Medidas do dia que os investidores compartilham (comida no mundo/região).
 	double food_need = 0.0;
 	double food_supply = 0.0;
+	// D-125: dia da última troca de modo da refinaria (id da construção → dia).
+	// Não é serializado: o cooldown da IA é uma janela de decisão do processo,
+	// como as demais janelas de preço (`risk_history`).
+	std::unordered_map<std::string, int> last_refinery_mode_day;
 	std::vector<double> region_need;
 	std::vector<double> region_supply;
 	// G2 — janelas de preço observadas pela IA de armazém (chave
@@ -150,6 +154,10 @@ AiActionResult ai_emit_group_invest(AiContext& ctx, const std::string& group,
 		const std::string& city, const std::string& building,
 		const std::string& resource, int output, double capacity,
 		const std::string& recipe_id, const std::string& partner);
+// D-125: troca de modo da refinaria (comando `set_refinery_mode`).
+// s0 cidade, s1 prédio, s2 modo (`standard`/`diesel`/`jet`).
+AiActionResult ai_emit_refinery_mode(AiContext& ctx, const std::string& city,
+		const std::string& building, const std::string& mode);
 
 // Fase da IA do dia. O chamador guarda UM objeto (o estado entre dias vive em
 // `state_`); `run` é quem decide a vez das cidades.

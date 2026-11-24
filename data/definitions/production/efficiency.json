@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "id": "D-125",
+    "title": "Eficiência de produção (estilo HOI4)",
+    "status": "defaults de balanceamento DECLARADOS",
+    "source": "especificação aprovada pelo dono em 23/11/2026 (specs/D-125_eficiencia_producao.md)",
+    "applies_to": "toda construção nova e toda troca de produto/modo",
+    "seed_mature": true,
+    "notes": [
+      "Nenhum número aqui é dado observado: é balanceamento declarado e ajustável pelo dono.",
+      "A eficiência multiplica a produção; a folha/opex continuam cheios (a planta emprega a equipe mesmo aprendendo).",
+      "A curva é linear por dia de operação: start -> mid em mid_days e mid -> 1.0 em full_days-start_days.",
+      "Sem equipamento (trator/máquina) o teto de maturação é cap_without; com equipamento, 1.0 e crescimento rate_boost.",
+      "Equipamento sem diesel no mercado da cidade fica PARADO no dia: não acelera a maturação nem consome o bem."
+    ]
+  },
+  "factory": {
+    "start": 0.30,
+    "mid": 0.90,
+    "mid_days": 90,
+    "full_days": 180
+  },
+  "refinery": {
+    "start": 0.30,
+    "mid": 0.90,
+    "mid_days": 90,
+    "full_days": 180
+  },
+  "mine": {
+    "start": 0.25,
+    "mid": 1.0,
+    "mid_days": 240,
+    "full_days": 240
+  },
+  "farm": {
+    "start": 0.20,
+    "mid": 1.0,
+    "mid_days": 365,
+    "full_days": 365
+  },
+  "ranch": {
+    "start": 0.20,
+    "mid": 1.0,
+    "mid_days": 540,
+    "full_days": 540
+  },
+  "equipment": {
+    "cap_without": 0.85,
+    "rate_boost": 1.5,
+    "fuel_product": "diesel",
+    "fuel_per_capacity_day": 0.0002
+  },
+  "transitions": {
+    "factory_days": 7,
+    "refinery_days": 7,
+    "military_days": 14,
+    "semiconductor_days": 30,
+    "farm": "next_plant_window",
+    "mode_days": 3
+  },
+  "retention": {
+    "same_family": 0.60,
+    "other": 0.0
+  },
+  "families": {
+    "source": "goods.json.sector",
+    "same_family_rule": "produtos do mesmo setor contam como mesma família"
+  },
+  "refinery_modes": {
+    "order": ["standard", "diesel", "jet"],
+    "standard": {"gasoline": 0.45, "diesel": 0.29, "jet_fuel": 0.09},
+    "diesel": {"gasoline": 0.38, "diesel": 0.36, "jet_fuel": 0.09},
+    "jet": {"gasoline": 0.40, "diesel": 0.28, "jet_fuel": 0.15}
+  },
+  "ai": {
+    "mode_cooldown_days": 30,
+    "mode_payback_days": 90,
+    "mode_min_gain": 0.05
+  }
+}

@@ -23,6 +23,8 @@
 
 #include "agriculture.h"
 
+#include "efficiency.h"
+
 #include "balance.h"
 #include "monetary.h"
 #include "profiling.h"
@@ -676,6 +678,11 @@ void SimCore::phase_agriculture() {
 		const double entry_loss = aggravated_loss(
 			total_pct / 100.0 * kAgriEntryLossShare, quality);
 		const double annual_budget = plan.area_ha * plan.yield_t_ha;
+		// D-125: a safra do par (cidade, produto) sai na eficiência média das
+		// fazendas que o produzem (ponderada pela capacidade). Fazenda madura
+		// = 1.0; fazenda nova aprende ao longo do ciclo.
+		const double harvest_fit = eff::harvest_factor(ws_,
+			static_cast<std::size_t>(plan.city_index), plan.product);
 		for (int index = 0; index < plan.season_count; ++index) {
 			const CropSeasonPlan& season = plan.seasons[index];
 			const int position = window_position(today.doy,
@@ -707,12 +714,13 @@ void SimCore::phase_agriculture() {
 				if (position > 0) {
 					state.delivered_t = annual_budget
 						* std::max(0.0, season.share)
-						* state.harvest_yield_scale * fraction;
+						* state.harvest_yield_scale * fraction * harvest_fit;
 					continue;
 				}
 			}
 			const double season_budget = annual_budget
-				* std::max(0.0, season.share) * state.harvest_yield_scale;
+				* std::max(0.0, season.share) * state.harvest_yield_scale
+				* harvest_fit;
 			const double target = season_budget * fraction;
 			const double gross = target - state.delivered_t;
 			if (gross <= 1e-12) {

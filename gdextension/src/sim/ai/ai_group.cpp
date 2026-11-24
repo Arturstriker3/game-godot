@@ -24,9 +24,11 @@
 #include "ai_group.h"
 
 #include "ai_phase.h"
+#include "ai_private.h"
 #include "ai_templates.h"
 #include "ai_view.h"
 
+#include "../efficiency.h"
 #include "../stock.h"
 
 #include <algorithm>
@@ -95,6 +97,9 @@ struct ResourceCandidate {
 	double price = 0.0;
 	double shortage = 0.0;
 	double desired = 0.0;
+	// D-125: eficiência média esperada da rampa (a mesma conta do investidor
+	// privado, `ai_expected_new_efficiency`); 1,0 na cesta alimentar.
+	double ramp = 1.0;
 };
 
 // Melhor oportunidade de um grupo (== retorno de `_score_candidate`).
@@ -137,6 +142,10 @@ struct GroupDay {
 	// Fila de grupos da vez, na ordem do ranking (índices de `view.groups`).
 	std::vector<int> queue;
 
+	// D-125: média da rampa por (produto, classe) — a conta percorre a curva
+	// dia a dia e o candidato é montado uma vez por (cidade, recurso).
+	mutable std::unordered_map<long long, double> ramp_cache;
+
 	// == `drain()`: prepara o dia e decide cada grupo da fila.
 	void run();
 	// == `_begin_group`: caixa local abaixo de MIN_CAPITAL não decide.
@@ -156,6 +165,10 @@ struct GroupDay {
 	// == `_score_candidate`: risco/retorno do grupo para um candidato.
 	bool score_candidate(int group_index, const ResourceCandidate& entry,
 		Opportunity& out);
+	// D-125: média da rampa de uma planta nova do template (mesma função do
+	// investidor privado); memorizada por (produto, classe) no dia.
+	double ramp_efficiency(const AiTemplate& tmpl, int city_index,
+		EfficiencyClass cls) const;
 	// == `_execute`: emite o `group_invest` e debita o caixa local.
 	void execute(int group_index, const Opportunity& opportunity);
 	// == `_load_signals`: sinais do dia e caches zerados.
@@ -443,6 +456,17 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 	if (margin <= 0.0) {
 		return;
 	}
+	// D-125: o retorno desconta a rampa de maturação, como no investidor
+	// privado (`ai_expected_new_efficiency`). A cesta alimentar mantém o peso
+	// cheio: a comida é prioridade declarada do grupo e o candidato só nasce
+	// com escassez local.
+	double ramp = 1.0;
+	if (!is_food && context.tmpl != nullptr) {
+		const City& city = ctx.ws.cities[static_cast<std::size_t>(city_index)];
+		const EfficiencyClass cls = eff::classify_new(ctx.ws, city, product,
+			recipe_index, context.input_product);
+		ramp = ramp_efficiency(*context.tmpl, city_index, cls);
+	}
 	ResourceCandidate entry;
 	entry.city = city_index;
 	entry.resource = resource;
@@ -454,7 +478,22 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 	entry.price = price;
 	entry.shortage = shortage;
 	entry.desired = desired;
+	entry.ramp = ramp;
 	out.push_back(std::move(entry));
+}
+
+double GroupDay::ramp_efficiency(const AiTemplate& tmpl, int city_index,
+		EfficiencyClass cls) const {
+	const long long key = static_cast<long long>(tmpl.product)
+		* (static_cast<long long>(EfficiencyClass::kRanch) + 1)
+		+ static_cast<int>(cls);
+	const auto found = ramp_cache.find(key);
+	if (found != ramp_cache.end()) {
+		return found->second;
+	}
+	const double value = ai_expected_new_efficiency(ctx, city_index, tmpl);
+	ramp_cache[key] = value;
+	return value;
 }
 
 bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
@@ -510,8 +549,9 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 	if (capacity < 0.5) {
 		return false;
 	}
-	// Rampa de operação (fábrica nova começa em 25%, como no núcleo).
-	const double ramp = entry.is_food ? 1.0 : 0.5;
+	// Rampa de operação: a planta nova não entrega a capacidade cheia no dia 1
+	// (D-125) — o retorno usa a média da curva, como o investidor privado.
+	const double ramp = entry.ramp;
 	const double profit_day = margin * capacity * ramp;
 	if (profit_day <= 0.0) {
 		return false;
