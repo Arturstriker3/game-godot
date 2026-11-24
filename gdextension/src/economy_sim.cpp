@@ -7,6 +7,7 @@
 #include "sim/bank.h"
 #include "sim/bank_crisis.h"
 #include "sim/central_bank.h"
+#include "sim/crisis.h"
 #include "sim/efficiency.h"
 #include "sim/exchange.h"
 #include "sim/monetary.h"
@@ -481,6 +482,34 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_efficiency_params);
 	ClassDB::bind_method(D_METHOD("get_efficiency_params"),
 	                     &EconomySim::get_efficiency_params);
+	// D-126: sobrevivencia em crise (parametros, status e acoes).
+	ClassDB::bind_method(D_METHOD("set_crisis_params", "values"),
+	                     &EconomySim::set_crisis_params);
+	ClassDB::bind_method(D_METHOD("get_crisis_params"),
+	                     &EconomySim::get_crisis_params);
+	ClassDB::bind_method(D_METHOD("get_crisis_status"),
+	                     &EconomySim::get_crisis_status);
+	ClassDB::bind_method(D_METHOD("crisis_layoff", "city_id", "building_id",
+	                     "share"),
+	                     &EconomySim::crisis_layoff, DEFVAL(0.0));
+	ClassDB::bind_method(D_METHOD("crisis_borrow", "city_id", "amount"),
+	                     &EconomySim::crisis_borrow, DEFVAL(0.0));
+	ClassDB::bind_method(D_METHOD("crisis_liquidate", "city_id",
+	                     "building_id", "share"),
+	                     &EconomySim::crisis_liquidate, DEFVAL(0.0));
+	ClassDB::bind_method(D_METHOD("crisis_mothball", "city_id",
+	                     "building_id"),
+	                     &EconomySim::crisis_mothball);
+	ClassDB::bind_method(D_METHOD("crisis_reopen", "city_id", "building_id"),
+	                     &EconomySim::crisis_reopen);
+	ClassDB::bind_method(D_METHOD("crisis_auction", "city_id",
+	                     "building_id"),
+	                     &EconomySim::crisis_auction);
+	ClassDB::bind_method(D_METHOD("crisis_set_stress", "city_id",
+	                     "building_id", "loss_days"),
+	                     &EconomySim::crisis_set_stress);
+	ClassDB::bind_method(D_METHOD("crisis_step"),
+	                     &EconomySim::crisis_step);
 	ClassDB::bind_method(D_METHOD("mature_world_efficiency", "buildings"),
 	                     &EconomySim::mature_world_efficiency,
 	                     DEFVAL(Array()));
@@ -2103,6 +2132,7 @@ void EconomySim::tick_core() {
 EconomySim::StatusKeys::StatusKeys() :
 		age_bands("age_bands"),
 		amount("amount"),
+		bank_money_delta_total("bank_money_delta_total"),
 		bankruptcies("bankruptcies"),
 		buildings("buildings"),
 		calendar_day("calendar_day"),
@@ -4174,6 +4204,10 @@ Dictionary EconomySim::get_status() {
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
 	root[k.money_total] = money_total();
+	// D-126: dinheiro bancário criado/destruído (M1) acumulado nos dias válidos.
+	// `money_total` pode crescer por crédito legítimo; os guardas de conservação
+	// somam este contador ao total inicial em vez de exigir constância.
+	root[k.bank_money_delta_total] = ws_.bank_money_delta_total;
 	root[k.transport_cash] = ws_.transport_cash;
 	root[k.foreign_cash] = ws_.foreign_cash;
 	root[k.construction_cash] = ws_.construction_cash;
@@ -4452,6 +4486,10 @@ Dictionary EconomySim::get_day_summary() {
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
 	root[k.money_total] = money_total();
+	// D-126: dinheiro bancário criado/destruído (M1) acumulado nos dias válidos.
+	// `money_total` pode crescer por crédito legítimo; os guardas de conservação
+	// somam este contador ao total inicial em vez de exigir constância.
+	root[k.bank_money_delta_total] = ws_.bank_money_delta_total;
 	root[k.transport_cash] = ws_.transport_cash;
 	root[k.foreign_cash] = ws_.foreign_cash;
 	root[k.construction_cash] = ws_.construction_cash;
@@ -11849,6 +11887,260 @@ Dictionary EconomySim::get_efficiency_params() const {
 	out["ai_mode_payback_days"] = p.ai_mode_payback_days;
 	out["ai_mode_min_gain"] = p.ai_mode_min_gain;
 	return out;
+}
+
+void EconomySim::set_crisis_params(const Dictionary& values) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::map<std::string, double> params;
+	for (const Variant& key : values.keys()) {
+		const Variant value = values.get(key, Variant());
+		if (value.get_type() == Variant::INT
+				|| value.get_type() == Variant::FLOAT
+				|| value.get_type() == Variant::BOOL) {
+			params[std::string(String(key).utf8().get_data())] =
+				double(value);
+		}
+	}
+	crisis::apply_params(ws_, params);
+	status_invalidate();
+}
+
+Dictionary EconomySim::get_crisis_params() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	for (const auto& row : crisis::params_map(ws_)) {
+		out[String(row.first.c_str())] = row.second;
+	}
+	return out;
+}
+
+Dictionary EconomySim::get_crisis_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["params"] = get_crisis_params();
+	out["layoffs"] = ws_.crisis_layoffs;
+	out["jobs_cut"] = ws_.crisis_jobs_cut;
+	out["severance_paid"] = ws_.crisis_severance_paid;
+	out["loans"] = ws_.crisis_loans;
+	out["renegotiations"] = ws_.crisis_renegotiations;
+	out["penalty_paid"] = ws_.crisis_penalty_paid;
+	out["liquidations"] = ws_.crisis_liquidations;
+	out["liquidated_t"] = ws_.crisis_liquidated_t;
+	out["liquidated_value"] = ws_.crisis_liquidated_value;
+	out["mothballs"] = ws_.crisis_mothballs;
+	out["reopens"] = ws_.crisis_reopens;
+	out["reopen_paid"] = ws_.crisis_reopen_paid;
+	out["auctions"] = ws_.crisis_auctions;
+	out["auction_value"] = ws_.crisis_auction_value;
+	out["auctions_unsold"] = ws_.crisis_auctions_unsold;
+	out["farm_area_reductions"] = ws_.crisis_farm_area_reductions;
+	out["power_auctions"] = ws_.crisis_power_auctions;
+	out["power_auction_value"] = ws_.crisis_power_auction_value;
+	Array buildings;
+	for (const Building& building : ws_.buildings) {
+		Dictionary row;
+		row["city"] = String(building.city.c_str());
+		row["id"] = String(building.id.c_str());
+		row["owner"] = String(building.owner.c_str());
+		row["output_product"] = building.output_product >= 0
+			? String(ws_.product_names[static_cast<std::size_t>(
+				building.output_product)].c_str()) : String();
+		row["capacity"] = building.capacity;
+		row["jobs"] = building.jobs;
+		row["workers"] = building.workers;
+		row["loss_days"] = building.loss_days;
+		row["crisis_stage"] = building.crisis_stage;
+		row["mothballed"] = building.mothballed;
+		row["mothball_unpaid_days"] = building.mothball_unpaid_days;
+		row["production_efficiency"] = building.production_efficiency;
+		row["bankrupt"] = building.bankrupt;
+		row["farm_area_reduced"] = building.farm_area_reduced;
+		buildings.append(row);
+	}
+	out["buildings"] = buildings;
+	Array plants;
+	for (const PowerPlant& plant : ws_.power_plants) {
+		Dictionary row;
+		row["id"] = String(plant.id.c_str());
+		row["city"] = plant.city_index >= 0
+			&& plant.city_index < static_cast<int>(ws_.cities.size())
+			? String(ws_.cities[static_cast<std::size_t>(
+				plant.city_index)].id.c_str()) : String();
+		row["owner_group"] = String(plant.owner_group.c_str());
+		row["mw"] = plant.mw;
+		row["jobs"] = plant.jobs;
+		row["loss_days"] = plant.loss_days;
+		row["crisis_stage"] = plant.crisis_stage;
+		row["mothballed"] = plant.mothballed;
+		row["mothball_unpaid_days"] = plant.mothball_unpaid_days;
+		row["production_efficiency"] = plant.production_efficiency;
+		row["bankrupt"] = plant.bankrupt;
+		plants.append(row);
+	}
+	out["power_plants"] = plants;
+	Array cities;
+	for (const City& city : ws_.cities) {
+		Dictionary row;
+		row["city"] = String(city.id.c_str());
+		row["firm_cash"] = city.firm_cash;
+		row["service_cash"] = city.service_cash;
+		row["firm_debt"] = city.firm_debt;
+		row["firm_credit_arrears"] = city.firm_credit_arrears;
+		row["firm_credit_rate_add"] = city.firm_credit_rate_add;
+		row["firm_credit_renegotiations"] = city.firm_credit_renegotiations;
+		row["firm_credit_defaults"] = city.firm_credit_defaults;
+		cities.append(row);
+	}
+	out["cities"] = cities;
+	return out;
+}
+
+Dictionary EconomySim::crisis_layoff(const String& city_id,
+		const String& building_id, double share) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	std::string error;
+	const bool ok = crisis::layoff(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()), share, &error);
+	out["ok"] = ok;
+	if (!ok) {
+		out["error"] = String(error.c_str());
+	}
+	const Building* building = ogs::find_building(ws_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()));
+	if (building != nullptr) {
+		out["jobs"] = building->jobs;
+		out["severance_paid"] = ws_.crisis_severance_paid;
+	}
+	status_invalidate();
+	return out;
+}
+
+Dictionary EconomySim::crisis_borrow(const String& city_id, double amount) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	std::string error;
+	const std::string city = std::string(city_id.utf8().get_data());
+	double before = 0.0;
+	for (const City& row : ws_.cities) {
+		if (row.id == city) {
+			before = row.firm_debt;
+			break;
+		}
+	}
+	const bool ok = crisis::borrow_working_capital(ws_, sim_core_, city, amount,
+		&error);
+	out["ok"] = ok;
+	if (!ok) {
+		out["error"] = String(error.c_str());
+	}
+	for (const City& row : ws_.cities) {
+		if (row.id == city) {
+			out["granted"] = row.firm_debt - before;
+			out["debt"] = row.firm_debt;
+			break;
+		}
+	}
+	status_invalidate();
+	return out;
+}
+
+Dictionary EconomySim::crisis_liquidate(const String& city_id,
+		const String& building_id, double share) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	std::string error;
+	const int before_t = ws_.crisis_liquidations;
+	const double before_tons = ws_.crisis_liquidated_t;
+	const double before_value = ws_.crisis_liquidated_value;
+	const bool ok = crisis::liquidate_stock(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()), share, &error);
+	out["ok"] = ok;
+	if (!ok) {
+		out["error"] = String(error.c_str());
+	}
+	out["events"] = ws_.crisis_liquidations - before_t;
+	out["tons"] = ws_.crisis_liquidated_t - before_tons;
+	out["value"] = ws_.crisis_liquidated_value - before_value;
+	status_invalidate();
+	return out;
+}
+
+Dictionary EconomySim::crisis_mothball(const String& city_id,
+		const String& building_id) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	std::string error;
+	const bool ok = crisis::mothball(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()), &error);
+	out["ok"] = ok;
+	if (!ok) {
+		out["error"] = String(error.c_str());
+	}
+	status_invalidate();
+	return out;
+}
+
+Dictionary EconomySim::crisis_reopen(const String& city_id,
+		const String& building_id) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	std::string error;
+	const bool ok = crisis::reopen(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()), &error);
+	out["ok"] = ok;
+	if (!ok) {
+		out["error"] = String(error.c_str());
+	}
+	status_invalidate();
+	return out;
+}
+
+Dictionary EconomySim::crisis_auction(const String& city_id,
+		const String& building_id) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	std::string error;
+	const bool ok = crisis::auction(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()), &error);
+	out["ok"] = ok;
+	if (!ok) {
+		out["error"] = String(error.c_str());
+	}
+	status_invalidate();
+	return out;
+}
+
+Dictionary EconomySim::crisis_set_stress(const String& city_id,
+		const String& building_id, int loss_days) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	Building* building = ogs::find_building(ws_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()));
+	if (building == nullptr) {
+		out["ok"] = false;
+		out["error"] = "construcao desconhecida";
+		return out;
+	}
+	building->loss_days = std::clamp(loss_days, 0, 1000000);
+	out["ok"] = true;
+	out["loss_days"] = building->loss_days;
+	status_invalidate();
+	return out;
+}
+
+Dictionary EconomySim::crisis_step() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	sim_core_.phase_crisis();
+	status_invalidate();
+	return get_crisis_status();
 }
 
 void EconomySim::mature_world_efficiency(const Array& buildings) {

@@ -148,6 +148,11 @@ Ledger ledger(const WorldState& ws, double money_total) {
 		out.payables += city.service_wage_arrears + city.rural_wage_arrears;
 		out.arrears_service += city.service_wage_arrears;
 		out.arrears_rural += city.rural_wage_arrears;
+		// D-126: o crédito de capital de giro da cidade é passivo das firmas e
+		// a contraparte do empréstimo do banco (mesma conta do crédito de
+		// grupo), senão o invariante acusaria banco sem tomador.
+		out.group_debt += city.firm_debt;
+		out.group_arrears += city.firm_credit_arrears;
 
 		// Governo: orçamento público da cidade (o "tesouro nacional" do modelo).
 		out.government += city.government_budget;
@@ -227,6 +232,8 @@ Sheet firms(const WorldState& ws, const std::string& nation) {
 		}
 		sheet.cash += city.firm_cash + city.service_cash;
 		sheet.payables += city.service_wage_arrears + city.rural_wage_arrears;
+		// D-126: crédito de capital de giro da cidade.
+		sheet.debt += city.firm_debt + city.firm_credit_arrears;
 		// Estoque do mercado da cidade é do comerciante/firma local.
 		sheet.inventory += city_inventory_value(ws, city);
 	}

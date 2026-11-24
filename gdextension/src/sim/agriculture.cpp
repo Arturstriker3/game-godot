@@ -295,7 +295,8 @@ void SimCore::rebuild_crop_indexes() {
 		ws_.crop_planned[static_cast<std::size_t>(plan.city_index) * products
 			+ static_cast<std::size_t>(plan.product)] = 1;
 		ws_.cities[static_cast<std::size_t>(plan.city_index)]
-			.agri_seasonal_daily += plan.area_ha * plan.yield_t_ha / 365.0;
+			.agri_seasonal_daily += plan.area_ha * plan.area_scale
+				* plan.yield_t_ha / 365.0;
 	}
 	ws_.crop_index_ready = true;
 }
@@ -390,7 +391,6 @@ double SimCore::crop_standing_value(const std::string& city_id,
 		return 0.0;
 	}
 	const GameDate today = game_date_from_day(ws_.day);
-	const double annual = plan.area_ha * plan.yield_t_ha;
 	double standing_t = 0.0;
 	for (int index = 0; index < plan.season_count; ++index) {
 		const CropSeasonPlan& season = plan.seasons[index];
@@ -400,8 +400,12 @@ double SimCore::crop_standing_value(const std::string& city_id,
 		const bool current = state.harvest_year == key;
 		const double scale = current ? state.harvest_yield_scale
 			: state.yield_scale;
+		const double area_scale = current ? state.harvest_area_scale
+			: state.planted_area_scale;
 		const double delivered = current ? state.delivered_t : 0.0;
-		const double expected = annual * std::max(0.0, season.share) * scale;
+		const double expected = plan.area_ha * plan.yield_t_ha
+			* std::max(0.0, area_scale)
+			* std::max(0.0, season.share) * scale;
 		standing_t += std::max(0.0, expected - delivered);
 	}
 	return standing_t * price;
@@ -587,7 +591,8 @@ void SimCore::phase_agriculture() {
 			continue;
 		}
 		City& city = ws_.cities[static_cast<std::size_t>(plan.city_index)];
-		const double annual_budget = plan.area_ha * plan.yield_t_ha;
+		const double annual_budget = plan.area_ha * plan.area_scale
+			* plan.yield_t_ha;
 		if (annual_budget <= 0.0) {
 			continue;
 		}
@@ -606,7 +611,10 @@ void SimCore::phase_agriculture() {
 			state.planted_year = key;
 			state.yield_scale = 1.0;
 			state.fertilizer_t = 0.0;
+			state.planted_area_scale = plan.area_scale;
+			state.harvest_area_scale = plan.area_scale;
 			const double need_t = plan.n_kg_ha * plan.area_ha
+				* plan.area_scale
 				* std::max(0.0, season.share)
 				/ (kAgriFertilizerNContent * 1000.0);
 			if (need_t > 0.0 && fert >= 0 && fert < ws_.products) {
@@ -677,7 +685,7 @@ void SimCore::phase_agriculture() {
 			? ws_.crop_loss_pct[static_cast<std::size_t>(plan.product)] : 0.0;
 		const double entry_loss = aggravated_loss(
 			total_pct / 100.0 * kAgriEntryLossShare, quality);
-		const double annual_budget = plan.area_ha * plan.yield_t_ha;
+		const double plan_annual = plan.area_ha * plan.yield_t_ha;
 		// D-125: a safra do par (cidade, produto) sai na eficiência média das
 		// fazendas que o produzem (ponderada pela capacidade). Fazenda madura
 		// = 1.0; fazenda nova aprende ao longo do ciclo.
@@ -703,6 +711,14 @@ void SimCore::phase_agriculture() {
 			if (state.harvest_year != key) {
 				state.harvest_year = key;
 				state.delivered_t = 0.0;
+				// D-126: congela a ÁREA da estação no início da colheita. A
+				// redução de crise vale para o próximo plantio; a lavoura em
+				// curso mantém a área que foi plantada.
+				if (state.planted_year != 0) {
+					state.harvest_area_scale = state.planted_area_scale;
+				}
+				const double annual_budget = plan_annual
+					* std::max(0.0, state.harvest_area_scale);
 				// Congela o rendimento da safra: o plantio do CICLO SEGUINTE não
 				// reescreve o orçamento desta colheita.
 				state.harvest_yield_scale = state.yield_scale;
@@ -718,6 +734,8 @@ void SimCore::phase_agriculture() {
 					continue;
 				}
 			}
+			const double annual_budget = plan_annual
+				* std::max(0.0, state.harvest_area_scale);
 			const double season_budget = annual_budget
 				* std::max(0.0, season.share) * state.harvest_yield_scale
 				* harvest_fit;

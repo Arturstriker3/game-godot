@@ -474,6 +474,9 @@ func _test() -> void:
 				first_violation = "dia %d: %s" % [
 					day_index + 1, String(day_violations[0])]
 	var money_final := float(status.get("money_total", 0.0))
+	# D-126: o crédito de giro cria M1 registrado (`bank_money_delta_total`); a
+	# conservação é contra o inicial + essa criação.
+	var bank_created_total := float(status.get("bank_money_delta_total", 0.0))
 	if violations > 0:
 		print("[age] aviso: %d dias com invariante violado (revertido pelo nucleo); primeiro: %s" % [
 			violations, first_violation])
@@ -573,14 +576,15 @@ func _test() -> void:
 				before, after, DEU_RETIRED_MIN_RISE])
 
 	# --- 4e: mundo vivo e dinheiro intocado --------------------------------
-	print("[age] mundo: populacao %.0f -> %.0f (delta %+.0f) | dinheiro %.2f -> %.2f (drift %+.4f)" % [
+	print("[age] mundo: populacao %.0f -> %.0f (delta %+.0f) | dinheiro %.2f -> %.2f (M1 criado %+.4f, drift %+.4f)" % [
 		world_population0, world_population365,
 		world_population365 - world_population0, money_initial, money_final,
-		money_final - money_initial])
+		bank_created_total, money_final - money_initial - bank_created_total])
 	if absf(world_population365 - world_population0) <= 0.0:
 		_fail("populacao mundial nao mudou em %d dias (%.3f)" % [
 			DAYS, world_population0])
-	if absf(money_final - money_initial) > MONEY_DRIFT_TOLERANCE:
-		_fail("dinheiro nao conservado em %d dias: %.2f -> %.2f (drift %.4f > %.2f)" % [
-			DAYS, money_initial, money_final, money_final - money_initial,
+	if absf(money_final - money_initial - bank_created_total) > MONEY_DRIFT_TOLERANCE:
+		_fail("dinheiro nao conservado em %d dias: %.2f -> %.2f (M1 criado %.2f, drift %.4f > %.2f)" % [
+			DAYS, money_initial, money_final, bank_created_total,
+			money_final - money_initial - bank_created_total,
 			MONEY_DRIFT_TOLERANCE])

@@ -245,6 +245,11 @@ namespace ogs {
 		// Perda de entrada (pós-colheita) do mês, para o status por nação.
 		double loss_month_t = 0.0;
 		int loss_month_key = 0;
+		// D-126 (save v41) — ÁREA plantada nesta estação (fração da área do
+		// plano) e a área CONGELADA no início da colheita. A redução de crise
+		// vale só para o próximo plantio; a safra em curso mantém a área.
+		double planted_area_scale = 1.0;
+		double harvest_area_scale = 1.0;
 	};
 	struct CropPlan {
 		std::string city;
@@ -260,6 +265,11 @@ namespace ogs {
 		// Derivado (NÃO serializado): toneladas líquidas entregues hoje por
 		// este plano. Serve ao status e ao teste de sazonalidade.
 		double delivered_today_t = 0.0;
+		// D-126 (save v41) — ÁREA EFETIVA do plano (0..1). A crise reduz a área
+		// da fazenda para a PRÓXIMA janela de plantio: o valor entra no plantio
+		// e fica congelado na estação (`CropSeasonState::planted_area_scale`).
+		// 1.0 = área cheia do dado.
+		double area_scale = 1.0;
 	};
 
 	// F3: uma categoria de necessidade (needs.json → levels.<nível>.categories).
@@ -418,6 +428,25 @@ namespace ogs {
 		// Modo da refinaria: 0 padrão (45/29/9), 1 foco diesel (38/36/9),
 		// 2 foco querosene (40/28/15). Fora da refinaria fica 0 e é inerte.
 		int refinery_mode = 0;
+		// -------------------------------------------------------------------
+		// D-126 (save v41) — SOBREVIVÊNCIA EM CRISE. `crisis_stage` guarda o
+		// degrau já alcançado na ordem declarada (0 nenhum, 1 corte, 2 demissão,
+		// 3 crédito, 4 liquidação, 5 hibernação, 6 falência/leilão). Os dias
+		// são o cooldown de cada ação; `mothballed` é o prédio hibernado (sem
+		// produção/folha, com manutenção mínima) e `mothball_unpaid_days` conta
+		// os dias sem pagar essa manutenção até o leilão.
+		int crisis_stage = 0;
+		int last_layoff_day = -1000000;
+		int last_credit_day = -1000000;
+		int last_liquidation_day = -1000000;
+		bool mothballed = false;
+		int mothball_day = -1;
+		int mothball_unpaid_days = 0;
+		int reopen_signal_days = 0;
+		// Custo de reabertura pago no dia (diagnóstico, não persistido).
+		double reopen_paid_today = 0.0;
+		// D-126: a redução de área da fazenda é única por episódio de crise.
+		bool farm_area_reduced = false;
 	};
 
 	// ------------------------------------------------------------------
@@ -1060,6 +1089,12 @@ namespace ogs {
 		double credit_repaid = 0.0;  // principal pago acumulado
 		int credit_default_days = 0;
 		int credit_defaults = 0;
+		// D-126 (save v41): prêmio de juro do capital de giro de crise (a taxa
+		// do banco + este adicional) e o contador de renegociações (máx. 1 no
+		// default declarado). Não muda a dívida por si só.
+		double credit_rate_add = 0.0;
+		int credit_renegotiations = 0;
+		int credit_arrears_days = 0;
 	};
 
 	// C4 (D-110) - BANCO COM DONO: a C3 tinha "1 banco agregado por nação";
@@ -1610,6 +1645,26 @@ struct Region {
 		double cf_base = 0.0;
 		// Geração do dia (derivada do despacho; NÃO persistida).
 		double generated_mwh = 0.0;
+		// D-126: disponibilidade usada pelo mérito hoje e o custo de caixa do
+		// dia (combustível + O&M + salários proporcionais à geração, o mesmo
+		// que `phase_power_settle` paga). Derivados do despacho; NÃO
+		// persistidos (zerados no início do dia). A crise compara a receita do
+		// despacho com `day_cost`, não com a folha cheia de uma usina ociosa.
+		double day_avail_mw = 0.0;
+		double day_cost = 0.0;
+		// D-126 (save v41) — MESMAS REGRAS DAS CONSTRUÇÕES: dias de prejuízo,
+		// hibernação, eficiência inicial na reabertura e falência/leilão.
+		int loss_days = 0;
+		bool mothballed = false;
+		int mothball_day = -1;
+		int mothball_unpaid_days = 0;
+		int crisis_stage = 0;
+		int last_layoff_day = -1000000;
+		int reopen_signal_days = 0;
+		bool bankrupt = false;  // marcada no dia; leilão/remoção no fechamento
+		// D-125/D-126: eficiência da usina (1 = madura). Entra no despacho como
+		// teto de disponibilidade; hibernar retém 60%, leilão reabre na inicial.
+		double production_efficiency = 1.0;
 	};
 
 	struct PowerGridState {
@@ -1699,6 +1754,18 @@ struct Region {
 		double simulation_population = 0.0;
 		double firm_cash = 0.0;
 		double service_cash = 0.0;
+		// D-126 (save v41) — CRÉDITO DE CAPITAL DE GIRO da cidade (firmas
+		// privadas e serviços, que compartilham o caixa agregado). O passivo é
+		// da cidade/dono privado; a contraparte é o banco público da nação,
+		// somado em `Bank::loans`. `firm_credit_rate_add` é o prêmio de crise
+		// (juro do banco + este adicional). 1 renegociação com multa.
+		double firm_debt = 0.0;
+		double firm_credit_arrears = 0.0;
+		double firm_credit_total = 0.0;
+		double firm_credit_rate_add = 0.0;
+		int firm_credit_default_days = 0;
+		int firm_credit_defaults = 0;
+		int firm_credit_renegotiations = 0;
 		// C1 (save v26) — PASSIVOS das firmas da cidade, por origem do atraso:
 		// folha do setor de serviços e folha rural (paga pelo caixa da firma da
 		// cidade-polo). O atraso por planta fica em `Building::wage_arrears`.
@@ -1899,6 +1966,11 @@ struct Region {
 		// C6 (D-114): crise bancaria (confianca, corrida, redesconto,
 		// aperto e resolucao). Roda depois da bolsa e antes dos invariantes.
 		kPhaseBankCrisis,
+		// D-126: reacao deterministica a crise (demissao, credito de giro,
+		// liquidacao, hibernacao e leilao). Roda depois do credito bancario e
+		// antes dos invariantes; o dinheiro bancario criado no dia entra no
+		// `bank_money_today`.
+		kPhaseCrisis,
 		// PARTE E (D-116): despacho por merito, preco da rede e racionamento.
 		// Roda ANTES do trabalho/producao (o fator de servico limita o emprego
 		// e a producao do dia). A liquidacao financeira roda depois da

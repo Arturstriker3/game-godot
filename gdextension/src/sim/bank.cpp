@@ -438,6 +438,69 @@ bool lend(WorldState& ws, const std::string& group_id, double amount,
 	return true;
 }
 
+bool lend_city(WorldState& ws, const std::string& city_id, double amount,
+		double* out_amount, std::string* error) {
+	if (out_amount != nullptr) {
+		*out_amount = 0.0;
+	}
+	const Policy pol = effective_policy(ws);
+	if (!pol.enabled) {
+		if (error != nullptr) {
+			*error = "credito desligado";
+		}
+		return false;
+	}
+	if (!(amount > 0.0) || !std::isfinite(amount)) {
+		if (error != nullptr) {
+			*error = "valor invalido";
+		}
+		return false;
+	}
+	City* city = nullptr;
+	for (City& row : ws.cities) {
+		if (row.id == city_id) {
+			city = &row;
+			break;
+		}
+	}
+	if (city == nullptr) {
+		if (error != nullptr) {
+			*error = "cidade desconhecida";
+		}
+		return false;
+	}
+	// C4 (D-110): o credito de giro usa o banco PUBLICO que JA existe. Sem banco
+	// na nacao nao ha credito de giro: nunca se cria um banco para emprestar
+	// (isso quebraria "sem banco => M1 = M0"). A escada da crise pula para o
+	// proximo degrau (liquidar/hibernar/leilao).
+	Bank* bank = find_mut(ws, city->nation, kRolePublic);
+	if (bank == nullptr) {
+		if (error != nullptr) {
+			*error = "nacao sem banco publico";
+		}
+		return false;
+	}
+	const double tightening = bank_crisis::credit_factor(ws, *bank);
+	const double granted = amount * std::clamp(tightening, 0.0, 1.0);
+	if (granted <= 1e-9) {
+		if (error != nullptr) {
+			*error = "credito cortado pelo capital do banco";
+		}
+		return false;
+	}
+	// Dinheiro BANCÁRIO: depósito do tomador (M1), não M0.
+	bank->loans += granted;
+	bank->deposits += granted;
+	bank->loans_count += 1;
+	city->firm_cash += granted;
+	city->firm_debt += granted;
+	city->firm_credit_total += granted;
+	if (out_amount != nullptr) {
+		*out_amount = granted;
+	}
+	return true;
+}
+
 namespace {
 
 // Capital pago pelas famílias da nação: sai da poupança das cidades na ordem
@@ -635,6 +698,28 @@ void distribute_dividends(WorldState& ws, const Policy& pol) {
 	}
 }
 
+// D-126: custo diário efetivo das firmas privadas/estatais e dos serviços da
+// cidade — base do capital de giro protegido e do teto do crédito de crise.
+double city_business_daily_cost(const WorldState& ws, std::size_t city_index) {
+	if (city_index >= ws.cities.size()) {
+		return 0.0;
+	}
+	const City& city = ws.cities[city_index];
+	double cost = std::max(0.0, city.service_wage_bill)
+		+ std::max(0.0, city.service_input_cost);
+	if (city_index < ws.buildings_by_city.size()) {
+		for (const int bi : ws.buildings_by_city[city_index]) {
+			const Building& building =
+				ws.buildings[static_cast<std::size_t>(bi)];
+			if (building.owner == "private" || building.owner == "state") {
+				cost += std::max(0.0, building.paid_wages)
+					+ std::max(0.0, building.paid_opex);
+			}
+		}
+	}
+	return cost;
+}
+
 } // namespace
 
 int phase(WorldState& ws, double* bank_money_delta) {
@@ -691,8 +776,11 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			// 1. Juro do dia. O caixa do grupo É o depósito dele no banco:
 			// pagar juro destrói depósito e vira patrimônio do banco. O que o
 			// caixa não cobre vira juro VENCIDO dos dois lados — nunca
-			// capitalizado em silêncio.
-			const double interest = group.debt * rate / kDaysPerYear;
+			// capitalizado em silêncio. D-126: o capital de giro de crise paga
+			// a taxa do banco + o prêmio declarado do grupo.
+			const double group_rate = rate
+				+ std::max(0.0, group.credit_rate_add);
+			const double interest = group.debt * group_rate / kDaysPerYear;
 			const double paid_interest = std::min({
 				std::max(0.0, group.cash), std::max(0.0, interest),
 				std::max(0.0, bank.deposits) });
@@ -719,6 +807,47 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			if (unpaid > 0.0) {
 				group.credit_arrears += unpaid;
 				bank.arrears += unpaid;
+				group.credit_arrears_days += 1;
+			} else {
+				group.credit_arrears_days = 0;
+			}
+			// D-126: UMA renegociação do capital de giro em atraso, com multa.
+			// A multa é paga ao banco (destrói depósito) e o atraso é
+			// reclassificado em principal — nenhum dinheiro é criado.
+			if (ws.crisis.enabled
+					&& group.credit_arrears > 1e-9
+					&& group.credit_renegotiations
+						< std::max(0, ws.crisis.credit_max_renegotiations)
+					&& group.credit_arrears_days
+						>= std::max(1, ws.crisis.credit_renegotiation_days)) {
+				const double base = group.debt + group.credit_arrears;
+				const double fee = std::max(0.0,
+					ws.crisis.credit_penalty * base);
+				const double penalty = std::min({
+					std::max(0.0, group.cash), fee,
+					std::max(0.0, bank.deposits) });
+				if (penalty > 0.0) {
+					group.cash -= penalty;
+					bank.deposits -= penalty;
+					bank.interest_income += penalty;
+					money_delta -= penalty;
+				}
+				// D-126: a parte da multa que o caixa não cobre é capitalizada
+				// no principal (o tomador deve os 5% a mais). Nenhum dinheiro é
+				// criado: só a dívida e o ativo do banco crescem juntos.
+				const double capitalized = std::max(0.0, fee - penalty);
+				group.debt += group.credit_arrears + capitalized;
+				bank.loans += group.credit_arrears + capitalized;
+				bank.arrears = std::max(0.0,
+					bank.arrears - group.credit_arrears);
+				group.credit_arrears = 0.0;
+				group.credit_arrears_days = 0;
+				group.credit_renegotiations += 1;
+				// D-126: o premio `credit_rate_add` entra UMA vez, quando o
+				// credito de giro e' concedido (crisis::borrow_group). A
+				// renegociacao capitaliza a multa, mas nao soma o premio de novo.
+				ws.crisis_renegotiations += 1;
+				ws.crisis_penalty_paid += fee;
 			}
 			// 2. Amortização: só o excedente ao capital de giro (30 dias de
 			// custo efetivamente pago) e na fração declarada. Destrói depósito.
@@ -777,10 +906,172 @@ int phase(WorldState& ws, double* bank_money_delta) {
 				const std::string foreign = "foreign:" + group.id + "@";
 				if (building.owner == national
 						|| building.owner.rfind(foreign, 0) == 0) {
-					building.bankrupt = true;
+					// D-126: a execução bancária entra na fila da crise como
+					// falência (o prédio vai a leilão antes de sumir). Sem a
+					// crise ligada, preserva a regra antiga.
+					if (ws.crisis.enabled) {
+						building.loss_days = std::max(building.loss_days,
+							ws.crisis.bankrupt_days);
+					} else {
+						building.bankrupt = true;
+					}
 				}
 			}
 			defaults += 1;
+		}
+	}
+	// 4. D-126: crédito de capital de giro das firmas privadas/serviços da
+	// cidade (credor = banco público). Mesma matemática da C3: juro e
+	// amortização destroem depósito; 1 renegociação com multa; calote depois
+	// do prazo. O caixa agregado da cidade é o tomador.
+	for (std::size_t city_index = 0; city_index < ws.cities.size();
+			++city_index) {
+		City& city = ws.cities[city_index];
+		if (city.firm_debt <= 0.0 && city.firm_credit_arrears <= 0.0) {
+			city.firm_credit_default_days = 0;
+			continue;
+		}
+		Bank* city_bank = &ensure(ws, city.nation, kRolePublic);
+		if (city_bank->id.empty()) {
+			city_bank = &ensure(ws, city.nation);
+		}
+		if (city_bank == nullptr) {
+			continue;
+		}
+		const double city_rate = loan_rate(ws, city.nation)
+			+ std::max(0.0, city.firm_credit_rate_add);
+		const double interest = std::min(
+			city.firm_debt * city_rate / kDaysPerYear,
+			std::max(0.0, city_bank->deposits));
+		double remaining = std::max(0.0, interest);
+		double paid_interest = 0.0;
+		const double from_firm = std::min(remaining,
+			std::max(0.0, city.firm_cash));
+		if (from_firm > 0.0) {
+			city.firm_cash -= from_firm;
+			paid_interest += from_firm;
+			remaining -= from_firm;
+		}
+		if (remaining > 0.0) {
+			const double from_service = std::min(remaining,
+				std::max(0.0, city.service_cash));
+			if (from_service > 0.0) {
+				city.service_cash -= from_service;
+				paid_interest += from_service;
+				remaining -= from_service;
+			}
+		}
+		if (paid_interest > 0.0) {
+			city_bank->deposits -= paid_interest;
+			city_bank->interest_income += paid_interest;
+			money_delta -= paid_interest;
+		}
+		if (remaining > 1e-12) {
+			city.firm_credit_arrears += remaining;
+			city_bank->arrears += remaining;
+			city.firm_credit_default_days += 1;
+		} else {
+			city.firm_credit_default_days = 0;
+		}
+		// Amortização só do excedente ao capital de giro protegido.
+		const double working = kWorkingCapitalDays
+			* city_business_daily_cost(ws, city_index);
+		const double excess = std::max(0.0, city.firm_cash - working);
+		const double repay = std::min({ city.firm_debt,
+			pol.repay_share * excess,
+			std::max(0.0, city_bank->deposits) });
+		if (repay > 0.0) {
+			city.firm_cash -= repay;
+			city.firm_debt -= repay;
+			city_bank->loans -= repay;
+			city_bank->deposits -= repay;
+			money_delta -= repay;
+		}
+		// Renegociação (máx. declarado): multa + atraso capitalizado.
+		if (ws.crisis.enabled
+				&& city.firm_credit_arrears > 1e-9
+				&& city.firm_credit_renegotiations
+					< std::max(0, ws.crisis.credit_max_renegotiations)
+				&& city.firm_credit_default_days
+					>= std::max(1, ws.crisis.credit_renegotiation_days)) {
+			const double base = city.firm_debt + city.firm_credit_arrears;
+			const double fee = std::max(0.0,
+				ws.crisis.credit_penalty * base);
+			const double penalty = std::min({
+				std::max(0.0, city.firm_cash + city.service_cash),
+				fee,
+				std::max(0.0, city_bank->deposits) });
+			if (penalty > 0.0) {
+				double left = penalty;
+				const double p_firm = std::min(left,
+					std::max(0.0, city.firm_cash));
+				city.firm_cash -= p_firm;
+				left -= p_firm;
+				if (left > 0.0) {
+					const double p_service = std::min(left,
+						std::max(0.0, city.service_cash));
+					city.service_cash -= p_service;
+					left -= p_service;
+				}
+				const double paid = penalty - left;
+				city_bank->deposits -= paid;
+				city_bank->interest_income += paid;
+				money_delta -= paid;
+				ws.crisis_penalty_paid += paid;
+			}
+			// D-126: a parte da multa que o caixa não cobre é capitalizada no
+			// principal — dívida e ativo do banco crescem juntos, sem dinheiro.
+			const double capitalized = std::max(0.0, fee - penalty);
+			city.firm_debt += city.firm_credit_arrears + capitalized;
+			city_bank->loans += city.firm_credit_arrears + capitalized;
+			city_bank->arrears = std::max(0.0,
+				city_bank->arrears - city.firm_credit_arrears);
+			city.firm_credit_arrears = 0.0;
+			city.firm_credit_default_days = 0;
+			city.firm_credit_renegotiations += 1;
+			// D-126: o premio `credit_rate_add` entra UMA vez, quando o credito
+			// de giro e' concedido (crisis::borrow_city). A renegociacao
+			// capitaliza a multa, mas nao soma o premio de novo.
+			ws.crisis_renegotiations += 1;
+		}
+		// Calote após a renegociação: o caixa é tomado e o resto é perda do
+		// banco. Trocar depósito por caixa não muda o `money_total`.
+		if (city.firm_credit_default_days
+				>= std::max(1, pol.default_days)
+				&& city.firm_credit_renegotiations
+					>= std::max(0, ws.crisis.credit_max_renegotiations)) {
+			const double claim = city.firm_debt + city.firm_credit_arrears;
+			const double available = std::max(0.0, city.firm_cash)
+				+ std::max(0.0, city.service_cash);
+			const double seized = std::min({ available, claim,
+				std::max(0.0, city_bank->deposits) });
+			if (seized > 0.0) {
+				double left = seized;
+				const double s_firm = std::min(left,
+					std::max(0.0, city.firm_cash));
+				city.firm_cash -= s_firm;
+				left -= s_firm;
+				if (left > 0.0) {
+					const double s_service = std::min(left,
+						std::max(0.0, city.service_cash));
+					city.service_cash -= s_service;
+					left -= s_service;
+				}
+				city_bank->deposits -= seized - left;
+				city_bank->cash += seized - left;
+			}
+			city_bank->loans = std::max(0.0,
+				city_bank->loans - city.firm_debt);
+			city_bank->arrears = std::max(0.0,
+				city_bank->arrears - city.firm_credit_arrears);
+			city_bank->writeoffs += std::max(0.0,
+				claim - seized);
+			city_bank->defaults += 1;
+			city_bank->last_default_day = ws.day;
+			city.firm_debt = 0.0;
+			city.firm_credit_arrears = 0.0;
+			city.firm_credit_default_days = 0;
+			city.firm_credit_defaults += 1;
 		}
 	}
 	// 4. Dividendo mensal ao dono (lucro retido × payout declarado).

@@ -294,15 +294,29 @@ func _test_default_is_creditor_loss() -> void:
 			"financial_sum=" + str(invariant.get("financial_sum")))
 		break
 	_check("A5 o calote aconteceu", defaulted, "nenhum default em 5 dias")
-	# Um dia depois o balanço do grupo já reflete a execução (as construções
-	# são fechadas no dia do calote; a leitura do grupo é do dia seguinte).
-	loaded.tick_day()
-	for row2: Dictionary in loaded.get_groups():
-		_check("A5 construções do grupo fechadas (%s)" % row2.get("id"),
-			int(row2.get("assets", -1)) == 0
-				and absf(float(row2.get("capacity", -1.0))) <= EPS,
-			"assets=%s capacity=%s" % [row2.get("assets"),
-				row2.get("capacity")])
+	# D-126 (spec item 5): a falência não fecha o prédio no mesmo dia - o credor
+	# marca a execução e o bem vai a leilão/hibernação. A dívida já foi executada
+	# acima (baixa > 0, calote registrado, dívida 0). Aqui confere que os bens do
+	# tomador não sumiram em silêncio: cada um foi fechado (`bankrupt`) ou está
+	# marcado para leilão (`loss_days` >= crisis.bankrupt_days = 60) ou já saiu
+	# do tomador (vendido no leilão).
+	var data_after: Dictionary = loaded.to_dict()
+	var owner_national := "national:" + group_id
+	var owner_foreign := "foreign:" + group_id + "@"
+	var remaining := 0
+	var marked := 0
+	for entry: Dictionary in data_after.get("buildings", []):
+		var owner := String(entry.get("owner", ""))
+		if owner != owner_national and not owner.begins_with(owner_foreign):
+			continue
+		remaining += 1
+		if bool(entry.get("bankrupt", false)) \
+				or int(entry.get("loss_days", 0)) >= 60 \
+				or int(entry.get("crisis_stage", 0)) >= 6:
+			marked += 1
+	_check("A5 execução da dívida: bens do grupo fechados ou marcados p/ leilão (D-126)",
+		remaining == 0 or marked == remaining,
+		"remaining=%d marked=%d" % [remaining, marked])
 
 
 # --- A6 -------------------------------------------------------------------

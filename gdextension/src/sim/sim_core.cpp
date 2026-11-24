@@ -853,7 +853,12 @@ void SimCore::phase_accounting() {
 			// regra é explícita — a construção some (capacidade e empregos), em
 			// vez de ficar produzindo no piso no vermelho para sempre. Planta
 			// estratégica é mantida pelo governo (ver subsídio acima).
-			if (building.loss_days >= kLossDaysBeforeClose && !building.strategic) {
+			// D-126: com a sobrevivência em crise ligada, a falência passa pela
+			// reação (hibernação e leilão) na fase `phase_crisis`; o prédio só
+			// some se o leilão não tiver comprador.
+			if (!ws_.crisis.enabled
+					&& building.loss_days >= kLossDaysBeforeClose
+					&& !building.strategic) {
 				building.bankrupt = true;
 			}
 			if (building.loss_days >= kLossDaysBeforeCut) {
@@ -935,6 +940,9 @@ void SimCore::phase_invariants() {
 	if (!ws_.invariant_violations.empty()) {
 		restore_state(ws_.snapshot_buffer);
 	} else {
+		// D-126: dia válido - acumula a criação/destruição bancária registrada
+		// (crédito de giro da crise + fase C3/C4). Um tick revertido não conta.
+		ws_.bank_money_delta_total += ws_.bank_money_today;
 		// C2a (D-103): com o dia válido, a série mensal do CPI recebe a amostra
 		// (a cada 30 dias por nação). Só medição — nenhum preço/caixa muda, e
 		// um tick revertido não amostra (o dia não aconteceu).

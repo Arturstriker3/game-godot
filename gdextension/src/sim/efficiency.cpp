@@ -316,7 +316,8 @@ double harvest_factor(const WorldState& ws, std::size_t city_index,
 	double total = 0.0;
 	for (const int bi : ws.buildings_by_city[city_index]) {
 		const Building& building = ws.buildings[static_cast<std::size_t>(bi)];
-		if (building.output_product != product || building.idle_today) {
+		if (building.output_product != product || building.idle_today
+				|| building.mothballed) {
 			continue;
 		}
 		const City& city = ws.cities[city_index];
@@ -346,6 +347,10 @@ void SimCore::phase_efficiency() {
 			Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 			building.idle_today = false;
 			building.equipment_active = false;
+			if (building.mothballed) {
+				// D-126: hibernada não produz, não matura e não consome diesel.
+				continue;
+			}
 			if (building.transition_days > 0) {
 				// Troca de produto/modo: a planta fica parada (sem produção e
 				// sem maturação) durante os dias de transição.

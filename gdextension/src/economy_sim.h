@@ -1084,6 +1084,32 @@ public:
 	 */
 	void set_efficiency_params(const Dictionary& values);
 
+	// ------------------------------------------------------------------
+	// D-126 — SOBREVIVÊNCIA EM CRISE (laboratório/API e teste). Os parâmetros
+	// são os mesmos do `crisis.json` e do bloco `crisis` do save v41; as ações
+	// explícitas são determinísticas e conservam dinheiro. A reação automática
+	// roda no tick (`phase_crisis`).
+	// ------------------------------------------------------------------
+	void set_crisis_params(const Dictionary& values);
+	Dictionary get_crisis_params() const;
+	Dictionary get_crisis_status() const;
+	Dictionary crisis_layoff(const String& city_id, const String& building_id,
+		double share);
+	Dictionary crisis_borrow(const String& city_id, double amount);
+	Dictionary crisis_liquidate(const String& city_id,
+		const String& building_id, double share);
+	Dictionary crisis_mothball(const String& city_id,
+		const String& building_id);
+	Dictionary crisis_reopen(const String& city_id,
+		const String& building_id);
+	Dictionary crisis_auction(const String& city_id,
+		const String& building_id);
+	// Laboratório/teste: força os dias de prejuízo de uma construção e roda a
+	// fase de reação sem avançar o dia. Não é ação do jogador.
+	Dictionary crisis_set_stress(const String& city_id,
+		const String& building_id, int loss_days);
+	Dictionary crisis_step();
+
 	/**
 	 * D-125: parâmetros de eficiência EFETIVAMENTE aplicados (JSON carregado ou
 	 * espelho compilado quando o arquivo não carregou). Formato plano, com as
@@ -1567,7 +1593,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct StatusKeys {
-		StringName age_bands, amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, income_strata, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, migration, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, diesel, diesel_target, jet_fuel, jet_target, diesel_used, jet_used, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups, stage, stage_factor, stage_reserve_kt, stage_mined_kt, next_deepen_cost,
+		StringName age_bands, amount, bank_money_delta_total, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, income_strata, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, migration, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, diesel, diesel_target, jet_fuel, jet_target, diesel_used, jet_used, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups, stage, stage_factor, stage_reserve_kt, stage_mined_kt, next_deepen_cost,
 		// D-125: eficiência de produção publicada por construção.
 		production_efficiency, efficiency_days, transition_days, equipment,
 		refinery_mode;

@@ -151,7 +151,7 @@ void SimCore::phase_production() {
 				}
 				// D-125: planta em troca de produto/modo não produz no dia
 				// (transição); a eficiência corrente multiplica a produção.
-				if (building.idle_today) {
+				if (building.idle_today || building.mothballed) {
 					continue;
 				}
 				const double efficiency = std::clamp(
