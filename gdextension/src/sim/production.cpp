@@ -234,8 +234,21 @@ void SimCore::phase_production() {
 						+ (desired_stock - stock_before) * ws_.inventory_recovery;
 				}
 				target = std::clamp(target, 0.0, effective_capacity);
-				const double desired_output = target * capacity_share * labor
-					* power_factor * efficiency;
+				// D-125 (correção): a eficiência limita a CAPACIDADE da planta,
+				// não o alvo de vendas. O alvo já vem em toneladas de mercado
+				// (`sold_prev` + reposição do estoque-alvo); multiplicá-lo pela
+				// eficiência encolhia a produção a cada dia (venda < alvo ×
+				// eficiência), levando fazenda/mineira nova a zero antes de
+				// repor a primeira venda — e à falência com folha cheia. O teto
+				// por construção aplica a eficiência UMA vez (junto da aptidão/
+				// estágio da extração), como a curva manda.
+				const double building_capacity =
+					building.capacity * building.output_scale;
+				double desired_output = target * capacity_share * labor
+					* power_factor;
+				desired_output = std::min(desired_output,
+					building_capacity * suitability * labor * power_factor
+						* efficiency);
 				double input_used = 0.0;
 				double output = desired_output;
 				if (building.recipe >= 0) {
