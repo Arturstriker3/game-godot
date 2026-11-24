@@ -101,7 +101,7 @@ crise, como a C3 já faz.
 `data/definitions/economy/crisis.json` — todos **defaults de balanceamento**
 declarados (a spec não traz números observados; não há fonte pública de
 rescisão, deságio ou custo de hibernação por país). O espelho compilado fica em
-`sim/crisis.h` e o bloco `definitions.crisis` do save preserva o que foi
+`sim/crisis.h` e o bloco `crisis` de topo do save preserva o que foi
 aplicado. `set_crisis_params` sobrescreve. Na correção da usina entrou
 **`power_reserve_margin: 0,15`** (margem de reserva de pico da rede; o despacho
 E2/E3 não tinha uma, então é default declarado aqui — não é dado observado).

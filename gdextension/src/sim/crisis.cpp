@@ -706,7 +706,13 @@ void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
 	const double payroll = std::max(0.0, plant.jobs)
 		* std::max(0.0, plant.wage);
 	if (plant.mothballed) {
-		const double maintenance = payroll
+		// D-126: manutencao de hibernacao = `mothball_opex_share` (10%) do
+		// OPEX diario da usina (O&M por MWh x capacidade x 24 h), NAO da folha
+		// parada. A folha nao e' custo de hibernacao: sem producao nao ha salario
+		// proporcional, e a spec manda pagar o opex minimo.
+		const double daily_opex = std::max(0.0, plant.opex_per_mwh)
+			* std::max(0.0, plant.mw) * 24.0;
+		const double maintenance = daily_opex
 			* std::clamp(ws.crisis.mothball_opex_share, 0.0, 1.0);
 		const double paid = debit_plant_owner(ws, city, plant, maintenance);
 		if (paid > 0.0) {

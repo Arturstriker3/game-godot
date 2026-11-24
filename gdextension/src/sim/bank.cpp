@@ -843,8 +843,9 @@ int phase(WorldState& ws, double* bank_money_delta) {
 				group.credit_arrears = 0.0;
 				group.credit_arrears_days = 0;
 				group.credit_renegotiations += 1;
-				group.credit_rate_add += std::max(0.0,
-					ws.crisis.credit_rate_add);
+				// D-126: o premio `credit_rate_add` entra UMA vez, quando o
+				// credito de giro e' concedido (crisis::borrow_group). A
+				// renegociacao capitaliza a multa, mas nao soma o premio de novo.
 				ws.crisis_renegotiations += 1;
 				ws.crisis_penalty_paid += fee;
 			}
@@ -1028,8 +1029,9 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			city.firm_credit_arrears = 0.0;
 			city.firm_credit_default_days = 0;
 			city.firm_credit_renegotiations += 1;
-			city.firm_credit_rate_add += std::max(0.0,
-				ws.crisis.credit_rate_add);
+			// D-126: o premio `credit_rate_add` entra UMA vez, quando o credito
+			// de giro e' concedido (crisis::borrow_city). A renegociacao
+			// capitaliza a multa, mas nao soma o premio de novo.
 			ws.crisis_renegotiations += 1;
 		}
 		// Calote após a renegociação: o caixa é tomado e o resto é perda do
