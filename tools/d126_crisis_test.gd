@@ -68,6 +68,10 @@ func _test_credit() -> void:
 	var sim := _world()
 	if not _build(sim, "D126-CREDIT", 20.0, "flour", "wheat"):
 		return
+	# C4 (D-110): o credito de giro usa o banco que JA existe; sem banco na
+	# nacao nao ha credito (nunca se cria banco para emprestar). O fixture
+	# injeta capital no banco publico (transferencia conservada).
+	sim.set_bank_capital("DEMO", 1.0e6)
 	_tick(sim)
 	var money_before := _money(sim)
 	var result: Dictionary = sim.crisis_borrow("AGRIA", 500.0)
@@ -433,6 +437,10 @@ func _test_ai_ladder() -> void:
 	var drained: Dictionary = sim.to_dict()
 	_drain_private_cash(drained)
 	sim = _load(drained)
+	# C4: o degrau de credito exige banco existente. O save de teste nao inventa
+	# um; injetar capital (transferencia conservada) cria o banco publico antes
+	# da escada, mantendo "sem banco => M1 = M0" no mundo sem banco.
+	sim.set_bank_capital("DEMO", 1.0e6)
 	sim.crisis_set_stress("AGRIA", "D126-LAD", 30)
 	status = sim.crisis_step()
 	_check("(10) crédito de giro entra na escada (loss_days=30)",

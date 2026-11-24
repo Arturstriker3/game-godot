@@ -469,10 +469,11 @@ bool lend_city(WorldState& ws, const std::string& city_id, double amount,
 		}
 		return false;
 	}
-	Bank* bank = &ensure(ws, city->nation, kRolePublic);
-	if (bank->id.empty()) {
-		bank = &ensure(ws, city->nation);
-	}
+	// C4 (D-110): o credito de giro usa o banco PUBLICO que JA existe. Sem banco
+	// na nacao nao ha credito de giro: nunca se cria um banco para emprestar
+	// (isso quebraria "sem banco => M1 = M0"). A escada da crise pula para o
+	// proximo degrau (liquidar/hibernar/leilao).
+	Bank* bank = find_mut(ws, city->nation, kRolePublic);
 	if (bank == nullptr) {
 		if (error != nullptr) {
 			*error = "nacao sem banco publico";
