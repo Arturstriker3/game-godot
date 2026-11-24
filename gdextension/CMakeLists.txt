@@ -9,20 +9,30 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# godot-cpp: use -DGODOTCPP_DIR ou a variável de ambiente GODOTCPP_DIR.
-if(NOT DEFINED GODOTCPP_DIR)
-    if(DEFINED ENV{GODOTCPP_DIR})
-        set(GODOTCPP_DIR "$ENV{GODOTCPP_DIR}" CACHE PATH "Caminho do godot-cpp")
-    else()
-        message(FATAL_ERROR "Defina -DGODOTCPP_DIR=<pasta do godot-cpp> ou a variável de ambiente GODOTCPP_DIR.")
+# Testes unitários C++ do núcleo de simulação (FASE 2, docs/testing/cpp_unit_tests.md).
+# Compilam opengs_sim + doctest e NÃO dependem de godot-cpp. Para rodar só eles:
+#   cmake -S gdextension -B gdextension/build-unit-tests -G Ninja \
+#         -DOPENGS_BUILD_UNIT_TESTS=ON -DOPENGS_BUILD_EXTENSION=OFF
+option(OPENGS_BUILD_UNIT_TESTS "Compila o executável sim_unit_tests (núcleo C++, sem Godot)" OFF)
+# A DLL do Godot (godot-cpp) continua sendo o alvo padrão do projeto.
+option(OPENGS_BUILD_EXTENSION "Compila a DLL economy_gdextension (requer godot-cpp)" ON)
+
+if(OPENGS_BUILD_EXTENSION)
+    # godot-cpp: use -DGODOTCPP_DIR ou a variável de ambiente GODOTCPP_DIR.
+    if(NOT DEFINED GODOTCPP_DIR)
+        if(DEFINED ENV{GODOTCPP_DIR})
+            set(GODOTCPP_DIR "$ENV{GODOTCPP_DIR}" CACHE PATH "Caminho do godot-cpp")
+        else()
+            message(FATAL_ERROR "Defina -DGODOTCPP_DIR=<pasta do godot-cpp>, a variável de ambiente GODOTCPP_DIR, ou configure com -DOPENGS_BUILD_EXTENSION=OFF.")
+        endif()
     endif()
+    set(GODOTCPP_API_VERSION "4.7" CACHE STRING "Versão da API do Godot alvo")
+    add_subdirectory(
+        "${GODOTCPP_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}/godot-cpp"
+        EXCLUDE_FROM_ALL
+    )
 endif()
-set(GODOTCPP_API_VERSION "4.7" CACHE STRING "Versão da API do Godot alvo")
-add_subdirectory(
-    "${GODOTCPP_DIR}"
-    "${CMAKE_CURRENT_BINARY_DIR}/godot-cpp"
-    EXCLUDE_FROM_ALL
-)
 
 # ---------------------------------------------------------------------------
 # opengs_sim — o núcleo da simulação como biblioteca estática C++ pura (A1a).
@@ -93,6 +103,7 @@ set_target_properties(opengs_sim PROPERTIES
 # economy_gdextension — a DLL do Godot: registra a classe e faz a ponte de
 # tipos (edge/). O resto (sim/) vem de opengs_sim.
 # ---------------------------------------------------------------------------
+if(OPENGS_BUILD_EXTENSION)
 add_library(economy_gdextension SHARED
     src/register_types.cpp
     src/economy_sim.cpp
@@ -138,6 +149,7 @@ set_target_properties(economy_gdextension PROPERTIES
 if(MINGW)
     target_link_options(economy_gdextension PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
+endif() # OPENGS_BUILD_EXTENSION
 
 # ---------------------------------------------------------------------------
 # opengs_sim_cli — executável headless (A1): roda N dias SÓ do núcleo a partir
@@ -158,3 +170,49 @@ set_target_properties(opengs_sim_cli PROPERTIES
 if(MINGW)
     target_link_options(opengs_sim_cli PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
+
+# ---------------------------------------------------------------------------
+# sim_unit_tests — testes unitários do núcleo em Milissegundos (FASE 2).
+# Header-only doctest (MIT, gdextension/third_party/doctest) + opengs_sim.
+# Nada de godot-cpp: o alvo compila e roda no headless da máquina.
+# Documentação (compilar, rodar, fixture, teste novo):
+# docs/testing/cpp_unit_tests.md.
+# ---------------------------------------------------------------------------
+if(OPENGS_BUILD_UNIT_TESTS)
+    add_executable(sim_unit_tests
+        tests/main.cpp
+        tests/pocket_world.cpp
+        tests/test_bank.cpp
+        tests/test_efficiency.cpp
+        tests/test_mass_balance.cpp
+        tests/test_roundtrip.cpp
+        tests/test_determinism.cpp
+        tests/test_crisis.cpp
+    )
+
+    target_link_libraries(sim_unit_tests PRIVATE opengs_sim)
+
+    target_include_directories(sim_unit_tests PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests"
+        "${CMAKE_CURRENT_SOURCE_DIR}/third_party"
+    )
+
+    # A fixture (tests/fixtures/pocket_world.json) é lida do worktree em
+    # runtime; o caminho é fixado na compilação para o teste rodar de
+    # qualquer diretório.
+    target_compile_definitions(sim_unit_tests PRIVATE
+        OPENGS_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+        OPENGS_REPO_DIR="${CMAKE_CURRENT_SOURCE_DIR}/.."
+    )
+
+    set_target_properties(sim_unit_tests PROPERTIES
+        CXX_EXTENSIONS OFF
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    )
+
+    # Runtime C++ estático no MinGW: o .exe roda sem libstdc++/libgcc ao lado.
+    if(MINGW)
+        target_link_options(sim_unit_tests PRIVATE -static -static-libgcc -static-libstdc++)
+    endif()
+endif()
+

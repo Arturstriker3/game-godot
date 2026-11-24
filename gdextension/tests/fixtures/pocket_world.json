@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "id": "pocket_world",
+    "purpose": "Mundo de bolso dos testes unitarios C++ (FASE 2). NAO e dado de jogo: 1 nacao, 2 cidades, poucos bens/receitas. Os numeros de producao seguem as decisoes D-125/D-127; os precos so existem para o mercado nao ser zero.",
+    "docs": "docs/testing/cpp_unit_tests.md"
+  },
+  "products": {
+    "count": 12,
+    "names": [
+      "wheat", "timber", "planks", "sawdust", "oil", "gasoline",
+      "diesel", "jet_fuel", "ethanol", "ammo", "chip", "meat"
+    ],
+    "base_prices": [40, 30, 60, 15, 55, 45, 45, 70, 35, 200, 400, 90],
+    "sectors": [
+      "agriculture", "wood", "wood", "wood", "primary", "energy",
+      "energy", "energy", "energy", "military", "electronics", "agriculture"
+    ],
+    "durable": [false, false, false, false, false, false, false, false, false, false, false, false]
+  },
+  "recipes": [
+    {
+      "id": "planks",
+      "output": "planks",
+      "yield": 0.55,
+      "input_count": 1,
+      "inputs": [{"product": "timber", "qty": 1.0}],
+      "byproduct_count": 1,
+      "byproducts": [{"product": "sawdust", "qty": 0.12}],
+      "co_loss": 0.33,
+      "note": "D-127: 1 t de tora -> 0,55 t de tabua + 0,12 t de serragem + 0,33 t de perda declarada."
+    },
+    {
+      "id": "gasoline_a",
+      "output": "gasoline",
+      "yield": 0.45,
+      "input_count": 1,
+      "inputs": [{"product": "oil", "qty": 1.0}],
+      "byproduct_count": 2,
+      "byproducts": [
+        {"product": "diesel", "qty": 0.29},
+        {"product": "jet_fuel", "qty": 0.09}
+      ],
+      "co_loss": 0.17,
+      "note": "D-125: refino de PETROLEO (saida gasolina + insumo oil). Modo padrao 45/29/9."
+    },
+    {
+      "id": "gasoline_b",
+      "output": "gasoline",
+      "yield": 0.75,
+      "input_count": 1,
+      "inputs": [{"product": "ethanol", "qty": 1.0}],
+      "byproduct_count": 0,
+      "byproducts": [],
+      "note": "Etanol: NAO e refinaria (mesmo com id/prefixo de gasolina)."
+    },
+    {
+      "id": "ammo",
+      "output": "ammo",
+      "yield": 1.0,
+      "input_count": 1,
+      "inputs": [{"product": "timber", "qty": 1.0}],
+      "byproduct_count": 0,
+      "byproducts": [],
+      "note": "Setor military: transicao de 14 dias."
+    },
+    {
+      "id": "chip",
+      "output": "chip",
+      "yield": 1.0,
+      "input_count": 1,
+      "inputs": [{"product": "oil", "qty": 0.1}],
+      "byproduct_count": 0,
+      "byproducts": [],
+      "note": "Setor electronics: transicao de 30 dias."
+    }
+  ],
+  "cities": [
+    {
+      "id": "AGRA",
+      "name": "Agria",
+      "nation": "AAA",
+      "landmass": "L1",
+      "population": 1000000,
+      "simulation_population": 1000000
+    },
+    {
+      "id": "PORTUS",
+      "name": "Portus",
+      "nation": "AAA",
+      "landmass": "L1",
+      "population": 500000,
+      "simulation_population": 500000
+    }
+  ],
+  "buildings": [
+    {
+      "id": "AGRA_FARM",
+      "city": "AGRA",
+      "output": "wheat",
+      "capacity": 10.0,
+      "owner": "private"
+    },
+    {
+      "id": "PORTUS_SAWMILL",
+      "city": "PORTUS",
+      "recipe": "planks",
+      "output": "planks",
+      "capacity": 5.0,
+      "owner": "national:AAA_WOOD"
+    },
+    {
+      "id": "PORTUS_REFINERY",
+      "city": "PORTUS",
+      "recipe": "gasoline_a",
+      "output": "gasoline",
+      "capacity": 5.0,
+      "owner": "national:AAA_FUEL"
+    }
+  ],
+  "groups": [
+    {
+      "id": "AAA_WOOD",
+      "name": "AAA Wood",
+      "origin_nation": "AAA",
+      "sector": "wood",
+      "cash": 1000.0
+    },
+    {
+      "id": "AAA_FUEL",
+      "name": "AAA Fuel",
+      "origin_nation": "AAA",
+      "sector": "energy",
+      "cash": 1000.0
+    }
+  ]
+}
