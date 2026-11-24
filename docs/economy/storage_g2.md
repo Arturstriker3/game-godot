@@ -151,8 +151,12 @@ que construir — comportamento esperado, não bug.
   produto, pulmão). **Aditivo**: v24 → v25 mantém tudo e o bloco nasce vazio;
   o `StorageService` reaplica a capacidade do **dado** (`only_missing`), sem
   inventar tonelada.
-- `StorageService`, no load, roda com `only_missing: true` e **sem semente** de
-  reserva: o que veio no save manda (inclusive o que a IA construiu).
+- `StorageService` foi escrito para rodar no load com `only_missing: true` e
+  **sem semente** de reserva (o que veio no save manda, inclusive o que a IA
+  construiu), mas esse hook **ainda não está ligado**: `Economy.refresh_storage()`
+  (`core/economy/economy.gd`) não tem chamador e o jogo não tem save/load em
+  disco (`GAME_STATE.md`). Hoje o caminho existe e está coberto pelo teste; o
+  load real da partida ainda não passa por ele.
 - Efeito nos goldens S0: `status_sha256` **idêntico**; só o `save_sha256` muda,
   pelo bloco vazio v25 (ver §8).
 
@@ -182,9 +186,13 @@ calibração de preço nem em esconder o número:
 1. **Reserva só do excedente, e só com comida segura** (§5): o governo deixou
    de comprar do estoque total do mercado e passou a comprar do `surplus`
    (estoque acima de 3 dias de demanda), apenas com satisfação ≥ 0,95, e a
-   liberar o guardado onde falta. 91 → 88.
+   liberar o guardado onde falta.
 2. **Pulmão não desvia safra de cidade abaixo do piso** (§5): a colheita de
-   quem está com déficit vai direto ao mercado. 88 → 85.
+   quem está com déficit vai direto ao mercado.
+
+As duas entraram juntas na rodada final: **91 → 85**. (Uma medição intermediária
+das duas regras separadas deu 88, mas não foi guardada como artefato; o número
+que vale é o de `_final.json`.)
 
 **Resultado honesto: 85/179, um acima da meta de 84.** As nações que ainda
 entraram no portão nesta rodada são NOR, CRI, DMA, PER, GRD, LCA e MEX (7), e
@@ -254,12 +262,28 @@ silo, então o grão fica no mercado. A IA construiu **5.252 t** de capacidade
 
 A sazonalidade **continua pequena** (o mesmo diagnóstico da D-097): o estoque
 inicial de 937,9 Mt satura o mercado no primeiro ano e o preço fica perto da
-base. A armazenagem criou uma oscilação nova no **trigo do sul** (3,05 %, antes
-0,5 %) e no **arroz do sul** (3,76 %), mas nada comparável a uma entressafra
-real. Milho, soja e batata não têm preço amostrado fora da base. A conclusão
-segue a da D-097: enquanto o estoque do dia 1 não for recalibrado, a
-sazonalidade não aparece na média do ano; a sonda sem estoque inicial é o
-instrumento para medir o mecanismo.
+base. A armazenagem criou uma oscilação nova no **trigo do sul** (1,9 %, antes
+0,5 %) e no **arroz do sul** (4,3 %), mas nada comparável a uma entressafra
+real. Milho e batata não têm preço amostrado fora da base. A conclusão segue a
+da D-097: enquanto o estoque do dia 1 não for recalibrado, a sazonalidade não
+aparece na média do ano; a sonda sem estoque inicial é o instrumento para medir
+o mecanismo. Os números desta tabela são a razão ao preço-base da evidência
+final (`g2_world_ai_365_d101_final.json`); a 1ª rodada
+(`g2_world_ai_365_d101.json`) trazia outro mundo (sem as regras de comida) e
+media em pontos percentuais máx−mín: trigo do sul 3,04 p.p. e arroz 3,76 p.p.
+
+**Dois anos (730 d): não medido nesta parte.** O harness aceita `--days=730`
+pelo mesmo caminho (`g2_world_ai_365.gd`), mas no fechamento a máquina tinha
+outra bateria de testes com o lock de `run_tests.ps1` ativo, e a regra é **um
+Godot de teste por vez**. O 1º ano já mostra que o **estoque inicial de
+937,9 Mt domina** a média; o 2º ano é o que deve mostrar o ciclo (enchimento do
+pulmão + entressafra) com o estoque do dia 1 absorvido. Quando a máquina
+estiver livre (sem lock), rodar 1 Godot `--headless`:
+
+```powershell
+godot --headless --path . --script res://tools/g2_world_ai_365.gd -- `
+    --days=730 --out=res://docs/economy/perf/g2_world_ai_730_d101.json
+```
 
 ## 8. Testes, goldens e equivalência
 
@@ -272,7 +296,10 @@ instrumento para medir o mecanismo.
   save v25 + migração v24→v25 e o bloco (8) da regra nova: **ilha faminta não
   perde comida para o silo do governo** (45 d com satisfação < 0,95: 0 compra,
   silo sem crescer) e **a reserva libera onde falta** (100 t → mercado em 10 d,
-  sem pagamento). O helper de satisfação do teste lia o padrão 1,0 (a ficha da
+  sem pagamento). O bloco (8) prova a regra **composta** (excedente + piso de
+  comida): numa cidade faminta o `Market::surplus` já é ~0, então ele não
+  isola o piso sozinho; a prova do piso é a construção (o teste das duas
+  condições no mesmo `if`) e a liberação, que só dispara abaixo de 0,95. O helper de satisfação do teste lia o padrão 1,0 (a ficha da
   cidade não tem o campo solto, tem o bloco `pop`); corrigido, o cenário (5)
   virou um mundo em paz de verdade (PORTUS menor) e a checagem de "não causar
   fome" passou a valer contra a mesma cidade **sem** IA.
