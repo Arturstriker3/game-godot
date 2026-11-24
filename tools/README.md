@@ -3,6 +3,28 @@
 Esta pasta é ferramenta de desenvolvimento; nada aqui é conteúdo do jogo. O
 teste canônico é `tools/run_tests.ps1` (ver o cabeçalho do arquivo).
 
+## Validação em camadas
+
+Antes do merge, use `-Tier quick` ou `-Tier pr`; a bateria completa é noturna.
+O mapa `caminho alterado -> testes` e as sentinelas ficam em
+`tools/test_impact_map.json`; detalhes, medição e propostas em
+`docs/testing/tiers.md`.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_tests.ps1 -Tier pr
+powershell ... -Tier quick -DryRun
+powershell ... -Tier nightly
+```
+
+- `quick` = testes impactados pelo diff + sentinelas baratas.
+- `pr` = quick + rodada c1 de 90 dias com digest.
+- `nightly` = `-All` + rodada c1 de 365 dias.
+- `-Base <ref>` escolhe a referência do diff (padrão `balance/global-resources`).
+- `-Parallel N` (padrão 3) só vale para as checagens de CLI (`cli_checks`), nunca
+  para Godot. Hoje a lista está vazia; o porquê está em `docs/testing/tiers.md`.
+- `-All` sem `-Tier` mantém o comportamento antigo.
+
+
 ## Arquivos temporários de teste → `G:\opengs_tmp`
 
 Regra do projeto: **nenhum artefato grande de teste no C:**. Runs, lock, logs,

@@ -468,7 +468,7 @@ function Get-ChangedFiles {
     foreach ($f in $files) {
         $p = ([string]$f) -replace '\\', '/'
         if ($p -match '(^\.godot/|\.uid$|\.import$|\.tmp$|\.log$)') { continue }
-        if ($p -match '^gdextension/[Bb]in/') { continue }
+        if ($p -match '^gdextension/([Bb]in|build[^/]*)/') { continue }
         $clean += $p
     }
     return @($clean | Sort-Object -Unique)
@@ -507,9 +507,11 @@ function Get-ImpactSelection {
         }
         foreach ($n in $matched) {
             if (-not $n) { continue }
-            if (-not $names.Contains($n)) { [void]$names.Add($n) }
-            if (-not $reasons.Contains($n)) { $reasons[$n] = @() }
-            if (-not ($reasons[$n] -contains $p)) { $reasons[$n] = @($reasons[$n]) + $p }
+            $key = [string]$n
+            if ($key -eq "ALL") { $key = "__ALL__" }
+            if (-not $names.Contains($key)) { [void]$names.Add($key) }
+            if (-not $reasons.Contains($key)) { $reasons[$key] = @() }
+            if (-not ($reasons[$key] -contains $p)) { $reasons[$key] = @($reasons[$key]) + $p }
         }
     }
     return [pscustomobject]@{
@@ -1235,7 +1237,7 @@ function Invoke-Main {
         $script:SelectionNeedsNightly = $impact.NeedsNightly
 
         $impactNames = @($impact.Names)
-        $allRequested = ($tierMode -eq "nightly") -or ($impactNames -contains "ALL") -or $All
+        $allRequested = ($tierMode -eq "nightly") -or ($impactNames -contains "__ALL__") -or $All
         if ($allRequested) {
             $selected = @($catalog | Where-Object { $_.Mode -ne "skip" })
         } else {
@@ -1249,7 +1251,7 @@ function Invoke-Main {
                 $merged = @()
                 $missing = @()
                 foreach ($n in $impactNames) {
-                    if ($n -eq "ALL") { continue }
+                    if ($n -eq "ALL" -or $n -eq "__ALL__") { continue }
                     if ($byName.ContainsKey($n)) { $merged += $byName[$n] } else { $missing += $n }
                 }
                 if ($missing.Count -gt 0) {
