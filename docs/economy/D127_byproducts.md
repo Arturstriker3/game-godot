@@ -125,10 +125,51 @@ save não muda (é leitura de `recipes.json` no início).
   `tools/production_template_test.gd`, `tools/f0_fuels_test.gd` → ver §7.
 - Rodada 365 com `--control=res://docs/economy/perf/c6_gate_base.json` → ver §7.
 
-## 7. Resultados dos testes
+## 7. Resultados dos testes (24/11/2026)
 
-_(preenchido após a bateria de Godot; alvo: falências ≤ 2–3, comida ≤ 97/179,
-0 violações e 0 travados)_
+Worktree `opengs-wt-d127`, após o merge de `balance/global-resources`
+(`fa788c55` = F0 + D-125; DLL debug reconstruída do fonte na própria worktree,
+`--headless --import` exit 0).
+
+| teste | resultado |
+| --- | --- |
+| `tools/d127_byproducts_test.gd` (novo) | **verde** — 114 receitas sem criar massa; 3 receitas com subproduto/perda fechando exato; serraria 0,55 + 0,12 + 0,33; serragem 2,2:1 e 1,15:1; 115 bens = spec; runtime 0,12/0,55 |
+| `production_chain_test` | OK |
+| `production_template_test` | PASS |
+| `price_formation_test` | OK (piso de custo 600/648) |
+| `d125_efficiency_test` | OK (rampa, modos, save v40, determinismo) |
+| `f0_fuels_test` | OK (45/29/9, frota, migração v39) |
+| `economy_save_load_roundtrip_test` | OK (save/status idênticos, 0 diffs) |
+| `market_template_test` | PASS (115 bens, moedas, ofertas) |
+| `python tools/build_goods_chain.py check` | 0 problemas |
+
+Rodada 365 (`c1_world_ai_365.gd --control=res://docs/economy/perf/c6_gate_base.json`,
+365 s, 1 thread, JSON em `G:/opengs_tmp/c1_world_ai_365.json`):
+
+- **falências 4**, **comida 94/179** (mediana 0,9727), **0 violações**, 0 travados,
+  drift 0,005618, digest `01b835ea`.
+- Falências: as 2 do controle (`pri_pon_copper_mine` e `pri_pon_iron_mine`, dia
+  126), `chl_san_wheat` (dia 153) e `mlt_val_wheat` (dia 154).
+- **A/B na mesma branch, só com o dado anterior** (`6caae697`: `goods.json` +
+  `recipes.json` antigos trocados no lugar): **3 falências** (as 2 PRI-PON +
+  `chl_san_wheat`), **comida 92/179**, drift 0,005610, digest `6ae5b3e8` — o
+  mesmo da D-125. Portanto: (a) o merge de F0/D-125 está limpo (o dado anterior
+  reproduz a rodada da D-125 bit a bit); (b) a 3ª falência da D-125 é a
+  `chl_san_wheat`, não a `mlt_val_wheat` como a linha D-125 registrou; (c) o
+  dado D-127 **acrescenta** exatamente uma falência, a `mlt_val_wheat`.
+
+**Portão de falências da spec (≤3) NÃO atendido — por 1, e não foi amolecido.**
+`mlt_val_wheat` fecha por insolvência bancária com `loss_days=0`, receita 0,
+`power_ration_days=153` (de 153 dias) e energia no teto de preço (1,658); é a
+fazenda isolada que a D-124/D-125 já descrevem como marginal, que perde a
+última venda quando o custo real da cadeia alimentar (farinha/pão +33%, ração
++33%) encolhe a demanda. O preço específico responsável **não foi isolado** por
+A/B de preço único — o efeito é da cadeia, e o caminho para fechar o portão é
+decisão de balanceamento (Game Systems Designer), não de dado inventado: ou o
+dono aceita 4 falências, ou se mexe na regra de preço derivado (por exemplo
+creditar o valor do subproduto no preço do pai, que hoje cobra a tora inteira só
+da tábua e depois vende a serragem a 10% dessa tábua), ou se revisa a planta
+marginal isolada.
 
 ## 8. Riscos e regressões a observar
 
