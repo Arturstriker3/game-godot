@@ -26,6 +26,21 @@
 #   ... -TimeoutOverrides "economy_long_run_test=3600,world_equivalence_test=1800"
 #   ... -TmpRoot "G:\opengs_tmp"
 #
+# Layered validation (pre-merge gate):
+#   ... -Tier quick                 # testes impactados pelo diff + sentinelas baratas
+#   ... -Tier pr                    # quick + rodada c1 de 90 dias com digest
+#   ... -Tier nightly               # -All + rodada c1 de 365 dias
+#   ... -Tier quick -Base main      # diff contra outra ref (padrao: balance/global-resources)
+#   ... -Tier quick -DryRun         # so mostra o que rodaria (nao pega lock, nao abre Godot)
+#   ... -Parallel 3                 # checagens de CLI em paralelo (nunca Godot; padrao 3)
+# -Tier usa tools/test_impact_map.json (caminho alterado -> testes) e sempre inclui as
+# sentinelas declaradas la. -List/-Pattern continuam funcionando e, com -Tier, sao somados
+# as sentinelas. -All sem -Tier mantem exatamente o comportamento antigo.
+# Mudar a propria infra de testes (tools/run_tests.ps1, tools/test_impact_map.json,
+# tools/tmp_paths.gd) invalida a selecao: o mapa manda rodar a bateria inteira (-All).
+# Qualquer arquivo em gdextension/src/ seleciona o conjunto amplo de nucleo (core_set)
+# e imprime o aviso de -Tier nightly antes do merge.
+#
 # Exit codes:
 #   0 all green
 #   1 at least one FAIL / CRASH / TIMEOUT
@@ -53,6 +68,11 @@ param(
     [string]$ProjectRoot = "",
     [string]$TmpRoot = "G:\opengs_tmp",
     [string]$OutDir = "",
+    [string]$Tier = "",
+    [string]$Base = "balance/global-resources",
+    [string]$ImpactMap = "",
+    [int]$Parallel = 3,
+    [switch]$DryRun,
     [switch]$KeepLogs
 )
 
@@ -69,6 +89,11 @@ $script:OutDir = ""
 $script:LogDir = ""
 $script:Results = @()
 $script:SystemDiskWarned = $false
+$script:BaseRef = ""
+$script:ChangedFiles = @()
+$script:SelectionReasons = [ordered]@{}
+$script:SelectionNeedsNightly = $false
+$script:ImpactMapPath = ""
 
 # ---------------------------------------------------------------------------
 # Small helpers
@@ -349,6 +374,316 @@ function Select-Tests {
         return $picked
     }
     return @($Catalog)
+}
+
+# ---------------------------------------------------------------------------
+# Layered selection (-Tier quick|pr|nightly): git diff -> impact map -> tests
+# ---------------------------------------------------------------------------
+
+function Get-TierRank([string]$Name) {
+    switch ($Name) {
+        "quick" { return 0 }
+        "pr" { return 1 }
+        "nightly" { return 2 }
+        default { return -1 }
+    }
+}
+
+# test_sets may reference other sets by name (e.g. core_set -> broad_economy).
+function Expand-TestNames {
+    param($Map, [string[]]$Tokens)
+    $out = New-Object System.Collections.Generic.List[string]
+    $seen = New-Object System.Collections.Generic.HashSet[string]
+    $guard = New-Object System.Collections.Generic.HashSet[string]
+    $queue = New-Object System.Collections.Generic.Queue[string]
+    foreach ($t in $Tokens) {
+        if ($t) { $queue.Enqueue([string]$t) }
+    }
+    while ($queue.Count -gt 0) {
+        $tok = $queue.Dequeue()
+        if ($tok -eq "ALL") {
+            if (-not $seen.Contains($tok)) { [void]$seen.Add($tok); [void]$out.Add($tok) }
+            continue
+        }
+        $isSet = $false
+        if ($Map.test_sets) {
+            $isSet = ($Map.test_sets.PSObject.Properties.Name -contains $tok)
+        }
+        if ($isSet) {
+            if ($guard.Contains($tok)) { continue }
+            [void]$guard.Add($tok)
+            foreach ($sub in @($Map.test_sets.$tok)) {
+                if ($sub) { $queue.Enqueue([string]$sub) }
+            }
+            continue
+        }
+        if (-not $seen.Contains($tok)) {
+            [void]$seen.Add($tok)
+            [void]$out.Add($tok)
+        }
+    }
+    return @($out)
+}
+
+# Changed paths = committed since <Base> + working tree (staged/unstaged) + untracked.
+# A missing base falls back to HEAD with a warning instead of aborting.
+function Get-ChangedFiles {
+    param([string]$Root, [string]$BaseRef)
+    $files = New-Object System.Collections.Generic.List[string]
+    $baseUsed = $BaseRef
+    $baseOk = $false
+    # Native stderr goes to a file (not $null): on Windows git prints CRLF
+    # normalization warnings, and with $ErrorActionPreference=Stop a redirected
+    # native stderr line can abort/blank the whole pipeline in PowerShell 5.1.
+    $errRoot = $script:TmpRoot
+    if (-not $errRoot) { $errRoot = $env:TEMP }
+    $errFile = Join-Path $errRoot ("opengs_git_" + $PID + ".err")
+    # Native stderr (git CRLF warnings on Windows) must not become a terminating
+    # error: with $ErrorActionPreference=Stop, PS 5.1 aborts the pipeline and the
+    # diff output is lost. Continue locally and send stderr to a file.
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $null = & git -C $Root rev-parse --verify --quiet ("{0}^{{commit}}" -f $BaseRef) 2> $errFile
+        if ($LASTEXITCODE -eq 0) { $baseOk = $true }
+    } catch {
+        $baseOk = $false
+    }
+    if (-not $baseOk) {
+        Write-Host "[tier] base '$BaseRef' nao encontrada; usando HEAD."
+        $baseUsed = "HEAD"
+    }
+    try {
+        foreach ($f in @(& git -C $Root diff --name-only $baseUsed -- 2> $errFile)) {
+            if ($f) { $files.Add([string]$f) }
+        }
+    } catch {
+    }
+    try {
+        foreach ($f in @(& git -C $Root ls-files --others --exclude-standard 2> $errFile)) {
+            if ($f) { $files.Add([string]$f) }
+        }
+    } catch {
+    }
+    $ErrorActionPreference = $prevEap
+    Remove-Item -LiteralPath $errFile -Force -ErrorAction SilentlyContinue
+    # Godot import artifacts (.uid/.import/.godot) are noise for impact selection.
+    $clean = @()
+    foreach ($f in $files) {
+        $p = ([string]$f) -replace '\\', '/'
+        if ($p -match '(^\.godot/|\.uid$|\.import$|\.tmp$|\.log$)') { continue }
+        if ($p -match '^gdextension/([Bb]in|build[^/]*)/') { continue }
+        $clean += $p
+    }
+    return @($clean | Sort-Object -Unique)
+}
+
+# First matching rule wins. A tools/<name>_test.gd change selects that test.
+# No match (or a tools/ helper) falls back to default_tests, except when a rule
+# matched on purpose with an empty list (helper-only change).
+function Get-ImpactSelection {
+    param($Map, [string[]]$Changed)
+    $names = New-Object System.Collections.Generic.List[string]
+    $reasons = [ordered]@{}
+    $needsNightly = $false
+    $coreTouched = $false
+    foreach ($raw in $Changed) {
+        $p = ([string]$raw).Trim()
+        if (-not $p) { continue }
+        $p = $p -replace '\\', '/'
+        # Any C++/core source under gdextension/src/ earns an explicit nightly hint.
+        if ($p -match '^gdextension/src/') { $coreTouched = $true }
+        $matched = @()
+        $ruleMatched = $false
+        if ($p -match '^tools/([A-Za-z0-9_]+)_test\.(gd|tscn)$') {
+            $matched = @($Matches[1])
+            $ruleMatched = $true
+        } else {
+            foreach ($rule in @($Map.rules)) {
+                if (-not $rule.match) { continue }
+                if ($p -match $rule.match) {
+                    $ruleMatched = $true
+                    $matched = @(Expand-TestNames -Map $Map -Tokens @($rule.tests))
+                    if ($rule.requires_nightly) { $needsNightly = $true }
+                    break
+                }
+            }
+        }
+        if (-not $ruleMatched) {
+            $matched = @(Expand-TestNames -Map $Map -Tokens @($Map.default_tests))
+        }
+        foreach ($n in $matched) {
+            if (-not $n) { continue }
+            $key = [string]$n
+            if ($key -eq "ALL") { $key = "__ALL__" }
+            if (-not $names.Contains($key)) { [void]$names.Add($key) }
+            if (-not $reasons.Contains($key)) { $reasons[$key] = @() }
+            if (-not ($reasons[$key] -contains $p)) { $reasons[$key] = @($reasons[$key]) + $p }
+        }
+    }
+    return [pscustomobject]@{
+        Names = @($names)
+        Reasons = $reasons
+        NeedsNightly = $needsNightly
+        CoreTouched = $coreTouched
+    }
+}
+
+function Read-ImpactMap([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "mapa de impacto nao encontrado: $Path"
+    }
+    $raw = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+    $map = $raw | ConvertFrom-Json
+    if ($null -eq $map.rules) { throw "mapa de impacto invalido (sem 'rules'): $Path" }
+    return $map
+}
+
+# ---------------------------------------------------------------------------
+# CLI checks: the only parallel path. Never starts Godot.
+# ---------------------------------------------------------------------------
+
+function Get-CliChecks {
+    param($Map, [string]$TierName)
+    $tierRank = Get-TierRank $TierName
+    if ($tierRank -lt 0 -or -not $Map.cli_checks) { return @() }
+    return @($Map.cli_checks | Where-Object {
+        (Get-TierRank ([string]$_.tier)) -le $tierRank
+    })
+}
+
+function Invoke-CliChecks {
+    param($Checks, [int]$MaxParallel, [string]$Root)
+    $records = @()
+    if (-not $Checks -or $Checks.Count -eq 0) {
+        Write-Host "[cli] nenhuma checagem de CLI para este tier."
+        return @()
+    }
+    $runnable = @()
+    foreach ($c in $Checks) {
+        $missing = @()
+        foreach ($req in @($c.requires)) {
+            if (-not $req) { continue }
+            $full = Join-Path $Root ([string]$req)
+            if (-not (Test-Path -LiteralPath $full)) { $missing += [string]$req }
+        }
+        if ($missing.Count -gt 0) {
+            $records += [ordered]@{
+                name = [string]$c.name
+                mode = "cli"
+                res_path = ""
+                status = "SKIP"
+                exit_code = $null
+                exit_hex = ""
+                duration_s = 0
+                log_out = ""
+                log_err = ""
+                tail_out = @()
+                tail_err = @("requer ausente: " + ($missing -join ", "))
+            }
+            Write-Host ("[skip]  {0}: requer ausente ({1})" -f $c.name, ($missing -join ", "))
+            continue
+        }
+        $runnable += $c
+    }
+    if ($runnable.Count -eq 0) { return @($records) }
+
+    $max = [math]::Max(1, $MaxParallel)
+    Write-Host ("[cli] {0} checagem(ns), paralelismo {1} (sem Godot)." -f $runnable.Count, $max)
+    $prevOpenGsTmp = $env:OPENGS_TMP
+    $env:OPENGS_TMP = $script:TmpRoot
+    try {
+        for ($i = 0; $i -lt $runnable.Count; $i += $max) {
+            $batch = @($runnable[$i..([math]::Min($i + $max - 1, $runnable.Count - 1))])
+            $procs = @()
+            foreach ($c in $batch) {
+                $name = [string]$c.name
+                $outLog = Join-Path $script:LogDir "$name.out.log"
+                $errLog = Join-Path $script:LogDir "$name.err.log"
+                $cmd = [string]$c.command
+                $argList = @()
+                foreach ($a in @($c.args)) { if ($null -ne $a) { $argList += (Quote-Arg ([string]$a)) } }
+                $started = Get-Date
+                try {
+                    $proc = Start-Process -FilePath $cmd -ArgumentList $argList `
+                        -WorkingDirectory $Root -RedirectStandardOutput $outLog `
+                        -RedirectStandardError $errLog -NoNewWindow -PassThru -ErrorAction Stop
+                    $null = $proc.Handle
+                    $procs += [pscustomobject]@{
+                        Check = $c; Proc = $proc; Started = $started
+                        OutLog = $outLog; ErrLog = $errLog
+                        TimeoutSec = $(if ($c.timeout_s) { [int]$c.timeout_s } else { 300 })
+                    }
+                } catch {
+                    $records += [ordered]@{
+                        name = $name
+                        mode = "cli"
+                        res_path = ""
+                        status = "FAIL"
+                        exit_code = $null
+                        exit_hex = "start-error"
+                        duration_s = [math]::Round(((Get-Date) - $started).TotalSeconds, 2)
+                        log_out = $outLog
+                        log_err = $errLog
+                        tail_out = @()
+                        tail_err = @([string]$_.Exception.Message)
+                    }
+                    Write-Host ("[fail]  {0} (start-error)" -f $name)
+                }
+            }
+            foreach ($p in $procs) {
+                $deadline = $p.Started.AddSeconds($p.TimeoutSec)
+                $timedOut = $false
+                while (-not $p.Proc.HasExited) {
+                    if ((Get-Date) -ge $deadline) { $timedOut = $true; break }
+                    Start-Sleep -Milliseconds 250
+                }
+                if ($timedOut) {
+                    Stop-ProcessTree -RootPid $p.Proc.Id
+                }
+                $code = $null
+                if (-not $timedOut) {
+                    try { $code = $p.Proc.ExitCode } catch { }
+                    if ($null -eq $code) { try { $p.Proc.Refresh(); $code = $p.Proc.ExitCode } catch { } }
+                }
+                try { $p.Proc.Dispose() } catch { }
+                $status = "FAIL"
+                if ($timedOut) {
+                    $status = "TIMEOUT"
+                } elseif ($null -ne $code -and $code -eq 0) {
+                    $status = "OK"
+                }
+                $rec = [ordered]@{
+                    name = [string]$p.Check.name
+                    mode = "cli"
+                    res_path = ""
+                    status = $status
+                    exit_code = $code
+                    exit_hex = ""
+                    duration_s = [math]::Round(((Get-Date) - $p.Started).TotalSeconds, 2)
+                    log_out = $p.OutLog
+                    log_err = $p.ErrLog
+                    tail_out = @()
+                    tail_err = @()
+                }
+                if ($null -ne $code) { $rec.exit_hex = Get-ExitCodeHex -code ([int]$code) }
+                if ($timedOut) { $rec.exit_hex = "timeout" }
+                if ($status -ne "OK") {
+                    $rec.tail_out = Get-LogTail -Path $p.OutLog
+                    $rec.tail_err = Get-LogTail -Path $p.ErrLog
+                }
+                $records += $rec
+                Write-Host ("[{0,-7}] {1} (cli) {2}s" -f $status.ToLower(), $rec.name, $rec.duration_s)
+            }
+        }
+    } finally {
+        if ($null -eq $prevOpenGsTmp) {
+            Remove-Item Env:\OPENGS_TMP -ErrorAction SilentlyContinue
+        } else {
+            $env:OPENGS_TMP = $prevOpenGsTmp
+        }
+    }
+    return @($records)
 }
 
 # ---------------------------------------------------------------------------
@@ -671,6 +1006,16 @@ function Invoke-TestRun {
     $godotArgs = @("--headless", "--disable-crash-handler", "--path", (Quote-Arg $script:Root))
     if ($Test.Mode -eq "script") {
         $godotArgs += @("--script", (Quote-Arg $Test.ResPath))
+    } elseif ($Test.Mode -eq "run") {
+        $godotArgs += @("--script", (Quote-Arg $Test.ResPath))
+        $runArgs = @()
+        if ($Test.PSObject.Properties.Name -contains "Args") {
+            foreach ($a in @($Test.Args)) { if ($null -ne $a) { $runArgs += [string]$a } }
+        }
+        if ($runArgs.Count -gt 0) {
+            $godotArgs += @("--")
+            foreach ($a in $runArgs) { $godotArgs += (Quote-Arg $a) }
+        }
     } else {
         $godotArgs += @((Quote-Arg $Test.ResPath))
     }
@@ -785,6 +1130,10 @@ function Write-Summary {
         $writer.Write(',"godot":' + (ConvertTo-Json -InputObject $script:GodotExe -Compress))
         $writer.Write(',"started_at":' + (ConvertTo-Json -InputObject $StartedAt -Compress))
         $writer.Write(',"finished_at":' + (ConvertTo-Json -InputObject ((Get-Date).ToString("o")) -Compress))
+        $writer.Write(',"tier":' + (ConvertTo-Json -InputObject $script:Tier -Compress))
+        $writer.Write(',"base":' + (ConvertTo-Json -InputObject $script:BaseRef -Compress))
+        $writer.Write(',"changed_files":' + (ConvertTo-Json -InputObject @($script:ChangedFiles) -Compress -Depth 4))
+        $writer.Write(',"selection":' + (ConvertTo-Json -InputObject $script:SelectionReasons -Compress -Depth 5))
         $writer.Write(',"aborted":' + (ConvertTo-Json -InputObject $Aborted -Compress))
         $writer.Write(',"logs_deleted":' + (ConvertTo-Json -InputObject $LogsDeleted -Compress))
         $writer.Write(',"totals":' + (ConvertTo-Json -InputObject $totals -Compress -Depth 4))
@@ -835,6 +1184,10 @@ function Invoke-Main {
     }
     $script:Root = $root
     $script:GodotExe = Find-GodotExe -Explicit $Godot
+    if ($Parallel -lt 1) { throw "-Parallel precisa ser >= 1" }
+    if ($Tier -and (@("quick", "pr", "nightly") -notcontains $Tier.ToLower())) {
+        throw "-Tier aceita quick, pr ou nightly (recebido: '$Tier')"
+    }
 
     $script:TmpRoot = Resolve-TmpRoot -Requested $TmpRoot
     $script:GodotTmpDir = Join-Path $script:TmpRoot "godot_tmp"
@@ -874,7 +1227,101 @@ function Invoke-Main {
     }
 
     $catalog = Get-TestCatalog -Root $root
-    $selected = @(Select-Tests -Catalog $catalog -Names $listItems -NamePattern $Pattern)
+    $tierMode = ([string]$Tier).ToLower()
+    $selected = @()
+    $runs = @()
+
+    if ($tierMode) {
+        $mapPath = $ImpactMap
+        if (-not $mapPath) { $mapPath = Join-Path $root "tools/test_impact_map.json" }
+        $script:ImpactMapPath = (Resolve-Path -LiteralPath $mapPath).Path
+        $map = Read-ImpactMap -Path $script:ImpactMapPath
+        $script:Tier = $tierMode
+        $script:BaseRef = $Base
+        $script:ChangedFiles = @(Get-ChangedFiles -Root $root -BaseRef $Base)
+
+        $impact = Get-ImpactSelection -Map $map -Changed $script:ChangedFiles
+        $script:SelectionReasons = $impact.Reasons
+        $script:SelectionNeedsNightly = $impact.NeedsNightly
+        $script:SelectionCoreTouched = $impact.CoreTouched
+
+        $impactNames = @($impact.Names)
+        $allRequested = ($tierMode -eq "nightly") -or ($impactNames -contains "__ALL__") -or $All
+        if ($allRequested) {
+            $selected = @($catalog | Where-Object { $_.Mode -ne "skip" })
+        } else {
+            $fromExplicit = $false
+            if ($listItems.Count -gt 0 -or $Pattern) {
+                $selected = @(Select-Tests -Catalog $catalog -Names $listItems -NamePattern $Pattern)
+                $fromExplicit = $true
+            } else {
+                $byName = @{}
+                foreach ($c in $catalog) { $byName[$c.Name] = $c }
+                $merged = @()
+                $missing = @()
+                foreach ($n in $impactNames) {
+                    if ($n -eq "ALL" -or $n -eq "__ALL__") { continue }
+                    if ($byName.ContainsKey($n)) { $merged += $byName[$n] } else { $missing += $n }
+                }
+                if ($missing.Count -gt 0) {
+                    Write-Host ("[tier] aviso: {0} teste(s) do mapa fora do catalogo: {1}" -f $missing.Count, ($missing -join ", "))
+                }
+                $selected = $merged
+            }
+
+            # Cheap sentinels run in quick AND pr (always), on top of the impact list.
+            $byName = @{}
+            foreach ($c in $catalog) { $byName[$c.Name] = $c }
+            $withSentinels = @()
+            foreach ($s in @($map.sentinels.cheap)) {
+                if (-not $s) { continue }
+                if ($byName.ContainsKey([string]$s)) {
+                    $withSentinels += $byName[[string]$s]
+                } else {
+                    Write-Host "[tier] aviso: sentinela '$s' fora do catalogo"
+                }
+            }
+            foreach ($t in $selected) {
+                $dup = $false
+                foreach ($w in $withSentinels) { if ($w.Name -eq $t.Name) { $dup = $true; break } }
+                if (-not $dup) { $withSentinels += $t }
+            }
+            $selected = $withSentinels
+            if ($fromExplicit) {
+                Write-Host "[tier] -List/-Pattern informado: selecao explicita + sentinelas."
+            }
+        }
+
+        $rank = Get-TierRank $tierMode
+        foreach ($r in @($map.sentinels.runs)) {
+            if (-not $r) { continue }
+            if ((Get-TierRank ([string]$r.tier)) -gt $rank) { continue }
+            $runTimeout = $TimeoutSec
+            if ($r.timeout_s) { $runTimeout = [int]$r.timeout_s }
+            $runs += [pscustomobject]@{
+                Name = [string]$r.name
+                Mode = "run"
+                ResPath = [string]$r.script
+                SkipReason = ""
+                Args = @($r.args)
+                TimeoutSec = $runTimeout
+            }
+        }
+
+        $selected = @($selected | Sort-Object Name -Unique)
+        if ($runs.Count -gt 0) { $selected += $runs }
+        if ($tierMode -ne "nightly") {
+            if ($script:SelectionCoreTouched) {
+                # File stays ASCII-only: build the accented warning from code points.
+                $coreMsg = "mudan" + [char]0x00E7 + "a no n" + [char]0x00FA + "cleo: rode -Tier nightly antes do merge se poss" + [char]0x00ED + "vel"
+                Write-Host ("[tier] aviso: " + $coreMsg)
+            } elseif ($script:SelectionNeedsNightly) {
+                Write-Host "[tier] aviso: caminho central alterado; a cobertura completa pede -Tier nightly."
+            }
+        }
+    } else {
+        $selected = @(Select-Tests -Catalog $catalog -Names $listItems -NamePattern $Pattern)
+    }
     if ($selected.Count -eq 0) { throw "nenhum teste selecionado" }
 
     $overrides = @{}
@@ -892,6 +1339,49 @@ function Invoke-Main {
     Write-Host "[runner] tmp:     $($script:TmpRoot) (TEMP/TMP do Godot: $($script:GodotTmpDir))"
     Write-Host "[runner] testes:  $($selected.Count) (timeout padrao ${TimeoutSec}s)"
     Write-Host "[runner] saida:   $($script:OutDir)"
+    if ($tierMode) {
+        Write-Host ("[tier]     {0} (base {1}; {2} arquivo(s) alterado(s))" -f `
+            $tierMode, $Base, $script:ChangedFiles.Count)
+        foreach ($f in $script:ChangedFiles) { Write-Host "             diff: $f" }
+        foreach ($k in $script:SelectionReasons.Keys) {
+            $why = (@($script:SelectionReasons[$k]) -join ", ")
+            Write-Host ("             {0} <- {1}" -f $k, $why)
+        }
+    }
+
+    if ($DryRun) {
+        Write-Host ("[dry-run] {0} entrada(s); nenhum Godot sera aberto." -f $selected.Count)
+        foreach ($t in $selected) {
+            if ($t.Mode -eq "run") {
+                Write-Host ("  run     {0} ({1})" -f $t.Name, (@($t.Args) -join " "))
+            } else {
+                Write-Host ("  {0,-7} {1}" -f $t.Mode, $t.Name)
+            }
+        }
+        $selectionPath = Join-Path $script:OutDir "selection.json"
+        $payload = [ordered]@{
+            tier = $tierMode
+            base = $Base
+            changed_files = @($script:ChangedFiles)
+            selected = @($selected | ForEach-Object { $_.Name })
+            reasons = $script:SelectionReasons
+            needs_nightly = $script:SelectionNeedsNightly
+            core_touched = $script:SelectionCoreTouched
+        }
+        Write-Utf8NoBom -Path $selectionPath -Text (ConvertTo-Json -InputObject $payload -Depth 6)
+        Write-Host "[dry-run] selecao: $selectionPath"
+        return 0
+    }
+
+    # CLI checks never start Godot, so they run before the global lock and are
+    # the only part that uses -Parallel.
+    if ($tierMode) {
+        $cliChecks = @(Get-CliChecks -Map $map -TierName $tierMode)
+        if ($cliChecks.Count -gt 0) {
+            $cliRecords = @(Invoke-CliChecks -Checks $cliChecks -MaxParallel $Parallel -Root $root)
+            $script:Results += $cliRecords
+        }
+    }
 
     $startedAt = (Get-Date).ToString("o")
     $aborted = ""
@@ -953,7 +1443,12 @@ function Invoke-Main {
                 break
             }
 
-            $timeout = Get-TestTimeout -Name $test.Name -Default $TimeoutSec -Overrides $overrides
+            $timeout = $TimeoutSec
+            if (($test.PSObject.Properties.Name -contains "TimeoutSec") -and $test.TimeoutSec) {
+                $timeout = [int]$test.TimeoutSec
+            } else {
+                $timeout = Get-TestTimeout -Name $test.Name -Default $TimeoutSec -Overrides $overrides
+            }
             $record = Invoke-TestRun -Test $test -TimeoutSeconds $timeout
             $script:Results += $record
 
