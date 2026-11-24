@@ -175,6 +175,19 @@ drift vem desses canais, não da eletricidade: as hibernações de usina caíram
 2.960 para 39 e o portão de comida fechou. Evidência
 `G:\opengs_tmp\c1_d126_365_on_fix.json`.
 
+**Refeita no fecho da branch (24/11/2026, após as correções do QA — crédito de
+giro no banco público existente, manutenção da hibernada sobre o O&M diário,
+prêmio de risco uma única vez, `bank_money_delta_total` no harness — e o merge
+de `balance/global-resources`, só docs; `--control=res://docs/economy/perf/c6_gate_base.json`,
+evidência `G:\opengs_tmp\c1_d126_365_final.json`):** crise LIGADA = **0
+falências**, **comida 96/179** (teto 97; mediana 0,9731, média 0,9074; 4 extras
+vs controle: KWT, MEX, ETH, AUS), **0 violações**, **0 travados**, **drift
+0,016524**, **51 hibernações (40 usinas + prédios)**, 10 reaberturas, 47
+demissões / 1.907 vagas cortadas, crédito 1,819e9, 222 renegociações / 311.377
+de multa, 2 liquidações (4.950 t), 0 leilões; `trajectory_sha256 49c797ef…`.
+Bateria canônica: `-Tier pr` **104/104** e `-Tier nightly` **105/105** verdes
+(a rodada de 365 d roda pelo runner com `OGS_C1_CONTROL`/`OGS_C1_OUT`, 86,2 s).
+
 **Leilões sem comprador da rodada anterior (só diagnóstico):** o contador era
 todo de **usina** (`power_auctions=83`, `auction_value = power_auction_value`);
 não havia bem/refinaria/fazenda no leilão. Para nomear os 48, a rodada antiga foi
