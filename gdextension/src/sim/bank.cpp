@@ -813,15 +813,17 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			// D-126: UMA renegociação do capital de giro em atraso, com multa.
 			// A multa é paga ao banco (destrói depósito) e o atraso é
 			// reclassificado em principal — nenhum dinheiro é criado.
-			if (group.credit_arrears > 1e-9
+			if (ws.crisis.enabled
+					&& group.credit_arrears > 1e-9
 					&& group.credit_renegotiations
 						< std::max(0, ws.crisis.credit_max_renegotiations)
 					&& group.credit_arrears_days
 						>= std::max(1, ws.crisis.credit_renegotiation_days)) {
 				const double base = group.debt + group.credit_arrears;
+				const double fee = std::max(0.0,
+					ws.crisis.credit_penalty * base);
 				const double penalty = std::min({
-					std::max(0.0, group.cash),
-					std::max(0.0, ws.crisis.credit_penalty * base),
+					std::max(0.0, group.cash), fee,
 					std::max(0.0, bank.deposits) });
 				if (penalty > 0.0) {
 					group.cash -= penalty;
@@ -829,8 +831,12 @@ int phase(WorldState& ws, double* bank_money_delta) {
 					bank.interest_income += penalty;
 					money_delta -= penalty;
 				}
-				group.debt += group.credit_arrears;
-				bank.loans += group.credit_arrears;
+				// D-126: a parte da multa que o caixa não cobre é capitalizada
+				// no principal (o tomador deve os 5% a mais). Nenhum dinheiro é
+				// criado: só a dívida e o ativo do banco crescem juntos.
+				const double capitalized = std::max(0.0, fee - penalty);
+				group.debt += group.credit_arrears + capitalized;
+				bank.loans += group.credit_arrears + capitalized;
 				bank.arrears = std::max(0.0,
 					bank.arrears - group.credit_arrears);
 				group.credit_arrears = 0.0;
@@ -839,7 +845,7 @@ int phase(WorldState& ws, double* bank_money_delta) {
 				group.credit_rate_add += std::max(0.0,
 					ws.crisis.credit_rate_add);
 				ws.crisis_renegotiations += 1;
-				ws.crisis_penalty_paid += penalty;
+				ws.crisis_penalty_paid += fee;
 			}
 			// 2. Amortização: só o excedente ao capital de giro (30 dias de
 			// custo efetivamente pago) e na fração declarada. Destrói depósito.
@@ -980,15 +986,18 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			money_delta -= repay;
 		}
 		// Renegociação (máx. declarado): multa + atraso capitalizado.
-		if (city.firm_credit_arrears > 1e-9
+		if (ws.crisis.enabled
+				&& city.firm_credit_arrears > 1e-9
 				&& city.firm_credit_renegotiations
 					< std::max(0, ws.crisis.credit_max_renegotiations)
 				&& city.firm_credit_default_days
 					>= std::max(1, ws.crisis.credit_renegotiation_days)) {
 			const double base = city.firm_debt + city.firm_credit_arrears;
+			const double fee = std::max(0.0,
+				ws.crisis.credit_penalty * base);
 			const double penalty = std::min({
 				std::max(0.0, city.firm_cash + city.service_cash),
-				std::max(0.0, ws.crisis.credit_penalty * base),
+				fee,
 				std::max(0.0, city_bank->deposits) });
 			if (penalty > 0.0) {
 				double left = penalty;
@@ -1008,8 +1017,11 @@ int phase(WorldState& ws, double* bank_money_delta) {
 				money_delta -= paid;
 				ws.crisis_penalty_paid += paid;
 			}
-			city.firm_debt += city.firm_credit_arrears;
-			city_bank->loans += city.firm_credit_arrears;
+			// D-126: a parte da multa que o caixa não cobre é capitalizada no
+			// principal — dívida e ativo do banco crescem juntos, sem dinheiro.
+			const double capitalized = std::max(0.0, fee - penalty);
+			city.firm_debt += city.firm_credit_arrears + capitalized;
+			city_bank->loans += city.firm_credit_arrears + capitalized;
 			city_bank->arrears = std::max(0.0,
 				city_bank->arrears - city.firm_credit_arrears);
 			city.firm_credit_arrears = 0.0;

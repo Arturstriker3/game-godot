@@ -22,7 +22,10 @@ produzem a mesma decisão):
    limitado por `credit_working_days` (60 d) de custo e `credit_asset_share`
    (50%) do ativo imobilizado. Vale para firmas privadas, grupos e serviços.
    **Uma** renegociação após `credit_renegotiation_days` (15 d) em atraso, com
-   multa de `credit_penalty` (5%).
+   multa de `credit_penalty` (5% sobre principal + atraso): o caixa paga o que
+   puder e o resto é **capitalizado no principal** (o tomador deve os 5% a
+   mais; o ativo do banco cresce no mesmo valor — nenhum dinheiro é criado).
+   A renegociação é regra da D-126 e respeita `crisis.enabled`.
 4. **Liquidar estoque** — vende a fatia do estoque atribuída à planta (mesma
    regra de rateio da receita) ao exterior com `liquidation_discount` (30%),
    até `liquidation_share` (50%) por evento. O comprador é o exterior
@@ -56,7 +59,9 @@ Todo fluxo é transferência entre contas já contadas em `money_total`:
   amortização destroem depósito (mesma regra C3/C4);
 * liquidação: `foreign_cash` → caixa do dono; estoque sai do mercado;
 * hibernação: caixa do dono → caixa de serviços da cidade;
-* leilão: caixa do comprador → credor/dono; nada é criado.
+* leilão: caixa do comprador → credor/dono; nada é criado;
+* multa da renegociação: caixa do tomador → banco (destrói depósito); a parte
+  sem caixa vira principal (dívida e ativo do banco crescem juntos).
 
 O dia informa ao invariante o dinheiro bancário criado/destruído pelo crédito de
 crise, como a C3 já faz.
@@ -81,3 +86,31 @@ nada é inventado para trás.
 
 Ver `GAME_STATE.md` (D-126) e o teste
 `godot --headless --path . --script res://tools/d126_crisis_test.gd`.
+
+O teste cobre: demissão+rescisão, crédito de giro, **renegociação com multa
+capitalizada**, liquidação pelo caminho do exterior (valor com deságio,
+`foreign_cash` cai e dinheiro conservado), hibernação/reabertura, leilão, área
+da fazenda, **refinaria e usina** pelas mesmas regras, **escada automática**
+(cortar→demitir→crédito→liquidar→hibernar→leilão), save v41, migração v40 e
+determinismo.
+
+## Medição 365 d (24/11/2026)
+
+`tools/c1_world_ai_365.gd --days=365 --control=res://docs/economy/perf/c6_gate_base.json`,
+365 d com IA, `threads=1`, crise LIGADA (default do jogo) × braço `--crisis=0`
+(mesmo JSON com `enabled=0`, só laboratório):
+
+| braço | falências | leilões (compra/sem) | hibernações | demissões | vagas | comida | violações | drift |
+|---|---|---|---|---|---|---|---|---|
+| crise LIGADA | 0 | 83 / 48 | 3.214 (2.960 usinas + 8 prédios) | 4.670 | 477.537 | **121/179** | 0 | 0,017961 |
+| `--crisis=0` | 4 | — | 0 | 0 | 0 | 94/179 | 0 | 0,005618 |
+
+O braço `--crisis=0` reproduz a D-127 (4 falências, 94/179): as mudanças desta
+rodada não movem o mundo sem crise. **O portão de comida NÃO fecha com a crise
+ligada (121 > 97).** Diagnóstico: os **2.960 hibernações são usinas**, não
+prédios — `react_power` cobra a folha CHEIA da usina mesmo quando ela não foi
+despachada no dia (geração 0, receita 0), então quase todo o parque acumula
+`loss_days` e hiberna; a eletricidade cai, o racionamento derruba indústria,
+serviços e comida. Corrigir o gatilho da usina (receita medida do despacho ×
+custos da geração, como no prédio) é decisão do núcleo/D-126 seguinte, não
+desta medição.

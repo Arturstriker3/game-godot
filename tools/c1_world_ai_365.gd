@@ -7,6 +7,11 @@ const TmpPaths := preload("res://tools/tmp_paths.gd")
 ##   godot --headless --path . --script res://tools/c1_world_ai_365.gd -- \
 ##     [--days=365] [--out=docs/economy/perf/c1_world_ai_365.json] [--power=0]
 ##     [--refining=0] [--refining-diag=1] [--fuel-diag=1] [--oil-diag=1]
+##     [--crisis=0]
+##
+## `--crisis=0` é o braço "sem a sobrevivência em crise" do A/B da D-126 (só
+## medição): o JSON é aplicado com `enabled=0`, então o mundo roda como antes
+## da D-126. Não existe no jogo: separa o efeito da crise da medição.
 ##
 ## `--power=0` é o braço "sem energia" do A/B (só medição): não aplica o dado
 ## de energia, então o mundo roda como antes da E2/E3. O controle versionado
@@ -48,6 +53,9 @@ const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 ## D-125: defaults de balanceamento da eficiência de produção (mesmo caminho
 ## do autoload; o espelho C++ é o fallback).
 const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
+## D-126: defaults de balanceamento da sobrevivência em crise (mesmo caminho do
+## autoload; o espelho compilado em `sim/crisis.h` é o fallback).
+const CRISIS_PATH := "res://data/definitions/economy/crisis.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
@@ -93,6 +101,10 @@ var _power_on := true
 # F0/D-124: braco A/B SEM a semente de refino (`--refining=0`), so medicao.
 # Nao existe no jogo: separa as falencias que o refino causa das que ja existem.
 var _refining_on := true
+# D-126: braço A/B SEM a sobrevivência em crise (`--crisis=0`), só medição.
+# Não existe no jogo: separa o efeito da D-126 (demissão, crédito, hibernação,
+# leilão) da medição do portão.
+var _crisis_on := true
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -169,6 +181,8 @@ func _init() -> void:
 			_power_on = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--refining="):
 			_refining_on = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--crisis="):
+			_crisis_on = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--refining-diag"):
 			var refining_value := "1"
 			if arg.contains("="):
@@ -563,6 +577,16 @@ func _make_world() -> Object:
 						+ _eff_override_path)
 					return null
 			sim.set_efficiency_params(params)
+	# D-126: sobrevivência em crise (demissão, crédito de giro, liquidação,
+	# hibernação, leilão e área). Antes do mundo, como no autoload. Só medição:
+	# os contadores do fecho vão para o JSON de saída.
+	if sim.has_method("set_crisis_params"):
+		var crisis: Variant = _load(CRISIS_PATH)
+		if crisis is Dictionary:
+			var params: Dictionary = crisis
+			if not _crisis_on:
+				params["enabled"] = 0.0
+			sim.set_crisis_params(params)
 	sim.set_needs(_load(NEEDS_PATH))
 	sim.set_services(_load(SERVICES_PATH))
 	# C2c (D-108): regime real por moeda ANTES do carregamento das moedas.
@@ -1641,6 +1665,12 @@ func _run() -> void:
 		# C6 (D-114): crise bancária no fecho — confiança, corridas,
 		# resoluções, fundo de seguro e redesconto. Só medição.
 		"bank_crisis": _bank_crisis_report(sim),
+		# D-126: sobrevivência em crise no fecho — demissões/rescisão, crédito de
+		# giro e renegociações, liquidações ao exterior, hibernações/reaberturas,
+		# leilões (com/sem comprador) e redução de área. Só medição.
+		"crisis": _crisis_report(sim),
+		"crisis_on": _crisis_on,
+		"crisis_entities": _crisis_entities(sim),
 		"stock": _stock_report(sim, stock_start, status_final, stock_formed),
 		"stock_timeline": stock_timeline,
 		"monetary_timeline": monetary_timeline,
@@ -1711,6 +1741,29 @@ func _run() -> void:
 		% [float(crisis_report.get("lolr_borrowed", 0.0)),
 		float(crisis_report.get("capital_flight", 0.0)),
 		float(crisis_report.get("confidence_min", 1.0))])
+	var d126: Dictionary = out.get("crisis", {})
+	if not d126.is_empty():
+		print("[c1] D-126: demissões=%d vagas_cortadas=%.1f rescisão=%.0f "
+			% [int(d126.get("layoffs", 0)), float(d126.get("jobs_cut", 0.0)),
+				float(d126.get("severance_paid", 0.0))]
+			+ "crédito=%.0f renegociações=%d multa=%.0f "
+			% [float(d126.get("loans", 0.0)),
+				int(d126.get("renegotiations", 0)),
+				float(d126.get("penalty_paid", 0.0))]
+			+ "liquidações=%d (%.0f t) hibernações=%d reaberturas=%d "
+			% [int(d126.get("liquidations", 0)),
+				float(d126.get("liquidated_t", 0.0)),
+				int(d126.get("mothballs", 0)), int(d126.get("reopens", 0))]
+			+ "leilões=%d sem_comprador=%d usinas=%d área=%d"
+			% [int(d126.get("auctions", 0)), int(d126.get("auctions_unsold", 0)),
+				int(d126.get("power_auctions", 0)),
+				int(d126.get("farm_area_reductions", 0))])
+		var entities: Dictionary = out.get("crisis_entities", {})
+		if not entities.is_empty():
+			print("[c1] D-126 hibernados por produto (top): %s | usinas=%d | estágios=%s"
+				% [str(entities.get("mothballed_by_product", {})),
+					int(entities.get("mothballed_plants", 0)),
+					str(entities.get("buildings_by_stage", {}))])
 	print("[c1] balanço: financeiro=%.6f caixa_residual=%.6f PL_famílias=%.0f "
 		% [float((balance["invariant"] as Dictionary).get("financial_sum", 0.0)),
 			float((balance["invariant"] as Dictionary).get("cash_residual", 0.0)),
@@ -1741,6 +1794,73 @@ func _run() -> void:
 			% [int(credit["defaults"]), float(credit["writeoffs"]),
 				float(credit["equity"])])
 	quit(0)
+
+
+## D-126: contadores da sobrevivência em crise no fecho (só medição). O status
+## do núcleo é a fonte única; o nome do campo segue o contrato do `crisis.json`.
+func _crisis_report(sim) -> Dictionary:
+	if not sim.has_method("get_crisis_status"):
+		return {}
+	var status: Dictionary = sim.get_crisis_status()
+	var params: Dictionary = status.get("params", {})
+	return {
+		"enabled": float(params.get("enabled", 0.0)) > 0.5,
+		"layoffs": int(status.get("layoffs", 0)),
+		"jobs_cut": float(status.get("jobs_cut", 0.0)),
+		"severance_paid": float(status.get("severance_paid", 0.0)),
+		"loans": float(status.get("loans", 0.0)),
+		"renegotiations": int(status.get("renegotiations", 0)),
+		"penalty_paid": float(status.get("penalty_paid", 0.0)),
+		"liquidations": int(status.get("liquidations", 0)),
+		"liquidated_t": float(status.get("liquidated_t", 0.0)),
+		"liquidated_value": float(status.get("liquidated_value", 0.0)),
+		"mothballs": int(status.get("mothballs", 0)),
+		"reopens": int(status.get("reopens", 0)),
+		"reopen_paid": float(status.get("reopen_paid", 0.0)),
+		"auctions": int(status.get("auctions", 0)),
+		"auction_value": float(status.get("auction_value", 0.0)),
+		"auctions_unsold": int(status.get("auctions_unsold", 0)),
+		"farm_area_reductions": int(status.get("farm_area_reductions", 0)),
+		"power_auctions": int(status.get("power_auctions", 0)),
+		"power_auction_value": float(status.get("power_auction_value", 0.0)),
+	}
+
+
+## D-126: onde a crise está, por produto (só medição). Ajuda a separar a
+## hibernação de fazenda (sazonal) da de indústria quando o portão se move.
+func _crisis_entities(sim) -> Dictionary:
+	if not sim.has_method("get_crisis_status"):
+		return {}
+	var status: Dictionary = sim.get_crisis_status()
+	var by_product: Dictionary = {}
+	var stage_counts: Dictionary = {}
+	for row_value: Variant in status.get("buildings", []):
+		var row: Dictionary = row_value
+		var stage := int(row.get("crisis_stage", 0))
+		if stage > 0:
+			var stage_key := str(stage)
+			stage_counts[stage_key] = int(stage_counts.get(stage_key, 0)) + 1
+		if bool(row.get("mothballed", false)):
+			var product := String(row.get("output_product", "?"))
+			by_product[product] = int(by_product.get(product, 0)) + 1
+	var top: Array = []
+	for product: Variant in by_product:
+		top.append([String(product), int(by_product[product])])
+	top.sort_custom(func(a: Array, b: Array) -> bool:
+		return int(a[1]) > int(b[1]))
+	var top_dict: Dictionary = {}
+	for index in mini(top.size(), 12):
+		top_dict[String(top[index][0])] = int(top[index][1])
+	var plants_mothballed := 0
+	for plant_value: Variant in status.get("power_plants", []):
+		if bool((plant_value as Dictionary).get("mothballed", false)):
+			plants_mothballed += 1
+	return {
+		"mothballed_by_product": top_dict,
+		"mothballed_products": top.size(),
+		"mothballed_plants": plants_mothballed,
+		"buildings_by_stage": stage_counts,
+	}
 
 
 func _credit_report(sim) -> Dictionary:

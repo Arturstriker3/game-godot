@@ -28,10 +28,13 @@ var _failures: Array[String] = []
 func _init() -> void:
 	_test_layoff()
 	_test_credit()
+	_test_renegotiation()
 	_test_liquidation()
 	_test_mothball_reopen()
 	_test_auction()
 	_test_farm_area()
+	_test_refinery_and_power()
+	_test_ai_ladder()
 	_test_save_load_v41()
 	_test_v40_migration()
 	_test_determinism()
@@ -81,6 +84,91 @@ func _test_credit() -> void:
 			loans + EPS >= granted, "loans=%.4f granted=%.4f" % [loans, granted])
 
 
+# --- (2b) renegociação bancária do crédito de giro (15 d + multa 5%) --------
+func _test_renegotiation() -> void:
+	# Caminho do BANCO (não o atalho da crise): 15 dias de atraso disparam UMA
+	# renegociação. Sem caixa, a multa de 5% é CAPITALIZADA no principal — o
+	# tomador passa a dever mais e o ativo do banco cresce no mesmo valor; nenhum
+	# dinheiro é criado. O status `penalty_paid` registra a multa cobrada.
+	var sim := _world()
+	# Um dia para o grupo ter lucro medido (base do limite de crédito).
+	_tick(sim)
+	var group_id := _first_group(sim)
+	if group_id.is_empty():
+		_fail("(2b) fixture sem grupo acionista")
+		return
+	sim.set_bank_capital("DEMO", 1.0e6)
+	sim.set_bank_policy(0.02, 1.0, 2.0, 60, 0.5)
+	var borrow: Dictionary = sim.group_borrow(group_id, 1.0e9)
+	_check("(2b) empréstimo do grupo concedido",
+		float(borrow.get("granted", 0.0)) > 0.0, str(borrow))
+	if not float(borrow.get("granted", 0.0)) > 0.0:
+		return
+	# Depois de emprestar, hibernar as construções do grupo: sem receita, o
+	# caixa não paga o juro e o atraso corre dia a dia.
+	for row: Dictionary in sim.get_crisis_status().get("buildings", []):
+		if String(row.get("owner", "")).begins_with("national:"):
+			sim.crisis_mothball(String(row.get("city", "")),
+				String(row.get("id", "")))
+	# Estado de teste CONSERVADO: o caixa do grupo vai ao orçamento da cidade
+	# (transferência; sem criar/destruir dinheiro).
+	var data: Dictionary = sim.to_dict()
+	var moved := 0.0
+	for entry: Dictionary in data.get("groups", []):
+		if String(entry.get("id", "")) == group_id:
+			moved = float(entry.get("cash", 0.0))
+			entry["cash"] = 0.0
+	var cities: Array = data.get("cities", [])
+	if not cities.is_empty():
+		var city: Dictionary = cities[0]
+		city["government_budget"] = float(city.get("government_budget", 0.0)) \
+			+ moved
+	var loaded := _load(data)
+	loaded.set_bank_policy(0.02, 1.0, 2.0, 60, 0.5)
+	var row := _bank_group(loaded, group_id)
+	var debt_start := float(row.get("debt", 0.0))
+	var rate := _loan_rate(loaded, "DEMO") \
+		+ float(loaded.get_crisis_status().get("params", {}).get(
+			"credit_rate_add", 0.0))
+	var before := int(loaded.get_crisis_status().get("renegotiations", 0))
+	var penalty_before := float(loaded.get_crisis_status().get("penalty_paid",
+		0.0))
+	var triggered := false
+	for day: int in 40:
+		loaded.tick_day()
+		if int(loaded.get_crisis_status().get("renegotiations", 0)) > before:
+			triggered = true
+			break
+	_check("(2b) 15 d de atraso disparam UMA renegociação", triggered,
+		"renegociações=%d" % int(loaded.get_crisis_status().get(
+			"renegotiations", 0)))
+	if not triggered:
+		return
+	var after := _bank_group(loaded, group_id)
+	var debt_after := float(after.get("debt", 0.0))
+	_check("(2b) atraso zerado vira principal",
+		absf(float(after.get("arrears", -1.0))) <= EPS,
+		"arrears=" + str(after.get("arrears")))
+	# Atraso esperado = juro diário (dívida parada) x 15 dias.
+	var expected_arrears := debt_start * rate / 365.0 * 15.0
+	var expected_fee := 0.05 * (debt_start + expected_arrears)
+	var delta := debt_after - debt_start
+	_check("(2b) multa de 5% capitalizada no principal",
+		absf(delta - expected_arrears - expected_fee)
+			<= maxf(1e-3, expected_fee * 0.02),
+		"Δdívida=%.4f atraso=%.4f multa=%.4f" % [delta, expected_arrears,
+			expected_fee])
+	_check("(2b) multa registrada no status",
+		float(loaded.get_crisis_status().get("penalty_paid", 0.0))
+			- penalty_before > 0.0,
+		"penalty=%.4f" % float(loaded.get_crisis_status().get("penalty_paid",
+			0.0)))
+	_check("(2b) capitalização não cria dinheiro (invariante fecha)",
+		bool((loaded.get_balance_status().get("invariant", {}) as Dictionary).get(
+			"ok", false)),
+		str(loaded.get_balance_status().get("invariant", {})))
+
+
 # --- (3) liquidação de estoque ---------------------------------------------
 func _test_liquidation() -> void:
 	var sim := _world()
@@ -89,14 +177,29 @@ func _test_liquidation() -> void:
 	sim.set_market_stock("AGRIA", "wheat", 10000.0)
 	_tick(sim)
 	var stock_before := _stock(sim, "AGRIA", "wheat")
+	var price := _market_price(sim, "AGRIA", "wheat")
 	var money_before := _money(sim)
+	var external_before := _external_cash(sim)
 	var result: Dictionary = sim.crisis_liquidate("AGRIA", "D126-LIQ", 1.0)
 	var stock_after := _stock(sim, "AGRIA", "wheat")
+	var value := float(result.get("value", 0.0))
+	var tons := float(result.get("tons", 0.0))
 	_check("(3) liquidação vende estoque com desconto",
 			bool(result.get("ok", false))
-				and float(result.get("tons", 0.0)) > 0.0
+				and tons > 0.0
 				and stock_after < stock_before,
 			str(result))
+	# Mesmo caminho da exportação bruta (production.cpp): o exterior paga o
+	# preço de mercado com o deságio declarado e o caixa do dono recebe.
+	_check("(3) valor = toneladas x preço x (1 - deságio de 30%)",
+			absf(value - tons * price * (1.0 - 0.30))
+				<= maxf(1e-3, value * 1e-9),
+			"valor=%.4f tons=%.4f preço=%.4f" % [value, tons, price])
+	_check("(3) exterior paga a liquidação (foreign_cash cai pelo valor)",
+			absf((_external_cash(sim) - external_before) + value)
+				<= maxf(1e-6, value * 1e-12),
+			"Δexterior=%.6f valor=%.6f" % [_external_cash(sim)
+				- external_before, value])
 	_check("(3) liquidação conserva dinheiro (comprador é o exterior)",
 			absf(_money(sim) - money_before) <= EPS,
 			"antes=%.4f depois=%.4f" % [money_before, _money(sim)])
@@ -174,6 +277,147 @@ func _test_farm_area() -> void:
 	var scale := _plan_area_scale(save, "AGRIA", "wheat")
 	_check("(6) área reduzida entra no save (próxima safra)",
 			scale < 1.0 and scale >= 0.10, "area_scale=%.4f" % scale)
+
+
+# --- (9) refinaria e usina pelas mesmas regras ------------------------------
+func _test_refinery_and_power() -> void:
+	var sim := _world()
+	if not _build(sim, "D126-REF", 30.0, "gasoline", "oil", 20.0, 12.0,
+			"gasoline_a"):
+		return
+	_tick(sim)
+	var lay: Dictionary = sim.crisis_layoff("AGRIA", "D126-REF", 0.5)
+	_check("(9) refinaria demite pela mesma regra (rescisão paga)",
+		bool(lay.get("ok", false))
+			and float(lay.get("severance_paid", 0.0)) > 0.0, str(lay))
+	var moth: Dictionary = sim.crisis_mothball("AGRIA", "D126-REF")
+	_check("(9) refinaria hiberna pela mesma regra",
+		bool(moth.get("ok", false))
+			and bool(_crisis_row(sim, "D126-REF").get("mothballed", false)),
+		str(moth))
+	# Usina: mesmo gatilho de perda (loss_days), mesa de demissão/hibernação e
+	# leilão por manutenção impaga.
+	var power := _power_world()
+	var plants: Array = power.get_crisis_status().get("power_plants", [])
+	if plants.is_empty():
+		_fail("(9) fixture sem usina")
+		return
+	var plant_id := String((plants[0] as Dictionary).get("id", ""))
+	var jobs_before := float((plants[0] as Dictionary).get("jobs", 0.0))
+	var layoffs_before := int(power.get_crisis_status().get("layoffs", 0))
+	power = _load(_plant_stress(power, plant_id, 25))
+	power.crisis_step()
+	var plant_row := _plant_row(power, plant_id)
+	_check("(9) usina demite pela mesma regra",
+		int(power.get_crisis_status().get("layoffs", 0)) > layoffs_before
+			and float(plant_row.get("jobs", 1.0)) < jobs_before,
+		"jobs=%.1f %s" % [float(plant_row.get("jobs", -1.0)),
+			str(power.get_crisis_status().get("layoffs", 0))])
+	var mothballs_before := int(power.get_crisis_status().get("mothballs", 0))
+	power = _load(_plant_stress(power, plant_id, 55))
+	power.crisis_step()
+	plant_row = _plant_row(power, plant_id)
+	_check("(9) usina hiberna pela mesma regra",
+		int(power.get_crisis_status().get("mothballs", 0)) > mothballs_before
+			and bool(plant_row.get("mothballed", false)), str(plant_row))
+	# Manutenção impaga além da carência: vai a leilão. Com o Estado dono e sem
+	# orçamento (estado de teste), não há comprador: a usina é removida (regra
+	# antiga), e o contador de leilões sem comprador sobe.
+	var unsold_before := int(power.get_crisis_status().get(
+		"auctions_unsold", 0))
+	var auctions_before := int(power.get_crisis_status().get("auctions", 0))
+	power = _load(_plant_unpaid(power, plant_id))
+	power.crisis_step()
+	var unsold := int(power.get_crisis_status().get("auctions_unsold", 0)) \
+		> unsold_before
+	var bought := int(power.get_crisis_status().get("auctions", 0)) \
+		> auctions_before
+	_check("(9) usina sem manutenção vai a leilão (compra ou remoção)",
+		unsold or bought, "sem_comprador=%s comprado=%s" % [unsold, bought])
+	_check("(9) usina sem comprador sai do parque",
+		not unsold or _plant_row(power, plant_id).is_empty(),
+		str(_plant_row(power, plant_id)))
+
+
+# --- (10) escada automática da IA num cenário de crise ----------------------
+func _test_ai_ladder() -> void:
+	var sim := _world()
+	# Planta grande com custo diário acima do caixa da cidade: o crédito de
+	# giro (etapa 3) tem o que cobrir e as etapas seguem uma a uma.
+	if not _build(sim, "D126-LAD", 400.0, "flour", "wheat", 100.0):
+		return
+	sim.set_market_stock("AGRIA", "wheat", 1000.0)
+	sim.set_market_stock("AGRIA", "flour", 1000.0)
+	_tick(sim)
+	var before: Dictionary = sim.get_crisis_status()
+	# Etapa 1 (cortar) é a regra existente de `loss_days` (produção), anterior à
+	# fase de crise: com prejuízo abaixo do gatilho de demissão nada reage.
+	sim.crisis_set_stress("AGRIA", "D126-LAD", 5)
+	var status: Dictionary = sim.crisis_step()
+	_check("(10) corte antes da demissão (nenhuma ação de crise)",
+		int(status.get("layoffs", 0)) == int(before.get("layoffs", 0))
+			and int(_crisis_row(sim, "D126-LAD").get("crisis_stage", 0)) == 0,
+		str(_crisis_row(sim, "D126-LAD")))
+	# Etapa 2: demitir (paga rescisão do caixa da cidade).
+	sim.crisis_set_stress("AGRIA", "D126-LAD", 20)
+	status = sim.crisis_step()
+	_check("(10) demissão entra na escada (loss_days=20)",
+		_key(status, "layoffs") > _key(before, "layoffs"),
+		"layoffs=%.0f -> %.0f" % [_key(before, "layoffs"),
+			_key(status, "layoffs")])
+	before = status
+	# Etapa 3: crédito de giro. A cidade fica sem caixa (transferência ao
+	# orçamento) para o limite de giro ter o que cobrir; o save preserva a
+	# demissão e a fase.
+	var drained: Dictionary = sim.to_dict()
+	_drain_private_cash(drained)
+	sim = _load(drained)
+	sim.crisis_set_stress("AGRIA", "D126-LAD", 30)
+	status = sim.crisis_step()
+	_check("(10) crédito de giro entra na escada (loss_days=30)",
+		_key(status, "loans") > _key(before, "loans"),
+		"loans=%.2f -> %.2f" % [_key(before, "loans"), _key(status, "loans")])
+	before = status
+	# Etapa 4: liquidar estoque (o comprador é o exterior).
+	sim.crisis_set_stress("AGRIA", "D126-LAD", 40)
+	status = sim.crisis_step()
+	_check("(10) liquidação entra na escada (loss_days=40)",
+		_key(status, "liquidations") > _key(before, "liquidations"),
+		"liquidações=%.0f -> %.0f" % [_key(before, "liquidations"),
+			_key(status, "liquidations")])
+	before = status
+	# Etapa 5: hibernar sem produção, pagando a manutenção mínima.
+	sim.crisis_set_stress("AGRIA", "D126-LAD", 50)
+	status = sim.crisis_step()
+	_check("(10) hibernação entra na escada (loss_days=50)",
+		_key(status, "mothballs") > _key(before, "mothballs"),
+		"hibernações=%.0f -> %.0f" % [_key(before, "mothballs"),
+			_key(status, "mothballs")])
+	var row := _crisis_row(sim, "D126-LAD")
+	_check("(10) hibernação mantém o prédio (etapa 5)",
+		bool(row.get("mothballed", false)), str(row))
+	# Etapa 6: manutenção impaga até a carência. O save carrega o estado de
+	# teste (60 dias sem pagar), sem inventar regra.
+	var data: Dictionary = sim.to_dict()
+	_drain_private_cash(data)
+	for entry: Dictionary in data.get("buildings", []):
+		if String(entry.get("id", "")) == "D126-LAD":
+			entry["mothball_unpaid_days"] = 60
+	var loaded := _load(data)
+	var auctions_before := int(loaded.get_crisis_status().get("auctions", 0))
+	var unsold_before := int(loaded.get_crisis_status().get("auctions_unsold",
+		0))
+	loaded.crisis_step()
+	var after: Dictionary = loaded.get_crisis_status()
+	var bought := int(after.get("auctions", 0)) > auctions_before
+	var unsold := int(after.get("auctions_unsold", 0)) > unsold_before
+	row = _crisis_row(loaded, "D126-LAD")
+	_check("(10) leilão fecha a escada (compra ou sem comprador)",
+		bought or unsold, "comprado=%s sem_comprador=%s" % [bought, unsold])
+	if bought:
+		_check("(10) comprador assume o prédio (não some)",
+			not row.is_empty() and String(row.get("owner", "")) != "private",
+			str(row))
 
 
 # --- (7) save v41 round-trip -----------------------------------------------
@@ -260,16 +504,36 @@ func _world() -> Object:
 	return sim
 
 
+## Mundo com uma usina a gás de 50 MW (mesmo caminho do dado de energia). O
+## fixture não traz parque; o dado é de teste, não de simulação do jogo.
+func _power_world() -> Object:
+	var sim := _world()
+	var nations := {"DEMO": {
+		"access_pct": 100.0, "access_urban_pct": 100.0,
+		"access_rural_pct": 100.0, "loss_pct": 4.0,
+	}}
+	var cities := {"AGRIA": {
+		"access_pct": 100.0, "loss_pct": 4.0,
+		"park": {"gas": 50.0}, "cap": {}, "solar_month": [],
+	}}
+	sim.set_power_definitions(nations, cities, {}, true)
+	sim.set_power_city("AGRIA", 0, 0.0, 100.0)
+	return sim
+
+
 func _build(sim: Object, id: String, jobs: float, output: String,
-		input: String, capacity: float = 10.0) -> bool:
+		input: String, capacity: float = 10.0, opex: float = 10.0,
+		recipe_override: String = "") -> bool:
 	var output_index := _product(sim, output)
 	if output_index < 0:
 		_fail("produto %s inexistente" % output)
 		return false
-	var recipe := "" if input == "" else output
+	var recipe := recipe_override
+	if recipe.is_empty():
+		recipe = "" if input == "" else output
 	var built: Dictionary = sim.build("AGRIA", id, input if input != "" else output,
 			_product(sim, input) if input != "" else -1, output_index,
-			capacity, jobs, 2.0, 10.0, 0.0, "private", 1000.0, recipe)
+			capacity, jobs, 2.0, opex, 0.0, "private", 1000.0, recipe)
 	if not bool(built.get("created", false)):
 		_fail("construção %s não criada: %s" % [id, built])
 		return false
@@ -326,6 +590,98 @@ func _stock(sim: Object, city_id: String, product: String) -> float:
 	return float((markets[index] as Dictionary).get("stock", 0.0))
 
 
+func _market_price(sim: Object, city_id: String, product: String) -> float:
+	var index := _product(sim, product)
+	var markets: Array = sim.get_city_status(city_id).get("markets", [])
+	if index < 0 or index >= markets.size():
+		return 0.0
+	return float((markets[index] as Dictionary).get("price", 0.0))
+
+
+## Posição do setor externo (`foreign_cash`) pelo balanço: é o comprador da
+## exportação bruta e da liquidação de crise.
+func _external_cash(sim: Object) -> float:
+	var world: Dictionary = sim.get_balance_status().get("world", {})
+	var external: Dictionary = world.get("external", {})
+	return float(external.get("cash", 0.0))
+
+
+func _first_group(sim: Object) -> String:
+	var groups: Array = sim.get_groups()
+	if groups.is_empty():
+		return ""
+	return String((groups[0] as Dictionary).get("id", ""))
+
+
+func _bank_group(sim: Object, group_id: String) -> Dictionary:
+	for row: Variant in sim.get_bank_status().get("groups", []):
+		var group: Dictionary = row
+		if String(group.get("id", "")) == group_id:
+			return group
+	return {}
+
+
+func _credit_city(sim: Object, city_id: String) -> Dictionary:
+	for row: Variant in sim.get_crisis_status().get("cities", []):
+		var city: Dictionary = row
+		if String(city.get("city", "")) == city_id:
+			return city
+	return {}
+
+
+func _loan_rate(sim: Object, nation: String) -> float:
+	for row: Variant in sim.get_bank_status().get("nations", []):
+		var entry: Dictionary = row
+		if String(entry.get("nation", "")) == nation:
+			return float(entry.get("loan_rate", 0.0))
+	return 0.0
+
+
+func _key(status: Dictionary, key: String) -> float:
+	return float(status.get(key, 0.0))
+
+
+func _plant_row(sim: Object, plant_id: String) -> Dictionary:
+	for row: Variant in sim.get_crisis_status().get("power_plants", []):
+		var plant: Dictionary = row
+		if String(plant.get("id", "")) == plant_id:
+			return plant
+	return {}
+
+
+## Save com o estado de teste de uma usina (dias de prejuízo forçados), no
+## mesmo formato que o núcleo grava — o teste não inventa regra, só a entrada.
+func _plant_stress(sim: Object, plant_id: String, loss_days: int) -> Dictionary:
+	var data: Dictionary = sim.to_dict()
+	for entry: Dictionary in (data.get("power", {}) as Dictionary).get(
+			"plants", []):
+		if String(entry.get("id", "")) == plant_id:
+			entry["loss_days"] = loss_days
+	return data
+
+
+## Usina hibernada com 60 dias de manutenção impaga e a cidade sem orçamento
+## (estado de teste): o leilão é a regra, não um atalho do teste.
+func _plant_unpaid(sim: Object, plant_id: String) -> Dictionary:
+	var data: Dictionary = sim.to_dict()
+	for entry: Dictionary in (data.get("power", {}) as Dictionary).get(
+			"plants", []):
+		if String(entry.get("id", "")) == plant_id:
+			entry["mothball_unpaid_days"] = 60
+	for city: Dictionary in data.get("cities", []):
+		city["government_budget"] = 0.0
+	return data
+
+
+## Move o caixa das firmas para o orçamento (estado de teste conservado).
+func _drain_private_cash(data: Dictionary) -> void:
+	for city: Dictionary in data.get("cities", []):
+		var cash := float(city.get("firm_cash", 0.0))
+		city["firm_cash"] = 0.0
+		city["government_budget"] = float(city.get("government_budget", 0.0)) \
+			+ cash
+
+
 func _json(path: String) -> Variant:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -349,8 +705,10 @@ func _fail(message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("[d126] OK: demissão, crédito de giro, liquidação, hibernação/"
-			+ "reabertura, leilão, área da fazenda, save v41 e determinismo.")
+		print("[d126] OK: demissão, crédito de giro, renegociação com multa, "
+			+ "liquidação via exterior, hibernação/reabertura, leilão (prédio, "
+			+ "refinaria e usina), área da fazenda, escada da IA, save v41 e "
+			+ "determinismo.")
 		quit(0)
 	else:
 		print("[d126] FALHAS (%d):" % _failures.size())
