@@ -170,9 +170,26 @@ bool is_refinery(const WorldState& ws, const Building& building) {
 			|| building.recipe >= static_cast<int>(ws.recipes.size())) {
 		return false;
 	}
-	// A spec liga o refino à receita de gasolina (F0/D-123 `gasoline_a`).
-	return ws.recipes[static_cast<std::size_t>(building.recipe)].id.rfind(
-		"gasoline_", 0) == 0;
+	// Refino de PETRÓLEO: a receita entrega a gasolina E consome petróleo
+	// bruto. O prefixo do id não é assinatura do processo — `gasoline_b` é o
+	// etanol (`chemical_plant`, insumo `ethanol`) e também começa com
+	// "gasoline_"; e uma fábrica que consome petróleo (plástico) não é
+	// refinaria. O prédio declarado no recipes.json (`refinery`) não chega ao
+	// mundo em memória: a receita (saída + insumo) é a identificação.
+	const Recipe& recipe =
+		ws.recipes[static_cast<std::size_t>(building.recipe)];
+	if (recipe.output != ws.efficiency.refinery_gasoline) {
+		return false;
+	}
+	for (int slot = 0; slot < recipe.input_count; ++slot) {
+		const int input = recipe.inputs[slot];
+		if (input >= 0
+				&& input < static_cast<int>(ws.product_names.size())
+				&& ws.product_names[static_cast<std::size_t>(input)] == "oil") {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool is_ranch(const WorldState& ws, const Building& building) {

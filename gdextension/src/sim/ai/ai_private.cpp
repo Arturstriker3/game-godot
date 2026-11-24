@@ -153,6 +153,25 @@ double caloric_factor_of(const AiContext& ctx, const std::string& resource) {
 
 } // namespace
 
+// D-125: eficiência MÉDIA esperada da rampa de uma planta NOVA do template no
+// horizonte de decisão do investidor — a mesma regra de `AiPrivateInvestor`
+// (receita/bem bulk 730 d, primário/extrator 150 d), compartilhada com o
+// investidor de grupo (`ai_group.cpp`) para o retorno não ser valorado pela
+// capacidade cheia. Planta nova: parte do início da curva e sem equipamento
+// (o teto `cap_without` das classes que dependem de trator/máquina entra na
+// média, como no privado).
+double ai_expected_new_efficiency(const AiContext& ctx, int city_index,
+		const AiTemplate& tmpl) {
+	double horizon = kMinPaybackDays;
+	if (tmpl.is_recipe) {
+		horizon = kMinPaybackDaysIndustry;
+	} else if (ctx.templates.is_bulk_low_value(tmpl.resource)) {
+		horizon = kMinPaybackDaysBulk;
+	}
+	return ai_expected_efficiency(ctx, city_index, tmpl, std::string(),
+		static_cast<int>(horizon));
+}
+
 void AiPrivateInvestor::prepare(const AiContext& ctx) {
 	// Ordem de `prepare_totals`: comida, obras em andamento e grupos. Os totais
 	// por produto NÃO são somados aqui: `view.tot_*` já é o `market_totals`.

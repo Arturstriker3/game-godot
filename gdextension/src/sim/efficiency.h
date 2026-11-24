@@ -56,10 +56,11 @@ double cap(const WorldState& ws, const Building& building, EfficiencyClass cls);
 double step(const WorldState& ws, const Building& building,
 	EfficiencyClass cls, bool equipment_active);
 
-// É uma receita de refino? (id começa com o prefixo declarado).
+// É a receita de refino de PETRÓLEO? (saída gasolina + insumo petróleo; o
+// prefixo do id não vale — `gasoline_b` é etanol).
 bool is_refinery(const WorldState& ws, const Building& building);
 
-// Pecuária? (produto em `ranch_products`; hoje `meat`).
+// Pecuária? (produto `meat`, declarado no núcleo; o JSON não lista a cesta).
 bool is_ranch(const WorldState& ws, const Building& building);
 
 // Mundo SEMEADO (ano-base): a planta já existe madura. `equipment` liga o

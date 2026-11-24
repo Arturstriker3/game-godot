@@ -11833,6 +11833,18 @@ Dictionary EconomySim::get_efficiency_params() const {
 	out["transition_mode_days"] = p.transition_mode_days;
 	out["retention_same_family"] = p.retention_same_family;
 	out["retention_other"] = p.retention_other;
+	// D-125: modos da refinaria na ordem de `refinery_modes.order`
+	// (standard, diesel, jet) × (gasoline, diesel, jet_fuel); a MESMA matriz
+	// do bloco `definitions.efficiency.mode_shares` do save.
+	Array modes;
+	for (int mode = 0; mode < 3; ++mode) {
+		Array row;
+		row.append(p.mode_shares[mode][0]);
+		row.append(p.mode_shares[mode][1]);
+		row.append(p.mode_shares[mode][2]);
+		modes.append(row);
+	}
+	out["mode_shares"] = modes;
 	out["ai_mode_cooldown_days"] = p.ai_mode_cooldown_days;
 	out["ai_mode_payback_days"] = p.ai_mode_payback_days;
 	out["ai_mode_min_gain"] = p.ai_mode_min_gain;

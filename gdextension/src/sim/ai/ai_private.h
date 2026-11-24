@@ -136,4 +136,11 @@ private:
 	std::unordered_map<std::string, int> extra_regions_;
 };
 
+// D-125: eficiência média da rampa de uma planta NOVA do template no horizonte
+// de decisão do investidor (a mesma conta do gate de payback do privado:
+// `eff::mean_efficiency` sobre a curva da classe). Usada pelo investidor de
+// grupo em `ai_group.cpp`; `existing` vazio e sem equipamento próprio.
+double ai_expected_new_efficiency(const AiContext& ctx, int city_index,
+	const AiTemplate& tmpl);
+
 } // namespace ogs

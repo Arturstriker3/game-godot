@@ -54,6 +54,7 @@ func _init() -> void:
 	_test_factory_ramp()
 	_test_product_change_and_retention()
 	_test_refinery_modes()
+	_test_ethanol_is_not_refinery()
 	_test_equipment()
 	_test_save_load_v40()
 	_test_determinism()
@@ -198,6 +199,57 @@ func _test_refinery_modes() -> void:
 	var after := _produced(sim.get_status(), gasoline)
 	_check("(3) troca de modo sem produção durante a transição",
 			absf(after - before) <= EPS, "produzido=%.6f" % (after - before))
+
+
+## (3) `gasoline_b` é o etanol (`chemical_plant`, insumo `ethanol`), não o
+## refino de petróleo: o modo da refinaria não pode valer para ela. O prefixo
+## do id (`gasoline_`) não é assinatura do processo.
+func _test_ethanol_is_not_refinery() -> void:
+	var sim := _world()
+	sim.set_ai_enabled(false)
+	sim.set_instant_construction(true)
+	var gasoline := _product(sim, "gasoline")
+	sim.set_market_stock("AGRIA", "ethanol", 5000.0)
+	var built: Dictionary = sim.build("AGRIA", "D125-ETHANOL", "ethanol", -1,
+			gasoline, 200.0, 100.0, 2.0, 12.0, 0.0, "private", 10000.0,
+			"gasoline_b")
+	if not bool(built.get("created", false)):
+		_fail("(3) planta de etanol não foi construída: %s" % built)
+		return
+	var refused: Dictionary = sim.set_refinery_mode("AGRIA", "D125-ETHANOL",
+			"diesel")
+	_check("(3) gasoline_b (etanol) recusa o modo de refinaria",
+			not bool(refused.get("changed", true))
+				and not String(refused.get("error", "")).is_empty(),
+			"%s" % refused)
+	var row := _row(sim, "AGRIA", "D125-ETHANOL")
+	_check("(3) gasoline_b fica no modo 0 e sem transição",
+			int(row.get("refinery_mode", -1)) == 0
+				and int(row.get("transition_days", -1)) == 0,
+			"modo=%d transição=%d" % [int(row.get("refinery_mode", -1)),
+				int(row.get("transition_days", -1))])
+	# O lote continua o 0,80 da receita (sem as frações de refino).
+	for good: String in ["gasoline", "diesel", "jet_fuel"]:
+		sim.set_market_stock("AGRIA", good, 0.0)
+	var before := {
+		"gasoline": _produced(sim.get_status(), gasoline),
+		"diesel": _produced(sim.get_status(), _product(sim, "diesel")),
+		"jet_fuel": _produced(sim.get_status(), _product(sim, "jet_fuel")),
+	}
+	sim.tick_day()
+	var made := {
+		"gasoline": _produced(sim.get_status(), gasoline)
+			- float(before["gasoline"]),
+		"diesel": _produced(sim.get_status(), _product(sim, "diesel"))
+			- float(before["diesel"]),
+		"jet_fuel": _produced(sim.get_status(), _product(sim, "jet_fuel"))
+			- float(before["jet_fuel"]),
+	}
+	_check("(3) gasoline_b produz gasolina e nenhum co-produto de refino",
+			float(made["gasoline"]) > EPS
+				and absf(float(made["diesel"])) <= EPS
+				and absf(float(made["jet_fuel"])) <= EPS,
+			"%s" % made)
 
 
 func _check_refinery_fraction(mode: String) -> void:
@@ -425,6 +477,37 @@ func _test_fallback_matches_json() -> void:
 				== int(ai.get("mode_payback_days", -2)),
 			"fallback=%s json=%s" % [got.get("ai_mode_payback_days"),
 				ai.get("mode_payback_days")])
+	_check("(8) fallback ai.mode_cooldown_days == JSON",
+			int(got.get("ai_mode_cooldown_days", -1))
+				== int(ai.get("mode_cooldown_days", -2)),
+			"fallback=%s json=%s" % [got.get("ai_mode_cooldown_days"),
+				ai.get("mode_cooldown_days")])
+	_check("(8) fallback ai.mode_min_gain == JSON",
+			absf(float(got.get("ai_mode_min_gain", -1.0))
+				- float(ai.get("mode_min_gain", -2.0))) <= EPS,
+			"fallback=%s json=%s" % [got.get("ai_mode_min_gain"),
+				ai.get("mode_min_gain")])
+	# Modos da refinaria: mesma matriz 3×3 do JSON, na ordem `order`
+	# (standard, diesel, jet) × (gasoline, diesel, jet_fuel).
+	var modes: Dictionary = json.get("refinery_modes", {})
+	var order: Array = modes.get("order", [])
+	var got_modes: Array = got.get("mode_shares", [])
+	_check("(8) fallback mode_shares tem 3 modos",
+			got_modes.size() == 3 and order.size() == 3,
+			"fallback=%d json=%d" % [got_modes.size(), order.size()])
+	if got_modes.size() == 3 and order.size() == 3:
+		var goods: Array = ["gasoline", "diesel", "jet_fuel"]
+		for mode in 3:
+			var row: Dictionary = modes.get(String(order[mode]), {})
+			var got_row: Array = got_modes[mode]
+			for slot in 3:
+				var good := String(goods[slot])
+				_check("(8) fallback mode_shares.%s.%s == JSON" % [
+						String(order[mode]), good],
+						absf(float(got_row[slot])
+							- float(row.get(good, -2.0))) <= EPS,
+						"fallback=%s json=%s" % [got_row[slot],
+							row.get(good)])
 
 
 # --- (9) IA: o payback usa a rampa, não a capacidade cheia ------------------
@@ -443,7 +526,7 @@ func _test_investor_ramp() -> void:
 			1.0)
 	var ramp := PrivateInvestorScript.expected_payback_days(6000.0, 5.0, 10.0,
 			mean)
-	_check("(9) fazenda a 100% fecharia o gate (payback %.1f d)" % full,
+	_check("(9) fazenda a 100%% fecharia o gate (payback %.1f d)" % full,
 			full <= PrivateInvestorScript.MIN_PAYBACK_DAYS,
 			"payback=%.1f d" % full)
 	_check("(9) investidor REJEITA a fazenda com a rampa (payback %.1f d)"

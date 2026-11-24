@@ -48,8 +48,7 @@
     "cap_without": 0.85,
     "rate_boost": 1.5,
     "fuel_product": "diesel",
-    "fuel_per_capacity_day": 0.0002,
-    "ranch_products": ["meat"]
+    "fuel_per_capacity_day": 0.0002
   },
   "transitions": {
     "factory_days": 7,
@@ -68,7 +67,6 @@
     "same_family_rule": "produtos do mesmo setor contam como mesma família"
   },
   "refinery_modes": {
-    "recipe_prefix": "gasoline_",
     "order": ["standard", "diesel", "jet"],
     "standard": {"gasoline": 0.45, "diesel": 0.29, "jet_fuel": 0.09},
     "diesel": {"gasoline": 0.38, "diesel": 0.36, "jet_fuel": 0.09},

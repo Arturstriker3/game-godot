@@ -51,6 +51,12 @@ eficiência; `utilization` publicado é a produção ÷ capacidade.
 A troca de modo leva 3 dias sem produção (transição). O padrão é idêntico ao
 dado `gasoline_a` da F0 (45/29/9), então a calibração do ano-base não muda.
 
+Os modos valem **só para o refino de petróleo**: a receita que entrega gasolina
+E consome petróleo bruto (`gasoline_a`, prédio `refinery` no `recipes.json`).
+O prefixo do id não é assinatura do processo — `gasoline_b` é o etanol
+(`chemical_plant`, insumo `ethanol`) e uma fábrica que consome petróleo
+(plástico) não é refinaria; a API recusa o modo nessas construções.
+
 ## Equipamento (trator / máquina de mineração)
 
 * `equipment` (0..1) é o nível do equipamento da fazenda/mina. Sem equipamento
@@ -74,10 +80,23 @@ mundo não mudar se o arquivo não carregar. A IA usa a API
 com custo de transição declarado (`ai.*` no JSON): só troca quando o ganho de
 receita do modo cobre a produção perdida na transição.
 
+O JSON não declara mais `equipment.ranch_products` nem
+`refinery_modes.recipe_prefix`: nenhum código os lia (a pecuária é o produto
+`meat` no núcleo e o refino é identificado pela receita — saída gasolina +
+insumo petróleo), então os campos saíram em vez de virarem contrato morto.
+
 O gate de payback do investidor privado (`private_investor.gd` e o porte
 `ai_private.cpp`) usa a eficiência **esperada** — a média da curva no horizonte
 de payback, não a capacidade cheia. Folha/opex continuam cheios; a planta
 existente continua a rampa a partir da eficiência corrente.
+
+O investidor de **grupo** (`ai_group.cpp`) desconta a mesma média da rampa do
+candidato não alimentar (`ai_expected_new_efficiency`, a mesma
+`eff::mean_efficiency` e os mesmos horizontes do privado: receita/bulk 730 d,
+primário 150 d) em vez do valor fixo 0,5. A cesta alimentar mantém o peso cheio:
+a comida é prioridade declarada do grupo e o candidato só nasce com escassez
+local. O porte GDScript (`group_investor.gd`, usado pelas ferramentas antigas)
+mantém o valor fixo; a regra viva do jogo é a do núcleo C++.
 
 ## Verificação
 
