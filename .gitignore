@@ -9,6 +9,8 @@ gdextension/build-debug/
 gdextension/build-release/
 # A0: release de medição com perfil por fase (-DOGS_PROFILE_RELEASE=ON)
 gdextension/build-profile-release/
+# FASE 2: build dos testes unitários C++ (-DOPENGS_BUILD_UNIT_TESTS=ON)
+gdextension/build-unit-tests/
 
 # Ferramentas locais de desenvolvimento (MCP / agentes)
 addons/godot_mcp/

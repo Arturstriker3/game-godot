@@ -36,6 +36,12 @@
 # -Tier usa tools/test_impact_map.json (caminho alterado -> testes) e sempre inclui as
 # sentinelas declaradas la. -List/-Pattern continuam funcionando e, com -Tier, sao somados
 # as sentinelas. -All sem -Tier mantem exatamente o comportamento antigo.
+# -Tier quick/pr roda PRIMEIRO as checagens de CLI do mapa (`cli_checks`), sem
+# Godot: `sim_unit_tests` (testes unitarios C++ do nucleo, FASE 2) roda em
+# milissegundos e, se falhar, o tier aborta antes de qualquer teste Godot.
+# Se o executavel nao estiver compilado a checagem vira SKIP. Como compilar e
+# escrever teste: docs/testing/cpp_unit_tests.md. Qualquer mudanca em
+# gdextension/src/** cobre esse alvo (ele roda sempre no quick, nao por diff).
 # Mudar a propria infra de testes (tools/run_tests.ps1, tools/test_impact_map.json,
 # tools/tmp_paths.gd) invalida a selecao: o mapa manda rodar a bateria inteira (-All).
 # Qualquer arquivo em gdextension/src/ seleciona o conjunto amplo de nucleo (core_set)
@@ -601,13 +607,29 @@ function Invoke-CliChecks {
                 $outLog = Join-Path $script:LogDir "$name.out.log"
                 $errLog = Join-Path $script:LogDir "$name.err.log"
                 $cmd = [string]$c.command
+                # Comando relativo COM separador resolve contra a raiz do
+                # projeto; nome puro (ex.: cmd.exe) continua resolvido pelo PATH.
+                if ($cmd -and -not [System.IO.Path]::IsPathRooted($cmd) -and
+                    ($cmd -match '[\\/]')) {
+                    $cmd = Join-Path $Root $cmd
+                }
                 $argList = @()
                 foreach ($a in @($c.args)) { if ($null -ne $a) { $argList += (Quote-Arg ([string]$a)) } }
                 $started = Get-Date
                 try {
-                    $proc = Start-Process -FilePath $cmd -ArgumentList $argList `
-                        -WorkingDirectory $Root -RedirectStandardOutput $outLog `
-                        -RedirectStandardError $errLog -NoNewWindow -PassThru -ErrorAction Stop
+                    # ArgumentList vazio faz Start-Process falhar; so passa a
+                    # chave quando ha argumentos (ex.: sim_unit_tests sem args).
+                    $startParams = @{
+                        FilePath = $cmd
+                        WorkingDirectory = $Root
+                        RedirectStandardOutput = $outLog
+                        RedirectStandardError = $errLog
+                        NoNewWindow = $true
+                        PassThru = $true
+                        ErrorAction = "Stop"
+                    }
+                    if ($argList.Count -gt 0) { $startParams.ArgumentList = $argList }
+                    $proc = Start-Process @startParams
                     $null = $proc.Handle
                     $procs += [pscustomobject]@{
                         Check = $c; Proc = $proc; Started = $started
@@ -1375,19 +1397,32 @@ function Invoke-Main {
 
     # CLI checks never start Godot, so they run before the global lock and are
     # the only part that uses -Parallel.
+    $startedAt = (Get-Date).ToString("o")
+    $aborted = ""
+    $setupCode = 0
     if ($tierMode) {
         $cliChecks = @(Get-CliChecks -Map $map -TierName $tierMode)
         if ($cliChecks.Count -gt 0) {
             $cliRecords = @(Invoke-CliChecks -Checks $cliChecks -MaxParallel $Parallel -Root $root)
             $script:Results += $cliRecords
+            # `fail_fast`: uma checagem barata (ex.: sim_unit_tests) derruba o
+            # tier antes de qualquer Godot ser aberto.
+            $failFastNames = @($cliChecks | Where-Object { $_.fail_fast } |
+                ForEach-Object { [string]$_.name })
+            $failedFast = @($cliRecords | Where-Object {
+                ($_.status -eq "FAIL" -or $_.status -eq "TIMEOUT") -and
+                ($failFastNames -contains [string]$_.name)
+            })
+            if ($failedFast.Count -gt 0) {
+                $names = (@($failedFast | ForEach-Object { [string]$_.name }) -join ", ")
+                $aborted = "cli fail-fast: $names falhou"
+                Write-Host "[cli] $aborted. Abortando antes de qualquer teste Godot."
+                $setupCode = 1
+            }
         }
     }
 
-    $startedAt = (Get-Date).ToString("o")
-    $aborted = ""
-    $setupCode = 0
-
-    if (-not (Acquire-TestLock -MaxWaitSec $LockWaitSec)) {
+    if ($setupCode -eq 0 -and -not (Acquire-TestLock -MaxWaitSec $LockWaitSec)) {
         Write-Host "[lock] nao consegui o lock em ${LockWaitSec}s. Abortando sem rodar teste."
         $aborted = "lock: outro runner segurou $($script:LockPath) por mais de ${LockWaitSec}s"
         $setupCode = 3

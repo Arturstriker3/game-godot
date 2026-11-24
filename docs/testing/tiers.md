@@ -12,7 +12,7 @@ artefatos em `G:\opengs_tmp`.
 
 | tier | o que roda | quando usar | tempo observado |
 |---|---|---|---|
-| `quick` | testes impactados pelo `git diff` + sentinelas baratas | antes de cada commit/etapa | 1–12 min conforme o diff |
+| `quick` | `sim_unit_tests` (C++, antes de tudo) + testes impactados pelo `git diff` + sentinelas baratas | antes de cada commit/etapa | ~0,04 s + 1–12 min conforme o diff |
 | `pr` | `quick` + rodada c1 de **90 dias** com digest (`c1_world_ai_365.gd --days=90`) | antes do merge | 4–20 min |
 | `nightly` | `-All` (102 testes) + rodada c1 de **365 dias** | madrugada/CI noturna | bateria completa + ~3 min |
 
@@ -33,6 +33,11 @@ powershell ... -List economy_integration_test
 
 - `-Tier` usa `tools/test_impact_map.json`. `-List`/`-Pattern` continuam valendo:
   com tier, a seleção explícita é somada às sentinelas.
+- **Antes de qualquer Godot**, os tiers `quick`/`pr` rodam as checagens de CLI do
+  mapa. A primeira é `sim_unit_tests` (testes unitários C++ do núcleo, ~0,04 s,
+  sem Godot): se o executável estiver compilado e falhar, o tier aborta na hora
+  (`fail_fast`) com código 1; se não estiver compilado, vira SKIP. Detalhes,
+  compilação e como escrever um caso: `docs/testing/cpp_unit_tests.md`.
 - O diff considerado é `<Base>...working tree` + arquivos não rastreados
   (`git ls-files --others`). Ruído de import/build (`.uid`, `.import`, `.godot/`,
   `gdextension/bin/`, `gdextension/build*/`) é ignorado.
@@ -123,9 +128,16 @@ Candidatos quando (1)–(3) forem resolvidos: `c1_balance_test`,
 `c3_bank_seizure_conservation_test`, `price_formation_test`,
 `production_chain_test`, `population_demo_test`. O caminho mais curto é um modo
 `--fixture`/demo no CLI (núcleo, fora deste escopo) ou um formato de snapshot
-compacto. Até lá, `cli_checks` fica vazio (`[]`) e nada é pulado à toa.
+compacto.
 
-## Propostas de encurtamento (fase 2 — não implementadas)
+**FASE 2 (feito): testes unitários C++.** Em vez de migrar testes GDScript, o
+alvo `sim_unit_tests` (doctest + `opengs_sim`, sem godot-cpp) cobre regras
+isoladas em milissegundos — banco/D-128, eficiência/D-125, massa/D-127,
+save/load e determinismo, com o fixture "mundo de bolso". Ele é a primeira
+checagem de `quick`/`pr` (`cli_checks` do mapa) e falha rápido. Ver
+`docs/testing/cpp_unit_tests.md`. O `cli_checks` deixou de ser vazio.
+
+## Propostas de encurtamento (fase 2 — em andamento)
 
 Não mexa nos testes lentos agora; a fase 1 só os tira do caminho rápido.
 

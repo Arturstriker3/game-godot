@@ -324,5 +324,16 @@
       "note": "ferramenta/teste: o proprio teste e selecionado pelo nome; helper puro roda so as sentinelas"
     }
   ],
-  "cli_checks": []
+  "cli_checks": [
+    {
+      "name": "sim_unit_tests",
+      "command": "gdextension/build-unit-tests/sim_unit_tests.exe",
+      "args": [],
+      "tier": "quick",
+      "timeout_s": 60,
+      "fail_fast": true,
+      "requires": ["gdextension/build-unit-tests/sim_unit_tests.exe"],
+      "note": "FASE 2: testes unitarios C++ do nucleo (sem Godot, <1 s). Roda em TODO -Tier quick/pr e falha rapido; se o executavel nao estiver compilado (cmake -DOPENGS_BUILD_UNIT_TESTS=ON), vira SKIP. Qualquer gdextension/src/** mapeia para este alvo SEMPRE (nao depende do diff). Como compilar: docs/testing/cpp_unit_tests.md."
+    }
+  ]
 }
