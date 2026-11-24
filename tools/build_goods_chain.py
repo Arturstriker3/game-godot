@@ -642,6 +642,10 @@ def build_goods(spec: dict, prices: dict[str, dict], icons: dict, legacy_prices:
         }
         if gid in GOOD_ALIASES:
             entry["alias_of"] = GOOD_ALIASES[gid]
+        # Consumidor pendente declarado na spec (D-130b): bem sem demanda
+        # modelada ainda, igual ao `uranium` primário.
+        if good.get("consumer_note"):
+            entry["consumer_note"] = good["consumer_note"]
         note = good.get("note", "")
         if note:
             entry["note"] = note
@@ -699,7 +703,7 @@ def build_needs(spec: dict, goods: list[dict]) -> dict:
     for tag in institutional:
         institutional[tag].sort()
 
-    built = {
+    return {
         "version": 1,
         "note": (
             "Necessidades das POPs. Só basic/food tem âncora física no núcleo "
@@ -719,9 +723,6 @@ def build_needs(spec: dict, goods: list[dict]) -> dict:
         "consumption_rules": list(spec["consumption_rules"]),
         "pending": list(spec.get("pending", [])),
     }
-    if spec.get("military_demand"):
-        built["military_demand"] = spec["military_demand"]
-    return built
 
 
 # --------------------------------------------------------------------------

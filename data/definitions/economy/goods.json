@@ -2081,9 +2081,8 @@
     "price_source": "derived",
     "icon_color": "#5F6B4A",
     "food": false,
-    "use": [
-      "army"
-    ],
+    "use": [],
+    "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
     "note": "Equipamento tático individual: aramida + placa cerâmica balística + borracha + tecido sintético. D-130."
   },
   {
@@ -2099,9 +2098,8 @@
     "price_source": "derived",
     "icon_color": "#4E6B7A",
     "food": false,
-    "use": [
-      "army"
-    ],
+    "use": [],
+    "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
     "note": "Equipamento de comando: computador + componentes eletrônicos + baterias + fios. D-130."
   },
   {
@@ -2117,9 +2115,8 @@
     "price_source": "derived",
     "icon_color": "#5A6470",
     "food": false,
-    "use": [
-      "army"
-    ],
+    "use": [],
+    "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
     "note": "Bloqueador de drones: placa de circuito + componentes eletrônicos + baterias + plástico. D-130."
   },
   {
@@ -2135,9 +2132,8 @@
     "price_source": "derived",
     "icon_color": "#6A5A3C",
     "food": false,
-    "use": [
-      "army"
-    ],
+    "use": [],
+    "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
     "note": "Lança-foguetes anti-tanque: aço + ferragens + tábuas. D-130."
   },
   {
@@ -2153,9 +2149,8 @@
     "price_source": "derived",
     "icon_color": "#A0522D",
     "food": false,
-    "use": [
-      "army"
-    ],
+    "use": [],
+    "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
     "note": "Foguete anti-tanque (munição): explosivos + pólvora + chapa de aço. D-130."
   },
   {
@@ -2171,9 +2166,8 @@
     "price_source": "derived",
     "icon_color": "#556B5A",
     "food": false,
-    "use": [
-      "army"
-    ],
+    "use": [],
+    "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
     "note": "Lançador antiaéreo portátil (inclui o míssil): sensores + componentes eletrônicos + explosivos + lingote de alumínio. D-130."
   }
 ]

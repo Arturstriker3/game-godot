@@ -20,25 +20,40 @@ Todos os coeficientes são **1 unidade por insumo** (`coef_source: default_unit`
 | `at_rocket` | Foguete anti-tanque | military | final/final | `explosives` + `gunpowder` + `steel_sheet` |
 | `aa_launcher` | Lançador antiaéreo portátil | military | final/final | `sensors` + `electronic_components` + `explosives` + `aluminum_ingot` |
 
-Cadeia fechada: `chemicals`/`refined_sulfur` → **aramida** → **placa cerâmica balística** → **equipamento tático**. `aramid` e `ballistic_ceramic_plate` são bens intermediários (consumidos pela receita seguinte); os seis finais entram na cesta institucional `army`.
+Cadeia fechada: `chemicals`/`refined_sulfur` → **aramida** → **placa cerâmica balística** → **equipamento tático**. `aramid` e `ballistic_ceramic_plate` são bens intermediários (consumidos pela receita seguinte); os seis finais ficam no catálogo **sem demanda militar modelada** (adiada — ver §2).
 
 `infantry_gear` mantém o **id** e passa a exibir **"Equipamento de apoio"** (en `Support equipment`, es `Equipo de apoyo`).
 
-## 2. Demanda militar declarada
+## 2. Demanda militar — ADIADA (decisão do dono, 2026-11-24)
 
-`needs.json` (gerado da spec) ganhou o bloco `military_demand`:
+A primeira versão da D-130 chegou a declarar demanda militar: o bloco
+`military_demand` em `needs.json` (1 unidade de referência por soldado/ano por
+item, `params_source: declared:unit_reference`) e os seis bens finais novos na
+cesta institucional `army`. **Isso foi removido**: ainda não existe demanda
+militar real no jogo e o ajuste será feito quando o sistema militar existir.
 
-- `unit`: unidade de referência por soldado/ano;
-- `params_source`: `declared:unit_reference`;
-- `per_soldier_unit_year`: **1,0** para `uniforms`, `infantry_gear`, `small_arms`, `ammunition` e **1,0** para `tactical_equipment`, `command_equipment`, `drone_jammer`, `at_launcher`, `at_rocket`, `aa_launcher`.
+O que saiu (só o que a D-130 havia acrescentado por causa da demanda):
 
-Não existe efetivo militar no modelo nem âncora observada de consumo por soldado; o valor é **default de balanceamento declarado**, proporcional 1:1 aos itens que já estavam na lista `army`. Não é dado de simulação e o núcleo ainda não consome essa cesta (a lista institucional é declaração de intenção, como as demais tags `use`). A lista `army` de `needs.json` passa a incluir os seis bens finais novos.
+- bloco `military_demand` de `needs.json` e da spec (`production_chains_spec.json`);
+- `tactical_equipment`, `command_equipment`, `drone_jammer`, `at_launcher`,
+  `at_rocket` e `aa_launcher` da lista institucional `army`;
+- a tag `use: ["army"]` desses seis em `goods.json`/spec, trocada por
+  `use: []` + `consumer_note` "pendente: demanda militar adiada por decisão do
+  dono (sistema militar futuro)" (mesmo padrão do `uranium`).
+
+A demanda que já existia antes da D-130 (`small_arms`, `ammunition`, `uniforms`,
+`infantry_gear`, `artillery`, `military_drone`, `combat_ration`, `diesel`…)
+**não foi tocada**. `aramid` e `ballistic_ceramic_plate` nunca tiveram demanda
+própria: seguem apenas como insumos da cadeia. Bens, receitas, preços,
+armazenagem e ícones continuam como na D-130. O builder
+(`tools/build_goods_chain.py`) deixou de emitir `military_demand` e passou a
+reproduzir `consumer_note` vindo da spec.
 
 ## 3. IA, armazenagem e listas fixas
 
 - `gdextension/src/sim/storage.cpp`: os sete bens militares novos entram em `kMagazineProducts` (paiol). A aramida fica no armazém geral (química).
 - `data/definitions/economy/goods_storage_map.json`: `military_depot` para a placa, os três equipamentos e os três lançadores/foguetes (a placa e o equipamento tático têm `general_warehouse` como secundário); apenas `aramid` cai no `general_warehouse` declarado. O mapa é gerado por `tools/build_storage_g2.py`, que também ganhou as regras explícitas.
-- `needs.json` institucional `army` é a lista que a IA de importação/consumo consulta quando a cesta for ligada; os novos ids já estão nela.
+- `needs.json` institucional `army` é a lista que a IA de importação/consumo consulta quando a cesta for ligada; os novos ids **não** estão nela (demanda adiada, §2).
 
 ## 4. Ícones
 
@@ -87,3 +102,26 @@ Rodada `c1_world_ai_90` (JSON `G:\opengs_tmp\c1_world_ai_90_d130_dllnew.json`):
 Comparação com a main (controle): a mesma ferramenta e os mesmos argumentos em `balance/global-resources` `ca783dba`, com a DLL de `bin/` também recompilada em Debug, produzem **a mesma rodada** — todos os campos do JSON batem e só `wall_s` difere (`G:\opengs_tmp\c1_world_ai_90_main.json`). A D-130, portanto, **não altera** o resultado de 90 d: a cesta `army` é declaração (o núcleo não a consome), nenhum bem novo é produzido no horizonte e a lista de paiol só muda a classificação de armazém.
 
 Nota de escopo: a rodada anterior (`20261124_181633`, 596 fechamentos, drift 0,001321) usou uma DLL de `bin/` mais velha que o fonte da main; depois da recompilação dos dois lados, os números são 582 e 0,011852 em ambos. A diferença era da DLL defasada, não da D-130.
+
+## 7. Revisão D-130b — demanda militar adiada (2026-11-24)
+
+O dono decidiu retirar a demanda militar nova: ainda não há demanda militar real
+no jogo e ela será ajustada quando o sistema militar existir. Revisão no worktree
+`G:/projetos/opengs-wt-d130b`, branch `fix/d130-no-mil-demand`, base
+`balance/global-resources` `ffa6df4d`.
+
+- **Removido:** bloco `military_demand` (spec + `needs.json`); os seis finais
+  novos da cesta `army`; a tag `use: ["army"]` deles (agora `use: []` +
+  `consumer_note` pendente); o gerador deixou de emitir `military_demand`.
+- **Mantido:** os 8 bens, receitas, preços, `goods_storage_map`/
+  `kMagazineProducts` e ícones; toda a demanda que já existia antes da D-130.
+- **Guarda:** `tools/goods_data_test.gd` falha se `military_demand` voltar ou se
+  algum dos 8 ids entrar na cesta `army`.
+- **Verificação (D-130b):** `build_goods_chain check` 0 problemas;
+  `sim_unit_tests` **40/40** (344 asserções); `-Tier quick` **22/22**;
+  `-Tier pr -Base balance/global-resources` **23/23 OK** (~13 min, run
+  `20261124_202319`); 90 d (`G:\opengs_tmp\c1_world_ai_365.json`): comida
+  **83/179** abaixo de 0,975 (média 0,9313; mediana 0,9778), **0 falências
+  industriais**, 582 serviços fechados, **0 violações**, 0 travados, drift
+  0,011852 — JSON **idêntico** ao da D-130 exceto `wall_s`
+  (`trajectory_sha256` `17c6b0ee…`).
