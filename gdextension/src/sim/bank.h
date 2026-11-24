@@ -134,6 +134,14 @@ Bank* lender(WorldState& ws, const Group& group);
 bool lend(WorldState& ws, const std::string& group_id, double amount,
 	double* out_amount, std::string* error);
 
+// D-126: crédito de capital de giro das firmas privadas e dos serviços de uma
+// cidade. O tomador é o caixa agregado da cidade (`firm_cash`); o passivo fica
+// em `City::firm_debt` e a contraparte no banco PÚBLICO da nação (o mesmo
+// credor da regra C4). Cria depósito (dinheiro bancário), nunca M0. O chamador
+// já limita o pedido; aqui só se aplica o aperto de capital da C6.
+bool lend_city(WorldState& ws, const std::string& city_id, double amount,
+	double* out_amount, std::string* error);
+
 // Capital pago pelo dono do banco (Tesouro, famílias ou exterior). Conservado:
 // não cria dinheiro. `out_paid` = efetivamente pago.
 double inject_capital(WorldState& ws, const std::string& nation, int role,

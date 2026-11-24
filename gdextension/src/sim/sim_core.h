@@ -121,6 +121,8 @@ public:
 	// calote do banco agregado (perda no credor). Roda depois da política
 	// monetária (a taxa do dia já existe) e antes dos invariantes.
 	void phase_credit();
+	// D-126: reacao deterministica a crise das firmas, servicos e usinas.
+	void phase_crisis();
 	// PARTE E (D-116): despacho por mérito, preço da rede e racionamento.
 	// Antes do trabalho/produção: define o fator de energia de cada cidade
 	// (indústria/serviços/insatisfação). `phase_power_settle` roda depois da

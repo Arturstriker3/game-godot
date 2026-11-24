@@ -1084,6 +1084,32 @@ public:
 	 */
 	void set_efficiency_params(const Dictionary& values);
 
+	// ------------------------------------------------------------------
+	// D-126 — SOBREVIVÊNCIA EM CRISE (laboratório/API e teste). Os parâmetros
+	// são os mesmos do `crisis.json` e do bloco `crisis` do save v41; as ações
+	// explícitas são determinísticas e conservam dinheiro. A reação automática
+	// roda no tick (`phase_crisis`).
+	// ------------------------------------------------------------------
+	void set_crisis_params(const Dictionary& values);
+	Dictionary get_crisis_params() const;
+	Dictionary get_crisis_status() const;
+	Dictionary crisis_layoff(const String& city_id, const String& building_id,
+		double share);
+	Dictionary crisis_borrow(const String& city_id, double amount);
+	Dictionary crisis_liquidate(const String& city_id,
+		const String& building_id, double share);
+	Dictionary crisis_mothball(const String& city_id,
+		const String& building_id);
+	Dictionary crisis_reopen(const String& city_id,
+		const String& building_id);
+	Dictionary crisis_auction(const String& city_id,
+		const String& building_id);
+	// Laboratório/teste: força os dias de prejuízo de uma construção e roda a
+	// fase de reação sem avançar o dia. Não é ação do jogador.
+	Dictionary crisis_set_stress(const String& city_id,
+		const String& building_id, int loss_days);
+	Dictionary crisis_step();
+
 	/**
 	 * D-125: parâmetros de eficiência EFETIVAMENTE aplicados (JSON carregado ou
 	 * espelho compilado quando o arquivo não carregou). Formato plano, com as

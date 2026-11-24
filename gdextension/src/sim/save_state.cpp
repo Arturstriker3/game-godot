@@ -10,6 +10,7 @@
 #include "bank.h"
 #include "bank_crisis.h"
 #include "central_bank.h"
+#include "crisis.h"
 #include "exchange.h"
 #include "sim_constants.h"
 #include "sim_core.h"
@@ -329,6 +330,35 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	data["bankruptcies"] = ws.bankruptcies;
 	data["depleted_mines"] = ws.depleted_mines;
 	data["industry_seeded"] = ws.industry_seeded;
+	// D-126 (v41): parâmetros de crise aplicados + contadores da reação. O
+	// bloco preserva o balanceamento que gerou o mundo; v40 chega sem ele.
+	{
+		Dictionary block = make_object();
+		Dictionary params = make_object();
+		for (const auto& row : crisis::params_map(ws)) {
+			params[sim_str(row.first.c_str())] = row.second;
+		}
+		block["params"] = params;
+		block["layoffs"] = ws.crisis_layoffs;
+		block["jobs_cut"] = ws.crisis_jobs_cut;
+		block["severance_paid"] = ws.crisis_severance_paid;
+		block["loans"] = ws.crisis_loans;
+		block["renegotiations"] = ws.crisis_renegotiations;
+		block["penalty_paid"] = ws.crisis_penalty_paid;
+		block["liquidations"] = ws.crisis_liquidations;
+		block["liquidated_t"] = ws.crisis_liquidated_t;
+		block["liquidated_value"] = ws.crisis_liquidated_value;
+		block["mothballs"] = ws.crisis_mothballs;
+		block["reopens"] = ws.crisis_reopens;
+		block["reopen_paid"] = ws.crisis_reopen_paid;
+		block["auctions"] = ws.crisis_auctions;
+		block["auction_value"] = ws.crisis_auction_value;
+		block["auctions_unsold"] = ws.crisis_auctions_unsold;
+		block["farm_area_reductions"] = ws.crisis_farm_area_reductions;
+		block["power_auctions"] = ws.crisis_power_auctions;
+		block["power_auction_value"] = ws.crisis_power_auction_value;
+		data["crisis"] = block;
+	}
 	// G (v24) — estado da safra por (cidade, produto, safra): ano do plantio,
 	// fator de rendimento por fertilizante e o que já foi entregue na colheita
 	// do ano. Só entram as entradas com estado (o plano em si é DEFINIÇÃO e vai
@@ -351,21 +381,26 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 				item["delivered_t"] = state.delivered_t;
 				item["loss_month_t"] = state.loss_month_t;
 				item["loss_month_key"] = state.loss_month_key;
+				// D-126 (v41): área da estação (plantada e congelada).
+				item["planted_area_scale"] = state.planted_area_scale;
+				item["harvest_area_scale"] = state.harvest_area_scale;
 				if (state.planted_year != 0 || state.harvest_year != 0
 						|| state.delivered_t != 0.0
 						|| state.yield_scale != 1.0
-						|| state.fertilizer_t != 0.0) {
+						|| state.fertilizer_t != 0.0
+						|| state.planted_area_scale != 1.0) {
 					touched = true;
 				}
 				seasons.append(item);
 			}
-			if (!touched) {
+			if (!touched && plan.area_scale == 1.0) {
 				continue;
 			}
 			Dictionary entry = make_object();
 			entry["city"] = Value(plan.city);
 			entry["product"] = Value(ws.product_names[
 				static_cast<std::size_t>(plan.product)]);
+			entry["area_scale"] = plan.area_scale;
 			entry["seasons"] = seasons;
 			plans.append(entry);
 		}
@@ -447,6 +482,15 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["sim_population"] = city.simulation_population;
 		entry["firm_cash"] = city.firm_cash;
 		entry["service_cash"] = city.service_cash;
+		// D-126 (v41): crédito de capital de giro da cidade e o prêmio de crise.
+		entry["firm_debt"] = city.firm_debt;
+		entry["firm_credit_arrears"] = city.firm_credit_arrears;
+		entry["firm_credit_total"] = city.firm_credit_total;
+		entry["firm_credit_rate_add"] = city.firm_credit_rate_add;
+		entry["firm_credit_default_days"] = city.firm_credit_default_days;
+		entry["firm_credit_defaults"] = city.firm_credit_defaults;
+		entry["firm_credit_renegotiations"] =
+			city.firm_credit_renegotiations;
 		// C1 (save v26): salário atrasado das firmas da cidade (passivo).
 		entry["service_wage_arrears"] = city.service_wage_arrears;
 		entry["rural_wage_arrears"] = city.rural_wage_arrears;
@@ -970,6 +1014,16 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["transition_days"] = building.transition_days;
 		entry["equipment"] = building.equipment;
 		entry["refinery_mode"] = building.refinery_mode;
+		// D-126 (save v41): estado da sobrevivência em crise.
+		entry["crisis_stage"] = building.crisis_stage;
+		entry["last_layoff_day"] = building.last_layoff_day;
+		entry["last_credit_day"] = building.last_credit_day;
+		entry["last_liquidation_day"] = building.last_liquidation_day;
+		entry["mothballed"] = building.mothballed;
+		entry["mothball_day"] = building.mothball_day;
+		entry["mothball_unpaid_days"] = building.mothball_unpaid_days;
+		entry["reopen_signal_days"] = building.reopen_signal_days;
+		entry["farm_area_reduced"] = building.farm_area_reduced;
 		buildings.append(entry);
 	}
 	data["buildings"] = buildings;
@@ -1817,6 +1871,15 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			// Geração do dia (MWh): o status publica esse valor até o próximo
 			// despacho; o save o preserva como os agregados da rede já fazem.
 			entry["generated_mwh"] = plant.generated_mwh;
+			// D-126 (v41): crise da usina e eficiência de despacho.
+			entry["loss_days"] = plant.loss_days;
+			entry["mothballed"] = plant.mothballed;
+			entry["mothball_day"] = plant.mothball_day;
+			entry["mothball_unpaid_days"] = plant.mothball_unpaid_days;
+			entry["crisis_stage"] = plant.crisis_stage;
+			entry["last_layoff_day"] = plant.last_layoff_day;
+			entry["reopen_signal_days"] = plant.reopen_signal_days;
+			entry["production_efficiency"] = plant.production_efficiency;
 			plants.append(entry);
 		}
 		block["plants"] = plants;
@@ -1909,6 +1972,10 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["credit_repaid"] = group.credit_repaid;
 		entry["credit_default_days"] = group.credit_default_days;
 		entry["credit_defaults"] = group.credit_defaults;
+		// D-126 (v41): prêmio de juro do capital de giro de crise.
+		entry["credit_rate_add"] = group.credit_rate_add;
+		entry["credit_renegotiations"] = group.credit_renegotiations;
+		entry["credit_arrears_days"] = group.credit_arrears_days;
 		Array by_host = make_array();
 		for (const auto& row : group.profit_by_host) {
 			Dictionary host = make_object();
@@ -2130,6 +2197,52 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	ws.bankrupt_planned_primary = 0;
 	ws.depleted_mines = int(data.get("depleted_mines", 0));
 	ws.industry_seeded = bool(data.get("industry_seeded", false));
+	// D-126 (v41): parâmetros e contadores da sobrevivência em crise. Save v40
+	// e anteriores não têm o bloco: o WorldState mantém os defaults declarados
+	// e nenhuma reação em curso é inventada.
+	if (version >= 41 && data.has("crisis")) {
+		const Dictionary block = data.get("crisis", Dictionary());
+		const Value& params_variant = block.get("params", Value());
+		if (params_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary params = params_variant;
+			std::map<std::string, double> values;
+			for (const auto& row : params.entries()) {
+				values[row.first] = double(row.second);
+			}
+			crisis::apply_params(ws, values);
+		}
+		ws.crisis_layoffs = std::max(0, int(block.get("layoffs", 0)));
+		ws.crisis_jobs_cut = safe_nonneg(double(block.get("jobs_cut", 0.0)));
+		ws.crisis_severance_paid = safe_nonneg(
+			double(block.get("severance_paid", 0.0)));
+		ws.crisis_loans = safe_nonneg(double(block.get("loans", 0.0)));
+		ws.crisis_renegotiations = std::max(0,
+			int(block.get("renegotiations", 0)));
+		ws.crisis_penalty_paid = safe_nonneg(
+			double(block.get("penalty_paid", 0.0)));
+		ws.crisis_liquidations = std::max(0,
+			int(block.get("liquidations", 0)));
+		ws.crisis_liquidated_t = safe_nonneg(
+			double(block.get("liquidated_t", 0.0)));
+		ws.crisis_liquidated_value = safe_nonneg(
+			double(block.get("liquidated_value", 0.0)));
+		ws.crisis_mothballs = std::max(0,
+			int(block.get("mothballs", 0)));
+		ws.crisis_reopens = std::max(0, int(block.get("reopens", 0)));
+		ws.crisis_reopen_paid = safe_nonneg(
+			double(block.get("reopen_paid", 0.0)));
+		ws.crisis_auctions = std::max(0, int(block.get("auctions", 0)));
+		ws.crisis_auction_value = safe_nonneg(
+			double(block.get("auction_value", 0.0)));
+		ws.crisis_auctions_unsold = std::max(0,
+			int(block.get("auctions_unsold", 0)));
+		ws.crisis_farm_area_reductions = std::max(0,
+			int(block.get("farm_area_reductions", 0)));
+		ws.crisis_power_auctions = std::max(0,
+			int(block.get("power_auctions", 0)));
+		ws.crisis_power_auction_value = safe_nonneg(
+			double(block.get("power_auction_value", 0.0)));
+	}
 
 	// F5: moedas e tarifas (save v6). Carregadas ANTES das cidades porque o
 	// preço-base local (moeda da nação) depende da taxa. Save v5 sem as chaves
@@ -2740,6 +2853,13 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			int(entry.get("credit_default_days", 0)));
 		group.credit_defaults = std::max(0,
 			int(entry.get("credit_defaults", 0)));
+		// D-126 (v41): v40 e anteriores chegam sem prêmio/renegociação.
+		group.credit_rate_add = version >= 41
+			? std::max(0.0, double(entry.get("credit_rate_add", 0.0))) : 0.0;
+		group.credit_renegotiations = version >= 41
+			? std::max(0, int(entry.get("credit_renegotiations", 0))) : 0;
+		group.credit_arrears_days = version >= 41
+			? std::max(0, int(entry.get("credit_arrears_days", 0))) : 0;
 		const Array by_host = entry.get("profit_by_host", Array());
 		for (int host_index = 0; host_index < by_host.size(); ++host_index) {
 			const Dictionary host = by_host[host_index];
@@ -3152,6 +3272,24 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		city.simulation_population = read_sim_population(entry, city.population);
 		city.firm_cash = double(entry.get("firm_cash", 0.0));
 		city.service_cash = double(entry.get("service_cash", 0.0));
+		// D-126 (v41): crédito de giro da cidade. v40 e anteriores chegam sem
+		// a chave (dívida zero, sem crise em curso).
+		city.firm_debt = version >= 41
+			? safe_nonneg(double(entry.get("firm_debt", 0.0))) : 0.0;
+		city.firm_credit_arrears = version >= 41
+			? safe_nonneg(double(entry.get("firm_credit_arrears", 0.0))) : 0.0;
+		city.firm_credit_total = version >= 41
+			? safe_nonneg(double(entry.get("firm_credit_total", 0.0))) : 0.0;
+		city.firm_credit_rate_add = version >= 41
+			? std::max(0.0, double(entry.get("firm_credit_rate_add", 0.0)))
+			: 0.0;
+		city.firm_credit_default_days = version >= 41
+			? std::max(0, int(entry.get("firm_credit_default_days", 0))) : 0;
+		city.firm_credit_defaults = version >= 41
+			? std::max(0, int(entry.get("firm_credit_defaults", 0))) : 0;
+		city.firm_credit_renegotiations = version >= 41
+			? std::max(0, int(entry.get("firm_credit_renegotiations", 0)))
+			: 0;
 		// C1 (save v26): salário atrasado das firmas da cidade. v25 e
 		// anteriores não têm a chave — nasce 0.
 		city.service_wage_arrears = version >= 26
@@ -4011,6 +4149,26 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			? double(entry.get("equipment", 0.0)) : 1.0, 0.0, 1.0);
 		building.refinery_mode = version >= 40
 			? std::clamp(int(entry.get("refinery_mode", 0)), 0, 2) : 0;
+		// D-126 (save v41): sobrevivência em crise. Save v40 e anteriores
+		// carrega neutro (sem hibernação, sem demissão/liquidação em curso).
+		if (version >= 41) {
+			building.crisis_stage = std::clamp(
+				int(entry.get("crisis_stage", 0)), 0, 6);
+			building.last_layoff_day = std::max(-1000000,
+				int(entry.get("last_layoff_day", -1000000)));
+			building.last_credit_day = std::max(-1000000,
+				int(entry.get("last_credit_day", -1000000)));
+			building.last_liquidation_day = std::max(-1000000,
+				int(entry.get("last_liquidation_day", -1000000)));
+			building.mothballed = bool(entry.get("mothballed", false));
+			building.mothball_day = int(entry.get("mothball_day", -1));
+			building.mothball_unpaid_days = std::max(0,
+				int(entry.get("mothball_unpaid_days", 0)));
+			building.reopen_signal_days = std::max(0,
+				int(entry.get("reopen_signal_days", 0)));
+			building.farm_area_reduced = bool(
+				entry.get("farm_area_reduced", false));
+		}
 		building.idle_today = false;
 		building.equipment_active = building.equipment > 0.0;
 		// D-086 (decisão do dono): o recurso nunca acaba — ignora o `depleted`
@@ -4440,6 +4598,23 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				double(entry.get("cf_base", 0.0)), 0.0, 1.0);
 			plant.generated_mwh = std::max(0.0,
 				double(entry.get("generated_mwh", 0.0)));
+			if (version >= 41) {
+				plant.loss_days = std::max(0,
+					int(entry.get("loss_days", 0)));
+				plant.mothballed = bool(entry.get("mothballed", false));
+				plant.mothball_day = int(entry.get("mothball_day", -1));
+				plant.mothball_unpaid_days = std::max(0,
+					int(entry.get("mothball_unpaid_days", 0)));
+				plant.crisis_stage = std::clamp(
+					int(entry.get("crisis_stage", 0)), 0, 6);
+				plant.last_layoff_day = std::max(-1000000,
+					int(entry.get("last_layoff_day", -1000000)));
+				plant.reopen_signal_days = std::max(0,
+					int(entry.get("reopen_signal_days", 0)));
+				plant.production_efficiency = std::clamp(
+					double(entry.get("production_efficiency", 1.0)),
+					0.0, 1.0);
+			}
 			ws.power_plants.push_back(std::move(plant));
 		}
 		const Value& grids_variant = block.get("grids", Value());
@@ -5091,6 +5266,11 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			}
 			CropPlan& plan = ws.crop_plans[
 				static_cast<std::size_t>(plan_found->second)];
+			// D-126 (v41): área efetiva do plano. v40 e anteriores chegam com
+			// área cheia (1.0) — nada inventado para trás.
+			plan.area_scale = version >= 41
+				? std::clamp(double(entry.get("area_scale", 1.0)), 0.10, 1.0)
+				: 1.0;
 			const Array seasons = entry.get("seasons", Array());
 			const int count = std::min(plan.season_count, seasons.size());
 			for (int slot = 0; slot < count; ++slot) {
@@ -5110,6 +5290,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				state.loss_month_t = safe_nonneg(
 					double(item.get("loss_month_t", 0.0)));
 				state.loss_month_key = int(item.get("loss_month_key", 0));
+				state.planted_area_scale = version >= 41
+					? std::clamp(double(item.get("planted_area_scale", 1.0)),
+						0.10, 1.0) : 1.0;
+				state.harvest_area_scale = version >= 41
+					? std::clamp(double(item.get("harvest_area_scale", 1.0)),
+						0.10, 1.0) : 1.0;
 			}
 		}
 	}

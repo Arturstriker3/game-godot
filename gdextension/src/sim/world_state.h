@@ -178,12 +178,55 @@ struct CpiHistory {
 	int count = 0;
 };
 
+// ---------------------------------------------------------------------------
+// D-126 — SOBREVIVÊNCIA EM CRISE. Espelho C++ dos defaults de balanceamento
+// declarados em `data/definitions/economy/crisis.json`. NÃO são dado observado:
+// são regras do jogo (rescisão, crédito de giro, deságio de liquidação,
+// hibernação, leilão e redução de área). O JSON é a fonte de balanceamento;
+// `set_crisis_params` sobrescreve e o bloco `definitions.crisis` do save v41
+// preserva o que foi aplicado. A ordem da reação é fixa e não é parâmetro:
+// corte -> demissão -> crédito -> liquidação -> hibernação -> leilão.
+// ---------------------------------------------------------------------------
+struct CrisisParams {
+	bool enabled = true;
+	int cut_days = 5;
+	int layoff_days = 20;
+	double layoff_share = 0.25;
+	double layoff_min_jobs_share = 0.10;
+	double severance_days = 60.0;
+	int layoff_cooldown_days = 30;
+	int credit_days = 30;
+	double credit_working_days = 60.0;
+	double credit_asset_share = 0.5;
+	double credit_rate_add = 0.02;
+	int credit_renegotiation_days = 15;
+	double credit_penalty = 0.05;
+	int credit_max_renegotiations = 1;
+	int liquidate_days = 40;
+	double liquidation_discount = 0.30;
+	double liquidation_share = 0.5;
+	int mothball_days = 50;
+	double mothball_opex_share = 0.10;
+	double mothball_efficiency_retention = 0.60;
+	double reopen_cost_per_capacity = 20.0;
+	int reopen_signal_days = 10;
+	int mothball_grace_days = 60;
+	int bankrupt_days = 60;
+	double auction_discount = 0.30;
+	double auction_state_share = 0.5;
+	double farm_area_reduction = 0.25;
+	int farm_area_reduction_days = 30;
+};
+
 struct WorldState {
 	int day = 0;
 	CadenceState cadence;
 	// D-125: parâmetros de balanceamento da eficiência de produção (defaults
 	// declarados no JSON de produção; o save preserva o que foi aplicado).
 	EfficiencyParams efficiency;
+	// D-126: parâmetros de sobrevivência em crise (defaults declarados no JSON
+	// de crise; o save preserva o que foi aplicado).
+	CrisisParams crisis;
 
 	// Estado do cenário de validação de duas cidades.
 	bool active = false;
@@ -366,6 +409,25 @@ struct WorldState {
 	std::vector<Port> ports;
 	std::vector<TradeOrder> last_orders;
 	int bankruptcies = 0;
+	// D-126: contadores do dia/partida (status e teste; persistidos no v41).
+	int crisis_layoffs = 0;
+	double crisis_jobs_cut = 0.0;
+	double crisis_severance_paid = 0.0;
+	double crisis_loans = 0.0;
+	int crisis_renegotiations = 0;
+	double crisis_penalty_paid = 0.0;
+	int crisis_liquidations = 0;
+	double crisis_liquidated_t = 0.0;
+	double crisis_liquidated_value = 0.0;
+	int crisis_mothballs = 0;
+	int crisis_reopens = 0;
+	double crisis_reopen_paid = 0.0;
+	int crisis_auctions = 0;
+	double crisis_auction_value = 0.0;
+	int crisis_auctions_unsold = 0;
+	int crisis_farm_area_reductions = 0;
+	int crisis_power_auctions = 0;
+	double crisis_power_auction_value = 0.0;
 	// D-099: composição das falências do mundo para o diagnóstico do 365 d
 	// (contadores de RUNTIME, não serializados; zeram no load). Por produto
 	// (`output_product`) e quantas eram primárias COM plano de safra.

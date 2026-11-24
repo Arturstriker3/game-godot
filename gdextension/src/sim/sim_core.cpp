@@ -853,7 +853,12 @@ void SimCore::phase_accounting() {
 			// regra é explícita — a construção some (capacidade e empregos), em
 			// vez de ficar produzindo no piso no vermelho para sempre. Planta
 			// estratégica é mantida pelo governo (ver subsídio acima).
-			if (building.loss_days >= kLossDaysBeforeClose && !building.strategic) {
+			// D-126: com a sobrevivência em crise ligada, a falência passa pela
+			// reação (hibernação e leilão) na fase `phase_crisis`; o prédio só
+			// some se o leilão não tiver comprador.
+			if (!ws_.crisis.enabled
+					&& building.loss_days >= kLossDaysBeforeClose
+					&& !building.strategic) {
 				building.bankrupt = true;
 			}
 			if (building.loss_days >= kLossDaysBeforeCut) {

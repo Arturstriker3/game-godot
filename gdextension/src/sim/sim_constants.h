@@ -165,7 +165,7 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // `definitions.efficiency` guarda os parâmetros de balanceamento da curva.
 // Save v39 carrega com a planta MADURA (eficiência 1, equipamento ligado): o
 // estoque existente é o ano-base e o comportamento anterior é preservado.
-constexpr int kSaveVersion = 40;
+constexpr int kSaveVersion = 41;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

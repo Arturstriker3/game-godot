@@ -1295,7 +1295,9 @@ void SimCore::phase_power() {
 				southern);
 		}
 		day.avail_mw = std::max(0.0, plant.mw)
-			* std::clamp(cf * cf_scale, 0.0, 1.0);
+			* std::clamp(cf * cf_scale, 0.0, 1.0)
+			* (plant.mothballed ? 0.0
+				: std::clamp(plant.production_efficiency, 0.0, 1.0));
 		if (plant.fuel != POWER_SOLAR && plant.fuel != POWER_NUCLEAR
 				&& power_fuel_is_thermal(plant.fuel)) {
 			const auto found = season.find(city.nation);
