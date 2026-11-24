@@ -3272,22 +3272,25 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		city.simulation_population = read_sim_population(entry, city.population);
 		city.firm_cash = double(entry.get("firm_cash", 0.0));
 		city.service_cash = double(entry.get("service_cash", 0.0));
-		// D-126 (v41): crédito de giro da cidade. v40 e anteriores chegam sem
-		// a chave (dívida zero, sem crise em curso).
-		city.firm_debt = version >= 41
+		// D-126 (v41): crédito de giro da cidade. Lido pela PRESENÇA da chave,
+		// não pela versão: `banks[].loans` é lido em qualquer versão, e zerar a
+		// dívida de um save reconstruído/rebaixado abriria o gap crédito ×
+		// passivo que o invariante financeiro acusa. Sem a chave (save v40 real)
+		// o estado é neutro: dívida zero, como antes da D-126.
+		city.firm_debt = entry.has("firm_debt")
 			? safe_nonneg(double(entry.get("firm_debt", 0.0))) : 0.0;
-		city.firm_credit_arrears = version >= 41
+		city.firm_credit_arrears = entry.has("firm_credit_arrears")
 			? safe_nonneg(double(entry.get("firm_credit_arrears", 0.0))) : 0.0;
-		city.firm_credit_total = version >= 41
+		city.firm_credit_total = entry.has("firm_credit_total")
 			? safe_nonneg(double(entry.get("firm_credit_total", 0.0))) : 0.0;
-		city.firm_credit_rate_add = version >= 41
+		city.firm_credit_rate_add = entry.has("firm_credit_rate_add")
 			? std::max(0.0, double(entry.get("firm_credit_rate_add", 0.0)))
 			: 0.0;
-		city.firm_credit_default_days = version >= 41
+		city.firm_credit_default_days = entry.has("firm_credit_default_days")
 			? std::max(0, int(entry.get("firm_credit_default_days", 0))) : 0;
-		city.firm_credit_defaults = version >= 41
+		city.firm_credit_defaults = entry.has("firm_credit_defaults")
 			? std::max(0, int(entry.get("firm_credit_defaults", 0))) : 0;
-		city.firm_credit_renegotiations = version >= 41
+		city.firm_credit_renegotiations = entry.has("firm_credit_renegotiations")
 			? std::max(0, int(entry.get("firm_credit_renegotiations", 0)))
 			: 0;
 		// C1 (save v26): salário atrasado das firmas da cidade. v25 e
