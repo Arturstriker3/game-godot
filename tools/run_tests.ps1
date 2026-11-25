@@ -821,11 +821,39 @@ function Release-TestLock {
 function Get-ForeignGodotTests {
     param([int[]]$ExcludePid = @())
     $out = @()
-    $procs = @(Get-CimInstance Win32_Process -Filter "Name LIKE 'Godot%'" -ErrorAction SilentlyContinue)
-    foreach ($p in $procs) {
+    # A checagem precisa da cadeia de pais, inclusive de processos que nao sao
+    # Godot (o runner e um powershell): um snapshot unico evita consultas por
+    # processo e mantem a decisao coerente.
+    $all = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue)
+    $parentOf = @{}
+    foreach ($q in $all) {
+        try { $parentOf[[int]$q.ProcessId] = [int]$q.ParentProcessId } catch { }
+    }
+    # Tudo o que descende DESTE runner e arvore do proprio teste (um teste pode
+    # abrir Godot filhos, ex.: determinism_cross_process_test). Nunca e "de
+    # outra tarefa": nao esperar por ele nem contar como lock alheio.
+    $ownRoots = New-Object System.Collections.Generic.HashSet[int]
+    if ($PID -gt 0) { [void]$ownRoots.Add([int]$PID) }
+    foreach ($id in @($ExcludePid)) {
+        if ($null -ne $id -and [int]$id -gt 0) { [void]$ownRoots.Add([int]$id) }
+    }
+    foreach ($p in $all) {
+        if ($p.Name -notmatch '^Godot') { continue }
         if (-not $p.CommandLine) { continue }
-        if ($ExcludePid -contains [int]$p.ProcessId) { continue }
-        if ($p.CommandLine -match '--headless' -and $p.CommandLine -match '--path') { $out += $p }
+        if (-not ($p.CommandLine -match '--headless' -and $p.CommandLine -match '--path')) { continue }
+        $procId = [int]$p.ProcessId
+        if ($ExcludePid -contains $procId) { continue }
+        $own = $false
+        $cursor = $procId
+        for ($depth = 0; $depth -lt 32; $depth++) {
+            if (-not $parentOf.ContainsKey($cursor)) { break }
+            $parent = [int]$parentOf[$cursor]
+            if ($parent -le 0 -or $parent -eq $cursor) { break }
+            if ($ownRoots.Contains($parent)) { $own = $true; break }
+            $cursor = $parent
+        }
+        if ($own) { continue }
+        $out += $p
     }
     return @($out)
 }

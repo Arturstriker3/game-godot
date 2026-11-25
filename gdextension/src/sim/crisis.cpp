@@ -866,6 +866,10 @@ bool borrow_city(WorldState& ws, const std::string& city_id, double amount,
 	// D-131: o comando `city_borrow`/IA roda fora da fase da crise (o tick já
 	// fechou), então o M1 criado não passa por `bank_money_today`; entra no
 	// acumulado que os guardas de conservação leem.
+	// NÃO chame esta função dentro da escada da crise: lá o delta do dia já
+	// entra em `bank_money_today` (`crisis.cpp`/`bank_crisis.cpp`) e o `+=`
+	// abaixo contaria o mesmo M1 duas vezes. A escada continua em
+	// `borrow_city_impl`.
 	if (granted > 0.0) {
 		ws.bank_money_delta_total += granted;
 	}

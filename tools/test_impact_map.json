@@ -22,6 +22,13 @@
         "args": ["--days=365"],
         "tier": "nightly",
         "timeout_s": 3600
+      },
+      {
+        "name": "determinism_cross_process",
+        "script": "res://tools/determinism_cross_process_test.gd",
+        "args": [],
+        "tier": "pr",
+        "timeout_s": 900
       }
     ]
   },
@@ -42,10 +49,10 @@
       "storage_g2_test",
       "construction_project_test",
       "economy_tick_async_test",
-      "determinism_cross_process_test",
       "goods_data_test",
       "population_demo_test",
       "d125_efficiency_test",
+      "d126_crisis_test",
       "d127_byproducts_test"
     ],
     "bank_fast": [
@@ -60,6 +67,7 @@
       "c4_banks_test",
       "c5_stock_exchange_test",
       "c6_bank_crisis_test",
+      "d126_crisis_test",
       "currency_trade_test"
     ],
     "bank_fx_heavy": [
