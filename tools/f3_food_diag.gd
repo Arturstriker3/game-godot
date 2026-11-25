@@ -16,7 +16,6 @@ extends SceneTree
 ## Não é um teste: nunca falha por asserção.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -121,17 +120,16 @@ func _run() -> void:
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
+	# A IA roda no C++ (D-131); o detalhe das decisões não é exposto por este
+	# caminho, então `ai` fica nulo e os blocos de decisão viram no-op.
 	var ai: Object = null
 	if geo != null:
 		geo.apply_to_sim(sim, _cities_with_center(cities))
-		ai = EconomicAIScript.new()
-		ai.setup(sim, geo)
+		sim.set_ai_enabled(true)
 	var status: Dictionary = sim.get_status()
 	_emit(sim, 0, status, ai)
 	for day in _days:
 		status = sim.tick_day()
-		if ai != null:
-			ai.run(int(status.get("day", day + 1)), status)
 		var current := int(status.get("day", day + 1))
 		if current % _every == 0 or day + 1 == _days:
 			_emit(sim, current, status, ai)

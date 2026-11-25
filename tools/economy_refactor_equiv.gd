@@ -17,7 +17,6 @@ extends SceneTree
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 const LandPropertyScript := preload("res://core/economy/land_property.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 ## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
 const RegionDataScript := preload("res://core/economy/region_data.gd")
 
@@ -158,7 +157,6 @@ func _run() -> void:
 		sim.set_sim_threads(_threads)
 
 	var geo: Object = null
-	var ai: Object = null
 
 	if _mode == "demo":
 		# AGRIA/PORTUS (2 cidades), sem IA — mesmo setup do economy_integration_test.
@@ -186,8 +184,7 @@ func _run() -> void:
 		sim.initialize_world(cities, ports, buildings)
 		if geo != null:
 			geo.apply_to_sim(sim, _cities_with_center(cities))
-			ai = EconomicAIScript.new()
-			ai.setup(sim, geo)
+			sim.set_ai_enabled(true)
 
 	# B5 (D-089): infra inicial do estado (dado real World Bank), como o autoload.
 	# No cenário sintético AGRIA/PORTUS não há bloco `region` — nada muda.
@@ -204,8 +201,6 @@ func _run() -> void:
 
 	for day in _days:
 		var status: Dictionary = sim.tick_day()
-		if ai != null:
-			ai.run(int(status.get("day", day + 1)), status)
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])

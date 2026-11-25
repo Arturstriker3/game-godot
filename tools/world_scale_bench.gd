@@ -11,20 +11,19 @@ const TmpPaths := preload("res://tools/tmp_paths.gd")
 ##   3. save/load (to_dict + JSON);
 ##   4. tick assíncrono (WorkerThreadPool) e determinismo contra o tick
 ##      síncrono — mesmo resultado depois de `--determinism` dias;
-##   5. opcional: IA escalonada, comboios (pedidos + A*) e mapa/rótulos.
+##   5. opcional: comboios (pedidos + A*) e mapa/rótulos.
 ##
 ## Uso (headless, como cena por causa de autoloads/viewport):
 ##   godot --headless --path . res://tools/world_scale_bench.tscn -- \
 ##       --cities=650 --nations=190 --ports=120 --tick-days=10 --warmup=2 \
-##       --determinism=30 [--ai-days=0] [--convoys=0] [--labels=0] \
+##       --determinism=30 [--convoys=0] [--labels=0] \
 ##       [--tag=antes] [--out=<arquivo.json>]
 ##
-## Os blocos de IA/comboios/mapa ficam DESLIGADOS por padrão: eles dependem de
+## Os blocos de comboios/mapa ficam DESLIGADOS por padrão: eles dependem de
 ## subsistemas em evolução paralela e não entram na meta de tempo do tick.
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 
-const AI_BUDGET_US := 1500
 
 ## Fases do tick C++, na ordem em que o núcleo as reporta. As quatro últimas
 ## subdividem a fase `status` (cidades, pedidos, nações e o resto).
@@ -34,21 +33,12 @@ const PHASES := [
 	"status_cities", "status_orders", "status_nations", "status_misc",
 ]
 
-class StubGeo extends RefCounted:
-	func load_data() -> bool:
-		return true
-
-	func city_land_capacity_t_day(_city_id: String, _resource: String) -> float:
-		return 0.0
-
-
 var _nations := 190
 var _cities := 650
 var _ports := 120
 var _tick_days := 10
 var _warmup := 2
 var _determinism := 30
-var _ai_days := 0
 var _convoys := false
 var _labels := false
 var _tag := ""
@@ -70,8 +60,6 @@ func _ready() -> void:
 			_warmup = int(arg.split("=")[1])
 		elif arg.begins_with("--determinism="):
 			_determinism = int(arg.split("=")[1])
-		elif arg.begins_with("--ai-days="):
-			_ai_days = int(arg.split("=")[1])
 		elif arg.begins_with("--convoys="):
 			_convoys = arg.split("=")[1] != "0"
 		elif arg.begins_with("--labels="):
@@ -145,15 +133,10 @@ func _run() -> void:
 	var from_dict_ms := _ms(l0)
 	var mem_after_save := OS.get_static_memory_usage()
 
-	# 4. Opcional: IA escalonada por frame.
-	var ai_block := {}
-	if _ai_days > 0:
-		ai_block = _measure_ai(sim, _ai_days)
-
-	# 5. Opcional: comboios (pedidos/dia, teto de visíveis, A* fatiado).
+	# 4. Opcional: comboios (pedidos/dia, teto de visíveis, A* fatiado).
 	var convoy_block := {}
 	if _convoys:
-		convoy_block = _measure_convoys(sim, min(_ai_days if _ai_days > 0 else 10, 10))
+		convoy_block = _measure_convoys(sim, 10)
 
 	# 6. Opcional: mapa/rótulos/LOD.
 	var labels := {}
@@ -181,7 +164,6 @@ func _run() -> void:
 			"from_dict_ms": from_dict_ms,
 		},
 		"async": determinism,
-		"ai": ai_block,
 		"convoys": convoy_block,
 		"flows": {
 			"orders_per_day": _stats_ints(orders_count),
@@ -264,43 +246,6 @@ func _measure_determinism(world: Dictionary) -> Dictionary:
 		"async_wall_ms": wall_ms,
 		"async_start_ms": _stats(tick_start_ms),
 		"async_main_frame_ms": _stats(main_frame_ms),
-	}
-
-
-func _measure_ai(sim, days: int) -> Dictionary:
-	var ai = load("res://core/economy/ai/economic_ai.gd").new()
-	ai.interval_days = 7
-	ai.setup(sim, StubGeo.new())
-	var plan_ms: Array[float] = []
-	var pump_ms: Array[float] = []
-	var frames: Array[int] = []
-	var peak_ms: Array[float] = []
-	for day in days:
-		var summary: Dictionary = sim.tick_day()
-		var p0 := Time.get_ticks_usec()
-		ai.plan(day, summary)
-		plan_ms.append(_ms(p0))
-		var count := 0
-		var total := 0.0
-		var peak := 0.0
-		while ai.is_busy():
-			var q0 := Time.get_ticks_usec()
-			ai.pump(AI_BUDGET_US)
-			var cost := _ms(q0)
-			total += cost
-			peak = maxf(peak, cost)
-			count += 1
-			if count > 5000:
-				break
-		pump_ms.append(total)
-		frames.append(count)
-		peak_ms.append(peak)
-	return {
-		"plan_ms": _stats(plan_ms),
-		"pump_ms": _stats(pump_ms),
-		"frames": _stats_ints(frames),
-		"peak_ms": _stats(peak_ms),
-		"decisions": ai.decisions.size(),
 	}
 
 
@@ -669,11 +614,6 @@ func _print_report() -> void:
 			float(a["sync_total_ms"]) / float(a["days"]),
 			a["async_main_frame_ms"]["mean"], a["async_main_frame_ms"]["max"],
 			a["async_wall_ms"]])
-	var ai: Dictionary = _results.get("ai", {})
-	if not ai.is_empty():
-		print("[scale] %s IA: plano %.2f ms/dia, trabalho %.2f ms/dia em %.1f frames (pico %.2f)" % [
-			_label(), ai["plan_ms"]["mean"], ai["pump_ms"]["mean"],
-			ai["frames"]["mean"], ai["peak_ms"]["max"]])
 	var c: Dictionary = _results.get("convoys", {})
 	if not c.is_empty():
 		print("[scale] %s comboios: %.1f pedidos/dia, fila %.1f, ativos %.1f, pump %.1f ms/dia em %.1f frames (pico %.2f)" % [

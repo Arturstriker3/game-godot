@@ -16,7 +16,6 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/economy_rebalance_scan.gd [--days=60] [--out=path] [--tag=after]
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -113,12 +112,10 @@ func _run() -> void:
 	sim.set_needs(_load_dict(NEEDS_PATH))
 	sim.initialize_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
 	geo.apply_to_sim(sim, _cities_with_center(cities))
-	var ai = EconomicAIScript.new()
-	ai.setup(sim, geo)
+	sim.set_ai_enabled(true)
 
 	for day in _days:
 		var status: Dictionary = sim.tick_day()
-		ai.run(int(status.get("day", 0)), status)
 
 	var status: Dictionary = sim.get_status()
 	var nation_cities := {}
