@@ -28,6 +28,7 @@ var _failures: Array[String] = []
 func _init() -> void:
 	_test_layoff()
 	_test_credit()
+	_test_city_borrow_replay_cap()
 	_test_renegotiation()
 	_test_liquidation()
 	_test_mothball_reopen()
@@ -87,6 +88,55 @@ func _test_credit() -> void:
 	var loans := float(banks.get("totals", {}).get("loans", 0.0))
 	_check("(2) banco contabiliza o empréstimo",
 			loans + EPS >= granted, "loans=%.4f granted=%.4f" % [loans, granted])
+
+
+# --- (2c) teto D-126 no comando city_borrow via replay_commands -------------
+func _test_city_borrow_replay_cap() -> void:
+	# O handler do comando A3 usa `crisis::borrow_city`, que capa o pedido no
+	# teto D-126 (0,5 x ativos - dívida). Um pedido 10x acima do teto não pode
+	# desembolsar mais que o teto, venha o comando da IA ou do replay.
+	var sim := _world()
+	if not _build(sim, "D126-CAP", 20.0, "flour", "wheat"):
+		return
+	sim.set_bank_capital("DEMO", 1.0e9)
+	_tick(sim)
+	var day := int(sim.get_status().get("day", 0))
+	var before := _credit_city(sim, "AGRIA")
+	var debt_before := float(before.get("firm_debt", 0.0))
+	var assets := maxf(0.0, float(before.get("firm_cash", 0.0))) \
+		+ maxf(0.0, float(before.get("service_cash", 0.0)))
+	var heavy: Dictionary = sim.get_city_status("AGRIA")
+	for row: Variant in heavy.get("buildings", []):
+		var building: Dictionary = row
+		var owner := String(building.get("owner", ""))
+		if owner == "private" or owner == "state":
+			assets += maxf(0.0, float(building.get(
+				"capital_per_capacity", 0.0))) \
+				* maxf(0.0, float(building.get("capacity", 0.0)))
+	var share := 0.5
+	var crisis: Variant = _json(CRISIS_PATH)
+	if crisis is Dictionary:
+		share = float(crisis.get("credit_asset_share", share))
+	var limit := maxf(0.0, share * assets - debt_before
+		- float(before.get("firm_credit_arrears", 0.0)))
+	_check("(2c) teto D-126 calculado > 0", limit > 0.0, "teto=%.4f" % limit)
+	if limit <= 0.0:
+		return
+	var request := limit * 10.0
+	var entry := {
+		"type": "city_borrow", "day": day, "apply_day": day, "seq": 1,
+		"s": ["AGRIA"], "v": [request],
+	}
+	var ok: bool = sim.replay_commands([entry], day)
+	var after := _credit_city(sim, "AGRIA")
+	var granted := float(after.get("firm_debt", 0.0)) - debt_before
+	_check("(2c) replay aceita city_borrow", ok, str(after))
+	_check("(2c) pedido 10x acima do teto é capado no teto D-126",
+		granted <= limit + 1e-4 and granted < request * 0.5,
+		"pedido=%.4f concedido=%.4f teto=%.4f" % [request, granted, limit])
+	_check("(2c) banco sem aperto desembolsa exatamente o teto",
+		absf(granted - limit) <= maxf(1e-4, limit * 1e-6),
+		"concedido=%.6f teto=%.6f" % [granted, limit])
 
 
 # --- (2b) renegociação bancária do crédito de giro (15 d + multa 5%) --------
