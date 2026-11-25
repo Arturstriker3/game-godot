@@ -1691,7 +1691,7 @@
   {
     "order": 96,
     "id": "chips",
-    "name": "Chips",
+    "name": "Semicondutores",
     "sector": "electronics",
     "kind": "intermediate",
     "tier": "semi",

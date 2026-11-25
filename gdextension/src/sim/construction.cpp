@@ -208,11 +208,25 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 		const bool is_mine = !factory && !is_food && project_city != nullptr
 			&& project.output_product >= 0
 			&& project_city->deposits[project.output_product].tracked;
-		const double base_days = factory
-			? static_cast<double>(kConstructionFactoryDays)
-			: is_food ? static_cast<double>(kConstructionFoodDays)
-			: is_mine ? static_cast<double>(kConstructionMineDays)
-			: static_cast<double>(kConstructionPrimaryDays);
+		double base_days = static_cast<double>(kConstructionPrimaryDays);
+		if (factory) {
+			base_days = static_cast<double>(kConstructionFactoryDays);
+			// G1: a receita pode declarar o próprio prazo de obra
+			// (`construction_days`); 0/ausente mantém a tabela atual.
+			if (project.recipe >= 0
+					&& project.recipe < static_cast<int>(ws_.recipes.size())) {
+				const Recipe& project_recipe =
+					ws_.recipes[static_cast<std::size_t>(project.recipe)];
+				if (project_recipe.construction_days > 0) {
+					base_days = static_cast<double>(
+						project_recipe.construction_days);
+				}
+			}
+		} else if (is_food) {
+			base_days = static_cast<double>(kConstructionFoodDays);
+		} else if (is_mine) {
+			base_days = static_cast<double>(kConstructionMineDays);
+		}
 		const double size_ratio = std::max(1.0, project.capacity)
 			/ kConstructionSizeReference;
 		const double size_scale = std::clamp(

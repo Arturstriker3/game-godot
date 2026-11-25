@@ -198,12 +198,30 @@ double brain_expected_price(AiContext& ctx, int city_index, int product,
 
 // D-131 (R1) — prazo de obra da planta nova, mesma regra de
 // `construction.cpp` (tipo + escala logarítmica do tamanho). Estimativa
-// declarada, não cronograma observado.
+// declarada, não cronograma observado. G1: a receita escolhida pode declarar
+// `construction_days`; sem ela (0/ausente) vale a tabela atual.
 int brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
-		bool is_food, bool is_mineral, double capacity) {
+		bool is_food, bool is_mineral, double capacity, int recipe_index) {
 	double base_days = static_cast<double>(kConstructionPrimaryDays);
 	if (tmpl.is_recipe) {
 		base_days = static_cast<double>(kConstructionFactoryDays);
+		int declared = -1;
+		if (recipe_index >= 0
+				&& recipe_index < static_cast<int>(ctx.ws.recipes.size())) {
+			declared = ctx.ws.recipes[
+				static_cast<std::size_t>(recipe_index)].construction_days;
+		} else if (!tmpl.recipes.empty()) {
+			// Template usa a PRIMEIRA receita da saída para os parâmetros.
+			const int showcase = tmpl.recipes.front();
+			if (showcase >= 0
+					&& showcase < static_cast<int>(ctx.ws.recipes.size())) {
+				declared = ctx.ws.recipes[
+					static_cast<std::size_t>(showcase)].construction_days;
+			}
+		}
+		if (declared > 0) {
+			base_days = static_cast<double>(declared);
+		}
 	} else if (is_food) {
 		base_days = static_cast<double>(kConstructionFoodDays);
 	} else if (is_mineral) {
@@ -245,8 +263,9 @@ double ai_brain_expected_price(AiContext& ctx, int city_index, int product,
 }
 
 int ai_brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
-		bool is_food, bool is_mineral, double capacity) {
-	return brain_construction_days(ctx, tmpl, is_food, is_mineral, capacity);
+		bool is_food, bool is_mineral, double capacity, int recipe_index) {
+	return brain_construction_days(ctx, tmpl, is_food, is_mineral, capacity,
+		recipe_index);
 }
 
 // R5: o crédito de INVESTIMENTO da cidade é o limite da D-126 (o mesmo que a
@@ -773,6 +792,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		double jobs_per_ton = tmpl.jobs_per_ton;
 		double wage = tmpl.wage;
 		double opex_per_ton = tmpl.opex_per_ton;
+		int chosen_recipe = -1;
 		if (is_recipe) {
 			const int recipe_index =
 				ai_best_recipe(view, ctx.templates, city_index, tmpl);
@@ -780,6 +800,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 				ctx.state.brain_rejected += 1;
 				return false;
 			}
+			chosen_recipe = recipe_index;
 			const Recipe& recipe =
 				view.recipes[static_cast<std::size_t>(recipe_index)];
 			if (recipe.input_count <= 0) {
@@ -805,7 +826,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			eff::curve(ctx.ws, forecast_in.efficiency_class).start;
 		forecast_in.equipment_active = false;
 		forecast_in.construction_days = brain_construction_days(ctx, tmpl,
-			is_food_candidate, is_mineral, capacity);
+			is_food_candidate, is_mineral, capacity, chosen_recipe);
 		forecast_in.aptitude = 1.0;
 		if (!is_recipe && product >= 0
 				&& product < static_cast<int>(city.suitability.size())) {

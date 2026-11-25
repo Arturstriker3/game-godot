@@ -3,6 +3,7 @@
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
+#include "sim/save_definitions.h"
 #include "sim/save_state.h"
 #include "sim/sim_core.h"
 
@@ -91,6 +92,39 @@ TEST_CASE("save/load: catalogo e receitas continuam disponiveis apos o load") {
 	CHECK(target.ws.recipes[static_cast<std::size_t>(
 		target.recipe("planks"))].yield == Approx(0.55));
 	CHECK(target.ws.efficiency.refinery_gasoline == target.product("gasoline"));
+}
+
+TEST_CASE("save/load: roundtrip preserva construction_days e plant_class (G1)") {
+	// G1: prazo de obra da receita e classe da planta sao aditivos no save
+	// (sem bump de versao). O fixture tem a receita de eletronicos `chip`, que
+	// aqui representa a planta de semicondutores.
+	ogs::test::PocketWorld source;
+	const int source_index = source.recipe("chip");
+	REQUIRE(source_index >= 0);
+	ogs::Recipe& recipe = source.ws.recipes[
+		static_cast<std::size_t>(source_index)];
+	recipe.construction_days = 180;
+	recipe.plant_class = "semiconductor_fab";
+
+	// Caminho real do save: as receitas vivem no bloco `definitions`
+	// (to_snapshot/to_dict de economy_sim), nao no estado dinamico.
+	const ogs::save::Value definitions = ogs::save::definitions_to(source.ws);
+	const std::string before = ogs::save::dump_json(definitions);
+
+	ogs::test::PocketWorld target;
+	ogs::save::definitions_from(target.ws, definitions);
+
+	const int loaded_index = target.recipe("chip");
+	REQUIRE(loaded_index >= 0);
+	const ogs::Recipe& loaded = target.ws.recipes[
+		static_cast<std::size_t>(loaded_index)];
+	CHECK(loaded.construction_days == 180);
+	CHECK(loaded.plant_class == "semiconductor_fab");
+
+	// O bloco inteiro volta igual (o save_sha256 do jogo depende disso).
+	const std::string after = ogs::save::dump_json(
+		ogs::save::definitions_to(target.ws));
+	CHECK_MESSAGE(after == before, first_difference(before, after));
 }
 
 TEST_CASE("save/load: carregar duas vezes no mesmo mundo e idempotente") {

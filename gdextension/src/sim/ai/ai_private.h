@@ -149,7 +149,7 @@ double ai_expected_new_efficiency(const AiContext& ctx, int city_index,
 double ai_brain_expected_price(AiContext& ctx, int city_index, int product,
 	double price, double supply_future, double demand_future);
 int ai_brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
-	bool is_food, bool is_mineral, double capacity);
+	bool is_food, bool is_mineral, double capacity, int recipe_index = -1);
 
 // D-131 (fase C) — crédito de INVESTIMENTO do privado (cidade): limite da
 // D-126 (`city_credit_limit`, 0,5 × ativos − dívida) multiplicado pelo aperto

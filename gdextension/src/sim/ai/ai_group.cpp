@@ -674,7 +674,7 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 		in.equipment_active = false;
 		in.construction_days = ai_brain_construction_days(ctx, *tmpl,
 			entry.is_food, ctx.templates.is_mineral(entry.resource),
-			in.candidate_capacity);
+			in.candidate_capacity, recipe_index);
 		in.aptitude = 1.0;
 		if (recipe_index < 0 && entry.product >= 0
 				&& entry.product < static_cast<int>(city.suitability.size())) {
