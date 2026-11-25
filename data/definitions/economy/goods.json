@@ -1268,7 +1268,8 @@
     "use": [
       "chips",
       "sensors",
-      "micromotor"
+      "micromotor",
+      "microchips"
     ]
   },
   {
@@ -1706,7 +1707,8 @@
       "robots",
       "computer",
       "phone",
-      "drone"
+      "drone",
+      "fpv_drone"
     ]
   },
   {
@@ -1968,14 +1970,15 @@
     "kind": "final",
     "tier": "final",
     "durable": false,
-    "base_price": 93771.35,
+    "base_price": 58757.47,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#5F6F5A",
     "food": false,
     "use": [
       "army"
-    ]
+    ],
+    "note": "G1/D4: montado de peças (fuselagem, motor, sensores, bateria, microchips, fibra e munição) em vez de consumir um drone pronto."
   },
   {
     "order": 112,
@@ -2169,5 +2172,40 @@
     "use": [],
     "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
     "note": "Lançador antiaéreo portátil (inclui o míssil): sensores + componentes eletrônicos + explosivos + lingote de alumínio. D-130."
+  },
+  {
+    "order": 123,
+    "id": "microchips",
+    "name": "Microchips",
+    "sector": "electronics",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 19668.58,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8A7FB0",
+    "food": false,
+    "use": [
+      "military_drone"
+    ],
+    "note": "G1/A′ (D2/D5/D6): Fab de semicondutores; chips + terras raras. Opex 40/t = químicos 20 + energia 20, sem água ultrapura (D6); capex 180.000/t/dia e obra de 180 d (D5)."
+  },
+  {
+    "order": 124,
+    "id": "fpv_drone",
+    "name": "Drone FPV de ataque",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 23408.09,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5F6F5A",
+    "food": false,
+    "use": [],
+    "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
+    "note": "G1/A′ (D4): FPV descartável montado com chips (não microchips) + baterias + plástico + micromotor + explosivos."
   }
 ]

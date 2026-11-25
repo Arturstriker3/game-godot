@@ -2,8 +2,8 @@
 
 Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 
-- Bens: **123** (21 primários em `order` 0..20, 102 novos em 21..122)
-- Receitas: **122** (coeficiente unitário padrão onde a spec não traz qty)
+- Bens: **125** (21 primários em `order` 0..20, 104 novos em 21..124)
+- Receitas: **124** (coeficiente unitário padrão onde a spec não traz qty)
 - Preços: primários = `calibrated:legacy` (dado já calibrado); novos = `derived:v1`
   pela fórmula `min_receita(Σ qty × preço_insumo / yield) × (1 + margem)`.
 - Co-produtos: preço da ROTA PRINCIPAL (a receita de co-produção), com o
@@ -128,7 +128,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 108 | `artillery_ammo` | final | final | military | 406.80 | `derived:v1` |
 | 109 | `small_arms` | final | final | military | 351.00 | `derived:v1` |
 | 110 | `artillery` | final | final | military | 37348.56 | `derived:v1` |
-| 111 | `military_drone` | final | final | military | 93771.35 | `derived:v1` |
+| 111 | `military_drone` | final | final | military | 58757.47 | `derived:v1` |
 | 112 | `infantry_gear` | final | final | military | 7422.19 | `derived:v1` |
 | 113 | `diesel` | final | final | chemical | 74.90 | `derived:co_product_market_value:v2` |
 | 114 | `jet_fuel` | final | final | chemical | 78.22 | `derived:co_product_market_value:v2` |
@@ -140,6 +140,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 120 | `at_launcher` | final | final | military | 453.28 | `derived:v1` |
 | 121 | `at_rocket` | final | final | military | 352.42 | `derived:v1` |
 | 122 | `aa_launcher` | final | final | military | 44323.99 | `derived:v1` |
+| 123 | `microchips` | semi | intermediate | electronics | 19668.58 | `derived:v1` |
+| 124 | `fpv_drone` | final | final | military | 23408.09 | `derived:v1` |
 
 ## Receitas normalizadas
 
@@ -253,7 +255,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `artillery_ammo` â†’ `artillery_ammo` (yield 1): 1× `casing`, 1× `explosives`, 1× `steel`
 - `small_arms` â†’ `small_arms` (yield 1): 1× `steel`, 1× `hardware`
 - `artillery` â†’ `artillery` (yield 1): 1× `steel`, 1× `special_alloy`, 1× `industrial_tools`, 1× `cast_parts`, 1× `sensors`
-- `military_drone` â†’ `military_drone` (yield 1): 1× `drone`, 1× `ammunition`, 1× `carbon_fiber`
+- `military_drone` â†’ `military_drone` (yield 1): 1× `plastic_parts`, 1× `micromotor`, 1× `sensors`, 1× `batteries`, 1× `microchips`, 1× `carbon_fiber`, 1× `ammunition`
 - `infantry_gear` â†’ `infantry_gear` (yield 1): 1× `fabric`, 1× `hardware`, 1× `electronic_components`, 1× `batteries`
 - `diesel_a` â†’ `diesel` (yield 0.3): 1× `gas`
 - `diesel_b` â†’ `diesel` (yield 0.15): 1× `coal`
@@ -265,6 +267,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `at_launcher` â†’ `at_launcher` (yield 1): 1× `steel`, 1× `hardware`, 1× `planks`
 - `at_rocket` â†’ `at_rocket` (yield 1): 1× `explosives`, 1× `gunpowder`, 1× `steel_sheet`
 - `aa_launcher` â†’ `aa_launcher` (yield 1): 1× `sensors`, 1× `electronic_components`, 1× `explosives`, 1× `aluminum_ingot`
+- `microchips` â†’ `microchips` (yield 1): 1× `chips`, 1× `processed_rare_earths`
+- `fpv_drone` â†’ `fpv_drone` (yield 1): 1× `chips`, 1× `batteries`, 1× `plastic_parts`, 1× `micromotor`, 1× `explosives`
 
 ## Co-produtos: rota principal rateada por valor de mercado
 

@@ -2676,15 +2676,31 @@
     "yield": 1.0,
     "inputs": [
       {
-        "good": "drone",
+        "good": "plastic_parts",
         "qty": 1.0
       },
       {
-        "good": "ammunition",
+        "good": "micromotor",
+        "qty": 1.0
+      },
+      {
+        "good": "sensors",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      },
+      {
+        "good": "microchips",
         "qty": 1.0
       },
       {
         "good": "carbon_fiber",
+        "qty": 1.0
+      },
+      {
+        "good": "ammunition",
         "qty": 1.0
       }
     ],
@@ -2694,7 +2710,8 @@
     "opex_per_ton": 16.0,
     "capital_per_capacity": 12000.0,
     "coef_source": "default_unit",
-    "params_source": "estimated:order_of_magnitude"
+    "params_source": "estimated:order_of_magnitude",
+    "note": "G1/D4: montado de peças (fuselagem, motor, sensores, bateria, microchips, fibra e munição) em vez de consumir um drone pronto."
   },
   {
     "id": "infantry_gear",
@@ -3009,5 +3026,69 @@
     "coef_source": "default_unit",
     "params_source": "reuse:small_arms/infantry_gear",
     "note": "Lançador antiaéreo portátil (inclui o míssil): sensores + componentes eletrônicos + explosivos + lingote de alumínio. D-130."
+  },
+  {
+    "id": "microchips",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "microchips",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chips",
+        "qty": 1.0
+      },
+      {
+        "good": "processed_rare_earths",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 3.5,
+    "opex_per_ton": 40.0,
+    "capital_per_capacity": 180000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:declared_balance:D5/D6",
+    "plant_class": "semiconductor_fab",
+    "construction_days": 180,
+    "note": "G1/A′ (D2/D5/D6): Fab de semicondutores; chips + terras raras. Opex 40/t = químicos 20 + energia 20, sem água ultrapura (D6); capex 180.000/t/dia e obra de 180 d (D5)."
+  },
+  {
+    "id": "fpv_drone",
+    "building": "factory",
+    "sector": "military",
+    "output": "fpv_drone",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chips",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "micromotor",
+        "qty": 1.0
+      },
+      {
+        "good": "explosives",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "reuse:small_arms/infantry_gear",
+    "note": "G1/A′ (D4): FPV descartável montado com chips (não microchips) + baterias + plástico + micromotor + explosivos."
   }
 ]

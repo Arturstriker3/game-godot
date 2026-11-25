@@ -1920,6 +1920,7 @@ product.fabric,Tecido,Fabric,Tejido
 product.feed,Ração,Animal feed,Pienso
 product.fertilizer,Fertilizante,Fertilizer,Fertilizante
 product.flour,Farinha,Flour,Harina
+product.fpv_drone,Drone FPV de ataque,FPV attack drone,Dron FPV de ataque
 product.furniture,Móveis,Furniture,Muebles
 product.fuselage,Fuselagem,Fuselage,Fuselaje
 product.gas,Gás,Gas,Gas
@@ -1942,6 +1943,7 @@ product.maize,Milho,Maize,Maíz
 product.meat,Carne,Meat,Carne
 product.mechanical_parts,Peças mecânicas,Mechanical parts,Piezas mecÃ¡nicas
 product.medicine,Remédios,Medicine,Medicamentos
+product.microchips,Microchips,Microchips,Microchips
 product.micromotor,Micromotor e bobinas,Micromotor and coils,Micromotor y bobinas
 product.military_drone,Drone militar,Military drone,Dron militar
 product.mining_machine,Máquina de mineração,Mining machine,MÃ¡quina de minerÃ­a
@@ -2046,6 +2048,7 @@ resource.fabric,Tecido,Fabric,Tejido
 resource.feed,Ração,Animal feed,Pienso
 resource.fertilizer,Fertilizante,Fertilizer,Fertilizante
 resource.flour,Farinha,Flour,Harina
+resource.fpv_drone,Drone FPV de ataque,FPV attack drone,Dron FPV de ataque
 resource.furniture,Móveis,Furniture,Muebles
 resource.fuselage,Fuselagem,Fuselage,Fuselaje
 resource.gas,Gás,Gas,Gas
@@ -2068,6 +2071,7 @@ resource.maize,Milho,Maize,Maíz
 resource.meat,Carne,Meat,Carne
 resource.mechanical_parts,Peças mecânicas,Mechanical parts,Piezas mecÃ¡nicas
 resource.medicine,Remédios,Medicine,Medicamentos
+resource.microchips,Microchips,Microchips,Microchips
 resource.micromotor,Micromotor e bobinas,Micromotor and coils,Micromotor y bobinas
 resource.military_drone,Drone militar,Military drone,Dron militar
 resource.mining_machine,Máquina de mineração,Mining machine,MÃ¡quina de minerÃ­a

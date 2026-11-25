@@ -6,7 +6,7 @@ Fontes de verdade:
   - data/definitions/scenario/nations.json    (PIB PPP e moeda por nação)
 
 Saídas (nada aqui toca a simulação C++; o núcleo ignora os bens que não conhece):
-  - data/definitions/economy/goods.json       (123 bens, ordem canônica 0..122)
+  - data/definitions/economy/goods.json       (125 bens, ordem canônica 0..124)
   - data/definitions/economy/recipes.json     (receitas normalizadas)
   - data/definitions/economy/needs.json       (necessidades das POPs)
   - data/definitions/economy/currencies.json  (moeda por nação e câmbio derivado)
@@ -228,6 +228,8 @@ TRANSLATIONS = {
     "electronic_components": ("Electronic components", "Componentes electrónicos"),
     "circuit_board": ("Circuit board", "Placa de circuito"),
     "chips": ("Semiconductors", "Semiconductores"),
+    "microchips": ("Microchips", "Microchips"),
+    "fpv_drone": ("FPV attack drone", "Dron FPV de ataque"),
     "sensors": ("Sensors and optics", "Sensores y óptica"),
     "batteries": ("Batteries", "Baterías"),
     "appliances": ("Home appliances", "Electrodomésticos"),
@@ -368,6 +370,12 @@ def build_recipes(spec: dict) -> list[dict]:
                 "coef_source": "default_unit" if len(inputs) > 1 else "spec",
                 "params_source": params_source,
             }
+            # G1 (D5): metadados da planta — prazo de obra próprio e classe
+            # para rótulo/agrupamento. Sem eles, 0/"" mantém a tabela atual.
+            if recipe.get("plant_class"):
+                entry["plant_class"] = str(recipe["plant_class"])
+            if recipe.get("construction_days"):
+                entry["construction_days"] = int(recipe["construction_days"])
             if outputs:
                 entry["outputs"] = outputs
             if recipe.get("co_loss", 0.0) > 0.0:
@@ -942,10 +950,10 @@ def check_all() -> list[str]:
     spec_ids = [g["id"] for g in spec["goods"]]
 
     # --- goods
-    if len(goods) != 123:
-        problems.append(f"goods.json: {len(goods)} bens (esperado 123)")
-    if len(spec_ids) != 102:
-        problems.append(f"spec: {len(spec_ids)} bens novos (esperado 102)")
+    if len(goods) != 125:
+        problems.append(f"goods.json: {len(goods)} bens (esperado 125)")
+    if len(spec_ids) != 104:
+        problems.append(f"spec: {len(spec_ids)} bens novos (esperado 104)")
     ids = [g.get("id", "") for g in goods]
     if len(set(ids)) != len(ids):
         problems.append("goods.json: ids repetidos")

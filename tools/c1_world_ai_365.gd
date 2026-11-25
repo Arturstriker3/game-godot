@@ -151,6 +151,12 @@ var _cotton_counts: Array = []
 var _cotton_prices: Array = []
 var _cotton_last_day := 0
 var _cotton_index := -1
+# G1: diag de bens (preço MA30 e oferta/produção por nação) — só medição.
+var _goods_diag_ids: Array[String] = []
+var _goods_diag_prices: Dictionary = {}
+var _goods_diag_supply: Dictionary = {}
+var _goods_diag_sold: Dictionary = {}
+var _goods_price_base: Dictionary = {}
 var _products: PackedStringArray = PackedStringArray()
 # Agregado do mercado de algodão do snapshot corrente (medido dentro da mesma
 # passada pesada de `_buildings_snapshot` — sem uma segunda varredura).
@@ -235,6 +241,12 @@ func _init() -> void:
 			if arg.contains("="):
 				cotton_value = arg.split("=", true, 1)[1]
 			_cotton_diag = cotton_value != "0"
+		elif arg.begins_with("--goods-diag="):
+			# G1: lista de bens a vigiar (ex.: chips,microchips). Só medição.
+			for raw_id in arg.split("=", true, 1)[1].split(",", false):
+				var good_id := raw_id.strip_edges()
+				if not good_id.is_empty():
+					_goods_diag_ids.append(good_id)
 	if _control_path.is_empty() and OS.get_environment("OGS_C1_CONTROL") != "":
 		_control_path = OS.get_environment("OGS_C1_CONTROL")
 	_run()
@@ -1552,6 +1564,8 @@ func _run() -> void:
 		history.append(ratio)
 		if history.size() > WINDOW:
 			history.pop_front()
+		if not _goods_diag_ids.is_empty():
+			_goods_diag_sample(day_now, status)
 		if _fuel_diag and day_now == 1:
 			# F0 (D-123): retrato do dia 1 — antes de qualquer obra da IA.
 			var fuel_day1 := _fuel_report(sim, status, day_now)
@@ -1723,6 +1737,7 @@ func _run() -> void:
 		"food_chain": food_chain,
 		"food_gate_extras": gate_extras,
 		"food_gate_control": _control_path,
+		"goods_diag": _goods_diag_report() if not _goods_diag_ids.is_empty() else {},
 		"efficiency_override": _eff_override_path,
 		"fuel_diag": fuel_reports,
 		"refining_diag": refining_reports,
@@ -1766,6 +1781,8 @@ func _run() -> void:
 		print("[c1] D-117 falências: " + " | ".join(lines))
 	if _cotton_diag:
 		print(_cotton_summary(out.get("cotton_diag", {}), bankruptcies_detail))
+	if not _goods_diag_ids.is_empty():
+		_print_goods_diag(out["goods_diag"])
 	var crisis_report: Dictionary = out.get("bank_crisis", {})
 	print("[c1] C6: corridas=%d resoluções=%d eventos=%d fundo=%.2f prêmios=%.2f "
 		% [int(crisis_report.get("runs", 0)),
@@ -2254,6 +2271,7 @@ func _load_goods_meta() -> void:
 		_goods_sector[good_id] = String(row.get("sector", ""))
 		_goods_food[good_id] = bool(row.get("food", false))
 		_goods_kind[good_id] = String(row.get("kind", ""))
+		_goods_price_base[good_id] = float(row.get("base_price", 0.0))
 
 
 ## Retrato dos edifícios (id → última operação conhecida) + energia da cidade.
@@ -2930,4 +2948,139 @@ func _link_report(acc: Dictionary, power: Dictionary) -> Dictionary:
 		"top_by_flow": rows.slice(0, mini(15, rows.size())),
 		"zero_flow": zero.slice(0, mini(30, zero.size())),
 	}
+
+
+# ---------------------------------------------------------------------------
+# G1 — diag de bens (preço MA30 e oferta/produção por nação). Só medição.
+# ---------------------------------------------------------------------------
+
+## Amostra diária barata: `status.light` traz preço/vendido/oferta por cidade
+## sem chamar `get_city_status`. `m_supply` é a oferta ao mercado do dia e serve
+## de proxy de produção por nação (mesma leitura do `price_trajectory_365`).
+func _goods_diag_sample(day: int, status: Dictionary) -> void:
+	var light: Dictionary = status.get("light", {})
+	var per_city := int(light.get("product_count", 0))
+	var products: Array = status.get("products", [])
+	var prices: PackedFloat64Array = light.get("m_price", PackedFloat64Array())
+	var sold: PackedFloat64Array = light.get("m_sold", PackedFloat64Array())
+	var supply: PackedFloat64Array = light.get("m_supply", PackedFloat64Array())
+	var cities: Array = status.get("cities", [])
+	if per_city <= 0 or products.is_empty():
+		return
+	for good_id: String in _goods_diag_ids:
+		var index := products.find(good_id)
+		if index < 0:
+			continue
+		var weighted := 0.0
+		var weight := 0.0
+		var plain := 0.0
+		var priced := 0
+		var by_nation: Dictionary = {}
+		var sold_by_nation: Dictionary = {}
+		for slot in cities.size():
+			var at: int = slot * per_city + index
+			if at >= prices.size():
+				break
+			var price := float(prices[at])
+			var quantity := float(sold[at]) if at < sold.size() else 0.0
+			if price > 0.0:
+				priced += 1
+				plain += price
+				weighted += price * quantity
+				weight += quantity
+			var produced := float(supply[at]) if at < supply.size() else 0.0
+			if produced > 0.0 or quantity > 0.0:
+				var nation := String((cities[slot] as Dictionary).get("nation", ""))
+				if not nation.is_empty():
+					if produced > 0.0:
+						by_nation[nation] = float(by_nation.get(nation, 0.0)) + produced
+					if quantity > 0.0:
+						sold_by_nation[nation] = \
+							float(sold_by_nation.get(nation, 0.0)) + quantity
+		var mean := 0.0
+		if weight > 0.0:
+			mean = weighted / weight
+		elif priced > 0:
+			mean = plain / float(priced)
+		var series: Array = _goods_diag_prices.get(good_id, [])
+		series.append(mean)
+		_goods_diag_prices[good_id] = series
+		var supply_series: Array = _goods_diag_supply.get(good_id, [])
+		supply_series.append(by_nation)
+		_goods_diag_supply[good_id] = supply_series
+		var sold_series: Array = _goods_diag_sold.get(good_id, [])
+		sold_series.append(sold_by_nation)
+		_goods_diag_sold[good_id] = sold_series
+
+
+func _mean_price(series: Array) -> float:
+	var total := 0.0
+	var count := 0
+	for value: Variant in series:
+		var price := float(value)
+		if price > 0.0:
+			total += price
+			count += 1
+	return total / count if count > 0 else 0.0
+
+
+func _avg30_by_nation(series: Array) -> Dictionary:
+	var window: Array = series.slice(
+		maxi(0, series.size() - WINDOW), series.size())
+	var totals: Dictionary = {}
+	for day_row: Dictionary in window:
+		for nation in day_row:
+			totals[nation] = float(totals.get(nation, 0.0)) \
+				+ float(day_row[nation])
+	var days := maxi(1, window.size())
+	var by_nation: Dictionary = {}
+	for nation in totals:
+		by_nation[nation] = float(totals[nation]) / float(days)
+	return {"by_nation": by_nation, "days": days}
+
+
+func _goods_diag_report() -> Dictionary:
+	var out: Dictionary = {}
+	for good_id: String in _goods_diag_ids:
+		var series: Array = _goods_diag_prices.get(good_id, [])
+		var first := series.slice(0, mini(WINDOW, series.size()))
+		var last := series.slice(maxi(0, series.size() - WINDOW), series.size())
+		var supply := _avg30_by_nation(_goods_diag_supply.get(good_id, []))
+		var sold := _avg30_by_nation(_goods_diag_sold.get(good_id, []))
+		var nations: Dictionary = {}
+		for nation in supply["by_nation"]:
+			if float(supply["by_nation"][nation]) > 1e-9:
+				nations[nation] = true
+		for nation in sold["by_nation"]:
+			if float(sold["by_nation"][nation]) > 1e-9:
+				nations[nation] = true
+		var base := float(_goods_price_base.get(good_id, 0.0))
+		var ma30_last := _mean_price(last)
+		out[good_id] = {
+			"base_price": base,
+			"ma30_first": _mean_price(first),
+			"ma30_last": ma30_last,
+			"ratio_last_base": ma30_last / base if base > 0.0 else 0.0,
+			"producing_nations_30d": nations.size(),
+			"supply_avg30_by_nation": supply["by_nation"],
+			"sold_avg30_by_nation": sold["by_nation"],
+		}
+	return out
+
+
+func _print_goods_diag(report: Dictionary) -> void:
+	for good_id in report:
+		var row: Dictionary = report[good_id]
+		var supply_total := 0.0
+		for value: Variant in (row["supply_avg30_by_nation"] as Dictionary).values():
+			supply_total += float(value)
+		var sold_total := 0.0
+		for value: Variant in (row["sold_avg30_by_nation"] as Dictionary).values():
+			sold_total += float(value)
+		print("[c1] G1 %s: base=%.2f MA30_dia0=%.2f MA30_final=%.2f razão=%.4f supply30d=%.4f sold30d=%.4f t/dia em %d países"
+			% [String(good_id), float(row["base_price"]),
+			float(row["ma30_first"]), float(row["ma30_last"]),
+			float(row["ratio_last_base"]), supply_total, sold_total,
+			int(row["producing_nations_30d"])])
+
 
