@@ -1810,8 +1810,10 @@ func _run() -> void:
 			% [int(d131.get("investments_total", 0)),
 				int(d131.get("investments_private", 0)),
 				int(d131.get("investments_group", 0))])
-		print("[c1] D-131 B: candidatos únicos/mês=%d rejeitados caixa/mês=%d "
-			+ "risco=%d anti-manada máx 30d=%d"
+		# Precedência: `%` liga mais que `+`; agrupa as duas partes antes de formatar
+		# (senão o primeiro trecho sai com os `%d` literais).
+		print(("[c1] D-131 B: candidatos únicos/mês=%d rejeitados caixa/mês=%d "
+			+ "risco=%d anti-manada máx 30d=%d")
 			% [int(d131.get("unique_candidates_month", 0)),
 				int(d131.get("unique_rejected_month", 0)),
 				int(d131.get("risk_rejected", 0)),
