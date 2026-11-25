@@ -136,7 +136,7 @@ As seções de R5 já entram no JSON e no save; a fase C lê R2, R4, herd e R5.
   `D-131: duas rodadas com o cerebro ligado fecham o mesmo digest` (determinismo
   do caminho ligado) e os casos de unidade da fase C.
 - `tools/run_tests.ps1 -Tier pr -Base balance/global-resources`: **41/41 OK**
-  (run `20261125_022712`) com o **default ligado** (`ai_brain.json`
+  (run `20261125_024734`) com o **default ligado** (`ai_brain.json`
   `enabled=true`): 90 d com **138 investimentos** (94 privado / 44 grupo),
   **0 falências**, comida **84/179** abaixo do portão (mediana 0,977164),
   **0 violações**, drift **0,010799**, anti-manada máx. 3 plantas/30 d.
