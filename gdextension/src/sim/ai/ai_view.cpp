@@ -10,6 +10,7 @@
 #include "../agriculture.h"
 #include "../efficiency.h"
 #include "../monetary.h"
+#include "../potential_demand.h"
 #include "../sim_core.h"
 #include "../sim_constants.h"
 #include "../storage.h"
@@ -97,6 +98,32 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 		pop.satisfaction = city.pop.satisfaction;
 		pop.labor_force = city.pop.labor_force;
 		pop.unemployed = city.pop.unemployed;
+	}
+
+	// 1a. G2 — PISO DE DEMANDA POTENCIAL (spec §3.3). Um único ponto: depois
+	// de copiar os mercados e antes dos totais. O potencial é a demanda final
+	// propagada para trás pela árvore de receitas, com desconto por nível.
+	// `d = max(0, potencial - desired)` é PISO, não soma: onde a demanda viva
+	// já é maior, nada muda; onde é zero (chips/microchips sem comprador ao
+	// vivo), aparece o sinal. A view é cópia descartável: produção, preços e
+	// o mercado real ficam intactos. Desligado = nenhum cálculo.
+	if (ws.ai_brain.enabled && ws.ai_brain.potential_enabled && ws.needs_loaded) {
+		PotentialDemandIndex potential_index;
+		build_potential_demand_index(ws, potential_index);
+		std::vector<double> potential;
+		for (std::size_t city_index = 0; city_index < cities; ++city_index) {
+			potential_demand_for_city(ws, potential_index,
+				static_cast<int>(city_index), ws.ai_brain, potential);
+			for (std::size_t product = 0; product < products; ++product) {
+				AiMarketRow& row =
+					view.markets[city_index * products + product];
+				const double gap = potential[product] - row.desired;
+				if (gap > 0.0) {
+					row.desired += gap;
+					row.shortage += gap;
+				}
+			}
+		}
 	}
 
 	// 1b. G2 — armazenagem e calendário de safra (dado que a IA privada/governo
@@ -313,9 +340,12 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	view.tot_surplus.assign(products, 0.0);
 	view.tot_sold.assign(products, 0.0);
 	view.tot_desired.assign(products, 0.0);
-	for (const City& city : ws.cities) {
+	// A cópia `view.markets` é a fonte: sem o piso (desligado) tem exatamente
+	// os valores vivos, bit a bit; com o piso, o total enxerga o potencial.
+	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		for (std::size_t product = 0; product < products; ++product) {
-			const Market& market = city.markets[product];
+			const AiMarketRow& market =
+				view.markets[city_index * products + product];
 			if (market.surplus > 0.0) {
 				view.tot_surplus[product] += market.surplus;
 			}

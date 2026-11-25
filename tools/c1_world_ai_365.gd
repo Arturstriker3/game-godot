@@ -58,6 +58,8 @@ const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
 const CRISIS_PATH := "res://data/definitions/economy/crisis.json"
 ## D-131: cérebro econômico da IA (fase A; preço esperado + previsão de caixa).
 const AI_BRAIN_PATH := "res://data/definitions/economy/ai_brain.json"
+## G2: semente industrial do dia 0 (participação real × âncora × seed_fraction).
+const BOOTSTRAP_PATH := "res://data/definitions/economy/bootstrap_industry.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
@@ -112,6 +114,10 @@ var _crisis_on := true
 # flag `0` DESLIGA só nesta rodada de laboratório (o caminho off bit a bit).
 var _ai_brain_on := false
 var _ai_brain_set := false
+# G2: braço A/B da semente industrial (`--bootstrap=0` / OGS_C1_BOOTSTRAP=0).
+# Sem a flag vale o `enabled` do JSON (default do jogo = ligado).
+var _bootstrap_on := true
+var _bootstrap_set := false
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -190,6 +196,9 @@ func _init() -> void:
 	if OS.get_environment("OGS_C1_AI_BRAIN") != "":
 		_ai_brain_on = OS.get_environment("OGS_C1_AI_BRAIN") != "0"
 		_ai_brain_set = true
+	if OS.get_environment("OGS_C1_BOOTSTRAP") != "":
+		_bootstrap_on = OS.get_environment("OGS_C1_BOOTSTRAP") != "0"
+		_bootstrap_set = true
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
@@ -204,6 +213,9 @@ func _init() -> void:
 		elif arg.begins_with("--ai-brain="):
 			_ai_brain_on = arg.split("=", true, 1)[1] != "0"
 			_ai_brain_set = true
+		elif arg.begins_with("--bootstrap="):
+			_bootstrap_on = arg.split("=", true, 1)[1] != "0"
+			_bootstrap_set = true
 		elif arg.begins_with("--refining-diag"):
 			var refining_value := "1"
 			if arg.contains("="):
@@ -628,6 +640,16 @@ func _make_world() -> Object:
 			print("[c1] D-131 cérebro da IA: enabled=%s"
 				% ["1" if float(brain_params.get("enabled", 0.0)) > 0.5 else "0"])
 	sim.set_needs(_load(NEEDS_PATH))
+	# G2: semente industrial por produtores reais (mesma ordem do autoload).
+	if sim.has_method("set_bootstrap_industry"):
+		var bootstrap: Variant = _load(BOOTSTRAP_PATH)
+		if bootstrap is Dictionary:
+			var bootstrap_params: Dictionary = bootstrap
+			if _bootstrap_set:
+				bootstrap_params["enabled"] = _bootstrap_on
+			sim.set_bootstrap_industry(bootstrap_params)
+			print("[c1] G2 bootstrap industrial: enabled=%s"
+				% ["1" if bool(bootstrap_params.get("enabled", false)) else "0"])
 	sim.set_services(_load(SERVICES_PATH))
 	# C2c (D-108): regime real por moeda ANTES do carregamento das moedas.
 	if sim.has_method("set_fx_regimes"):

@@ -265,6 +265,58 @@ struct AiBrainParams {
 	double food_multiplier = 2.0;
 	// R5 — vínculo com a D-126.
 	int block_loss_days = 30;
+	// G2 (spec G2_bootstrap_industrial.md §3): piso de demanda potencial na
+	// visão da IA. `enabled` é o default compilado desligado; o jogo liga pelo
+	// ai_brain.json. Com `enabled=false` o snapshot não executa o bloco.
+	bool potential_enabled = false;
+	double potential_discount = 0.5;
+	double potential_cap = 1.0;
+};
+
+// ---------------------------------------------------------------------------
+// G2 — BOOTSTRAP INDUSTRIAL (spec G2_bootstrap_industrial.md §2).
+//
+// Definição estática vinda de `data/definitions/economy/bootstrap_industry.json`
+// pelo `set_bootstrap_industry` antes de `initialize_world`. NÃO entra no save
+// (como `age_structures`): o mundo que nasce já carrega as plantas semeadas.
+// `enabled=false`/arquivo ausente = vetor vazio = zero build (mundo idêntico).
+// ---------------------------------------------------------------------------
+struct BootstrapProducer {
+	std::string nation;  // ISO3 do dado; "outros" = residual declarado
+	double share = 0.0;
+};
+
+struct BootstrapGood {
+	std::string id;            // id do bem em goods.json
+	std::string source;        // citação da participação real
+	std::string params_source; // declared:balancing quando não há fonte
+	std::vector<BootstrapProducer> producers;
+};
+
+struct BootstrapIndustry {
+	bool enabled = false;
+	bool loaded = false;
+	double budget_share = 0.50;
+	double seed_fraction = 0.10;
+	double capacity_min = 0.05;
+	double capacity_max = 20.0;
+	int max_cities_per_nation = 1;
+	// Insumos primários usados no critério de cidade (§2.3 regra 4).
+	std::vector<std::string> score_inputs;
+	// Bens na ordem declarada do JSON (ordem da semeadura).
+	std::vector<BootstrapGood> goods;
+};
+
+// Diagnóstico da semente (status; não vai ao save).
+struct BootstrapPlanRow {
+	std::string good;
+	std::string nation;
+	std::string city;
+	double capacity = 0.0;
+	double cost = 0.0;
+	int recipe = -1;
+	bool seeded = false;
+	std::string reason;  // "" | "no_city" | "budget" | "no_recipe"
 };
 
 struct WorldState {
@@ -279,6 +331,13 @@ struct WorldState {
 	// D-131: parâmetros do cérebro econômico da IA (fase A; o save v42
 	// preserva o que foi aplicado).
 	AiBrainParams ai_brain;
+	// G2: bootstrap industrial (definição estática; não vai ao save) e o
+	// relatório da semente para o status.
+	BootstrapIndustry bootstrap;
+	std::vector<BootstrapPlanRow> bootstrap_rows;
+	double bootstrap_shortfall = 0.0;
+	double bootstrap_unseeded_share = 0.0;
+	int bootstrap_plants = 0;
 
 	// Estado do cenário de validação de duas cidades.
 	bool active = false;

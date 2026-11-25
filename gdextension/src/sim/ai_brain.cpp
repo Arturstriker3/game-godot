@@ -175,6 +175,13 @@ void apply_params(WorldState& ws, const std::map<std::string, double>& values) {
 	p.block_loss_days = std::max(0,
 		int(get("crisis_link.block_loss_days", "block_loss_days",
 			p.block_loss_days)));
+	// G2 — piso de demanda potencial (regra declarada; off não executa nada).
+	p.potential_enabled = get("potential_demand.enabled",
+		"potential_enabled", p.potential_enabled ? 1.0 : 0.0) > 0.5;
+	p.potential_discount = std::clamp(get("potential_demand.discount",
+		"potential_discount", p.potential_discount), 0.0, 1.0);
+	p.potential_cap = std::max(0.0, get("potential_demand.cap",
+		"potential_cap", p.potential_cap));
 }
 
 std::map<std::string, double> params_map(const WorldState& ws) {
@@ -202,6 +209,10 @@ std::map<std::string, double> params_map(const WorldState& ws) {
 		{"herd.max_new_capacity_share_30d", p.max_new_capacity_share_30d},
 		{"herd.food_multiplier", p.food_multiplier},
 		{"crisis_link.block_loss_days", double(p.block_loss_days)},
+		// G2: diagnóstico; o save só grava a seção quando difere do default.
+		{"potential_demand.enabled", p.potential_enabled ? 1.0 : 0.0},
+		{"potential_demand.discount", p.potential_discount},
+		{"potential_demand.cap", p.potential_cap},
 	};
 }
 

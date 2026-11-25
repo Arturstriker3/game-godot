@@ -1138,6 +1138,17 @@ Value ai_brain_to(const WorldState& ws) {
 	Value crisis_link;
 	crisis_link["block_loss_days"] = Value(p.block_loss_days);
 	out["crisis_link"] = crisis_link;
+	// G2: seção ADITIVA só quando difere do default compilado. Rodada com o
+	// piso desligado (o caso de equivalência bit a bit) não ganha a chave e o
+	// documento salvo continua idêntico ao D-131.
+	if (p.potential_enabled || p.potential_discount != 0.5
+			|| p.potential_cap != 1.0) {
+		Value potential;
+		potential["enabled"] = Value(p.potential_enabled ? 1 : 0);
+		potential["discount"] = Value(p.potential_discount);
+		potential["cap"] = Value(p.potential_cap);
+		out["potential_demand"] = potential;
+	}
 	return out;
 }
 
@@ -1198,6 +1209,14 @@ void ai_brain_from(WorldState& ws, const Value& block) {
 	if (const Value* section = read_object(block, "crisis_link")) {
 		scalar(*section, "crisis_link", "block_loss_days",
 			ws.ai_brain.block_loss_days);
+	}
+	// G2: save antigo sem a seção mantém o valor carregado do JSON (defaults).
+	if (const Value* section = read_object(block, "potential_demand")) {
+		scalar(*section, "potential_demand", "discount",
+			ws.ai_brain.potential_discount);
+		scalar(*section, "potential_demand", "cap", ws.ai_brain.potential_cap);
+		values["potential_demand.enabled"] =
+			read_double(*section, "enabled", 0.0) > 0.5 ? 1.0 : 0.0;
 	}
 	ai_brain::apply_params(ws, values);
 }
