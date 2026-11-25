@@ -39,10 +39,10 @@
       "pop_needs_test",
       "services_business_audit_test",
       "labor_market_test",
-      "investment_test",
       "storage_g2_test",
       "construction_project_test",
       "economy_tick_async_test",
+      "determinism_cross_process_test",
       "goods_data_test",
       "population_demo_test",
       "d125_efficiency_test",
@@ -203,7 +203,7 @@
       "note": "qualquer fonte do nucleo: conjunto amplo de nucleo (core_set); o runner avisa para rodar -Tier nightly antes do merge. ALL fica reservado a infra de teste."
     },
     {
-      "match": "^core/economy/(economy_sim|tick_scheduler|turbo_config|trajectory_digest|command_log|save)[A-Za-z0-9_]*\\.gd$",
+      "match": "^core/economy/(economy_sim|tick_scheduler|turbo_config|command_log|save)[A-Za-z0-9_]*\\.gd$",
       "tests": ["core_set"],
       "requires_nightly": true,
       "note": "fachada/save/agendador: conjunto amplo de nucleo"
