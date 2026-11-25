@@ -27,7 +27,7 @@ const GeoScript := preload("res://core/economy/geography_service.gd")
 const AgriScript := preload("res://core/economy/agriculture_service.gd")
 const StorageScript := preload("res://core/economy/storage_service.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
-const TrajectoryDigest := preload("res://core/economy/trajectory_digest.gd")
+const TrajectoryDigest := preload("res://tools/trajectory_digest.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -397,7 +397,7 @@ func _profile_block(sim: Object) -> Dictionary:
 ## Média por nação (30 d) de consumido/necessidade, a partir das colunas leves
 ## do status (p_need/p_consumed por cidade).
 func _food_ratio(status: Dictionary) -> Dictionary:
-	# Dono único da conta (portão e hash): core/economy/trajectory_digest.gd.
+	# Dono único da conta (portão e hash): tools/trajectory_digest.gd.
 	return TrajectoryDigest.food_ratios(status)
 
 

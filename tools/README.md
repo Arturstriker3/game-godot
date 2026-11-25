@@ -52,11 +52,11 @@ Como funciona:
   um piso de 2 GB que gera **aviso**, não aborto.
 - Scripts que geram JSON/CSV grande leem `OPENGS_TMP` via
   `tools/tmp_paths.gd` (`TmpPaths.path(...)` / `TmpPaths.dir(...)`), com default
-  `G:/opengs_tmp` e queda para o temp do SO. Hoje: `ai_scale_bench`,
-  `world_scale_bench`, `economy_world_sweep`, `b5_infra_ab_365`,
-  `price_trajectory_365`, `c1_world_ai_365`, `c2c_ab_365_test` e o log de
-  evidência do `economy_ai_test` (este último só quando `OPENGS_TMP` está
-  definido; o runner sempre define).
+  `G:/opengs_tmp` e queda para o temp do SO. Hoje: `world_scale_bench`,
+  `economy_world_sweep`, `b5_infra_ab_365`, `price_trajectory_365`,
+  `c1_world_ai_365`, `c2c_ab_365_test` e o log de evidência do
+  `economy_ai_test` (este último só quando `OPENGS_TMP` está definido; o runner
+  sempre define).
 
 Para regravar um artefato versionado em `docs/` (ex.: `docs/economy/perf/*.json`),
 rode a ferramenta direto com `--out=res://docs/...` (ou `OGS_*_OUT`) sem o

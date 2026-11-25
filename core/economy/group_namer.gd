@@ -3,7 +3,7 @@ class_name GroupNamer
 
 ## Nomeia os grupos econômicos pela cultura de origem.
 ##
-## Porte fiel de `GroupInvestor.name_groups` (`core/economy/ai/group_investor.gd`)
+## Porte fiel de `AiGroupInvestor::name_groups` (`gdextension/src/sim/ai/`)
 ## para uso depois que a IA passou a viver no C++: o núcleo não sabe cultura nem
 ## idioma, então só o NOME continua em GDScript. Nada aqui decide economia — a
 ## função lê o ranking de grupos do núcleo e devolve os nomes por

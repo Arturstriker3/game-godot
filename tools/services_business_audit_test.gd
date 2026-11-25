@@ -26,7 +26,6 @@ extends SceneTree
 ## `findings` sem derrubar o teste — a correção é do gerente-simulacao.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -139,8 +138,7 @@ func _run_audit() -> void:
 	buildings = geo.resolve_initial_farms(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
 	geo.apply_to_sim(sim, _cities_with_center(cities))
-	var ai := EconomicAIScript.new()
-	ai.setup(sim, geo)
+	sim.set_ai_enabled(true)
 
 	var status: Dictionary = sim.get_status()
 	var money_initial := float(status.get("money_total", 0.0))
@@ -152,7 +150,6 @@ func _run_audit() -> void:
 	# Loop de 90 dias com IA (mesmo pipeline do jogo ao vivo).
 	for day in _days:
 		status = sim.tick_day()
-		ai.run(int(status.get("day", day + 1)), status)
 		_collect_day(sim, status, day)
 
 	var money_final := float(status.get("money_total", 0.0))

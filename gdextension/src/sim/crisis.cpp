@@ -861,7 +861,22 @@ double city_credit_limit(const WorldState& ws, std::size_t city_index) {
 
 bool borrow_city(WorldState& ws, const std::string& city_id, double amount,
 		double* out_granted, std::string* error) {
-	return borrow_city_impl(ws, city_id, amount, out_granted, error);
+	double granted = 0.0;
+	const bool ok = borrow_city_impl(ws, city_id, amount, &granted, error);
+	// D-131: o comando `city_borrow`/IA roda fora da fase da crise (o tick já
+	// fechou), então o M1 criado não passa por `bank_money_today`; entra no
+	// acumulado que os guardas de conservação leem.
+	// NÃO chame esta função dentro da escada da crise: lá o delta do dia já
+	// entra em `bank_money_today` (`crisis.cpp`/`bank_crisis.cpp`) e o `+=`
+	// abaixo contaria o mesmo M1 duas vezes. A escada continua em
+	// `borrow_city_impl`.
+	if (granted > 0.0) {
+		ws.bank_money_delta_total += granted;
+	}
+	if (out_granted != nullptr) {
+		*out_granted = granted;
+	}
+	return ok;
 }
 
 void apply_params(WorldState& ws, const std::map<std::string, double>& values) {
@@ -1048,7 +1063,14 @@ bool borrow_working_capital(WorldState& ws, SimCore& core,
 		}
 		return false;
 	}
-	return borrow_city_impl(ws, city_id, ask, nullptr, error);
+	double granted = 0.0;
+	const bool ok = borrow_city_impl(ws, city_id, ask, &granted, error);
+	// D-131: a API de giro (comando/IA) roda fora da fase da crise, depois de
+	// o tick fechar; o M1 criado aqui entra direto no acumulado auditável.
+	if (granted > 0.0) {
+		ws.bank_money_delta_total += granted;
+	}
+	return ok;
 }
 
 bool liquidate_stock(WorldState& ws, SimCore& core, const std::string& city_id,

@@ -8,7 +8,6 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/economy_bankruptcy_diag.gd [--days=730]
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -52,15 +51,13 @@ func _run() -> void:
 	sim.initialize_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
 	sim.set_goods(goods)
 	geo.apply_to_sim(sim, _cities_with_center(cities))
-	var ai = EconomicAIScript.new()
-	ai.setup(sim, geo)
+	sim.set_ai_enabled(true)
 
 	var previous: Dictionary = {}
 	var closures: Array = []
 	var first_seen: Dictionary = {}
 	for day in _days:
 		var status: Dictionary = sim.tick_day()
-		ai.run(int(status.get("day", 0)), status)
 		var current := {}
 		for city in status.get("cities", []):
 			var cid := String(city.get("id", ""))

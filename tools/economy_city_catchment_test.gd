@@ -20,7 +20,6 @@ extends SceneTree
 ## Uso: godot --headless --path . --script res://tools/economy_city_catchment_test.gd
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -254,12 +253,10 @@ func _check_france_wheat_cap(cities: Array, geo: Object) -> void:
 	sim.initialize_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
 	sim.set_goods(goods)
 	geo.apply_to_sim(sim, _cities_with_center(cities))
-	var ai = EconomicAIScript.new()
-	ai.setup(sim, geo)
+	sim.set_ai_enabled(true)
 
 	for day in DAYS:
 		var status: Dictionary = sim.tick_day()
-		ai.run(int(status.get("day", 0)))
 
 	var status: Dictionary = sim.get_status()
 	var products: Array = status.get("products", [])

@@ -16,7 +16,6 @@ extends SceneTree
 ## Não é um teste: nunca falha por asserção.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -121,40 +120,20 @@ func _run() -> void:
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
-	var ai: Object = null
+	# A IA roda no C++ (D-131) e não expõe as decisões individuais ao GDScript:
+	# este diagnóstico mede o estado do mundo (produção, comida, caixa e
+	# plantações), não a lista de decisões da IA.
 	if geo != null:
 		geo.apply_to_sim(sim, _cities_with_center(cities))
-		ai = EconomicAIScript.new()
-		ai.setup(sim, geo)
+		sim.set_ai_enabled(true)
 	var status: Dictionary = sim.get_status()
-	_emit(sim, 0, status, ai)
+	_emit(sim, 0, status)
 	for day in _days:
 		status = sim.tick_day()
-		if ai != null:
-			ai.run(int(status.get("day", day + 1)), status)
 		var current := int(status.get("day", day + 1))
 		if current % _every == 0 or day + 1 == _days:
-			_emit(sim, current, status, ai)
+			_emit(sim, current, status)
 	_flush()
-	# Diagnóstico de falências: construções que a IA abriu e não existem no
-	# status final (falidas/removidas). Ajuda a separar falha de fazenda nova
-	# de mina antiga sem tocar no núcleo C++.
-	if ai != null:
-		var final_ids: Dictionary = {}
-		for building in status.get("buildings", []):
-			final_ids[String(building.get("id", ""))] = true
-		var failed: Dictionary = {}
-		for decision in ai.get_decisions():
-			var action := String(decision.get("action", ""))
-			if action != "build" and action != "build_state":
-				continue
-			var target := String(decision.get("target", ""))
-			if target == "" or final_ids.has(target):
-				continue
-			var key := "%s:%s:%s" % [String(decision.get("city", "")),
-				String(decision.get("resource", "")), action]
-			failed[key] = int(failed.get(key, 0)) + 1
-		print("  FALIDAS (construções da IA ausentes no fim): %s" % str(failed))
 
 
 func _cities_with_center(cities: Array) -> Array:
@@ -175,7 +154,7 @@ static func _heavy(sim: Object, city: Dictionary) -> Dictionary:
 	return heavy
 
 
-func _emit(sim: Object, day: int, status: Dictionary, ai: Object) -> void:
+func _emit(sim: Object, day: int, status: Dictionary) -> void:
 	var global := {
 		"production": 0.0, "consumed": 0.0, "imported": 0.0, "stock": 0.0,
 		"desired": 0.0, "price": 0.0, "n": 0,
@@ -301,23 +280,6 @@ func _emit(sim: Object, day: int, status: Dictionary, ai: Object) -> void:
 			if id.begins_with("SEED-") or bool(building.get("strategic", false)):
 				print("  SEED %s: %s (%s)" % [String(building.get("city", "")), id,
 					String(building.get("resource", ""))])
-	if ai != null and day % _every == 0:
-		var counts: Dictionary = {}
-		var per_nation: Dictionary = {}
-		for decision in ai.get_decisions():
-			if String(decision.get("action", "")) != "build" \
-					and String(decision.get("action", "")) != "expand" \
-					and String(decision.get("action", "")) != "build_state":
-				continue
-			var key := "%s:%s" % [String(decision.get("agent", "")), String(decision.get("resource", ""))]
-			counts[key] = int(counts.get(key, 0)) + 1
-			var city_id := String(decision.get("city", ""))
-			var tag := city_id.get_slice("-", 0)
-			if _nations.has(tag):
-				var nation_key := "%s:%s" % [tag, key]
-				per_nation[nation_key] = int(per_nation.get(nation_key, 0)) + 1
-		print("  IA ate %d: %s" % [day, str(counts)])
-		print("  IA por nação ate %d: %s" % [day, str(per_nation)])
 
 
 func _flush() -> void:
