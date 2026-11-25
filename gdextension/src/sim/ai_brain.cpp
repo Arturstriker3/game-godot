@@ -67,17 +67,26 @@ UnitMonth unit_month(const WorldState& ws, const AiBrainParams& params,
 	UnitMonth out;
 	const MonthProd prod = month_production(ws, params, in, month);
 	const double capacity = std::max(0.0, ref_capacity);
+	// `tons` é a produção do MÊS por unidade de capacidade (já inclui os
+	// `op_days`). O opex NÃO usa `tons`: é custo por capacidade-dia (o núcleo
+	// paga `capacity × opex_per_ton` sobre a operação).
 	const double tons = prod.prod_per_capacity;
 	const double total_prod = capacity * tons;
-	const double share = total_prod + in.supply_future > 1e-9
-		? total_prod / (in.supply_future + total_prod) : 0.0;
-	const double revenue = total_prod * share * std::max(0.0, in.price_expected);
+	// D-131 fase C (correção de dupla contagem): a planta vende a produção
+	// pelo preço esperado. O excesso de oferta JÁ entra no preço (R3,
+	// elasticidade com piso) — multiplicar de novo pela própria produção como
+	// "parcela de mercado" contava a mesma coisa duas vezes e subcontava a
+	// receita em ~100×.
+	const double revenue = total_prod * std::max(0.0, in.price_expected);
 	const double fixed = static_cast<double>(prod.op_days)
 		* std::max(0.0, in.jobs_per_capacity) * std::max(0.0, in.wage);
-	const double variable = static_cast<double>(prod.op_days)
-			* std::max(0.0, in.opex_per_ton) * tons
-		+ std::max(0.0, in.input_ratio) * tons
-			* std::max(0.0, in.input_price);
+	// Opex é custo por unidade de CAPACIDADE por dia (o núcleo grava
+	// `capacity × opex_per_ton` e paga sobre a operação), não por tonelada
+	// produzida. Por isso não escala com a aptidão nem com a eficiência.
+	const double opex = static_cast<double>(prod.op_days)
+		* std::max(0.0, in.opex_per_ton);
+	const double inputs = std::max(0.0, in.input_ratio) * tons
+		* std::max(0.0, in.input_price);
 	// Juro do capital emprestado (o crédito aprovado cobre o que o caixa não
 	// paga). Taxa anual / 365 × dias do mês.
 	const double borrowed = std::max(0.0, capacity * in.unit_capex - in.cash);
@@ -87,7 +96,7 @@ UnitMonth unit_month(const WorldState& ws, const AiBrainParams& params,
 	// burn_m)` só fecha se `burn` for o custo líquido POR capacidade.
 	const double revenue_per_capacity =
 		capacity > 1e-9 ? revenue / capacity : 0.0;
-	out.burn = fixed + variable
+	out.burn = fixed + opex + inputs
 		+ borrowed / std::max(1e-9, capacity)
 			* std::max(0.0, in.loan_rate_annual)
 			* static_cast<double>(std::max(1, params.month_days)) / 365.0
@@ -263,6 +272,7 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 	const double unit_capex = std::max(1e-9, in.unit_capex);
 	const double spendable = std::max(0.0, in.cash) * params.capital_share
 		+ std::max(0.0, in.credit_approved);
+	out.spendable = spendable;
 	const double cap_by_share = spendable / unit_capex;
 
 	// Dimensionamento fechado: saldo_m = caixa − cap × (unit_capex + burn_m).
@@ -282,6 +292,7 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 	out.cap_max = cap_max;
 	out.constrained = cap_max < candidate - 1e-9;
 	if (cap_max < std::max(0.0, in.min_capacity)) {
+		out.failed_gate = 6;
 		return out;
 	}
 
@@ -297,6 +308,7 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 	out.trough_profit = 0.0;
 	double weighted_eff = 0.0;
 	int total_op_days = 0;
+	double last_operating = 0.0;
 	// Fase C (R5): "não nascer para hibernar". O forecast é mensal; um mês com
 	// resultado operacional negativo vale todos os seus `op_days` de perda (a
 	// escada D-126 conta dias CONSECUTIVOS de prejuízo). A sequência reinicia
@@ -306,21 +318,26 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 		const MonthProd prod = month_production(ws, params, in, month);
 		const double tons = prod.prod_per_capacity;
 		const double total_prod = capacity * tons;
-		const double share = total_prod + in.supply_future > 1e-9
-			? total_prod / (in.supply_future + total_prod) : 0.0;
-		const double revenue = total_prod * share
+		// Mesma correção de dupla contagem de `unit_month`: o preço esperado
+		// já castiga o excesso de oferta.
+		const double revenue = total_prod
 			* std::max(0.0, in.price_expected);
 		const double fixed = static_cast<double>(prod.op_days)
 			* std::max(0.0, in.jobs_per_capacity) * std::max(0.0, in.wage)
 			* capacity;
-		const double variable = static_cast<double>(prod.op_days)
-				* std::max(0.0, in.opex_per_ton) * total_prod
-			+ std::max(0.0, in.input_ratio) * total_prod
-				* std::max(0.0, in.input_price);
+		// Opex por capacidade-dia (não por tonelada produzida) + insumo sobre
+		// o que foi efetivamente produzido.
+		const double opex_fixed = static_cast<double>(prod.op_days)
+			* std::max(0.0, in.opex_per_ton) * capacity;
+		const double inputs = std::max(0.0, in.input_ratio) * total_prod
+			* std::max(0.0, in.input_price);
 		const double borrowed = std::max(0.0, capex - std::max(0.0, in.cash));
 		const double interest = borrowed * std::max(0.0, in.loan_rate_annual)
 			* static_cast<double>(month_days) / 365.0;
-		const double operating = revenue - fixed - variable - interest;
+		const double operating =
+			revenue - fixed - opex_fixed - inputs - interest;
+		out.revenue_total += revenue;
+		out.cost_total += fixed + opex_fixed + inputs + interest;
 		balance += operating;
 		out.final_balance = balance;
 		out.min_balance = std::min(out.min_balance, balance);
@@ -329,6 +346,7 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 			out.trough_profit = std::min(out.trough_profit, cumulative);
 		}
 		if (prod.op_days > 0) {
+			last_operating = operating;
 			if (operating < 0.0) {
 				loss_days += prod.op_days;
 				out.max_loss_days = std::max(out.max_loss_days, loss_days);
@@ -359,12 +377,30 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 		const int hibernation = std::max(1, ws.crisis.mothball_days);
 		stairs_ok = out.max_loss_days < hibernation;
 	}
-	out.pass = capex <= spendable + eps
-		&& out.min_balance >= -credit - eps
-		&& out.final_balance >= -eps
-		&& out.trough_profit >= -eps
-		&& out.payback_days <= payback_limit + eps
-		&& stairs_ok;
+	const bool gate_a = capex <= spendable + eps;
+	const bool gate_b = out.min_balance >= -credit - eps;
+	// D-131 fase C (R5, correção): a linha de crédito de INVESTIMENTO financia
+	// o vale da rampa D-125. Exigir saldo final >= 0 só com caixa tornava o
+	// crédito inútil (era só teto do capex e o grupo ficava com 0 obras).
+	// Agora o saldo final e o trough podem usar a linha (limite), mas o
+	// projeto precisa estar em OPERAÇÃO >= 0 no último mês do horizonte: não
+	// nasce para queimar crédito.
+	const bool gate_c = out.final_balance >= -credit - eps
+		&& last_operating >= -eps;
+	const bool gate_d = out.trough_profit >= -credit - eps && stairs_ok;
+	const bool gate_e = out.payback_days <= payback_limit + eps;
+	if (!gate_a) {
+		out.failed_gate = 1;
+	} else if (!gate_b) {
+		out.failed_gate = 2;
+	} else if (!gate_c) {
+		out.failed_gate = 3;
+	} else if (!gate_d) {
+		out.failed_gate = 4;
+	} else if (!gate_e) {
+		out.failed_gate = 5;
+	}
+	out.pass = out.failed_gate == 0;
 	return out;
 }
 

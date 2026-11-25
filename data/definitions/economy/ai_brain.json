@@ -1,12 +1,12 @@
-{
-  "_comment": "D-131 fase A (spec aprovada pelo dono em 24/11/2026) - cerebro economico da IA: previsao de caixa mensal (R1) e preco esperado (R3). TODOS os numeros sao DEFAULT DE BALANCEAMENTO declarados: a spec nao traz valores observados e o repositorio nao tem fonte publica de rampa de caixa, elasticidade-preco de oferta ou limite de exposicao por agente. Nenhum numero aqui e dado observado. `enabled=false` mantem as decisoes da IA bit a bit como antes.",
+﻿{
+  "_comment": "D-131 fase A (spec aprovada pelo dono em 24/11/2026) - cerebro economico da IA: previsao de caixa mensal (R1) e preco esperado (R3). TODOS os numeros sao DEFAULT DE BALANCEAMENTO declarados: a spec nao traz valores observados e o repositorio nao tem fonte publica de rampa de caixa, elasticidade-preco de oferta ou limite de exposicao por agente. Nenhum numero aqui e dado observado. `enabled=true` e o default do jogo (o cerebro guia cada pais); `enabled=false` (override de teste/flag) mantem as decisoes da IA bit a bit como antes.",
   "meta": {
     "id": "D-131",
     "source": "default de jogo",
     "params_source": "declared:balancing",
     "spec": "D-131_cerebro_economico_ia.md"
   },
-  "enabled": false,
+  "enabled": true,
   "forecast": {
     "month_days": 30,
     "months_max": 12,
@@ -43,3 +43,4 @@
   "note_price": "R3 - trend = ma30(preco)/ma30_anterior, limitado a [trend_min, trend_max], com no minimo 5 observacoes (senao 1). excesso = max(0,(oferta_futura - demanda_futura)/max(demanda_futura,0.001)); preco_esperado = preco_hoje x clamp(trend) x clamp(1 - elasticidade x excesso, price_floor, 1). Fase A usa a oferta existente de hoje (R2 vem na fase B).",
   "note_disabled": "Com enabled=false nenhum forecast/preco esperado e calculado: a IA decide exatamente como antes (equivalencia bit a bit da rodada de 90 e 365 dias)."
 }
+

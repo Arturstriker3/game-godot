@@ -822,6 +822,46 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws, forecast_in);
 		if (!forecast.pass || forecast.capacity < kMinCapacity) {
 			ctx.state.brain_rejected += 1;
+			// D-131 fase C (diagnóstico): gate que reprovou + amostra.
+			const int gate = forecast.failed_gate >= 0
+					&& forecast.failed_gate <= 6
+				? forecast.failed_gate : 0;
+			ctx.state.brain_gate_rejected[static_cast<std::size_t>(gate)] += 1;
+			if (forecast.revenue_total <= 1e-9) {
+				ctx.state.brain_zero_revenue += 1;
+			}
+			if (ctx.state.brain_samples.size() < 10
+					&& forecast.failed_gate != 0) {
+				bool seen_combo = false;
+				for (const AiForecastSample& row : ctx.state.brain_samples) {
+					if (row.product == product
+							&& row.gate == forecast.failed_gate) {
+						seen_combo = true;
+						break;
+					}
+				}
+				if (!seen_combo) {
+					AiForecastSample sample;
+					sample.day = ctx.day;
+					sample.city = city_index;
+					sample.product = product;
+					sample.gate = forecast.failed_gate;
+					sample.cash = forecast_in.cash;
+					sample.credit = forecast_in.credit_approved;
+					sample.capex = forecast.capex;
+					sample.revenue = forecast.revenue_total;
+					sample.cost = forecast.cost_total;
+					sample.payback = forecast.payback_days;
+					sample.trough = forecast.trough_profit;
+					sample.min_balance = forecast.min_balance;
+					sample.final_balance = forecast.final_balance;
+					sample.cap_max = forecast.cap_max;
+					sample.capacity = forecast.capacity;
+					sample.price = forecast_in.price_expected;
+					sample.margin = forecast_in.margin_per_ton;
+					ctx.state.brain_samples.push_back(sample);
+				}
+			}
 			// Candidato único rejeitado PELO CAIXA no mês (mesma chave da
 			// contagem de tentativas).
 			const auto seen = ctx.state.brain_rejected_month.find(key);
@@ -864,7 +904,8 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			ai_risk::city_exposure(ctx.state.brain_exposure, city_index);
 		if (exposure != nullptr
 				&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
-					product, sector, cost, city.firm_cash)) {
+					product, sector, cost, city.firm_cash
+						+ ai_investment_credit(ctx, city_index))) {
 			ctx.state.brain_risk_rejected += 1;
 			ctx.state.brain_exposure_rejected += 1;
 			return false;
@@ -935,7 +976,8 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 				ai_risk::city_exposure(ctx.state.brain_exposure, city_index);
 			if (exposure != nullptr
 					&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
-						product, sector, cost, city.firm_cash)) {
+						product, sector, cost, city.firm_cash
+							+ ai_investment_credit(ctx, city_index))) {
 				ctx.state.brain_risk_rejected += 1;
 				ctx.state.brain_exposure_rejected += 1;
 				return false;

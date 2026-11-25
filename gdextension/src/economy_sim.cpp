@@ -12006,6 +12006,52 @@ Dictionary EconomySim::get_ai_brain_status() const {
 	out["competition_skipped"] = state.brain_competition_skipped;
 	out["group_attempts"] = state.brain_group_attempts;
 	out["group_rejected"] = state.brain_group_rejected;
+	// D-131 fase C (diagnóstico): reprovações por gate e amostras (privado e
+	// grupo). Só leitura: nada disto entra no save nem no mundo.
+	const auto gate_counts = [](const std::array<int, 7>& gates) {
+		Dictionary out;
+		out["a"] = gates[1];
+		out["b"] = gates[2];
+		out["c"] = gates[3];
+		out["d"] = gates[4];
+		out["e"] = gates[5];
+		out["cap_max"] = gates[6];
+		out["unknown"] = gates[0];
+		return out;
+	};
+	const auto sample_list = [](const std::vector<AiForecastSample>& rows) {
+		Array out;
+		for (const AiForecastSample& row : rows) {
+			Dictionary sample;
+			sample["day"] = row.day;
+			sample["city"] = row.city;
+			sample["product"] = row.product;
+			sample["gate"] = row.gate;
+			sample["cash"] = row.cash;
+			sample["credit"] = row.credit;
+			sample["capex"] = row.capex;
+			sample["revenue"] = row.revenue;
+			sample["cost"] = row.cost;
+			sample["payback"] = row.payback;
+			sample["trough"] = row.trough;
+			sample["min_balance"] = row.min_balance;
+			sample["final_balance"] = row.final_balance;
+			sample["cap_max"] = row.cap_max;
+			sample["capacity"] = row.capacity;
+			sample["price"] = row.price;
+			sample["margin"] = row.margin;
+			out.append(sample);
+		}
+		return out;
+	};
+	out["gate_rejected"] = gate_counts(state.brain_gate_rejected);
+	out["group_gate_rejected"] = gate_counts(state.brain_group_gate_rejected);
+	out["samples"] = sample_list(state.brain_samples);
+	out["group_samples"] = sample_list(state.brain_group_samples);
+	out["zero_revenue"] = state.brain_zero_revenue;
+	out["group_zero_revenue"] = state.brain_group_zero_revenue;
+	out["group_executed"] = state.brain_group_executed;
+	out["group_created"] = state.brain_group_created;
 	std::map<int, int> herd_plants;
 	int herd_max = 0;
 	for (const AiHerdEvent& event : state.herd_events) {

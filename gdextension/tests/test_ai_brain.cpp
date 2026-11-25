@@ -229,6 +229,52 @@ TEST_CASE("D-131 fase B: unit_month e o cap_max usam a mesma base") {
 	CHECK(result.cap_max < 2.5);
 }
 
+TEST_CASE("D-131 fase C: receita pela demanda e opex contado uma vez") {
+	// Regressão dos dois defeitos de unidade da fase C: (1) a receita usava a
+	// própria produção como mercado (`P/(oferta+P)`) e subcontava ~100×; (2) o
+	// opex por tonelada era multiplicado por `op_days` duas vezes (o `tons` já
+	// traz os dias). Ambos faziam o forecast reprovar quase tudo.
+	ogs::test::PocketWorld world;
+	ogs::AiBrainParams params;
+	params.capital_share = 1.0;
+	ogs::ai_brain::ForecastInput in = factory_input(world, 10.0);
+	in.cash = 1.0e9;
+	in.unit_capex = 1000.0;
+	in.construction_days = 0;
+	in.jobs_per_capacity = 0.0;
+	in.opex_per_ton = 2.0;
+	in.price_expected = 10.0;
+	in.supply_future = 900.0;
+	in.demand_future = 900.0;
+	in.payback_limit_days = 1000000.0;
+	const ogs::ai_brain::ForecastResult result =
+		ogs::ai_brain::forecast_monthly(params, world.ws, in);
+	REQUIRE(result.pass);
+	// A planta vende a produção pelo preço esperado (o excesso de oferta já
+	// está no preço, R3). O bug antigo multiplicava pela própria produção
+	// como "parcela" e o opex por `op_days` duas vezes: custo > receita em
+	// qualquer planta saudável.
+	CHECK(result.revenue_total > result.cost_total);
+	CHECK(result.cost_total > 0.0);
+	// A oferta futura não reduz a receita de novo (evita a dupla contagem):
+	// o mesmo projeto tem a MESMA receita com qualquer oferta.
+	in.supply_future = 0.0;
+	in.demand_future = 1000.0;
+	const ogs::ai_brain::ForecastResult open_market =
+		ogs::ai_brain::forecast_monthly(params, world.ws, in);
+	REQUIRE(open_market.pass);
+	CHECK(open_market.revenue_total == Approx(result.revenue_total));
+	CHECK(open_market.revenue_total > open_market.cost_total);
+	// O opex é fixo por capacidade-dia: dobrar a aptidão dobra a receita e
+	// deixa o custo igual.
+	in.aptitude = 0.5;
+	const ogs::ai_brain::ForecastResult half =
+		ogs::ai_brain::forecast_monthly(params, world.ws, in);
+	REQUIRE(half.pass);
+	CHECK(half.cost_total == Approx(open_market.cost_total));
+	CHECK(half.revenue_total == Approx(0.5 * open_market.revenue_total));
+}
+
 TEST_CASE("D-131 fase B: price_trend usa a janela disponivel corretamente") {
 	ogs::AiBrainParams params;  // trend_days = 30
 	std::vector<double> series;

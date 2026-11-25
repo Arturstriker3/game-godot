@@ -50,6 +50,10 @@ constexpr double kMinCapital = 6000.0;
 constexpr double kMaxCapacity = 12.0;
 constexpr double kMinReturn = 0.0018;
 constexpr double kFoodSecureSatisfaction = 0.98;
+// D-131 fase C: mesma barreira de sítio do investidor privado
+// (`kMinSuitability` em ai_private.cpp). Sem ela o grupo tentava toda cidade,
+// inclusive aptidão 0 (produção zero, sem receita).
+constexpr double kMinSuitability = 0.30;
 constexpr double kCashShare = 0.5;
 
 // Cesta alimentar na ORDEM de decisão (== `Templates.FOOD_RESOURCES`).
@@ -223,6 +227,7 @@ void GroupDay::run() {
 		Opportunity best;
 		decide_group(index, best);
 		if (best.valid) {
+			ctx.state.brain_group_executed += 1;
 			execute(index, best);
 		}
 	}
@@ -251,7 +256,11 @@ void GroupDay::decide_group(int group_index, Opportunity& best) {
 	resources_for(group.sector, resources);
 	// `_best_score` começa em MIN_RETURN: só uma oportunidade ESTRITAMENTE
 	// melhor vence (empate fica com o primeiro recurso/cidade da ordem).
-	double best_score = kMinReturn;
+	// D-131 fase C: com o cérebro ligado o R1/R5 já é o portão duro de
+	// solvência/payback; o score volta a ser só RANKING (o corte antigo de
+	// 0,18%/dia bloqueava projetos que o forecast aprova). Desligado mantém
+	// exatamente a regra antiga.
+	double best_score = ctx.ws.ai_brain.enabled ? 0.0 : kMinReturn;
 	best = Opportunity();
 	for (const std::string& resource : resources) {
 		const std::vector<ResourceCandidate>& candidates = base_for(resource);
@@ -278,7 +287,13 @@ void GroupDay::resources_for(const std::string& sector,
 	for (const char* name : kFoodResources) {
 		out.emplace_back(name);
 	}
-	if (!food_secure) {
+	// D-131 fase C: com o cérebro ligado o setor do grupo também é avaliado
+	// mesmo com a comida abaixo de 0,98. O motivo: o R1/R5 já reprova um
+	// projeto insolvente ou que nasceria para hibernar, e a cesta alimentar
+	// continua sendo avaliada PRIMEIRO na mesma decisão (o score decide). O
+	// portão de comida de 0,98 era a proteção do mundo sem forecast; o caminho
+	// `enabled=false` mantém exatamente a regra antiga.
+	if (!food_secure && !ctx.ws.ai_brain.enabled) {
 		return;
 	}
 	const WorldState& ws = ctx.ws;
@@ -419,6 +434,21 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 	}
 	const std::vector<double>& suitability =
 		view.city_rows[static_cast<std::size_t>(city_index)].suitability;
+	// D-131 fase C (correção de escala): o privado só considera sítio com
+	// aptidão mínima (`kMinSuitability`) e depósito para minério. O grupo
+	// avaliava TODAS as cidades, inclusive aptidão 0 (receita zero e gate (d)
+	// garantido) — 24% dos forecasts eram lixo. Mesma barreira dos dois lados.
+	if (!context.has_recipes) {
+		const double aptitude = product < static_cast<int>(suitability.size())
+			? suitability[static_cast<std::size_t>(product)] : 0.0;
+		if (aptitude < kMinSuitability) {
+			return;
+		}
+		if (ctx.templates.is_mineral(resource)
+				&& !ai_has_deposit(view, city_index, product)) {
+			return;
+		}
+	}
 	// §15/D-060: lavouras industriais só são viáveis em terra boa.
 	if (ctx.templates.is_land_competing(resource)) {
 		if (product >= static_cast<int>(suitability.size())
@@ -676,6 +706,48 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 			ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws, in);
 		if (!forecast.pass || forecast.capacity < 0.5) {
 			ctx.state.brain_group_rejected += 1;
+			// D-131 fase C (diagnóstico): gate que reprovou + amostra.
+			const int gate = forecast.failed_gate >= 0
+					&& forecast.failed_gate <= 6
+				? forecast.failed_gate : 0;
+			ctx.state.brain_group_gate_rejected[static_cast<std::size_t>(gate)]
+				+= 1;
+			if (forecast.revenue_total <= 1e-9) {
+				ctx.state.brain_group_zero_revenue += 1;
+			}
+			if (ctx.state.brain_group_samples.size() < 10
+					&& forecast.failed_gate != 0) {
+				bool seen_combo = false;
+				for (const AiForecastSample& row :
+						ctx.state.brain_group_samples) {
+					if (row.product == entry.product
+							&& row.gate == forecast.failed_gate) {
+						seen_combo = true;
+						break;
+					}
+				}
+				if (!seen_combo) {
+					AiForecastSample sample;
+					sample.day = ctx.day;
+					sample.city = entry.city;
+					sample.product = entry.product;
+					sample.gate = forecast.failed_gate;
+					sample.cash = in.cash;
+					sample.credit = in.credit_approved;
+					sample.capex = forecast.capex;
+					sample.revenue = forecast.revenue_total;
+					sample.cost = forecast.cost_total;
+					sample.payback = forecast.payback_days;
+					sample.trough = forecast.trough_profit;
+					sample.min_balance = forecast.min_balance;
+					sample.final_balance = forecast.final_balance;
+					sample.cap_max = forecast.cap_max;
+					sample.capacity = forecast.capacity;
+					sample.price = in.price_expected;
+					sample.margin = in.margin_per_ton;
+					ctx.state.brain_group_samples.push_back(sample);
+				}
+			}
 			return false;
 		}
 		capacity = forecast.capacity;
@@ -738,7 +810,7 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 			exposure = &empty;
 		}
 		if (!ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
-				entry.product, sector, cost, cash)) {
+				entry.product, sector, cost, cash + credit)) {
 			ctx.state.brain_risk_rejected += 1;
 			ctx.state.brain_exposure_rejected += 1;
 			return false;
@@ -818,6 +890,7 @@ void GroupDay::execute(int group_index, const Opportunity& opportunity) {
 	if (!result.created) {
 		return;
 	}
+	ctx.state.brain_group_created += 1;
 	// Mantém o caixa local em dia para as próximas decisões do mesmo dia.
 	for (int index = 0; index < static_cast<int>(view.groups.size()); ++index) {
 		if (view.groups[static_cast<std::size_t>(index)].id == group.id) {

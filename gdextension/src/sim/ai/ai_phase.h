@@ -37,6 +37,7 @@
 #include "ai_templates.h"
 #include "ai_view.h"
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -66,6 +67,28 @@ struct AiHerdEvent {
 // janelas de preço do risco, o contador de id das plantas novas, o cooldown de
 // obra do governo e as visões locais de caixa do dia (grupos). Vive no objeto
 // `AiPhase` do chamador; a `AiPhase` não guarda nada fora daqui.
+// D-131 fase C (diagnóstico): uma rejeição amostrada do forecast, com os
+// valores que explicam o gate. Não é serializado (como os contadores).
+struct AiForecastSample {
+	int day = 0;
+	int city = -1;
+	int product = -1;
+	int gate = 0;
+	double cash = 0.0;
+	double credit = 0.0;
+	double capex = 0.0;
+	double revenue = 0.0;
+	double cost = 0.0;
+	double payback = 0.0;
+	double trough = 0.0;
+	double min_balance = 0.0;
+	double final_balance = 0.0;
+	double cap_max = 0.0;
+	double capacity = 0.0;
+	double price = 0.0;
+	double margin = 0.0;
+};
+
 struct AiState {
 	// Contadores de id dos prédios criados pela IA (nome estável no log).
 	int private_id = 1;
@@ -122,6 +145,21 @@ struct AiState {
 	int brain_competition_skipped = 0;
 	int brain_group_attempts = 0;
 	int brain_group_rejected = 0;
+	// D-131 fase C (diagnóstico): distribuição das reprovações do forecast por
+	// gate (índice = `ForecastResult::failed_gate`, 0..6) para privado e grupo,
+	// e as primeiras amostras de rejeição de cada lado (valores do forecast).
+	std::array<int, 7> brain_gate_rejected{};
+	std::array<int, 7> brain_group_gate_rejected{};
+	std::vector<AiForecastSample> brain_samples;
+	std::vector<AiForecastSample> brain_group_samples;
+	// Rejeições do forecast em que a receita do horizonte ficou ZERO (aptidão
+	// zero: cidade sem sítio/depósito) — separa "sem mercado" de "custo alto".
+	int brain_zero_revenue = 0;
+	int brain_group_zero_revenue = 0;
+	// D-131 fase C: funil do grupo depois do forecast (oportunidade escolhida
+	// e obra realmente criada pelo núcleo).
+	int brain_group_executed = 0;
+	int brain_group_created = 0;
 	// D-131 fase B (R2/R4). `pending_committed` acumula a capacidade das obras
 	// emitidas NA MESMA fase (privado + grupo + governo, ordem determinística)
 	// e é zerado no começo do dia. Os caches do dia (oferta efetiva e

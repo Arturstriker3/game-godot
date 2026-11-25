@@ -113,6 +113,16 @@ struct ForecastResult {
 	double mean_efficiency = 0.0;
 	// Horizonte do forecast em meses (H).
 	int months = 0;
+	// D-131 fase C (diagnóstico): primeiro gate reprovado.
+	// 0 = passou; 1 = (a) capex > caixa × capital_share + crédito; 2 = (b)
+	// saldo mínimo < −crédito; 3 = (c) saldo final < 0; 4 = (d) trough
+	// operacional negativo (ou escada D-126); 5 = (e) payback; 6 = o
+	// dimensionamento fechado ficou abaixo de `min_capacity` (cap_max).
+	int failed_gate = 0;
+	// Valores do forecast para o diagnóstico por gate.
+	double spendable = 0.0;     // caixa × capital_share + crédito
+	double revenue_total = 0.0; // receita somada no horizonte
+	double cost_total = 0.0;    // folha + insumo + juro no horizonte
 };
 
 // R1 — previsão mensal + dimensionamento fechado + gates (a)-(e).
