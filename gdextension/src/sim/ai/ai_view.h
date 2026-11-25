@@ -47,6 +47,7 @@
 namespace ogs {
 
 class SimCore;
+struct PotentialDemandCache;
 
 // Linha de mercado de uma cidade para um produto (os 7 doubles do `light`).
 struct AiMarketRow {
@@ -218,7 +219,14 @@ double ai_food_calories(const AiView& view, int product);
 // Fotografa o dia em `view` (limpa e preenche). `core` só empresta
 // `SimCore::owner_kind` (o parser de dono que o núcleo já tem) para montar a
 // lista de incumbentes: nenhuma leitura viva acontece depois do snapshot.
-void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view);
+//
+// `potential_cache` (opcional, G2 perf): quando informado, o piso de demanda
+// potencial é recalculado no dia 0 e a cada `potential_demand.recompute_days`
+// dias e reusado entre recalculos (cache mensal deterministico). Sem cache o
+// piso é recalculado a cada chamada (mesmo resultado do caminho diario, usado
+// pelos testes unitarios).
+void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view,
+	PotentialDemandCache* potential_cache = nullptr);
 
 // ==== Helpers de leitura (só a view; nunca o WorldState vivo) ====
 

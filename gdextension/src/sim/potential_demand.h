@@ -18,6 +18,7 @@
 // (B, piso por cidade em `snapshot_ai_view`). Nada aqui toca o mundo vivo.
 #include "world_state.h"
 
+#include <cstddef>
 #include <vector>
 
 namespace ogs {
@@ -43,5 +44,42 @@ void potential_demand_for_city(const WorldState& ws,
 void potential_demand_world(const WorldState& ws,
 	const PotentialDemandIndex& index, const AiBrainParams& params,
 	std::vector<double>& out);
+
+// ---------------------------------------------------------------------------
+// G2 (perf) — CACHE MENSAL do piso por cidade.
+//
+// A propagacao depende de: populacao da cidade, needs.json (categorias,
+// durabilidade, governo), receitas vigentes (rota escolhida) e os parametros
+// do piso. Nada disso muda dentro do mes, entao o piso e recalculado no dia 0
+// e a cada `potential_demand.recompute_days` dias (default 30) e reusado nos
+// dias do meio. A populacao flutua dia a dia; o cache a congela DE PROPOSITO
+// (piso mensal declarado, determinista): o custo por dia deixa de pagar a
+// propagacao e a trajetoria continua reproduzivel.
+//
+// `stale` = cache vazio, dimensoes diferentes, definicoes mudadas, dia
+// andou para tras (save/load) ou o periodo venceu.
+// ---------------------------------------------------------------------------
+struct PotentialDemandCache {
+	// Piso por cidade x produto (indice = city * products + product).
+	std::vector<double> values;
+	int cities = 0;
+	int products = 0;
+	int day = -1;  // dia do ultimo recalculo (ws.day)
+	// Assinatura minima das definicoes que mudam a propagacao.
+	std::size_t recipes = 0;
+	std::size_t needs_levels = 0;
+	std::size_t government_products = 0;
+	double durable_decay = 0.0;
+	double discount = -1.0;
+	double cap = -1.0;
+	bool needs_loaded = false;
+};
+
+bool potential_demand_cache_stale(const WorldState& ws,
+	const PotentialDemandCache& cache);
+
+// Recalcula o piso de TODAS as cidades e carimba o cache com o dia corrente.
+void potential_demand_refresh_cache(const WorldState& ws,
+	PotentialDemandCache& cache);
 
 } // namespace ogs

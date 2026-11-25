@@ -182,6 +182,11 @@ void apply_params(WorldState& ws, const std::map<std::string, double>& values) {
 		"potential_discount", p.potential_discount), 0.0, 1.0);
 	p.potential_cap = std::max(0.0, get("potential_demand.cap",
 		"potential_cap", p.potential_cap));
+	// G2 (perf): periodo do recalculo do piso (1 = todo dia, o comportamento
+	// antigo; 30 = cache mensal). Deterministico: dia 0 e multiplos de N.
+	p.potential_recompute_days = std::max(1, int(get(
+		"potential_demand.recompute_days", "potential_recompute_days",
+		double(p.potential_recompute_days))));
 }
 
 std::map<std::string, double> params_map(const WorldState& ws) {
@@ -213,6 +218,8 @@ std::map<std::string, double> params_map(const WorldState& ws) {
 		{"potential_demand.enabled", p.potential_enabled ? 1.0 : 0.0},
 		{"potential_demand.discount", p.potential_discount},
 		{"potential_demand.cap", p.potential_cap},
+		{"potential_demand.recompute_days",
+			double(p.potential_recompute_days)},
 	};
 }
 

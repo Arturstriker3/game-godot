@@ -214,4 +214,65 @@ void potential_demand_world(const WorldState& ws,
 	}
 }
 
+bool potential_demand_cache_stale(const WorldState& ws,
+		const PotentialDemandCache& cache) {
+	if (!cache.needs_loaded || cache.day < 0) {
+		return true;
+	}
+	if (cache.cities != static_cast<int>(ws.cities.size())
+			|| cache.products != ws.products) {
+		return true;
+	}
+	// "Definicoes mudaram": catalogo, arvore de necessidades e governo.
+	if (cache.recipes != ws.recipes.size()
+			|| cache.needs_levels != ws.needs_levels.size()
+			|| cache.government_products != ws.government_products.size()) {
+		return true;
+	}
+	// Parametros do piso (o override de laboratorio recarrega o cerebro).
+	if (cache.durable_decay != ws.durable_decay
+			|| cache.discount != ws.ai_brain.potential_discount
+			|| cache.cap != ws.ai_brain.potential_cap) {
+		return true;
+	}
+	// Dia andou para tras (save/load ou mundo novo): o cache nao vale.
+	if (ws.day < cache.day) {
+		return true;
+	}
+	const int period = std::max(1, ws.ai_brain.potential_recompute_days);
+	return ws.day - cache.day >= period;
+}
+
+void potential_demand_refresh_cache(const WorldState& ws,
+		PotentialDemandCache& cache) {
+	const int cities = static_cast<int>(ws.cities.size());
+	const int products = std::max(0, ws.products);
+	cache.values.assign(
+		static_cast<std::size_t>(cities) * static_cast<std::size_t>(products),
+		0.0);
+	cache.cities = cities;
+	cache.products = products;
+	cache.day = ws.day;
+	cache.recipes = ws.recipes.size();
+	cache.needs_levels = ws.needs_levels.size();
+	cache.government_products = ws.government_products.size();
+	cache.durable_decay = ws.durable_decay;
+	cache.discount = ws.ai_brain.potential_discount;
+	cache.cap = ws.ai_brain.potential_cap;
+	cache.needs_loaded = ws.needs_loaded;
+	if (!ws.needs_loaded || cities <= 0 || products <= 0) {
+		return;  // ausencia honesta: tudo zero, sem propagacao
+	}
+	PotentialDemandIndex index;
+	build_potential_demand_index(ws, index);
+	std::vector<double> city_potential;
+	for (int city = 0; city < cities; ++city) {
+		potential_demand_for_city(ws, index, city, ws.ai_brain,
+			city_potential);
+		std::copy(city_potential.begin(), city_potential.end(),
+			cache.values.begin()
+				+ static_cast<std::ptrdiff_t>(city) * products);
+	}
+}
+
 } // namespace ogs

@@ -155,6 +155,13 @@ var _oil_diag := false
 # algodão no mundo e a contagem de fazendas de algodão/têxteis por nação.
 # Não existe no jogo: serve só para explicar as falências da rodada base.
 var _cotton_diag := false
+# G2 (perf): custo por fase do nucleo (`set_profiling(true)` + `get_profile`).
+# So medicao: instrumenta sem mudar o mundo (mesmo caminho do b6/g2).
+var _profile := false
+# G2 (perf): tempo de parede medido no GDScript (tick x status) quando
+# `--profile=1`; o profiler do nucleo nao cobre a marshalling do Dictionary.
+var _prof_tick_us := 0
+var _prof_status_us := 0
 var _cotton_farms: Dictionary = {}
 var _cotton_counts: Array = []
 var _cotton_prices: Array = []
@@ -258,6 +265,11 @@ func _init() -> void:
 			if arg.contains("="):
 				cotton_value = arg.split("=", true, 1)[1]
 			_cotton_diag = cotton_value != "0"
+		elif arg.begins_with("--profile"):
+			var profile_value := "1"
+			if arg.contains("="):
+				profile_value = arg.split("=", true, 1)[1]
+			_profile = profile_value != "0"
 		elif arg.begins_with("--goods-diag="):
 			# G1: lista de bens a vigiar (ex.: chips,microchips). Só medição.
 			for raw_id in arg.split("=", true, 1)[1].split(",", false):
@@ -757,6 +769,26 @@ func _make_world() -> Object:
 			% ["LIGADO" if _harvest_rate else "DESLIGADO",
 				1 if _harvest_rate else 0])
 	return sim
+
+
+## G2 (perf): custo por fase do nucleo (`get_profile`, µs acumulados) em µs/dia.
+func _profile_block(sim: Object) -> Dictionary:
+	var raw: Dictionary = sim.get_profile()
+	var total_us := 0.0
+	var per_phase: Dictionary = {}
+	for key: Variant in raw:
+		var value := float(raw[key])
+		per_phase[String(key)] = value
+		total_us += value
+	var per_day: Dictionary = {}
+	for key: Variant in per_phase:
+		per_day[key] = float(per_phase[key]) / float(maxi(1, _days))
+	return {
+		"total_us": total_us,
+		"total_us_per_day": total_us / float(maxi(1, _days)),
+		"per_phase_us": per_phase,
+		"per_phase_us_per_day": per_day,
+	}
 
 
 func _food_ratio(status: Dictionary) -> Dictionary:
@@ -1540,6 +1572,8 @@ func _run() -> void:
 	# D-125: índice do algodão no mundo (diagnóstico do algodão).
 	_products = sim.get_products()
 	_cotton_index = _products.find("cotton")
+	if _profile and sim.has_method("set_profiling"):
+		sim.set_profiling(true)
 	if _fx_seed_days > 0 and sim.has_method("seed_central_bank_reserves"):
 		# C2b2 (D-106): o cenário funda as reservas DEPOIS de 30 dias de comércio
 		# (no dia 0 não há importação medida); o laço abaixo faz a chamada.
@@ -1582,7 +1616,10 @@ func _run() -> void:
 			# mundo (dia 30; no dia 0 não há comércio).
 			var seeded: float = sim.seed_central_bank_reserves(_fx_seed_days)
 			print("[c1] cenário C2b2: reservas = %.3f âncora no dia 30" % seeded)
+		var _tick_start := Time.get_ticks_usec() if _profile else 0
 		var summary: Dictionary = sim.tick_day()
+		if _profile:
+			_prof_tick_us += Time.get_ticks_usec() - _tick_start
 		for violation in Array(summary.get("invariant_violations", [])):
 			violation_count += 1
 			if violation_samples.size() < 10:
@@ -1592,7 +1629,10 @@ func _run() -> void:
 		if day_now <= day_before:
 			stalled += 1
 		day_before = day_now
+		var _status_start := Time.get_ticks_usec() if _profile else 0
 		var status: Dictionary = sim.get_status()
+		if _profile:
+			_prof_status_us += Time.get_ticks_usec() - _status_start
 		var money := float(status.get("money_total", 0.0))
 		if money_start > 0.0:
 			max_drift = maxf(max_drift, absf(money - money_start) / money_start)
@@ -1785,6 +1825,13 @@ func _run() -> void:
 			if _power_on else {},
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
+	# G2 (perf): custo por fase do nucleo (us/dia); so instrumentacao.
+	if _profile:
+		out["profile"] = _profile_block(sim)
+		out["profile"]["harness_tick_us_per_day"] = \
+			float(_prof_tick_us) / float(maxi(1, _days))
+		out["profile"]["harness_status_us_per_day"] = \
+			float(_prof_status_us) / float(maxi(1, _days))
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
 	if _cotton_diag:

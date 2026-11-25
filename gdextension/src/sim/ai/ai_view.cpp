@@ -35,9 +35,47 @@ void city_range(const std::vector<int>& offset, int city, int& begin, int& end) 
 	end = offset[static_cast<std::size_t>(city) + 1];
 }
 
+// G2 (perf): aplica o piso de demanda potencial aos mercados da view. O piso
+// vem do cache mensal quando informado (`snapshot_ai_view` do jogo); sem cache
+// e recalculado a cada chamada (testes). Desligado nao executa nada.
+void apply_potential_floor(const WorldState& ws, AiView& view,
+		PotentialDemandCache* cache) {
+	if (!ws.ai_brain.enabled || !ws.ai_brain.potential_enabled
+			|| !ws.needs_loaded) {
+		return;
+	}
+	PotentialDemandCache local;
+	PotentialDemandCache* target = cache != nullptr ? cache : &local;
+	if (cache == nullptr || potential_demand_cache_stale(ws, *target)) {
+		potential_demand_refresh_cache(ws, *target);
+	}
+	const std::size_t products = static_cast<std::size_t>(view.products);
+	const std::size_t expected =
+		static_cast<std::size_t>(view.cities) * products;
+	if (target->values.size() != expected) {
+		return;  // dimensoes inesperadas: ausencia honesta, sem piso
+	}
+	for (std::size_t city_index = 0;
+			city_index < static_cast<std::size_t>(view.cities);
+			++city_index) {
+		for (std::size_t product = 0; product < products; ++product) {
+			AiMarketRow& row =
+				view.markets[city_index * products + product];
+			const double potential =
+				target->values[city_index * products + product];
+			const double gap = potential - row.desired;
+			if (gap > 0.0) {
+				row.desired += gap;
+				row.shortage += gap;
+			}
+		}
+	}
+}
+
 } // namespace
 
-void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
+void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view,
+		PotentialDemandCache* potential_cache) {
 	const std::size_t cities = ws.cities.size();
 	const std::size_t products =
 		static_cast<std::size_t>(std::max(ws.products, 0));
@@ -107,24 +145,9 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	// já é maior, nada muda; onde é zero (chips/microchips sem comprador ao
 	// vivo), aparece o sinal. A view é cópia descartável: produção, preços e
 	// o mercado real ficam intactos. Desligado = nenhum cálculo.
-	if (ws.ai_brain.enabled && ws.ai_brain.potential_enabled && ws.needs_loaded) {
-		PotentialDemandIndex potential_index;
-		build_potential_demand_index(ws, potential_index);
-		std::vector<double> potential;
-		for (std::size_t city_index = 0; city_index < cities; ++city_index) {
-			potential_demand_for_city(ws, potential_index,
-				static_cast<int>(city_index), ws.ai_brain, potential);
-			for (std::size_t product = 0; product < products; ++product) {
-				AiMarketRow& row =
-					view.markets[city_index * products + product];
-				const double gap = potential[product] - row.desired;
-				if (gap > 0.0) {
-					row.desired += gap;
-					row.shortage += gap;
-				}
-			}
-		}
-	}
+	// G2 perf: o cache mensal (quando informado) evita repayar a propagação
+	// a cada dia; a semântica do piso é a mesma dentro do mês.
+	apply_potential_floor(ws, view, potential_cache);
 
 	// 1b. G2 — armazenagem e calendário de safra (dado que a IA privada/governo
 	// usa para decidir guardar/vender e construir). Nenhuma leitura viva depois

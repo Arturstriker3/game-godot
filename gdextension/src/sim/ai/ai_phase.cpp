@@ -503,6 +503,7 @@ void AiPhase::reset() {
 	// `run` (o catálogo de produtos do mundo novo pode ter outro tamanho).
 	state_ = AiState{};
 	view_ = AiView{};
+	potential_cache_ = PotentialDemandCache{};
 	templates_ = AiTemplates{};
 	templates_products_ = -1;
 }
@@ -516,7 +517,7 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 	// 1. Retrato do dia. A partir daqui as regras só enxergam `view_`.
 	{
 		OGS_SIM_ZONE(kPhaseAiView);
-		snapshot_ai_view(ws, core, view_);
+		snapshot_ai_view(ws, core, view_, &potential_cache_);
 	}
 
 	// 2. Templates de engenharia: construídos uma vez, refeitos só quando o

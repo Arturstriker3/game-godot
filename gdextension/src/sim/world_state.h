@@ -271,6 +271,11 @@ struct AiBrainParams {
 	bool potential_enabled = false;
 	double potential_discount = 0.5;
 	double potential_cap = 1.0;
+	// G2 (perf): o piso por cidade e recalculado no dia 0 e a cada N dias
+	// (`potential_demand.recompute_days` no ai_brain.json). Entre recalculos
+	// vale o valor cacheado -- mensal de proposito, o piso nao acompanha a
+	// populacao dia a dia. 1 reproduz o calculo diario antigo.
+	int potential_recompute_days = 30;
 };
 
 // ---------------------------------------------------------------------------

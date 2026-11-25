@@ -27,6 +27,7 @@
 // sem IA.
 
 #include "../commands.h"
+#include "../potential_demand.h"
 #include "../sim_core.h"
 #include "../world_state.h"
 #include "ai_government.h"
@@ -274,6 +275,9 @@ public:
 private:
 	// Retrato do dia (reaproveitado entre dias: os vetores mantêm capacidade).
 	AiView view_;
+	// G2 (perf): piso de demanda potencial por cidade x produto, recalculado
+	// no dia 0 e a cada `potential_demand.recompute_days` dias (cache mensal).
+	PotentialDemandCache potential_cache_;
 	// Templates de engenharia: construídos uma vez; refeitos só quando o
 	// catálogo de produtos muda de tamanho.
 	AiTemplates templates_;

@@ -170,6 +170,44 @@ TEST_CASE("G2: piso desligado nao altera a view nem os totais") {
 	}
 }
 
+TEST_CASE("G2: cache mensal reusa o piso e recalcula no periodo") {
+	ogs::test::PocketWorld world;
+	const int chip = world.product("chip");
+	REQUIRE(chip >= 0);
+	world.ws.ai_brain.enabled = true;
+	world.ws.ai_brain.potential_enabled = true;
+	world.ws.ai_brain.potential_discount = 0.5;
+	world.ws.ai_brain.potential_cap = 1.0;
+	world.ws.ai_brain.potential_recompute_days = 30;
+	add_category(world.ws, 1e-6, chip);
+	world.ws.needs_loaded = true;
+	world.ws.cities[0].simulation_population = 1000000.0;
+	world.ws.day = 0;
+	ogs::PotentialDemandCache cache;
+	CHECK(ogs::potential_demand_cache_stale(world.ws, cache));
+	ogs::AiView day0;
+	ogs::snapshot_ai_view(world.ws, world.core, day0, &cache);
+	const double first = day0.markets[chip].desired;
+	CHECK(first > 0.0);
+	CHECK(!ogs::potential_demand_cache_stale(world.ws, cache));
+	// A populacao dobra, mas dentro do mes o piso cacheado NAO recalcula.
+	world.ws.cities[0].simulation_population = 2000000.0;
+	world.ws.day = 1;
+	ogs::AiView day1;
+	ogs::snapshot_ai_view(world.ws, world.core, day1, &cache);
+	CHECK(day1.markets[chip].desired == doctest::Approx(first));
+	// No dia 30 (periodo vencido) ele recalcula com a populacao do dia.
+	world.ws.day = 30;
+	CHECK(ogs::potential_demand_cache_stale(world.ws, cache));
+	ogs::AiView day30;
+	ogs::snapshot_ai_view(world.ws, world.core, day30, &cache);
+	CHECK(day30.markets[chip].desired == doctest::Approx(first * 2.0));
+	CHECK(!ogs::potential_demand_cache_stale(world.ws, cache));
+	// Mudar parametro do piso tambem invalida o cache (definicao mudou).
+	world.ws.ai_brain.potential_cap = 0.5;
+	CHECK(ogs::potential_demand_cache_stale(world.ws, cache));
+}
+
 TEST_CASE("G2: semeadura deterministica (duas cargas = mesmo plano)") {
 	ogs::WorldState ws = demand_world();
 	ws.bootstrap.enabled = true;
