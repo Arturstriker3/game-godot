@@ -35,7 +35,10 @@ std::map<std::string, double> params_map(const WorldState& ws);
 
 // R3 — tendência da série de preços (média dos últimos `trend_days` dividida
 // pela média da janela anterior), limitada a [trend_min, trend_max]. Menos de
-// 5 observações ou janela anterior vazia devolve 1.0 (ausência declarada).
+// 5 observações devolve 1.0 (ausência declarada). Com histórico menor que
+// `2 × trend_days`, a janela corrente usa o máximo disponível que ainda deixe
+// ao menos 5 observações para a janela anterior (ex.: 40 observações e
+// trend_days=30 → 30 correntes / 10 anteriores).
 double price_trend(const AiBrainParams& params,
 	const std::vector<double>& history);
 

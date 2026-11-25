@@ -32,6 +32,7 @@
 #include "ai_government.h"
 #include "ai_group.h"
 #include "ai_private.h"
+#include "ai_risk.h"
 #include "ai_storage.h"
 #include "ai_templates.h"
 #include "ai_view.h"
@@ -52,6 +53,13 @@ struct AiActionResult {
 	double local_share = 0.0;
 	std::string error;
 	std::string owner;
+};
+
+// D-131 fase B (R4) — planta nova registrada para a janela móvel de 30 dias.
+struct AiHerdEvent {
+	int day = 0;
+	int product = -1;
+	double capacity = 0.0;
 };
 
 // Estado da IA que NÃO é serializado no save e não cabe no WorldState: as
@@ -99,6 +107,21 @@ struct AiState {
 	// D-131 — diagnóstico da fase A: forecasts avaliados e rejeições do gate.
 	int brain_attempts = 0;
 	int brain_rejected = 0;
+	// D-131 fase B (R2/R4). `pending_committed` acumula a capacidade das obras
+	// emitidas NA MESMA fase (privado + grupo + governo, ordem determinística)
+	// e é zerado no começo do dia. Os caches do dia (oferta efetiva e
+	// exposição) são reconstruídos junto; o histórico de demanda tem até 90
+	// dias por produto. Nada disto é serializado.
+	std::unordered_map<int, double> pending_committed;
+	std::vector<AiHerdEvent> herd_events;
+	AiSupplyCache brain_supply;
+	AiExposureCache brain_exposure;
+	std::vector<std::vector<double>> brain_demand_history;
+	// Candidatos únicos por (cidade, produto) por mês: o mapa guarda o último
+	// mês contado e o total soma a primeira aparição de cada chave no mês.
+	std::unordered_map<std::uint64_t, int> brain_candidate_month;
+	int brain_unique_month_candidates = 0;
+	int brain_phase_day = -1;
 };
 
 // O que uma regra recebe: tudo por referência, nada copiado.

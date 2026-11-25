@@ -239,7 +239,11 @@ struct AiBrainParams {
 	int months_max = 12;
 	int trough_months_max = 6;
 	double capital_share = 0.35;
-	// R2 — concorrência (não implementada na fase A; só a janela de demanda).
+	// R2 — concorrência. `scope_food`/`scope_other` são o enum declarado do
+	// JSON (`region` = 0, `world` = 1); o save grava os nomes e o loader
+	// converte de volta. A janela da média móvel de demanda é `demand_growth_days`.
+	int scope_food = 0;
+	int scope_other = 1;
 	int demand_growth_days = 30;
 	// R3 — preço esperado (média móvel + castigo por excesso).
 	int trend_days = 30;

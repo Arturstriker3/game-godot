@@ -341,6 +341,15 @@ AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 	out.cost = result.cost;
 	out.error = result.error;
 	out.owner = owner;
+	// D-131 fase B: a obra emitida nesta fase entra na concorrência
+	// (`pending_committed`), na janela anti-manada e na exposição do dono.
+	if (ctx.ws.ai_brain.enabled && result.created) {
+		ctx.state.pending_committed[output] +=
+			std::max(0.0, capacity);
+		ai_risk::herd_record(ctx.state, output, capacity, ctx.day);
+		ai_risk::exposure_add(ctx.state.brain_exposure, city, owner, output,
+			result.cost);
+	}
 	return out;
 }
 
@@ -407,6 +416,13 @@ AiActionResult ai_emit_group_invest(AiContext& ctx, const std::string& group,
 	out.local_share = result.local_share;
 	out.error = result.error;
 	out.owner = result.owner;
+	if (ctx.ws.ai_brain.enabled && result.created) {
+		ctx.state.pending_committed[output] +=
+			std::max(0.0, capacity);
+		ai_risk::herd_record(ctx.state, output, capacity, ctx.day);
+		ai_risk::exposure_add(ctx.state.brain_exposure, city,
+			result.owner.empty() ? group : result.owner, output, result.cost);
+	}
 	return out;
 }
 

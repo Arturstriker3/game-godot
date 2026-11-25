@@ -81,11 +81,17 @@ UnitMonth unit_month(const WorldState& ws, const AiBrainParams& params,
 	// Juro do capital emprestado (o crédito aprovado cobre o que o caixa não
 	// paga). Taxa anual / 365 × dias do mês.
 	const double borrowed = std::max(0.0, capacity * in.unit_capex - in.cash);
+	// Fase B (ressalva da fase A): receita e custos na MESMA base, por unidade
+	// de capacidade. `revenue` acima é o total da capacidade de referência; o
+	// dimensionamento fechado `cap_max = (caixa + crédito)/max_m(unit_capex +
+	// burn_m)` só fecha se `burn` for o custo líquido POR capacidade.
+	const double revenue_per_capacity =
+		capacity > 1e-9 ? revenue / capacity : 0.0;
 	out.burn = fixed + variable
-		+ borrowed / std::max(1.0, capacity)
+		+ borrowed / std::max(1e-9, capacity)
 			* std::max(0.0, in.loan_rate_annual)
 			* static_cast<double>(std::max(1, params.month_days)) / 365.0
-		- revenue;
+		- revenue_per_capacity;
 	return out;
 }
 
@@ -113,6 +119,12 @@ void apply_params(WorldState& ws, const std::map<std::string, double>& values) {
 	p.capital_share = std::clamp(
 		get("forecast.capital_share", "capital_share", p.capital_share),
 		0.0, 1.0);
+	// Escopos: enum declarado (0 = região, 1 = mundo). O chamador converte os
+	// nomes do JSON/save (`region`/`world`) para este código.
+	p.scope_food = std::clamp(
+		int(get("competition.scope_food", "scope_food", p.scope_food)), 0, 1);
+	p.scope_other = std::clamp(
+		int(get("competition.scope_other", "scope_other", p.scope_other)), 0, 1);
 	p.demand_growth_days = std::max(1,
 		int(get("competition.demand_growth_days", "demand_growth_days",
 			p.demand_growth_days)));
@@ -159,6 +171,8 @@ std::map<std::string, double> params_map(const WorldState& ws) {
 		{"forecast.months_max", double(p.months_max)},
 		{"forecast.trough_months_max", double(p.trough_months_max)},
 		{"forecast.capital_share", p.capital_share},
+		{"competition.scope_food", double(p.scope_food)},
+		{"competition.scope_other", double(p.scope_other)},
 		{"competition.demand_growth_days", double(p.demand_growth_days)},
 		{"price.trend_days", double(p.trend_days)},
 		{"price.history_days", double(p.history_days)},
@@ -184,13 +198,29 @@ double price_trend(const AiBrainParams& params,
 	if (count < 5) {
 		return 1.0;
 	}
-	const std::size_t window = std::min<std::size_t>(
-		static_cast<std::size_t>(std::max(1, params.trend_days)), count / 2);
-	if (window < 2) {
+	// Fase B (ressalva da fase A): com menos de `2 × trend_days` observações a
+	// janela corrente usa TODO o histórico disponível até `trend_days`, desde
+	// que sobre ao menos 5 observações para a janela anterior. O `count / 2`
+	// antigo cortava a MA corrente pela metade mesmo quando ela caberia (ex.:
+	// 40 observações com trend_days=30 usava 20/20 em vez de 30/10).
+	const std::size_t trend = static_cast<std::size_t>(
+		std::max(1, params.trend_days));
+	std::size_t window = 0;
+	if (count >= trend + 5) {
+		window = trend;
+	} else {
+		// Série curta (5..trend+4): metade disponível, nunca menos de 2, para
+		// que as duas médias existam.
+		window = count / 2;
+	}
+	// A janela anterior usa o que sobrou (até `trend_days`); com 40
+	// observações e trend=30 são 30 correntes e 10 anteriores.
+	const std::size_t previous_window = std::min(trend, count - window);
+	if (window < 2 || previous_window < 2 || count < window + previous_window) {
 		return 1.0;
 	}
 	const double current = mean_of(history, count - window, count);
-	const double previous = mean_of(history, count - 2 * window,
+	const double previous = mean_of(history, count - window - previous_window,
 		count - window);
 	if (previous <= 1e-9) {
 		return 1.0;

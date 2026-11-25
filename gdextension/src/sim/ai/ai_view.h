@@ -139,6 +139,12 @@ struct AiView {
 	std::vector<double> b_utilization;
 	std::vector<double> b_costs;
 	std::vector<double> b_site_suitability;
+	// D-131 fase B (R2): eficiência corrente da curva D-125 e o teto de
+	// maturação da classe (1.0 na indústria; `cap_without` sem equipamento nas
+	// classes que dependem dele). A diferença entre os dois mede a rampa que
+	// ainda falta entregar.
+	std::vector<double> b_production_efficiency;
+	std::vector<double> b_eff_cap;
 	// D-086 — estágio de mina por construção (ordem de `b_offset`): profundidade
 	// de operação e produção relativa do estágio (0,05..1,0). 0/1,0 nas demais.
 	std::vector<int> b_stage;
@@ -163,6 +169,9 @@ struct AiView {
 	std::vector<int> c_output;
 	std::vector<double> c_capacity;
 	std::vector<int> c_expand;
+	// Receita do projeto (-1 fora de receita): usada para classificar a
+	// eficiência de entrega no cálculo da oferta efetiva (R2).
+	std::vector<int> c_recipe;
 
 	// Incumbentes (F9): cidade, recurso e grupo dono — mesmo filtro e ordem do
 	// bloco `light` (cidade → construção, dono-grupo, recurso não vazio).

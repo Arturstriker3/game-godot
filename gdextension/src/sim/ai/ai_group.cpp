@@ -367,12 +367,32 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 	// lacuna já atendida por uma obra em voo (local ou global) não dispara
 	// outro candidato. R3/Q-014: na CESTA ALIMENTAR o pending GLOBAL não
 	// desconta; a obra LOCAL continua descontando.
-	shortage = std::max(0.0,
-		shortage - ai_pending_capacity(view, city_index, product));
 	const bool is_food = context.is_food;
-	if (product < static_cast<int>(pending_global.size()) && !is_food) {
+	const bool brain = ctx.ws.ai_brain.enabled;
+	const double raw_shortage = std::max(0.0, shortage);
+	if (brain) {
+		// D-131 fase B (R2): oferta efetiva do escopo (comida = região; demais
+		// = mundo) já inclui obras em voo e `pending_committed` da fase. O
+		// gatilho local continua sendo o teto da lacuna.
+		const bool region_scope = is_food
+			? ctx.ws.ai_brain.scope_food == 0
+			: ctx.ws.ai_brain.scope_other == 0;
+		const int region = region_scope ? ai_risk::region_slot(
+			ctx.state.brain_supply,
+			view.city_rows[static_cast<std::size_t>(city_index)].landmass) : -1;
+		const double supply = ai_risk::supply_effective(
+			ctx.state.brain_supply, ctx.state, product, region, region_scope);
+		const double demand = ai_risk::demand_future(ctx.state.brain_supply,
+			product, region, region_scope,
+			ctx.ws.ai_brain.demand_growth_days);
+		shortage = std::min(raw_shortage, std::max(0.0, demand - supply));
+	} else {
 		shortage = std::max(0.0,
-			shortage - pending_global[static_cast<std::size_t>(product)]);
+			shortage - ai_pending_capacity(view, city_index, product));
+		if (product < static_cast<int>(pending_global.size()) && !is_food) {
+			shortage = std::max(0.0,
+				shortage - pending_global[static_cast<std::size_t>(product)]);
+		}
 	}
 	if (is_food) {
 		// Comida: só onde há escassez local (nunca em excesso).
@@ -580,6 +600,35 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 	}
 	const double score = profit_day / std::max(cost, 1.0) / risk
 		* ogs::stock::investment_factor(ctx.ws, group.id);
+	// D-131 fase B (R4): tetos de exposição do grupo e anti-manada global.
+	if (ctx.ws.ai_brain.enabled) {
+		const int sector = ai_risk::sector_slot(ctx.state.brain_exposure,
+			entry.product);
+		const AiExposure* exposure = ai_risk::group_exposure(
+			ctx.state.brain_exposure, group.id);
+		AiExposure empty;
+		if (exposure == nullptr) {
+			empty.by_product.assign(static_cast<std::size_t>(
+				ctx.state.brain_exposure.products), 0.0);
+			empty.by_sector.assign(static_cast<std::size_t>(
+				ctx.state.brain_exposure.sectors), 0.0);
+			exposure = &empty;
+		}
+		if (!ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
+				entry.product, sector, cost, cash)) {
+			return false;
+		}
+		const double existing_capacity = entry.product >= 0
+			&& entry.product < static_cast<int>(
+				ctx.state.brain_supply.world_capacity.size())
+			? ctx.state.brain_supply.world_capacity[
+				static_cast<std::size_t>(entry.product)]
+			: 0.0;
+		if (!ai_risk::herd_allows(ctx.state, ctx.ws.ai_brain, entry.product,
+				entry.is_food, ctx.day, capacity, existing_capacity)) {
+			return false;
+		}
+	}
 	out = Opportunity();
 	out.valid = true;
 	out.city = entry.city;

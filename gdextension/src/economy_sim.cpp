@@ -11941,6 +11941,18 @@ void EconomySim::set_ai_brain_params(const Dictionary& values) {
 						|| value.get_type() == Variant::FLOAT
 						|| value.get_type() == Variant::BOOL) {
 					params[name] = double(value);
+					continue;
+				}
+				// D-131 fase B: os escopos chegam como nome do JSON
+				// (`region`/`world`) e viram o enum do struct (0/1).
+				if (value.get_type() == Variant::STRING) {
+					const std::string text =
+						std::string(String(value).utf8().get_data());
+					if (name == "competition.scope_food") {
+						params[name] = text == "world" ? 1.0 : 0.0;
+					} else if (name == "competition.scope_other") {
+						params[name] = text == "region" ? 0.0 : 1.0;
+					}
 				}
 			}
 		};
@@ -11967,6 +11979,16 @@ Dictionary EconomySim::get_ai_brain_status() const {
 	out["rejected"] = state.brain_rejected;
 	out["reject_share"] = state.brain_attempts > 0
 		? double(state.brain_rejected) / double(state.brain_attempts) : 0.0;
+	// Fase B: candidatos únicos por (cidade, produto) por mês e o maior
+	// número de plantas do mesmo bem em qualquer janela de 30 d observada.
+	out["unique_candidates_month"] = state.brain_unique_month_candidates;
+	std::map<int, int> herd_plants;
+	int herd_max = 0;
+	for (const AiHerdEvent& event : state.herd_events) {
+		const int count = ++herd_plants[event.product];
+		herd_max = std::max(herd_max, count);
+	}
+	out["herd_max_plants_30d"] = herd_max;
 	return out;
 }
 
