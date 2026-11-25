@@ -46,6 +46,15 @@
 
 namespace ogs {
 
+// G2 perf - agenda determinística da varredura mensal do investidor: o agente
+// `index` (cidade do privado / grupo) avalia candidatos quando
+// `day % interval == index % interval`, ou seja, `(day - index) % interval ==
+// 0`. Sem cursor no save: o dia e o índice bastam (round-trip igual).
+inline bool ai_scan_due(int day, int index, int interval) {
+	const int period = interval < 1 ? 1 : interval;
+	return day % period == index % period;
+}
+
 // Resultado de uma ação emitida pela IA, já convertido do resultado do núcleo
 // (InvestResult/BuildResult/GroupInvestResult) para o que a regra consulta.
 struct AiActionResult {

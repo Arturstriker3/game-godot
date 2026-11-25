@@ -187,6 +187,11 @@ void apply_params(WorldState& ws, const std::map<std::string, double>& values) {
 	p.potential_recompute_days = std::max(1, int(get(
 		"potential_demand.recompute_days", "potential_recompute_days",
 		double(p.potential_recompute_days))));
+	// G2 (perf): varredura mensal escalonada do investidor (cidade/grupo `i`
+	// avalia quando `(dia - i) % N == 0`). 1 reproduz a varredura diaria.
+	p.scan_interval_days = std::max(1, int(get(
+		"scan_interval_days", "scan_interval_days",
+		double(p.scan_interval_days))));
 }
 
 std::map<std::string, double> params_map(const WorldState& ws) {
@@ -220,6 +225,9 @@ std::map<std::string, double> params_map(const WorldState& ws) {
 		{"potential_demand.cap", p.potential_cap},
 		{"potential_demand.recompute_days",
 			double(p.potential_recompute_days)},
+		// G2 (perf): cadencia da varredura do investidor (diagnostico/save
+		// aditivo; so grava quando difere do default).
+		{"scan_interval_days", double(p.scan_interval_days)},
 	};
 }
 

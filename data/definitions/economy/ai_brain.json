@@ -7,6 +7,7 @@
     "spec": "D-131_cerebro_economico_ia.md"
   },
   "enabled": true,
+  "scan_interval_days": 30,
   "forecast": {
     "month_days": 30,
     "months_max": 12,
@@ -42,6 +43,7 @@
   "note_forecast": "R1 - mes de 30 dias; H = ceil(payback_limit/30) limitado a months_max. A obra dura construction_days (15 comida / 30 primario / 45 mina / 60 fabrica, escalados pela capacidade) sem folha nem receita; depois a rampa D-125 e a folha CHEIA. Gate: (a) capex <= caixa x capital_share + credito; (b) menor saldo mensal >= -credito; (c) saldo no fim do horizonte >= 0; (d) lucro operacional acumulado >= 0 ate trough_months_max; (e) payback D-125 com preco esperado <= limite. Dimensionamento fechado: cap_max = (caixa + credito) / max_m(unit_capex + burn_m); abaixo de 2 t/dia nao investe.",
   "note_price": "R3 - trend = ma30(preco)/ma30_anterior, limitado a [trend_min, trend_max], com no minimo 5 observacoes (senao 1). excesso = max(0,(oferta_futura - demanda_futura)/max(demanda_futura,0.001)); preco_esperado = preco_hoje x clamp(trend) x clamp(1 - elasticidade x excesso, price_floor, 1). Fase A usa a oferta existente de hoje (R2 vem na fase B).",
     "note_potential": "G2 perf - o piso por cidade e recalculado no dia 0 e a cada recompute_days dias (default 30) e reusado entre recalculos; entre eles a populacao do piso fica congelada de proposito (cache mensal deterministico). recompute_days=1 reproduz o calculo diario.",
+  "note_scan": "G2 perf - varredura mensal escalonada do investidor: com o cerebro ligado, a cidade i (privado) e o grupo i (grupos) so avaliam candidatos quando (dia - i) % scan_interval_days == 0; entre varreduras nao ha avaliacao de candidato novo (obras em andamento seguem normais). O offset e deterministico (indice % intervalo), sem cursor no save. Desligado (enabled=false) mantem a cadencia antiga (semanal para o privado, monthly_period para os grupos) bit a bit.",
 "note_disabled": "Com enabled=false nenhum forecast/preco esperado e calculado: a IA decide exatamente como antes (equivalencia bit a bit da rodada de 90 e 365 dias).",
   "potential_demand": {
     "enabled": true,

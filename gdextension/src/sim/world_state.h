@@ -276,6 +276,13 @@ struct AiBrainParams {
 	// vale o valor cacheado -- mensal de proposito, o piso nao acompanha a
 	// populacao dia a dia. 1 reproduz o calculo diario antigo.
 	int potential_recompute_days = 30;
+	// G2 (perf): varredura mensal escalonada do investidor. Com o cerebro
+	// ligado, a cidade/grupo `i` so avalia candidatos quando
+	// `(dia - i) % scan_interval_days == 0` (offset deterministico, sem
+	// cursor no save). Entre varreduras nao ha candidato novo; obras em
+	// andamento seguem normais. `enabled=false` ignora este campo e mantem a
+	// cadencia antiga (semanal/mensal do CadenceState), bit a bit.
+	int scan_interval_days = 30;
 };
 
 // ---------------------------------------------------------------------------

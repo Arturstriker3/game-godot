@@ -207,10 +207,14 @@ void GroupDay::run() {
 	// `_prepare_slice` passo 0: fila da vez, na ordem do ranking (a view já é
 	// o `get_group_ranking` do dia). A6: período no estado do mundo (antes 30).
 	queue.clear();
-	const int interval = std::max(1, ctx.ws.cadence.monthly_period);
-	const int phase = ctx.day % interval;
+	// G2 perf: com o cerebro ligado a varredura do grupo segue
+	// `scan_interval_days` (default 30, o mesmo mensal da A6); desligado fica
+	// exatamente a cadencia do CadenceState (`monthly_period`), bit a bit.
+	const int interval = ctx.ws.ai_brain.enabled
+		? std::max(1, ctx.ws.ai_brain.scan_interval_days)
+		: std::max(1, ctx.ws.cadence.monthly_period);
 	for (int index = 0; index < static_cast<int>(view.groups.size()); ++index) {
-		if (index % interval == phase) {
+		if (ai_scan_due(ctx.day, index, interval)) {
 			queue.push_back(index);
 		}
 	}
@@ -622,6 +626,15 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 		if (tmpl == nullptr) {
 			return false;
 		}
+		// Gate barato ANTES do forecast: nem a capacidade minima (0,5) cabe no
+		// caixa x capital_share + credito bruto. O forecast reprovaria no gate
+		// (6); aqui economiza o calculo mensal inteiro. Usa o credito ANTES do
+		// aperto do banco (limite superior), entao nunca rejeita um projeto que
+		// o forecast aprovaria.
+		const double spendable = cash * ctx.ws.ai_brain.capital_share + credit;
+		if (spendable < 0.5 * capital_per_capacity) {
+			return false;
+		}
 		const int recipe_index =
 			entry.recipe.empty() ? -1 : ctx.core.recipe_index(entry.recipe);
 		int input_product = tmpl->input;
@@ -649,6 +662,21 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 		margin = entry.margin + (price_expected - entry.price);
 		if (margin <= 0.0) {
 			return false;
+		}
+		// Gate barato do payback D-125 ANTES do forecast: payback = capex /
+		// (margem x capacidade x eficiencia) = capital / (margem x eficiencia),
+		// independente da capacidade. Para nao-food a eficiencia usada pelo
+		// forecast e a MESMA `entry.ramp` (ai_expected_new_efficiency), entao
+		// reprovar aqui e o gate (e) exato; so evita montar o fluxo mensal.
+		const double payback_limit = tmpl->is_recipe ? 730.0
+			: (ctx.templates.is_bulk_low_value(entry.resource) ? 730.0
+				: 150.0);
+		if (!entry.is_food) {
+			const double cheap_payback = capital_per_capacity
+				/ std::max(margin * entry.ramp, 1e-6);
+			if (cheap_payback > payback_limit + 1e-6) {
+				return false;
+			}
 		}
 		ai_brain::ForecastInput in;
 		in.cash = cash;
@@ -695,9 +723,7 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 		in.margin_per_ton = margin;
 		in.expected_efficiency =
 			ai_expected_new_efficiency(ctx, entry.city, *tmpl);
-		in.payback_limit_days = tmpl->is_recipe ? 730.0
-			: (ctx.templates.is_bulk_low_value(entry.resource) ? 730.0
-				: 150.0);
+		in.payback_limit_days = payback_limit;
 		in.min_capacity = 0.5;
 		ctx.state.brain_group_attempts += 1;
 		const ai_brain::ForecastResult forecast =

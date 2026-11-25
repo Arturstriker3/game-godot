@@ -3,6 +3,7 @@
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
+#include "sim/ai/ai_phase.h"
 #include "sim/ai/ai_view.h"
 #include "sim/ai_brain.h"
 #include "sim/bootstrap.h"
@@ -206,6 +207,32 @@ TEST_CASE("G2: cache mensal reusa o piso e recalcula no periodo") {
 	// Mudar parametro do piso tambem invalida o cache (definicao mudou).
 	world.ws.ai_brain.potential_cap = 0.5;
 	CHECK(ogs::potential_demand_cache_stale(world.ws, cache));
+}
+
+TEST_CASE("G2 perf: varredura mensal escalonada do investidor") {
+	// O offset e o indice do agente (cidade/grupo): cada um varre uma vez a
+	// cada `interval` dias, em dia fixo, sem cursor no save.
+	for (int index = 0; index < 30; ++index) {
+		int hits = 0;
+		for (int day = 0; day < 30; ++day) {
+			if (ogs::ai_scan_due(day, index, 30)) {
+				++hits;
+				CHECK(day == index);
+			}
+		}
+		CHECK(hits == 1);
+		CHECK(ogs::ai_scan_due(index + 30, index, 30));
+		CHECK(ogs::ai_scan_due(index + 60, index, 30));
+		CHECK_FALSE(ogs::ai_scan_due(index + 1, index, 30));
+	}
+	// Intervalo 1 reproduz a varredura diaria antiga; 0/negativo vira 1.
+	for (int day = 0; day < 5; ++day) {
+		CHECK(ogs::ai_scan_due(day, 7, 1));
+		CHECK(ogs::ai_scan_due(day, 7, 0));
+		CHECK(ogs::ai_scan_due(day, 7, -3));
+	}
+	// Default declarado do cerebro (ai_brain.json / struct) e 30.
+	CHECK(ogs::AiBrainParams().scan_interval_days == 30);
 }
 
 TEST_CASE("G2: semeadura deterministica (duas cargas = mesmo plano)") {

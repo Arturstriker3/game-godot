@@ -1150,6 +1150,11 @@ Value ai_brain_to(const WorldState& ws) {
 		potential["recompute_days"] = Value(p.potential_recompute_days);
 		out["potential_demand"] = potential;
 	}
+	// G2 perf: so grava a cadencia da varredura do investidor quando difere do
+	// default (30); o caminho OFF/cadencia antiga nao ganha a chave.
+	if (p.scan_interval_days != 30) {
+		out["scan_interval_days"] = Value(p.scan_interval_days);
+	}
 	return out;
 }
 
@@ -1221,6 +1226,9 @@ void ai_brain_from(WorldState& ws, const Value& block) {
 		values["potential_demand.enabled"] =
 			read_double(*section, "enabled", 0.0) > 0.5 ? 1.0 : 0.0;
 	}
+	// G2 perf: topo aditivo; save antigo sem a chave mantem o default/carregado.
+	values["scan_interval_days"] = read_double(block, "scan_interval_days",
+		ws.ai_brain.scan_interval_days);
 	ai_brain::apply_params(ws, values);
 }
 

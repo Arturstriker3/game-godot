@@ -573,6 +573,28 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 	// (== `phase >= mini(_city_count, interval_days)` do GDScript).
 	const int interval = std::max(1, ws.cadence.weekly_period);
 	const int phase = day % interval;
+	// G2 perf - VARREDURA MENSAL ESCALONADA DO INVESTIDOR. Com o cérebro
+	// ligado o privado avalia candidatos só no dia da cidade
+	// (`(dia - índice) % scan_interval_days == 0`, offset determinístico, sem
+	// cursor no save); nos outros dias não há candidato novo. Governo e
+	// armazém continuam na agenda semanal da A6. Desligado, o laço único
+	// abaixo mantém a cadência antiga bit a bit.
+	if (ws.ai_brain.enabled) {
+		const int scan = std::max(1, ws.ai_brain.scan_interval_days);
+		for (int index = 0; index < view_.cities; ++index) {
+			// Ordem do dia por cidade: privado, governo e, por último, armazém
+			// (compra/liberação e obra). O armazém vem depois para não competir
+			// com as decisões de produção pelo caixa congelado da view.
+			if (ai_scan_due(day, index, scan)) {
+				private_investor_.run_city(ctx, index);
+			}
+			if (index % interval == phase) {
+				government_.run_city(ctx, index);
+				storage_investor_.run_city(ctx, index);
+			}
+		}
+		return;
+	}
 	if (view_.cities > 0 && phase >= std::min(view_.cities, interval)) {
 		return;
 	}
