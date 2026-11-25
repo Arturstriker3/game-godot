@@ -218,9 +218,23 @@ bool borrow_city_impl(WorldState& ws, const std::string& city_id, double amount,
 		}
 		return false;
 	}
+	// D-126: o teto de crédito da cidade vale para TODO caminho, inclusive o
+	// comando `city_borrow` (que entra pela fila A3 e pode vir de
+	// `replay_commands`). A escada da crise já pede `min(need, limit)`; aqui o
+	// capa para o handler da API/IA não ter um caminho sem limite.
+	const std::size_t city_index = static_cast<std::size_t>(
+		city - ws.cities.data());
+	const double limit = city_credit_limit_impl(ws, city_index);
+	const double ask = std::min(std::max(0.0, amount), limit);
+	if (!(ask > 1e-9)) {
+		if (error != nullptr) {
+			*error = "sem limite de credito";
+		}
+		return false;
+	}
 	double granted = 0.0;
 	std::string bank_error;
-	if (!bank::lend_city(ws, city_id, amount, &granted, &bank_error)) {
+	if (!bank::lend_city(ws, city_id, ask, &granted, &bank_error)) {
 		if (error != nullptr) {
 			*error = bank_error.empty() ? "credito recusado" : bank_error;
 		}

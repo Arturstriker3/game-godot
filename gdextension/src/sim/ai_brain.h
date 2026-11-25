@@ -73,10 +73,8 @@ struct ForecastInput {
 	double opex_per_ton = 0.0;
 	double input_ratio = 0.0;
 	double input_price = 0.0;
-	// Receita: preço esperado e parcelas de mercado da oferta/demanda futuras.
+	// Receita: preço esperado (o excesso de oferta já entra nele, R3).
 	double price_expected = 0.0;
-	double supply_future = 0.0;
-	double demand_future = 0.0;
 	// Juro anual do crédito aprovado (0 = forecast sem dívida).
 	double loan_rate_annual = 0.0;
 	// Gate (e): margem por tonelada com o preço esperado e a eficiência média

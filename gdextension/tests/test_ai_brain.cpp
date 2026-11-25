@@ -48,8 +48,6 @@ ogs::ai_brain::ForecastInput factory_input(const ogs::test::PocketWorld& world,
 	in.input_ratio = 0.0;
 	in.input_price = 0.0;
 	in.price_expected = 100.0;
-	in.supply_future = 0.0;
-	in.demand_future = 100.0;
 	in.loan_rate_annual = 0.0;
 	in.margin_per_ton = 100.0;
 	in.expected_efficiency = 0.5;
@@ -216,8 +214,6 @@ TEST_CASE("D-131 fase B: unit_month e o cap_max usam a mesma base") {
 	in.input_ratio = 0.0;
 	in.input_price = 0.0;
 	in.price_expected = 20.0 / 30.0;  // receita = 20/capacidade/mes
-	in.supply_future = 0.0;
-	in.demand_future = 1000.0;
 	in.margin_per_ton = 0.0;
 	in.expected_efficiency = 1.0;
 	in.payback_limit_days = 1000000.0;
@@ -244,8 +240,6 @@ TEST_CASE("D-131 fase C: receita pela demanda e opex contado uma vez") {
 	in.jobs_per_capacity = 0.0;
 	in.opex_per_ton = 2.0;
 	in.price_expected = 10.0;
-	in.supply_future = 900.0;
-	in.demand_future = 900.0;
 	in.payback_limit_days = 1000000.0;
 	const ogs::ai_brain::ForecastResult result =
 		ogs::ai_brain::forecast_monthly(params, world.ws, in);
@@ -256,23 +250,14 @@ TEST_CASE("D-131 fase C: receita pela demanda e opex contado uma vez") {
 	// qualquer planta saudável.
 	CHECK(result.revenue_total > result.cost_total);
 	CHECK(result.cost_total > 0.0);
-	// A oferta futura não reduz a receita de novo (evita a dupla contagem):
-	// o mesmo projeto tem a MESMA receita com qualquer oferta.
-	in.supply_future = 0.0;
-	in.demand_future = 1000.0;
-	const ogs::ai_brain::ForecastResult open_market =
-		ogs::ai_brain::forecast_monthly(params, world.ws, in);
-	REQUIRE(open_market.pass);
-	CHECK(open_market.revenue_total == Approx(result.revenue_total));
-	CHECK(open_market.revenue_total > open_market.cost_total);
 	// O opex é fixo por capacidade-dia: dobrar a aptidão dobra a receita e
 	// deixa o custo igual.
 	in.aptitude = 0.5;
 	const ogs::ai_brain::ForecastResult half =
 		ogs::ai_brain::forecast_monthly(params, world.ws, in);
 	REQUIRE(half.pass);
-	CHECK(half.cost_total == Approx(open_market.cost_total));
-	CHECK(half.revenue_total == Approx(0.5 * open_market.revenue_total));
+	CHECK(half.cost_total == Approx(result.cost_total));
+	CHECK(half.revenue_total == Approx(0.5 * result.revenue_total));
 }
 
 TEST_CASE("D-131 fase B: price_trend usa a janela disponivel corretamente") {
@@ -308,9 +293,18 @@ TEST_CASE("D-131 fase B: oferta efetiva e demanda futura por escopo") {
 	cache.region_supply = {4.0};
 	cache.region_demand = {8.0};
 	ogs::AiState state;
-	state.pending_committed[0] = 6.0;
+	// Obra emitida na região 0: entra no total mundo e no recorte da região.
+	ogs::ai_risk::pending_add(state, 0, 0, 6.0);
 	CHECK(ogs::ai_risk::supply_effective(cache, state, 0, 0, false)
 		== Approx(16.0));
+	CHECK(ogs::ai_risk::supply_effective(cache, state, 0, 0, true)
+		== Approx(10.0));
+	// Obra de OUTRA região: conta no mundo, mas não desconta a oferta regional
+	// da região 0 (R3/Q-014). O cache do teste tem 1 região, então a chave 1 é
+	// só o recorte; o mundo soma as duas.
+	ogs::ai_risk::pending_add(state, 1, 0, 4.0);
+	CHECK(ogs::ai_risk::supply_effective(cache, state, 0, 0, false)
+		== Approx(20.0));
 	CHECK(ogs::ai_risk::supply_effective(cache, state, 0, 0, true)
 		== Approx(10.0));
 	CHECK(ogs::ai_risk::demand_future(cache, 0, 0, false, 30)
@@ -630,4 +624,33 @@ TEST_CASE("D-131: enabled=false nao altera as decisoes da IA") {
 	const std::vector<std::string> second_lines = run(second);
 	CHECK_FALSE(first_lines.empty());
 	CHECK(first_lines == second_lines);
+}
+
+TEST_CASE("D-131: duas rodadas com o cerebro ligado fecham o mesmo digest") {
+	// Determinismo do caminho NOVO: dois mundos idênticos, com o cérebro
+	// ligado e a mesma escassez semeada, rodam a fase da IA pelos mesmos dias
+	// e têm de fechar o MESMO save (digest FNV do mundo serializado).
+	const auto run = [](ogs::test::PocketWorld& world) {
+		std::map<std::string, double> values;
+		values["enabled"] = 1.0;
+		ogs::ai_brain::apply_params(world.ws, values);
+		const int planks = world.product("planks");
+		const int timber = world.product("timber");
+		ogs::City& agra = world.ws.cities.front();
+		agra.firm_cash = 200000.0;
+		agra.markets[static_cast<std::size_t>(planks)].price = 60.0;
+		agra.markets[static_cast<std::size_t>(planks)].desired = 10.0;
+		agra.markets[static_cast<std::size_t>(planks)].shortage = 10.0;
+		agra.markets[static_cast<std::size_t>(timber)].stock = 100.0;
+		ogs::CommandQueue queue;
+		ogs::AiPhase phase;
+		for (int day = 0; day < 5; ++day) {
+			ogs::tick_day(world.ws, world.core);
+			phase.run(world.ws, world.core, queue, false, false);
+		}
+		return ogs::test::digest(world.ws, world.core);
+	};
+	ogs::test::PocketWorld first;
+	ogs::test::PocketWorld second;
+	CHECK(run(first) == run(second));
 }

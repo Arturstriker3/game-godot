@@ -691,8 +691,6 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 		in.input_price = input_product >= 0
 			? ai_market(view, entry.city, input_product, kAiPrice) : 0.0;
 		in.price_expected = price_expected;
-		in.supply_future = entry.supply_future;
-		in.demand_future = entry.demand_future;
 		in.loan_rate_annual = bank::loan_rate(ctx.ws, city.nation);
 		in.margin_per_ton = margin;
 		in.expected_efficiency =

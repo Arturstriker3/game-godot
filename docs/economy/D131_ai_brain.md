@@ -11,7 +11,9 @@ declarados em `data/definitions/economy/ai_brain.json`.
 1. **Parâmetros** — `AiBrainParams` em `sim/world_state.h` (espelho do JSON),
    `set_ai_brain_params`/`get_ai_brain_params`/`get_ai_brain_status` na fachada e
    o bloco aditivo `definitions.ai_brain` no **save v42**. Save v41 e anteriores
-   carregam sem o bloco e ficam com `enabled=false` (default do struct).
+   não têm o bloco; o load de definitions é **aditivo**, então os parâmetros já
+   aplicados pelo JSON (`enabled=true` no jogo) permanecem. O default compilado
+   `false` do struct só vale para um mundo criado sem definitions e sem o bloco.
 2. **`eff::mean_between`** — média da curva D-125 num intervalo de dias de
    operação, com o MESMO laço diário de `mean_efficiency`
    (`mean_between(0, d-1) == mean_efficiency(d)`).
@@ -19,19 +21,24 @@ declarados em `data/definitions/economy/ai_brain.json`.
    `H = ceil(payback_limit/30)` limitado a `months_max = 12`; a obra dura
    `construction_days` (15 comida / 30 primário / 45 mina / 60 fábrica escalados
    pela capacidade) sem folha nem receita; depois rampa D-125 e folha CHEIA.
-   Fluxos: receita `prod_m × share × preço_esperado`,
-   `fixo = op_m × jobs × wage`, `var = op_m × opex × prod_m + insumo`, juro do
-   capital emprestado (`loan_rate` anual/365). Gates:
+   Fluxos (fase C): receita `prod_m × preço_esperado` (o excesso de oferta já
+   está no preço, R3); `fixo = op_m × jobs × wage × capacity`,
+   `var = op_m × opex × capacity + insumo` (opex por capacidade-dia, não por
+   tonelada), juro do capital emprestado (`loan_rate` anual/365). A rampa
+   desconta os `construction_days` do índice (dia de OPERAÇÃO, não de projeto).
+   Gates:
    (a) `capex ≤ caixa × capital_share + crédito`;
    (b) `min_m saldo_m ≥ −crédito`;
-   (c) `saldo_H ≥ 0`;
-   (d) lucro operacional acumulado ≥ 0 até `trough_months_max = 6`;
+   (c) `saldo_H ≥ −crédito` **e** operação ≥ 0 no último mês;
+   (d) lucro operacional acumulado ≥ −crédito até `trough_months_max = 6` e
+   sequência de perdas < `crisis.mothball_days` (com a crise ligada);
    (e) payback D-125 com preço esperado ≤ limite.
    Dimensionamento fechado:
    `cap_max = (caixa + crédito) / max_m(unit_capex + burn_m)` e
-   `capacidade = min(candidata, cap_max)`; abaixo de 2 t/dia não investe.
-   Na fase A o privado usa `credit_approved = 0` (o crédito de investimento é
-   fase C); a alça (a) usa `capital_share = 0,35`.
+   `capacidade = min(candidata, cap_max)`; abaixo de 2 t/dia não investe
+   (grupo: 0,5 t/dia). O crédito aprovado é o teto D-126 × aperto do banco.
+   Na fase A o privado usa `credit_approved = 0`; a fase C liga o crédito de
+   investimento com `capital_share = 0,35`.
 4. **R3 — preço esperado** — `trend = ma30(preço)/ma30_anterior` limitado a
    `[0,5; 2,0]` (série de 60 d, mínimo 5 observações, senão 1);
    `excesso = max(0, (oferta − demanda)/max(demanda, 0,001))`;
@@ -87,8 +94,9 @@ declarados em `data/definitions/economy/ai_brain.json`.
     - **dupla contagem da oferta na receita** — a receita multiplicava a
       produção por ela mesma como "parcela de mercado" (`P/(oferta+P)`) e o
       excesso de oferta já estava no preço esperado (R3). A receita passou a
-      ser `produção × preço_esperado`; `supply_future`/`demand_future` seguem
-      no R3.
+      ser `produção × preço_esperado`; oferta/demanda do escopo continuam só no
+      R3 (o `ForecastInput` não carrega mais `supply_future`/`demand_future`,
+      campos que o forecast nunca lia).
 12. **Crédito de investimento nos gates (c)/(d)** — o saldo final e o trough
     podem ficar dentro da linha de crédito aprovada, mas o projeto tem de
     estar com operação ≥ 0 no último mês do horizonte. Antes o crédito só
@@ -122,37 +130,41 @@ declarados em `data/definitions/economy/ai_brain.json`.
 
 As seções de R5 já entram no JSON e no save; a fase C lê R2, R4, herd e R5.
 
-## Verificação (fase C, binário final)
+## Verificação (fase C + correções do QA, binário final)
 
-- `sim_unit_tests`: **58/58 casos** (432 asserções), incluindo o caso novo
-  `D-131 fase C: receita pela demanda e opex contado uma vez` (regressão dos
-  dois defeitos de unidade).
+- `sim_unit_tests`: **59/59 casos** (432 asserções), incluindo o caso novo
+  `D-131: duas rodadas com o cerebro ligado fecham o mesmo digest` (determinismo
+  do caminho ligado) e os casos de unidade da fase C.
 - `tools/run_tests.ps1 -Tier pr -Base balance/global-resources`: **41/41 OK**
-  (run `20261125_014333`) com o **default ligado** (`ai_brain.json`
-  `enabled=true`): 90 d com **147 investimentos** (102 privado / 45 grupo),
-  **0 falências**, comida **82/179** abaixo do portão (mediana 0,9798),
-  **0 violações**, drift **0,010881**, anti-manada máx. 4 plantas/30 d (comida,
-  limite 6).
+  (run `20261125_022712`) com o **default ligado** (`ai_brain.json`
+  `enabled=true`): 90 d com **138 investimentos** (94 privado / 44 grupo),
+  **0 falências**, comida **84/179** abaixo do portão (mediana 0,977164),
+  **0 violações**, drift **0,010799**, anti-manada máx. 3 plantas/30 d.
 - **365 d `enabled=true`** (default do jogo; JSON
-  `G:\opengs_tmp\d131c_365_on_final.json`): **761 investimentos** (633
-  privado / **128 grupo**), **0 falências**, comida **95/179** abaixo de 0,975
-  (mediana **0,9709**, média 0,9074; critério ≤97), **0 violações**, 0
-  travados, **drift 0,014164** (critério <0,03), anti-manada **máx. 3
-  plantas/30 d** (meta ≤3; comida permite 6). Forecast privado: 37.668
-  tentativas, 2.247 rejeições (todas no gate (d)). Grupo: 3.554.785
-  tentativas, gates b 43.276 / c 646.667 / cap_max 4.644 / d 259.512 /
-  e 109.728; **1.763 oportunidades executadas e 128 obras criadas**.
+  `G:\opengs_tmp\d131d_365_on.json`): **850 investimentos** (726 privado /
+  **124 grupo**), **0 falências**, comida **93/179** abaixo de 0,975
+  (mediana **0,973819**, média 0,908273; critério ≤97), **0 violações**, 0
+  travados, **drift 0,013175** (máx. diário 0,013833; critério <0,03),
+  anti-manada **máx. 3 plantas/30 d** (meta ≤3; comida permite 6). Forecast
+  privado: 37.976 tentativas, 3.812 rejeições (gate c 1.262 / d 2.550). Grupo:
+  3.610.671 tentativas, gates b 55.390 / c 698.792 / cap_max 6.216 / d 232.002 /
+  e 107.994; **1.679 oportunidades executadas e 124 obras criadas**.
 - **Equivalência `enabled=false`** (`OGS_C1_AI_BRAIN=0`; JSON
-  `G:\opengs_tmp\d131c_365_off_final.json`): `trajectory_sha256 49c797ef…`,
-  **igual à baseline D-126** (`c1_d126_365_final.json`): 3.172 investimentos,
-  0 falências, comida 96/179, **0 violações**, 0 travados, drift 0,016524.
-  Nenhuma mudança da fase C toca o caminho desligado.
-- **Comparação com a fase B** (`enabled=true`): investimentos **154 → 761**
-  (grupo **0 → 128**), comida **94 → 95/179** (mediana 0,9703 → 0,9709), drift
-  **0,012479 → 0,014164** (ainda abaixo de 0,03). A rodada de 90 d usada no
-  diagnóstico mostrou o grupo com `group_created=45` já na fase C; a contagem
-  do harness passou a ler esse contador do núcleo (o log é `GRP-*`, não
-  `AI-GRP-*`).
+  `G:\opengs_tmp\d131d_365_off.json`): `trajectory_sha256 49c797ef…`,
+  **bit-idêntico à baseline D-126**: 3.172 investimentos, 0 falências, comida
+  96/179, **0 violações**, 0 travados, drift 0,016524.
+- **Correções do QA (D-131b)** aplicadas neste binário: (1) `month_production`
+  passa dias de OPERAÇÃO ao `mean_between` (desconta `construction_days`);
+  (2) `pending_committed` é separado por (região, produto) — a oferta regional
+  da comida não desconta obra de outra massa de terra; (3) o pedido de
+  `city_borrow` divide o `gap` pelo aperto do banco (o desembolso não aplica o
+  fator duas vezes); (4) `borrow_city` capa o pedido no teto D-126, então o
+  comando via `replay_commands` respeita o mesmo limite da IA.
+- **Comparação com a fase B** (`enabled=true`): investimentos **154 → 850**
+  (grupo **0 → 124**), comida **94 → 93/179** (mediana 0,9703 → 0,9738), drift
+  **0,012479 → 0,013175** (ainda abaixo de 0,03). A rodada de 90 d usada no
+  diagnóstico mostrou o grupo com `group_created=44` já na fase C; a contagem
+  do harness lê esse contador do núcleo (o log é `GRP-*`, não `AI-GRP-*`).
 
 ## Pendências / próximas fases
 

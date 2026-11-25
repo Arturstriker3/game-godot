@@ -160,12 +160,15 @@ struct AiState {
 	// e obra realmente criada pelo núcleo).
 	int brain_group_executed = 0;
 	int brain_group_created = 0;
-	// D-131 fase B (R2/R4). `pending_committed` acumula a capacidade das obras
-	// emitidas NA MESMA fase (privado + grupo + governo, ordem determinística)
-	// e é zerado no começo do dia. Os caches do dia (oferta efetiva e
-	// exposição) são reconstruídos junto; o histórico de demanda tem até 90
-	// dias por produto. Nada disto é serializado.
+	// D-131 fase B (R2/R4). Capacidade das obras emitidas NA MESMA fase
+	// (privado + grupo + governo, ordem determinística), zerada no começo do dia.
+	// `pending_committed` é o total MUNDO por produto (soma de todas as regiões);
+	// `pending_committed_region` guarda o recorte por (massa de terra, produto) —
+	// a cesta alimentar desconta só a obra da própria região (R3/Q-014). Os
+	// caches do dia (oferta efetiva e exposição) são reconstruídos junto; o
+	// histórico de demanda tem até 90 dias por produto. Nada disto é serializado.
 	std::unordered_map<int, double> pending_committed;
+	std::unordered_map<std::uint64_t, double> pending_committed_region;
 	std::vector<AiHerdEvent> herd_events;
 	AiSupplyCache brain_supply;
 	AiExposureCache brain_exposure;

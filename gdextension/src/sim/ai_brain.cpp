@@ -42,13 +42,18 @@ MonthProd month_production(const WorldState& ws, const AiBrainParams& params,
 	MonthProd out;
 	const int month_begin = (month - 1) * month_days;
 	const int month_end = month * month_days - 1;
-	const int op_begin = std::max(month_begin, std::max(0, in.construction_days));
+	const int construction_days = std::max(0, in.construction_days);
+	const int op_begin = std::max(month_begin, construction_days);
 	if (month_end < op_begin) {
 		return out;
 	}
 	out.op_days = month_end - op_begin + 1;
+	// `mean_between` recebe dias de OPERAÇÃO (0 = primeiro dia de produção),
+	// não dias de projeto: o índice precisa descontar a obra, senão a rampa
+	// começa `construction_days` adiantada e o forecast fica otimista.
 	out.mean_eff = eff::mean_between(ws, in.efficiency_class,
-		in.from_efficiency, in.equipment_active, op_begin, month_end);
+		in.from_efficiency, in.equipment_active,
+		op_begin - construction_days, month_end - construction_days);
 	const double site = std::max(0.0, in.aptitude)
 		* std::max(0.0, in.stage_factor) * std::max(0.0, in.area_scale);
 	out.prod_per_capacity = site * out.mean_eff

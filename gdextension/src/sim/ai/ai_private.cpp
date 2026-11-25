@@ -217,6 +217,24 @@ int brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
 	return std::max(1, static_cast<int>(std::llround(base_days * size_scale)));
 }
 
+// Aperto de capital do banco público da cidade (1,0 sem banco/sem crédito). O
+// `lend_city` já multiplica o pedido por ele; quem pede o valor exato do
+// `gap` precisa dividir por este fator para não receber `gap x f`.
+double public_credit_factor(const AiContext& ctx, int city_index) {
+	const WorldState& ws = ctx.ws;
+	if (!ws.bank_credit_enabled || city_index < 0
+			|| static_cast<std::size_t>(city_index) >= ws.cities.size()) {
+		return 1.0;
+	}
+	const Bank* bank = bank::find(ws,
+		ws.cities[static_cast<std::size_t>(city_index)].nation,
+		bank::kRolePublic);
+	if (bank == nullptr) {
+		return 1.0;
+	}
+	return std::clamp(bank_crisis::credit_factor(ws, *bank), 0.0, 1.0);
+}
+
 } // namespace
 
 // D-131 fase C: os helpers do cérebro usados também pelo investidor de grupo.
@@ -243,11 +261,9 @@ double ai_investment_credit(const AiContext& ctx, int city_index) {
 	}
 	const std::size_t index = static_cast<std::size_t>(city_index);
 	double limit = crisis::city_credit_limit(ws, index);
-	const Bank* bank = bank::find(ws, ws.cities[index].nation,
-		bank::kRolePublic);
-	if (bank != nullptr) {
-		limit *= bank_crisis::credit_factor(ws, *bank);
-	}
+	// Mesmo aperto que o `lend_city` aplica no desembolso: o limite efetivo
+	// (o que o forecast pode dimensionar) é `limit x fator`.
+	limit *= public_credit_factor(ctx, city_index);
 	return std::max(0.0, limit);
 }
 
@@ -284,6 +300,7 @@ void AiPrivateInvestor::prepare(const AiContext& ctx) {
 		if (state.brain_phase_day != ctx.day) {
 			state.brain_phase_day = ctx.day;
 			state.pending_committed.clear();
+			state.pending_committed_region.clear();
 			const std::size_t products = static_cast<std::size_t>(
 				std::max(0, ctx.view.products));
 			if (state.brain_demand_history.size() != products) {
@@ -805,14 +822,8 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			? ai_market(view, city_index, input_product, kAiPrice) : 0.0;
 		// Receita pelo preço esperado (a mesma referência da margem).
 		forecast_in.price_expected = reference_price;
-		// R2: com o cérebro ligado a parcela de mercado do forecast usa a
-		// oferta efetiva e a demanda futura do escopo (inclui pendências).
-		forecast_in.supply_future = brain
-			? brain_supply_value
-			: ai_market(view, city_index, product, kAiSupply);
-		forecast_in.demand_future = brain
-			? brain_demand_value
-			: ai_market(view, city_index, product, kAiDesired);
+		// R2: a oferta/demanda do escopo entram no PREÇO esperado (R3); o
+		// forecast de fluxo de caixa não as usa de novo (evita dupla contagem).
 		forecast_in.loan_rate_annual = bank::loan_rate(ctx.ws, city.nation);
 		forecast_in.margin_per_ton = margin;
 		forecast_in.expected_efficiency = expected_efficiency;
@@ -1001,7 +1012,20 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			if (brain) {
 				const double gap = cost - std::max(0.0, city.firm_cash);
 				if (gap > 1e-9) {
-					ai_emit_city_borrow(ctx, city_id, gap);
+					// `lend_city` entrega `pedido x fator` (aperto do banco): pedir
+					// o `gap` cru desembolsaria só `gap x f` e o Build falharia com
+					// banco estressado. Divide pelo fator (e capa no teto D-126,
+					// que o handler do comando também valida) para o crédito
+					// chegar exatamente ao `gap`.
+					const double factor = public_credit_factor(ctx, city_index);
+					// O `+1e-6` cobre o arredondamento de `gap / f` para o Build
+					// não receber um caixa 1 ulp abaixo do custo.
+					const double request = factor > 1e-9
+						? gap / factor + 1e-6 : gap;
+					const double limit = crisis::city_credit_limit(ctx.ws,
+						static_cast<std::size_t>(city_index));
+					ai_emit_city_borrow(ctx, city_id,
+						std::min(request, limit));
 				}
 			}
 			const int id = ctx.state.private_id++;

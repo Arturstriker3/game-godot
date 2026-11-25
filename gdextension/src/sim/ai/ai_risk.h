@@ -7,7 +7,8 @@
 //
 //   * R2 — oferta efetiva = existente + em construção + em rampa, no escopo
 //     declarado (cesta alimentar = região; demais = mundo). `pending_committed`
-//     (obras emitidas na MESMA fase) entra no desconto da decisão seguinte.
+//     (obras emitidas na MESMA fase) entra no desconto da decisão seguinte, por
+//     escopo: mundo = todas; região = só a obra da própria massa de terra.
 //     A demanda futura aplica a inclinação da média móvel de `tot_desired`.
 //   * R4 — exposição de capital por agente (privado = cidade/dono `private`;
 //     grupo = id), por bem e por setor, e o teto rolling de 30 dias por bem.
@@ -82,6 +83,10 @@ int sector_slot(const AiExposureCache& cache, int product);
 // R2 — oferta efetiva no escopo. `region=true` usa a massa da cidade.
 double supply_effective(const AiSupplyCache& cache, const AiState& state,
 	int product, int region, bool region_scope);
+// R2 — registra a obra emitida nesta fase no escopo certo: o total MUNDO por
+// produto e o recorte (região, produto). `region` = `region_slot` da cidade
+// (-1 quando a massa não resolve: só o total mundo recebe).
+void pending_add(AiState& state, int region, int product, double capacity);
 // R2 — demanda futura = demanda do dia × (1 + crescimento × janela).
 double demand_future(const AiSupplyCache& cache, int product, int region,
 	bool region_scope, int growth_days);

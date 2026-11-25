@@ -38,6 +38,17 @@ bool take_own(CommandQueue& queue, uint64_t seq, Command& out) {
 	return queue.take_by_seq(seq, out);
 }
 
+// Massa de terra da cidade no cache do dia (-1 = não resolveu). A obra entra
+// no recorte regional do `pending_committed` (R3/Q-014: comida).
+int city_region(const AiContext& ctx, const std::string& city_id) {
+	for (const City& city : ctx.ws.cities) {
+		if (city.id == city_id) {
+			return ai_risk::region_slot(ctx.state.brain_supply, city.landmass);
+		}
+	}
+	return -1;
+}
+
 // D-125 — MODOS DA REFINARIA. A IA só troca o modo quando o ganho de receita
 // por lote cobre a produção perdida na transição (`ai.*` do
 // efficiency.json): ganho relativo >= `mode_min_gain`, cooldown entre trocas e
@@ -345,8 +356,8 @@ AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 	// D-131 fase B: a obra emitida nesta fase entra na concorrência
 	// (`pending_committed`), na janela anti-manada e na exposição do dono.
 	if (ctx.ws.ai_brain.enabled && result.created) {
-		ctx.state.pending_committed[output] +=
-			std::max(0.0, capacity);
+		ai_risk::pending_add(ctx.state, city_region(ctx, city), output,
+			std::max(0.0, capacity));
 		ai_risk::herd_record(ctx.state, output, capacity, ctx.day);
 		ai_risk::exposure_add(ctx.state.brain_exposure, city, owner, output,
 			result.cost);
@@ -444,8 +455,8 @@ AiActionResult ai_emit_group_invest(AiContext& ctx, const std::string& group,
 	out.error = result.error;
 	out.owner = result.owner;
 	if (ctx.ws.ai_brain.enabled && result.created) {
-		ctx.state.pending_committed[output] +=
-			std::max(0.0, capacity);
+		ai_risk::pending_add(ctx.state, city_region(ctx, city), output,
+			std::max(0.0, capacity));
 		ai_risk::herd_record(ctx.state, output, capacity, ctx.day);
 		ai_risk::exposure_add(ctx.state.brain_exposure, city,
 			result.owner.empty() ? group : result.owner, output, result.cost);

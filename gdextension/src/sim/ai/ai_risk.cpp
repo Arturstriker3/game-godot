@@ -16,6 +16,13 @@ namespace {
 constexpr int kHerdWindowDays = 30;
 constexpr double kEps = 1e-9;
 
+// Chave estável do pending por (região, produto): a região vai deslocada em 32
+// bits para não colidir entre produtos.
+std::uint64_t pending_key(int region, int product) {
+	return (static_cast<std::uint64_t>(region + 1) << 32)
+		| static_cast<std::uint32_t>(product);
+}
+
 // Dono-grupo no formato do núcleo: `national:<g>` ou `foreign:<g>@<n>`.
 bool owner_group_id(const std::string& owner, std::string* group_id) {
 	if (owner.rfind("national:", 0) == 0) {
@@ -343,14 +350,33 @@ double supply_effective(const AiSupplyCache& cache, const AiState& state,
 	if (region_scope && region >= 0 && region < cache.regions) {
 		base = cache.region_supply[static_cast<std::size_t>(
 			region * cache.products + product)];
+		// R3/Q-014: na cesta alimentar só a obra da MESMA região desconta; a
+		// obra em outra massa de terra não garante entrega aqui.
+		const auto committed = state.pending_committed_region.find(
+			pending_key(region, product));
+		if (committed != state.pending_committed_region.end()) {
+			base += committed->second;
+		}
 	} else {
 		base = cache.world_supply[static_cast<std::size_t>(product)];
-	}
-	const auto committed = state.pending_committed.find(product);
-	if (committed != state.pending_committed.end()) {
-		base += committed->second;
+		// Escopo mundo: toda obra emitida na fase conta, inclusive as de região
+		// não resolvida (elas só não entram no recorte regional acima).
+		const auto committed = state.pending_committed.find(product);
+		if (committed != state.pending_committed.end()) {
+			base += committed->second;
+		}
 	}
 	return base;
+}
+
+void pending_add(AiState& state, int region, int product, double capacity) {
+	if (product < 0 || !(capacity > 0.0)) {
+		return;
+	}
+	state.pending_committed[product] += capacity;
+	if (region >= 0) {
+		state.pending_committed_region[pending_key(region, product)] += capacity;
+	}
 }
 
 double demand_future(const AiSupplyCache& cache, int product, int region,
