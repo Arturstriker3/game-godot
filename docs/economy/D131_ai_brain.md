@@ -58,9 +58,9 @@ declarados em `data/definitions/economy/ai_brain.json`.
    obras em construção (com a rampa D-125 já herdada) e a `pending_committed`
    do mesmo turno; `region_slot` (landmass) para comida e `world` para os demais
    bens. `demand_future` usa a média móvel de `tot_desired` por
-   `demand_growth_days` (30 d). Oferta e demanda do escopo alimentam o forecast
-   (share de mercado e excesso do preço esperado); a fase A usava a oferta de
-   hoje. Duas cidades no mesmo dia não duplicam a obra.
+   `demand_growth_days` (30 d). Oferta e demanda do escopo alimentam o preço
+   esperado (excesso), não o fluxo de caixa; a fase A usava a oferta de hoje.
+   Duas cidades no mesmo dia não duplicam a obra.
 7. **R4 — exposição por agente e anti-manada** — cache por agente (privado =
    cidade; grupo = id) de custo por (bem, setor), com `max_good_share=0,35`,
    `max_sector_share=0,60` e `max_goods_per_agent=8`; a checagem vale para
@@ -174,3 +174,5 @@ As seções de R5 já entram no JSON e no save; a fase C lê R2, R4, herd e R5.
   investe (o log é `GRP-*`; a contagem do harness é `group_created`).
 - Calibrar `capital_share`, `elasticity`, `price_floor` e os tetos de
   R4/herd com as rodadas de 365 d antes de qualquer novo afrouxamento.
+- Pendências menores (QA t68): teste automatizado do teto CityBorrow via
+  comando; digest entre processos; dívida sem planta em caso extremo.
