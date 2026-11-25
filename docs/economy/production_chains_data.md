@@ -99,7 +99,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 79 | `chassis` | semi | intermediate | machinery | 275.39 | `derived:v1` |
 | 80 | `tractor` | final | final | machinery | 1402.24 | `derived:v1` |
 | 81 | `mining_machine` | final | final | machinery | 1436.11 | `derived:v1` |
-| 82 | `robots` | final | final | machinery | 85289.04 | `derived:v1` |
+| 82 | `robots` | final | final | machinery | 93269.74 | `derived:v1` |
 | 83 | `industrial_machinery` | final | final | machinery | 13459.54 | `derived:v1` |
 | 84 | `spare_parts` | final | final | machinery | 492.78 | `derived:v1` |
 | 85 | `construction_material` | final | final | construction | 218.33 | `derived:v1` |
@@ -117,8 +117,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 97 | `sensors` | semi | intermediate | electronics | 25210.73 | `derived:v1` |
 | 98 | `batteries` | semi | intermediate | electronics | 85.94 | `derived:v1` |
 | 99 | `appliances` | final | final | electronics | 10287.50 | `derived:v1` |
-| 100 | `computer` | final | final | electronics | 38760.62 | `derived:v1` |
-| 101 | `phone` | final | final | electronics | 38915.32 | `derived:v1` |
+| 100 | `computer` | final | final | electronics | 46741.32 | `derived:v1` |
+| 101 | `phone` | final | final | electronics | 46896.01 | `derived:v1` |
 | 102 | `drone` | final | final | electronics | 74283.64 | `derived:v1` |
 | 103 | `containers` | semi | intermediate | packaging | 23.44 | `derived:v1` |
 | 104 | `jewelry` | final | final | luxury | 15750.00 | `derived:v1` |
@@ -135,7 +135,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 115 | `aramid` | semi | intermediate | chemical | 70.31 | `derived:v1` |
 | 116 | `ballistic_ceramic_plate` | semi | intermediate | military | 106.64 | `derived:v1` |
 | 117 | `tactical_equipment` | final | final | military | 542.05 | `derived:v1` |
-| 118 | `command_equipment` | final | final | military | 78716.88 | `derived:v1` |
+| 118 | `command_equipment` | final | final | military | 93082.14 | `derived:v1` |
 | 119 | `drone_jammer` | final | final | military | 20200.07 | `derived:v1` |
 | 120 | `at_launcher` | final | final | military | 453.28 | `derived:v1` |
 | 121 | `at_rocket` | final | final | military | 352.42 | `derived:v1` |
@@ -223,7 +223,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `chassis` â†’ `chassis` (yield 1): 1× `steel_sheet`, 1× `mechanical_parts`
 - `tractor` â†’ `tractor` (yield 1): 1× `chassis`, 1× `engine`, 1× `tires`
 - `mining_machine` â†’ `mining_machine` (yield 1): 1× `steel`, 1× `engine`, 1× `industrial_tools`
-- `robots` â†’ `robots` (yield 1): 1× `mechanical_parts`, 1× `chips`, 1× `micromotor`, 1× `sensors`, 1× `electrical_material`
+- `robots` â†’ `robots` (yield 1): 1× `mechanical_parts`, 1× `microchips`, 1× `micromotor`, 1× `sensors`, 1× `electrical_material`
 - `industrial_machinery` â†’ `industrial_machinery` (yield 1): 1× `mechanical_parts`, 1× `industrial_tools`, 1× `micromotor`, 1× `cast_parts`, 1× `electrical_material`
 - `spare_parts` â†’ `spare_parts` (yield 1): 1× `mechanical_parts`, 1× `tires`
 - `construction_material` â†’ `construction_material` (yield 1): 1× `planks`, 1× `hardware`
@@ -241,8 +241,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `sensors` â†’ `sensors` (yield 1): 1× `microchips`, 1× `processed_rare_earths`
 - `batteries` â†’ `batteries` (yield 1): 1× `lead_ingot`, 1× `chemicals`
 - `appliances` â†’ `appliances` (yield 1): 1× `steel_sheet`, 1× `micromotor`, 1× `electronic_components`, 1× `plastic_parts`
-- `computer` â†’ `computer` (yield 1): 1× `circuit_board`, 1× `chips`, 1× `plastic_parts`
-- `phone` â†’ `phone` (yield 1): 1× `circuit_board`, 1× `chips`, 1× `plastic_parts`, 1× `batteries`
+- `computer` â†’ `computer` (yield 1): 1× `circuit_board`, 1× `microchips`, 1× `plastic_parts`
+- `phone` â†’ `phone` (yield 1): 1× `circuit_board`, 1× `microchips`, 1× `plastic_parts`, 1× `batteries`
 - `drone` â†’ `drone` (yield 1): 1× `plastic_parts`, 1× `micromotor`, 1× `chips`, 1× `sensors`, 1× `batteries`
 - `containers_a` â†’ `containers` (yield 1): 1× `aluminum_ingot`
 - `containers_b` â†’ `containers` (yield 1): 1× `plastic`

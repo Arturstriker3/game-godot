@@ -1516,7 +1516,7 @@
     {
      "inputs": [
       "mechanical_parts",
-      "chips",
+      "microchips",
       "micromotor",
       "sensors",
       "electrical_material"
@@ -1848,9 +1848,6 @@
    ],
    "byproducts": [],
    "use": [
-    "robots",
-    "computer",
-    "phone",
     "drone",
     "fpv_drone"
    ],
@@ -1939,7 +1936,7 @@
     {
      "inputs": [
       "circuit_board",
-      "chips",
+      "microchips",
       "plastic_parts"
      ],
      "yield": 1.0
@@ -1962,7 +1959,7 @@
     {
      "inputs": [
       "circuit_board",
-      "chips",
+      "microchips",
       "plastic_parts",
       "batteries"
      ],
@@ -2540,7 +2537,10 @@
    "byproducts": [],
    "use": [
     "military_drone",
-    "sensors"
+    "sensors",
+    "computer",
+    "phone",
+    "robots"
    ],
    "durable": false,
    "note": "G1/A′ (D2/D5/D6): Fab de semicondutores; chips + terras raras. Opex 40/t = químicos 20 + energia 20, sem água ultrapura (D6); capex 180.000/t/dia e obra de 180 d (D5)."
