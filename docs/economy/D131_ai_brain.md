@@ -1,4 +1,4 @@
-# D-131 (fases A e B) — Cérebro econômico da IA
+# D-131 (fases A, B e C) — Cérebro econômico da IA
 
 Base: `balance/global-resources` (`4605ce90`, com a D-130); fase A no merge
 `e6270a23`, fase B sobre ele. Branch `feat/d131-ai-brain`, worktree
@@ -71,11 +71,48 @@ declarados em `data/definitions/economy/ai_brain.json`.
 9. **Integração** — tudo atrás de `enabled`; desligado permanece bit-idêntico à
    main (nenhum contador, cache ou janela é alimentado).
 
+## O que entrou (fase C) — diagnóstico e correção
+
+10. **Diagnóstico por gate** — `ForecastResult::failed_gate` (1…6 = a…e,
+    `cap_max` abaixo do mínimo) e `revenue_total`/`cost_total`/`spendable`; o
+    status publica `gate_rejected`/`group_gate_rejected`, amostras
+    (caixa, crédito, capex, receita, custo, payback, trough, saldo) e o funil
+    `group_executed`/`group_created`. Nada disto vai ao save nem ao mundo.
+11. **Duas causas raiz de unidade/escala no forecast:**
+    - **opex contado com `op_days` duas vezes** — `tons` já traz os dias de
+      operação; o núcleo grava `opex = capacity × opex_per_ton` e paga por
+      capacidade-dia, então o custo passou a `op_days × opex × capacity`
+      (sem aptidão/eficiência). O código antigo inflava o custo ~30× e
+      reprovava quase tudo.
+    - **dupla contagem da oferta na receita** — a receita multiplicava a
+      produção por ela mesma como "parcela de mercado" (`P/(oferta+P)`) e o
+      excesso de oferta já estava no preço esperado (R3). A receita passou a
+      ser `produção × preço_esperado`; `supply_future`/`demand_future` seguem
+      no R3.
+12. **Crédito de investimento nos gates (c)/(d)** — o saldo final e o trough
+    podem ficar dentro da linha de crédito aprovada, mas o projeto tem de
+    estar com operação ≥ 0 no último mês do horizonte. Antes o crédito só
+    servia de teto do capex; o grupo ficava com saldo final < 0 e zero obras.
+13. **R4 coerente com o crédito** — a base de `max_good_share`/
+    `max_sector_share` é `caixa + crédito aprovado` (grupo e privado), não o
+    caixa sozinho.
+14. **Grupo com a mesma régua do privado** — aptidão mínima 0,30 e depósito
+    para minério (antes tentava toda cidade, 24% com receita 0); com o cérebro
+    ligado o setor do grupo também é avaliado (a cesta alimentar continua
+    primeiro) e o score antigo (`kMinReturn`) vira só ranking — o R1/R5 é o
+    portão duro. `enabled=false` mantém a regra antiga bit a bit.
+15. **Contagem do grupo** — o log usa `GRP-*` (não `AI-GRP-*`); o harness
+    passou a publicar `group_created` do núcleo.
+16. **Default ligado** — `ai_brain.json` passa a `enabled=true` (decisão do
+    dono: o cérebro guia cada país). O default compilado do struct continua
+    `false` como fallback de save/mundo sem o bloco; o caminho off é o
+    override `enabled=false`/`OGS_C1_AI_BRAIN=0` e continua bit a bit.
+
 ## Defaults declarados (`ai_brain.json`)
 
 | seção | chaves |
 |---|---|
-| root | `enabled=false` |
+| root | `enabled=true` (default do jogo desde a fase C) |
 | forecast | `month_days=30`, `months_max=12`, `trough_months_max=6`, `capital_share=0,35` |
 | competition | `scope_food=region`, `scope_other=world`, `demand_growth_days=30` |
 | price | `trend_days=30`, `history_days=60`, `trend_min=0,5`, `trend_max=2,0`, `elasticity=0,35`, `price_floor=0,60` |
@@ -83,47 +120,45 @@ declarados em `data/definitions/economy/ai_brain.json`.
 | herd | `max_new_plants_per_good_30d=3`, `max_new_capacity_share_30d=0,25`, `food_multiplier=2,0` |
 | crisis_link | `block_loss_days=30` |
 
-As seções de R5 já entram no JSON e no save; a fase B lê R2, R4 e herd.
+As seções de R5 já entram no JSON e no save; a fase C lê R2, R4, herd e R5.
 
-## Verificação
+## Verificação (fase C, binário final)
 
-- `sim_unit_tests`: **53/53 casos** (7 da fase A + 6 da fase B: base do
-  `unit_month`/`cap_max`, janela curta do `price_trend`, oferta/demanda por
-  escopo, tetos de exposição, anti-manada de 3 plantas/capacidade e duas
-  cidades no mesmo dia).
+- `sim_unit_tests`: **58/58 casos** (432 asserções), incluindo o caso novo
+  `D-131 fase C: receita pela demanda e opex contado uma vez` (regressão dos
+  dois defeitos de unidade).
 - `tools/run_tests.ps1 -Tier pr -Base balance/global-resources`: **41/41 OK**
-  (run `20261124_215744`). Bateria completa (`-Tier quick`/104 testes + runs):
-  OFF `enabled=false` **105/106** e ON `enabled=true` **104/105**; a única falha
-  era `d126_crisis_test` esperando save v41 (o D-131 subiu para v42). A
-  asserção foi atualizada para v42 e o teste re-rodou verde (1/1).
-- **Equivalência `enabled=false`** — a rodada de 365 d do worktree é a baseline
-  D-126 da main: `trajectory_sha256 49c797ef…` (igual a
-  `c1_d126_365_final.json`; re-rodada com o binário final em
-  `d131b_365_off2.json`), **0 falências**, comida 96/179, **0 violações**,
-  0 travados, drift 0,016524.
-- **365 d `enabled=true`** (fase B): **0 falências**, comida **94/179**
-  (mediana 0,9703; critério ≤97), **0 violações**, 0 travados, **drift
-  0,012479**, **43.665 tentativas**, **39.045 rejeições de caixa (89,4%)**,
-  **11.262 candidatos únicos (cidade, produto) rejeitados pelo caixa** de
-  12.495 candidatos únicos/mês, **154 investimentos** de planta nova (154
-  privado / 0 grupo), **1.914.100 rejeições de risco** (exposição/anti-manada,
-  contadas fora de `attempts`) e **anti-manada no máximo 3 plantas do mesmo bem
-  em 30 d** (meta ≤3). JSON em `G:\opengs_tmp\d131b_365_on.json`.
-- **Comparação com a fase A** (`enabled=true`): investimentos **1.065 → 154**,
-  comida **90/179 → 94/179**, drift **0,016868 → 0,012479**; tentativas
-  **12.950 → 43.665** porque a planta reprovada no forecast volta a tentar
-  todo dia (não há backoff nesta fase).
-- **Contadores separados:** `reject_share` passou a considerar só o gate de
-  caixa (39.045/43.665 = 89,4%); `risk_rejected` (exposição/anti-manada) tem
-  contador próprio e não infla a razão. A rodada anterior, com o contador
-  único, dava 101,6% — foi só a métrica; a trajetória (`49c797ef…` off e
-  `ba2d77b0…` on) não mudou com a correção.
+  (run `20261125_014333`) com o **default ligado** (`ai_brain.json`
+  `enabled=true`): 90 d com **147 investimentos** (102 privado / 45 grupo),
+  **0 falências**, comida **82/179** abaixo do portão (mediana 0,9798),
+  **0 violações**, drift **0,010881**, anti-manada máx. 4 plantas/30 d (comida,
+  limite 6).
+- **365 d `enabled=true`** (default do jogo; JSON
+  `G:\opengs_tmp\d131c_365_on_final.json`): **761 investimentos** (633
+  privado / **128 grupo**), **0 falências**, comida **95/179** abaixo de 0,975
+  (mediana **0,9709**, média 0,9074; critério ≤97), **0 violações**, 0
+  travados, **drift 0,014164** (critério <0,03), anti-manada **máx. 3
+  plantas/30 d** (meta ≤3; comida permite 6). Forecast privado: 37.668
+  tentativas, 2.247 rejeições (todas no gate (d)). Grupo: 3.554.785
+  tentativas, gates b 43.276 / c 646.667 / cap_max 4.644 / d 259.512 /
+  e 109.728; **1.763 oportunidades executadas e 128 obras criadas**.
+- **Equivalência `enabled=false`** (`OGS_C1_AI_BRAIN=0`; JSON
+  `G:\opengs_tmp\d131c_365_off_final.json`): `trajectory_sha256 49c797ef…`,
+  **igual à baseline D-126** (`c1_d126_365_final.json`): 3.172 investimentos,
+  0 falências, comida 96/179, **0 violações**, 0 travados, drift 0,016524.
+  Nenhuma mudança da fase C toca o caminho desligado.
+- **Comparação com a fase B** (`enabled=true`): investimentos **154 → 761**
+  (grupo **0 → 128**), comida **94 → 95/179** (mediana 0,9703 → 0,9709), drift
+  **0,012479 → 0,014164** (ainda abaixo de 0,03). A rodada de 90 d usada no
+  diagnóstico mostrou o grupo com `group_created=45` já na fase C; a contagem
+  do harness passou a ler esse contador do núcleo (o log é `GRP-*`, não
+  `AI-GRP-*`).
 
 ## Pendências / próximas fases
 
-- R5 (bloqueio por `loss_days`, crédito de investimento da cidade, paridade do
-  investidor de grupo) fica para a fase C.
-- O forecast segue conservador: a fase B derrubou os investimentos de 1.065
-  para 154 e o drift de 0,016524 (off) para 0,012479. A medição existe para
-  calibrar `capital_share`, `elasticity`, `price_floor` e os tetos de R4/herd
-  antes de ligar no jogo.
+- R5 entrou na fase C: bloqueio D-126 por `loss_days`, crédito de
+  investimento nos gates (c)/(d) e paridade do investidor de grupo.
+- O forecast continua conservador por desenho, mas o caminho de grupo agora
+  investe (o log é `GRP-*`; a contagem do harness é `group_created`).
+- Calibrar `capital_share`, `elasticity`, `price_floor` e os tetos de
+  R4/herd com as rodadas de 365 d antes de qualquer novo afrouxamento.

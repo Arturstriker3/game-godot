@@ -438,7 +438,7 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 	// aptidão mínima (`kMinSuitability`) e depósito para minério. O grupo
 	// avaliava TODAS as cidades, inclusive aptidão 0 (receita zero e gate (d)
 	// garantido) — 24% dos forecasts eram lixo. Mesma barreira dos dois lados.
-	if (!context.has_recipes) {
+	if (ctx.ws.ai_brain.enabled && !context.has_recipes) {
 		const double aptitude = product < static_cast<int>(suitability.size())
 			? suitability[static_cast<std::size_t>(product)] : 0.0;
 		if (aptitude < kMinSuitability) {
