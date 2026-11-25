@@ -149,6 +149,35 @@ double mean_efficiency(const WorldState& ws, EfficiencyClass cls, double from,
 	return total / days;
 }
 
+double mean_between(const WorldState& ws, EfficiencyClass cls, double from,
+		bool equipment_active, int first_day, int last_day) {
+	const double initial = std::clamp(from, 0.0, 1.0);
+	if (last_day < first_day) {
+		return initial;
+	}
+	const int begin = std::max(0, first_day);
+	const int end = std::max(begin, last_day);
+	// Mesma sonda e mesma ordem de `mean_efficiency`: o dia d usa a eficiência
+	// DEPOIS do passo diário.
+	Building probe;
+	probe.production_efficiency = initial;
+	probe.equipment = equipment_active ? 1.0 : 0.0;
+	probe.equipment_active = equipment_active;
+	const double ceiling = cap(ws, probe, cls);
+	double total = 0.0;
+	for (int day = 0; day <= end; ++day) {
+		const double rate = step(ws, probe, cls, equipment_active);
+		if (probe.production_efficiency < ceiling) {
+			probe.production_efficiency = std::min(ceiling,
+				probe.production_efficiency + rate);
+		}
+		if (day >= begin) {
+			total += probe.production_efficiency;
+		}
+	}
+	return total / static_cast<double>(end - begin + 1);
+}
+
 double step(const WorldState& ws, const Building& building,
 		EfficiencyClass cls, bool equipment_active) {
 	const EfficiencyCurve& c = curve(ws, cls);

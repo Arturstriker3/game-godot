@@ -224,6 +224,41 @@ struct CrisisParams {
 	double power_reserve_margin = 0.15;
 };
 
+// ---------------------------------------------------------------------------
+// D-131 — CÉREBRO ECONÔMICO DA IA (fase A: previsão de caixa + preço
+// esperado). Espelho C++ dos defaults declarados em
+// `data/definitions/economy/ai_brain.json`. NÃO são dado observado: são
+// regras de balanceamento declaradas. `set_ai_brain_params` sobrescreve e o
+// bloco `definitions.ai_brain` do save v42 preserva o que foi aplicado.
+// `enabled=false` (default) mantém as decisões da IA bit a bit como antes.
+// ---------------------------------------------------------------------------
+struct AiBrainParams {
+	bool enabled = false;
+	// R1 — previsão de fluxo de caixa mensal.
+	int month_days = 30;
+	int months_max = 12;
+	int trough_months_max = 6;
+	double capital_share = 0.35;
+	// R2 — concorrência (não implementada na fase A; só a janela de demanda).
+	int demand_growth_days = 30;
+	// R3 — preço esperado (média móvel + castigo por excesso).
+	int trend_days = 30;
+	int history_days = 60;
+	double trend_min = 0.5;
+	double trend_max = 2.0;
+	double elasticity = 0.35;
+	double price_floor = 0.60;
+	// R4 — exposição e anti-manada (fase B; os defaults já entram no save).
+	double max_good_share = 0.35;
+	double max_sector_share = 0.60;
+	int max_goods_per_agent = 8;
+	int max_new_plants_per_good_30d = 3;
+	double max_new_capacity_share_30d = 0.25;
+	double food_multiplier = 2.0;
+	// R5 — vínculo com a D-126.
+	int block_loss_days = 30;
+};
+
 struct WorldState {
 	int day = 0;
 	CadenceState cadence;
@@ -233,6 +268,9 @@ struct WorldState {
 	// D-126: parâmetros de sobrevivência em crise (defaults declarados no JSON
 	// de crise; o save preserva o que foi aplicado).
 	CrisisParams crisis;
+	// D-131: parâmetros do cérebro econômico da IA (fase A; o save v42
+	// preserva o que foi aplicado).
+	AiBrainParams ai_brain;
 
 	// Estado do cenário de validação de duas cidades.
 	bool active = false;

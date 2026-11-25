@@ -56,6 +56,8 @@ const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
 ## D-126: defaults de balanceamento da sobrevivência em crise (mesmo caminho do
 ## autoload; o espelho compilado em `sim/crisis.h` é o fallback).
 const CRISIS_PATH := "res://data/definitions/economy/crisis.json"
+## D-131: cérebro econômico da IA (fase A; preço esperado + previsão de caixa).
+const AI_BRAIN_PATH := "res://data/definitions/economy/ai_brain.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
@@ -105,6 +107,11 @@ var _refining_on := true
 # Não existe no jogo: separa o efeito da D-126 (demissão, crédito, hibernação,
 # leilão) da medição do portão.
 var _crisis_on := true
+# D-131: braço A/B do cérebro econômico (`--ai-brain=1` / `OGS_C1_AI_BRAIN=1`).
+# O JSON commitado vem com `enabled=false`; a flag liga SÓ nesta rodada de
+# laboratório. Não existe no jogo (lá o default é o do arquivo).
+var _ai_brain_on := false
+var _ai_brain_set := false
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -173,6 +180,10 @@ func _init() -> void:
 		# Regra de disco: com OPENGS_TMP definido (o runner sempre define), o
 		# JSON grande vai para o disco de temporários, não para o repo nem C:.
 		_out = TmpPaths.path("c1_world_ai_365.json")
+	# D-131: braço A/B do cérebro econômico pelo runner (que não passa args).
+	if OS.get_environment("OGS_C1_AI_BRAIN") != "":
+		_ai_brain_on = OS.get_environment("OGS_C1_AI_BRAIN") != "0"
+		_ai_brain_set = true
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
@@ -184,6 +195,9 @@ func _init() -> void:
 			_refining_on = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--crisis="):
 			_crisis_on = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--ai-brain="):
+			_ai_brain_on = arg.split("=", true, 1)[1] != "0"
+			_ai_brain_set = true
 		elif arg.begins_with("--refining-diag"):
 			var refining_value := "1"
 			if arg.contains("="):
@@ -590,6 +604,17 @@ func _make_world() -> Object:
 			if not _crisis_on:
 				params["enabled"] = 0.0
 			sim.set_crisis_params(params)
+	# D-131 (fase A): cérebro econômico da IA. O JSON commitado vem com
+	# enabled=false; a flag de laboratório só troca esse booleano nesta rodada.
+	if sim.has_method("set_ai_brain_params"):
+		var brain: Variant = _load(AI_BRAIN_PATH)
+		if brain is Dictionary:
+			var brain_params: Dictionary = brain.duplicate(true)
+			if _ai_brain_set:
+				brain_params["enabled"] = 1.0 if _ai_brain_on else 0.0
+			sim.set_ai_brain_params(brain_params)
+			print("[c1] D-131 cérebro da IA: enabled=%s"
+				% ["1" if float(brain_params.get("enabled", 0.0)) > 0.5 else "0"])
 	sim.set_needs(_load(NEEDS_PATH))
 	sim.set_services(_load(SERVICES_PATH))
 	# C2c (D-108): regime real por moeda ANTES do carregamento das moedas.
@@ -1679,6 +1704,9 @@ func _run() -> void:
 		"crisis": _crisis_report(sim),
 		"crisis_on": _crisis_on,
 		"crisis_entities": _crisis_entities(sim),
+		# D-131 (fase A): parâmetros/contadores do cérebro e investimentos de
+		# plantas novas emitidos pela IA. Só medição.
+		"ai_brain": _ai_brain_report(sim),
 		"stock": _stock_report(sim, stock_start, status_final, stock_formed),
 		"stock_timeline": stock_timeline,
 		"monetary_timeline": monetary_timeline,
@@ -1772,6 +1800,16 @@ func _run() -> void:
 				% [str(entities.get("mothballed_by_product", {})),
 					int(entities.get("mothballed_plants", 0)),
 					str(entities.get("buildings_by_stage", {}))])
+	var d131: Dictionary = out.get("ai_brain", {})
+	if not d131.is_empty():
+		print("[c1] D-131 IA: enabled=%s tentativas=%d rejeitadas=%d (%.1f%%) "
+			% ["1" if bool(d131.get("enabled", false)) else "0",
+				int(d131.get("attempts", 0)), int(d131.get("rejected", 0)),
+				float(d131.get("reject_share", 0.0)) * 100.0]
+			+ "investimentos=%d (privado=%d grupo=%d)"
+			% [int(d131.get("investments_total", 0)),
+				int(d131.get("investments_private", 0)),
+				int(d131.get("investments_group", 0))])
 	print("[c1] balanço: financeiro=%.6f caixa_residual=%.6f PL_famílias=%.0f "
 		% [float((balance["invariant"] as Dictionary).get("financial_sum", 0.0)),
 			float((balance["invariant"] as Dictionary).get("cash_residual", 0.0)),
@@ -1802,6 +1840,41 @@ func _run() -> void:
 			% [int(credit["defaults"]), float(credit["writeoffs"]),
 				float(credit["equity"])])
 	quit(0)
+
+
+## D-131 (fase A): parâmetros/contadores do cérebro da IA e as plantas novas
+## emitidas pela IA (`build` AI-* e `group_invest` AI-GRP-*). Só medição.
+func _ai_brain_report(sim) -> Dictionary:
+	if not sim.has_method("get_ai_brain_status"):
+		return {}
+	var status: Dictionary = sim.get_ai_brain_status()
+	var private_builds := 0
+	var group_builds := 0
+	for entry: Variant in sim.get_command_log():
+		if not entry is Dictionary:
+			continue
+		var command: Dictionary = entry
+		var kind := String(command.get("type", ""))
+		var strings: Array = command.get("s", [])
+		if strings.size() < 2:
+			continue
+		var target := String(strings[1])
+		if kind == "build" and target.begins_with("AI-") \
+				and not target.begins_with("AI-GRP-"):
+			private_builds += 1
+		elif kind == "group_invest" and target.begins_with("AI-GRP-"):
+			group_builds += 1
+	return {
+		"enabled": float((status.get("params", {}) as Dictionary)
+			.get("enabled", 0.0)) > 0.5,
+		"params": status.get("params", {}),
+		"attempts": int(status.get("attempts", 0)),
+		"rejected": int(status.get("rejected", 0)),
+		"reject_share": float(status.get("reject_share", 0.0)),
+		"investments_private": private_builds,
+		"investments_group": group_builds,
+		"investments_total": private_builds + group_builds,
+	}
 
 
 ## D-126: contadores da sobrevivência em crise no fecho (só medição). O status

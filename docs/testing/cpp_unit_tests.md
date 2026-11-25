@@ -104,7 +104,7 @@ TEST_CASE("minha regra") {
 6. Rode `sim_unit_tests.exe` e depois `run_tests.ps1 -Tier quick` se quiser
    exercitar a integração do runner.
 
-## Cobertura atual (40 casos, 344 asserções)
+## Cobertura atual (47 casos, 371 asserções)
 
 | área | casos | o que cobre |
 |---|---:|---|
@@ -113,9 +113,10 @@ TEST_CASE("minha regra") {
 | Eficiência (D-125) | 13 | rampa fábrica 30→90→100 % (90/180 d); mina 25→100 % em 240 d; fazenda 20→100 % em 365 d (85 % sem trator); pecuária 540 d; teto/equipamento (1,5x); média esperada; dias de transição por setor; retenção por família; refinaria só petróleo; modos 45/29/9, 38/36/9, 40/28/15; espelho do `efficiency.json` |
 | Massa (D-127) | 5 | serraria 0,55/0,12/0,33; moagem 0,75/0,25; refinaria 0,45/0,29/0,09/0,17; dado real `recipes.json` |
 | Produtos militares (D-130) | 4 | catálogo dos 8 bens; insumos das receitas; cadeia aramida → placa → equipamento tático; parâmetros iguais a `small_arms`/`infantry_gear` com `params_source` |
+| Cérebro da IA (D-131) | 7 | `mean_between` = laço diário; vale de caixa rejeita; dimensionamento fechado reduz a capacidade; preço cai com excesso e respeita o piso; tendência em [0,5; 2,0]; save v42 preserva `ai_brain` e v41 lê defaults; `enabled=false` não altera comandos |
 | Save/load | 4 | roundtrip bit-exato do documento; dinheiro/dia/entidades; catálogo/receitas; load idempotente |
 | Determinismo | 3 | mesma semente ⇒ mesmo digest (sem e com tick); dias andados mudam o digest |
-| **Total** | **40** | |
+| **Total** | **47** | **371 asserções** |
 
 Os casos da **D-126** (bateria Godot `tools/d126_crisis_test.gd`) estão portados
 em `tests/test_crisis.cpp` (mundo de bolso, sem godot-cpp). As usinas do caso de

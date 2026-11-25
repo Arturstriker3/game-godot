@@ -55,6 +55,7 @@ add_library(opengs_sim STATIC
     src/sim/bank.cpp
     src/sim/bank_crisis.cpp
     src/sim/crisis.cpp
+    src/sim/ai_brain.cpp
     src/sim/stock.cpp
     src/sim/central_bank.cpp
     src/sim/monetary.cpp
@@ -189,6 +190,7 @@ if(OPENGS_BUILD_UNIT_TESTS)
         tests/test_roundtrip.cpp
         tests/test_determinism.cpp
         tests/test_crisis.cpp
+        tests/test_ai_brain.cpp
     )
 
     target_link_libraries(sim_unit_tests PRIVATE opengs_sim)

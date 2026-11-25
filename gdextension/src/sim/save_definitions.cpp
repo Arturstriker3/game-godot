@@ -26,6 +26,7 @@
 
 #include "save_definitions.h"
 
+#include "ai_brain.h"
 #include "sim_core.h"
 
 #include <algorithm>
@@ -1086,6 +1087,103 @@ void age_structure_from(WorldState& ws, const Value& array) {
 	ws.age_structures = std::move(parsed);
 }
 
+// ---------------------------------------------------------------------------
+// D-131 (save v42, aditivo) — parâmetros do cérebro econômico da IA
+// (defaults declarados em data/definitions/economy/ai_brain.json). Mesma
+// forma seccionada do JSON; a ordem das chaves é parte do dump estável.
+// ---------------------------------------------------------------------------
+Value ai_brain_to(const WorldState& ws) {
+	const AiBrainParams& p = ws.ai_brain;
+	Value out;
+	out["enabled"] = Value(p.enabled ? 1 : 0);
+	Value forecast;
+	forecast["month_days"] = Value(p.month_days);
+	forecast["months_max"] = Value(p.months_max);
+	forecast["trough_months_max"] = Value(p.trough_months_max);
+	forecast["capital_share"] = Value(p.capital_share);
+	out["forecast"] = forecast;
+	Value competition;
+	competition["demand_growth_days"] = Value(p.demand_growth_days);
+	out["competition"] = competition;
+	Value price;
+	price["trend_days"] = Value(p.trend_days);
+	price["history_days"] = Value(p.history_days);
+	price["trend_min"] = Value(p.trend_min);
+	price["trend_max"] = Value(p.trend_max);
+	price["elasticity"] = Value(p.elasticity);
+	price["price_floor"] = Value(p.price_floor);
+	out["price"] = price;
+	Value risk;
+	risk["max_good_share"] = Value(p.max_good_share);
+	risk["max_sector_share"] = Value(p.max_sector_share);
+	risk["max_goods_per_agent"] = Value(p.max_goods_per_agent);
+	out["risk"] = risk;
+	Value herd;
+	herd["max_new_plants_per_good_30d"] =
+		Value(p.max_new_plants_per_good_30d);
+	herd["max_new_capacity_share_30d"] = Value(p.max_new_capacity_share_30d);
+	herd["food_multiplier"] = Value(p.food_multiplier);
+	out["herd"] = herd;
+	Value crisis_link;
+	crisis_link["block_loss_days"] = Value(p.block_loss_days);
+	out["crisis_link"] = crisis_link;
+	return out;
+}
+
+void ai_brain_from(WorldState& ws, const Value& block) {
+	if (block.get_type() != Value::DICTIONARY) {
+		return;
+	}
+	std::map<std::string, double> values;
+	values["enabled"] = read_double(block, "enabled", 0.0) > 0.5 ? 1.0 : 0.0;
+	const auto scalar = [&values](const Value& section, const char* prefix,
+			const char* key, double fallback) {
+		values[std::string(prefix) + "." + key] =
+			read_double(section, key, fallback);
+	};
+	if (const Value* section = read_object(block, "forecast")) {
+		scalar(*section, "forecast", "month_days", ws.ai_brain.month_days);
+		scalar(*section, "forecast", "months_max", ws.ai_brain.months_max);
+		scalar(*section, "forecast", "trough_months_max",
+			ws.ai_brain.trough_months_max);
+		scalar(*section, "forecast", "capital_share",
+			ws.ai_brain.capital_share);
+	}
+	if (const Value* section = read_object(block, "competition")) {
+		scalar(*section, "competition", "demand_growth_days",
+			ws.ai_brain.demand_growth_days);
+	}
+	if (const Value* section = read_object(block, "price")) {
+		scalar(*section, "price", "trend_days", ws.ai_brain.trend_days);
+		scalar(*section, "price", "history_days", ws.ai_brain.history_days);
+		scalar(*section, "price", "trend_min", ws.ai_brain.trend_min);
+		scalar(*section, "price", "trend_max", ws.ai_brain.trend_max);
+		scalar(*section, "price", "elasticity", ws.ai_brain.elasticity);
+		scalar(*section, "price", "price_floor", ws.ai_brain.price_floor);
+	}
+	if (const Value* section = read_object(block, "risk")) {
+		scalar(*section, "risk", "max_good_share",
+			ws.ai_brain.max_good_share);
+		scalar(*section, "risk", "max_sector_share",
+			ws.ai_brain.max_sector_share);
+		scalar(*section, "risk", "max_goods_per_agent",
+			ws.ai_brain.max_goods_per_agent);
+	}
+	if (const Value* section = read_object(block, "herd")) {
+		scalar(*section, "herd", "max_new_plants_per_good_30d",
+			ws.ai_brain.max_new_plants_per_good_30d);
+		scalar(*section, "herd", "max_new_capacity_share_30d",
+			ws.ai_brain.max_new_capacity_share_30d);
+		scalar(*section, "herd", "food_multiplier",
+			ws.ai_brain.food_multiplier);
+	}
+	if (const Value* section = read_object(block, "crisis_link")) {
+		scalar(*section, "crisis_link", "block_loss_days",
+			ws.ai_brain.block_loss_days);
+	}
+	ai_brain::apply_params(ws, values);
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------
@@ -1102,6 +1200,7 @@ Value definitions_to(const WorldState& ws) {
 	out["employment"] = employment_to(ws);
 	out["balance"] = balance_to(ws);
 	out["efficiency"] = efficiency_to(ws);
+	out["ai_brain"] = ai_brain_to(ws);
 	out["land_capacity"] = land_capacity_to(ws);
 	out["age_structure"] = age_structure_to(ws);
 	// G — agricultura sazonal (dado; o estado vai no save v24).
@@ -1136,6 +1235,9 @@ void definitions_from(WorldState& ws, const Value& data) {
 	}
 	if (const Value* block = read_object(data, "efficiency")) {
 		efficiency_from(ws, *block);
+	}
+	if (const Value* block = read_object(data, "ai_brain")) {
+		ai_brain_from(ws, *block);
 	}
 	if (const Value* array = read_array(data, "land_capacity")) {
 		land_capacity_from(ws, *array);
