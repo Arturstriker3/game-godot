@@ -126,3 +126,16 @@ otimização** (cache mensal da propagação da demanda potencial), **não
 otimizada nesta rodada**. O A/B inclui o efeito indireto nas decisões da IA
 (24 → 37 investimentos em 30 d), então o custo da propagação pura é ≤ 3,64 s/dia.
 
+### Testes
+
+`-Tier pr -Base main` (run `20261125_164155`): **44/46 OK**, com
+`sim_unit_tests` e `c1_world_ai_90` verdes. **2 falhas**:
+`population_template_test` e `services_template_test`, ambas com
+`economia não publicou resumo antes do teste`. As duas esperam no máximo 600
+`process_frame` pelo `last_summary` do autoload; a semeadura da G2 no dia 0
+(271 plantas) alonga o startup e a janela de frames vence antes. Os dois
+passavam na bateria de 12:21 (antes da G2). **Hipótese:** espera por frames
+curta demais para o custo novo; a correção é esperar sinal ou tempo de parede
+(pendência de QA, não alterada nesta rodada).
+
+
