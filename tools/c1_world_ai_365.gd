@@ -108,8 +108,8 @@ var _refining_on := true
 # leilão) da medição do portão.
 var _crisis_on := true
 # D-131: braço A/B do cérebro econômico (`--ai-brain=1` / `OGS_C1_AI_BRAIN=1`).
-# O JSON commitado vem com `enabled=false`; a flag liga SÓ nesta rodada de
-# laboratório. Não existe no jogo (lá o default é o do arquivo).
+# O JSON commitado vem com `enabled=true` (default do jogo desde a fase C); a
+# flag `0` DESLIGA só nesta rodada de laboratório (o caminho off bit a bit).
 var _ai_brain_on := false
 var _ai_brain_set := false
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
@@ -1810,6 +1810,12 @@ func _run() -> void:
 			% [int(d131.get("investments_total", 0)),
 				int(d131.get("investments_private", 0)),
 				int(d131.get("investments_group", 0))])
+		print("[c1] D-131 B: candidatos únicos/mês=%d rejeitados caixa/mês=%d "
+			+ "risco=%d anti-manada máx 30d=%d"
+			% [int(d131.get("unique_candidates_month", 0)),
+				int(d131.get("unique_rejected_month", 0)),
+				int(d131.get("risk_rejected", 0)),
+				int(d131.get("herd_max_plants_30d", 0))])
 	print("[c1] balanço: financeiro=%.6f caixa_residual=%.6f PL_famílias=%.0f "
 		% [float((balance["invariant"] as Dictionary).get("financial_sum", 0.0)),
 			float((balance["invariant"] as Dictionary).get("cash_residual", 0.0)),
@@ -1872,8 +1878,33 @@ func _ai_brain_report(sim) -> Dictionary:
 		"rejected": int(status.get("rejected", 0)),
 		"reject_share": float(status.get("reject_share", 0.0)),
 		"investments_private": private_builds,
-		"investments_group": group_builds,
-		"investments_total": private_builds + group_builds,
+		# O log do grupo usa o id `GRP-*` (não `AI-GRP-*`); o contador do
+		# núcleo é a fonte do que foi REALMENTE criado.
+		"investments_group": int(status.get("group_created", group_builds)),
+		"investments_total": private_builds
+			+ int(status.get("group_created", group_builds)),
+		"unique_candidates_month":
+			int(status.get("unique_candidates_month", 0)),
+		"unique_rejected_month":
+			int(status.get("unique_rejected_month", 0)),
+		"risk_rejected": int(status.get("risk_rejected", 0)),
+		# D-131 fase C: distribuição por gate e contadores do grupo.
+		"exposure_rejected": int(status.get("exposure_rejected", 0)),
+		"herd_rejected": int(status.get("herd_rejected", 0)),
+		"loss_blocked": int(status.get("loss_blocked", 0)),
+		"competition_skipped": int(status.get("competition_skipped", 0)),
+		"group_attempts": int(status.get("group_attempts", 0)),
+		"group_rejected": int(status.get("group_rejected", 0)),
+		"herd_max_plants_30d": int(status.get("herd_max_plants_30d", 0)),
+		# D-131 fase C (diagnóstico): reprovações por gate e amostras.
+		"gate_rejected": status.get("gate_rejected", {}),
+		"group_gate_rejected": status.get("group_gate_rejected", {}),
+		"samples": status.get("samples", []),
+		"group_samples": status.get("group_samples", []),
+		"zero_revenue": int(status.get("zero_revenue", 0)),
+		"group_zero_revenue": int(status.get("group_zero_revenue", 0)),
+		"group_executed": int(status.get("group_executed", 0)),
+		"group_created": int(status.get("group_created", 0)),
 	}
 
 

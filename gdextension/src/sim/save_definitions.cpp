@@ -1103,6 +1103,8 @@ Value ai_brain_to(const WorldState& ws) {
 	forecast["capital_share"] = Value(p.capital_share);
 	out["forecast"] = forecast;
 	Value competition;
+	competition["scope_food"] = Value(p.scope_food == 0 ? "region" : "world");
+	competition["scope_other"] = Value(p.scope_other == 0 ? "region" : "world");
 	competition["demand_growth_days"] = Value(p.demand_growth_days);
 	out["competition"] = competition;
 	Value price;
@@ -1150,6 +1152,13 @@ void ai_brain_from(WorldState& ws, const Value& block) {
 			ws.ai_brain.capital_share);
 	}
 	if (const Value* section = read_object(block, "competition")) {
+		// Escopos são nomes declarados no save; o struct guarda o enum.
+		const std::string scope_food =
+			read_string(*section, "scope_food", "region");
+		const std::string scope_other =
+			read_string(*section, "scope_other", "world");
+		values["competition.scope_food"] = scope_food == "world" ? 1.0 : 0.0;
+		values["competition.scope_other"] = scope_other == "region" ? 0.0 : 1.0;
 		scalar(*section, "competition", "demand_growth_days",
 			ws.ai_brain.demand_growth_days);
 	}

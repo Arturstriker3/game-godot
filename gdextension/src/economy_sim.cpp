@@ -9108,6 +9108,21 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			}
 			return out;
 		}
+		case ogs::CommandType::CityBorrow: {
+			double granted = 0.0;
+			std::string error;
+			const bool ok = ogs::crisis::borrow_city(ws_,
+				std::string(cmd.s[0].c_str()), cmd.v[0], &granted,
+				&error);
+			Dictionary out;
+			out["ok"] = ok;
+			out["granted"] = granted;
+			out["city"] = String(cmd.s[0].c_str());
+			if (!ok) {
+				out["error"] = String(error.c_str());
+			}
+			return out;
+		}
 		case ogs::CommandType::None:
 			break;
 	}
@@ -11941,6 +11956,18 @@ void EconomySim::set_ai_brain_params(const Dictionary& values) {
 						|| value.get_type() == Variant::FLOAT
 						|| value.get_type() == Variant::BOOL) {
 					params[name] = double(value);
+					continue;
+				}
+				// D-131 fase B: os escopos chegam como nome do JSON
+				// (`region`/`world`) e viram o enum do struct (0/1).
+				if (value.get_type() == Variant::STRING) {
+					const std::string text =
+						std::string(String(value).utf8().get_data());
+					if (name == "competition.scope_food") {
+						params[name] = text == "world" ? 1.0 : 0.0;
+					} else if (name == "competition.scope_other") {
+						params[name] = text == "region" ? 0.0 : 1.0;
+					}
 				}
 			}
 		};
@@ -11967,6 +11994,71 @@ Dictionary EconomySim::get_ai_brain_status() const {
 	out["rejected"] = state.brain_rejected;
 	out["reject_share"] = state.brain_attempts > 0
 		? double(state.brain_rejected) / double(state.brain_attempts) : 0.0;
+	// Fase B: candidatos únicos por (cidade, produto) por mês e o maior
+	// número de plantas do mesmo bem em qualquer janela de 30 d observada.
+	out["unique_candidates_month"] = state.brain_unique_month_candidates;
+	out["unique_rejected_month"] = state.brain_unique_rejected_month;
+	out["risk_rejected"] = state.brain_risk_rejected;
+	// Fase C: distribuição por gate e contadores do grupo (diagnóstico).
+	out["exposure_rejected"] = state.brain_exposure_rejected;
+	out["herd_rejected"] = state.brain_herd_rejected;
+	out["loss_blocked"] = state.brain_loss_blocked;
+	out["competition_skipped"] = state.brain_competition_skipped;
+	out["group_attempts"] = state.brain_group_attempts;
+	out["group_rejected"] = state.brain_group_rejected;
+	// D-131 fase C (diagnóstico): reprovações por gate e amostras (privado e
+	// grupo). Só leitura: nada disto entra no save nem no mundo.
+	const auto gate_counts = [](const std::array<int, 7>& gates) {
+		Dictionary out;
+		out["a"] = gates[1];
+		out["b"] = gates[2];
+		out["c"] = gates[3];
+		out["d"] = gates[4];
+		out["e"] = gates[5];
+		out["cap_max"] = gates[6];
+		out["unknown"] = gates[0];
+		return out;
+	};
+	const auto sample_list = [](const std::vector<AiForecastSample>& rows) {
+		Array out;
+		for (const AiForecastSample& row : rows) {
+			Dictionary sample;
+			sample["day"] = row.day;
+			sample["city"] = row.city;
+			sample["product"] = row.product;
+			sample["gate"] = row.gate;
+			sample["cash"] = row.cash;
+			sample["credit"] = row.credit;
+			sample["capex"] = row.capex;
+			sample["revenue"] = row.revenue;
+			sample["cost"] = row.cost;
+			sample["payback"] = row.payback;
+			sample["trough"] = row.trough;
+			sample["min_balance"] = row.min_balance;
+			sample["final_balance"] = row.final_balance;
+			sample["cap_max"] = row.cap_max;
+			sample["capacity"] = row.capacity;
+			sample["price"] = row.price;
+			sample["margin"] = row.margin;
+			out.append(sample);
+		}
+		return out;
+	};
+	out["gate_rejected"] = gate_counts(state.brain_gate_rejected);
+	out["group_gate_rejected"] = gate_counts(state.brain_group_gate_rejected);
+	out["samples"] = sample_list(state.brain_samples);
+	out["group_samples"] = sample_list(state.brain_group_samples);
+	out["zero_revenue"] = state.brain_zero_revenue;
+	out["group_zero_revenue"] = state.brain_group_zero_revenue;
+	out["group_executed"] = state.brain_group_executed;
+	out["group_created"] = state.brain_group_created;
+	std::map<int, int> herd_plants;
+	int herd_max = 0;
+	for (const AiHerdEvent& event : state.herd_events) {
+		const int count = ++herd_plants[event.product];
+		herd_max = std::max(herd_max, count);
+	}
+	out["herd_max_plants_30d"] = herd_max;
 	return out;
 }
 

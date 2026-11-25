@@ -233,7 +233,18 @@ void plan_city(AiContext& ctx, int city_index) {
 				capacity = available / capital_cost;
 			}
 			if (capacity >= kMinStateCapacity) {
-				if (build_gate(ctx, city_id, city_index, product, bindex)) {
+				const bool brain = ctx.ws.ai_brain.enabled;
+				const double existing_capacity = brain && product >= 0
+					&& product < static_cast<int>(
+						ctx.state.brain_supply.world_capacity.size())
+					? ctx.state.brain_supply.world_capacity[
+						static_cast<std::size_t>(product)]
+					: 0.0;
+				const bool herd_ok = !brain
+					|| ai_risk::herd_allows(ctx.state, ctx.ws.ai_brain,
+						product, true, ctx.day, capacity, existing_capacity);
+				if (herd_ok
+						&& build_gate(ctx, city_id, city_index, product, bindex)) {
 					const double cost = capacity * capital_cost;
 					const std::string target = "STATE-" + ascii_upper(resource)
 						+ "-" + std::to_string(ctx.state.government_id);
@@ -388,6 +399,18 @@ void plan_city(AiContext& ctx, int city_index) {
 		}
 		if (capacity < kMinStateCapacity) {
 			continue;
+		}
+		if (ctx.ws.ai_brain.enabled) {
+			const double existing_capacity = product >= 0
+				&& product < static_cast<int>(
+					ctx.state.brain_supply.world_capacity.size())
+				? ctx.state.brain_supply.world_capacity[
+					static_cast<std::size_t>(product)]
+				: 0.0;
+			if (!ai_risk::herd_allows(ctx.state, ctx.ws.ai_brain, product,
+					false, ctx.day, capacity, existing_capacity)) {
+				continue;
+			}
 		}
 		const double cost = capacity * capital_cost;
 		const std::string target = "STATE-" + ascii_upper(resource) + "-"

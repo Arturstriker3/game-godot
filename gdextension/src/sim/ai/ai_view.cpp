@@ -8,6 +8,7 @@
 #include "ai_view.h"
 
 #include "../agriculture.h"
+#include "../efficiency.h"
 #include "../monetary.h"
 #include "../sim_core.h"
 #include "../sim_constants.h"
@@ -186,6 +187,8 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	view.b_utilization.clear();
 	view.b_costs.clear();
 	view.b_site_suitability.clear();
+	view.b_production_efficiency.clear();
+	view.b_eff_cap.clear();
 	view.b_stage.clear();
 	view.b_stage_factor.clear();
 	view.b_deepen_cost.clear();
@@ -205,6 +208,13 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 				view.b_utilization.push_back(building.utilization);
 				view.b_costs.push_back(building.costs);
 				const int output = building.output_product;
+				// D-131 fase B (R2): eficiência corrente e teto da classe para
+				// estimar a rampa que ainda falta entregar.
+				const EfficiencyClass eff_class =
+					eff::classify(ws, bcity, building);
+				view.b_production_efficiency.push_back(
+					building.production_efficiency);
+				view.b_eff_cap.push_back(eff::cap(ws, building, eff_class));
 				view.b_site_suitability.push_back(
 					output >= 0 && output < ws.products
 						? bcity.suitability[output] : 0.0);
@@ -254,6 +264,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	view.c_output.clear();
 	view.c_capacity.clear();
 	view.c_expand.clear();
+	view.c_recipe.clear();
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		const std::string& city_id = ws.cities[city_index].id;
 		for (const ConstructionProject& project : ws.construction_projects) {
@@ -263,6 +274,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 			view.c_output.push_back(project.output_product);
 			view.c_capacity.push_back(project.capacity);
 			view.c_expand.push_back(project.expand_existing ? 1 : 0);
+			view.c_recipe.push_back(project.recipe);
 		}
 		view.c_offset[city_index + 1] =
 			static_cast<int>(view.c_output.size());

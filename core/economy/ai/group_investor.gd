@@ -1,6 +1,12 @@
 extends RefCounted
 class_name GroupInvestor
 
+## LEGADO (D-131 fase C): o jogo roda o investidor de grupo em C++
+## (`gdextension/src/sim/ai/ai_group.cpp`). Este porte GDScript não é chamado
+## pelo jogo nem pelo caminho do cérebro: só ferramentas/testes históricos
+## (`investment_test.gd`, `balance_review.gd`) o instanciam. `CASH_SHARE = 0,5`
+## abaixo é a regra ANTIGA e não é critério de decisão do jogo.
+
 ## F9 — decisão de investimento por GRUPO/EMPRESA (docs §14).
 ##
 ## Cada grupo decide em cadência BAIXA: um grupo de índice `i` decide nos dias em
@@ -43,7 +49,8 @@ const MAX_CAPACITY := 12.0
 const MIN_RETURN := 0.0018
 ## Satisfação alimentar média abaixo da qual só se investe em comida.
 const FOOD_SECURE_SATISFACTION := 0.98
-## Fração do caixa comprometida por decisão.
+## Fração do caixa comprometida por decisão — REGRA ANTIGA (legado). O caminho
+## do jogo (C++) dimensiona pelo forecast/R1, não por esta constante.
 const CASH_SHARE := 0.5
 ## Cidades/candidatos entre duas leituras do relógio (fatiamento).
 const YIELD_EVERY := 16
@@ -676,6 +683,8 @@ func _score_candidate(group: Dictionary, entry: Dictionary) -> Dictionary:
 			return {}
 		if mode == 1 and not _is_incumbent(group, city_nation, resource):
 			return {}
+	# Legado: o porte GDScript ainda usa o 0,5 do caixa; o jogo (C++) usa o
+	# forecast. Mantido só para as ferramentas que instanciam este script.
 	var capacity := clampf(cash * CASH_SHARE / capital_per_capacity, 0.5,
 		MAX_CAPACITY)
 	var cost := capacity * capital_per_capacity

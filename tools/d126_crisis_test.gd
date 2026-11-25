@@ -498,7 +498,8 @@ func _test_save_load_v41() -> void:
 	sim.crisis_layoff("AGRIA", "D126-SAVE", 0.5)
 	sim.crisis_mothball("AGRIA", "D126-SAVE")
 	var save: Dictionary = sim.to_dict()
-	_check("(7) save v41", int(save.get("version", 0)) == 41,
+	# D-131 fase A subiu o save para v42 (bloco aditivo definitions.ai_brain).
+	_check("(7) save v42", int(save.get("version", 0)) == 42,
 			"version=%d" % int(save.get("version", 0)))
 	var loaded := _load(save)
 	var row := _crisis_row(loaded, "D126-SAVE")

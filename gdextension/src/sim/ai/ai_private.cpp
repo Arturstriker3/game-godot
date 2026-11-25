@@ -17,6 +17,8 @@
 #include "ai_view.h"
 #include "../ai_brain.h"
 #include "../bank.h"
+#include "../bank_crisis.h"
+#include "../crisis.h"
 #include "../efficiency.h"
 #include "../sim_constants.h"
 
@@ -163,7 +165,7 @@ std::uint64_t brain_key(int city_index, int product) {
 // amostrada UMA vez por dia e o valor fica em cache (o mesmo produto é lido
 // por vários templates na mesma visita). `enabled=false` nunca chega aqui.
 double brain_expected_price(AiContext& ctx, int city_index, int product,
-		double price) {
+		double price, double supply_future, double demand_future) {
 	const AiBrainParams& params = ctx.ws.ai_brain;
 	AiState& state = ctx.state;
 	const std::uint64_t key = brain_key(city_index, product);
@@ -186,11 +188,10 @@ double brain_expected_price(AiContext& ctx, int city_index, int product,
 		last_day = ctx.day;
 	}
 	const double trend = ai_brain::price_trend(params, history);
-	// Fase A (sem R2): a oferta futura é a oferta de hoje do mercado local.
-	const double supply = ai_market(ctx.view, city_index, product, kAiSupply);
-	const double demand = ai_market(ctx.view, city_index, product, kAiDesired);
+	// Fase B (R2): a oferta/demanda futuras do escopo chegam do chamador;
+	// `enabled=false` nunca chega aqui.
 	const double value = ai_brain::expected_price(params, price, trend,
-		supply, demand);
+		supply_future, demand_future);
 	state.brain_price_expected[key] = value;
 	return value;
 }
@@ -216,7 +217,55 @@ int brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
 	return std::max(1, static_cast<int>(std::llround(base_days * size_scale)));
 }
 
+// Aperto de capital do banco público da cidade (1,0 sem banco/sem crédito). O
+// `lend_city` já multiplica o pedido por ele; quem pede o valor exato do
+// `gap` precisa dividir por este fator para não receber `gap x f`.
+double public_credit_factor(const AiContext& ctx, int city_index) {
+	const WorldState& ws = ctx.ws;
+	if (!ws.bank_credit_enabled || city_index < 0
+			|| static_cast<std::size_t>(city_index) >= ws.cities.size()) {
+		return 1.0;
+	}
+	const Bank* bank = bank::find(ws,
+		ws.cities[static_cast<std::size_t>(city_index)].nation,
+		bank::kRolePublic);
+	if (bank == nullptr) {
+		return 1.0;
+	}
+	return std::clamp(bank_crisis::credit_factor(ws, *bank), 0.0, 1.0);
+}
+
 } // namespace
+
+// D-131 fase C: os helpers do cérebro usados também pelo investidor de grupo.
+double ai_brain_expected_price(AiContext& ctx, int city_index, int product,
+		double price, double supply_future, double demand_future) {
+	return brain_expected_price(ctx, city_index, product, price, supply_future,
+		demand_future);
+}
+
+int ai_brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
+		bool is_food, bool is_mineral, double capacity) {
+	return brain_construction_days(ctx, tmpl, is_food, is_mineral, capacity);
+}
+
+// R5: o crédito de INVESTIMENTO da cidade é o limite da D-126 (o mesmo que a
+// escada de crise usa), com o aperto de capital do banco público. O giro de
+// crise (`credit_working_days` × custo diário) NÃO entra aqui: ele financia
+// operação, não capex.
+double ai_investment_credit(const AiContext& ctx, int city_index) {
+	const WorldState& ws = ctx.ws;
+	if (!ws.bank_credit_enabled || city_index < 0
+			|| city_index >= static_cast<int>(ws.cities.size())) {
+		return 0.0;
+	}
+	const std::size_t index = static_cast<std::size_t>(city_index);
+	double limit = crisis::city_credit_limit(ws, index);
+	// Mesmo aperto que o `lend_city` aplica no desembolso: o limite efetivo
+	// (o que o forecast pode dimensionar) é `limit x fator`.
+	limit *= public_credit_factor(ctx, city_index);
+	return std::max(0.0, limit);
+}
 
 // D-125: eficiência MÉDIA esperada da rampa de uma planta NOVA do template no
 // horizonte de decisão do investidor — a mesma regra de `AiPrivateInvestor`
@@ -243,6 +292,39 @@ void AiPrivateInvestor::prepare(const AiContext& ctx) {
 	measure_food_balance(ctx);
 	measure_pending(ctx);
 	refresh_groups(ctx);
+	// D-131 fase B: caches do dia (oferta efetiva R2 e exposição R4) e o
+	// histórico de demanda. Uma vez por dia, antes de grupos e cidades; com
+	// `enabled=false` nada disto é construído.
+	if (ctx.ws.ai_brain.enabled) {
+		AiState& state = ctx.state;
+		if (state.brain_phase_day != ctx.day) {
+			state.brain_phase_day = ctx.day;
+			state.pending_committed.clear();
+			state.pending_committed_region.clear();
+			const std::size_t products = static_cast<std::size_t>(
+				std::max(0, ctx.view.products));
+			if (state.brain_demand_history.size() != products) {
+				state.brain_demand_history.assign(products, {});
+			}
+			for (std::size_t product = 0; product < products; ++product) {
+				std::vector<double>& history =
+					state.brain_demand_history[product];
+				history.push_back(
+					ctx.view.tot_desired[product]);
+				if (history.size() > 90) {
+					history.erase(history.begin());
+				}
+			}
+			ai_risk::build_supply_cache(ctx.ws, ctx.view, ctx.templates,
+				ctx.ws.ai_brain, state.brain_demand_history,
+				state.brain_supply);
+			ai_risk::build_exposure_cache(ctx.ws, ctx.view, ctx.templates,
+				state.brain_exposure);
+			// O preço esperado é recalculado no dia; o cache é do dia.
+			state.brain_price_expected.clear();
+			state.brain_cache_day = ctx.day;
+		}
+	}
 }
 
 int AiPrivateInvestor::region_slot(const AiContext& ctx,
@@ -499,17 +581,51 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	const double surplus = ai_market(view, city_index, product, kAiSurplus);
 	// §15/D-060: a capacidade futura em obras conta na decisão — a lacuna já
 	// atendida por uma obra em voo não dispara outra construção.
+	const bool brain = ctx.ws.ai_brain.enabled;
+	const bool is_food_candidate = ctx.templates.is_food(resource);
+	// D-131 fase C (R5): o agente não investe num bem que já tem planta em
+	// prejuízo há `block_loss_days` (30) — a escada D-126 já está mandando
+	// cortar/demitir/hibernar. `crisis.enabled=false` desliga o bloqueio.
+	if (brain && ai_risk::loss_blocked(ctx.ws, ctx.ws.ai_brain, city.id,
+			std::string(), product)) {
+		ctx.state.brain_loss_blocked += 1;
+		return false;
+	}
+	// D-131 fase B (R2): com o cérebro ligado, a lacuna é a do ESCOPO
+	// declarado (comida = região; demais = mundo): demanda futura menos oferta
+	// efetiva (existente + em construção + em rampa + `pending_committed` da
+	// mesma fase). O gatilho local (`shortage`) continua sendo o teto — a
+	// regra regional não inventa demanda que o mercado local não sinalizou.
 	double effective_shortage = std::max(0.0,
 		shortage - ai_pending_capacity(view, city_index, product));
-	if (product < static_cast<int>(sum_pending_.size())) {
-		// R3/Q-014: na CESTA ALIMENTAR o pending GLOBAL não desconta (a obra em
-		// outra cidade não garante entrega nesta). A obra LOCAL continua
-		// descontando (anti-empilhamento na cidade).
-		if (!ctx.templates.is_food(resource)) {
-			effective_shortage = std::max(0.0,
-				effective_shortage
-				- sum_pending_[static_cast<std::size_t>(product)]);
+	double brain_supply_value = 0.0;
+	double brain_demand_value = 0.0;
+	if (!brain) {
+		if (product < static_cast<int>(sum_pending_.size())) {
+			// R3/Q-014: na CESTA ALIMENTAR o pending GLOBAL não desconta (a
+			// obra em outra cidade não garante entrega nesta). A obra LOCAL
+			// continua descontando (anti-empilhamento na cidade).
+			if (!is_food_candidate) {
+				effective_shortage = std::max(0.0,
+					effective_shortage
+					- sum_pending_[static_cast<std::size_t>(product)]);
+			}
 		}
+	} else {
+		const bool region_scope = is_food_candidate
+			? ctx.ws.ai_brain.scope_food == 0
+			: ctx.ws.ai_brain.scope_other == 0;
+		const int region = region_scope
+			? ai_risk::region_slot(ctx.state.brain_supply, city.landmass)
+			: -1;
+		brain_supply_value = ai_risk::supply_effective(
+			ctx.state.brain_supply, ctx.state, product, region, region_scope);
+		brain_demand_value = ai_risk::demand_future(ctx.state.brain_supply,
+			product, region, region_scope,
+			ctx.ws.ai_brain.demand_growth_days);
+		const double scope_gap =
+			std::max(0.0, brain_demand_value - brain_supply_value);
+		effective_shortage = std::min(std::max(0.0, shortage), scope_gap);
 	}
 
 	// F3 — oferta mundial curta: para a cesta alimentar, o excedente LOCAL não
@@ -528,6 +644,11 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		return false;
 	}
 	if (effective_shortage < kMinShortageTons) {
+		if (brain) {
+			// Diagnóstico da fase C: candidato descartado pela concorrência
+			// (oferta efetiva já cobre a demanda futura do escopo).
+			ctx.state.brain_competition_skipped += 1;
+		}
 		return false;
 	}
 	if (!resource_available(ctx, city_index, tmpl)) {
@@ -541,8 +662,10 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	// D-131 (R3): com o cérebro ligado, a margem/payback usam o preço esperado
 	// (tendência × castigo por excesso) em vez do preço de hoje. Desligado, o
 	// valor é EXATAMENTE o preço de hoje (equivalência bit a bit).
-	const double price_expected = ctx.ws.ai_brain.enabled
-		? brain_expected_price(ctx, city_index, product, price) : price;
+	const double price_expected = brain
+		? brain_expected_price(ctx, city_index, product, price,
+			brain_supply_value, brain_demand_value)
+		: price;
 	const double observed = ai_observed_cost(view, city_index, product);
 	const bool is_mineral = ctx.templates.is_mineral(resource) && !is_recipe;
 	// Margem "honesta" para minas: inclui o fator de profundidade da jazida
@@ -631,9 +754,20 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	// planta NOVA (expansão/aprofundamento seguem a regra de hoje na fase A):
 	// o forecast mensal fecha o saldo antes de emitir o capex e, se preciso,
 	// reduz a capacidade para caber no caixa + crédito aprovado.
-	if (ctx.ws.ai_brain.enabled && existing.empty()) {
+	if (brain && existing.empty()) {
 		ctx.state.brain_attempts += 1;
-		const bool is_food_candidate = ctx.templates.is_food(resource);
+		// Fase B (ressalva da fase A): além do total diário, conta a primeira
+		// tentativa de cada (cidade, produto) dentro do mês declarado.
+		const int month = ctx.day / std::max(1, ctx.ws.ai_brain.month_days);
+		const std::uint64_t key = static_cast<std::uint64_t>(city_index)
+			* 1000000ULL + static_cast<std::uint64_t>(product);
+		const auto seen =
+			ctx.state.brain_candidate_month.find(key);
+		if (seen == ctx.state.brain_candidate_month.end()
+				|| seen->second != month) {
+			ctx.state.brain_candidate_month[key] = month;
+			ctx.state.brain_unique_month_candidates += 1;
+		}
 		int input_product = tmpl.input;
 		double input_ratio = tmpl.input_ratio;
 		double jobs_per_ton = tmpl.jobs_per_ton;
@@ -660,9 +794,8 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		}
 		ai_brain::ForecastInput forecast_in;
 		forecast_in.cash = city.firm_cash;
-		// Fase A: o privado ainda não tem crédito de INVESTIMENTO aprovado
-		// (D-126/C3 só oferece giro). O crédito entra na fase C.
-		forecast_in.credit_approved = 0.0;
+		// Fase C (R5): crédito de INVESTIMENTO da cidade (não o giro da D-126).
+		forecast_in.credit_approved = ai_investment_credit(ctx, city_index);
 		forecast_in.candidate_capacity = capacity;
 		forecast_in.unit_capex = unit_capital;
 		forecast_in.efficiency_class = eff::classify_new(ctx.ws,
@@ -689,10 +822,8 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			? ai_market(view, city_index, input_product, kAiPrice) : 0.0;
 		// Receita pelo preço esperado (a mesma referência da margem).
 		forecast_in.price_expected = reference_price;
-		forecast_in.supply_future =
-			ai_market(view, city_index, product, kAiSupply);
-		forecast_in.demand_future =
-			ai_market(view, city_index, product, kAiDesired);
+		// R2: a oferta/demanda do escopo entram no PREÇO esperado (R3); o
+		// forecast de fluxo de caixa não as usa de novo (evita dupla contagem).
 		forecast_in.loan_rate_annual = bank::loan_rate(ctx.ws, city.nation);
 		forecast_in.margin_per_ton = margin;
 		forecast_in.expected_efficiency = expected_efficiency;
@@ -702,11 +833,93 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws, forecast_in);
 		if (!forecast.pass || forecast.capacity < kMinCapacity) {
 			ctx.state.brain_rejected += 1;
+			// D-131 fase C (diagnóstico): gate que reprovou + amostra.
+			const int gate = forecast.failed_gate >= 0
+					&& forecast.failed_gate <= 6
+				? forecast.failed_gate : 0;
+			ctx.state.brain_gate_rejected[static_cast<std::size_t>(gate)] += 1;
+			if (forecast.revenue_total <= 1e-9) {
+				ctx.state.brain_zero_revenue += 1;
+			}
+			if (ctx.state.brain_samples.size() < 10
+					&& forecast.failed_gate != 0) {
+				bool seen_combo = false;
+				for (const AiForecastSample& row : ctx.state.brain_samples) {
+					if (row.product == product
+							&& row.gate == forecast.failed_gate) {
+						seen_combo = true;
+						break;
+					}
+				}
+				if (!seen_combo) {
+					AiForecastSample sample;
+					sample.day = ctx.day;
+					sample.city = city_index;
+					sample.product = product;
+					sample.gate = forecast.failed_gate;
+					sample.cash = forecast_in.cash;
+					sample.credit = forecast_in.credit_approved;
+					sample.capex = forecast.capex;
+					sample.revenue = forecast.revenue_total;
+					sample.cost = forecast.cost_total;
+					sample.payback = forecast.payback_days;
+					sample.trough = forecast.trough_profit;
+					sample.min_balance = forecast.min_balance;
+					sample.final_balance = forecast.final_balance;
+					sample.cap_max = forecast.cap_max;
+					sample.capacity = forecast.capacity;
+					sample.price = forecast_in.price_expected;
+					sample.margin = forecast_in.margin_per_ton;
+					ctx.state.brain_samples.push_back(sample);
+				}
+			}
+			// Candidato único rejeitado PELO CAIXA no mês (mesma chave da
+			// contagem de tentativas).
+			const auto seen = ctx.state.brain_rejected_month.find(key);
+			if (seen == ctx.state.brain_rejected_month.end()
+					|| seen->second != month) {
+				ctx.state.brain_rejected_month[key] = month;
+				ctx.state.brain_unique_rejected_month += 1;
+			}
 			return false;
 		}
 		if (forecast.constrained) {
 			capacity = forecast.capacity;
 			cost = capacity * unit_capital;
+		}
+	}
+
+	// D-131 fase B (R4): anti-manada e exposição. A capacidade já é a final
+	// (depois do forecast). O teto de plantas por bem é global; a exposição é
+	// do agente que efetivamente paga a obra (grupo escolhido ou `private`).
+	const int sector = brain
+		? ai_risk::sector_slot(ctx.state.brain_exposure, product) : -1;
+	if (brain && existing.empty()) {
+		const double existing_capacity =
+			product >= 0
+			&& product < static_cast<int>(
+				ctx.state.brain_supply.world_capacity.size())
+			? ctx.state.brain_supply.world_capacity[
+				static_cast<std::size_t>(product)]
+			: 0.0;
+		if (!ai_risk::herd_allows(ctx.state, ctx.ws.ai_brain, product,
+				is_food_candidate, ctx.day, capacity, existing_capacity)) {
+			ctx.state.brain_risk_rejected += 1;
+			ctx.state.brain_herd_rejected += 1;
+			return false;
+		}
+	}
+	if (brain && !existing.empty()) {
+		// R4: bem no teto não recebe expansão/aprofundamento.
+		const AiExposure* exposure =
+			ai_risk::city_exposure(ctx.state.brain_exposure, city_index);
+		if (exposure != nullptr
+				&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
+					product, sector, cost, city.firm_cash
+						+ ai_investment_credit(ctx, city_index))) {
+			ctx.state.brain_risk_rejected += 1;
+			ctx.state.brain_exposure_rejected += 1;
+			return false;
 		}
 	}
 
@@ -767,6 +980,20 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			opex_per_ton = recipe.opex_per_ton;
 		}
 		const int group = pick_group(ctx, city.nation, product, cost);
+		if (brain && group < 0) {
+			// R4: sem grupo pagando, a obra é do dono `private` da cidade —
+			// os tetos são os da cidade (caixa + exposição total).
+			const AiExposure* exposure =
+				ai_risk::city_exposure(ctx.state.brain_exposure, city_index);
+			if (exposure != nullptr
+					&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
+						product, sector, cost, city.firm_cash
+							+ ai_investment_credit(ctx, city_index))) {
+				ctx.state.brain_risk_rejected += 1;
+				ctx.state.brain_exposure_rejected += 1;
+				return false;
+			}
+		}
 		if (group >= 0) {
 			// O contador incrementa ANTES de emitir (como no GDScript): o id
 			// carrega o valor corrente e o próximo build usa o seguinte.
@@ -778,6 +1005,29 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			result = ai_emit_group_invest(ctx, group_id, city_id, target,
 				resource, product, capacity, recipe_id, std::string());
 		} else {
+			// Fase C (R5): a obra é do dono `private` da cidade. Se o capex
+			// passar do caixa (o forecast só cresceu por causa do crédito de
+			// INVESTIMENTO), toma o crédito ANTES da obra — o `Build` exige o
+			// caixa reservado. O comando entra no log A3 como o do grupo.
+			if (brain) {
+				const double gap = cost - std::max(0.0, city.firm_cash);
+				if (gap > 1e-9) {
+					// `lend_city` entrega `pedido x fator` (aperto do banco): pedir
+					// o `gap` cru desembolsaria só `gap x f` e o Build falharia com
+					// banco estressado. Divide pelo fator (e capa no teto D-126,
+					// que o handler do comando também valida) para o crédito
+					// chegar exatamente ao `gap`.
+					const double factor = public_credit_factor(ctx, city_index);
+					// O `+1e-6` cobre o arredondamento de `gap / f` para o Build
+					// não receber um caixa 1 ulp abaixo do custo.
+					const double request = factor > 1e-9
+						? gap / factor + 1e-6 : gap;
+					const double limit = crisis::city_credit_limit(ctx.ws,
+						static_cast<std::size_t>(city_index));
+					ai_emit_city_borrow(ctx, city_id,
+						std::min(request, limit));
+				}
+			}
 			const int id = ctx.state.private_id++;
 			const std::string target =
 				"AI-" + ascii_upper(resource) + "-" + std::to_string(id);
@@ -936,6 +1186,16 @@ int AiPrivateInvestor::pick_group(AiContext& ctx, const std::string& nation,
 	if (found == groups_by_key_.end()) {
 		return -1;
 	}
+	const bool brain = ctx.ws.ai_brain.enabled;
+	const int sector_slot =
+		brain ? ai_risk::sector_slot(ctx.state.brain_exposure, product) : -1;
+	AiExposure empty_exposure;
+	if (brain) {
+		empty_exposure.by_product.assign(
+			static_cast<std::size_t>(ctx.state.brain_exposure.products), 0.0);
+		empty_exposure.by_sector.assign(
+			static_cast<std::size_t>(ctx.state.brain_exposure.sectors), 0.0);
+	}
 	const std::vector<int>& slots = found->second;
 	for (const int index : slots) {
 		if (index < 0
@@ -944,11 +1204,26 @@ int AiPrivateInvestor::pick_group(AiContext& ctx, const std::string& nation,
 		}
 		double& cash =
 			ctx.state.private_group_cash[static_cast<std::size_t>(index)];
-		if (cash + 1e-9 >= cost) {
-			// Caixa local do dia: a próxima decisão vê o valor já debitado.
-			cash -= cost;
-			return index;
+		if (cash + 1e-9 < cost) {
+			continue;
 		}
+		if (brain) {
+			// R4: o grupo escolhido também respeita os tetos de exposição.
+			const std::string& group_id =
+				ctx.view.groups[static_cast<std::size_t>(index)].id;
+			const AiExposure* exposure = ai_risk::group_exposure(
+				ctx.state.brain_exposure, group_id);
+			if (exposure == nullptr) {
+				exposure = &empty_exposure;
+			}
+			if (!ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure, product,
+					sector_slot, cost, cash)) {
+				continue;
+			}
+		}
+		// Caixa local do dia: a próxima decisão vê o valor já debitado.
+		cash -= cost;
+		return index;
 	}
 	return -1;
 }

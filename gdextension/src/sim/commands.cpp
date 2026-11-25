@@ -60,6 +60,8 @@ constexpr TypeName kTypeNames[] = {
 	{CommandType::ChangeProduct, "change_product"},
 	{CommandType::SetRefineryMode, "set_refinery_mode"},
 	{CommandType::SetBuildingEquipment, "set_building_equipment"},
+	// D-131 (fase C): crédito de investimento da cidade.
+	{CommandType::CityBorrow, "city_borrow"},
 };
 
 } // namespace

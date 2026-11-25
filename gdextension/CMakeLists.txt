@@ -82,6 +82,7 @@ add_library(opengs_sim STATIC
     src/sim/actions.cpp
     src/sim/ai/ai_templates.cpp
     src/sim/ai/ai_view.cpp
+    src/sim/ai/ai_risk.cpp
     src/sim/ai/ai_private.cpp
     src/sim/ai/ai_group.cpp
     src/sim/ai/ai_government.cpp

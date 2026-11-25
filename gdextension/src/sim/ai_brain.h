@@ -35,7 +35,10 @@ std::map<std::string, double> params_map(const WorldState& ws);
 
 // R3 — tendência da série de preços (média dos últimos `trend_days` dividida
 // pela média da janela anterior), limitada a [trend_min, trend_max]. Menos de
-// 5 observações ou janela anterior vazia devolve 1.0 (ausência declarada).
+// 5 observações devolve 1.0 (ausência declarada). Com histórico menor que
+// `2 × trend_days`, a janela corrente usa o máximo disponível que ainda deixe
+// ao menos 5 observações para a janela anterior (ex.: 40 observações e
+// trend_days=30 → 30 correntes / 10 anteriores).
 double price_trend(const AiBrainParams& params,
 	const std::vector<double>& history);
 
@@ -70,10 +73,8 @@ struct ForecastInput {
 	double opex_per_ton = 0.0;
 	double input_ratio = 0.0;
 	double input_price = 0.0;
-	// Receita: preço esperado e parcelas de mercado da oferta/demanda futuras.
+	// Receita: preço esperado (o excesso de oferta já entra nele, R3).
 	double price_expected = 0.0;
-	double supply_future = 0.0;
-	double demand_future = 0.0;
 	// Juro anual do crédito aprovado (0 = forecast sem dívida).
 	double loan_rate_annual = 0.0;
 	// Gate (e): margem por tonelada com o preço esperado e a eficiência média
@@ -100,11 +101,26 @@ struct ForecastResult {
 	// Menor lucro operacional ACUMULADO (sem capex) nos primeiros
 	// `trough_months_max` meses.
 	double trough_profit = 0.0;
+	// Fase C (R5): maior sequência de dias operacionais negativos dentro do
+	// horizonte. O gate (d) antecipa os degraus da escada D-126: com a crise
+	// ligada, uma sequência >= `crisis.mothball_days` reprova (a planta nasceria
+	// para hibernar). 0 quando a crise está desligada.
+	int max_loss_days = 0;
 	double payback_days = 0.0;
 	// Eficiência média da rampa no horizonte do forecast.
 	double mean_efficiency = 0.0;
 	// Horizonte do forecast em meses (H).
 	int months = 0;
+	// D-131 fase C (diagnóstico): primeiro gate reprovado.
+	// 0 = passou; 1 = (a) capex > caixa × capital_share + crédito; 2 = (b)
+	// saldo mínimo < −crédito; 3 = (c) saldo final < 0; 4 = (d) trough
+	// operacional negativo (ou escada D-126); 5 = (e) payback; 6 = o
+	// dimensionamento fechado ficou abaixo de `min_capacity` (cap_max).
+	int failed_gate = 0;
+	// Valores do forecast para o diagnóstico por gate.
+	double spendable = 0.0;     // caixa × capital_share + crédito
+	double revenue_total = 0.0; // receita somada no horizonte
+	double cost_total = 0.0;    // folha + insumo + juro no horizonte
 };
 
 // R1 — previsão mensal + dimensionamento fechado + gates (a)-(e).

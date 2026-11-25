@@ -16,6 +16,7 @@
 // Toda ação é determinística: a ordem de visita é a ordem do save (buildings,
 // groups e power_plants), sem `unordered_map`. Nenhum fluxo cria/destrói
 // dinheiro fora das regras bancárias já existentes.
+#include <cstddef>
 #include <map>
 #include <string>
 
@@ -43,6 +44,12 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta);
 // Ações explícitas (API do jogador/teste). Todas devolvem false com `error`
 // quando recusadas; nenhuma inventa números.
 // ---------------------------------------------------------------------------
+// D-131/R5: limite do crédito de INVESTIMENTO da cidade (0,5 × ativos −
+// dívida). É o mesmo teto que a D-126 já usa na escada; o giro de crise
+// (`credit_working_days`) é outra coisa e não passa por aqui.
+double city_credit_limit(const WorldState& ws, std::size_t city_index);
+bool borrow_city(WorldState& ws, const std::string& city_id, double amount,
+	double* out_granted, std::string* error);
 bool layoff(WorldState& ws, SimCore& core, const std::string& city_id,
 	const std::string& building_id, double share, std::string* error);
 bool borrow_working_capital(WorldState& ws, SimCore& core,
