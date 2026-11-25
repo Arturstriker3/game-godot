@@ -19,6 +19,7 @@ banks.private,Banco privado nacional,Domestic private bank,Banco privado naciona
 banks.public,Banco público,State-owned bank,Banco público
 building.chemical_plant,Planta química,Chemical plant,Planta química
 building.refinery,Refinaria,Refinery,Refinería
+building.semiconductor_fab,Fab de semicondutores,Semiconductor fab,Fab de semiconductores
 chain.col.byproducts,Subprodutos,Byproducts,Subproductos
 chain.col.consumers,Quem consome,Who consumes,Quién consume
 chain.col.inputs,Insumos,Inputs,Insumos
@@ -1894,7 +1895,7 @@ product.cellulose,Celulose,Cellulose,Celulosa
 product.charcoal,Carvão vegetal,Charcoal,CarbÃ³n vegetal
 product.chassis,Chassi,Chassis,Chasis
 product.chemicals,Químicos,Chemicals,Productos quÃ­micos
-product.chips,Chips,Chips,Chips
+product.chips,Semicondutores,Semiconductors,Semiconductores
 product.circuit_board,Placa de circuito,Circuit board,Placa de circuito
 product.clothes,Roupas,Clothes,Ropa
 product.coal,Carvão,Coal,Carbón
@@ -2020,7 +2021,7 @@ resource.cellulose,Celulose,Cellulose,Celulosa
 resource.charcoal,Carvão vegetal,Charcoal,CarbÃ³n vegetal
 resource.chassis,Chassi,Chassis,Chasis
 resource.chemicals,Químicos,Chemicals,Productos quÃ­micos
-resource.chips,Chips,Chips,Chips
+resource.chips,Semicondutores,Semiconductors,Semiconductores
 resource.circuit_board,Placa de circuito,Circuit board,Placa de circuito
 resource.clothes,Roupas,Clothes,Ropa
 resource.coal,Carvão,Coal,Carbón

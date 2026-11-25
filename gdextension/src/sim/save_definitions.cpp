@@ -276,6 +276,10 @@ Value recipes_to(const WorldState& ws) {
 		entry["opex_per_ton"] = Value(recipe.opex_per_ton);
 		entry["education_mix"] = array_of(recipe.education_mix,
 			kEducationLevels);
+		// G1: prazo de obra e classe da planta (aditivo; save antigo sem os
+		// campos carrega 0/"" = tabela atual, sem bump de versão).
+		entry["construction_days"] = Value(recipe.construction_days);
+		entry["plant_class"] = Value(recipe.plant_class);
 		out.append(entry);
 	}
 	return out;
@@ -307,6 +311,11 @@ void recipes_from(WorldState& ws, const Value& array) {
 					recipe.education_mix[level]);
 			}
 		}
+		// G1: prazo de obra e classe da planta (opcionais; ausência = 0/"").
+		recipe.construction_days = std::max(0, read_int(entry,
+			"construction_days", recipe.construction_days));
+		recipe.plant_class = read_string(entry, "plant_class",
+			recipe.plant_class);
 		// `input_count` manda, limitado ao que o array realmente traz (o dump
 		// grava os dois coerentes; um arquivo editado à mão não estoura o
 		// array fixo do struct).

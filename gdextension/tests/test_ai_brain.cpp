@@ -654,3 +654,56 @@ TEST_CASE("D-131: duas rodadas com o cerebro ligado fecham o mesmo digest") {
 	ogs::test::PocketWorld second;
 	CHECK(run(first) == run(second));
 }
+
+TEST_CASE("G1: construction_days da receita entra na obra e no forecast") {
+	ogs::test::PocketWorld world;
+	const int recipe_index = world.recipe("chip");
+	REQUIRE(recipe_index >= 0);
+	REQUIRE_FALSE(world.ws.cities.empty());
+	const std::string city_id = world.ws.cities.front().id;
+	const int output = world.ws.recipes[static_cast<std::size_t>(
+		recipe_index)].output;
+
+	// ConstructionProject: prazo com 0/ausente = tabela atual; com 180 =
+	// 180 x escala de tamanho (capacidade 10 t/dia => escala 1,0).
+	const auto duration_for = [&](const std::string& building_id,
+			double capacity) {
+		ogs::ConstructionProject project;
+		project.id = building_id;
+		project.building_id = building_id;
+		project.city = city_id;
+		project.owner = "private";
+		project.resource = "chip";
+		project.output_product = output;
+		project.recipe = recipe_index;
+		project.capacity = capacity;
+		project.jobs = 4.0;
+		project.total_cost = 1000.0;
+		world.core.add_construction_project(project);
+		return project.duration_days;
+	};
+	const int table_days = duration_for("g1_chip_zero", 10.0);
+	CHECK(table_days == ogs::kConstructionFactoryDays);
+	world.ws.recipes[static_cast<std::size_t>(recipe_index)]
+		.construction_days = 180;
+	const int declared_days = duration_for("g1_chip_180", 10.0);
+	CHECK(declared_days == 180);
+	CHECK(declared_days > table_days);
+
+	// Forecast (D-131 R1): a mesma receita alimenta o vale de caixa.
+	ogs::AiTemplates templates;
+	ogs::build_ai_templates(world.ws, templates);
+	const ogs::AiTemplate* tmpl = templates.by_resource("chip");
+	REQUIRE(tmpl != nullptr);
+	ogs::AiView view;
+	ogs::snapshot_ai_view(world.ws, world.core, view);
+	ogs::CommandQueue queue;
+	ogs::AiState state;
+	ogs::AiContext ctx{world.ws, world.core, queue, templates, view, state};
+	CHECK(ogs::ai_brain_construction_days(ctx, *tmpl, false, false, 10.0,
+		recipe_index) == 180);
+	world.ws.recipes[static_cast<std::size_t>(recipe_index)]
+		.construction_days = 0;
+	CHECK(ogs::ai_brain_construction_days(ctx, *tmpl, false, false, 10.0,
+		recipe_index) == ogs::kConstructionFactoryDays);
+}

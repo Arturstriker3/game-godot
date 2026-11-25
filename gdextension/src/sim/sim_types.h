@@ -310,6 +310,14 @@ namespace ogs {
 		// recipes.json quando declarada; senão derivada do `sector` (tabela
 		// documentada em set_recipes).
 		double education_mix[kEducationLevels] = {0.60, 0.30, 0.10};
+		// G1: prazo de obra declarado em recipes.json (`construction_days`).
+		// 0/ausente = tabela atual (kConstructionFactoryDays), escalada pelo
+		// tamanho pela mesma regra da construção; nunca menos que 1 dia.
+		int construction_days = 0;
+		// G1: classe da planta (`plant_class` em recipes.json). Metadado de
+		// exibição/status — NÃO entra na simulação (sem classe de eficiência
+		// nova, D5). Vazio = planta sem classe declarada.
+		std::string plant_class;
 	};
 
 	struct Building {

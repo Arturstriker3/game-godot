@@ -2315,6 +2315,7 @@ EconomySim::StatusKeys::StatusKeys() :
 		byproducts("byproducts"),
 		qty("qty"),
 		capital_per_capacity("capital_per_capacity"),
+		plant_class("plant_class"),
 		last_utilization("last_utilization"),
 		strategic("strategic"),
 		yield("yield"),
@@ -3397,10 +3398,13 @@ void EconomySim::fill_city_status(std::size_t city_index,
 				entry[k.inputs] = inputs;
 				entry[k.byproducts] = byproducts;
 				entry[k.yield] = recipe.yield;
+				// G1: classe da planta (metadado; "" = sem classe).
+				entry[k.plant_class] = String(recipe.plant_class.c_str());
 			} else {
 				entry[k.recipe] = String();
 				entry[k.inputs] = Array();
 				entry[k.byproducts] = Array();
+				entry[k.plant_class] = String();
 			}
 		}
 		// Valores diÃ¡rios: sÃ³ reescreve o que mudou (comparar double Ã© ~20Ã—
@@ -4975,6 +4979,15 @@ void EconomySim::set_recipes(const Array& recipes) {
 		recipe.wage = safe_nonneg(static_cast<double>(entry.get("wage", 2.0)));
 		recipe.opex_per_ton = safe_nonneg(
 			static_cast<double>(entry.get("opex_per_ton", 2.5)));
+		// G1: prazo de obra e classe da planta (opcionais). 0 = tabela atual;
+		// `plant_class` é só metadado de status/i18n, não altera a simulação.
+		const double construction_days =
+			static_cast<double>(entry.get("construction_days", 0));
+		recipe.construction_days = std::isfinite(construction_days)
+			&& construction_days > 0.0
+			? static_cast<int>(std::min(construction_days, 3650.0)) : 0;
+		recipe.plant_class = std::string(
+			String(entry.get("plant_class", "")).utf8().get_data());
 		// F7: escolaridade das vagas. `education_mix` explÃ­cito vence a tabela
 		// por setor (dado do Game Systems Designer); sem ele, o setor decide.
 		const std::string sector(
