@@ -227,7 +227,7 @@ TRANSLATIONS = {
     "cargo_plane": ("Cargo plane", "Avión de carga"),
     "electronic_components": ("Electronic components", "Componentes electrónicos"),
     "circuit_board": ("Circuit board", "Placa de circuito"),
-    "chips": ("Chips", "Chips"),
+    "chips": ("Semiconductors", "Semiconductores"),
     "sensors": ("Sensors and optics", "Sensores y óptica"),
     "batteries": ("Batteries", "Baterías"),
     "appliances": ("Home appliances", "Electrodomésticos"),

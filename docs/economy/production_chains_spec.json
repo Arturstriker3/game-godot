@@ -1831,7 +1831,7 @@
   },
   {
    "id": "chips",
-   "name": "Chips",
+   "name": "Semicondutores",
    "sector": "electronics",
    "kind": "intermediate",
    "recipes": [
