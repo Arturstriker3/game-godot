@@ -125,6 +125,9 @@ var _refining_diag := false
 # D-125: override de laboratorio dos parametros de eficiencia (JSON com merge
 # profundo sobre o arquivo commitado). Nao existe no jogo: serve so ao A/B.
 var _eff_override_path := ""
+# G2: override de laboratorio do cerebro da IA (JSON com merge profundo sobre
+# `ai_brain.json`). Serve so ao A/B do potential_demand; nao existe no jogo.
+var _brain_override_path := ""
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 var _fx_seed_days := 0
 # C3 (D-107) + D-111: forçar o crédito de empresa por flag. Desde a D-111 o
@@ -238,6 +241,8 @@ func _init() -> void:
 			_control_path = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--eff-override="):
 			_eff_override_path = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--brain-override="):
+			_brain_override_path = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--fuel-diag"):
 			var fuel_value := "1"
 			if arg.contains("="):
@@ -634,6 +639,15 @@ func _make_world() -> Object:
 		var brain: Variant = _load(AI_BRAIN_PATH)
 		if brain is Dictionary:
 			var brain_params: Dictionary = brain.duplicate(true)
+			if not _brain_override_path.is_empty():
+				var override: Variant = _load(_brain_override_path)
+				if override is Dictionary:
+					_merge_dict(brain_params, override)
+					print("[c1] G2 override do cerebro: " + _brain_override_path)
+				else:
+					print("[c1] FALHA: override do cerebro ilegivel: "
+						+ _brain_override_path)
+					return null
 			if _ai_brain_set:
 				brain_params["enabled"] = 1.0 if _ai_brain_on else 0.0
 			sim.set_ai_brain_params(brain_params)
@@ -1761,6 +1775,7 @@ func _run() -> void:
 		"food_gate_control": _control_path,
 		"goods_diag": _goods_diag_report() if not _goods_diag_ids.is_empty() else {},
 		"efficiency_override": _eff_override_path,
+		"brain_override": _brain_override_path,
 		"fuel_diag": fuel_reports,
 		"refining_diag": refining_reports,
 		"oil_diag": oil_reports,
