@@ -2,10 +2,10 @@
 
 Status: **parte 0 implementada** (núcleo, save, rename de exibição e teste
 unitário) e **parte 1 em andamento** — Fase A′ (bens `microchips`/`fpv_drone`,
-Fab de semicondutores e remontagem do `military_drone`) concluída; fases C e D
-(sensores/computador/celular/robôs trocando `chips` por `microchips`) aplicadas
-em sequência, cada uma com sua própria rodada de aceite. Decisões do dono
-registradas no `GAME_STATE.md` (§ "Decidido pelo dono", G1).
+Fab de semicondutores e remontagem do `military_drone`) concluída e **Fase C
+aplicada (`sensors` usa `microchips`), mas reprovada no critério de cadeia viva**;
+a Fase D não foi aplicada (protocolo: parar na fase que reprova). Decisões do
+dono registradas no `GAME_STATE.md` (§ "Decidido pelo dono", G1).
 
 Esta nota cobre apenas a **parte 0**: a infraestrutura de receita que as partes
 seguintes usam — prazo de obra próprio e classe da planta — e o rename de
@@ -175,9 +175,31 @@ países é o resultado esperado — o único consumidor é `military_drone`, que
 demanda militar zero; sem consumo, a IA não vê preço esperado e não abre Fab. O
 critério "cadeia viva em ≥ 3 países" só pode ser cobrado a partir da fase C.
 
+## Fase C — `sensors` troca `chips` por `microchips` (NÃO ACEITA)
+
+- `sensors`: 19.668,58 → **25.210,73** (+28,2%); `drone` civil: 64.307,77 →
+  74.283,64 (+15,5%). `chips` perde `sensors` como consumidor.
+- Rodada 365 d com cérebro ligado: **0 falências**, comida **93/179**, drift
+  **0,013175**, **0 violações / 0 travados**, **850 investimentos** (726/124) —
+  **idêntica à A′**, bit a bit nos agregados; `chips` e `microchips` MA30 dia
+  365 ÷ base = **1,0000**.
+- **Produção de `microchips`: 0 países — critério 5 reprovado (meta ≥ 3).**
+  Diagnóstico medido: no mundo base, **`chips` não aparece como oferta nem como
+  venda de mercado em nenhum país** durante os 365 d (o mesmo diag mostra
+  `wheat` com oferta em 129 países). Sem `chips`, a Fab de `microchips` não
+  recebe insumo e a troca em `sensors` é inerte — por isso a medição não se move.
+- A meta **não foi afrouxada**. Consequência: a **Fase D não foi aplicada**
+  (`computer`, `phone` e `robots` continuam consumindo `chips`), porque o
+  protocolo manda parar na fase que reprova no aceite.
+
 ## Fora do escopo (partes seguintes)
 
+- **Fase D** (`computer`, `phone`, `robots` trocando `chips` por `microchips`):
+  bloqueada pela reprovação da C no critério de cadeia viva.
 - Cadeia de silício (`quartz`/`silicon_eg`/`wafer`) — D1.
 - Telas/listas que mostram `plant_class`; a chave i18n já existe, o componente
   visual ainda não.
 - Arte final dos ícones de `microchips`/`fpv_drone` (hoje placeholder).
+- Produção de `chips`/`microchips` no mundo base: é pré-requisito da G1 e hoje
+  não acontece (o setor eletrônico não é produzido no cenário). Fica como
+  pendência de seed/cadeia para a próxima decisão.

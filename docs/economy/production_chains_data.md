@@ -99,7 +99,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 79 | `chassis` | semi | intermediate | machinery | 275.39 | `derived:v1` |
 | 80 | `tractor` | final | final | machinery | 1402.24 | `derived:v1` |
 | 81 | `mining_machine` | final | final | machinery | 1436.11 | `derived:v1` |
-| 82 | `robots` | final | final | machinery | 75313.17 | `derived:v1` |
+| 82 | `robots` | final | final | machinery | 85289.04 | `derived:v1` |
 | 83 | `industrial_machinery` | final | final | machinery | 13459.54 | `derived:v1` |
 | 84 | `spare_parts` | final | final | machinery | 492.78 | `derived:v1` |
 | 85 | `construction_material` | final | final | construction | 218.33 | `derived:v1` |
@@ -108,18 +108,18 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 88 | `truck` | final | final | transport | 1556.93 | `derived:v1` |
 | 89 | `car` | final | final | transport | 1911.29 | `derived:v1` |
 | 90 | `naval_hull` | semi | intermediate | transport | 431.25 | `derived:v1` |
-| 91 | `cargo_ship` | final | final | transport | 56493.95 | `derived:v1` |
+| 91 | `cargo_ship` | final | final | transport | 66469.82 | `derived:v1` |
 | 92 | `fuselage` | semi | intermediate | transport | 728.12 | `derived:v1` |
-| 93 | `cargo_plane` | final | final | transport | 57028.32 | `derived:v1` |
+| 93 | `cargo_plane` | final | final | transport | 67004.19 | `derived:v1` |
 | 94 | `electronic_components` | semi | intermediate | electronics | 4851.56 | `derived:v1` |
 | 95 | `circuit_board` | semi | intermediate | electronics | 6228.51 | `derived:v1` |
 | 96 | `chips` | semi | intermediate | electronics | 15234.86 | `derived:v1` |
-| 97 | `sensors` | semi | intermediate | electronics | 19668.58 | `derived:v1` |
+| 97 | `sensors` | semi | intermediate | electronics | 25210.73 | `derived:v1` |
 | 98 | `batteries` | semi | intermediate | electronics | 85.94 | `derived:v1` |
 | 99 | `appliances` | final | final | electronics | 10287.50 | `derived:v1` |
 | 100 | `computer` | final | final | electronics | 38760.62 | `derived:v1` |
 | 101 | `phone` | final | final | electronics | 38915.32 | `derived:v1` |
-| 102 | `drone` | final | final | electronics | 64307.77 | `derived:v1` |
+| 102 | `drone` | final | final | electronics | 74283.64 | `derived:v1` |
 | 103 | `containers` | semi | intermediate | packaging | 23.44 | `derived:v1` |
 | 104 | `jewelry` | final | final | luxury | 15750.00 | `derived:v1` |
 | 105 | `casing` | semi | intermediate | military | 93.75 | `derived:v1` |
@@ -127,8 +127,8 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 107 | `ammunition` | final | final | military | 237.44 | `derived:v1` |
 | 108 | `artillery_ammo` | final | final | military | 406.80 | `derived:v1` |
 | 109 | `small_arms` | final | final | military | 351.00 | `derived:v1` |
-| 110 | `artillery` | final | final | military | 37348.56 | `derived:v1` |
-| 111 | `military_drone` | final | final | military | 58757.47 | `derived:v1` |
+| 110 | `artillery` | final | final | military | 47324.43 | `derived:v1` |
+| 111 | `military_drone` | final | final | military | 66793.58 | `derived:v1` |
 | 112 | `infantry_gear` | final | final | military | 7422.19 | `derived:v1` |
 | 113 | `diesel` | final | final | chemical | 74.90 | `derived:co_product_market_value:v2` |
 | 114 | `jet_fuel` | final | final | chemical | 78.22 | `derived:co_product_market_value:v2` |
@@ -139,7 +139,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 119 | `drone_jammer` | final | final | military | 20200.07 | `derived:v1` |
 | 120 | `at_launcher` | final | final | military | 453.28 | `derived:v1` |
 | 121 | `at_rocket` | final | final | military | 352.42 | `derived:v1` |
-| 122 | `aa_launcher` | final | final | military | 44323.99 | `derived:v1` |
+| 122 | `aa_launcher` | final | final | military | 54299.86 | `derived:v1` |
 | 123 | `microchips` | semi | intermediate | electronics | 19668.58 | `derived:v1` |
 | 124 | `fpv_drone` | final | final | military | 23408.09 | `derived:v1` |
 
@@ -238,7 +238,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `electronic_components` â†’ `electronic_components` (yield 1): 1× `copper_ingot`, 1× `plastic`, 1× `gold_bar`
 - `circuit_board` â†’ `circuit_board` (yield 1): 1× `electronic_components`, 1× `copper_ingot`, 1× `plastic`
 - `chips` â†’ `chips` (yield 1): 1× `electronic_components`, 1× `processed_rare_earths`, 1× `precision_tools`, 1× `chemicals`
-- `sensors` â†’ `sensors` (yield 1): 1× `chips`, 1× `processed_rare_earths`
+- `sensors` â†’ `sensors` (yield 1): 1× `microchips`, 1× `processed_rare_earths`
 - `batteries` â†’ `batteries` (yield 1): 1× `lead_ingot`, 1× `chemicals`
 - `appliances` â†’ `appliances` (yield 1): 1× `steel_sheet`, 1× `micromotor`, 1× `electronic_components`, 1× `plastic_parts`
 - `computer` â†’ `computer` (yield 1): 1× `circuit_board`, 1× `chips`, 1× `plastic_parts`

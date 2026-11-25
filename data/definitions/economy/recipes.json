@@ -2240,7 +2240,7 @@
     "yield": 1.0,
     "inputs": [
       {
-        "good": "chips",
+        "good": "microchips",
         "qty": 1.0
       },
       {

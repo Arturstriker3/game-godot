@@ -1848,7 +1848,6 @@
    ],
    "byproducts": [],
    "use": [
-    "sensors",
     "robots",
     "computer",
     "phone",
@@ -1866,7 +1865,7 @@
    "recipes": [
     {
      "inputs": [
-      "chips",
+      "microchips",
       "processed_rare_earths"
      ],
      "yield": 1.0
@@ -2540,7 +2539,8 @@
    ],
    "byproducts": [],
    "use": [
-    "military_drone"
+    "military_drone",
+    "sensors"
    ],
    "durable": false,
    "note": "G1/A′ (D2/D5/D6): Fab de semicondutores; chips + terras raras. Opex 40/t = químicos 20 + energia 20, sem água ultrapura (D6); capex 180.000/t/dia e obra de 180 d (D5)."
