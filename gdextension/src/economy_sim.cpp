@@ -9108,6 +9108,21 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			}
 			return out;
 		}
+		case ogs::CommandType::CityBorrow: {
+			double granted = 0.0;
+			std::string error;
+			const bool ok = ogs::crisis::borrow_city(ws_,
+				std::string(cmd.s[0].c_str()), cmd.v[0], &granted,
+				&error);
+			Dictionary out;
+			out["ok"] = ok;
+			out["granted"] = granted;
+			out["city"] = String(cmd.s[0].c_str());
+			if (!ok) {
+				out["error"] = String(error.c_str());
+			}
+			return out;
+		}
 		case ogs::CommandType::None:
 			break;
 	}
@@ -11984,6 +11999,13 @@ Dictionary EconomySim::get_ai_brain_status() const {
 	out["unique_candidates_month"] = state.brain_unique_month_candidates;
 	out["unique_rejected_month"] = state.brain_unique_rejected_month;
 	out["risk_rejected"] = state.brain_risk_rejected;
+	// Fase C: distribuição por gate e contadores do grupo (diagnóstico).
+	out["exposure_rejected"] = state.brain_exposure_rejected;
+	out["herd_rejected"] = state.brain_herd_rejected;
+	out["loss_blocked"] = state.brain_loss_blocked;
+	out["competition_skipped"] = state.brain_competition_skipped;
+	out["group_attempts"] = state.brain_group_attempts;
+	out["group_rejected"] = state.brain_group_rejected;
 	std::map<int, int> herd_plants;
 	int herd_max = 0;
 	for (const AiHerdEvent& event : state.herd_events) {

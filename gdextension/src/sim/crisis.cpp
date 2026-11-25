@@ -188,7 +188,7 @@ double stock_share(const WorldState& ws, std::size_t city_index,
 		* std::max(0.0, building.output_scale) / total, 0.0, 1.0);
 }
 
-double city_credit_limit(const WorldState& ws, std::size_t city_index) {
+double city_credit_limit_impl(const WorldState& ws, std::size_t city_index) {
 	if (city_index >= ws.cities.size()) {
 		return 0.0;
 	}
@@ -209,7 +209,7 @@ double city_credit_limit(const WorldState& ws, std::size_t city_index) {
 		- city.firm_debt - city.firm_credit_arrears);
 }
 
-bool borrow_city(WorldState& ws, const std::string& city_id, double amount,
+bool borrow_city_impl(WorldState& ws, const std::string& city_id, double amount,
 		double* out_granted, std::string* error) {
 	City* city = find_city(ws, city_id);
 	if (city == nullptr) {
@@ -838,6 +838,18 @@ void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
 
 } // namespace
 
+// D-131 (R5): superfície pública do crédito de INVESTIMENTO da cidade. São os
+// mesmos helpers internos da escada D-126 — expostos para o forecast da IA não
+// reimplementar o teto (0,5 × ativos − dívida) nem o empréstimo.
+double city_credit_limit(const WorldState& ws, std::size_t city_index) {
+	return city_credit_limit_impl(ws, city_index);
+}
+
+bool borrow_city(WorldState& ws, const std::string& city_id, double amount,
+		double* out_granted, std::string* error) {
+	return borrow_city_impl(ws, city_id, amount, out_granted, error);
+}
+
 void apply_params(WorldState& ws, const std::map<std::string, double>& values) {
 	CrisisParams& p = ws.crisis;
 	const auto get = [&values](const char* key, double fallback) {
@@ -1014,7 +1026,7 @@ bool borrow_working_capital(WorldState& ws, SimCore& core,
 		need = std::max(0.0, ws.crisis.credit_working_days * daily
 			- std::max(0.0, city->firm_cash));
 	}
-	const double limit = city_credit_limit(ws, city_index);
+	const double limit = city_credit_limit_impl(ws, city_index);
 	const double ask = std::min(need, limit);
 	if (!(ask > 1e-9)) {
 		if (error != nullptr) {
@@ -1022,7 +1034,7 @@ bool borrow_working_capital(WorldState& ws, SimCore& core,
 		}
 		return false;
 	}
-	return borrow_city(ws, city_id, ask, nullptr, error);
+	return borrow_city_impl(ws, city_id, ask, nullptr, error);
 }
 
 bool liquidate_stock(WorldState& ws, SimCore& core, const std::string& city_id,
@@ -1283,10 +1295,10 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 						building.crisis_stage = std::max(
 							building.crisis_stage, 3);
 					}
-				} else if (city_credit_limit(ws, city_index) > 1e-9
-						&& borrow_city(ws, city->id,
+				} else if (city_credit_limit_impl(ws, city_index) > 1e-9
+						&& borrow_city_impl(ws, city->id,
 							std::min(need,
-								city_credit_limit(ws, city_index)),
+								city_credit_limit_impl(ws, city_index)),
 							&granted, nullptr)) {
 					if (bank_money_delta != nullptr) {
 						*bank_money_delta += granted;
@@ -1342,10 +1354,10 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 				- std::max(0.0, city->service_cash));
 		const std::size_t city_index = static_cast<std::size_t>(
 			city - ws.cities.data());
-		const double limit = city_credit_limit(ws, city_index);
+		const double limit = city_credit_limit_impl(ws, city_index);
 		if (need > 1e-9 && limit > 1e-9) {
 			double granted = 0.0;
-			if (borrow_city(ws, city->id, std::min(need, limit), &granted,
+			if (borrow_city_impl(ws, city->id, std::min(need, limit), &granted,
 					nullptr) && bank_money_delta != nullptr) {
 				*bank_money_delta += granted;
 			}

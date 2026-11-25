@@ -17,6 +17,8 @@
 #include "ai_view.h"
 #include "../ai_brain.h"
 #include "../bank.h"
+#include "../bank_crisis.h"
+#include "../crisis.h"
 #include "../efficiency.h"
 #include "../sim_constants.h"
 
@@ -216,6 +218,38 @@ int brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
 }
 
 } // namespace
+
+// D-131 fase C: os helpers do cérebro usados também pelo investidor de grupo.
+double ai_brain_expected_price(AiContext& ctx, int city_index, int product,
+		double price, double supply_future, double demand_future) {
+	return brain_expected_price(ctx, city_index, product, price, supply_future,
+		demand_future);
+}
+
+int ai_brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
+		bool is_food, bool is_mineral, double capacity) {
+	return brain_construction_days(ctx, tmpl, is_food, is_mineral, capacity);
+}
+
+// R5: o crédito de INVESTIMENTO da cidade é o limite da D-126 (o mesmo que a
+// escada de crise usa), com o aperto de capital do banco público. O giro de
+// crise (`credit_working_days` × custo diário) NÃO entra aqui: ele financia
+// operação, não capex.
+double ai_investment_credit(const AiContext& ctx, int city_index) {
+	const WorldState& ws = ctx.ws;
+	if (!ws.bank_credit_enabled || city_index < 0
+			|| city_index >= static_cast<int>(ws.cities.size())) {
+		return 0.0;
+	}
+	const std::size_t index = static_cast<std::size_t>(city_index);
+	double limit = crisis::city_credit_limit(ws, index);
+	const Bank* bank = bank::find(ws, ws.cities[index].nation,
+		bank::kRolePublic);
+	if (bank != nullptr) {
+		limit *= bank_crisis::credit_factor(ws, *bank);
+	}
+	return std::max(0.0, limit);
+}
 
 // D-125: eficiência MÉDIA esperada da rampa de uma planta NOVA do template no
 // horizonte de decisão do investidor — a mesma regra de `AiPrivateInvestor`
@@ -532,6 +566,14 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	// atendida por uma obra em voo não dispara outra construção.
 	const bool brain = ctx.ws.ai_brain.enabled;
 	const bool is_food_candidate = ctx.templates.is_food(resource);
+	// D-131 fase C (R5): o agente não investe num bem que já tem planta em
+	// prejuízo há `block_loss_days` (30) — a escada D-126 já está mandando
+	// cortar/demitir/hibernar. `crisis.enabled=false` desliga o bloqueio.
+	if (brain && ai_risk::loss_blocked(ctx.ws, ctx.ws.ai_brain, city.id,
+			std::string(), product)) {
+		ctx.state.brain_loss_blocked += 1;
+		return false;
+	}
 	// D-131 fase B (R2): com o cérebro ligado, a lacuna é a do ESCOPO
 	// declarado (comida = região; demais = mundo): demanda futura menos oferta
 	// efetiva (existente + em construção + em rampa + `pending_committed` da
@@ -585,6 +627,11 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		return false;
 	}
 	if (effective_shortage < kMinShortageTons) {
+		if (brain) {
+			// Diagnóstico da fase C: candidato descartado pela concorrência
+			// (oferta efetiva já cobre a demanda futura do escopo).
+			ctx.state.brain_competition_skipped += 1;
+		}
 		return false;
 	}
 	if (!resource_available(ctx, city_index, tmpl)) {
@@ -730,9 +777,8 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		}
 		ai_brain::ForecastInput forecast_in;
 		forecast_in.cash = city.firm_cash;
-		// Fase A: o privado ainda não tem crédito de INVESTIMENTO aprovado
-		// (D-126/C3 só oferece giro). O crédito entra na fase C.
-		forecast_in.credit_approved = 0.0;
+		// Fase C (R5): crédito de INVESTIMENTO da cidade (não o giro da D-126).
+		forecast_in.credit_approved = ai_investment_credit(ctx, city_index);
 		forecast_in.candidate_capacity = capacity;
 		forecast_in.unit_capex = unit_capital;
 		forecast_in.efficiency_class = eff::classify_new(ctx.ws,
@@ -808,6 +854,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		if (!ai_risk::herd_allows(ctx.state, ctx.ws.ai_brain, product,
 				is_food_candidate, ctx.day, capacity, existing_capacity)) {
 			ctx.state.brain_risk_rejected += 1;
+			ctx.state.brain_herd_rejected += 1;
 			return false;
 		}
 	}
@@ -819,6 +866,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 				&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
 					product, sector, cost, city.firm_cash)) {
 			ctx.state.brain_risk_rejected += 1;
+			ctx.state.brain_exposure_rejected += 1;
 			return false;
 		}
 	}
@@ -889,6 +937,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 					&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
 						product, sector, cost, city.firm_cash)) {
 				ctx.state.brain_risk_rejected += 1;
+				ctx.state.brain_exposure_rejected += 1;
 				return false;
 			}
 		}
@@ -903,6 +952,16 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			result = ai_emit_group_invest(ctx, group_id, city_id, target,
 				resource, product, capacity, recipe_id, std::string());
 		} else {
+			// Fase C (R5): a obra é do dono `private` da cidade. Se o capex
+			// passar do caixa (o forecast só cresceu por causa do crédito de
+			// INVESTIMENTO), toma o crédito ANTES da obra — o `Build` exige o
+			// caixa reservado. O comando entra no log A3 como o do grupo.
+			if (brain) {
+				const double gap = cost - std::max(0.0, city.firm_cash);
+				if (gap > 1e-9) {
+					ai_emit_city_borrow(ctx, city_id, gap);
+				}
+			}
 			const int id = ctx.state.private_id++;
 			const std::string target =
 				"AI-" + ascii_upper(resource) + "-" + std::to_string(id);

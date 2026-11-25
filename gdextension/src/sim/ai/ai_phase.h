@@ -112,6 +112,16 @@ struct AiState {
 	int brain_risk_rejected = 0;
 	std::unordered_map<std::uint64_t, int> brain_rejected_month;
 	int brain_unique_rejected_month = 0;
+	// D-131 fase C: distribuição por gate (diagnóstico). `brain_exposure_rejected`
+	// e `brain_herd_rejected` separam o antigo `risk_rejected`; `brain_loss_blocked`
+	// é o bloqueio D-126 e `brain_competition_skipped` a lacuna de escopo nula.
+	// Os contadores de grupo são separados dos do privado.
+	int brain_exposure_rejected = 0;
+	int brain_herd_rejected = 0;
+	int brain_loss_blocked = 0;
+	int brain_competition_skipped = 0;
+	int brain_group_attempts = 0;
+	int brain_group_rejected = 0;
 	// D-131 fase B (R2/R4). `pending_committed` acumula a capacidade das obras
 	// emitidas NA MESMA fase (privado + grupo + governo, ordem determinística)
 	// e é zerado no começo do dia. Os caches do dia (oferta efetiva e
@@ -187,6 +197,10 @@ AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 // C3 (D-107): pedido de crédito do grupo (comando `group_borrow`).
 // s0 grupo, v0 valor pedido. `cost` = concedido.
 AiActionResult ai_emit_group_borrow(AiContext& ctx, const std::string& group,
+		double amount);
+// D-131 fase C (R5): crédito de INVESTIMENTO da cidade (`city_borrow`).
+// s0 cidade, v0 valor pedido. `cost` = concedido. Só a IA do cérebro emite.
+AiActionResult ai_emit_city_borrow(AiContext& ctx, const std::string& city,
 		double amount);
 AiActionResult ai_emit_group_invest(AiContext& ctx, const std::string& group,
 		const std::string& city, const std::string& building,

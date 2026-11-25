@@ -112,5 +112,13 @@ void herd_record(AiState& state, int product, double capacity, int day);
 void exposure_add(AiExposureCache& cache, const std::string& city_id,
 	const std::string& owner, int product, double cost);
 
+// R5 (fase C) — bloqueio da D-126: o agente já tem planta do mesmo bem com
+// `loss_days >= crisis_link.block_loss_days`? `owner_id` vazio = dono
+// `private` da cidade `city_id`; não vazio = id do grupo (plantas
+// `national:<id>`/`foreign:<id>` em qualquer cidade). Só vale com
+// `ai_brain.enabled` e `crisis.enabled`; desligado devolve `false` (nada muda).
+bool loss_blocked(const WorldState& ws, const AiBrainParams& params,
+	const std::string& city_id, const std::string& owner_id, int product);
+
 } // namespace ai_risk
 } // namespace ogs

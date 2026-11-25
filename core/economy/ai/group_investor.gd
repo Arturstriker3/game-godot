@@ -1,6 +1,11 @@
 extends RefCounted
 class_name GroupInvestor
 
+## LEGADO (D-131 fase C): o jogo roda o investidor de grupo em C++
+## (`gdextension/src/sim/ai/ai_group.cpp`). Este porte GDScript nao recebe mais
+## regra nova: a paridade de forecast/preco esperado/credito existe so no C++,
+## e o 0,5 de `CASH_SHARE` abaixo nao e o criterio usado pelo jogo.
+
 ## F9 — decisão de investimento por GRUPO/EMPRESA (docs §14).
 ##
 ## Cada grupo decide em cadência BAIXA: um grupo de índice `i` decide nos dias em

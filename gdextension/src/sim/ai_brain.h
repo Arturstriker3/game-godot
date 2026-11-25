@@ -103,6 +103,11 @@ struct ForecastResult {
 	// Menor lucro operacional ACUMULADO (sem capex) nos primeiros
 	// `trough_months_max` meses.
 	double trough_profit = 0.0;
+	// Fase C (R5): maior sequência de dias operacionais negativos dentro do
+	// horizonte. O gate (d) antecipa os degraus da escada D-126: com a crise
+	// ligada, uma sequência >= `crisis.mothball_days` reprova (a planta nasceria
+	// para hibernar). 0 quando a crise está desligada.
+	int max_loss_days = 0;
 	double payback_days = 0.0;
 	// Eficiência média da rampa no horizonte do forecast.
 	double mean_efficiency = 0.0;

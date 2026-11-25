@@ -6,13 +6,16 @@
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
+#include "sim/ai/ai_group.h"
 #include "sim/ai/ai_phase.h"
 #include "sim/ai/ai_private.h"
 #include "sim/ai/ai_risk.h"
 #include "sim/ai/ai_templates.h"
 #include "sim/ai/ai_view.h"
 #include "sim/ai_brain.h"
+#include "sim/bank.h"
 #include "sim/commands.h"
+#include "sim/crisis.h"
 #include "sim/efficiency.h"
 #include "sim/save_definitions.h"
 #include "sim/save_value.h"
@@ -370,6 +373,172 @@ TEST_CASE("D-131 fase B: duas cidades no mesmo dia nao duplicam a obra") {
 	}
 	CHECK(ammo_builds == 1);
 	CHECK(state.pending_committed[ammo] > 0.0);
+}
+
+TEST_CASE("D-131 fase C: credito de investimento libera o que o caixa nao") {
+	ogs::test::PocketWorld world;
+	ogs::AiBrainParams params;
+	ogs::ai_brain::ForecastInput in = factory_input(world, 10.0);
+	in.cash = 1000.0;
+	in.unit_capex = 1000.0;
+	in.construction_days = 0;
+	// Caixa sozinho: cap_max = 1000 x 0,35 / 1000 = 0,35 (abaixo de 2 t/dia).
+	in.credit_approved = 0.0;
+	const ogs::ai_brain::ForecastResult cash_only =
+		ogs::ai_brain::forecast_monthly(params, world.ws, in);
+	CHECK_FALSE(cash_only.pass);
+	CHECK(cash_only.capacity == Approx(0.0));
+	// Credito de INVESTIMENTO aprovado: a mesma planta passa e o capex supera
+	// o caixa (o Build toma o credito antes da obra).
+	in.credit_approved = 9000.0;
+	const ogs::ai_brain::ForecastResult with_credit =
+		ogs::ai_brain::forecast_monthly(params, world.ws, in);
+	CHECK(with_credit.pass);
+	CHECK(with_credit.capacity > cash_only.capacity);
+	CHECK(with_credit.capex > in.cash);
+	// Sem o credito aprovado o caixa e o unico teto (nao ha limite escondido).
+	CHECK(with_credit.capex <= in.cash * params.capital_share
+		+ in.credit_approved + 1e-6);
+}
+
+TEST_CASE("D-131 fase C: giro da D-126 nao financia capex") {
+	ogs::test::PocketWorld world;
+	world.ws.bank_credit_enabled = true;
+	world.ws.crisis.enabled = true;
+	world.ws.crisis.credit_working_days = 60.0;
+	ogs::City& agra = world.ws.cities.front();
+	agra.firm_cash = 0.0;
+	agra.service_cash = 0.0;
+	agra.firm_debt = 0.0;
+	ogs::AiTemplates templates;
+	ogs::build_ai_templates(world.ws, templates);
+	ogs::AiView view;
+	ogs::snapshot_ai_view(world.ws, world.core, view);
+	ogs::CommandQueue queue;
+	ogs::AiState state;
+	ogs::AiContext ctx{world.ws, world.core, queue, templates, view, state};
+	const double limit = ogs::crisis::city_credit_limit(world.ws, 0);
+	const double available = ogs::ai_investment_credit(ctx, 0);
+	CHECK(limit > 0.0);
+	CHECK(available > 0.0);
+	// O teto e o da D-126 (0,5 x ativos), com o aperto do banco no maximo 1,0;
+	// nao e 60 dias de custo diario (o giro).
+	CHECK(available <= limit + 1e-6);
+	CHECK(limit == Approx(world.ws.crisis.credit_asset_share
+		* (agra.firm_cash + agra.service_cash
+			+ 2000.0 * 10.0)));
+	// Divida acima dos ativos: sem credito de investimento, mesmo com a cidade
+	// "precisando" de giro (o giro nao entra na conta do capex).
+	agra.firm_debt = 1.0e9;
+	CHECK(ogs::ai_investment_credit(ctx, 0) == Approx(0.0));
+	// Mecanica de credito desligada: 0, independente dos ativos.
+	world.ws.bank_credit_enabled = false;
+	agra.firm_debt = 0.0;
+	CHECK(ogs::ai_investment_credit(ctx, 0) == Approx(0.0));
+}
+
+TEST_CASE("D-131 fase C: bloqueio de planta em loss_days da D-126") {
+	ogs::test::PocketWorld world;
+	ogs::AiBrainParams params;
+	params.enabled = true;
+	params.block_loss_days = 30;
+	world.ws.crisis.enabled = true;
+	const int wheat = world.product("wheat");
+	const int planks = world.product("planks");
+	REQUIRE(wheat >= 0);
+	REQUIRE(planks >= 0);
+	ogs::Building* farm = world.building("AGRA_FARM");
+	REQUIRE(farm != nullptr);
+	farm->loss_days = 29;
+	CHECK_FALSE(ogs::ai_risk::loss_blocked(world.ws, params, "AGRA",
+		std::string(), wheat));
+	farm->loss_days = 30;
+	CHECK(ogs::ai_risk::loss_blocked(world.ws, params, "AGRA",
+		std::string(), wheat));
+	// Outra cidade/outro dono nao herda o bloqueio.
+	CHECK_FALSE(ogs::ai_risk::loss_blocked(world.ws, params, "PORTUS",
+		std::string(), wheat));
+	// Grupo: a planta `national:<id>` do mesmo bem em qualquer cidade bloqueia.
+	ogs::Building* sawmill = world.building("PORTUS_SAWMILL");
+	REQUIRE(sawmill != nullptr);
+	sawmill->loss_days = 30;
+	CHECK(ogs::ai_risk::loss_blocked(world.ws, params, std::string(),
+		"AAA_WOOD", planks));
+	CHECK_FALSE(ogs::ai_risk::loss_blocked(world.ws, params, std::string(),
+		"AAA_FUEL", planks));
+	// `crisis.enabled=false`: o bloqueio sai do caminho (equivalencia com hoje).
+	world.ws.crisis.enabled = false;
+	CHECK_FALSE(ogs::ai_risk::loss_blocked(world.ws, params, "AGRA",
+		std::string(), wheat));
+	// `enabled=false` tambem nunca bloqueia.
+	world.ws.crisis.enabled = true;
+	params.enabled = false;
+	CHECK_FALSE(ogs::ai_risk::loss_blocked(world.ws, params, "AGRA",
+		std::string(), wheat));
+}
+
+TEST_CASE("D-131 fase C: grupo usa o forecast (sem 0,5 fixo do caixa)") {
+	ogs::test::PocketWorld world;
+	std::map<std::string, double> changed;
+	changed["enabled"] = 1.0;
+	changed["price.elasticity"] = 0.0;
+	ogs::ai_brain::apply_params(world.ws, changed);
+	world.ws.crisis.enabled = false;
+	const int ammo = world.product("ammo");
+	const int wheat = world.product("wheat");
+	REQUIRE(ammo >= 0);
+	// O grupo AAA_WOOD decide no setor metalurgico NESTE teste (o setor e dado
+	// do cenario; o que se mede e a capacidade vinda do forecast).
+	world.ws.groups.front().sector = "military";
+	// Cadencia mensal fixa: no dia `i` só o grupo da posição `i` decide.
+	world.ws.cadence.monthly_period = 30;
+	for (ogs::City& city : world.ws.cities) {
+		// Comida segura e sem escassez: so o setor do grupo decide.
+		city.pop.satisfaction = 1.0;
+		city.markets[static_cast<std::size_t>(wheat)].shortage = 0.0;
+		city.markets[static_cast<std::size_t>(ammo)].price = 300.0;
+		city.markets[static_cast<std::size_t>(ammo)].desired = 20.0;
+		city.markets[static_cast<std::size_t>(ammo)].shortage = 0.0;
+	}
+	ogs::City& portus = world.ws.cities[1];
+	portus.markets[static_cast<std::size_t>(ammo)].shortage = 6.0;
+	ogs::AiTemplates templates;
+	ogs::build_ai_templates(world.ws, templates);
+	ogs::AiView view;
+	ogs::snapshot_ai_view(world.ws, world.core, view);
+	ogs::CommandQueue queue;
+	ogs::AiState state;
+	ogs::AiContext ctx{world.ws, world.core, queue, templates, view, state};
+	// A `AiView` ordena os grupos pelo ranking: descobre a posição do AAA_WOOD
+	// e usa o dia correspondente (a cadência do dia é o índice da posição).
+	int target = -1;
+	for (std::size_t index = 0; index < view.groups.size(); ++index) {
+		if (view.groups[index].id == "AAA_WOOD") {
+			target = static_cast<int>(index);
+		}
+	}
+	REQUIRE(target >= 0);
+	ctx.day = target;
+	ogs::AiPrivateInvestor private_investor;
+	private_investor.prepare(ctx);
+	state.group_cash.assign(view.groups.size(), 100000.0);
+	state.group_credit.assign(view.groups.size(), 0.0);
+	ogs::AiGroupInvestor group_investor;
+	group_investor.run(ctx);
+	double capacity = 0.0;
+	int builds = 0;
+	for (const ogs::Command& cmd : queue.log_entries()) {
+		if (cmd.type == ogs::CommandType::GroupInvest
+				&& cmd.i[0] == ammo) {
+			capacity = cmd.v[0];
+			++builds;
+		}
+	}
+	CHECK(builds == 1);
+	// A regra antiga daria 12 t/dia (caixa x 0,5 / capital) e ignoraria a
+	// lacuna; o forecast usa a lacuna de 6 t/dia como teto.
+	CHECK(capacity == Approx(6.0));
+	CHECK(capacity < 12.0);
 }
 
 TEST_CASE("D-131: enabled=false nao altera as decisoes da IA") {

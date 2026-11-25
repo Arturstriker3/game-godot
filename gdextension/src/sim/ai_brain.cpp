@@ -297,6 +297,11 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 	out.trough_profit = 0.0;
 	double weighted_eff = 0.0;
 	int total_op_days = 0;
+	// Fase C (R5): "não nascer para hibernar". O forecast é mensal; um mês com
+	// resultado operacional negativo vale todos os seus `op_days` de perda (a
+	// escada D-126 conta dias CONSECUTIVOS de prejuízo). A sequência reinicia
+	// no primeiro mês operacional positivo.
+	int loss_days = 0;
 	for (int month = 1; month <= months; ++month) {
 		const MonthProd prod = month_production(ws, params, in, month);
 		const double tons = prod.prod_per_capacity;
@@ -323,6 +328,14 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 		if (month <= params.trough_months_max) {
 			out.trough_profit = std::min(out.trough_profit, cumulative);
 		}
+		if (prod.op_days > 0) {
+			if (operating < 0.0) {
+				loss_days += prod.op_days;
+				out.max_loss_days = std::max(out.max_loss_days, loss_days);
+			} else {
+				loss_days = 0;
+			}
+		}
 		weighted_eff += prod.mean_eff * static_cast<double>(prod.op_days);
 		total_op_days += prod.op_days;
 	}
@@ -337,11 +350,21 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 
 	const double credit = std::max(0.0, in.credit_approved);
 	const double eps = 1e-6;
+	// (d) Fase C: com a crise ligada a planta não pode chegar ao degrau de
+	// hibernação da escada D-126 (a reação do núcleo continua mandando; o
+	// forecast só não cria a planta que já nasceria para hibernar). Com
+	// `crisis.enabled=false` o degrau sai do caminho (equivalência com hoje).
+	bool stairs_ok = true;
+	if (ws.crisis.enabled) {
+		const int hibernation = std::max(1, ws.crisis.mothball_days);
+		stairs_ok = out.max_loss_days < hibernation;
+	}
 	out.pass = capex <= spendable + eps
 		&& out.min_balance >= -credit - eps
 		&& out.final_balance >= -eps
 		&& out.trough_profit >= -eps
-		&& out.payback_days <= payback_limit + eps;
+		&& out.payback_days <= payback_limit + eps
+		&& stairs_ok;
 	return out;
 }
 

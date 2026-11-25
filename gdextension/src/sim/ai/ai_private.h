@@ -143,4 +143,18 @@ private:
 double ai_expected_new_efficiency(const AiContext& ctx, int city_index,
 	const AiTemplate& tmpl);
 
+// D-131 (fase C) — helpers do cérebro compartilhados com o investidor de grupo
+// (paridade): preço esperado com a série/cache do dia e prazo de obra da planta
+// nova. Só devem ser chamados com `ai_brain.enabled`.
+double ai_brain_expected_price(AiContext& ctx, int city_index, int product,
+	double price, double supply_future, double demand_future);
+int ai_brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
+	bool is_food, bool is_mineral, double capacity);
+
+// D-131 (fase C) — crédito de INVESTIMENTO do privado (cidade): limite da
+// D-126 (`city_credit_limit`, 0,5 × ativos − dívida) multiplicado pelo aperto
+// de capital do banco público (`bank_crisis::credit_factor`). NÃO é o giro de
+// crise (`credit_working_days`): 0 sem a mecânica de crédito ligada.
+double ai_investment_credit(const AiContext& ctx, int city_index);
+
 } // namespace ogs

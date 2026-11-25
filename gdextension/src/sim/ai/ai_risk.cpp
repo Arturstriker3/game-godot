@@ -466,6 +466,34 @@ void herd_record(AiState& state, int product, double capacity, int day) {
 	state.herd_events.push_back(event);
 }
 
+bool loss_blocked(const WorldState& ws, const AiBrainParams& params,
+		const std::string& city_id, const std::string& owner_id, int product) {
+	if (!params.enabled || !ws.crisis.enabled || product < 0) {
+		return false;
+	}
+	const int limit = std::max(1, params.block_loss_days);
+	for (const Building& building : ws.buildings) {
+		if (building.output_product != product || building.bankrupt) {
+			continue;
+		}
+		if (building.loss_days < limit) {
+			continue;
+		}
+		if (owner_id.empty()) {
+			// Privado: o caixa é o da cidade e o dono é `private`.
+			if (building.owner == "private" && building.city == city_id) {
+				return true;
+			}
+			continue;
+		}
+		std::string group_id;
+		if (owner_group_id(building.owner, &group_id) && group_id == owner_id) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void exposure_add(AiExposureCache& cache, const std::string& city_id,
 		const std::string& owner, int product, double cost) {
 	if (cost <= 0.0) {

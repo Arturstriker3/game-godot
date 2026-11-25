@@ -90,6 +90,9 @@ enum class CommandType : int {
 	ChangeProduct,
 	SetRefineryMode,
 	SetBuildingEquipment,
+	// D-131 (fase C): crédito de INVESTIMENTO da cidade (o mesmo teto da
+	// D-126). Sempre pela fila A3, como todo comando de política.
+	CityBorrow,
 };
 
 // Nome estavel do tipo (log/replay em JSON). `nullptr` para tipo invalido.

@@ -14,6 +14,7 @@
 #include "../actions.h"
 #include "../balance.h"
 #include "../bank.h"
+#include "../crisis.h"
 #include "../efficiency.h"
 #include "../profiling.h"
 
@@ -373,6 +374,32 @@ AiActionResult ai_emit_group_borrow(AiContext& ctx, const std::string& group,
 	double granted = 0.0;
 	std::string error;
 	out.created = bank::lend(ctx.ws, group, amount, &granted, &error);
+	taken.apply_day = ctx.day;
+	ctx.queue.log(taken);
+	out.cost = granted;
+	out.cash = granted;
+	out.error = error;
+	return out;
+}
+
+AiActionResult ai_emit_city_borrow(AiContext& ctx, const std::string& city,
+		double amount) {
+	Command cmd;
+	cmd.type = CommandType::CityBorrow;
+	cmd.day = ctx.day;
+	cmd.s[0] = city;
+	cmd.v[0] = amount;
+	const uint64_t seq = ctx.queue.push(cmd);
+
+	AiActionResult out;
+	Command taken;
+	if (!take_own(ctx.queue, seq, taken)) {
+		out.error = "comando perdido na fila";
+		return out;
+	}
+	double granted = 0.0;
+	std::string error;
+	out.created = crisis::borrow_city(ctx.ws, city, amount, &granted, &error);
 	taken.apply_day = ctx.day;
 	ctx.queue.log(taken);
 	out.cost = granted;

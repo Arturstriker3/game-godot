@@ -1885,6 +1885,13 @@ func _ai_brain_report(sim) -> Dictionary:
 		"unique_rejected_month":
 			int(status.get("unique_rejected_month", 0)),
 		"risk_rejected": int(status.get("risk_rejected", 0)),
+		# D-131 fase C: distribuição por gate e contadores do grupo.
+		"exposure_rejected": int(status.get("exposure_rejected", 0)),
+		"herd_rejected": int(status.get("herd_rejected", 0)),
+		"loss_blocked": int(status.get("loss_blocked", 0)),
+		"competition_skipped": int(status.get("competition_skipped", 0)),
+		"group_attempts": int(status.get("group_attempts", 0)),
+		"group_rejected": int(status.get("group_rejected", 0)),
 		"herd_max_plants_30d": int(status.get("herd_max_plants_30d", 0)),
 	}
 
