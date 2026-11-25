@@ -11,7 +11,6 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/balance_review.gd [--days=730]
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -58,15 +57,13 @@ func _run() -> void:
 	sim.set_goods(goods)
 	var applied := geo.apply_to_sim(sim, _cities_with_center(cities))
 
-	var ai = EconomicAIScript.new()
-	ai.setup(sim, geo)
+	sim.set_ai_enabled(true)
 
 	var mid: Dictionary = {}
 	var trace: Array = []
 	for day in _days:
 		var status: Dictionary = sim.tick_day()
 		# Reusa o resumo do tick: a IA não chama get_status de novo.
-		ai.run(int(status.get("day", 0)), status)
 		if day == _days / 2 - 1:
 			mid = _snapshot(sim)
 		if day == 0 or (day + 1) % 30 == 0:

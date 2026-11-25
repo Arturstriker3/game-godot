@@ -25,7 +25,7 @@ const GeoScript := preload("res://core/economy/geography_service.gd")
 const AgriScript := preload("res://core/economy/agriculture_service.gd")
 const StorageScript := preload("res://core/economy/storage_service.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
-const TrajectoryDigest := preload("res://core/economy/trajectory_digest.gd")
+const TrajectoryDigest := preload("res://tools/trajectory_digest.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"

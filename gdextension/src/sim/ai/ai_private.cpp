@@ -1,15 +1,14 @@
-// Implementação de ai_private.h (A5): porte fiel do investidor privado do
-// GDScript (`core/economy/ai/private_investor.gd`) sobre o retrato do dia.
+// Implementação de ai_private.h (A5): o investidor privado do jogo.
 //
-// Regra de ouro deste arquivo: cada função é a TRANSCRIÇÃO de uma função do
-// GDScript — mesma ordem de leitura, mesmas condições, mesmas constantes e
-// mesmas operações em ponto flutuante (`std::max`/`std::min`/`std::clamp`,
-// `std::pow`, `std::sqrt`). Não introduza critério novo nem "simplifique" a
-// ordem dos testes: o aceite é a equivalência bit a bit com o GDScript.
+// Nasceu como porte do GDScript `core/economy/ai/private_investor.gd`; a
+// limpeza D-131 removeu o legado, então este arquivo é a fonte única da regra.
+// Mantém a ordem de leitura e as operações em ponto flutuante (`std::max`/
+// `std::min`/`std::clamp`, `std::pow`, `std::sqrt`) do porte, que é o que os
+// goldens de trajetória medem.
 //
-// Os únicos desvios são de CONTEXTO, listados em ai_private.h: a view congelada
-// no lugar do dicionário `status`, os totais já somados em `view.tot_*`, as
-// medidas do dia feitas uma vez em `prepare` e nenhum log de decisão.
+// O contexto vem de ai_private.h: a view congelada no lugar do dicionário
+// `status`, os totais já somados em `view.tot_*`, as medidas do dia feitas uma
+// vez em `prepare` e nenhum log de decisão.
 
 #include "ai_private.h"
 
@@ -1031,22 +1030,37 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			// INVESTIMENTO), toma o crédito ANTES da obra — o `Build` exige o
 			// caixa reservado. O comando entra no log A3 como o do grupo.
 			if (brain) {
-				const double gap = cost - std::max(0.0, city.firm_cash);
+				// O caixa do VIVO pode ser menor que o do retrato usado no
+				// forecast (outra obra do mesmo dia já gastou). A decisão final
+				// de crédito é pelo caixa vivo para não abrir dívida sem planta.
+				const City& live_city = ctx.ws.cities[
+					static_cast<std::size_t>(city_index)];
+				const double live_cash = std::max(0.0, live_city.firm_cash);
+				const double gap = cost - live_cash;
 				if (gap > 1e-9) {
 					// `lend_city` entrega `pedido x fator` (aperto do banco): pedir
 					// o `gap` cru desembolsaria só `gap x f` e o Build falharia com
 					// banco estressado. Divide pelo fator (e capa no teto D-126,
 					// que o handler do comando também valida) para o crédito
 					// chegar exatamente ao `gap`.
-					const double factor = public_credit_factor(ctx, city_index);
+					const double factor = std::clamp(
+						public_credit_factor(ctx, city_index), 0.0, 1.0);
+					const double limit = crisis::city_credit_limit(ctx.ws,
+						static_cast<std::size_t>(city_index));
+					// D-131 (dívida sem planta): se o teto D-126 não cobre o
+					// gap, a obra não sai. Não tome o crédito que não fecha.
+					if (live_cash + limit * factor < cost - 1e-6) {
+						return false;
+					}
 					// O `+1e-6` cobre o arredondamento de `gap / f` para o Build
 					// não receber um caixa 1 ulp abaixo do custo.
 					const double request = factor > 1e-9
 						? gap / factor + 1e-6 : gap;
-					const double limit = crisis::city_credit_limit(ctx.ws,
-						static_cast<std::size_t>(city_index));
-					ai_emit_city_borrow(ctx, city_id,
-						std::min(request, limit));
+					const AiActionResult borrow = ai_emit_city_borrow(ctx,
+						city_id, std::min(request, limit));
+					if (!borrow.created) {
+						return false;
+					}
 				}
 			}
 			const int id = ctx.state.private_id++;

@@ -43,7 +43,7 @@ const StorageScript := preload("res://core/economy/storage_service.gd")
 const PowerScript := preload("res://core/economy/power_service.gd")
 const RefiningScript := preload("res://core/economy/refining_service.gd")
 const RegionDataScript := preload("res://core/economy/region_data.gd")
-const TrajectoryDigest := preload("res://core/economy/trajectory_digest.gd")
+const TrajectoryDigest := preload("res://tools/trajectory_digest.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -712,7 +712,7 @@ func _make_world() -> Object:
 
 
 func _food_ratio(status: Dictionary) -> Dictionary:
-	# Dono único da conta (portão e hash): core/economy/trajectory_digest.gd.
+	# Dono único da conta (portão e hash): tools/trajectory_digest.gd.
 	return TrajectoryDigest.food_ratios(status)
 
 
@@ -1611,7 +1611,7 @@ func _run() -> void:
 		var balance_block: Dictionary = status.get("balance", {})
 		# C2b1-fix (D-105): linha canônica única (dinheiro 6 casas, falências,
 		# comida, M0, estoque privado, crédito). Ver
-		# core/economy/trajectory_digest.gd e docs/economy/inv_c2b1_gate/README.md.
+		# tools/trajectory_digest.gd e docs/economy/inv_c2b1_gate/README.md.
 		hash_lines.append(TrajectoryDigest.line(day_now, status, sim))
 		if day == 0 and sim.has_method("get_stock_status"):
 			# C5 (D-112): a bolsa nasce no primeiro tick; a variação do ano é

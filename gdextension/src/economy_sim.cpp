@@ -9112,6 +9112,11 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			const bool ok = ogs::bank::lend(ws_,
 				std::string(cmd.s[0].c_str()), cmd.v[0], &granted,
 				&error);
+			// D-131: empréstimo de grupo fora da fase da crise cria M1; registra
+			// no acumulado auditável (o tick já fechou).
+			if (granted > 0.0) {
+				ws_.bank_money_delta_total += granted;
+			}
 			Dictionary out;
 			out["ok"] = ok;
 			out["granted"] = granted;

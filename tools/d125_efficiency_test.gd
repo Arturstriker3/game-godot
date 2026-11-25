@@ -24,8 +24,6 @@ const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
-const PrivateInvestorScript := preload(
-	"res://core/economy/ai/private_investor.gd")
 
 const EPS := 1e-6
 ## Defaults de balanceamento declarados em efficiency.json (não são dado
@@ -59,7 +57,6 @@ func _init() -> void:
 	_test_save_load_v40()
 	_test_determinism()
 	_test_fallback_matches_json()
-	_test_investor_ramp()
 	_finish()
 
 
@@ -508,34 +505,6 @@ func _test_fallback_matches_json() -> void:
 							- float(row.get(good, -2.0))) <= EPS,
 						"fallback=%s json=%s" % [got_row[slot],
 							row.get(good)])
-
-
-# --- (9) IA: o payback usa a rampa, não a capacidade cheia ------------------
-func _test_investor_ramp() -> void:
-	var sim := _world()
-	var investor: Object = PrivateInvestorScript.new()
-	investor.setup(sim, null)
-	var horizon := int(PrivateInvestorScript.MIN_PAYBACK_DAYS)
-	var mean := float(investor.expected_efficiency_mean("farm", horizon))
-	# Curva da lavoura no horizonte de 150 d: 0,20 + (0,80/365)×75,5.
-	_check("(9) média da rampa da fazenda em 150 d (~0,3655)",
-			absf(mean - 0.3654794) <= 1e-4, "média=%.6f" % mean)
-	# Aceite: capacidade 10 t/d, margem 5/t e custo 6000 — a 100% o payback é
-	# 120 d (passa o limite de 150 d); com a rampa passa de 300 d.
-	var full := PrivateInvestorScript.expected_payback_days(6000.0, 5.0, 10.0,
-			1.0)
-	var ramp := PrivateInvestorScript.expected_payback_days(6000.0, 5.0, 10.0,
-			mean)
-	_check("(9) fazenda a 100%% fecharia o gate (payback %.1f d)" % full,
-			full <= PrivateInvestorScript.MIN_PAYBACK_DAYS,
-			"payback=%.1f d" % full)
-	_check("(9) investidor REJEITA a fazenda com a rampa (payback %.1f d)"
-			% ramp, ramp > PrivateInvestorScript.MIN_PAYBACK_DAYS,
-			"payback=%.1f d" % ramp)
-	# Fábrica: o horizonte de 730 d cobre a rampa de 180 d (~94,5% médio).
-	var factory := float(investor.expected_efficiency_mean("factory", 730))
-	_check("(9) fábrica no horizonte de 730 d ~0,945",
-			absf(factory - 0.945) <= 0.005, "média=%.4f" % factory)
 
 
 func _deterministic_run() -> String:
