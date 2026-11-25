@@ -160,10 +160,10 @@ Números brutos: `docs/economy/perf/g2_potential_cache.json`.
 ### Testes
 
 `-Tier pr -Base main` (run `20261125_184841`, HEAD `6e62fe9b`): **46/46 OK** —
-`sim_unit_tests` 69/69, `population_template_test` 36,17 s e
-`services_template_test` 28,72 s verdes (correção abaixo), `c1_world_ai_90` e
-`determinism_cross_process` verdes. A rodada anterior (44/46) tinha as duas
-falhas de startup descritas em seguida.
+`sim_unit_tests` 69/69, `population_template_test` **35,57 s** e
+`services_template_test` **28,05 s** verdes (correção abaixo), `c1_world_ai_90`
+(**521,09 s**) e `determinism_cross_process` (**76,04 s**) verdes. A rodada
+anterior (44/46) tinha as duas falhas de startup descritas em seguida.
 
 `-Tier pr -Base main` (run `20261125_164155`, antes desta rodada): **44/46 OK**,
 com `sim_unit_tests` e `c1_world_ai_90` verdes. **2 falhas**:
