@@ -385,6 +385,11 @@ AiActionResult ai_emit_group_borrow(AiContext& ctx, const std::string& group,
 	double granted = 0.0;
 	std::string error;
 	out.created = bank::lend(ctx.ws, group, amount, &granted, &error);
+	// D-131: a IA roda depois do tick; o M1 do empréstimo de grupo entra no
+	// acumulado auditável (não passa por `bank_money_today`).
+	if (granted > 0.0) {
+		ctx.ws.bank_money_delta_total += granted;
+	}
 	taken.apply_day = ctx.day;
 	ctx.queue.log(taken);
 	out.cost = granted;

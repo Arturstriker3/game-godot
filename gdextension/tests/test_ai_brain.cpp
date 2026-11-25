@@ -415,6 +415,68 @@ TEST_CASE("D-131 fase B: duas cidades no mesmo dia nao duplicam a obra") {
 	CHECK(state.pending_committed[ammo] > 0.0);
 }
 
+TEST_CASE("D-131: teto D-126 sem caixa nao deixa divida sem planta") {
+	// Reproduz a corrida do fim do dia: o forecast aprova com o caixa do
+	// RETRATO, mas o caixa vivo já foi gasto por outra obra e o teto D-126
+	// não cobre o gap. O crédito não pode ser tomado sem a planta sair.
+	ogs::test::PocketWorld world;
+	std::map<std::string, double> changed;
+	changed["enabled"] = 1.0;
+	changed["forecast.capital_share"] = 1.0;
+	changed["price.elasticity"] = 0.0;
+	ogs::ai_brain::apply_params(world.ws, changed);
+	world.ws.bank_credit_enabled = true;
+	world.ws.crisis.enabled = true;
+	world.ws.crisis.credit_asset_share = 0.5;
+	const int ammo = world.product("ammo");
+	const int timber = world.product("timber");
+	const int wheat = world.product("wheat");
+	REQUIRE(ammo >= 0);
+	REQUIRE(timber >= 0);
+	REQUIRE(wheat >= 0);
+	ogs::City& agra = world.ws.cities.front();
+	// Retrato com caixa alto; a dívida deixa o teto em ~1 XGS quando o caixa
+	// vivo zera (0,5 x 2000 x 10 - dívida).
+	agra.firm_cash = 1.0e6;
+	agra.service_cash = 0.0;
+	agra.firm_debt = 0.5 * (2000.0 * 10.0) - 1.0;
+	agra.firm_credit_arrears = 0.0;
+	agra.pop.satisfaction = 1.0;
+	agra.markets[static_cast<std::size_t>(ammo)].price = 500.0;
+	agra.markets[static_cast<std::size_t>(ammo)].shortage = 10.0;
+	agra.markets[static_cast<std::size_t>(ammo)].desired = 10.0;
+	agra.markets[static_cast<std::size_t>(timber)].stock = 1000.0;
+	agra.markets[static_cast<std::size_t>(wheat)].supply = 1000000.0;
+
+	ogs::AiTemplates templates;
+	ogs::build_ai_templates(world.ws, templates);
+	ogs::AiView view;
+	ogs::snapshot_ai_view(world.ws, world.core, view);
+	ogs::CommandQueue queue;
+	ogs::AiState state;
+	ogs::AiContext ctx{world.ws, world.core, queue, templates, view, state};
+	// A outra obra do dia já gastou o caixa vivo: só o retrato tem o dinheiro.
+	agra.firm_cash = 0.0;
+	const double debt_before = agra.firm_debt;
+	ogs::AiPrivateInvestor investor;
+	investor.prepare(ctx);
+	investor.run_city(ctx, 0);
+
+	int borrows = 0;
+	int builds = 0;
+	for (const ogs::Command& cmd : queue.log_entries()) {
+		if (cmd.type == ogs::CommandType::CityBorrow) {
+			++borrows;
+		}
+		if (cmd.type == ogs::CommandType::Build && cmd.i[1] == ammo) {
+			++builds;
+		}
+	}
+	CHECK(agra.firm_debt == Approx(debt_before));
+	CHECK(borrows == 0);
+	CHECK(builds == 0);
+}
+
 TEST_CASE("D-131 fase C: credito de investimento libera o que o caixa nao") {
 	ogs::test::PocketWorld world;
 	ogs::AiBrainParams params;
