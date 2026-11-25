@@ -616,6 +616,7 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 		}
 		if (!ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
 				entry.product, sector, cost, cash)) {
+			ctx.state.brain_risk_rejected += 1;
 			return false;
 		}
 		const double existing_capacity = entry.product >= 0
@@ -626,6 +627,7 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 			: 0.0;
 		if (!ai_risk::herd_allows(ctx.state, ctx.ws.ai_brain, entry.product,
 				entry.is_food, ctx.day, capacity, existing_capacity)) {
+			ctx.state.brain_risk_rejected += 1;
 			return false;
 		}
 	}

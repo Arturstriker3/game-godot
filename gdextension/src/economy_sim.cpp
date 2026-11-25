@@ -11982,6 +11982,8 @@ Dictionary EconomySim::get_ai_brain_status() const {
 	// Fase B: candidatos únicos por (cidade, produto) por mês e o maior
 	// número de plantas do mesmo bem em qualquer janela de 30 d observada.
 	out["unique_candidates_month"] = state.brain_unique_month_candidates;
+	out["unique_rejected_month"] = state.brain_unique_rejected_month;
+	out["risk_rejected"] = state.brain_risk_rejected;
 	std::map<int, int> herd_plants;
 	int herd_max = 0;
 	for (const AiHerdEvent& event : state.herd_events) {

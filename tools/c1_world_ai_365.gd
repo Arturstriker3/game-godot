@@ -1810,6 +1810,12 @@ func _run() -> void:
 			% [int(d131.get("investments_total", 0)),
 				int(d131.get("investments_private", 0)),
 				int(d131.get("investments_group", 0))])
+		print("[c1] D-131 B: candidatos únicos/mês=%d rejeitados caixa/mês=%d "
+			+ "risco=%d anti-manada máx 30d=%d"
+			% [int(d131.get("unique_candidates_month", 0)),
+				int(d131.get("unique_rejected_month", 0)),
+				int(d131.get("risk_rejected", 0)),
+				int(d131.get("herd_max_plants_30d", 0))])
 	print("[c1] balanço: financeiro=%.6f caixa_residual=%.6f PL_famílias=%.0f "
 		% [float((balance["invariant"] as Dictionary).get("financial_sum", 0.0)),
 			float((balance["invariant"] as Dictionary).get("cash_residual", 0.0)),
@@ -1874,6 +1880,12 @@ func _ai_brain_report(sim) -> Dictionary:
 		"investments_private": private_builds,
 		"investments_group": group_builds,
 		"investments_total": private_builds + group_builds,
+		"unique_candidates_month":
+			int(status.get("unique_candidates_month", 0)),
+		"unique_rejected_month":
+			int(status.get("unique_rejected_month", 0)),
+		"risk_rejected": int(status.get("risk_rejected", 0)),
+		"herd_max_plants_30d": int(status.get("herd_max_plants_30d", 0)),
 	}
 
 

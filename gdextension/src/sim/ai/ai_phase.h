@@ -106,7 +106,12 @@ struct AiState {
 	int brain_cache_day = -1;
 	// D-131 — diagnóstico da fase A: forecasts avaliados e rejeições do gate.
 	int brain_attempts = 0;
+	// Rejeições do forecast de caixa (as únicas que entram em
+	// `reject_share`; R4 tem contador próprio para a razão não passar de 1).
 	int brain_rejected = 0;
+	int brain_risk_rejected = 0;
+	std::unordered_map<std::uint64_t, int> brain_rejected_month;
+	int brain_unique_rejected_month = 0;
 	// D-131 fase B (R2/R4). `pending_committed` acumula a capacidade das obras
 	// emitidas NA MESMA fase (privado + grupo + governo, ordem determinística)
 	// e é zerado no começo do dia. Os caches do dia (oferta efetiva e

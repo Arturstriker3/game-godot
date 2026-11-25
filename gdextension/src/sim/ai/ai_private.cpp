@@ -776,6 +776,14 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws, forecast_in);
 		if (!forecast.pass || forecast.capacity < kMinCapacity) {
 			ctx.state.brain_rejected += 1;
+			// Candidato único rejeitado PELO CAIXA no mês (mesma chave da
+			// contagem de tentativas).
+			const auto seen = ctx.state.brain_rejected_month.find(key);
+			if (seen == ctx.state.brain_rejected_month.end()
+					|| seen->second != month) {
+				ctx.state.brain_rejected_month[key] = month;
+				ctx.state.brain_unique_rejected_month += 1;
+			}
 			return false;
 		}
 		if (forecast.constrained) {
@@ -799,7 +807,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			: 0.0;
 		if (!ai_risk::herd_allows(ctx.state, ctx.ws.ai_brain, product,
 				is_food_candidate, ctx.day, capacity, existing_capacity)) {
-			ctx.state.brain_rejected += 1;
+			ctx.state.brain_risk_rejected += 1;
 			return false;
 		}
 	}
@@ -810,7 +818,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		if (exposure != nullptr
 				&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
 					product, sector, cost, city.firm_cash)) {
-			ctx.state.brain_rejected += 1;
+			ctx.state.brain_risk_rejected += 1;
 			return false;
 		}
 	}
@@ -880,7 +888,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			if (exposure != nullptr
 					&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
 						product, sector, cost, city.firm_cash)) {
-				ctx.state.brain_rejected += 1;
+				ctx.state.brain_risk_rejected += 1;
 				return false;
 			}
 		}

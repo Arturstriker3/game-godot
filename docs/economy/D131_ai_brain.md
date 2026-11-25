@@ -1,7 +1,8 @@
-# D-131 (fase A) — Cérebro econômico da IA: previsão de caixa e preço esperado
+# D-131 (fases A e B) — Cérebro econômico da IA
 
-Base: `balance/global-resources` (`4605ce90`, com a D-130). Branch `feat/d131-ai-brain`,
-worktree `opengs-wt-d131`. Spec: `D-131_cerebro_economico_ia.md` (aprovada pelo dono).
+Base: `balance/global-resources` (`4605ce90`, com a D-130); fase A no merge
+`e6270a23`, fase B sobre ele. Branch `feat/d131-ai-brain`, worktree
+`opengs-wt-d131`. Spec: `D-131_cerebro_economico_ia.md` (aprovada pelo dono).
 **Nenhum número aqui é dado observado**: todos são defaults de balanceamento
 declarados em `data/definitions/economy/ai_brain.json`.
 
@@ -43,6 +44,33 @@ declarados em `data/definitions/economy/ai_brain.json`.
    esperado e aplica o gate/dimensionamento somente em **planta NOVA**
    (expansão e aprofundamento seguem a regra atual nesta fase).
 
+## O que entrou (fase B)
+
+6. **R2 — oferta efetiva e concorrência** (`sim/ai/ai_risk.{h,cpp}`, consumido em
+   `ai_private.cpp`) — `supply_effective` soma a capacidade existente, a das
+   obras em construção (com a rampa D-125 já herdada) e a `pending_committed`
+   do mesmo turno; `region_slot` (landmass) para comida e `world` para os demais
+   bens. `demand_future` usa a média móvel de `tot_desired` por
+   `demand_growth_days` (30 d). Oferta e demanda do escopo alimentam o forecast
+   (share de mercado e excesso do preço esperado); a fase A usava a oferta de
+   hoje. Duas cidades no mesmo dia não duplicam a obra.
+7. **R4 — exposição por agente e anti-manada** — cache por agente (privado =
+   cidade; grupo = id) de custo por (bem, setor), com `max_good_share=0,35`,
+   `max_sector_share=0,60` e `max_goods_per_agent=8`; a checagem vale para
+   planta nova e para expansão/aprofundamento. `herd_allows` mantém uma janela
+   rolante de 30 d de plantas e capacidade por bem: no máximo
+   `max_new_plants_per_good_30d=3` plantas (×`food_multiplier=2` na comida) e
+   `max_new_capacity_share_30d=0,25` da capacidade existente (a primeira planta
+   da janela sempre passa).
+8. **Ressalvas da fase A fechadas** — `unit_month` na mesma base do `cap_max`
+   (custo unitário por tonelada); `price_trend` usa a janela disponível quando
+   há menos de `trend_days` de série; escopos persistem em `params_map`/save; o
+   status expõe `unique_candidates_month` (primeira tentativa de cada
+   (cidade, produto) por mês) e `herd_max_plants_30d` (maior número de plantas
+   do mesmo bem na janela rolante no fecho).
+9. **Integração** — tudo atrás de `enabled`; desligado permanece bit-idêntico à
+   main (nenhum contador, cache ou janela é alimentado).
+
 ## Defaults declarados (`ai_brain.json`)
 
 | seção | chaves |
@@ -55,32 +83,47 @@ declarados em `data/definitions/economy/ai_brain.json`.
 | herd | `max_new_plants_per_good_30d=3`, `max_new_capacity_share_30d=0,25`, `food_multiplier=2,0` |
 | crisis_link | `block_loss_days=30` |
 
-As seções de R4/R5 já entram no JSON e no save, mas só a fase A as lê.
+As seções de R5 já entram no JSON e no save; a fase B lê R2, R4 e herd.
 
 ## Verificação
 
-- `sim_unit_tests`: **47/47 casos, 371 asserções** (7 casos D-131:
-  `mean_between`, vale de caixa rejeita, dimensionamento reduz a capacidade,
-  preço cai com excesso, tendência limitada, save v42/v41 e `enabled=false`
-  inócuo).
+- `sim_unit_tests`: **53/53 casos** (7 da fase A + 6 da fase B: base do
+  `unit_month`/`cap_max`, janela curta do `price_trend`, oferta/demanda por
+  escopo, tetos de exposição, anti-manada de 3 plantas/capacidade e duas
+  cidades no mesmo dia).
 - `tools/run_tests.ps1 -Tier pr -Base balance/global-resources`: **41/41 OK**
-  (run `20261124_205517`).
-- **Equivalência `enabled=false`** — a rodada de 90 d do worktree é idêntica à
-  da main (`trajectory_sha256 17c6b0ee…`, 0 falências, 0 violações,
-  drift 0,011852, comida 83/179). A rodada de 365 d `enabled=false` reproduz a
-  baseline D-126: **0 falências, comida 96/179, 0 violações, drift 0,016524**.
-- **365 d `enabled=true`**: **0 falências**, comida **90/179** (critério da
-  correção: ≤97/179 abaixo de 0,975; mediana 0,974846), **0 violações**,
-  0 travados, **drift 0,016868** (≤0,017), **12.950 tentativas de forecast**,
-  **1.065 investimentos** de planta nova (91,7% rejeitados pelo gate de caixa).
-  JSONs em `G:\opengs_tmp\d131_365_{off,on}.json`.
+  (run `20261124_215744`). Bateria completa (`-Tier quick`/104 testes + runs):
+  OFF `enabled=false` **105/106** e ON `enabled=true` **104/105**; a única falha
+  era `d126_crisis_test` esperando save v41 (o D-131 subiu para v42). A
+  asserção foi atualizada para v42 e o teste re-rodou verde (1/1).
+- **Equivalência `enabled=false`** — a rodada de 365 d do worktree é a baseline
+  D-126 da main: `trajectory_sha256 49c797ef…` (igual a
+  `c1_d126_365_final.json`; re-rodada com o binário final em
+  `d131b_365_off2.json`), **0 falências**, comida 96/179, **0 violações**,
+  0 travados, drift 0,016524.
+- **365 d `enabled=true`** (fase B): **0 falências**, comida **94/179**
+  (mediana 0,9703; critério ≤97), **0 violações**, 0 travados, **drift
+  0,012479**, **43.665 tentativas**, **39.045 rejeições de caixa (89,4%)**,
+  **11.262 candidatos únicos (cidade, produto) rejeitados pelo caixa** de
+  12.495 candidatos únicos/mês, **154 investimentos** de planta nova (154
+  privado / 0 grupo), **1.914.100 rejeições de risco** (exposição/anti-manada,
+  contadas fora de `attempts`) e **anti-manada no máximo 3 plantas do mesmo bem
+  em 30 d** (meta ≤3). JSON em `G:\opengs_tmp\d131b_365_on.json`.
+- **Comparação com a fase A** (`enabled=true`): investimentos **1.065 → 154**,
+  comida **90/179 → 94/179**, drift **0,016868 → 0,012479**; tentativas
+  **12.950 → 43.665** porque a planta reprovada no forecast volta a tentar
+  todo dia (não há backoff nesta fase).
+- **Contadores separados:** `reject_share` passou a considerar só o gate de
+  caixa (39.045/43.665 = 89,4%); `risk_rejected` (exposição/anti-manada) tem
+  contador próprio e não infla a razão. A rodada anterior, com o contador
+  único, dava 101,6% — foi só a métrica; a trajetória (`49c797ef…` off e
+  `ba2d77b0…` on) não mudou com a correção.
 
 ## Pendências / próximas fases
 
-- R2 (concorrência: `pending_committed`, oferta em rampa/em construção, escopo
-  regional da comida), R4 (exposição por bem/setor/agente e anti-manada) e R5
-  (bloqueio por `loss_days`, crédito de investimento da cidade, paridade do
-  investidor de grupo) ficam para as fases B/C.
-- O forecast da fase A é conservador: 91,7% das decisões de planta nova do
-  privado morreram no gate. A medição existe para calibrar `capital_share`,
-  `elasticity` e `price_floor` antes de ligar no jogo.
+- R5 (bloqueio por `loss_days`, crédito de investimento da cidade, paridade do
+  investidor de grupo) fica para a fase C.
+- O forecast segue conservador: a fase B derrubou os investimentos de 1.065
+  para 154 e o drift de 0,016524 (off) para 0,012479. A medição existe para
+  calibrar `capital_share`, `elasticity`, `price_floor` e os tetos de R4/herd
+  antes de ligar no jogo.
