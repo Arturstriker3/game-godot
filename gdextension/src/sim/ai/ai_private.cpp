@@ -15,6 +15,8 @@
 
 #include "ai_phase.h"
 #include "ai_view.h"
+#include "../ai_brain.h"
+#include "../bank.h"
 #include "../efficiency.h"
 #include "../sim_constants.h"
 
@@ -149,6 +151,69 @@ double local_food_supply(const AiContext& ctx, int city_index) {
 double caloric_factor_of(const AiContext& ctx, const std::string& resource) {
 	const AiTemplate* tmpl = ctx.templates.by_resource(resource);
 	return tmpl != nullptr ? tmpl->caloric_factor : 1.0;
+}
+
+// D-131 — chave (cidade × produto) das séries de preço do cérebro econômico.
+std::uint64_t brain_key(int city_index, int product) {
+	return static_cast<std::uint64_t>(city_index) * 1000000ULL
+		+ static_cast<std::uint64_t>(product);
+}
+
+// D-131 (R3) — preço esperado do dia. A série de até `history_days` preços é
+// amostrada UMA vez por dia e o valor fica em cache (o mesmo produto é lido
+// por vários templates na mesma visita). `enabled=false` nunca chega aqui.
+double brain_expected_price(AiContext& ctx, int city_index, int product,
+		double price) {
+	const AiBrainParams& params = ctx.ws.ai_brain;
+	AiState& state = ctx.state;
+	const std::uint64_t key = brain_key(city_index, product);
+	if (state.brain_cache_day != ctx.day) {
+		state.brain_price_expected.clear();
+		state.brain_cache_day = ctx.day;
+	}
+	const auto cached = state.brain_price_expected.find(key);
+	if (cached != state.brain_price_expected.end()) {
+		return cached->second;
+	}
+	std::vector<double>& history = state.brain_price_history[key];
+	int& last_day = state.brain_price_day[key];
+	if (last_day != ctx.day) {
+		history.push_back(price);
+		while (history.size() > static_cast<std::size_t>(
+				std::max(1, params.history_days))) {
+			history.erase(history.begin());
+		}
+		last_day = ctx.day;
+	}
+	const double trend = ai_brain::price_trend(params, history);
+	// Fase A (sem R2): a oferta futura é a oferta de hoje do mercado local.
+	const double supply = ai_market(ctx.view, city_index, product, kAiSupply);
+	const double demand = ai_market(ctx.view, city_index, product, kAiDesired);
+	const double value = ai_brain::expected_price(params, price, trend,
+		supply, demand);
+	state.brain_price_expected[key] = value;
+	return value;
+}
+
+// D-131 (R1) — prazo de obra da planta nova, mesma regra de
+// `construction.cpp` (tipo + escala logarítmica do tamanho). Estimativa
+// declarada, não cronograma observado.
+int brain_construction_days(const AiContext& ctx, const AiTemplate& tmpl,
+		bool is_food, bool is_mineral, double capacity) {
+	double base_days = static_cast<double>(kConstructionPrimaryDays);
+	if (tmpl.is_recipe) {
+		base_days = static_cast<double>(kConstructionFactoryDays);
+	} else if (is_food) {
+		base_days = static_cast<double>(kConstructionFoodDays);
+	} else if (is_mineral) {
+		base_days = static_cast<double>(kConstructionMineDays);
+	}
+	const double size_ratio = std::max(1.0, capacity)
+		/ kConstructionSizeReference;
+	const double size_scale = std::clamp(
+		1.0 + kConstructionSizeLogScale * std::log2(size_ratio),
+		kConstructionSizeScaleMin, kConstructionSizeScaleMax);
+	return std::max(1, static_cast<int>(std::llround(base_days * size_scale)));
 }
 
 } // namespace
@@ -473,6 +538,11 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	}
 
 	const double price = ai_market(view, city_index, product, kAiPrice);
+	// D-131 (R3): com o cérebro ligado, a margem/payback usam o preço esperado
+	// (tendência × castigo por excesso) em vez do preço de hoje. Desligado, o
+	// valor é EXATAMENTE o preço de hoje (equivalência bit a bit).
+	const double price_expected = ctx.ws.ai_brain.enabled
+		? brain_expected_price(ctx, city_index, product, price) : price;
 	const double observed = ai_observed_cost(view, city_index, product);
 	const bool is_mineral = ctx.templates.is_mineral(resource) && !is_recipe;
 	// Margem "honesta" para minas: inclui o fator de profundidade da jazida
@@ -498,9 +568,9 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		}
 	}
 	// Fábrica sem demanda madura: o preço de referência é o piso de custo.
-	double reference_price = price;
+	double reference_price = price_expected;
 	if (is_recipe) {
-		reference_price = std::max(price, unit_cost * 1.05);
+		reference_price = std::max(price_expected, unit_cost * 1.05);
 	}
 	const double margin = reference_price - unit_cost;
 	if (margin <= kMinMarginPerTon) {
@@ -536,7 +606,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	if (capacity < kMinCapacity) {
 		return false;
 	}
-	const double cost = capacity * unit_capital;
+	double cost = capacity * unit_capital;
 	// D-125: o horizonte do gate decide a expectativa de eficiência; o retorno
 	// diário é a margem × capacidade × eficiência MÉDIA da rampa no horizonte.
 	double payback_limit = kMinPaybackDays;
@@ -555,6 +625,89 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	const double adjusted_payback = payback / std::max(0.5, 1.0 - risk);
 	if (adjusted_payback > payback_limit) {
 		return false;
+	}
+
+	// D-131 (R1) — vale de caixa da rampa. Só com o cérebro ligado e para
+	// planta NOVA (expansão/aprofundamento seguem a regra de hoje na fase A):
+	// o forecast mensal fecha o saldo antes de emitir o capex e, se preciso,
+	// reduz a capacidade para caber no caixa + crédito aprovado.
+	if (ctx.ws.ai_brain.enabled && existing.empty()) {
+		ctx.state.brain_attempts += 1;
+		const bool is_food_candidate = ctx.templates.is_food(resource);
+		int input_product = tmpl.input;
+		double input_ratio = tmpl.input_ratio;
+		double jobs_per_ton = tmpl.jobs_per_ton;
+		double wage = tmpl.wage;
+		double opex_per_ton = tmpl.opex_per_ton;
+		if (is_recipe) {
+			const int recipe_index =
+				ai_best_recipe(view, ctx.templates, city_index, tmpl);
+			if (recipe_index < 0) {
+				ctx.state.brain_rejected += 1;
+				return false;
+			}
+			const Recipe& recipe =
+				view.recipes[static_cast<std::size_t>(recipe_index)];
+			if (recipe.input_count <= 0) {
+				ctx.state.brain_rejected += 1;
+				return false;
+			}
+			input_product = recipe.inputs[0];
+			input_ratio = recipe.input_qty[0] / recipe.yield;
+			jobs_per_ton = recipe.jobs_per_ton;
+			wage = recipe.wage;
+			opex_per_ton = recipe.opex_per_ton;
+		}
+		ai_brain::ForecastInput forecast_in;
+		forecast_in.cash = city.firm_cash;
+		// Fase A: o privado ainda não tem crédito de INVESTIMENTO aprovado
+		// (D-126/C3 só oferece giro). O crédito entra na fase C.
+		forecast_in.credit_approved = 0.0;
+		forecast_in.candidate_capacity = capacity;
+		forecast_in.unit_capex = unit_capital;
+		forecast_in.efficiency_class = eff::classify_new(ctx.ws,
+			ctx.ws.cities[static_cast<std::size_t>(city_index)], product,
+			is_recipe ? 0 : -1, input_product);
+		forecast_in.from_efficiency =
+			eff::curve(ctx.ws, forecast_in.efficiency_class).start;
+		forecast_in.equipment_active = false;
+		forecast_in.construction_days = brain_construction_days(ctx, tmpl,
+			is_food_candidate, is_mineral, capacity);
+		forecast_in.aptitude = 1.0;
+		if (!is_recipe && product >= 0
+				&& product < static_cast<int>(city.suitability.size())) {
+			forecast_in.aptitude = std::clamp(
+				city.suitability[static_cast<std::size_t>(product)], 0.0, 1.0);
+		}
+		forecast_in.stage_factor = 1.0;
+		forecast_in.area_scale = 1.0;
+		forecast_in.jobs_per_capacity = jobs_per_ton;
+		forecast_in.wage = wage;
+		forecast_in.opex_per_ton = opex_per_ton;
+		forecast_in.input_ratio = input_ratio;
+		forecast_in.input_price = input_product >= 0
+			? ai_market(view, city_index, input_product, kAiPrice) : 0.0;
+		// Receita pelo preço esperado (a mesma referência da margem).
+		forecast_in.price_expected = reference_price;
+		forecast_in.supply_future =
+			ai_market(view, city_index, product, kAiSupply);
+		forecast_in.demand_future =
+			ai_market(view, city_index, product, kAiDesired);
+		forecast_in.loan_rate_annual = bank::loan_rate(ctx.ws, city.nation);
+		forecast_in.margin_per_ton = margin;
+		forecast_in.expected_efficiency = expected_efficiency;
+		forecast_in.payback_limit_days = payback_limit;
+		forecast_in.min_capacity = kMinCapacity;
+		const ai_brain::ForecastResult forecast =
+			ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws, forecast_in);
+		if (!forecast.pass || forecast.capacity < kMinCapacity) {
+			ctx.state.brain_rejected += 1;
+			return false;
+		}
+		if (forecast.constrained) {
+			capacity = forecast.capacity;
+			cost = capacity * unit_capital;
+		}
 	}
 
 	AiActionResult result;

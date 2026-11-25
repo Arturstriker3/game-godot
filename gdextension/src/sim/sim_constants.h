@@ -165,7 +165,12 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // `definitions.efficiency` guarda os parâmetros de balanceamento da curva.
 // Save v39 carrega com a planta MADURA (eficiência 1, equipamento ligado): o
 // estoque existente é o ano-base e o comportamento anterior é preservado.
-constexpr int kSaveVersion = 41;
+//
+// D-131 (save v42, aditivo): o bloco `definitions.ai_brain` guarda os
+// parâmetros do cérebro econômico da IA (fase A: previsão de caixa + preço
+// esperado). Save v41 carrega com os defaults do struct (`enabled=false`),
+// que reproduzem as decisões atuais.
+constexpr int kSaveVersion = 42;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

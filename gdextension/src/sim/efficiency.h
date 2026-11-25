@@ -44,6 +44,15 @@ EfficiencyClass classify_new(const WorldState& ws, const City& city,
 double mean_efficiency(const WorldState& ws, EfficiencyClass cls, double from,
 	bool equipment_active, int days, int idle_days = 0);
 
+// D-131 — média da curva D-125 no intervalo de dias de OPERAÇÃO [first_day,
+// last_day] (0 = primeiro dia de produção, mesma convenção de
+// `mean_efficiency`). Soma `days = last_day - first_day + 1` termos do MESMO
+// laço diário (`step`/`cap`) partindo de `from`; `mean_between(0, days - 1)`
+// é idêntico a `mean_efficiency(days)`. Intervalo vazio ou invertido devolve
+// `from` (sem estimativa para um mês sem operação).
+double mean_between(const WorldState& ws, EfficiencyClass cls, double from,
+	bool equipment_active, int first_day, int last_day);
+
 // Curva da classe no estado atual.
 const EfficiencyCurve& curve(const WorldState& ws, EfficiencyClass cls);
 

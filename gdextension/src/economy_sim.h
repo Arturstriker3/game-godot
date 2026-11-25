@@ -1092,6 +1092,15 @@ public:
 	// ------------------------------------------------------------------
 	void set_crisis_params(const Dictionary& values);
 	Dictionary get_crisis_params() const;
+
+	/** D-131 (fase A): parâmetros do cérebro econômico da IA. O dicionário
+	 * pode vir seccionado (como o JSON, ex.: `forecast.month_days`) ou com as
+	 * chaves pontuadas; chave ausente mantém o default. */
+	void set_ai_brain_params(const Dictionary& values);
+	Dictionary get_ai_brain_params() const;
+	/** Parâmetros aplicados + contadores de diagnóstico da fase A (tentativas
+	 * de forecast e rejeições pelo gate de caixa). Não entra no save. */
+	Dictionary get_ai_brain_status() const;
 	Dictionary get_crisis_status() const;
 	Dictionary crisis_layoff(const String& city_id, const String& building_id,
 		double share);

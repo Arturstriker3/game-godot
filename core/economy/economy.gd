@@ -91,6 +91,10 @@ const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
 ## D-126: sobrevivência em crise (rescisão, crédito de giro, liquidação,
 ## hibernação, leilão e área). Defaults de balanceamento declarados.
 const CRISIS_PATH := "res://data/definitions/economy/crisis.json"
+## D-131 (fase A): cérebro econômico da IA (previsão de caixa mensal e preço
+## esperado). Defaults de balanceamento declarados; `enabled=false` por padrão
+## mantém as decisões da IA como antes.
+const AI_BRAIN_PATH := "res://data/definitions/economy/ai_brain.json"
 ## Necessidades das POPs (cesta básica data-driven; níveis completos em F3).
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 ## Serviços (F8): 20 setores, compradores, insumos e mistura de escolaridade.
@@ -188,6 +192,12 @@ func _ready() -> void:
 		var crisis := _load_json_dict_optional(CRISIS_PATH)
 		if not crisis.is_empty():
 			sim.set_crisis_params(crisis)
+	# D-131: parâmetros do cérebro econômico da IA (fase A). Antes do mundo,
+	# como crise/eficiência; `enabled=false` no JSON mantém o comportamento.
+	if sim.has_method("set_ai_brain_params"):
+		var brain := _load_json_dict_optional(AI_BRAIN_PATH)
+		if not brain.is_empty():
+			sim.set_ai_brain_params(brain)
 	sim.set_needs(_load_json_dict(NEEDS_PATH))
 	# F8: serviços (catálogo). Antes do mundo: os negócios iniciais e o preço-âncora
 	# dos 20 setores dependem dele.

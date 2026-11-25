@@ -89,6 +89,16 @@ struct AiState {
 	// cidade|tipo|dono (anti-loop).
 	std::unordered_map<std::uint64_t, std::vector<double>> storage_prices;
 	std::unordered_map<std::string, int> storage_last_build_day;
+	// D-131 — janelas de preço do cérebro econômico (chave cidade × produto),
+	// o dia da última amostra e o cache de preço esperado do dia. Não são
+	// serializados (mesma regra de `risk_history`).
+	std::unordered_map<std::uint64_t, std::vector<double>> brain_price_history;
+	std::unordered_map<std::uint64_t, int> brain_price_day;
+	std::unordered_map<std::uint64_t, double> brain_price_expected;
+	int brain_cache_day = -1;
+	// D-131 — diagnóstico da fase A: forecasts avaliados e rejeições do gate.
+	int brain_attempts = 0;
+	int brain_rejected = 0;
 };
 
 // O que uma regra recebe: tudo por referência, nada copiado.
@@ -174,6 +184,9 @@ public:
 	// `from_dict` (load de save) NÃO chama isto — o estado da IA sobrevive ao
 	// load, como o objeto EconomicAI no GDScript.
 	void reset();
+
+	// D-131 — leitura do estado entre dias (contadores de diagnóstico da fase A).
+	const AiState& state() const { return state_; }
 
 private:
 	// Retrato do dia (reaproveitado entre dias: os vetores mantêm capacidade).

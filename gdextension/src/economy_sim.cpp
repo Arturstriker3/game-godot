@@ -8,6 +8,7 @@
 #include "sim/bank_crisis.h"
 #include "sim/central_bank.h"
 #include "sim/crisis.h"
+#include "sim/ai_brain.h"
 #include "sim/efficiency.h"
 #include "sim/exchange.h"
 #include "sim/monetary.h"
@@ -487,6 +488,12 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_crisis_params);
 	ClassDB::bind_method(D_METHOD("get_crisis_params"),
 	                     &EconomySim::get_crisis_params);
+	ClassDB::bind_method(D_METHOD("set_ai_brain_params", "values"),
+	                     &EconomySim::set_ai_brain_params);
+	ClassDB::bind_method(D_METHOD("get_ai_brain_params"),
+	                     &EconomySim::get_ai_brain_params);
+	ClassDB::bind_method(D_METHOD("get_ai_brain_status"),
+	                     &EconomySim::get_ai_brain_status);
 	ClassDB::bind_method(D_METHOD("get_crisis_status"),
 	                     &EconomySim::get_crisis_status);
 	ClassDB::bind_method(D_METHOD("crisis_layoff", "city_id", "building_id",
@@ -11911,6 +11918,55 @@ Dictionary EconomySim::get_crisis_params() const {
 	for (const auto& row : crisis::params_map(ws_)) {
 		out[String(row.first.c_str())] = row.second;
 	}
+	return out;
+}
+
+void EconomySim::set_ai_brain_params(const Dictionary& values) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	std::map<std::string, double> params;
+	// O JSON é seccionado (`forecast`, `price`, ...); achata uma seção por vez
+	// em chaves pontuadas ("forecast.month_days"). Chaves já planas passam.
+	std::function<void(const Dictionary&, const std::string&)> flatten =
+		[&flatten, &params](const Dictionary& source,
+			const std::string& prefix) {
+			for (const Variant& key : source.keys()) {
+				const Variant value = source.get(key, Variant());
+				const std::string name = prefix
+					+ std::string(String(key).utf8().get_data());
+				if (value.get_type() == Variant::DICTIONARY) {
+					flatten(Dictionary(value), name + ".");
+					continue;
+				}
+				if (value.get_type() == Variant::INT
+						|| value.get_type() == Variant::FLOAT
+						|| value.get_type() == Variant::BOOL) {
+					params[name] = double(value);
+				}
+			}
+		};
+	flatten(values, std::string());
+	ai_brain::apply_params(ws_, params);
+	status_invalidate();
+}
+
+Dictionary EconomySim::get_ai_brain_params() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	for (const auto& row : ai_brain::params_map(ws_)) {
+		out[String(row.first.c_str())] = row.second;
+	}
+	return out;
+}
+
+Dictionary EconomySim::get_ai_brain_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["params"] = get_ai_brain_params();
+	const AiState& state = ai_phase_.state();
+	out["attempts"] = state.brain_attempts;
+	out["rejected"] = state.brain_rejected;
+	out["reject_share"] = state.brain_attempts > 0
+		? double(state.brain_rejected) / double(state.brain_attempts) : 0.0;
 	return out;
 }
 
