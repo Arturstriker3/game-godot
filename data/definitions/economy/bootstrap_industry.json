@@ -390,6 +390,138 @@
         "DEU": 0.02,
         "outros": 0.06
       }
+    },
+    {
+      "id": "meat",
+      "lot": "L2",
+      "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
+      "anchor_source": "needs:life/protein",
+      "source": "FAO Meat Market Review 2024 (producao de carne por pais)",
+      "params_source": "measured:fao_meat_market_review_2024",
+      "producers": {
+        "CHN": 0.26,
+        "USA": 0.17,
+        "BRA": 0.11,
+        "IND": 0.06,
+        "RUS": 0.04,
+        "DEU": 0.03,
+        "MEX": 0.03,
+        "ESP": 0.03,
+        "ARG": 0.03,
+        "FRA": 0.02,
+        "POL": 0.02,
+        "VNM": 0.02,
+        "outros": 0.18
+      }
+    },
+    {
+      "id": "feed",
+      "lot": "L2",
+      "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
+      "anchor_source": "needs:life/protein (via meat)",
+      "source": "default:balancing (base Alltech/FAO racao 2024)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.22,
+        "USA": 0.18,
+        "BRA": 0.07,
+        "IND": 0.05,
+        "MEX": 0.04,
+        "RUS": 0.04,
+        "DEU": 0.03,
+        "ESP": 0.03,
+        "FRA": 0.02,
+        "NED": 0.02,
+        "outros": 0.3
+      }
+    },
+    {
+      "id": "canned_food",
+      "lot": "L2",
+      "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
+      "anchor_source": "needs:life/protein",
+      "source": "default:balancing (base FAO/UNIDO)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.25,
+        "USA": 0.14,
+        "THA": 0.08,
+        "BRA": 0.07,
+        "ITA": 0.06,
+        "ESP": 0.05,
+        "MEX": 0.05,
+        "TUR": 0.04,
+        "IND": 0.04,
+        "VNM": 0.03,
+        "outros": 0.19
+      }
+    },
+    {
+      "id": "alcohol",
+      "lot": "L2",
+      "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
+      "anchor_source": "needs:life/leisure",
+      "source": "default:balancing (base Kirin/OIV 2023)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.26,
+        "USA": 0.12,
+        "BRA": 0.06,
+        "DEU": 0.05,
+        "RUS": 0.05,
+        "JPN": 0.05,
+        "MEX": 0.04,
+        "GBR": 0.04,
+        "FRA": 0.03,
+        "ESP": 0.03,
+        "outros": 0.27
+      }
+    },
+    {
+      "id": "premium_spirits",
+      "lot": "L2",
+      "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
+      "anchor_source": "needs:luxury/status",
+      "source": "default:balancing (base OIV/SWA)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "GBR": 0.2,
+        "FRA": 0.15,
+        "USA": 0.1,
+        "IRL": 0.07,
+        "JPN": 0.05,
+        "MEX": 0.04,
+        "ITA": 0.03,
+        "ESP": 0.03,
+        "outros": 0.33
+      }
+    },
+    {
+      "id": "containers",
+      "lot": "L2",
+      "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
+      "anchor_source": "derived:embalagem (consumidores)",
+      "source": "default:balancing (base packaging/UN Comtrade)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.4,
+        "USA": 0.12,
+        "DEU": 0.06,
+        "ITA": 0.05,
+        "IND": 0.05,
+        "JPN": 0.04,
+        "KOR": 0.03,
+        "BRA": 0.03,
+        "MEX": 0.03,
+        "ESP": 0.03,
+        "outros": 0.16
+      }
     }
   ]
 }

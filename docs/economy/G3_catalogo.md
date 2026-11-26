@@ -297,3 +297,43 @@ reais) + `max_plant_capacity_per_100k` por bem.
 
 Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,on365_f090,on365_fix,on365_c3,off365,
 off365_f090,off365_fix,off365_c3,smoke_f090,smoke_fix,smoke_c3_30}.json` e logs `*.log`.
+
+## 10. LOTE 2 — alimentos/bebidas (andamento)
+
+**Dado.** `meat`, `feed`, `canned_food`, `alcohol`, `premium_spirits` e `containers` entram no
+`bootstrap_industry.json` com `lot: L2`, `seed_fraction: 0,90` (princípio do §7) e
+`max_plant_capacity_per_100k: 10` (teto da correção 2). Participações = tabela §4 da spec rev.2
+(FAO *Meat Market Review 2024* no `meat`; o resto `declared:balancing`), cada linha somando 1,00
+com `outros` residual.
+
+**Insumos a montante.** Os cinco primários que alimentam `feed` e `alcohol` (maize, wheat, rice,
+soy, potato) **já** nascem semeados por produtores reais: o `AgricultureService` declara, por
+nação, a área colhida FAOSTAT (`crop_yields.json`), o calendário (`crop_calendar.json`) e o rateio
+por capacidade de terra — o mesmo contrato que o algodão usa (`set_crop_plan`). O lote **não
+duplica** essa semente nem sobrescreve plano existente; a medição diz se a área cobre a demanda
+nova. (`bran`, variante c do `feed`, não tem produtor no dia 0; o `choose_recipe` cai na primeira
+receita com aptidão local — milho —, como no resto do jogo.)
+
+**Smoke 30 d ON** (`c1_world_ai_365.gd --days=30 --bootstrap=1 --ai-brain=1
+--goods-diag=meat,feed,canned_food,alcohol,premium_spirits,containers,maize,wheat,plastic,
+aluminum_ingot`; `G:/opengs_tmp/g3/l2_smoke_30.json`, trajetória `35e1c82e…`, 9,1 s):
+
+| métrica | medido |
+|---|---|
+| falências / violações / travados | **0 / 0 / 0** |
+| drift | **0,017667** |
+| comida (avg30) | 108/179 (mediana 0,9555; **sem braço de controle** — não atribuível ao L2) |
+| plantas de bootstrap / shortfall / sobra | 536 / **207 143 t/dia** / 4,8% |
+| grãos a montante | maize **413 kt/dia em 164 países** (MA30 1,0026), wheat **697 kt/dia em 134** (1,0402) |
+| vendas (avg30) | meat 1 415 t/dia em 10 · feed 3 288 em 10 · alcohol 82 em 6 · containers 66 em 5 · canned_food 0,7 em 1 · premium_spirits 0 |
+
+**Bloqueios medidos (para a próxima tarefa).** (1) `containers` escolhe a **primeira** receita
+(`containers_a`, `aluminum_ingot`), porque nenhum insumo tem aptidão local no `choose_recipe`; o
+alumínio não tem planta no dia 0 (preço 18,75 fixo, 0 vendido) → embalagem sem insumo →
+`canned_food` em 1 país. (2) `premium_spirits` depende de `planks` (L4) e fica em 0. (3) O
+shortfall de 207 kt/dia mostra que a fração 0,90 não chega ao plano nos bens de massa (mesma
+família do §7, agora com âncoras maiores). A correção de (1) pede campo `recipe` por bem no
+bootstrap (núcleo) ou a semente de alumínio — nenhuma das duas cabe neste lote.
+
+**Próximo passo:** gate de 365 d do L2 no acumulado (L1 + L2), com braço de controle no mesmo
+dia para atribuir a comida.
