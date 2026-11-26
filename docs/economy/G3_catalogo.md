@@ -397,3 +397,60 @@ porque o alvo do alumínio (capacidade dos containers do lote) é potencial e o 
 cidades só constrói 497 t/dia; medir o elo pela demanda realizada exigiria um critério novo no
 bootstrap (fora desta tarefa). O merge do L2 fica bloqueado até uma decisão sobre drift/preços/
 `canned_food`.
+
+### 10.3 Correção 2 — `funding: "none"` (ativo herdado do dia 0) — gate REPROVADO
+
+**Diagnóstico.** O `budget_share` municipal cortava a semeadura dos bens de massa mesmo nos
+bens que já existem no mundo real: no smoke anterior a semente construía 544 plantas e o
+shortfall era **214 377 t/dia**; o alumínio era o caso extremo (497 de 9 312 t/dia).
+A resposta é de **dado**, não de regra: marcar a entrada como ativo herdado do dia 0.
+
+**Mecanismo.** Campo opcional por bem `funding: "none"` no `bootstrap_industry.json`:
+o plano **não consome** o `budget_share` da cidade e a construção não debita o orçamento nem
+credita o setor de obras (o custo continua na planta como valor de livro); o que sobra declara
+`reason: "capacity"` (teto de cidade/planta), não `budget`. Ausente = financiado, caminho G2
+**bit a bit**. O flag viaja no comando `Build` (`cmd.b`), então vale também na fila; a fachada
+GDScript `build()` continua sempre financiada (teste C++ cobre plano e execução:
+`sim_unit_tests` **79/79**, 799 asserções).
+
+**Dado.** Todo o L1+L2 declara `funding: "none"`; `feed` passa a `capacity_from: meat` (a ração
+nasce em 0,8 t por t de capacidade de carne semeada, 35 486 t/dia); `aluminum_ingot` recebe o
+mesmo teto proporcional de 10 t/dia/100k do lote para espelhar `containers`.
+
+**Smoke 30 d ON** (`G:/opengs_tmp/g3/l2_c2_smoke30.json`, trajetória `865e5bc2…`, 49,4 s):
+0 falências/0 violações/0 travados; drift **0,007114** (era 0,017448); comida **109/179**;
+**764** plantas (era 544) e shortfall **82 224 t/dia** (era 214 377, **-61,6%**). O alumínio
+semeia **29 104 t/dia** de um alvo de **38 151** — o alvo cresceu porque `containers` deixou de
+ser cortado (9 312 → 38 151); o teto por cidade ainda corta ~9 047 t/dia, que é o shortfall
+restante do bem. Vendas avg30: `meat` 3 628 t/dia em 16 países, `feed` 5 677 em 13, `alcohol`
+306 em 7, `containers` 680 em 9, `canned_food` 13,3 em **5**, `aluminum_ingot` 645 em 8,
+bauxita 864 em 81.
+
+**Gate 365 d ON (L1+L2)** (`G:/opengs_tmp/g3/l2_c2_on365.json`, trajetória `de4e919d…`, 723,9 s):
+
+| critério | medido | veredito |
+|---|---|---|
+| violações / travados | 0 / 0 | OK |
+| falências | 2 (CHL `wheat` d210, GIN `bauxite` d287; ≤3) | OK |
+| comida (avg30) | **96/179** (≤97; mediana 0,9640) | OK |
+| drift | **0,053063** (máx. diário 0,054302) | **REPROVA** (>0,03) |
+| bens do lote ≥3 países | meat 17, feed 12, alcohol 13, containers 11, aluminum 11, **canned_food 6** | OK (era 2) |
+| MA30 d365÷d0 ≤1,15 | meat 1,0405; alcohol 0,9408; aluminum 1,0083; **feed 1,6676; canned_food 1,6943; containers 1,2424** | **REPROVA** (3 bens) |
+
+**Controle L1-only** (`--bootstrap-path=G:/opengs_tmp/g3/bootstrap_l1_only_c2.json`, trajetória
+`6287b12d…`, 729,1 s): 0 violações/0 travados, **1 falência**, comida **93/179** (mediana
+0,97207), drift **0,021834**, 439 plantas, shortfall 5 951 t/dia. **Atribuição ao L2: drift
++0,031229** (0,021834 → 0,053063) e comida +3 abaixo do portão; falências +1.
+
+**OFF 365** (`G:/opengs_tmp/g3/off365_c2.json`): `ded6f54b…` **idêntico** ao baseline (0
+falências, comida 97/179, drift 0,016673) — a correção só age com o bootstrap ligado.
+
+**Leitura honesta.** O `funding: "none"` faz o que prometia no abastecimento (plantas
+544 → 764, shortfall -61,6%, `canned_food` 2 → 6 países, alumínio vivo e `containers` em 11
+países), mas **o gate de 365 d continua REPROVADO**: o drift quase dobrou (0,032657 → 0,053063;
++5,3% de estoque de dinheiro no ano, com 0 violações diárias — é expansão de crédito, não
+vazamento contábil) e os preços de `feed`, `canned_food` e `containers` subiram acima do teto
+de 1,15 no ano. Sem nova iteração nesta tarefa: o L2 FECHA como **reprovado**, com o delta
+medido contra o controle L1-only no mesmo código. `-Tier pr -Base main` **49/49 OK** (run
+`20261126_115250`; 0 falha/crash/timeout) e `sim_unit_tests` **79/79** na DLL final sem a
+instrumentação.
