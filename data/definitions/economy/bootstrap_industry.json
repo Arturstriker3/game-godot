@@ -1,5 +1,5 @@
 ﻿{
-  "_comment": "G2 (spec G2_bootstrap_industrial.md, revisao 2) + G3 LOTE 1 (spec G3_semeadura_catalogo.md, revisao 2) - semente do dia 0 por PRODUTORES REAIS. Nenhuma capacidade literal: cap_planta = participacao x ancora_mundial(bem) x seed_fraction, com ancora = demanda final de needs.json propagada pela arvore de receitas (mesma funcao do potencial da IA). Participacoes arredondadas somam 1,00; 'outros' e residual declarado e NAO vira planta. Fonte por bem no campo `source`; `params_source: declared:balancing` quando nao ha producao publicada. G3: cada bem pode declarar `seed_fraction` proprio (ausente/0 herda o global). Principio (G3 rev. 2): bem de NECESSIDADE BASICA madura nasce ~abastecido - `seed_fraction` ~0,90 do necessario para a demanda-ancora (o cerebro constroi o crescimento e a margem); fracao pequena (0,02-0,10) fica para bens em crescimento. O LOTE 1 (clothes/fabric/shoes) usa 0,90 (recalibracao pos-diagnostico); os 21 bens do G2 continuam em 0,10. Correcao 2: cada bem pode declarar `max_plant_capacity_per_100k` (teto da planta em t/dia por 100 mil habitantes simulados; ausente/0 mantem o teto fixo capacity_max=20 t/dia do G2). O LOTE 1 declara 10 t/dia/100k (declared:balancing) porque 1 planta por cidade com teto de 20 t/dia satura a semeadura dos bens de massa; o valor fica abaixo do limite de orcamento por cidade (pop/6000 t/dia com capital 3000 e budget_share 0,5).",
+  "_comment": "G2 (spec G2_bootstrap_industrial.md, revisao 2) + G3 LOTE 1 (spec G3_semeadura_catalogo.md, revisao 2) - semente do dia 0 por PRODUTORES REAIS. Nenhuma capacidade literal: cap_planta = participacao x ancora_mundial(bem) x seed_fraction, com ancora = demanda final de needs.json propagada pela arvore de receitas (mesma funcao do potencial da IA). Participacoes arredondadas somam 1,00; 'outros' e residual declarado e NAO vira planta. Fonte por bem no campo `source`; `params_source: declared:balancing` quando nao ha producao publicada. G3: cada bem pode declarar `seed_fraction` proprio (ausente/0 herda o global). Principio (G3 rev. 2): bem de NECESSIDADE BASICA madura nasce ~abastecido - `seed_fraction` ~0,90 do necessario para a demanda-ancora (o cerebro constroi o crescimento e a margem); fracao pequena (0,02-0,10) fica para bens em crescimento. O LOTE 1 (clothes/fabric/shoes) usa 0,90 (recalibracao pos-diagnostico); os 21 bens do G2 continuam em 0,10. Correcao 2: cada bem pode declarar `max_plant_capacity_per_100k` (teto da planta em t/dia por 100 mil habitantes simulados; ausente/0 mantem o teto fixo capacity_max=20 t/dia do G2). O LOTE 1 declara 10 t/dia/100k (declared:balancing) porque 1 planta por cidade com teto de 20 t/dia satura a semeadura dos bens de massa; o valor fica abaixo do limite de orcamento por cidade (pop/6000 t/dia com capital 3000 e budget_share 0,5). LOTE 2: `capacity_from` marca bem-INSUMO do lote (ex.: aluminum_ingot para containers): o alvo e o consumo dos planos ja semeados do bem-fonte (capacidade x qty / yield), nao a ancora mundial; o bem-fonte deve vir antes no JSON e as participacoes do insumo sao normalizadas sem 'outros'. premium_spirits adiado para o LOTE 4 (depende de planks).",
   "version": 2,
   "meta": {
     "id": "G2+G3",
@@ -482,26 +482,6 @@
       }
     },
     {
-      "id": "premium_spirits",
-      "lot": "L2",
-      "seed_fraction": 0.9,
-      "max_plant_capacity_per_100k": 10.0,
-      "anchor_source": "needs:luxury/status",
-      "source": "default:balancing (base OIV/SWA)",
-      "params_source": "declared:balancing",
-      "producers": {
-        "GBR": 0.2,
-        "FRA": 0.15,
-        "USA": 0.1,
-        "IRL": 0.07,
-        "JPN": 0.05,
-        "MEX": 0.04,
-        "ITA": 0.03,
-        "ESP": 0.03,
-        "outros": 0.33
-      }
-    },
-    {
       "id": "containers",
       "lot": "L2",
       "seed_fraction": 0.9,
@@ -521,6 +501,21 @@
         "MEX": 0.03,
         "ESP": 0.03,
         "outros": 0.16
+      }
+    },
+    {
+      "id": "aluminum_ingot",
+      "lot": "L2",
+      "capacity_from": "containers",
+      "anchor_source": "derived:insumo de containers (containers_a consome 1:1)",
+      "source": "USGS Mineral Commodity Summaries 2025 - Aluminum, World Smelter Production 2024e (CHN 44000, IND 4200, RUS 3880, CAN 3320, ARE 2690 kt)",
+      "params_source": "measured:usgs_mcs2025_aluminum",
+      "producers": {
+        "CHN": 0.7574,
+        "IND": 0.0723,
+        "RUS": 0.0668,
+        "CAN": 0.0572,
+        "ARE": 0.0463
       }
     }
   ]

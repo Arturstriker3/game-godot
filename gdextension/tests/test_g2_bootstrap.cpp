@@ -436,6 +436,50 @@ TEST_CASE("G3 correcao 2: teto proporcional por cidade e ausente mantem o G2") {
 	CHECK(g2.rows[1].capacity == Approx(750.0 / 38.0));
 }
 
+TEST_CASE("G3 L2: insumo do lote dimensiona pelo consumo do bem-fonte") {
+	// `final` (bem-fonte) consome `mid` 1:1 na receita; o insumo nao tem
+	// ancora final propria (a propagacao daria so o desconto de 0,5). Com
+	// `capacity_from`, o alvo e a necessidade do plano do bem-fonte (10 t/dia)
+	// distribuida sem o residual "outros".
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-4;
+	ws.cities[0].government_budget = 1e9;
+	ogs::BootstrapGood source;
+	source.id = "final";
+	source.producers.push_back({"AAA", 1.0});
+	ws.bootstrap.goods.push_back(source);
+	ogs::BootstrapGood input;
+	input.id = "mid";
+	input.capacity_from = "final";
+	input.producers.push_back({"AAA", 0.6});
+	ws.bootstrap.goods.push_back(input);
+
+	const ogs::bootstrap::Plan tied = ogs::bootstrap::plan(ws);
+	REQUIRE(tied.seeded == 2);
+	CHECK(tied.rows[0].good == "final");
+	CHECK(tied.rows[0].capacity == Approx(10.0));  // 100 x 0,10
+	CHECK(tied.rows[1].good == "mid");
+	// 10 t/dia de `final` x 1 / 1 = 10; o unico produtor cobre 100% do total.
+	CHECK(tied.rows[1].capacity == Approx(10.0));
+	CHECK(tied.shortfall == Approx(0.0));
+
+	// Sem plano do bem-fonte nao ha consumidor: declara (nao omite).
+	ogs::BootstrapGood orphan;
+	orphan.id = "other_mid";
+	orphan.capacity_from = "raw";
+	orphan.producers.push_back({"AAA", 1.0});
+	ws.bootstrap.goods.push_back(orphan);
+	const ogs::bootstrap::Plan orphan_plan = ogs::bootstrap::plan(ws);
+	REQUIRE_FALSE(orphan_plan.rows.empty());
+	CHECK(orphan_plan.rows.back().good == "other_mid");
+	CHECK(orphan_plan.rows.back().reason == "no_input_need");
+}
+
 TEST_CASE("G2: semeadura deterministica (duas cargas = mesmo plano)") {
 	ogs::WorldState ws = demand_world();
 	ws.bootstrap.enabled = true;

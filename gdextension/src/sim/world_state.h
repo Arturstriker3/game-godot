@@ -312,6 +312,13 @@ struct BootstrapGood {
 	// limitada por `valor × população / 100 000` (fábricas de massa são grandes;
 	// centenas de plantas minúsculas saturam a semeadura e custam mais tick).
 	double max_plant_capacity_per_100k = 0.0;
+	// G3 (L2): bem-insumo sem âncora de demanda final própria. Quando declarado,
+	// o alvo mundial da semente é o consumo do bem pelos planos JÁ SEMEADOS do
+	// bem-fonte (capacidade × qty / yield da receita escolhida), e não
+	// `âncora × seed_fraction`. As participações distribuem esse total e são
+	// normalizadas sem o residual "outros" (o insumo do lote precisa ser
+	// coberto). O bem-fonte deve ser declarado antes deste no JSON.
+	std::string capacity_from;
 	std::vector<BootstrapProducer> producers;
 };
 

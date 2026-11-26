@@ -63,6 +63,34 @@ int choose_recipe(const WorldState& ws, const City& city, int product) {
 	return first;
 }
 
+// G3 (L2): consumo de `product` pelos planos já semeados de `source_good`, na
+// receita escolhida para cada planta (capacidade × qty / yield). É a
+// necessidade do lote — não a âncora mundial do bem-insumo.
+double dependent_input_need(const WorldState& ws,
+		const std::vector<BootstrapPlanRow>& rows,
+		const std::string& source_good, int product) {
+	double need = 0.0;
+	for (const BootstrapPlanRow& row : rows) {
+		if (!row.seeded || row.good != source_good) {
+			continue;
+		}
+		if (row.recipe < 0
+				|| row.recipe >= static_cast<int>(ws.recipes.size())) {
+			continue;
+		}
+		const Recipe& recipe = ws.recipes[static_cast<std::size_t>(row.recipe)];
+		if (recipe.yield <= 0.0) {
+			continue;
+		}
+		for (int slot = 0; slot < recipe.input_count; ++slot) {
+			if (recipe.inputs[slot] == product) {
+				need += row.capacity * recipe.input_qty[slot] / recipe.yield;
+			}
+		}
+	}
+	return need;
+}
+
 double city_score(const WorldState& ws, const City& city, int product,
 		const Recipe& recipe, double capacity) {
 	(void)product;
@@ -140,21 +168,39 @@ Plan plan(const WorldState& ws) {
 			out.rows.push_back(row);
 			continue;
 		}
-		const double world_anchor = anchor[static_cast<std::size_t>(product)];
-		if (world_anchor <= 0.0) {
-			// Ausência honesta: sem âncora não há semente, mas fica declarado
-			// (aviso) em vez de omitir o bem em silêncio.
-			BootstrapPlanRow row;
-			row.good = good.id;
-			row.reason = "no_anchor";
-			out.rows.push_back(row);
-			continue;
+		// G3 (L2): insumo do lote — o alvo é o consumo do bem pelos planos já
+		// semeados do bem-fonte. Esse insumo não tem âncora de demanda final
+		// própria, então o caminho `âncora × seed_fraction` não se aplica.
+		const bool input_tied = !good.capacity_from.empty();
+		double seed_world = 0.0;
+		if (input_tied) {
+			seed_world = dependent_input_need(ws, out.rows,
+				good.capacity_from, product);
+			if (seed_world <= 0.0) {
+				// Ausência honesta: sem plano do bem-fonte não há consumidor.
+				BootstrapPlanRow row;
+				row.good = good.id;
+				row.reason = "no_input_need";
+				out.rows.push_back(row);
+				continue;
+			}
+		} else {
+			const double world_anchor = anchor[static_cast<std::size_t>(product)];
+			if (world_anchor <= 0.0) {
+				// Ausência honesta: sem âncora não há semente, mas fica
+				// declarado (aviso) em vez de omitir o bem em silêncio.
+				BootstrapPlanRow row;
+				row.good = good.id;
+				row.reason = "no_anchor";
+				out.rows.push_back(row);
+				continue;
+			}
+			// G3: o bem pode declarar a própria fração (lotes L1–L5). Ausente
+			// (0) herda o global — o G2 continua idêntico.
+			const double fraction = good.seed_fraction > 0.0
+				? good.seed_fraction : cfg.seed_fraction;
+			seed_world = world_anchor * fraction;
 		}
-		// G3: o bem pode declarar a própria fração (lotes L1–L5). Ausente
-		// (0) herda o global — o G2 continua idêntico.
-		const double fraction = good.seed_fraction > 0.0
-			? good.seed_fraction : cfg.seed_fraction;
-		const double seed_world = world_anchor * fraction;
 		// Nações por participação desc e ISO3 asc (§2.7).
 		std::vector<BootstrapProducer> producers = good.producers;
 		std::sort(producers.begin(), producers.end(),
@@ -164,9 +210,29 @@ Plan plan(const WorldState& ws) {
 				}
 				return a.nation < b.nation;
 			});
+		// Insumo do lote: as participações só DISTRIBUEM a necessidade e são
+		// normalizadas sem o residual "outros" (o insumo precisa ser coberto;
+		// deixar 20% em "outros" deixaria o lote sem embalagem).
+		double share_total = 0.0;
+		if (input_tied) {
+			for (const BootstrapProducer& producer : producers) {
+				if (producer.nation != "outros") {
+					share_total += producer.share;
+				}
+			}
+			if (share_total <= 0.0) {
+				BootstrapPlanRow row;
+				row.good = good.id;
+				row.reason = "no_producer";
+				out.rows.push_back(row);
+				continue;
+			}
+		}
 		for (const BootstrapProducer& producer : producers) {
 			if (producer.nation == "outros") {
-				out.unseeded_share += producer.share;
+				if (!input_tied) {
+					out.unseeded_share += producer.share;
+				}
 				continue;
 			}
 			const auto nation_it = by_nation.find(producer.nation);
@@ -179,7 +245,8 @@ Plan plan(const WorldState& ws) {
 				out.rows.push_back(row);
 				continue;
 			}
-			const double target = producer.share * seed_world;
+			const double target = producer.share
+				* (input_tied ? seed_world / share_total : seed_world);
 			if (target < cfg.capacity_min) {
 				out.unseeded_share += producer.share;
 				BootstrapPlanRow row;

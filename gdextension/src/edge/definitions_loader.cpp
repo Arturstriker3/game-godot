@@ -702,6 +702,9 @@ void EconomySim::set_bootstrap_industry(const Dictionary& values) {
 		// habitantes simulados (0/ausente = teto fixo `capacity_max` do G2).
 		good.max_plant_capacity_per_100k = std::max(0.0,
 			double(entry.get("max_plant_capacity_per_100k", 0.0)));
+		// G3 (L2): insumo do lote dimensionado pelos planos do bem-fonte.
+		good.capacity_from = std::string(
+			String(entry.get("capacity_from", "")).utf8().get_data());
 		const Dictionary producers = entry.get("producers", Dictionary());
 		for (const Variant& key : producers.keys()) {
 			BootstrapProducer producer;
