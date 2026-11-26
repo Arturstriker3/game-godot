@@ -452,5 +452,11 @@ carrega o nível herdado do dia 0 (1,1892× a base). Decisão do dono
 
 **Verificação:** `sim_unit_tests` **74/74** (754 asserções); 365 d OFF release
 com **`ded6f54b…` inalterado** (0 falências/violações, comida 97/179, drift
-0,016673); `-Tier pr -Base main` no fechamento.
+0,016673); `-Tier pr -Base main` **46/46 OK** (run `20261126_002737`, 0 falha,
+0 crash, 0 timeout), incluindo `economy_save_load_roundtrip_test`,
+`d126_crisis_test`, `services_business_audit_test`, `c1_world_ai_90` e
+`determinism_cross_process`. O runner avisou que 3 entradas do mapa
+(`goods_data`, `population_template`, `services_template`) estão fora do
+catálogo — rodaram mesmo assim, todas OK; e que, por mexer no núcleo, a
+`-Tier nightly` é recomendada antes do merge.
 
