@@ -207,7 +207,79 @@ Artefatos: `G:\opengs_tmp\h1d_365_on.json` e `h1d_365_off.json`.
 - O runner esperou Godot de teste de outra tarefa antes de `c1_balance_test` e de
   `c2_central_bank_test`; sem conflito, só espera.
 
+## H1c — `edge/status_nation` (agregado por nação e trabalho)
+
+**Escopo:** mover para `gdextension/src/edge/status_nation.{h,cpp}` o corpo de
+`EconomySim::capture_nation_labor` (retrato semanal do trabalho), o lookup privado
+`EconomySim::find_labor_snapshot` (usado só por `build_nations`) e o corpo de
+`EconomySim::build_nations` (bloco `nations` do status: totais por nação, frota, mercado de
+trabalho e Gini de riqueza). Movidos **verbatim**: mesmas linhas, mesma ordem de escrita e de
+chaves, mesmos nomes de campo.
+
+| Método | Linhas em `economy_sim.cpp` (antes) | Linhas movidas |
+| --- | --- | --- |
+| `EconomySim::capture_nation_labor` | 2295-2348 | 54 |
+| `EconomySim::find_labor_snapshot` | 2350-2358 | 9 |
+| `EconomySim::build_nations` | 2360-2668 | 309 |
+| **Total (bloco contíguo)** | 2295-2668 | **374** |
+
+**Antes/depois:**
+
+- `gdextension/src/economy_sim.cpp`: **10.127 → 9.752 linhas** (−375: 374 de corpo + 1 linha em
+  branco separadora). `git diff --numstat` = `0 375`: só remoção, zero inserção.
+- `gdextension/src/edge/status_nation.cpp`: **397 linhas** (21 de preâmbulo + 374 movidas + 1 em
+  branco + 1 de fecho).
+- `gdextension/src/edge/status_nation.h`: âncora do módulo (documentação; as declarações continuam em
+  `economy_sim.h`, porque os métodos são de `EconomySim`).
+- `gdextension/CMakeLists.txt`: `src/edge/status_nation.cpp` no alvo `economy_gdextension`.
+
+**SHA-256 dos blocos (byte-exato):** o bloco contíguo movido foi extraído por bytes e o TU novo
+carrega o mesmo texto — bloco total (`capture_nation_labor` + `find_labor_snapshot` +
+`build_nations`, 374 linhas) `256526cc…`; por função: `27411739…` (54), `23c3e1b7…` (9) e
+`4ecf55f6…` (309). Nada foi reescrito; o mojibake pré-existente dos comentários viajou junto.
+
+**Por que continuam métodos de `EconomySim`:** os corpos leem `ws_`, `sim_core_`, `status_keys_`,
+`labor_snapshot_`/`labor_snapshot_day_` e os slots de `StatusCache` da fachada; extrair para funções
+livres exigiria abrir membros privados — o passo pede só a mudança de arquivo.
+
+**Dependências:** nenhum helper do namespace anônimo de `economy_sim.cpp` é usado. Tudo o que os
+corpos chamam é membro (`effective_productivity`, `find_labor_snapshot`) ou vem de headers do núcleo
+(`sim/sim_types.h` para `kEducationLevels`/`kIncomeLevels`/`kIncomeStrata`, via `economy_sim.h`;
+`SimCore::quintile_gini` em `sim/sim_core.h`) — sem duplicação de helper. `find_labor_snapshot`
+viajou junto porque é o único usuário do retrato e só `build_nations` o chama (mesmo arquivo, mesmo
+comportamento).
+
+## Portão de bit-identidade (H1c)
+
+Build: DLL debug `cmake --build gdextension/build-debug -j2` e `sim_unit_tests`
+(`build-unit-tests`, `-j2`), clang 23.1.5, godot-cpp 4.7.
+
+| Checagem | Resultado |
+| --- | --- |
+| `sim_unit_tests` | **62/62** casos, 451 asserções, exit 0 |
+| 365 d **ON** (`h1c_365_on`, `--ai-brain=1`) | `trajectory_sha256` **67d950b7…** = baseline G1/D-131 (0 falências, 0 violações, comida 93/179, drift 0,013175) |
+| 365 d **OFF** (`h1c_365_off`, `--ai-brain=0`) | `trajectory_sha256` **49c797ef…** = baseline D-126 (0 falências, 0 violações, comida 96/179, drift 0,016524) |
+| JSON completo × artefato do H1d | **idêntico** nas duas rodadas (só `wall_s` muda) |
+| `tools/run_tests.ps1 -Tier pr -Base main` | ver "Bateria (H1c)" |
+
+Artefatos: `G:\opengs_tmp\h1c_365_on.json` e `h1c_365_off.json`.
+
+## Bateria (H1c)
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_tests.ps1 -Tier pr -Base main`
+(seleção por diff: `gdextension/src/**` → conjunto amplo de núcleo + sentinelas `pr`).
+
+- **42/42 OK**, 0 falha, 0 crash, 0 timeout, 0 pulado — run `20261126_010457`
+  (`G:\opengs_tmp\opengs_test_run_20261126_010457\summary.json`).
+- Inclui `sim_unit_tests` (CLI), `status_query_test`, `labor_market_test`, a rodada c1 de **90 d**
+  (`c1_world_ai_90`, 226,57 s) e `determinism_cross_process`.
+- As rodadas 365 d ON/OFF do portão foram executadas pelo mesmo runner em invocação própria
+  (mapa temporário com as duas no tier `pr`, pedido `-List economy_integration_test`), para
+  respeitar o lock global: run `20261126_014618`, **4/4 OK** (365 ON 848,97 s; 365 OFF 385,76 s).
+- O runner ficou na fila do lock global enquanto o worktree `opengs-wt-g1b` rodava testes; sem
+  conflito, só espera.
+
 ## Próximos passos
 
-H1c (`edge/status_nation.cpp`), depois H1e, H1f, H1g — na ordem do plano, cada um com o mesmo
+H1e (`edge/commands_bridge`), depois H1f, H1g — na ordem do plano, cada um com o mesmo
 portão. Sem merge até o QA fechar a série.
