@@ -1,10 +1,11 @@
 // Implementação de ai_templates.h (A5): a fonte única dos parâmetros de
 // engenharia da IA econômica.
 //
-// A tabela de primários é a MESMA de core/economy/ai/industry_templates.gd
-// (`TEMPLATES`) e do GAME_STATE §15 — mesmos números, uma cópia só. Os índices
-// de produto NÃO são fixos aqui: saem de `ws.product_lookup`, então a ordem do
-// goods.json pode mudar sem corromper a IA.
+// A tabela `kPrimaries` abaixo é a única cópia dos 21 primários; o GAME_STATE
+// §15 documenta os mesmos números (o espelho GDScript saiu no R0.2, ver
+// `docs/economy/rework/R0.md`). Os índices de produto NÃO são fixos aqui: saem
+// de `ws.product_lookup`, então a ordem do goods.json pode mudar sem corromper
+// a IA.
 //
 // Nenhuma ordem depende de hash: as entradas de `all` vêm da tabela (ordem de
 // declaração) e depois das receitas na ordem do arquivo; os conjuntos são

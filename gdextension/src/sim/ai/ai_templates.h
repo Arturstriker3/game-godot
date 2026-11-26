@@ -1,11 +1,11 @@
 #pragma once
 // A5 — TEMPLATES DE ENGENHARIA DA IA ECONÔMICA (fonte única em C++).
 //
-// Hoje os parâmetros de construção da IA (empregos/t, salário, opex, insumo,
-// fator calórico e capital por capacidade) vivem duplicados em dois lugares:
-// a tabela `TEMPLATES` de `core/economy/ai/industry_templates.gd` e a lista do
-// GAME_STATE §15. Este módulo é a fonte única: os três investidores e o
-// governo passam a ler daqui.
+// Os parâmetros de construção da IA (empregos/t, salário, opex, insumo,
+// fator calórico e capital por capacidade) têm uma cópia só: a tabela
+// `kPrimaries` de ai_templates.cpp. O GAME_STATE §15 mantém a lista
+// documentada (mesmos números) e o espelho GDScript saiu no R0.2
+// (`docs/economy/rework/R0.md`). Os três investidores e o governo leem daqui.
 //
 // Escopo: só DADO derivado de `WorldState` (goods.json + recipes.json). Nada
 // de mercado, caixa, status ou RNG; nenhuma mutação do mundo. STL puro.
