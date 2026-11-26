@@ -15,14 +15,19 @@
 #include "../sim/world_state.h"
 
 namespace ogs {
+class PotentialDemandCache;
 namespace edge {
 
 // Serializa todo o estado do cenário (save). Sem lock: a fachada segura o mutex.
-godot::Dictionary to_dict(const WorldState& ws, const SimCore& core);
+// `potential_cache` (G2) entra como chave aditiva `potential_cache`; nulo/vazio
+// não grava nada (save antigo continua válido e o load recalcula o piso).
+godot::Dictionary to_dict(const WorldState& ws, const SimCore& core,
+	const PotentialDemandCache* potential_cache = nullptr);
 
 // Restaura o estado do cenário a partir de to_dict() (load + migrações).
 // Sem lock: a fachada segura o mutex e invalida o cache de status.
-void from_dict(WorldState& ws, SimCore& core, const godot::Dictionary& data);
+void from_dict(WorldState& ws, SimCore& core, const godot::Dictionary& data,
+	PotentialDemandCache* potential_cache = nullptr);
 
 } // namespace edge
 } // namespace ogs

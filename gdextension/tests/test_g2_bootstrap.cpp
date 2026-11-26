@@ -235,6 +235,128 @@ TEST_CASE("G2 perf: varredura mensal escalonada do investidor") {
 	CHECK(ogs::AiBrainParams().scan_interval_days == 30);
 }
 
+TEST_CASE("G2 bootstrap: leitor declara no_recipe e no_anchor (sem omitir)") {
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	// `raw` existe no catalogo mas NAO tem receita; `orphan` tem receita mas
+	// nenhuma cesta consome a cadeia dele (ancora final zero).
+	ws.products = 6;
+	ws.product_names.push_back("orphan");
+	add_recipe(ws, "orphan", 5, 1.0, {2});
+	ogs::BootstrapGood raw_good;
+	raw_good.id = "raw";
+	ws.bootstrap.goods.push_back(raw_good);
+	ogs::BootstrapGood other_good;
+	other_good.id = "orphan";
+	ws.bootstrap.goods.push_back(other_good);
+	const ogs::bootstrap::Plan plan = ogs::bootstrap::plan(ws);
+	REQUIRE(plan.rows.size() == 2);
+	CHECK(plan.rows[0].good == "raw");
+	CHECK(plan.rows[0].reason == "no_recipe");
+	CHECK(plan.rows[1].good == "orphan");
+	CHECK(plan.rows[1].reason == "no_anchor");
+	CHECK(plan.seeded == 0);
+}
+
+TEST_CASE("G2 bootstrap: residual (outros/no_city) e shortfall de orcamento") {
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	ws.bootstrap.max_cities_per_nation = 1;
+	// Ancora de `mid` = 1e-3 x 1e6 x 0,5 = 500 t/dia.
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-3;
+	ws.cities[0].government_budget = 50000.0;  // teto 25 000
+	ogs::BootstrapGood good;
+	good.id = "mid";
+	good.producers.push_back({"outros", 0.10});
+	good.producers.push_back({"BBB", 0.30});  // nacao sem cidade
+	good.producers.push_back({"AAA", 0.60});  // 1 cidade: cabe 15 de 30
+	ws.bootstrap.goods.push_back(good);
+
+	const ogs::bootstrap::Plan plan = ogs::bootstrap::plan(ws);
+	// 0,10 (outros) + 0,30 (BBB sem cidade) ficam declarados como residual.
+	CHECK(plan.unseeded_share == Approx(0.40));
+	// AAA: alvo 0,60 x 50 = 30 t/dia, 2 blocos de 15; um bloco custa
+	// 15 x 1000 = 15 000 <= 25 000: semeia 15 e declara 15 de shortfall.
+	CHECK(plan.seeded == 1);
+	CHECK(plan.shortfall == Approx(15.0));
+	bool saw_no_city = false;
+	bool saw_budget = false;
+	for (const ogs::BootstrapPlanRow& row : plan.rows) {
+		if (row.reason == "no_city") {
+			CHECK(row.nation == "BBB");
+			saw_no_city = true;
+		}
+		if (row.reason == "budget") {
+			saw_budget = true;
+		}
+		// O leitor (economy_sim.cpp) exige receita valida em linha semeada.
+		if (row.seeded) {
+			CHECK(row.recipe >= 0);
+			CHECK(row.recipe < static_cast<int>(ws.recipes.size()));
+		}
+	}
+	CHECK(saw_no_city);
+	CHECK(saw_budget);
+}
+
+TEST_CASE("G2 bootstrap: gate da cidade-semente (5 M, senao maior >=1 M)") {
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.max_cities_per_nation = 1;
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-3;
+	ws.cities[0].government_budget = 1e9;
+	ws.cities[0].id = "X_SMALL";
+	ws.cities[0].simulation_population = 500000.0;  // < 1 M: nao serve
+	ogs::City mid_city;
+	mid_city.id = "X_MID";
+	mid_city.nation = "AAA";
+	mid_city.simulation_population = 2000000.0;
+	mid_city.government_budget = 1e9;
+	ogs::City big_city;
+	big_city.id = "X_BIG";
+	big_city.nation = "AAA";
+	big_city.simulation_population = 6000000.0;
+	big_city.government_budget = 1e9;
+	ws.cities.push_back(mid_city);
+	ws.cities.push_back(big_city);
+	ogs::BootstrapGood good;
+	good.id = "mid";
+	good.producers.push_back({"AAA", 1.0});
+	ws.bootstrap.goods.push_back(good);
+
+	const auto seeded_city = [](const ogs::bootstrap::Plan& plan) {
+		for (const ogs::BootstrapPlanRow& row : plan.rows) {
+			if (row.seeded) {
+				return row.city;
+			}
+		}
+		return std::string();
+	};
+	// Com cidade >=5 M, so ela entra no filtro (nao a de 2 M).
+	CHECK(seeded_city(ogs::bootstrap::plan(ws)) == "X_BIG");
+
+	// Sem nenhuma >=5 M, vale a maior >=1 M (X_MID 2 M > X_BIG 1,5 M).
+	ws.cities[2].simulation_population = 1500000.0;
+	CHECK(seeded_city(ogs::bootstrap::plan(ws)) == "X_MID");
+
+	// Sem nenhuma >=1 M, no_city (a cidade pequena nao e promovida).
+	ws.cities[1].simulation_population = 800000.0;
+	ws.cities[2].simulation_population = 900000.0;
+	const ogs::bootstrap::Plan none_plan = ogs::bootstrap::plan(ws);
+	CHECK(none_plan.seeded == 0);
+	REQUIRE_FALSE(none_plan.rows.empty());
+	CHECK(none_plan.rows.back().reason == "no_city");
+}
+
 TEST_CASE("G2: semeadura deterministica (duas cargas = mesmo plano)") {
 	ogs::WorldState ws = demand_world();
 	ws.bootstrap.enabled = true;

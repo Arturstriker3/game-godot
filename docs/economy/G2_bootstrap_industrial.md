@@ -85,8 +85,14 @@ DLL debug `17:44:17`, `threads=1`, mundo real. As rodadas passaram pelo
 | portão de comida | ≤ 97/179 | **97/179** (mediana 0,96930) | OK |
 | drift máximo diário | < 0,03 | **0,014076** | OK |
 | `chips` e `microchips` produzidos + vendidos | ≥ 3 países | **9 e 11** | OK |
-| MA30 de `chips` × base | ≤ 1,10 | **1,1046** | **REPROVA (+0,46%)** |
+| MA30 de `chips` dia 365 ÷ dia 0 | ≤ 1,15 | **0,9289** | OK |
 | OFF estável entre 2 rodadas e igual ao C/D | bit a bit | `ded6f54b…` (2/2) | OK |
+
+> **Critério de preço (decisão do dono, 2026-11-25):** a razão do aceite é
+> **MA30(dia 365) ÷ MA30(dia 0) ≤ 1,15**; o quociente ÷ preço-base é
+> **informativo**. O MA30 do dia 0 já nasce **1,1892× a base** (preços da C/D),
+> então medir ÷base confundia nível herdado com deriva. O teto antigo (1,10×
+> sobre a base) foi substituído, não afrouxado: 1,15 sobre a deriva do dia 0.
 
 ### ON — `--bootstrap=1 --ai-brain=1 --goods-diag=…`
 
@@ -97,11 +103,13 @@ DLL debug `17:44:17`, `threads=1`, mundo real. As rodadas passaram pelo
 - Termômetro (união dos 30 dias finais do diagnóstico — país com oferta **ou**
   venda > 0): `chips` **9**, `microchips` **11**, `computer` 5, `phone` 6,
   `steel` 7, `plastic` 8, `precision_tools` 8.
-- MA30 do dia 365 × base: `chips` 16 828,0 / 15 234,9 = **1,1046**;
-  `microchips` 22 758,1 / 19 668,6 = 1,1571; `computer` 1,0925;
-  `phone` 1,5082; `steel` 1,2895; `plastic` 1,0584; `precision_tools` 1,1318.
-  **`chips` segue acima do teto 1,10×** (1,1046): a decisão de aceitar é do
-  dono; nada foi afrouxado.
+- Aceite de preço (dia 365 ÷ dia 0, informativo fora de `chips`): `chips`
+  **16 828,0 / 18 117,2 = 0,9289 ≤ 1,15 → APROVA** (÷base 1,1046,
+  informativo); `microchips` 1,1132; `computer` 0,8973; `phone` 1,5991;
+  `steel` 1,0958; `plastic` 0,9422; `precision_tools` 1,0923.
+  Só `chips` tem critério declarado na spec (G1 §9.6 / G2 §5.7); os demais são
+  leitura informativa. Nada foi afrouxado: a decisão do dono trocou a razão
+  (÷dia 0) e o teto (1,15).
 - A trajetória mudou vs a rodada sem cache (`751933e0…`): o piso agora é
   congelado dentro do mês — esperado e declarado.
 
@@ -221,10 +229,11 @@ DLL debug `19:46:36`, `threads=1`, mundo real, `--days=365`.
 - Termômetro (união dos 30 dias finais; produção **ou** venda > 0): `chips`
   **8**, `microchips` **8**, `computer` 5, `phone` 3, `steel` 8, `plastic` 7,
   `precision_tools` 9.
-- MA30 do dia 365 ÷ base: `chips` **1,1137 — REPROVA o teto 1,10 (+1,24%)**;
-  `microchips` 1,1671; `computer` 1,1969; `phone` 1,4312; `steel` 1,2431;
-  `plastic` 1,0026; `precision_tools` 1,1079. A cadência mensal **não** reduziu
-  o pico de `chips` (1,1046 → 1,1137).
+- Aceite de preço (dia 365 ÷ dia 0): `chips` **0,9365 ≤ 1,15 → APROVA**
+  (÷base 1,1137, informativo); `microchips` 0,9732; `computer` 0,9651;
+  `phone` 1,4195; `steel` 1,0937; `plastic` 0,8919; `precision_tools` 1,0160.
+  A cadência mensal **não** mudou o nível de `chips` (÷base 1,1046 → 1,1137);
+  o que mudou foi a leitura: sobre o dia 0, o preço derivou 0,9365.
 
 ### OFF — `--bootstrap=0 --ai-brain=0`
 
@@ -388,10 +397,13 @@ mesmo motivo (o caminho que o jogador roda).
 - **571 investimentos** (484 privado / 87 grupo), herd máx. **3**.
 - `chips` e `microchips` produzidos/vendidos em **8 e 12 países** (≥3);
   `computer` 7, `phone` 6, `steel` 9, `plastic` 9, `precision_tools` 8.
-- MA30 do dia 365 ÷ base: `chips` **1,2016 — REPROVA o teto 1,10** (o MA30 do
-  dia 0 já era 1,189× a base, herdado dos preços da C/D);
-  `microchips` 1,4071; `computer` 1,1125; `phone` 1,2810; `steel` 1,2660;
-  `plastic` 1,0937; `precision_tools` 1,1984.
+- Aceite de preço (dia 365 ÷ dia 0): `chips` **1,0104 ≤ 1,15 → APROVA**
+  (18 306,2 / 18 117,2; ÷base 1,2016, informativo); `microchips` 1,1733;
+  `computer` 0,8971; `phone` 1,2705; `steel` 1,1164; `plastic` 0,9728;
+  `precision_tools` 1,0990. **Observação declarada:** `microchips` (1,1733) e
+  `phone` (1,2705) passam de 1,15 na própria deriva, mas não têm critério de
+  preço na spec (só `chips` tem); ficam como leitura informativa e ponto de
+  vigilância, não como gate.
 - Comparação: a rodada 3 (sem a rodada 4) não tinha 365 d; a rodada 4 **não
   muda decisão** (30 d idêntico), então este é o primeiro 365 d do mundo da
   rodada 3 (correção do candidato de grupo): invests 367 → **571**.
@@ -404,6 +416,39 @@ mesmo motivo (o caminho que o jogador roda).
   pendência do G2), 3 106 investimentos.
 
 **Veredito da rodada 4:** critério de perf **APROVADO em release (+14,4%)**;
-365 d ON dentro de todos os critérios **exceto o MA30 de `chips` (1,2016 >
-1,10)**, que já vinha acima da base no dia 0 — decisão do dono.
+365 d ON dentro de **todos** os critérios, inclusive o de preço de `chips`
+(1,0104 ≤ 1,15 sobre o dia 0). O número antigo (1,2016) era a razão ÷base, que
+carrega o nível herdado do dia 0 (1,1892× a base). Decisão do dono
+(2026-11-25): razão do aceite = dia 365 ÷ dia 0, teto 1,15.
+
+## Fechamento pré-merge (2026-11-26)
+
+**Métrica.** A razão do aceite é **MA30(dia 365) ÷ MA30(dia 0)** por bem;
+÷preço-base é informativo. Artigos medidos da DLL release da rodada 4
+(`G:/opengs_tmp/g2r4/on365_rel.json`, sha `b4a4ab38…`): `chips` **1,0104**,
+`microchips` 1,1733, `computer` 0,8971, `phone` 1,2705, `steel` 1,1164,
+`plastic` 0,9728, `precision_tools` 1,0990. Só `chips` tem gate declarado.
+
+**Ressalvas do QA (t108) fechadas:**
+
+- **(a) Cache do piso no save (aditivo, sem bump de versão):** a chave
+  `potential_cache` guarda dia, dimensões, assinatura das definições e as
+  células **não nulas** (esparso, `[cidade, produto, valor]`). Save antigo — ou
+  brain/piso desligado — não tem a chave e o load recalcula (comportamento
+  anterior). Round-trip coberto em `test_roundtrip.cpp` (valores, assinatura e
+  ausência da chave).
+- **(b) `choose_recipe`:** o produto sem receita é declarado `no_recipe` antes
+  do plano e o comparador de cidades nunca indexa `recipes[-1]`; âncora 0 vira
+  linha `no_anchor` (aviso declarado), não omissão silenciosa.
+- **(c) Testes do leitor:** `no_recipe`/`no_anchor`, residual `outros`/`no_city`,
+  shortfall de orçamento, receita válida em linha semeada e gate da
+  cidade-semente (5 M → maior ≥1 M → `no_city`) em `test_g2_bootstrap.cpp`.
+- **(d) Drift OFF reconciliado:** `0,016673` e `0,016915` vinham da **mesma**
+  rodada (`ded6f54b…`): o primeiro é `drift` (dia 365), o segundo
+  `max_daily_drift`. O ON da rodada 4 sofreu a mesma troca na doc: `drift`
+  0,014103 e máximo diário 0,014201. Indentação do `ai_brain.json` corrigida.
+
+**Verificação:** `sim_unit_tests` **74/74** (754 asserções); 365 d OFF release
+com **`ded6f54b…` inalterado** (0 falências/violações, comida 97/179, drift
+0,016673); `-Tier pr -Base main` no fechamento.
 

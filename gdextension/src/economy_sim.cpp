@@ -8321,7 +8321,7 @@ bool EconomySim::apply_spend_government(const String& city_id, double amount) {
 
 Dictionary EconomySim::to_dict() const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	return ogs::edge::to_dict(ws_, sim_core_);
+	return ogs::edge::to_dict(ws_, sim_core_, &ai_phase_.potential_cache());
 }
 
 void EconomySim::set_urban(const Dictionary& urban_land,
@@ -8873,7 +8873,7 @@ void EconomySim::from_dict(const Dictionary& data) {
 	// A3: save carregado nÃ£o herda a fila nem o log do mundo anterior.
 	commands_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
-	ogs::edge::from_dict(ws_, sim_core_, data);
+	ogs::edge::from_dict(ws_, sim_core_, data, &ai_phase_.potential_cache());
 	// C4 (D-110): o save v31 migrado nÃ£o tem nomes e o v32 pode vir de outro
 	// dado; as definiÃ§Ãµes de `banks.json` sÃ£o reaplicadas para nomear os
 	// bancos e â€” se o dado nÃ£o declara estrangeiro â€” fundir o papel no
@@ -8890,7 +8890,7 @@ Dictionary EconomySim::to_snapshot() const {
 	Dictionary snapshot;
 	snapshot["definitions"] =
 		ogs::edge::to_godot(ogs::save::definitions_to(ws_));
-	snapshot["save"] = ogs::edge::to_dict(ws_, sim_core_);
+	snapshot["save"] = ogs::edge::to_dict(ws_, sim_core_, &ai_phase_.potential_cache());
 	return snapshot;
 }
 
@@ -8930,7 +8930,7 @@ void EconomySim::from_snapshot(const Dictionary& snapshot) {
 	const ogs::save::Value definition_data = ogs::edge::from_godot(definitions);
 	ogs::save::definitions_from(ws_, definition_data);
 	ogs::edge::from_dict(ws_, sim_core_,
-		static_cast<Dictionary>(save_block));
+		static_cast<Dictionary>(save_block), &ai_phase_.potential_cache());
 	// `land_capacity` Ã© dado de geografia e sÃ³ pode entrar depois das cidades:
 	// `definitions_from` rodou com o mundo vazio e ignorou os itens.
 	ogs::save::apply_land_capacity(ws_, sim_core_, definition_data);
@@ -8942,7 +8942,8 @@ bool EconomySim::to_snapshot_file(const String& path) const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	ogs::save::Value snapshot = ogs::save::Value::make_object();
 	snapshot["definitions"] = ogs::save::definitions_to(ws_);
-	snapshot["save"] = ogs::save::to_value(ws_, sim_core_);
+	snapshot["save"] = ogs::save::to_value(ws_, sim_core_,
+		&ai_phase_.potential_cache());
 	// A serializaÃ§Ã£o Ã© a da BIBLIOTECA (nlohmann via dump_json), nÃ£o a do
 	// Godot: Ã© o Ãºnico caminho com round-trip IEEE-exato para |x| < 1.
 	const std::string text = ogs::save::dump_json(snapshot, 2);
@@ -9012,7 +9013,8 @@ bool EconomySim::from_snapshot_file(const String& path) {
 	// carregados (Ã­ndices incluÃ­dos). `save::from_value` Ã© exatamente o que
 	// `edge::from_dict` chama: nada de Variant no meio do caminho.
 	ogs::save::definitions_from(ws_, definitions);
-	ogs::save::from_value(ws_, sim_core_, save_block);
+	ogs::save::from_value(ws_, sim_core_, save_block,
+		&ai_phase_.potential_cache());
 	// SÃ³ agora as cidades existem: o teto agrÃ­cola do bloco estÃ¡tico entra no
 	// nÃºcleo depois do estado dinÃ¢mico (mesmo motivo de from_snapshot).
 	ogs::save::apply_land_capacity(ws_, sim_core_, definitions);

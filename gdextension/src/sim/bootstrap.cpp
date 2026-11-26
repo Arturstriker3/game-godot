@@ -32,8 +32,18 @@ bool has_local_input(const City& city, int product) {
 	return city.deposits[product].remaining_kt > 0.0;
 }
 
+bool has_recipe_for(const WorldState& ws, int product) {
+	for (const Recipe& recipe : ws.recipes) {
+		if (recipe.output == product) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Variante da receita para a cidade: a primeira cujo insumo tem aptidão ou
 // jazida local >=0,30; sem alternativa local, a primeira na ordem do JSON.
+// Devolve -1 quando o produto não tem receita (chamador trata como ausência).
 int choose_recipe(const WorldState& ws, const City& city, int product) {
 	int first = -1;
 	for (std::size_t index = 0; index < ws.recipes.size(); ++index) {
@@ -122,9 +132,23 @@ Plan plan(const WorldState& ws) {
 			out.rows.push_back(row);
 			continue;
 		}
+		if (!has_recipe_for(ws, product)) {
+			// Sem receita não há planta: declara (não omite nem indexa -1).
+			BootstrapPlanRow row;
+			row.good = good.id;
+			row.reason = "no_recipe";
+			out.rows.push_back(row);
+			continue;
+		}
 		const double world_anchor = anchor[static_cast<std::size_t>(product)];
 		if (world_anchor <= 0.0) {
-			continue;  // ausência honesta: sem âncora não há semente
+			// Ausência honesta: sem âncora não há semente, mas fica declarado
+			// (aviso) em vez de omitir o bem em silêncio.
+			BootstrapPlanRow row;
+			row.good = good.id;
+			row.reason = "no_anchor";
+			out.rows.push_back(row);
+			continue;
 		}
 		const double seed_world = world_anchor * cfg.seed_fraction;
 		// Nações por participação desc e ISO3 asc (§2.7).
@@ -202,16 +226,20 @@ Plan plan(const WorldState& ws) {
 						ws.cities[static_cast<std::size_t>(left)];
 					const City& b =
 						ws.cities[static_cast<std::size_t>(right)];
-					const Recipe& ra = ws.recipes[
-						static_cast<std::size_t>(
-							choose_recipe(ws, a, product))];
-					const Recipe& rb = ws.recipes[
-						static_cast<std::size_t>(
-							choose_recipe(ws, b, product))];
-					const double sa = city_score(ws, a, product, ra,
-						std::max(cfg.capacity_min, target));
-					const double sb = city_score(ws, b, product, rb,
-						std::max(cfg.capacity_min, target));
+					const int ra_index = choose_recipe(ws, a, product);
+					const int rb_index = choose_recipe(ws, b, product);
+					// Guarda: produto sem receita não é candidata (índice -1
+					// não pode entrar em ws.recipes); sem receita = pior score.
+					const double sa = ra_index >= 0
+						? city_score(ws, a, product,
+							ws.recipes[static_cast<std::size_t>(ra_index)],
+							std::max(cfg.capacity_min, target))
+						: -1e300;
+					const double sb = rb_index >= 0
+						? city_score(ws, b, product,
+							ws.recipes[static_cast<std::size_t>(rb_index)],
+							std::max(cfg.capacity_min, target))
+						: -1e300;
 					if (sa != sb) {
 						return sa > sb;
 					}

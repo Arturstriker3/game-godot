@@ -281,6 +281,14 @@ public:
 	// D-131 — leitura do estado entre dias (contadores de diagnóstico da fase A).
 	const AiState& state() const { return state_; }
 
+	// G2 (perf) — cache mensal do piso: lido/gravado no save (chave aditiva
+	// `potential_cache`) para um load no meio do mês não recalcular o piso com
+	// a população de hoje e mudar a trajetória do mundo.
+	PotentialDemandCache& potential_cache() { return potential_cache_; }
+	const PotentialDemandCache& potential_cache() const {
+		return potential_cache_;
+	}
+
 private:
 	// Retrato do dia (reaproveitado entre dias: os vetores mantêm capacidade).
 	AiView view_;
