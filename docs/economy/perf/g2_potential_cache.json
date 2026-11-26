@@ -1,0 +1,56 @@
+{
+  "_comment": "G2 - A/B do potential_demand (30 d, mesma DLL debug, threads=1, mundo real). Medido no worktree opengs-wt-g1b em 25/11/2026. 'antes' = DLL 15:29:44 (HEAD 262d679c); 'depois' = DLL 17:44:17 (HEAD 6e62fe9b). Comando: tools/run_tests.ps1 -Tier quick -ImpactMap <mapa temporario> com --brain-override em G:/opengs_tmp/g2_perf/.",
+  "days": 30,
+  "threads": 1,
+  "scenario": "data/definitions/scenario/cities.json (849 cidades, 125 bens)",
+  "before_cache": {
+    "dll": "economy_gdextension.windows.template_debug.x86_64.dll 25/11/2026 15:29:44",
+    "off_wall_s": 55.773,
+    "off_s_per_day": 1.859,
+    "on_wall_s": 162.961,
+    "on_s_per_day": 5.432,
+    "overhead_pct": 192.2
+  },
+  "after_cache": {
+    "dll": "economy_gdextension.windows.template_debug.x86_64.dll 25/11/2026 17:44:17",
+    "off_wall_s": 56.394,
+    "off_s_per_day": 1.880,
+    "on_wall_s": 164.628,
+    "on_s_per_day": 5.488,
+    "overhead_pct": 191.9
+  },
+  "target": {
+    "max_overhead_pct": 20.0,
+    "met": false,
+    "reason": "a propagacao deixou de custar (ai_view ~5 ms/dia nos dois bracos), mas o custo dominante e a IA avaliando candidatos que o piso desbloqueia; nao e a propagacao."
+  },
+  "off_bitwise": {
+    "sha256_30d_antes": "7fd0a848",
+    "sha256_30d_depois": "7fd0a848",
+    "equal": true
+  },
+  "tick_wall_5d": {
+    "_comment": "Tempo de parede medido no GDScript ao redor de sim.tick_day() (--profile=1), media dos 5 dias.",
+    "on_s_per_day": 5.146,
+    "off_s_per_day": 1.487
+  },
+  "profile_5d": {
+    "_comment": "get_profile() do nucleo (microssegundos acumulados no periodo; o harness divide por dias). A fase ai_view e onde a propagacao roda: ~29 ms no periodo nos DOIS bracos (antes do cache ela custava segundos/dia).",
+    "ai_view_us_total_on": 28796.9,
+    "ai_view_us_total_off": 29078.7,
+    "ai_us_total_on": 5533046.8,
+    "ai_us_total_off": 1362464.1
+  },
+  "root_cause_30d": {
+    "group_attempts_off": 211067,
+    "group_attempts_on": 835581,
+    "group_rejected_off": 63803,
+    "group_rejected_on": 397124,
+    "group_created_off": 10,
+    "group_created_on": 17,
+    "investments_private_off": 14,
+    "investments_private_on": 20,
+    "investments_group_off": 10,
+    "investments_group_on": 17
+  }
+}

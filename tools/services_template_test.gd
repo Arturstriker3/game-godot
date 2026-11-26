@@ -361,8 +361,15 @@ func _frames(count: int) -> void:
 		await process_frame
 
 
+## A economia constrói o mundo no `_ready` do autoload e o PRIMEIRO dia roda no
+## worker do tick (~1,9 s/dia no debug com o mundo real). Em headless o
+## `process_frame` corre muito mais rápido que esse tick, então os 600 frames
+## antigos venciam antes do resumo (a semeadura de 271 plantas da G2 alonga o
+## dia 0). O teto agora é de TEMPO DE PAREDE (120 s), só deste teste: o
+## resultado não depende do FPS do headless. O runner mantém o timeout próprio.
 func _wait_for_summary() -> bool:
-	for _frame in 600:
+	var deadline := Time.get_ticks_msec() + 120000
+	while Time.get_ticks_msec() < deadline:
 		var eco := root.get_node_or_null("Economy")
 		if eco != null and not (eco.get("last_summary") as Dictionary).is_empty():
 			return true

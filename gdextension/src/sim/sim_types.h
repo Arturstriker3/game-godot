@@ -1985,6 +1985,14 @@ struct Region {
 		// contabilidade, quando as firmas ja receberam a receita do dia.
 		kPhasePower,
 		kPhasePowerSettle,
+		// G2 perf rodada 3: dissecação da fase `ai` (só medição). O piso de
+		// demanda potencial (G2-B) só toca a view; estas zonas medem onde o
+		// custo diário dela realmente cai — aplicação do piso, caches do dia
+		// (oferta/exposição), varredura de cada investidor e os forecasts.
+		kPhaseAiFloor, kPhaseAiPrepare, kPhaseAiSupplyCache,
+		kPhaseAiExposureCache, kPhaseAiGroups, kPhaseAiPrivate,
+		kPhaseAiGov, kPhaseAiStorage, kPhaseAiRefinery,
+		kPhaseAiLossScan, kPhaseAiForecast,
 		kPhaseCount
 	};
 

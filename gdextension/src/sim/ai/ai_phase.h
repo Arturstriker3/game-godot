@@ -27,6 +27,7 @@
 // sem IA.
 
 #include "../commands.h"
+#include "../potential_demand.h"
 #include "../sim_core.h"
 #include "../world_state.h"
 #include "ai_government.h"
@@ -44,6 +45,15 @@
 #include <vector>
 
 namespace ogs {
+
+// G2 perf - agenda determinística da varredura mensal do investidor: o agente
+// `index` (cidade do privado / grupo) avalia candidatos quando
+// `day % interval == index % interval`, ou seja, `(day - index) % interval ==
+// 0`. Sem cursor no save: o dia e o índice bastam (round-trip igual).
+inline bool ai_scan_due(int day, int index, int interval) {
+	const int period = interval < 1 ? 1 : interval;
+	return day % period == index % period;
+}
 
 // Resultado de uma ação emitida pela IA, já convertido do resultado do núcleo
 // (InvestResult/BuildResult/GroupInvestResult) para o que a regra consulta.
@@ -271,9 +281,20 @@ public:
 	// D-131 — leitura do estado entre dias (contadores de diagnóstico da fase A).
 	const AiState& state() const { return state_; }
 
+	// G2 (perf) — cache mensal do piso: lido/gravado no save (chave aditiva
+	// `potential_cache`) para um load no meio do mês não recalcular o piso com
+	// a população de hoje e mudar a trajetória do mundo.
+	PotentialDemandCache& potential_cache() { return potential_cache_; }
+	const PotentialDemandCache& potential_cache() const {
+		return potential_cache_;
+	}
+
 private:
 	// Retrato do dia (reaproveitado entre dias: os vetores mantêm capacidade).
 	AiView view_;
+	// G2 (perf): piso de demanda potencial por cidade x produto, recalculado
+	// no dia 0 e a cada `potential_demand.recompute_days` dias (cache mensal).
+	PotentialDemandCache potential_cache_;
 	// Templates de engenharia: construídos uma vez; refeitos só quando o
 	// catálogo de produtos muda de tamanho.
 	AiTemplates templates_;

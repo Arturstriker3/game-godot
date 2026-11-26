@@ -1138,6 +1138,23 @@ Value ai_brain_to(const WorldState& ws) {
 	Value crisis_link;
 	crisis_link["block_loss_days"] = Value(p.block_loss_days);
 	out["crisis_link"] = crisis_link;
+	// G2: seção ADITIVA só quando difere do default compilado. Rodada com o
+	// piso desligado (o caso de equivalência bit a bit) não ganha a chave e o
+	// documento salvo continua idêntico ao D-131.
+	if (p.potential_enabled || p.potential_discount != 0.5
+			|| p.potential_cap != 1.0 || p.potential_recompute_days != 30) {
+		Value potential;
+		potential["enabled"] = Value(p.potential_enabled ? 1 : 0);
+		potential["discount"] = Value(p.potential_discount);
+		potential["cap"] = Value(p.potential_cap);
+		potential["recompute_days"] = Value(p.potential_recompute_days);
+		out["potential_demand"] = potential;
+	}
+	// G2 perf: so grava a cadencia da varredura do investidor quando difere do
+	// default (30); o caminho OFF/cadencia antiga nao ganha a chave.
+	if (p.scan_interval_days != 30) {
+		out["scan_interval_days"] = Value(p.scan_interval_days);
+	}
 	return out;
 }
 
@@ -1199,6 +1216,19 @@ void ai_brain_from(WorldState& ws, const Value& block) {
 		scalar(*section, "crisis_link", "block_loss_days",
 			ws.ai_brain.block_loss_days);
 	}
+	// G2: save antigo sem a seção mantém o valor carregado do JSON (defaults).
+	if (const Value* section = read_object(block, "potential_demand")) {
+		scalar(*section, "potential_demand", "discount",
+			ws.ai_brain.potential_discount);
+		scalar(*section, "potential_demand", "cap", ws.ai_brain.potential_cap);
+		scalar(*section, "potential_demand", "recompute_days",
+			ws.ai_brain.potential_recompute_days);
+		values["potential_demand.enabled"] =
+			read_double(*section, "enabled", 0.0) > 0.5 ? 1.0 : 0.0;
+	}
+	// G2 perf: topo aditivo; save antigo sem a chave mantem o default/carregado.
+	values["scan_interval_days"] = read_double(block, "scan_interval_days",
+		ws.ai_brain.scan_interval_days);
 	ai_brain::apply_params(ws, values);
 }
 

@@ -1,9 +1,11 @@
 # G1 — Semicondutores, microchips e drone FPV
 
 Status: **parte 0 implementada** (núcleo, save, rename de exibição e teste
-unitário). As partes seguintes (bens `microchips`/`fpv_drone`, receitas da fab
-de semicondutores e telas) ainda não estão no código. Decisão do dono registrada
-no `GAME_STATE.md` (§ "Decidido pelo dono", G1).
+unitário) e **parte 1 em andamento** — Fase A′ (bens `microchips`/`fpv_drone`,
+Fab de semicondutores e remontagem do `military_drone`) concluída e **Fase C
+aplicada (`sensors` usa `microchips`), mas reprovada no critério de cadeia viva**;
+a Fase D não foi aplicada (protocolo: parar na fase que reprova). Decisões do
+dono registradas no `GAME_STATE.md` (§ "Decidido pelo dono", G1).
 
 Esta nota cobre apenas a **parte 0**: a infraestrutura de receita que as partes
 seguintes usam — prazo de obra próprio e classe da planta — e o rename de
@@ -109,12 +111,95 @@ são lidos de `data/definitions/economy/recipes.json` por
   `sim_unit_tests` CLI; inclui `goods_data_test` e `c1_world_ai_90`). O caso G1
   isolado (`sim_unit_tests.exe -tc="G1*"`) passa com 8 asserções.
 
+## Parte 1 — Fase A′ (decisões do dono, 2026-11-25)
+
+Decisões aplicadas:
+
+- **D1 — sem quartzo.** Não existem `quartz`, `silicon_eg` nem `wafer`; a cadeia
+  de silício fica para release seguinte ("Fase A′").
+- **D2 — composição do `microchips`.** `chips` + `processed_rare_earths` (sem
+  `precision_tools`, a recomendação da spec).
+- **D3 — fases C e D aceitas**, cada uma com rodada e medição próprias.
+- **D4 — `fpv_drone` usa `chips`** (não `microchips`), em montagem direta.
+- **D5 — Fab é receita**: `plant_class: "semiconductor_fab"` +
+  `construction_days: 180`, capex/opex de Fab; **sem** classe nova de eficiência
+  no núcleo.
+- **D6 — sem água.** O opex da Fab é químicos 20 + energia 20 = **40/t**
+  (default de balanceamento declarado); energia por prédio fica para depois.
+
+### Bens e receitas da A′
+
+| id | order | preço-base | receita |
+|---|---|---|---|
+| `microchips` | 123 | 19.668,58 | `chips` + `processed_rare_earths` (Fab) |
+| `fpv_drone` | 124 | 23.408,09 | `chips` + `batteries` + `plastic_parts` + `micromotor` + `explosives` (military_fab) |
+
+- **`military_drone` remontado:** `plastic_parts` + `micromotor` + `sensors` +
+  `batteries` + `microchips` + `carbon_fiber` + `ammunition` → **58.757,47**
+  (−37,3% vs. 93.771,35; deixa de consumir um `drone` pronto).
+- **Fab:** 3,0 empregos/t, salário 3,5, opex **40/t**, capex **180.000/t/dia**,
+  obra **180 d** (a escala por tamanho da regra existente continua valendo),
+  `plant_class: "semiconductor_fab"`.
+- **Demanda militar continua zero** (D-130b): `fpv_drone` tem `use: []` +
+  `consumer_note`; nada entra na cesta `army`.
+- Na A′, `microchips` só tem `military_drone` como consumidor; `chips` mantém os
+  consumidores atuais e ganha `fpv_drone`.
+
+### Dados derivados e apresentação
+
+- `tools/build_goods_chain.py build` gera **125 bens / 124 receitas**; `check`
+  retorna **0 problemas**.
+- i18n pt/en/es para os dois bens: `product.*` e `resource.*` (4 chaves).
+- `goods_storage_map.json`: `microchips` → armazém geral; `fpv_drone` → paiol
+  militar (regra do `build_storage_g2.py`, que ganhou a entrada do FPV).
+- **Ícones placeholder:** `microchips.svg`/`fpv_drone.svg` e os PNGs 128/64 são
+  cópia de `chips`/`military_drone`; a arte final fica para a etapa de ícones.
+  O PNG `microchips.png` que já existia no repositório foi **preservado**.
+
+### Verificação A′ (365 d, cérebro ligado)
+
+| critério | resultado |
+|---|---|
+| falências | **0** |
+| comida (portão de 30 d) | **93/179** (limiar ≤ 97) |
+| drift | **0,013175** (limiar < 0,03) |
+| violações de invariante / dias travados | **0 / 0** |
+| investimentos | **850** (726 privado / 124 grupo) |
+| `chips` MA30 dia 365 ÷ base | **1,0000** |
+| `microchips` MA30 dia 365 ÷ base | **1,0000** |
+| produção de `microchips` | **0 países** |
+
+A A′ é **aditiva**: o mundo é o baseline ON da D-131 (0 falências, 850
+investimentos, comida 93/179, drift 0,013175). A produção de `microchips` em 0
+países é o resultado esperado — o único consumidor é `military_drone`, que tem
+demanda militar zero; sem consumo, a IA não vê preço esperado e não abre Fab. O
+critério "cadeia viva em ≥ 3 países" só pode ser cobrado a partir da fase C.
+
+## Fase C — `sensors` troca `chips` por `microchips` (NÃO ACEITA)
+
+- `sensors`: 19.668,58 → **25.210,73** (+28,2%); `drone` civil: 64.307,77 →
+  74.283,64 (+15,5%). `chips` perde `sensors` como consumidor.
+- Rodada 365 d com cérebro ligado: **0 falências**, comida **93/179**, drift
+  **0,013175**, **0 violações / 0 travados**, **850 investimentos** (726/124) —
+  **idêntica à A′**, bit a bit nos agregados; `chips` e `microchips` MA30 dia
+  365 ÷ base = **1,0000**.
+- **Produção de `microchips`: 0 países — critério 5 reprovado (meta ≥ 3).**
+  Diagnóstico medido: no mundo base, **`chips` não aparece como oferta nem como
+  venda de mercado em nenhum país** durante os 365 d (o mesmo diag mostra
+  `wheat` com oferta em 129 países). Sem `chips`, a Fab de `microchips` não
+  recebe insumo e a troca em `sensors` é inerte — por isso a medição não se move.
+- A meta **não foi afrouxada**. Consequência: a **Fase D não foi aplicada**
+  (`computer`, `phone` e `robots` continuam consumindo `chips`), porque o
+  protocolo manda parar na fase que reprova no aceite.
+
 ## Fora do escopo (partes seguintes)
 
-- Bens `microchips` e `fpv_drone`, receitas da fab de semicondutores, mudança
-  das cadeias de computador/celular/robô/drone e arte de ícones.
+- **Fase D** (`computer`, `phone`, `robots` trocando `chips` por `microchips`):
+  bloqueada pela reprovação da C no critério de cadeia viva.
+- Cadeia de silício (`quartz`/`silicon_eg`/`wafer`) — D1.
 - Telas/listas que mostram `plant_class`; a chave i18n já existe, o componente
   visual ainda não.
-- Calibração de prazo de obra por receita: os valores só entram quando o Game
-  Systems Designer declarar as receitas da G1. Até lá, `construction_days = 0`
-  em todas as receitas e o comportamento é o da tabela atual.
+- Arte final dos ícones de `microchips`/`fpv_drone` (hoje placeholder).
+- Produção de `chips`/`microchips` no mundo base: é pré-requisito da G1 e hoje
+  não acontece (o setor eletrônico não é produzido no cenário). Fica como
+  pendência de seed/cadeia para a próxima decisão.

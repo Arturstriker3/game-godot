@@ -5,6 +5,7 @@
 
 #include "ai_phase.h"
 #include "../efficiency.h"
+#include "../profiling.h"
 
 #include <algorithm>
 #include <cmath>
@@ -497,6 +498,7 @@ bool loss_blocked(const WorldState& ws, const AiBrainParams& params,
 	if (!params.enabled || !ws.crisis.enabled || product < 0) {
 		return false;
 	}
+	OGS_SIM_ZONE_ADD(kPhaseAiLossScan);
 	const int limit = std::max(1, params.block_loss_days);
 	for (const Building& building : ws.buildings) {
 		if (building.output_product != product || building.bankrupt) {

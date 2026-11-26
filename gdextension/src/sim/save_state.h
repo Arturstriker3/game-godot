@@ -12,15 +12,21 @@
 
 namespace ogs {
 class SimCore;
+struct PotentialDemandCache;
 }
 
 namespace ogs::save {
 
 // Serializa todo o estado do cenário (save). Sem lock: quem chama segura o mutex.
-Value to_value(const WorldState& ws, const SimCore& core);
+// `potential_cache` (G2) é o cache mensal do piso de demanda potencial; quando
+// o ponteiro é nulo (ou o cache está vazio) a chave não é gravada — save antigo
+// continua válido e o load simplesmente recalcula o piso.
+Value to_value(const WorldState& ws, const SimCore& core,
+	const PotentialDemandCache* potential_cache = nullptr);
 
 // Restaura o estado do cenário a partir de to_value() (load + migrações).
 // Sem lock: quem chama segura o mutex e invalida o cache de status.
-void from_value(WorldState& ws, SimCore& core, const Value& data);
+void from_value(WorldState& ws, SimCore& core, const Value& data,
+	PotentialDemandCache* potential_cache = nullptr);
 
 } // namespace ogs::save

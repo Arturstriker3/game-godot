@@ -379,6 +379,15 @@ Dictionary EconomySim::get_status() {
 	root[k.mode] = "demo";
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
+	// G2: diagnóstico da semente (critério 9: residual e falta publicados).
+	if (ws_.bootstrap.loaded) {
+		Dictionary bootstrap;
+		bootstrap["enabled"] = ws_.bootstrap.enabled;
+		bootstrap["plants"] = ws_.bootstrap_plants;
+		bootstrap["shortfall"] = ws_.bootstrap_shortfall;
+		bootstrap["unseeded_share"] = ws_.bootstrap_unseeded_share;
+		root["bootstrap"] = bootstrap;
+	}
 	root[k.money_total] = money_total();
 	// D-126: dinheiro bancário criado/destruído (M1) acumulado nos dias válidos.
 	// `money_total` pode crescer por crédito legítimo; os guardas de conservação

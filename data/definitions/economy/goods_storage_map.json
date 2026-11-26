@@ -2,7 +2,7 @@
  "_meta": {
   "dataset": "goods_storage_map",
   "generated_by": "tools/build_storage_g2.py",
-  "goods": 123,
+  "goods": 125,
   "no_data_rule": "todo bem tem armazem primario; bem sem regra propria cai em general_warehouse (declarado)",
   "retrieved": "2026-11-24",
   "source": "docs/plans/perf_pop_financas_plano.md secao PARTE G2 (tabela de armazens)",
@@ -14,12 +14,12 @@
    "cold_room": 3,
    "fuel_tank": 6,
    "gas_storage": 1,
-   "general_warehouse": 67,
-   "military_depot": 18,
+   "general_warehouse": 68,
+   "military_depot": 19,
    "silo": 7,
    "vault": 7
   },
-  "explicit": 58,
+  "explicit": 59,
   "fallback_general_warehouse": [
    "alcohol",
    "aluminum_ingot",
@@ -57,6 +57,7 @@
    "luxury_furniture",
    "mechanical_parts",
    "medicine",
+   "microchips",
    "micromotor",
    "mining_machine",
    "naval_hull",
@@ -87,7 +88,7 @@
    "uniforms",
    "wires"
   ],
-  "goods_total": 123
+  "goods_total": 125
  },
  "goods": {
   "aa_launcher": {
@@ -585,6 +586,15 @@
    "sector": "food",
    "tier": "semi"
   },
+  "fpv_drone": {
+   "kind": "final",
+   "name": "Drone FPV de ataque",
+   "primary": "military_depot",
+   "reason": "drone FPV de ataque",
+   "secondary": [],
+   "sector": "military",
+   "tier": "final"
+  },
   "furniture": {
    "kind": "final",
    "name": "Móveis",
@@ -784,6 +794,15 @@
    "secondary": [],
    "sector": "chemical",
    "tier": "final"
+  },
+  "microchips": {
+   "kind": "intermediate",
+   "name": "Microchips",
+   "primary": "general_warehouse",
+   "reason": "semiprocessado/final padrao",
+   "secondary": [],
+   "sector": "electronics",
+   "tier": "semi"
   },
   "micromotor": {
    "kind": "intermediate",
