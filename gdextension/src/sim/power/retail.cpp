@@ -72,11 +72,16 @@ void SimCore::phase_power_settle() {
 		charge_households(city.pop, bill_h);
 		const double paid_h = std::max(0.0, before - city.pop.savings);
 		pool += paid_h;
-		const double paid_i = std::min(bill_i, std::max(0.0, city.firm_cash));
-		city.firm_cash -= paid_i;
+		// R1a: pagamento ao setor de energia e EXTERNO ao caixa privado; com o
+		// caixa unico ele sai do pool uma vez (firm_pay/service_pay) e o espelho
+		// por setor segue so como estatistica. Desligado, e a conta de antes.
+		const double paid_i = std::min(bill_i,
+			std::max(0.0, city.firm_liquidity()));
+		city.firm_pay(paid_i);
 		pool += paid_i;
-		const double paid_s = std::min(bill_s, std::max(0.0, city.service_cash));
-		city.service_cash -= paid_s;
+		const double paid_s = std::min(bill_s,
+			std::max(0.0, city.service_liquidity()));
+		city.service_pay(paid_s);
 		pool += paid_s;
 		const double paid_g = std::min(bill_g,
 			std::max(0.0, city.government_budget));
@@ -195,12 +200,14 @@ void SimCore::phase_power_settle() {
 			const double fuel_list = fuel_local[p] + fuel_import[p];
 			const double local_share = fuel_list > 1e-12
 				? fuel_local[p] / fuel_list : 0.0;
-			city.firm_cash += fuel_paid * local_share;
+			// R1a: receita do gerador e do O&M entra pelo credito do setor de
+			// firmas (com o caixa unico, credita o pool; desligado, o caixa).
+			city.firm_receive(fuel_paid * local_share);
 			ws.foreign_cash += fuel_paid * (1.0 - local_share);
 			paid_total += fuel_paid;
 		}
 		const double opex_paid = opex[p] * pay_ratio;
-		city.firm_cash += opex_paid;
+		city.firm_receive(opex_paid);
 		paid_total += opex_paid;
 		const double wages_paid = wages[p] * pay_ratio;
 		credit_households(city.pop, wages_paid);

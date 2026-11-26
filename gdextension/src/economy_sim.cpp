@@ -396,6 +396,12 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_needs);
 	ClassDB::bind_method(D_METHOD("set_bootstrap_industry", "values"),
 	                     &EconomySim::set_bootstrap_industry);
+	// R1a: flags do rework (regional_cash). Sem o binding o GDScript nao liga a
+	// flag (`has_method` falso) e o mundo ON fica identico ao OFF.
+	ClassDB::bind_method(D_METHOD("set_rework_params", "values"),
+	                     &EconomySim::set_rework_params);
+	ClassDB::bind_method(D_METHOD("get_rework_params"),
+	                     &EconomySim::get_rework_params);
 	ClassDB::bind_method(D_METHOD("set_services", "services"),
 	                     &EconomySim::set_services);
 	ClassDB::bind_method(D_METHOD("set_sector_employment", "data"),
