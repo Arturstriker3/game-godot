@@ -754,7 +754,8 @@ func _make_world() -> Object:
 	# A/B de medicao (nao existe no jogo).
 	if _refining_on:
 		var refining := RefiningScript.new()
-		var refining_report := refining.apply_to_sim(sim, cities, ports)
+		var refining_report := refining.apply_to_sim(sim, cities, ports,
+			{"geo": geo})
 		print(("[c1] refino: nações=%d plantas=%d capacidade=%.1f t/dia "
 			+ "maduras=%d (%s)") % [
 			(refining_report.get("nations", []) as Array).size(),
