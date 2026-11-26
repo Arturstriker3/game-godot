@@ -10,7 +10,7 @@
 **Revisão 3 (correção 2, §8):** a saturação da semeadura (55 330 t/dia de shortfall com 439
 plantas) foi atacada no teto por planta: o L1 declara `max_plant_capacity_per_100k = 10`
 (t/dia por 100 mil habitantes simulados) e o alvo do país é dividido pelas cidades-alvo. O gate
-de 365 d **continua reprovando** `clothes` (1,7750) e agora também `fabric` (1,3041); a hipótese
+de 365 d **continua reprovando** `clothes` (1,6081 d365÷d0; 1,7750 ÷base) e agora também `fabric` (1,2977 d365÷d0; 1,3041 ÷base); a hipótese
 medida é que o gargalo restante está a montante (algodão/tecido), não no teto da planta.
 **Revisão 4 (correção 3, §9):** a cadeia foi fechada a montante com o algodão semeado por
 produtores reais (USDA FAS) via área de safra (`set_crop_plan`). O LOTE 1 **fecha** na métrica
@@ -200,17 +200,17 @@ nacional) e o orçamento local — nada foi inventado para “fechar” o númer
 | portão de comida | ≤ 97/179 | 95 | 94 | **93/179** |
 | drift / máx. diário | < 0,03 | 0,014485 | 0,014074 | **0,020888** |
 | `clothes`/`fabric`/`shoes` produzido **e** vendido | ≥ 3 países | 4/5/2 | 4/5/4 | **3/4/1** |
-| `clothes` MA30 d365 ÷ d0 | ≤ 1,15 | 3,1064 | 2,2733 | **1,7750** (225,21 / 140,05) |
-| `fabric` idem | ≤ 1,15 | 1,2770 | 1,1166 | **1,3041** (114,11 / 87,93) |
-| `shoes` idem | ≤ 1,15 | 1,2196 | 1,1114 | **1,0800** (225,12 / 221,34) |
+| `clothes` MA30 d365 ÷ d0 | ≤ 1,15 | 3,1064 | 2,2733 | **1,6081** (225,21 / 140,05; ÷base 1,7750) |
+| `fabric` idem | ≤ 1,15 | 1,2770 | 1,1166 | **1,2977** (114,11 / 87,93; ÷base 1,3041) |
+| `shoes` idem | ≤ 1,15 | 1,2196 | 1,1114 | **1,0171** (225,12 / 221,34; ÷base 1,0800) |
 
 **Leitura medida.** A capacidade semeada deixou de saturar: `clothes` produzido+vendido sobe de
-137 para **299 t/dia** (CHN 226, USA 59, BRA 15) e o preço cai de 2,27 para **1,78** — a
+137 para **299 t/dia** (CHN 226, USA 59, BRA 15) e o preço cai de 2,27 para **1,61** (d365÷d0; 1,78 ÷base) — a
 correção ataca o gargalo certo da planta. Mas o preço **não fecha** e `fabric` **piora**
 (1,12 → 1,30): a produção de `clothes` agora acompanha o **tecido** disponível (347 t/dia de
 `fabric` vendido; a cadeia é limitada pelo algodão), e a capacidade de `fabric` 37× maior
 disputa o algodão e sobe o custo unitário (fabric 114 vs 98 no dia 365). `shoes` passa no preço
-(1,08) mas cai de 4 para **1 país** produtor: as plantas de BRA/ITA etc. ficam sem insumo/caixa
+(1,0171 d365÷d0; 1,08 ÷base) mas cai de 4 para **1 país** produtor: as plantas de BRA/ITA etc. ficam sem insumo/caixa
 e não vendem. Ou seja: o teto de 20 t/dia era **um** gargalo, não **o** gargalo; o restante
 está a montante (algodão → tecido) e na cobertura de países — fora do escopo desta correção.
 
@@ -218,14 +218,14 @@ está a montante (algodão → tecido) e na cobertura de países — fora do esc
 
 **O que mudou (commit `624ed142`).** A correção 2 mediu que o gargalo restante estava **a
 montante**: a capacidade de `fabric` semeada a 0,90 tinha ~37× a oferta de algodão do dia 0, o
-algodão virava gargalo e o custo unitário subia a cadeia toda (`fabric` 1,3041). Em vez de
+algodão virava gargalo e o custo unitário subia a cadeia toda (`fabric` 1,2977 d365÷d0; 1,3041 ÷base). Em vez de
 reduzir a semente do tecido, a cadeia foi **fechada a montante** com o mesmo princípio das
 plantas:
 
 - `data/definitions/agriculture/cotton_seed.json` — produtores reais de algodão em pluma
   2024/25 (USDA FAS *Cotton: World Markets and Trade*, mar/2026): China 0,27 · Índia 0,20 ·
   Brasil 0,14 · EUA 0,12 · Paquistão 0,04 · Austrália 0,05 · Turquia 0,03 · Uzbequistão 0,03
-  (89,6% declarados; os 10,4% restantes **não** são semeados); rendimento 0,859 t/ha; aptidão
+  (87,6% declarados; os 12,4% restantes **não** são semeados); rendimento 0,859 t/ha; aptidão
   mínima 0,30; **janela contínua declarada** (o dado do jogo não tem calendário de algodão —
   nenhum mês de plantio/colheita foi inventado).
 - `core/economy/cotton_seed.gd` declara a **área de safra** dos produtores reais pelo contrato
@@ -281,7 +281,7 @@ Nas duas leituras, `fabric` cai (o algodão deixou de ser gargalo e o tecido fic
 | 0,02 (decisão original) | 3,1064 / 1,2770 / 1,2196 | fração pequena em bem de massa = escassez artificial |
 | 0,10 (braço A, diagnóstico) | 2,5127 / 1,1046 / 1,0647 | 5× a fração não fecha `clothes` |
 | 0,90 ("básico maduro nasce abastecido") | 2,2733 / 1,1166 / 1,1114 | a fração não chega ao plano: 1 planta/cidade × teto de 20 t/dia satura (shortfall 55 330) |
-| teto proporcional à cidade (correção 2) | 1,7750 / 1,3041 / 1,0800 | o teto era **um** gargalo; agora o algodão limita o tecido |
+| teto proporcional à cidade (correção 2) | 1,6081 / 1,2977 / 1,0171 | o teto era **um** gargalo; agora o algodão limita o tecido |
 | **algodão por produtores reais (correção 3)** | **0,9702 / 0,6897 / 0,8895** | **cadeia inteira abastecida: passa** |
 
 **OFF bit a bit:** `--bootstrap=0 --ai-brain=0`, 365 d: `trajectory_sha256 ded6f54b…` idêntico
