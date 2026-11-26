@@ -150,7 +150,11 @@ Plan plan(const WorldState& ws) {
 			out.rows.push_back(row);
 			continue;
 		}
-		const double seed_world = world_anchor * cfg.seed_fraction;
+		// G3: o bem pode declarar a própria fração (lotes L1–L5). Ausente
+		// (0) herda o global — o G2 continua idêntico.
+		const double fraction = good.seed_fraction > 0.0
+			? good.seed_fraction : cfg.seed_fraction;
+		const double seed_world = world_anchor * fraction;
 		// Nações por participação desc e ISO3 asc (§2.7).
 		std::vector<BootstrapProducer> producers = good.producers;
 		std::sort(producers.begin(), producers.end(),

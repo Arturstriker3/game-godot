@@ -1,9 +1,9 @@
 {
-  "_comment": "G2 (spec G2_bootstrap_industrial.md, revisao 2) - semente do dia 0 por PRODUTORES REAIS. Nenhuma capacidade literal: cap_planta = participacao x ancora_mundial(bem) x seed_fraction, com ancora = demanda final de needs.json propagada pela arvore de receitas (mesma funcao do potencial da IA). Participacoes arredondadas somam 1,00; 'outros' e residual declarado e NAO vira planta. Fonte por bem no campo `source`; `params_source: declared:balancing` quando nao ha producao publicada.",
-  "version": 1,
+  "_comment": "G2 (spec G2_bootstrap_industrial.md, revisao 2) + G3 LOTE 1 (spec G3_semeadura_catalogo.md) - semente do dia 0 por PRODUTORES REAIS. Nenhuma capacidade literal: cap_planta = participacao x ancora_mundial(bem) x seed_fraction, com ancora = demanda final de needs.json propagada pela arvore de receitas (mesma funcao do potencial da IA). Participacoes arredondadas somam 1,00; 'outros' e residual declarado e NAO vira planta. Fonte por bem no campo `source`; `params_source: declared:balancing` quando nao ha producao publicada. G3: cada bem pode declarar `seed_fraction` proprio (ausente/0 herda o global). O LOTE 1 (clothes/fabric/shoes) usa 0,02 (decisao do dono D-G3-1); os 21 bens do G2 continuam em 0,10.",
+  "version": 2,
   "meta": {
-    "id": "G2",
-    "spec": "G2_bootstrap_industrial.md",
+    "id": "G2+G3",
+    "spec": "G2_bootstrap_industrial.md + G3_semeadura_catalogo.md",
     "params_source": "declared:balancing"
   },
   "enabled": true,
@@ -316,6 +316,76 @@
         "DEU": 0.04,
         "MEX": 0.03,
         "outros": 0.28
+      }
+    },
+    {
+      "id": "clothes",
+      "lot": "L1",
+      "seed_fraction": 0.02,
+      "anchor_source": "needs:basic/clothing",
+      "source": "WTO World Trade Statistical Review 2024 (exportacoes de vestuario como proxy de local)",
+      "params_source": "measured:wto_wtsr_2024",
+      "producers": {
+        "CHN": 0.3,
+        "BGD": 0.09,
+        "VNM": 0.08,
+        "IND": 0.07,
+        "IDN": 0.05,
+        "TUR": 0.04,
+        "USA": 0.04,
+        "BRA": 0.03,
+        "ITA": 0.03,
+        "DEU": 0.03,
+        "KHM": 0.03,
+        "PAK": 0.03,
+        "ESP": 0.02,
+        "MEX": 0.02,
+        "LKA": 0.02,
+        "THA": 0.02,
+        "outros": 0.1
+      }
+    },
+    {
+      "id": "fabric",
+      "lot": "L1",
+      "seed_fraction": 0.02,
+      "anchor_source": "needs:basic/clothing + life/footwear",
+      "source": "default:balancing (base ITMF/UN Comtrade)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.55,
+        "IND": 0.1,
+        "USA": 0.05,
+        "PAK": 0.04,
+        "TUR": 0.04,
+        "BRA": 0.03,
+        "IDN": 0.03,
+        "VNM": 0.03,
+        "KOR": 0.02,
+        "ITA": 0.02,
+        "outros": 0.09
+      }
+    },
+    {
+      "id": "shoes",
+      "lot": "L1",
+      "seed_fraction": 0.02,
+      "anchor_source": "needs:life/footwear",
+      "source": "APICCAPS World Footwear Yearbook 2024 (outros 0,06: residual fecha 1,00; a linha da spec imprime 0,04 e soma 0,98)",
+      "params_source": "measured:apiccaps_world_footwear_2024",
+      "producers": {
+        "CHN": 0.52,
+        "VNM": 0.11,
+        "IND": 0.09,
+        "IDN": 0.05,
+        "BRA": 0.04,
+        "TUR": 0.03,
+        "ITA": 0.02,
+        "MEX": 0.02,
+        "THA": 0.02,
+        "PAK": 0.02,
+        "DEU": 0.02,
+        "outros": 0.06
       }
     }
   ]

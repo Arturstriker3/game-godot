@@ -302,6 +302,9 @@ struct BootstrapGood {
 	std::string id;            // id do bem em goods.json
 	std::string source;        // citação da participação real
 	std::string params_source; // declared:balancing quando não há fonte
+	// G3 (D-G3-1): fração da âncora semeada por bem/lote. 0 = herda
+	// `BootstrapIndustry::seed_fraction` (comportamento G2 inalterado).
+	double seed_fraction = 0.0;
 	std::vector<BootstrapProducer> producers;
 };
 

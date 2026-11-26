@@ -1844,6 +1844,9 @@ func _run() -> void:
 		"food_gate_extras": gate_extras,
 		"food_gate_control": _control_path,
 		"goods_diag": _goods_diag_report() if not _goods_diag_ids.is_empty() else {},
+		# G2/G3: agregado da semente industrial (plantas, shortfall e residual)
+		# lido do status do dia final; só medição.
+		"bootstrap": status_final.get("bootstrap", {}),
 		"efficiency_override": _eff_override_path,
 		"brain_override": _brain_override_path,
 		"fuel_diag": fuel_reports,

@@ -357,6 +357,33 @@ TEST_CASE("G2 bootstrap: gate da cidade-semente (5 M, senao maior >=1 M)") {
 	CHECK(none_plan.rows.back().reason == "no_city");
 }
 
+TEST_CASE("G3: seed_fraction por bem sobrepoe o global e o ausente herda") {
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	// Ancora de `final` = 1e-4 x 1e6 = 100 t/dia.
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-4;
+	ws.cities[0].government_budget = 1e9;
+	ogs::BootstrapGood good;
+	good.id = "final";
+	good.producers.push_back({"AAA", 1.0});
+	good.seed_fraction = 0.02;
+	ws.bootstrap.goods.push_back(good);
+
+	const ogs::bootstrap::Plan l1 = ogs::bootstrap::plan(ws);
+	REQUIRE(l1.seeded == 1);
+	CHECK(l1.rows[0].capacity == Approx(2.0));  // 100 x 0,02
+
+	// Sem a fracao por bem, herda o global (100 x 0,10 = 10).
+	ws.bootstrap.goods[0].seed_fraction = 0.0;
+	const ogs::bootstrap::Plan inherited = ogs::bootstrap::plan(ws);
+	REQUIRE(inherited.seeded == 1);
+	CHECK(inherited.rows[0].capacity == Approx(10.0));
+}
+
 TEST_CASE("G2: semeadura deterministica (duas cargas = mesmo plano)") {
 	ogs::WorldState ws = demand_world();
 	ws.bootstrap.enabled = true;
