@@ -360,7 +360,8 @@ demanda realizada — é a mesma natureza do shortfall dos outros bens do lote.
 
 **Smoke 30 d ON (corrigido).** `--days=30 --bootstrap=1 --ai-brain=1 --goods-diag=meat,feed,
 canned_food,alcohol,containers,aluminum_ingot,bauxite,plastic,maize,wheat`
-(`G:/opengs_tmp/g3/l2_fix_smoke30.json`, 9,4 s): 0 falências/0 violações/0 travados; drift
+(`G:/opengs_tmp/g3/l2_fix_smoke30.json`, 46,2 s com 3 Godot concorrentes): 0 falências/0
+violações/0 travados; drift
 **0,017448**; comida 108/179 (igual ao smoke anterior; a correção não mexe na comida em 30 d);
 **544** plantas construídas (plano 556), shortfall **214 377 t/dia** (era 207 143 — o alumínio
 acrescenta 8,8 kt/dia de alvo que o orçamento não constrói); `aluminum_ingot` **produz 395,7
@@ -370,7 +371,7 @@ t/dia e vende 740,3 em 6 países** (stock em trânsito); `containers` **840 t/di
 ### 10.2 Gate de 365 d do L2 (acumulado L1 + L2) — REPROVADO
 
 `c1_world_ai_365.gd --days=365 --bootstrap=1 --ai-brain=1 --goods-diag=...`
-(`G:/opengs_tmp/g3/l2_on365.json`, trajetória `21cb74ae…`, 476 s). Controle **sem o L2** no
+(`G:/opengs_tmp/g3/l2_on365.json`, trajetória `21cb74ae…`, 653,5 s). Controle **sem o L2** no
 mesmo código (`--bootstrap-path=G:/opengs_tmp/g3/bootstrap_l1_only.json`, trajetória
 `c4668fb4…` = o ON do L1): drift 0,023558, comida 95/179, 2 falências, 426 plantas.
 
