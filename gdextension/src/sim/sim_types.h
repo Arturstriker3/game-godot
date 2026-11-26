@@ -1796,6 +1796,20 @@ struct Region {
 		// bit a bit). -1 = ainda nao medido: usa a razao dos espelhos.
 		static constexpr double kExternalShareFloor = 0.05;
 		static constexpr double kRevenueSharePendulumDays = 30.0;
+		// R1a (medicao R1a-M1/M2) - calibracao do sub-teto externo, lida de
+		// `regional_cash.external_subceiling` em rework.json:
+		//   kSubceilingAll (default) = cada setor paga fora no maximo a fatia;
+		//   kSubceilingOff = sem sub-teto (o teto e o pool que existe, como o
+		//     caixa antigo);
+		//   kSubceilingNonessential = a fatia vale para pagamentos nao
+		//     essenciais, mas a importacao de bem ESSENCIAL (cesta alimentar,
+		//     `food_calories(product) > 0`, a mesma classificacao do food_ratio)
+		//     pode usar o pool inteiro. Energia/juros/taxas seguem no teto.
+		// Sem a flag `regional_cash` o modo e irrelevante (teto = caixa).
+		static constexpr int kSubceilingOff = 0;
+		static constexpr int kSubceilingAll = 1;
+		static constexpr int kSubceilingNonessential = 2;
+		int external_subceiling = kSubceilingAll;
 		double firm_revenue_share = -1.0;
 		double firm_external_paid_today = 0.0;
 		double service_external_paid_today = 0.0;
@@ -1847,18 +1861,31 @@ struct Region {
 		// Ligada: a fatia da base, MAS nunca acima do pool que ainda existe -
 		// o outro setor pode ter pago primeiro e a fatia dele nao e dinheiro
 		// disponivel para este.
-		double firm_external_room() const {
+		// `essential` marca um pagamento externo por bem essencial (cesta
+		// alimentar): no modo `nonessential` ele usa o pool inteiro, sem a
+		// fatia. Os demais modos ignoram o argumento.
+		double firm_external_room(bool essential = false) const {
 			if (!unified_cash) {
 				return std::max(0.0, firm_cash);
+			}
+			if (external_subceiling == kSubceilingOff
+					|| (external_subceiling == kSubceilingNonessential
+						&& essential)) {
+				return std::max(0.0, private_cash);
 			}
 			const double share_room = external_payment_base()
 				* measured_firm_revenue_share() - firm_external_paid_today;
 			return std::max(0.0,
 				std::min(share_room, std::max(0.0, private_cash)));
 		}
-		double service_external_room() const {
+		double service_external_room(bool essential = false) const {
 			if (!unified_cash) {
 				return std::max(0.0, service_cash);
+			}
+			if (external_subceiling == kSubceilingOff
+					|| (external_subceiling == kSubceilingNonessential
+						&& essential)) {
+				return std::max(0.0, private_cash);
 			}
 			const double share_room = external_payment_base()
 				* (1.0 - measured_firm_revenue_share())

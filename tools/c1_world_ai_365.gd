@@ -124,6 +124,11 @@ var _bootstrap_set := false
 # Sem override vale o enabled do rework.json (default do jogo = desligado).
 var _regional_cash_on := false
 var _regional_cash_set := false
+# R1a (medicao R1a-M1/M2): override do modo do sub-teto externo
+# (`--external-subceiling=off|all|nonessential` / OGS_C1_EXTERNAL_SUBCEILING).
+# Sem override vale o rework.json (default "all"). Só laboratório.
+var _external_subceiling := ""
+var _external_subceiling_set := false
 # R1a (diagnostico): serie diaria das entradas que o portao de comida e o
 # credito leem, para decompor o efeito do caixa unico. So medicao
 # (--r1-diag / OGS_C1_R1_DIAG=1): nao altera o mundo.
@@ -231,6 +236,9 @@ func _init() -> void:
 	if OS.get_environment("OGS_C1_REGIONAL_CASH") != "":
 		_regional_cash_on = OS.get_environment("OGS_C1_REGIONAL_CASH") != "0"
 		_regional_cash_set = true
+	if OS.get_environment("OGS_C1_EXTERNAL_SUBCEILING") != "":
+		_external_subceiling = OS.get_environment("OGS_C1_EXTERNAL_SUBCEILING")
+		_external_subceiling_set = true
 	if OS.get_environment("OGS_C1_R1_DIAG") != "":
 		_r1_diag = OS.get_environment("OGS_C1_R1_DIAG") != "0"
 	for arg in OS.get_cmdline_user_args():
@@ -250,6 +258,9 @@ func _init() -> void:
 		elif arg.begins_with("--regional-cash="):
 			_regional_cash_on = arg.split("=", true, 1)[1] != "0"
 			_regional_cash_set = true
+		elif arg.begins_with("--external-subceiling="):
+			_external_subceiling = arg.split("=", true, 1)[1]
+			_external_subceiling_set = true
 		elif arg.begins_with("--r1-diag"):
 			_r1_diag = not arg.contains("=") \
 				or arg.split("=", true, 1)[1] != "0"
@@ -704,12 +715,18 @@ func _make_world() -> Object:
 		var rework: Variant = _load(REWORK_PATH)
 		if rework is Dictionary:
 			var rework_params: Dictionary = rework
-			if _regional_cash_set:
+			if _regional_cash_set or _external_subceiling_set:
 				var block: Dictionary = rework_params.get("regional_cash", {})
-				block["enabled"] = _regional_cash_on
+				if _regional_cash_set:
+					block["enabled"] = _regional_cash_on
+				if _external_subceiling_set:
+					block["external_subceiling"] = _external_subceiling
 				rework_params["regional_cash"] = block
 			sim.set_rework_params(rework_params)
-			print("[c1] R1a caixa unico regional: enabled=%s" % ["1" if bool((rework_params.get("regional_cash", {}) as Dictionary).get("enabled", false)) else "0"])
+			var rc: Dictionary = rework_params.get("regional_cash", {})
+			print("[c1] R1a caixa unico regional: enabled=%s sub-teto=%s" % [
+				"1" if bool(rc.get("enabled", false)) else "0",
+				String(rc.get("external_subceiling", "all"))])
 	if sim.has_method("set_bootstrap_industry"):
 		var bootstrap: Variant = _load(BOOTSTRAP_PATH)
 		if bootstrap is Dictionary:

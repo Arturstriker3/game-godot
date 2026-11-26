@@ -142,7 +142,9 @@ public:
 	// aplica a todas as cidades (ao ligar, `private_cash` nasce da soma dos
 	// dois caixas; ao desligar, volta a 0). Chamado no fim de initialize_world
 	// e pelo setter de definicoes; idempotente.
-	void set_regional_cash(bool enabled);
+	// `external_subceiling` (R1a medicao: 0=off, 1=all, 2=nonessential) e
+	// propagado para as cidades; default preserva o teto por fatia.
+	void set_regional_cash(bool enabled, int external_subceiling = 1);
 	// Depois do load: a flag do save (ou a configuracao) manda; cidade que veio
 	// sem `private_cash` e sincronizada a partir dos dois espelhos.
 	void apply_regional_cash_after_load(bool saved_flag, bool has_saved_flag);

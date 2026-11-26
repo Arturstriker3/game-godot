@@ -188,6 +188,43 @@ TEST_CASE("R1a: sub-teto externo por setor usa a fatia da receita") {
 	CHECK(off_city.firm_external_paid_today == Approx(0.0));
 }
 
+TEST_CASE("R1a: sub-teto externo off e isencao de essencial") {
+	// Modo "off": sem sub-teto. O teto volta a ser o pool que existe - os dois
+	// setores leem o mesmo pool (nunca o dinheiro duas vezes, porque o
+	// pagamento sai do pool).
+	{
+		ogs::test::PocketWorld world;
+		seed_cash(world, 50000.0, 30000.0);
+		world.core.set_regional_cash(true, 0);
+		ogs::City& city = world.ws.cities[0];
+		CHECK(city.external_subceiling == 0);
+		CHECK(city.firm_external_room() == Approx(80000.0));
+		CHECK(city.service_external_room() == Approx(80000.0));
+		city.firm_external_pay(30000.0);
+		CHECK(city.private_cash == Approx(50000.0));
+		CHECK(city.firm_external_room() == Approx(50000.0));
+		CHECK(city.service_external_room() == Approx(50000.0));
+	}
+	// Modo "nonessential": pagamento comum usa a fatia; o pagamento da cesta
+	// alimentar (`essential=true`) usa o pool inteiro.
+	{
+		ogs::test::PocketWorld world;
+		seed_cash(world, 50000.0, 30000.0);
+		world.core.set_regional_cash(true, 2);
+		ogs::City& city = world.ws.cities[0];
+		CHECK(city.external_subceiling == 2);
+		CHECK(city.firm_external_room(false) == Approx(50000.0));
+		CHECK(city.service_external_room(false) == Approx(30000.0));
+		CHECK(city.firm_external_room(true) == Approx(80000.0));
+		CHECK(city.service_external_room(true) == Approx(80000.0));
+		// O essencial consome o pool; o que sobra e o novo teto de todos.
+		city.firm_external_pay(40000.0);
+		CHECK(city.private_cash == Approx(40000.0));
+		CHECK(city.firm_external_room(true) == Approx(40000.0));
+		CHECK(city.service_external_room(true) == Approx(40000.0));
+	}
+}
+
 TEST_CASE("R1a: pendulo mensal da fatia usa a receita do dia") {
 	ogs::test::PocketWorld world;
 	seed_cash(world, 50000.0, 30000.0);

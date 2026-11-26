@@ -361,6 +361,10 @@ struct WorldState {
 	// true = firm_cash+service_cash formam UM caixa privado por regiao
 	// (`City::private_cash`). Default false = comportamento anterior.
 	bool regional_cash = false;
+	// R1a (medicao): modo do sub-teto externo por setor, espelhado em
+	// `City::external_subceiling`. Default = o teto por fatia (comportamento
+	// entregue); nao e serializado (configuracao lida do rework.json).
+	int external_subceiling = 1;
 	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
 	// laboratório; os padrões preservam o comportamento do jogo).
 	double natural_unemployment = 0.04;

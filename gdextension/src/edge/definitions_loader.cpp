@@ -670,7 +670,17 @@ void EconomySim::set_rework_params(const Dictionary& values) {
 	// (private_cash nasce de firm_cash + service_cash).
 	const Dictionary block = values.get("regional_cash", Dictionary());
 	const bool enabled = bool(block.get("enabled", false));
-	sim_core_.set_regional_cash(enabled);
+	// R1a (medicao): calibracao do sub-teto externo. Ausente = "all" (o teto
+	// por fatia entregue); "off" = sem sub-teto; "nonessential" = a cesta
+	// alimentar (food_calories > 0) usa o pool inteiro, o resto segue na fatia.
+	const String mode = block.get("external_subceiling", String("all"));
+	int subceiling = 1;
+	if (mode == "off") {
+		subceiling = 0;
+	} else if (mode == "nonessential") {
+		subceiling = 2;
+	}
+	sim_core_.set_regional_cash(enabled, subceiling);
 	status_invalidate();
 }
 
@@ -679,6 +689,13 @@ Dictionary EconomySim::get_rework_params() const {
 	Dictionary out;
 	Dictionary block;
 	block["enabled"] = ws_.regional_cash;
+	if (ws_.external_subceiling == 0) {
+		block["external_subceiling"] = String("off");
+	} else if (ws_.external_subceiling == 2) {
+		block["external_subceiling"] = String("nonessential");
+	} else {
+		block["external_subceiling"] = String("all");
+	}
 	out["regional_cash"] = block;
 	return out;
 }

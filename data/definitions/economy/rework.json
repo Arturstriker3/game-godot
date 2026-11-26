@@ -4,6 +4,8 @@
   "note": "Flags do rework R1. Lido por core/economy/economy.gd (REWORK_PATH) e por tools/c1_world_ai_365.gd; o núcleo recebe em EconomySim.set_rework_params(). Cada flag desligada mantém o mundo byte-a-byte anterior (save, status e digest).",
   "regional_cash": {
     "enabled": false,
-    "note": "R1a: firm_cash + service_cash passam a operar como UM caixa privado por região (City.private_cash); os dois campos viram espelho/estatística por setor. Transferências internas (opex firmas→serviços, insumos, frete, construção) viram no-op monetário. Desligado (default) = comportamento anterior."
+    "external_subceiling": "all",
+    "note": "R1a: firm_cash + service_cash passam a operar como UM caixa privado por região (City.private_cash); os dois campos viram espelho/estatística por setor. Transferências internas (opex firmas→serviços, insumos, frete, construção) viram no-op monetário. Desligado (default) = comportamento anterior.",
+    "external_subceiling_note": "R1a (medição): calibração do sub-teto dos pagamentos EXTERNOS por setor, só vale com enabled=true. \"all\" (default) = cada setor paga fora no máximo a sua fatia da receita privada; \"off\" = sem sub-teto (teto = pool restante); \"nonessential\" = a fatia vale para energia/juros/taxas, mas a importação de bem ESSENCIAL usa o pool inteiro. Essencial = cesta alimentar (food_calories(product) > 0: wheat, rice, maize, potato, soy), a mesma classificação do food_ratio; insumos agrícolas não alimentares seguem no teto."
   }
 }

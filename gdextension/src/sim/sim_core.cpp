@@ -62,9 +62,13 @@ const City* SimCore::find_city(const std::string& id) const {
 	return &ws_.cities[static_cast<std::size_t>(found->second)];
 }
 
-void SimCore::set_regional_cash(bool enabled) {
+void SimCore::set_regional_cash(bool enabled, int external_subceiling) {
 	ws_.regional_cash = enabled;
+	ws_.external_subceiling = external_subceiling;
 	for (City& city : ws_.cities) {
+		// R1a (medicao): o modo do sub-teto vale em qualquer chamada - trocar
+		// de modo nao mexe no dinheiro, so na leitura do teto.
+		city.external_subceiling = external_subceiling;
 		// Preserva o total: ao ligar, o pool nasce da soma dos dois caixas;
 		// ao desligar, os dois campos seguem como o estado (private_cash sai
 		// do save).
@@ -93,6 +97,8 @@ void SimCore::apply_regional_cash_after_load(bool saved_flag,
 	const bool enabled = has_saved_flag ? saved_flag : ws_.regional_cash;
 	ws_.regional_cash = enabled;
 	for (City& city : ws_.cities) {
+		// R1a (medicao): o modo vem da configuracao ja aplicada (rework.json).
+		city.external_subceiling = ws_.external_subceiling;
 		if (enabled) {
 			if (!city.unified_cash) {
 				// Save anterior a flag (ou sem a chave): o pool nasce da soma.

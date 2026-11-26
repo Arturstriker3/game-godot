@@ -860,7 +860,11 @@ void SimCore::trade_food() {
 			// R1a (continuacao): a parcela da firma e um pagamento EXTERNO e
 			// respeita o sub-teto do setor (fatia do pool); governo e familias
 			// continuam cobrindo o resto. Desligado, o teto e o caixa da firma.
-			const double firm_cash = buyer.city->firm_external_room();
+			// R1a (medicao): a cesta alimentar e o pagamento ESSENCIAL - no
+			// modo `nonessential` a firma pode usar o pool inteiro, que e o
+			// ponto do sub-teto que estrangulava a comida das economias
+			// pequenas (food_calories > 0 e a mesma classificacao do food_ratio).
+			const double firm_cash = buyer.city->firm_external_room(true);
 			const double gov_budget = std::max(0.0, buyer.city->government_budget);
 			const double savings = std::max(0.0, buyer.city->pop.savings);
 			const double payable = firm_cash + gov_budget + savings;
