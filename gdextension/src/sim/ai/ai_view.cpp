@@ -111,6 +111,8 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view,
 		row.nation = city.nation;
 		row.landmass = city.landmass;
 		row.firm_cash = city.firm_liquidity();
+		row.firm_revenue_share = city.unified_cash
+			? city.measured_firm_revenue_share() : 1.0;
 		row.government_budget = city.government_budget;
 		// C2b1 (D-104): a taxa básica da moeda do país entra na visão do dia
 		// (custo de capital do silo privado). Política do fecho anterior.

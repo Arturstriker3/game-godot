@@ -73,15 +73,15 @@ void SimCore::phase_power_settle() {
 		const double paid_h = std::max(0.0, before - city.pop.savings);
 		pool += paid_h;
 		// R1a: pagamento ao setor de energia e EXTERNO ao caixa privado; com o
-		// caixa unico ele sai do pool uma vez (firm_pay/service_pay) e o espelho
-		// por setor segue so como estatistica. Desligado, e a conta de antes.
+		// caixa unico ele sai do pool uma vez e respeita o sub-teto do setor
+		// (fatia da receita medida). Desligado, e a conta de antes.
 		const double paid_i = std::min(bill_i,
-			std::max(0.0, city.firm_liquidity()));
-		city.firm_pay(paid_i);
+			city.firm_external_room());
+		city.firm_external_pay(paid_i);
 		pool += paid_i;
 		const double paid_s = std::min(bill_s,
-			std::max(0.0, city.service_liquidity()));
-		city.service_pay(paid_s);
+			city.service_external_room());
+		city.service_external_pay(paid_s);
 		pool += paid_s;
 		const double paid_g = std::min(bill_g,
 			std::max(0.0, city.government_budget));

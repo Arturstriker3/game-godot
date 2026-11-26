@@ -946,17 +946,17 @@ int phase(WorldState& ws, double* bank_money_delta) {
 		double remaining = std::max(0.0, interest);
 		double paid_interest = 0.0;
 		const double from_firm = std::min(remaining,
-			std::max(0.0, city.firm_liquidity()));
+			city.firm_external_room());
 		if (from_firm > 0.0) {
-			city.firm_pay(from_firm);
+			city.firm_external_pay(from_firm);
 			paid_interest += from_firm;
 			remaining -= from_firm;
 		}
 		if (remaining > 0.0) {
 			const double from_service = std::min(remaining,
-				std::max(0.0, city.service_liquidity()));
+				city.service_external_room());
 			if (from_service > 0.0) {
-				city.service_pay(from_service);
+				city.service_external_pay(from_service);
 				paid_interest += from_service;
 				remaining -= from_service;
 			}
@@ -979,9 +979,10 @@ int phase(WorldState& ws, double* bank_money_delta) {
 		const double excess = std::max(0.0, city.firm_liquidity() - working);
 		const double repay = std::min({ city.firm_debt,
 			pol.repay_share * excess,
+			city.firm_external_room(),
 			std::max(0.0, city_bank->deposits) });
 		if (repay > 0.0) {
-			city.firm_pay(repay);
+			city.firm_external_pay(repay);
 			city.firm_debt -= repay;
 			city_bank->loans -= repay;
 			city_bank->deposits -= repay;
@@ -1004,13 +1005,13 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			if (penalty > 0.0) {
 				double left = penalty;
 				const double p_firm = std::min(left,
-					std::max(0.0, city.firm_liquidity()));
-				city.firm_pay(p_firm);
+					city.firm_external_room());
+				city.firm_external_pay(p_firm);
 				left -= p_firm;
 				if (left > 0.0) {
 					const double p_service = std::min(left,
-						std::max(0.0, city.service_liquidity()));
-					city.service_pay(p_service);
+						city.service_external_room());
+					city.service_external_pay(p_service);
 					left -= p_service;
 				}
 				const double paid = penalty - left;
@@ -1047,13 +1048,13 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			if (seized > 0.0) {
 				double left = seized;
 				const double s_firm = std::min(left,
-					std::max(0.0, city.firm_liquidity()));
-				city.firm_pay(s_firm);
+					city.firm_external_room());
+				city.firm_external_pay(s_firm);
 				left -= s_firm;
 				if (left > 0.0) {
 					const double s_service = std::min(left,
-						std::max(0.0, city.service_liquidity()));
-					city.service_pay(s_service);
+						city.service_external_room());
+					city.service_external_pay(s_service);
 					left -= s_service;
 				}
 				city_bank->deposits -= seized - left;

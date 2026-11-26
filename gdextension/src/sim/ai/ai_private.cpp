@@ -473,7 +473,11 @@ void AiPrivateInvestor::run_city(AiContext& ctx, int city_index) {
 void AiPrivateInvestor::plan_city(AiContext& ctx, int city_index) {
 	const AiView& view = ctx.view;
 	const AiCityRow& city = view.city_rows[static_cast<std::size_t>(city_index)];
-	const double firm_cash = city.firm_cash;
+	// R1a (continuacao): com o caixa unico, o pool inteiro NAO e a base do
+	// setor de firmas. Aplique a fatia medida da industria/servicos para a
+	// decisao equivaler ao antigo caixa das firmas (nada de dobrar a base).
+	const double firm_cash = city.firm_cash
+		* std::clamp(city.firm_revenue_share, 0.0, 1.0);
 	const double capital_cost = kCapitalPerCapacity;
 	const double available = firm_cash * kCapitalShare;
 	if (available < capital_cost * kMinCapacity) {
@@ -600,6 +604,9 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		double available, const std::vector<char>* local_products) {
 	const AiView& view = ctx.view;
 	const AiCityRow& city = view.city_rows[static_cast<std::size_t>(city_index)];
+	// R1a (continuacao): mesma base do `plan_city` - pool x fatia das firmas.
+	const double firm_cash = city.firm_cash
+		* std::clamp(city.firm_revenue_share, 0.0, 1.0);
 	const bool is_recipe = tmpl.is_recipe;
 	const int product = tmpl.product;
 	const double sold = ai_market(view, city_index, product, kAiSold);
@@ -820,7 +827,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			opex_per_ton = recipe.opex_per_ton;
 		}
 		ai_brain::ForecastInput forecast_in;
-		forecast_in.cash = city.firm_cash;
+		forecast_in.cash = firm_cash;
 		// Fase C (R5): crédito de INVESTIMENTO da cidade (não o giro da D-126).
 		forecast_in.credit_approved = ai_investment_credit(ctx, city_index);
 		forecast_in.candidate_capacity = capacity;
@@ -945,7 +952,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 			ai_risk::city_exposure(ctx.state.brain_exposure, city_index);
 		if (exposure != nullptr
 				&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
-					product, sector, cost, city.firm_cash
+					product, sector, cost, firm_cash
 						+ ai_investment_credit(ctx, city_index))) {
 			ctx.state.brain_risk_rejected += 1;
 			ctx.state.brain_exposure_rejected += 1;
@@ -1017,7 +1024,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 				ai_risk::city_exposure(ctx.state.brain_exposure, city_index);
 			if (exposure != nullptr
 					&& !ai_risk::exposure_allows(ctx.ws.ai_brain, *exposure,
-						product, sector, cost, city.firm_cash
+						product, sector, cost, firm_cash
 							+ ai_investment_credit(ctx, city_index))) {
 				ctx.state.brain_risk_rejected += 1;
 				ctx.state.brain_exposure_rejected += 1;
@@ -1045,7 +1052,10 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 				// de crédito é pelo caixa vivo para não abrir dívida sem planta.
 				const City& live_city = ctx.ws.cities[
 					static_cast<std::size_t>(city_index)];
-				const double live_cash = std::max(0.0, live_city.firm_liquidity());
+				const double live_share = live_city.unified_cash
+					? live_city.measured_firm_revenue_share() : 1.0;
+				const double live_cash = std::max(0.0,
+					live_city.firm_liquidity()) * live_share;
 				const double gap = cost - live_cash;
 				if (gap > 1e-9) {
 					// `lend_city` entrega `pedido x fator` (aperto do banco): pedir

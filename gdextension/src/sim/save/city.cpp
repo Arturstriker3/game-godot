@@ -43,6 +43,14 @@ void write(Dictionary& data, const WorldState& ws, const SimCore& core) {
 		// ao anterior).
 		if (city.unified_cash) {
 			entry["private_cash"] = city.private_cash;
+			// R1a (continuacao): estado do sub-teto externo e da fatia medida.
+			// So no ON (save OFF continua byte-identico ao anterior).
+			entry["firm_revenue_share"] =
+				city.measured_firm_revenue_share();
+			entry["firm_external_paid_today"] =
+				city.firm_external_paid_today;
+			entry["service_external_paid_today"] =
+				city.service_external_paid_today;
 		}
 		// D-126 (v41): crédito de capital de giro da cidade e o prêmio de crise.
 		entry["firm_debt"] = city.firm_debt;
@@ -580,6 +588,21 @@ void read(WorldState& ws, SimCore& core, const Dictionary& data, int version,
 			city.private_cash = double(entry.get("private_cash", 0.0));
 			city.unified_cash = true;
 		}
+		// R1a (continuacao): fatia medida e pagamentos externos do dia. Sem as
+		// chaves (save OFF ou anterior a correcao), a fatia e derivada dos
+		// espelhos em `apply_regional_cash_after_load` e o dia comeca zerado.
+		if (entry.has("firm_revenue_share")) {
+			city.firm_revenue_share =
+				double(entry.get("firm_revenue_share", -1.0));
+		}
+		city.firm_external_paid_today = entry.has("firm_external_paid_today")
+			? std::max(0.0, double(entry.get("firm_external_paid_today", 0.0)))
+			: 0.0;
+		city.service_external_paid_today =
+			entry.has("service_external_paid_today")
+			? std::max(0.0,
+				double(entry.get("service_external_paid_today", 0.0)))
+			: 0.0;
 		// D-126 (v41): crédito de giro da cidade. Lido pela PRESENÇA da chave,
 		// não pela versão: `banks[].loans` é lido em qualquer versão, e zerar a
 		// dívida de um save reconstruído/rebaixado abriria o gap crédito ×

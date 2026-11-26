@@ -70,10 +70,20 @@ void SimCore::set_regional_cash(bool enabled) {
 		// do save).
 		if (enabled && !city.unified_cash) {
 			city.unified_cash = true;
+			// R1a (continuacao): a fatia inicial dos pagamentos externos e a
+			// razao dos dois caixas no instante da fusao (mesma separacao que o
+			// caminho OFF usava); o pendulo mensal a atualiza depois.
+			if (city.firm_revenue_share < 0.0) {
+				city.firm_revenue_share =
+					city.measured_firm_revenue_share();
+			}
 			city.sync_private_cash();
 		} else if (!enabled) {
 			city.unified_cash = false;
 			city.private_cash = 0.0;
+			city.firm_revenue_share = -1.0;
+			city.firm_external_paid_today = 0.0;
+			city.service_external_paid_today = 0.0;
 		}
 	}
 }
@@ -89,9 +99,18 @@ void SimCore::apply_regional_cash_after_load(bool saved_flag,
 				city.unified_cash = true;
 				city.sync_private_cash();
 			}
+			// Save sem a fatia medida (anterior a esta correcao): deriva da
+			// razao dos espelhos, que o load preservou.
+			if (city.firm_revenue_share < 0.0) {
+				city.firm_revenue_share =
+					city.measured_firm_revenue_share();
+			}
 		} else {
 			city.unified_cash = false;
 			city.private_cash = 0.0;
+			city.firm_revenue_share = -1.0;
+			city.firm_external_paid_today = 0.0;
+			city.service_external_paid_today = 0.0;
 		}
 	}
 }
@@ -453,6 +472,30 @@ void SimCore::phase_reset() {
 		ws_.consumed_today[index] = 0.0;
 	}
 	for (City& city : ws_.cities) {
+		// R1a (continuacao): pendulo mensal da participacao por setor. A
+		// receita do dia que acabou (vendas das firmas por produto + receita
+		// de servicos) entra como amostra; a fatia anda 1/30 por dia e fica em
+		// [5%, 95%]. So com o caixa unico (desligada nao muda nada).
+		if (city.unified_cash) {
+			double firm_gross = 0.0;
+			for (int product = 0; product < ws_.products; ++product) {
+				firm_gross += std::max(0.0, city.revenue_by_product[product]);
+			}
+			const double service_gross = std::max(0.0, city.service_revenue);
+			const double gross = firm_gross + service_gross;
+			if (gross > 1e-9) {
+				const double current = city.measured_firm_revenue_share();
+				const double sample = firm_gross / gross;
+				city.firm_revenue_share = std::clamp(
+					current + (sample - current)
+						/ City::kRevenueSharePendulumDays,
+					City::kExternalShareFloor,
+					1.0 - City::kExternalShareFloor);
+			}
+		}
+		// Sub-teto diario dos pagamentos externos: recomeca zerado todo dia.
+		city.firm_external_paid_today = 0.0;
+		city.service_external_paid_today = 0.0;
 		city.pop.wage_income = 0.0;
 		city.pop.capital_income = 0.0;
 		city.pop.transfers = 0.0;
@@ -693,13 +736,13 @@ void SimCore::phase_accounting() {
 			const double royalty_paid = std::min({
 				building.revenue * building.royalty,
 				std::max(0.0, building.profit),
-				std::max(0.0, city.firm_liquidity())});
+				city.firm_external_room()});
 			if (royalty_paid <= 0.0) {
 				continue;
 			}
 			building.profit -= royalty_paid;
 			building.royalty_paid = royalty_paid;
-			city.firm_pay(royalty_paid);
+			city.firm_external_pay(royalty_paid);
 			city.government_budget += royalty_paid;
 		}
 

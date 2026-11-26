@@ -1,14 +1,17 @@
 // R1a - caixa unico regional (flag `rework.regional_cash`).
 //
-// Tres garantias, com o fixture `pocket_world` e o MESMO caminho do save real:
+// Garantias, com o fixture `pocket_world` e o MESMO caminho do save real:
 //   a) a fusao dos dois caixas conserva o total (money_total nao muda);
 //   b) uma transferencia interna (firmas -> servicos) e NO-OP monetario e
 //      continua registrada na estatistica por setor;
 //   c) o save/load com a flag ON preserva bit-a-bit o documento, e com a flag
-//      OFF o documento nao ganha a chave `private_cash` (save anterior).
+//      OFF o documento nao ganha a chave `private_cash` (save anterior);
+//   d) o sub-teto externo por setor usa a fatia da receita e nao consome em
+//      transferencia interna; a base investivel da IA e pool x fatia.
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
+#include "sim/ai/ai_view.h"
 #include "sim/save_state.h"
 #include "sim/sim_core.h"
 
@@ -135,4 +138,88 @@ TEST_CASE("R1a: save/load com a flag ON e OFF e bit-exato") {
 			ogs::save::to_value(target.ws, target.core));
 		CHECK(after == before);
 	}
+}
+
+TEST_CASE("R1a: sub-teto externo por setor usa a fatia da receita") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	world.core.set_regional_cash(true);
+	ogs::City& city = world.ws.cities[0];
+	CHECK(city.unified_cash);
+	// A fatia nasce da razao dos caixas (50k de 80k) e o pool e 80k.
+	CHECK(city.measured_firm_revenue_share() == Approx(0.625));
+	CHECK(city.firm_external_room() == Approx(50000.0));
+	CHECK(city.service_external_room() == Approx(30000.0));
+
+	// Transferencia INTERNA nao consome o sub-teto (continua no-op monetario).
+	city.firm_pay(10000.0);
+	city.service_receive(10000.0);
+	CHECK(city.private_cash == Approx(80000.0));
+	CHECK(city.firm_external_room() == Approx(50000.0));
+	CHECK(city.service_external_room() == Approx(30000.0));
+
+	// Pagamento EXTERNO das firmas consome o teto do setor e o pool. A base do
+	// dia (pool + pago) nao encolhe com o proprio pagamento.
+	city.firm_external_pay(20000.0);
+	CHECK(city.private_cash == Approx(60000.0));
+	CHECK(city.firm_external_paid_today == Approx(20000.0));
+	CHECK(city.firm_external_room() == Approx(30000.0));
+	CHECK(city.service_external_room() == Approx(30000.0));
+	// Os dois tetos somam o pool restante: nenhum setor drena o outro.
+	CHECK(city.firm_external_room() + city.service_external_room()
+		== Approx(city.private_cash));
+
+	// Desligado: o teto volta a ser o proprio caixa (caminho antigo).
+	world.core.set_regional_cash(false);
+	seed_cash(world, 50000.0, 30000.0);
+	ogs::City& off_city = world.ws.cities[0];
+	CHECK(off_city.firm_external_room() == Approx(50000.0));
+	CHECK(off_city.service_external_room() == Approx(30000.0));
+	off_city.firm_external_pay(12000.0);
+	CHECK(off_city.firm_cash == Approx(38000.0));
+	// Fora do pool, o contador diario nao e usado.
+	CHECK(off_city.firm_external_paid_today == Approx(0.0));
+}
+
+TEST_CASE("R1a: pendulo mensal da fatia usa a receita do dia") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	world.core.set_regional_cash(true);
+	ogs::City& city = world.ws.cities[0];
+	REQUIRE(world.ws.products > 0);
+	const int product = 0;
+	city.revenue_by_product[product] = 1000.0;
+	city.service_revenue = 0.0;
+
+	world.core.phase_reset();
+
+	// Uma amostra 100% firmas anda 1/30 do caminho (0,625 -> 0,6375).
+	CHECK(city.firm_revenue_share == Approx(0.6375));
+	// O reset zera os pagamentos externos do dia.
+	CHECK(city.firm_external_paid_today == Approx(0.0));
+	CHECK(city.service_external_paid_today == Approx(0.0));
+}
+
+TEST_CASE("R1a: base investivel da IA nao dobra com o pool") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	world.core.set_regional_cash(true);
+	ogs::AiView view;
+	ogs::snapshot_ai_view(world.ws, world.core, view, nullptr);
+	REQUIRE(view.city_rows.size() == world.ws.cities.size());
+	const ogs::AiCityRow& row = view.city_rows[0];
+	// A visao publica o pool e a fatia; a base efetiva do investidor e o
+	// produto (o antigo caixa das firmas), nunca o pool inteiro.
+	CHECK(row.firm_cash == Approx(80000.0));
+	CHECK(row.firm_revenue_share == Approx(0.625));
+	CHECK(row.firm_cash * row.firm_revenue_share == Approx(50000.0));
+
+	// Desligado, a visao e a base antiga (fatia 1, caixa das firmas).
+	world.core.set_regional_cash(false);
+	seed_cash(world, 50000.0, 30000.0);
+	ogs::AiView off_view;
+	ogs::snapshot_ai_view(world.ws, world.core, off_view, nullptr);
+	const ogs::AiCityRow& off_row = off_view.city_rows[0];
+	CHECK(off_row.firm_cash == Approx(50000.0));
+	CHECK(off_row.firm_revenue_share == Approx(1.0));
 }

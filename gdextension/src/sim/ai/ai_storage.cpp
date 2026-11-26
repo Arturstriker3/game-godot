@@ -199,6 +199,9 @@ bool AiStorageInvestor::private_decisions(AiContext& ctx, int city_index) {
 		}
 		const double affordable = std::max(0.0,
 			ctx.view.city_rows[static_cast<std::size_t>(city_index)].firm_cash)
+			* std::clamp(ctx.view.city_rows[
+				static_cast<std::size_t>(city_index)].firm_revenue_share,
+				0.0, 1.0)
 			* kStoragePrivateBuildCashShare;
 		const double tons = std::min(build_tons,
 			affordable / kStorageCostPerTon[type]);
@@ -241,6 +244,9 @@ bool AiStorageInvestor::private_decisions(AiContext& ctx, int city_index) {
 				&& held < capacity) {
 			const double budget = ctx.view.city_rows[
 				static_cast<std::size_t>(city_index)].firm_cash
+				* std::clamp(ctx.view.city_rows[
+					static_cast<std::size_t>(city_index)].firm_revenue_share,
+					0.0, 1.0)
 				* kStoragePrivateCashShare;
 			const double tons = std::min(std::min(stock * 0.05,
 				capacity - held), budget / price);

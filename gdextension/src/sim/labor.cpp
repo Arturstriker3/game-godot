@@ -152,7 +152,7 @@ void SimCore::phase_labor() {
 				}
 				const double interest = paid * rate * span;
 				const double take = std::min(interest,
-					std::max(0.0, city.firm_liquidity()));
+					city.firm_external_room());
 				if (take <= 1e-12) {
 					continue;
 				}
@@ -161,7 +161,7 @@ void SimCore::phase_labor() {
 				if (credited <= 0.0) {
 					continue;
 				}
-				city.firm_pay(credited);
+				city.firm_external_pay(credited);
 			}
 		}
 	}

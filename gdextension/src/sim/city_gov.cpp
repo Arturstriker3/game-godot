@@ -404,10 +404,17 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			const double hh_paid = std::min(due * household_part,
 				safe_nonneg(city.pop.savings));
 			const double firm_paid = std::min(due * (1.0 - household_part),
-				safe_nonneg(city.firm_liquidity()));
+				city.firm_external_room());
 			// B2: o IPTU da família sai da poupança rateada pelos quintis.
 			core.charge_households(city.pop, hh_paid);
-			city.firm_pay(firm_paid);
+			if (city.unified_cash) {
+				city.firm_external_pay(firm_paid);
+			} else {
+				// Caminho OFF preservado bit a bit: o antigo clamp do caixa
+				// antes do debito (caixa negativo impossivel pelo invariante,
+				// mas o digest nao pode depender disso).
+				city.firm_cash = safe_nonneg(city.firm_cash) - firm_paid;
+			}
 			gov.cash += hh_paid + firm_paid;
 			gov.month_revenue_iptu = hh_paid + firm_paid;
 		}
@@ -419,9 +426,15 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			* safe_nonneg(city.service_revenue)
 			* static_cast<double>(kMonthDays) * month_fraction;
 		const double fee_paid = std::min(fee_due,
-			safe_nonneg(city.service_liquidity()));
+			city.service_external_room());
 		if (fee_paid > 0.0) {
-			city.service_pay(fee_paid);
+			if (city.unified_cash) {
+				city.service_external_pay(fee_paid);
+			} else {
+				// Caminho OFF preservado bit a bit (clamp antigo do caixa).
+				city.service_cash =
+					safe_nonneg(city.service_cash) - fee_paid;
+			}
 			gov.cash += fee_paid;
 			gov.month_revenue_fees = fee_paid;
 		}

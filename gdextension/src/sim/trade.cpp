@@ -857,7 +857,10 @@ void SimCore::trade_food() {
 			// o mesmo dinheiro, não uma transferência nova. Sem isso, uma cidade
 			// com poupança alta e firma sem caixa (São Paulo, 28 M) ficava com
 			// fome enquanto o dinheiro dormia na conta das famílias (§19).
-			const double firm_cash = std::max(0.0, buyer.city->firm_liquidity());
+			// R1a (continuacao): a parcela da firma e um pagamento EXTERNO e
+			// respeita o sub-teto do setor (fatia do pool); governo e familias
+			// continuam cobrindo o resto. Desligado, o teto e o caixa da firma.
+			const double firm_cash = buyer.city->firm_external_room();
 			const double gov_budget = std::max(0.0, buyer.city->government_budget);
 			const double savings = std::max(0.0, buyer.city->pop.savings);
 			const double payable = firm_cash + gov_budget + savings;
@@ -914,7 +917,7 @@ void SimCore::trade_food() {
 			const double freight = unit_freight * amount_tons;
 			const double tariff_paid = unit_tariff * amount_tons;
 
-			buyer.city->firm_pay(firm_share);
+			buyer.city->firm_external_pay(firm_share);
 			buyer.city->government_budget -= gov_share;
 			// B2: a parcela da importação paga pela poupança sai rateada pelos
 			// quintis (a soma dos estratos acompanha o escalar).
@@ -1411,7 +1414,7 @@ void SimCore::trade_goods() {
 				// frete ao serviço do comprador. Governo cobre o que a firma não
 				// puder (insumo essencial), conservando o dinheiro.
 				const double unit_cost = offer.unit_cost;
-				const double payable = std::max(0.0, buyer_city.firm_liquidity())
+				const double payable = buyer_city.firm_external_room()
 					+ std::max(0.0, buyer_city.government_budget);
 				if (amount * unit_cost > payable) {
 					amount = unit_cost > 0.0 ? payable / unit_cost : 0.0;
@@ -1455,7 +1458,7 @@ void SimCore::trade_goods() {
 				}
 				const double total_cost = amount * unit_cost;
 				const double firm_share = std::min(total_cost,
-					std::max(0.0, buyer_city.firm_liquidity()));
+					buyer_city.firm_external_room());
 				const double gov_share = std::min(total_cost - firm_share,
 					std::max(0.0, buyer_city.government_budget));
 				const double paid = firm_share + gov_share;
@@ -1465,7 +1468,7 @@ void SimCore::trade_goods() {
 				const double goods_value = amount * offer.origin_anchor;
 				const double freight = amount * offer.unit_freight;
 				const double tariff_paid = amount * offer.unit_tariff;
-				buyer_city.firm_pay(firm_share);
+				buyer_city.firm_external_pay(firm_share);
 				buyer_city.government_budget -= gov_share;
 				seller.firm_receive(goods_value);
 				buyer_city.service_receive(freight);

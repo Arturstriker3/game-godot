@@ -1783,6 +1783,22 @@ struct Region {
 		// ------------------------------------------------------------------
 		double private_cash = 0.0;
 		bool unified_cash = false;
+		// R1a (continuacao) - SUB-TETO DOS PAGAMENTOS EXTERNOS.
+		//
+		// Cada setor pode pagar por dia, FORA do setor privado (tarifa de
+		// energia, importacao de bens/comida, juros e taxas), no maximo a sua
+		// fatia do pool. A fatia e a participacao estatistica de cada setor na
+		// receita privada (vendas das firmas x receita de servicos), com
+		// "pendulo mensal": EMA de 30 dias (1/30 por dia), presa em 5%..95%
+		// para nenhum setor ser zerado. Pagamento INTERNO (opex, insumos,
+		// frete, construcao) continua no-op monetario e NAO consome o teto.
+		// Desligada a flag, os tetos sao os proprios caixas (caminho antigo,
+		// bit a bit). -1 = ainda nao medido: usa a razao dos espelhos.
+		static constexpr double kExternalShareFloor = 0.05;
+		static constexpr double kRevenueSharePendulumDays = 30.0;
+		double firm_revenue_share = -1.0;
+		double firm_external_paid_today = 0.0;
+		double service_external_paid_today = 0.0;
 
 		// Liquidez que cada setor pode gastar HOJE (leitura). Com o caixa
 		// unico, os dois vem do pool - nunca somar as duas leituras.
@@ -1800,6 +1816,48 @@ struct Region {
 		double private_liquidity() const {
 			return unified_cash ? std::max(0.0, private_cash)
 				: std::max(0.0, firm_cash) + std::max(0.0, service_cash);
+		}
+		// Participacao MEDIDA do setor de firmas na receita privada, presa em
+		// [5%, 95%]. Sem medicao ainda (-1), deriva da razao dos dois espelhos
+		// (a mesma base que o caminho OFF usava para separar os caixas).
+		double measured_firm_revenue_share() const {
+			if (firm_revenue_share >= 0.0) {
+				return std::clamp(firm_revenue_share, kExternalShareFloor,
+					1.0 - kExternalShareFloor);
+			}
+			const double firm = std::max(0.0, firm_cash);
+			const double service = std::max(0.0, service_cash);
+			const double total = firm + service;
+			if (total <= 1e-9) {
+				return 0.5;
+			}
+			return std::clamp(firm / total, kExternalShareFloor,
+				1.0 - kExternalShareFloor);
+		}
+		// Base do dia para os pagamentos externos: o pool que existe agora mais
+		// o que os dois setores JA pagaram para fora hoje. E o pool de abertura
+		// mais as entradas externas do dia, sem contar duas vezes o dinheiro
+		// que saiu (o teto de cada setor e uma fatia desta base).
+		double external_payment_base() const {
+			return std::max(0.0, private_cash + firm_external_paid_today
+				+ service_external_paid_today);
+		}
+		// Quanto o setor ainda pode comprometer FORA do setor privado hoje.
+		// Desligada a flag: o proprio caixa (caminho antigo, bit a bit).
+		double firm_external_room() const {
+			if (!unified_cash) {
+				return std::max(0.0, firm_cash);
+			}
+			return std::max(0.0, external_payment_base()
+				* measured_firm_revenue_share() - firm_external_paid_today);
+		}
+		double service_external_room() const {
+			if (!unified_cash) {
+				return std::max(0.0, service_cash);
+			}
+			return std::max(0.0, external_payment_base()
+				* (1.0 - measured_firm_revenue_share())
+				- service_external_paid_today);
 		}
 		// Espelho: private_cash := firm_cash + service_cash (ligacao/legado).
 		void sync_private_cash() {
@@ -1833,6 +1891,27 @@ struct Region {
 				private_cash += value;
 			}
 			service_cash += value;
+		}
+		// Pagamento EXTERNO (fora do setor privado) de um setor. Desligada a
+		// flag e o mesmo `firm_pay`/`service_pay` de antes; ligada, debita o
+		// pool e consome o sub-teto diario daquele setor.
+		void firm_external_pay(double value) {
+			if (value <= 0.0) {
+				return;
+			}
+			firm_pay(value);
+			if (unified_cash) {
+				firm_external_paid_today += value;
+			}
+		}
+		void service_external_pay(double value) {
+			if (value <= 0.0) {
+				return;
+			}
+			service_pay(value);
+			if (unified_cash) {
+				service_external_paid_today += value;
+			}
 		}
 		// D-126 (save v41) — CRÉDITO DE CAPITAL DE GIRO da cidade (firmas
 		// privadas e serviços, que compartilham o caixa agregado). O passivo é

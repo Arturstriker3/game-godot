@@ -82,6 +82,12 @@ struct AiCityRow {
 	std::string nation;
 	std::string landmass;
 	double firm_cash = 0.0;
+	// R1a (continuacao): fatia das FIRMAS na receita privada medida (pendulo
+	// mensal). Com o caixa unico, `firm_cash` e o pool inteiro; o investidor
+	// privado usa `firm_cash * firm_revenue_share` como base para nao dobrar a
+	// leitura so porque os dois caixas foram somados. Desligada a flag = 1.0
+	// (base = caixa das firmas, como antes).
+	double firm_revenue_share = 1.0;
 	// C2b1 (D-104): taxa básica anual da moeda do país (leitura congelada do
 	// dia; 0 = sem moeda/sem política — o custo de capital não entra).
 	double policy_rate = 0.0;
