@@ -471,11 +471,17 @@ de inserção; qualquer reordenação muda os bytes do save).
 | --- | --- | --- |
 | `save/city.cpp` | 1.463 | `cities` (848 l., com pop/region aninhados), `cities`+`buildings`+`construction_projects` na carga (1.112 l.), `services` (52), `urban` (145), `city_gov` (54), `housing` (107) |
 | `save/pop.cpp` | 562 | bloco `pop` da escrita (209 l.), leitura (313 l.) e categorias (12 l.) |
-| `save/region.cpp` | 365 | bloco `region` da escrita (130 l.) e da leitura (212 l.) |
+| `save/region.cpp` | 369 | bloco `region` da escrita (130 l.) e da leitura (212 l.) |
 | `save/finance.cpp` | 1.280 | `currencies`..`stock` na escrita (407 l.); `currencies`..`banks` (540), `tariffs` (28), `stock` (140) e `bank_crisis` (132) na carga |
 | `save/power.cpp` | 479 | bloco `power` da escrita (174 l.) e da carga (282 l.) |
 | `save/save_internal.h` | 95 | helpers `detail` + contrato dos cinco domínios |
 | **`save_state.cpp`** | **1.533** (de 5.523) | `to_value`/`from_value` + chaves de núcleo + helpers |
+
+**Contagem do `region.cpp` (fecho do QA):** o commit de código `4aadc3df` tinha **365 linhas não
+vazias** (373 totais); o comentário B3 voltou no commit de docs `33d9cc2c`, **depois** do portão
+`-Tier pr` de `20261126_062236`, então o HEAD tem **369 não vazias** (377 totais) — só comentário,
+sem efeito no binário. O `-Tier quick` foi rodado de novo no HEAD (`20261126_082252`, **40/40 OK**)
+para selar a árvore exata.
 
 **Antes/depois:** `git diff --numstat` do commit de código = `34 4038` em `save_state.cpp` (34
 inserções: o include, `namespace detail`/`using`, e as 13 chamadas; 4.038 remoções). Os
