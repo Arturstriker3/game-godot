@@ -12,6 +12,10 @@ plantas) foi atacada no teto por planta: o L1 declara `max_plant_capacity_per_10
 (t/dia por 100 mil habitantes simulados) e o alvo do país é dividido pelas cidades-alvo. O gate
 de 365 d **continua reprovando** `clothes` (1,7750) e agora também `fabric` (1,3041); a hipótese
 medida é que o gargalo restante está a montante (algodão/tecido), não no teto da planta.
+**Revisão 4 (correção 3, §9):** a cadeia foi fechada a montante com o algodão semeado por
+produtores reais (USDA FAS) via área de safra (`set_crop_plan`). O LOTE 1 **fecha** na métrica
+oficial do dono (`MA30 d365 ÷ d0`): `clothes` 0,9702 · `fabric` 0,6897 · `shoes` 0,8895;
+cadeia viva (16/16/5 países), comida 95/179, 2 falências, drift 0,0236, OFF `ded6f54b…`.
 
 Este lote entrega **somente o LOTE 1** (`clothes`, `fabric`, `shoes`) e o **reuso** do mecanismo
 G2. Lotes 2–5 não aterrissam aqui; o gate é medido no acumulado (hoje, G2 + L1).
@@ -210,16 +214,86 @@ disputa o algodão e sobe o custo unitário (fabric 114 vs 98 no dia 365). `shoe
 e não vendem. Ou seja: o teto de 20 t/dia era **um** gargalo, não **o** gargalo; o restante
 está a montante (algodão → tecido) e na cobertura de países — fora do escopo desta correção.
 
-## 9. Estado e próximos passos
+## 9. Correção 3 — algodão por produtores reais (medição 4) e fechamento do LOTE 1
 
-- **Sem merge.** Branch `feat/g3-catalogo`. O gate do L1 continua **reprovado**: `clothes`
-  1,7750 > 1,15 e `fabric` 1,3041 > 1,15; `shoes` passa no preço (1,0800) mas não nos países
-  (1 < 3).
-- **Aguarda confirmação/decisão do dono:** (a) manter o 0,90 com a correção 2, (b) revisar o
-  escopo (cadeia do algodão/tecido) ou (c) voltar à decisão original de 0,02.
-- **Lotes 2–5 não aterrissaram.**
-- `sim_unit_tests` **76/76** (771 asserções). `-Tier pr -Base main` **42/42 OK** (run
-  `20261126_061255`; 0 falha, 0 crash, 0 timeout) — o runner recomenda `-Tier nightly` antes
-  de um merge.
-- Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,on365_f090,on365_fix,off365,off365_f090,
-  off365_fix,smoke_f090,smoke_fix}.json` e logs `*.log`.
+**O que mudou (commit `624ed142`).** A correção 2 mediu que o gargalo restante estava **a
+montante**: a capacidade de `fabric` semeada a 0,90 tinha ~37× a oferta de algodão do dia 0, o
+algodão virava gargalo e o custo unitário subia a cadeia toda (`fabric` 1,3041). Em vez de
+reduzir a semente do tecido, a cadeia foi **fechada a montante** com o mesmo princípio das
+plantas:
+
+- `data/definitions/agriculture/cotton_seed.json` — produtores reais de algodão em pluma
+  2024/25 (USDA FAS *Cotton: World Markets and Trade*, mar/2026): China 0,27 · Índia 0,20 ·
+  Brasil 0,14 · EUA 0,12 · Paquistão 0,04 · Austrália 0,05 · Turquia 0,03 · Uzbequistão 0,03
+  (89,6% declarados; os 10,4% restantes **não** são semeados); rendimento 0,859 t/ha; aptidão
+  mínima 0,30; **janela contínua declarada** (o dado do jogo não tem calendário de algodão —
+  nenhum mês de plantio/colheita foi inventado).
+- `core/economy/cotton_seed.gd` declara a **área de safra** dos produtores reais pelo contrato
+  existente `set_crop_plan` (nenhuma construção nova): alvo =
+  `min(capacidade instalada de fabric, demanda de tecido da cadeia) × algodão por tecido −
+  lavouras já instaladas`; rateio pela participação de produção e, dentro da nação, área
+  cultivável × aptidão da cidade; plano sem fazenda rastreada colhe maduro (D-125).
+- O `RefiningService` chama a semente logo depois de `seed_industry` e **só** com
+  `bootstrap.enabled`; com as flags desligadas nada é declarado.
+
+Medido no dia 0 (`on365_c3.log`): `[algodão] alvo=16 865,2 t/dia (fabric 16 865,2, final
+30 517,4, lavouras existentes 0,0) planos=19 área=6 091 292 ha rendimento=0,859
+produtores=AUS,BRA,CHN,IND,PAK,TUR,USA sobra=15,0%`.
+
+**Gate de 365 d com a correção 3** (`G:/opengs_tmp/g3/on365_c3.json`, trajetória
+`c4668fb4…`, parede 122,2 s):
+
+| critério | meta | medido | resultado |
+|---|---|---|---|
+| violações / dias travados | 0 / 0 | **0 / 0** | OK |
+| falências | ≤ 3 | **2** (BRA/iron d147, CHL/wheat d210) | OK |
+| portão de comida | ≤ 97/179 | **95/179** (mediana 0,9693) | OK |
+| drift / máx. diário | < 0,03 | **0,023558 / 0,024841** | OK |
+| `clothes`/`fabric`/`shoes` produzido **e** vendido | ≥ 3 países | **16 / 16 / 5** | OK |
+| `clothes` preço MA30 d365 ÷ d0 | ≤ 1,15 | **0,9702** (147,98 / 152,52) | **OK** |
+| `fabric` idem | ≤ 1,15 | **0,6897** (65,20 / 94,54) | **OK** |
+| `shoes` idem | ≤ 1,15 | **0,8895** (251,54 / 282,80) | **OK** |
+
+Cadeia viva: `fabric` vendido **20,8 kt/dia em 16 países** (`supply` 7,5 kt/dia),
+`clothes` 7,2 kt/dia em 16 países, `shoes` 304 t/dia em 5; algodão **162 fazendas**, 19 planos
+(2 fechadas); 438 plantas de bootstrap, `bootstrap_shortfall` **10 262 t/dia**.
+
+**As DUAS leituras do preço — a oficial é `d365 ÷ d0`.** A métrica **oficial** do gate,
+por decisão do dono, é `MA30(dia 365) ÷ MA30(dia 0) ≤ 1,15`. A leitura `MA30(dia 365) ÷
+preço-base` do bem (`base_price`) é **apenas informativa**: o MA30 do dia 0 já nasce acima da
+base por causa do estado herdado (C/D — `clothes` 1,202×, `shoes` 1,357×, `fabric` 1,080×), de
+modo que dividir pela base mistura "o preço subiu em 365 d" com "o dia 0 já estava alto".
+
+| bem | oficial d365 ÷ d0 | informativa d365 ÷ base |
+|---|---:|---:|
+| `clothes` | **0,9702** | 1,1663 |
+| `fabric` | **0,6897** | 0,7452 |
+| `shoes` | **0,8895** | 1,2068 |
+
+A leitura ÷base **não** é gate e nenhum limiar foi movido; ela é publicada só para rastreio.
+Nas duas leituras, `fabric` cai (o algodão deixou de ser gargalo e o tecido ficou barato) e
+`clothes`/`shoes` ficam estáveis na oficial.
+
+**A saga completa (cada passo atacou o gargalo que o anterior mediu):**
+
+| passo | clothes / fabric / shoes (d365÷d0) | o que o passo mediu |
+|---|---|---|
+| 0,02 (decisão original) | 3,1064 / 1,2770 / 1,2196 | fração pequena em bem de massa = escassez artificial |
+| 0,10 (braço A, diagnóstico) | 2,5127 / 1,1046 / 1,0647 | 5× a fração não fecha `clothes` |
+| 0,90 ("básico maduro nasce abastecido") | 2,2733 / 1,1166 / 1,1114 | a fração não chega ao plano: 1 planta/cidade × teto de 20 t/dia satura (shortfall 55 330) |
+| teto proporcional à cidade (correção 2) | 1,7750 / 1,3041 / 1,0800 | o teto era **um** gargalo; agora o algodão limita o tecido |
+| **algodão por produtores reais (correção 3)** | **0,9702 / 0,6897 / 0,8895** | **cadeia inteira abastecida: passa** |
+
+**OFF bit a bit:** `--bootstrap=0 --ai-brain=0`, 365 d: `trajectory_sha256 ded6f54b…` idêntico
+ao controle (0 falências, 0 violações, comida 97/179, drift 0,016673).
+
+**Estado.** LOTE 1 **fechado pela métrica oficial** do dono. `sim_unit_tests` **76/76** (771
+asserções) e `-Tier pr -Base main` **49/49 OK** (run `20261126_074912`; 0 falha, 0 crash, 0
+timeout). **Pendente antes do merge:** (a) confirmação do dono para o princípio "básico
+maduro nasce abastecido ~0,90" (a decisão registrada era 0,02); (b) `-Tier nightly`, que o
+runner recomenda por a mudança tocar o núcleo; (c) LOTE 2 (alimentos/bebidas), que segue o
+mesmo padrão: cadeia inteira a montante abastecida (inclusive insumos agrícolas por produtores
+reais) + `max_plant_capacity_per_100k` por bem.
+
+Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,on365_f090,on365_fix,on365_c3,off365,
+off365_f090,off365_fix,off365_c3,smoke_f090,smoke_fix,smoke_c3_30}.json` e logs `*.log`.
