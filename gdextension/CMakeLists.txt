@@ -111,6 +111,7 @@ add_library(economy_gdextension SHARED
     src/economy_sim.cpp
     src/edge/definitions_loader.cpp
     src/edge/save_load.cpp
+    src/edge/status_city.cpp
     src/edge/value_bridge.cpp
 )
 
