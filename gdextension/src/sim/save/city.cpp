@@ -38,6 +38,12 @@ void write(Dictionary& data, const WorldState& ws, const SimCore& core) {
 		entry["sim_population"] = city.simulation_population;
 		entry["firm_cash"] = city.firm_cash;
 		entry["service_cash"] = city.service_cash;
+		// R1a: com o caixa unico regional ligado, `private_cash` e o dinheiro
+		// real do setor privado. Desligado a chave NAO entra (save byte-identico
+		// ao anterior).
+		if (city.unified_cash) {
+			entry["private_cash"] = city.private_cash;
+		}
 		// D-126 (v41): crédito de capital de giro da cidade e o prêmio de crise.
 		entry["firm_debt"] = city.firm_debt;
 		entry["firm_credit_arrears"] = city.firm_credit_arrears;
@@ -568,6 +574,12 @@ void read(WorldState& ws, SimCore& core, const Dictionary& data, int version,
 		city.simulation_population = read_sim_population(entry, city.population);
 		city.firm_cash = double(entry.get("firm_cash", 0.0));
 		city.service_cash = double(entry.get("service_cash", 0.0));
+		// R1a: chave aditiva do caixa unico regional. Sem ela (save anterior ou
+		// flag desligada) o modo vem da configuracao e o pool nasce da soma.
+		if (entry.has("private_cash")) {
+			city.private_cash = double(entry.get("private_cash", 0.0));
+			city.unified_cash = true;
+		}
 		// D-126 (v41): crédito de giro da cidade. Lido pela PRESENÇA da chave,
 		// não pela versão: `banks[].loans` é lido em qualquer versão, e zerar a
 		// dívida de um save reconstruído/rebaixado abriria o gap crédito ×

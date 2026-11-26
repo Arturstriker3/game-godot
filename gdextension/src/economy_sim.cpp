@@ -1230,6 +1230,9 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	seed_services();
 	// F9: grupos/empresas a partir dos ativos privados existentes.
 	seed_groups();
+	// R1a: aplica a flag do caixa unico regional (se ligada, o pool privado nasce
+	// da soma dos dois caixas). Desligada e no-op.
+	sim_core_.set_regional_cash(ws_.regional_cash);
 }
 
 // ---------------------------------------------------------------------------
@@ -5088,7 +5091,7 @@ Dictionary EconomySim::apply_nationalize(const String& city_id,
 		if (Group* owner = find_group(group_id)) {
 			owner->cash += compensation;
 		} else {
-			city->firm_cash += compensation;
+			city->firm_receive(compensation);
 		}
 	}
 	building->owner = "state";
@@ -5263,7 +5266,7 @@ bool EconomySim::apply_spend_government(const String& city_id, double amount) {
 	}
 	city->government_budget -= amount;
 	// ServiÃ§o domÃ©stico (prospecÃ§Ã£o, estudos, licenciamento).
-	city->service_cash += amount;
+	city->service_receive(amount);
 	city->service_revenue += amount;
 	city->service_profit += amount;
 	city->gdp += amount;

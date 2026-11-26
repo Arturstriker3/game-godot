@@ -62,6 +62,40 @@ const City* SimCore::find_city(const std::string& id) const {
 	return &ws_.cities[static_cast<std::size_t>(found->second)];
 }
 
+void SimCore::set_regional_cash(bool enabled) {
+	ws_.regional_cash = enabled;
+	for (City& city : ws_.cities) {
+		// Preserva o total: ao ligar, o pool nasce da soma dos dois caixas;
+		// ao desligar, os dois campos seguem como o estado (private_cash sai
+		// do save).
+		if (enabled && !city.unified_cash) {
+			city.unified_cash = true;
+			city.sync_private_cash();
+		} else if (!enabled) {
+			city.unified_cash = false;
+			city.private_cash = 0.0;
+		}
+	}
+}
+
+void SimCore::apply_regional_cash_after_load(bool saved_flag,
+		bool has_saved_flag) {
+	const bool enabled = has_saved_flag ? saved_flag : ws_.regional_cash;
+	ws_.regional_cash = enabled;
+	for (City& city : ws_.cities) {
+		if (enabled) {
+			if (!city.unified_cash) {
+				// Save anterior a flag (ou sem a chave): o pool nasce da soma.
+				city.unified_cash = true;
+				city.sync_private_cash();
+			}
+		} else {
+			city.unified_cash = false;
+			city.private_cash = 0.0;
+		}
+	}
+}
+
 void SimCore::set_land_capacity(const std::string& city_id, int product,
 		double value) {
 	if (product < 0 || product >= ws_.products) {
@@ -195,7 +229,7 @@ double SimCore::money_total() const {
 		// capital_income_next é um crédito pendente às famílias: entra no total
 		// para a conservação valer em qualquer ponto do tick. O caixa da região
 		// (B3) é dinheiro do mundo, como o das famílias.
-		total += city.pop.savings + city.firm_cash + city.service_cash
+		total += city.pop.savings + city.private_total()
 		       + city.government_budget + city.capital_income_next
 		       + city.rent_income_next + city.region.cash;
 	}
@@ -637,7 +671,7 @@ void SimCore::phase_accounting() {
 				std::max(0.0, city.government_budget));
 			if (subsidy > 0.0) {
 				city.government_budget -= subsidy;
-				city.firm_cash += subsidy;
+				city.firm_receive(subsidy);
 				building.profit += subsidy;
 			}
 		}
@@ -659,13 +693,13 @@ void SimCore::phase_accounting() {
 			const double royalty_paid = std::min({
 				building.revenue * building.royalty,
 				std::max(0.0, building.profit),
-				std::max(0.0, city.firm_cash)});
+				std::max(0.0, city.firm_liquidity())});
 			if (royalty_paid <= 0.0) {
 				continue;
 			}
 			building.profit -= royalty_paid;
 			building.royalty_paid = royalty_paid;
-			city.firm_cash -= royalty_paid;
+			city.firm_pay(royalty_paid);
 			city.government_budget += royalty_paid;
 		}
 
@@ -734,7 +768,7 @@ void SimCore::phase_accounting() {
 		// estatais vão para o orçamento público; privados, para as famílias.
 		const double firm_target =
 			city.simulation_population * kFirmCashPerCapita;
-		double firm_surplus = std::max(0.0, city.firm_cash - firm_target);
+		double firm_surplus = std::max(0.0, city.firm_liquidity() - firm_target);
 		// F9: o lucro dos ativos de grupo sai da firma para o grupo (imposto
 		// corporativo fica no anfitrião; o resto vira caixa do grupo e, no
 		// fechamento do dia, dividendo ao estrato dono). A retenção é o que
@@ -743,7 +777,7 @@ void SimCore::phase_accounting() {
 			route_group_profit(static_cast<int>(row[0]), city.nation,
 				row[1], row[2], city, firm_surplus);
 		}
-		firm_surplus = std::max(0.0, city.firm_cash - firm_target);
+		firm_surplus = std::max(0.0, city.firm_liquidity() - firm_target);
 		const double positive_total = std::max(0.0, private_profit)
 			+ std::max(0.0, state_profit);
 		const double distributable = std::min(
@@ -755,8 +789,12 @@ void SimCore::phase_accounting() {
 		const double service_target =
 			(city.service_wage_bill + city.service_input_cost)
 			* kServiceCashBufferDays;
+		// R1a: o debito das firmas acontece ANTES de ler a liquidez dos servicos;
+		// com caixa unico os dois dividem o pool e o pagamento conjunto nao pode
+		// exceder o que existe. Desligado, a ordem nao muda numero nenhum.
+		city.firm_pay(modeled_distribution + state_distribution);
 		const double service_surplus = std::max(0.0,
-			city.service_cash - service_target);
+			city.service_liquidity() - service_target);
 		// F8: o lucro do setor é renda da POP dona (plano §13). O caixa guarda
 		// só o capital de giro (dias de folha + insumos); o resto do lucro é
 		// distribuído no dia seguinte. O alvo antigo por habitante (0,05/pessoa)
@@ -766,8 +804,7 @@ void SimCore::phase_accounting() {
 		const double service_distribution = std::min(
 			std::max(0.0, city.service_profit * kCapitalDistribution),
 			service_surplus);
-		city.firm_cash -= modeled_distribution + state_distribution;
-		city.service_cash -= service_distribution;
+		city.service_pay(service_distribution);
 		city.government_budget += state_distribution;
 		// §19 W3: a renda de capital do dia SOMA ao crédito pendente em vez de
 		// substituí-lo — o aluguel pago às famílias donas (fase 5b) já está
@@ -1190,8 +1227,15 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 					+ city.id + ": " + std::to_string(value));
 			}
 		};
-		check_nonneg("firm", city.firm_cash);
-		check_nonneg("service", city.service_cash);
+		if (city.unified_cash) {
+			// R1a: com um caixa unico, os espelhos por setor podem ficar
+			// negativos (transferencia cruzada registrada); o invariante e o
+			// pool.
+			check_nonneg("private", city.private_cash);
+		} else {
+			check_nonneg("firm", city.firm_cash);
+			check_nonneg("service", city.service_cash);
+		}
 		check_nonneg("government", city.government_budget);
 		check_nonneg("savings", city.pop.savings);
 		// B2: a soma dos quintis é o escalar da cidade; negativo em um estrato

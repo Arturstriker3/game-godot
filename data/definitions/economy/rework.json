@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "source": "REWORK_spec_mestre §1.2/§12 (R1a) — decisão de design, não dado de mundo",
+  "note": "Flags do rework R1. Lido por core/economy/economy.gd (REWORK_PATH) e por tools/c1_world_ai_365.gd; o núcleo recebe em EconomySim.set_rework_params(). Cada flag desligada mantém o mundo byte-a-byte anterior (save, status e digest).",
+  "regional_cash": {
+    "enabled": false,
+    "note": "R1a: firm_cash + service_cash passam a operar como UM caixa privado por região (City.private_cash); os dois campos viram espelho/estatística por setor. Transferências internas (opex firmas→serviços, insumos, frete, construção) viram no-op monetário. Desligado (default) = comportamento anterior."
+  }
+}

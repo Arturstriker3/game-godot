@@ -144,7 +144,7 @@ Ledger ledger(const WorldState& ws, double money_total) {
 
 		// Firmas: caixa das plantas e do setor de serviços; o salário atrasado
 		// é PASSIVO delas (mesma obrigação do ativo acima).
-		out.firms_cash += city.firm_cash + city.service_cash;
+		out.firms_cash += city.private_total();
 		out.payables += city.service_wage_arrears + city.rural_wage_arrears;
 		out.arrears_service += city.service_wage_arrears;
 		out.arrears_rural += city.rural_wage_arrears;
@@ -230,7 +230,7 @@ Sheet firms(const WorldState& ws, const std::string& nation) {
 		if (!nation.empty() && city.nation != nation) {
 			continue;
 		}
-		sheet.cash += city.firm_cash + city.service_cash;
+		sheet.cash += city.private_total();
 		sheet.payables += city.service_wage_arrears + city.rural_wage_arrears;
 		// D-126: crédito de capital de giro da cidade.
 		sheet.debt += city.firm_debt + city.firm_credit_arrears;

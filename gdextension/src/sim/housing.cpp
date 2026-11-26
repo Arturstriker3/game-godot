@@ -395,7 +395,7 @@ void SimCore::phase_housing() {
 			// circulação, então a manutenção só pode sair da renda dele.
 			const double maintenance = paid * kHousingMaintenanceShare;
 			const double net = paid - maintenance;
-			city.service_cash += maintenance;
+			city.service_receive(maintenance);
 			double share_house = safe_unit(house.owner_share[OWNER_HOUSEHOLD]);
 			double share_firm = safe_unit(house.owner_share[OWNER_FIRM]);
 			double share_gov = safe_unit(house.owner_share[OWNER_GOVERNMENT]);
@@ -417,7 +417,7 @@ void SimCore::phase_housing() {
 			const double to_firms = net * share_firm;
 			const double to_government = net * share_gov;
 			city.rent_income_next += to_households;
-			city.firm_cash += to_firms;
+			city.firm_receive(to_firms);
 			gov.cash += to_government;
 			house.rent_households_month += to_households;
 			house.rent_firms_month += to_firms;
@@ -457,7 +457,7 @@ void SimCore::phase_housing() {
 				// obra que não pode pagar (sem isso a falta de caixa viraria
 				// um no-op silencioso em start_project). Mínimo de 1 unidade.
 				const double units = std::min(short_batch,
-					std::max(0.0, city.firm_cash) / cost_unit);
+					std::max(0.0, city.firm_liquidity()) / cost_unit);
 				if (units < 1.0) {
 					continue;
 				}
@@ -664,7 +664,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 	} else if (owner == HOUSING_PROJECT_GOVERNMENT) {
 		budget = safe_nonneg(ws.city_gov[city_index].cash);
 	} else {
-		budget = city.firm_cash;
+		budget = city.firm_liquidity();
 	}
 	if (budget + 1e-9 < total_cost) {
 		return false;
@@ -696,7 +696,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 		ws.city_gov[city_index].cash =
 			safe_nonneg(ws.city_gov[city_index].cash) - total_cost;
 	} else {
-		city.firm_cash -= total_cost;
+		city.firm_pay(total_cost);
 	}
 	core.add_construction_project(project);
 	return true;

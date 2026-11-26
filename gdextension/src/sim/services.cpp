@@ -138,7 +138,7 @@ bool SimCore::service_open(City& city, int sector, double capacity,
 	// Se nem a soma cobre o capital sem tocar a reserva de comida, não abre.
 	const double food_reserve = city_food_reserve(city);
 	const double savings_surplus = std::max(0.0, city.pop.savings - food_reserve);
-	const double from_sector = std::min(capital, std::max(0.0, city.service_cash));
+	const double from_sector = std::min(capital, std::max(0.0, city.service_liquidity()));
 	const double from_savings = std::min(capital - from_sector, savings_surplus);
 	if (from_sector + from_savings < capital) {
 		return false;
@@ -161,7 +161,7 @@ bool SimCore::service_open(City& city, int sector, double capacity,
 	if (from_savings > 0.0) {
 		// B2: capital do negócio sai da poupança rateada pelos quintis.
 		charge_households(city.pop, from_savings);
-		city.service_cash += from_savings;
+		city.service_receive(from_savings);
 	}
 	ServiceBusiness business;
 	business.id = ws_.next_service_business_id++;
@@ -220,8 +220,8 @@ void SimCore::service_close(ServiceBusiness& business) {
 		const double returned = std::min(
 			std::max(0.0, business.capital_left),
 			std::max(0.0, business.capital));
-		const double paid_back = std::min(returned, std::max(0.0, city->service_cash));
-		city->service_cash -= paid_back;
+		const double paid_back = std::min(returned, std::max(0.0, city->service_liquidity()));
+		city->service_pay(paid_back);
 		// B2: o aporte devolvido volta para a poupança dos quintis.
 		credit_households(city->pop, paid_back);
 		city->service_business_count = std::max(0, city->service_business_count - 1);
@@ -410,7 +410,7 @@ void SimCore::services_day(City& city, double* foreign_slots,
 		government_pool = std::min(daily_flow * ws_.service_government_share,
 			std::max(0.0, city.government_budget));
 		city.government_budget -= government_pool;
-		city.service_cash += government_pool;
+		city.service_receive(government_pool);
 		city.service_government_revenue += government_pool;
 	}
 
@@ -467,7 +467,7 @@ void SimCore::services_day(City& city, double* foreign_slots,
 		sector_exports[sector] = units;
 		sector_export_revenue[sector] = revenue;
 		city.service_export_revenue += revenue;
-		city.service_cash += revenue;
+		city.service_receive(revenue);
 		foreign_slots[sector] += revenue;
 	}
 
@@ -659,10 +659,10 @@ void SimCore::services_day(City& city, double* foreign_slots,
 	}
 	// Paga os insumos de bens: service_cash → firm_cash.
 	const double paid_inputs = std::min(total_input_cost,
-		std::max(0.0, city.service_cash));
+		std::max(0.0, city.service_liquidity()));
 	if (paid_inputs > 0.0) {
-		city.service_cash -= paid_inputs;
-		city.firm_cash += paid_inputs;
+		city.service_pay(paid_inputs);
+		city.firm_receive(paid_inputs);
 	}
 	city.service_input_cost = total_input_cost;
 
@@ -770,7 +770,7 @@ void SimCore::services_open_close(City& city, double savings_surplus) {
 		// oferta se manter à frente do crescimento da renda. Financiada pelo
 		// caixa do setor + poupança das famílias ACIMA da reserva de comida
 		// (nunca pela poupança que paga comida — DJI, Q-004).
-		const double finance_base = std::max(0.0, city.service_cash) + savings_surplus;
+		const double finance_base = std::max(0.0, city.service_liquidity()) + savings_surplus;
 		const double affordable = finance_base > 0.0
 			? finance_base
 				/ (definition.capital_per_unit * kServiceCapitalReserve) : 0.0;

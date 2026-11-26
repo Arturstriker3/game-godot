@@ -307,7 +307,7 @@ double SimCore::compute_informal_services(City& city) {
 	// service_cash desce e a poupança das famílias sobe na MESMA quantia, por
 	// isso a receita realizada é limitada ao caixa do setor: creditar a receita
 	// cheia com o débito truncado em zero criaria dinheiro.
-	const double paid = std::min(revenue, std::max(0.0, city.service_cash));
+	const double paid = std::min(revenue, std::max(0.0, city.service_liquidity()));
 	pop.informal_service_workers = workers;
 	pop.informal_service_output = output;
 	pop.informal_service_demand = price > 1e-9 ? demand_money / price : 0.0;
@@ -332,7 +332,7 @@ double SimCore::compute_informal_services(City& city) {
 		} else {
 			credit_households(pop, paid);
 		}
-		city.service_cash = std::max(0.0, city.service_cash - paid);
+		city.service_pay(paid);
 	}
 	return paid;
 }

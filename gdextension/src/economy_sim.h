@@ -1954,6 +1954,16 @@ private:
 	 * nada (mundo bit-idêntico).
 	 */
 	void set_bootstrap_industry(const Dictionary& values);
+
+	/**
+	 * R1a - flag `rework.regional_cash` (data/definitions/economy/rework.json).
+	 * `{regional_cash: {enabled: bool}}`. Ligada: firm_cash+service_cash viram
+	 * UM caixa privado por regiao (`City::private_cash`); desligada (default) o
+	 * mundo e o de antes. Antes do mundo vale para initialize_world; depois do
+	 * load o save vence. Idempotente.
+	 */
+	void set_rework_params(const Dictionary& values);
+	Dictionary get_rework_params() const;
 	// F3: zera/redimensiona o estado de necessidades de uma POP (duráveis por
 	// produto, vetores dos 3 níveis) sem apagar estoque já acumulado.
 	void init_pop_needs(Pop& pop) const { sim_core_.init_pop_needs(pop); }

@@ -596,13 +596,13 @@ void SimCore::phase_storage() {
 				* kStorageMaintenancePerTonDay[site.type];
 			double paid = 0.0;
 			if (site.scope == STORAGE_PRIVATE) {
-				paid = std::min(due, std::max(0.0, city.firm_cash));
-				city.firm_cash -= paid;
+				paid = std::min(due, std::max(0.0, city.firm_liquidity()));
+				city.firm_pay(paid);
 			} else {
 				paid = std::min(due, std::max(0.0, city.government_budget));
 				city.government_budget -= paid;
 			}
-			city.service_cash += paid;
+			city.service_receive(paid);
 			site.maintenance_paid_today = paid;
 		}
 	}
@@ -649,8 +649,8 @@ void SimCore::phase_storage() {
 				const double due = amount * std::max(0.0, price) * penalty;
 				double paid = 0.0;
 				if (site.scope == STORAGE_PRIVATE) {
-					paid = std::min(due, std::max(0.0, city.firm_cash));
-					city.firm_cash -= paid;
+					paid = std::min(due, std::max(0.0, city.firm_liquidity()));
+					city.firm_pay(paid);
 				} else {
 					paid = std::min(due,
 						std::max(0.0, city.government_budget));

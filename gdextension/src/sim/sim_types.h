@@ -6,6 +6,7 @@
 // economy_sim.* passa a ser fachada (conversão Godot <-> sim). Nada de godot_cpp.
 
 #include <cstddef>
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -1762,6 +1763,77 @@ struct Region {
 		double simulation_population = 0.0;
 		double firm_cash = 0.0;
 		double service_cash = 0.0;
+		// ------------------------------------------------------------------
+		// R1a - CAIXA UNICO REGIONAL (flag `rework.regional_cash`).
+		//
+		// Desligado (default): `firm_cash`/`service_cash` sao os dois caixas
+		// do setor privado, como sempre foram, e `private_cash` fica 0.
+		//
+		// Ligado: `private_cash` e o dinheiro REAL do setor privado da regiao
+		// (firmas + servicos) e `firm_cash`/`service_cash` viram espelhos/
+		// estatistica por setor (podem ficar negativos quando um setor gasta
+		// alem do que arrecadou - e a transferencia cruzada, registrada). Toda
+		// debito/credito dos dois mexe no pool E no espelho (`firm_pay`,
+		// `firm_receive`, `service_pay`, `service_receive`); uma transferencia
+		// interna (opex firmas->servicos, insumos servicos->firmas, frete,
+		// construcao) vira NO-OP monetario e continua como estatistica.
+		//
+		// O save carrega `private_cash` SO quando ligado (save antigo nao tem
+		// a chave e carrega no modo desligado, byte-identico ao anterior).
+		// ------------------------------------------------------------------
+		double private_cash = 0.0;
+		bool unified_cash = false;
+
+		// Liquidez que cada setor pode gastar HOJE (leitura). Com o caixa
+		// unico, os dois vem do pool - nunca somar as duas leituras.
+		double firm_liquidity() const {
+			return unified_cash ? private_cash : firm_cash;
+		}
+		double service_liquidity() const {
+			return unified_cash ? private_cash : service_cash;
+		}
+		// Dinheiro do setor privado (soma economica do que existe).
+		double private_total() const {
+			return unified_cash ? private_cash : firm_cash + service_cash;
+		}
+		// Liquidez agregada (nunca conta o mesmo dinheiro duas vezes).
+		double private_liquidity() const {
+			return unified_cash ? std::max(0.0, private_cash)
+				: std::max(0.0, firm_cash) + std::max(0.0, service_cash);
+		}
+		// Espelho: private_cash := firm_cash + service_cash (ligacao/legado).
+		void sync_private_cash() {
+			if (unified_cash) {
+				private_cash = firm_cash + service_cash;
+			}
+		}
+		// Debito/credito de um setor. Desligado = a mesma conta de antes;
+		// ligado = mexe no pool e no espelho (transferencia interna entre os
+		// dois cancela o pool).
+		void firm_pay(double value) {
+			if (unified_cash) {
+				private_cash -= value;
+			}
+			firm_cash -= value;
+		}
+		void firm_receive(double value) {
+			if (unified_cash) {
+				private_cash += value;
+			}
+			firm_cash += value;
+		}
+		void service_pay(double value) {
+			if (unified_cash) {
+				private_cash -= value;
+			}
+			service_cash -= value;
+		}
+		void service_receive(double value) {
+			if (unified_cash) {
+				private_cash += value;
+			}
+			service_cash += value;
+		}
 		// D-126 (save v41) — CRÉDITO DE CAPITAL DE GIRO da cidade (firmas
 		// privadas e serviços, que compartilham o caixa agregado). O passivo é
 		// da cidade/dono privado; a contraparte é o banco público da nação,

@@ -453,7 +453,7 @@ double SimCore::fleet_buy_core(const std::string& nation, int product_index,
 		}
 		const double cost = quantity * seller_entry.price;
 		hq_city.government_budget -= cost;
-		seller.firm_cash += cost;
+		seller.firm_receive(cost);
 		market.stock -= quantity;
 		market.demand += quantity;
 		market.sold += quantity;

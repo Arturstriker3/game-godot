@@ -435,7 +435,7 @@ void EconomySim::seed_industry() {
 			city.simulation_population * kNeedPerCapita * 0.05, 2.0, 20.0);
 		const Recipe& flour = ws_.recipes[static_cast<std::size_t>(flour_recipe)];
 		const double cost = capacity * flour.capital_per_capacity;
-		if (city.firm_cash + city.government_budget < cost * 2.0) {
+		if (city.private_total() + city.government_budget < cost * 2.0) {
 			continue;
 		}
 		const String city_id(city.id.c_str());
@@ -662,8 +662,28 @@ void EconomySim::seed_industry() {
 	}
 }
 
-void EconomySim::set_bootstrap_industry(const Dictionary& values) {
+void EconomySim::set_rework_params(const Dictionary& values) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// R1a: `regional_cash.enabled` liga o caixa unico do setor privado. A
+	// ausencia do bloco/chave mantem o default (desligado), como os demais
+	// JSON de economia. Aplicar em cidade ja existente preserva o total
+	// (private_cash nasce de firm_cash + service_cash).
+	const Dictionary block = values.get("regional_cash", Dictionary());
+	const bool enabled = bool(block.get("enabled", false));
+	sim_core_.set_regional_cash(enabled);
+	status_invalidate();
+}
+
+Dictionary EconomySim::get_rework_params() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	Dictionary block;
+	block["enabled"] = ws_.regional_cash;
+	out["regional_cash"] = block;
+	return out;
+}
+
+void EconomySim::set_bootstrap_industry(const Dictionary& values) {	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	BootstrapIndustry cfg;
 	cfg.loaded = true;
 	cfg.enabled = bool(values.get("enabled", false));

@@ -523,7 +523,7 @@ void SimCore::phase_raw() {
 				market.stock -= sold;
 				market.demand += sold;
 				market.sold += sold;
-				city.firm_cash += revenue;
+				city.firm_receive(revenue);
 				city.revenue_by_product[product] += revenue;
 				city.exported[product] += sold;
 				city.export_value[product] += revenue;

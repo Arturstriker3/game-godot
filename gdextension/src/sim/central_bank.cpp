@@ -118,7 +118,7 @@ MoneyAllocation allocate_money(const WorldState& ws, double money_total) {
 	const std::size_t gov_count = std::min(ws.cities.size(), ws.city_gov.size());
 	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
 		const City& city = ws.cities[index];
-		double cash = city.pop.savings + city.firm_cash + city.service_cash
+		double cash = city.pop.savings + city.private_total()
 			+ city.government_budget + city.capital_income_next
 			+ city.rent_income_next + city.region.cash;
 		if (index < gov_count) {

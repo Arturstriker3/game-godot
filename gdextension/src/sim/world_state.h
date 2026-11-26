@@ -357,6 +357,10 @@ struct WorldState {
 	// (initialize_world), em vez do cenário AGRIA/PORTUS. Ativa o comércio
 	// genérico entre cidades no lugar dos blocos específicos de validação.
 	bool world_mode = false;
+	// R1a: flag `rework.regional_cash` (data/definitions/economy/rework.json).
+	// true = firm_cash+service_cash formam UM caixa privado por regiao
+	// (`City::private_cash`). Default false = comportamento anterior.
+	bool regional_cash = false;
 	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
 	// laboratório; os padrões preservam o comportamento do jogo).
 	double natural_unemployment = 0.04;

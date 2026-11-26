@@ -206,7 +206,8 @@ if(OPENGS_BUILD_UNIT_TESTS)
         tests/test_determinism.cpp
         tests/test_crisis.cpp
         tests/test_ai_brain.cpp
-        tests/test_g2_bootstrap.cpp 
+        tests/test_g2_bootstrap.cpp
+        tests/test_regional_cash.cpp
     )
 
     target_link_libraries(sim_unit_tests PRIVATE opengs_sim)

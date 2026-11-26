@@ -492,7 +492,7 @@ bool lend_city(WorldState& ws, const std::string& city_id, double amount,
 	bank->loans += granted;
 	bank->deposits += granted;
 	bank->loans_count += 1;
-	city->firm_cash += granted;
+	city->firm_receive(granted);
 	city->firm_debt += granted;
 	city->firm_credit_total += granted;
 	if (out_amount != nullptr) {
@@ -946,17 +946,17 @@ int phase(WorldState& ws, double* bank_money_delta) {
 		double remaining = std::max(0.0, interest);
 		double paid_interest = 0.0;
 		const double from_firm = std::min(remaining,
-			std::max(0.0, city.firm_cash));
+			std::max(0.0, city.firm_liquidity()));
 		if (from_firm > 0.0) {
-			city.firm_cash -= from_firm;
+			city.firm_pay(from_firm);
 			paid_interest += from_firm;
 			remaining -= from_firm;
 		}
 		if (remaining > 0.0) {
 			const double from_service = std::min(remaining,
-				std::max(0.0, city.service_cash));
+				std::max(0.0, city.service_liquidity()));
 			if (from_service > 0.0) {
-				city.service_cash -= from_service;
+				city.service_pay(from_service);
 				paid_interest += from_service;
 				remaining -= from_service;
 			}
@@ -976,12 +976,12 @@ int phase(WorldState& ws, double* bank_money_delta) {
 		// Amortização só do excedente ao capital de giro protegido.
 		const double working = kWorkingCapitalDays
 			* city_business_daily_cost(ws, city_index);
-		const double excess = std::max(0.0, city.firm_cash - working);
+		const double excess = std::max(0.0, city.firm_liquidity() - working);
 		const double repay = std::min({ city.firm_debt,
 			pol.repay_share * excess,
 			std::max(0.0, city_bank->deposits) });
 		if (repay > 0.0) {
-			city.firm_cash -= repay;
+			city.firm_pay(repay);
 			city.firm_debt -= repay;
 			city_bank->loans -= repay;
 			city_bank->deposits -= repay;
@@ -998,19 +998,19 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			const double fee = std::max(0.0,
 				ws.crisis.credit_penalty * base);
 			const double penalty = std::min({
-				std::max(0.0, city.firm_cash + city.service_cash),
+				std::max(0.0, city.private_total()),
 				fee,
 				std::max(0.0, city_bank->deposits) });
 			if (penalty > 0.0) {
 				double left = penalty;
 				const double p_firm = std::min(left,
-					std::max(0.0, city.firm_cash));
-				city.firm_cash -= p_firm;
+					std::max(0.0, city.firm_liquidity()));
+				city.firm_pay(p_firm);
 				left -= p_firm;
 				if (left > 0.0) {
 					const double p_service = std::min(left,
-						std::max(0.0, city.service_cash));
-					city.service_cash -= p_service;
+						std::max(0.0, city.service_liquidity()));
+					city.service_pay(p_service);
 					left -= p_service;
 				}
 				const double paid = penalty - left;
@@ -1041,20 +1041,19 @@ int phase(WorldState& ws, double* bank_money_delta) {
 				&& city.firm_credit_renegotiations
 					>= std::max(0, ws.crisis.credit_max_renegotiations)) {
 			const double claim = city.firm_debt + city.firm_credit_arrears;
-			const double available = std::max(0.0, city.firm_cash)
-				+ std::max(0.0, city.service_cash);
+			const double available = city.private_liquidity();
 			const double seized = std::min({ available, claim,
 				std::max(0.0, city_bank->deposits) });
 			if (seized > 0.0) {
 				double left = seized;
 				const double s_firm = std::min(left,
-					std::max(0.0, city.firm_cash));
-				city.firm_cash -= s_firm;
+					std::max(0.0, city.firm_liquidity()));
+				city.firm_pay(s_firm);
 				left -= s_firm;
 				if (left > 0.0) {
 					const double s_service = std::min(left,
-						std::max(0.0, city.service_cash));
-					city.service_cash -= s_service;
+						std::max(0.0, city.service_liquidity()));
+					city.service_pay(s_service);
 					left -= s_service;
 				}
 				city_bank->deposits -= seized - left;

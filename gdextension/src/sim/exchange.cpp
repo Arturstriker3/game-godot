@@ -105,7 +105,7 @@ double destroy_local_money(WorldState& ws, const Currency& currency,
 	double total = 0.0;
 	for (const City& city : ws.cities) {
 		if (nation_in(currency, city.nation)) {
-			total += std::max(0.0, city.firm_cash);
+			total += std::max(0.0, city.firm_liquidity());
 		}
 	}
 	const double take = std::min(amount, total);
@@ -118,7 +118,7 @@ double destroy_local_money(WorldState& ws, const Currency& currency,
 		if (!nation_in(currency, city.nation)) {
 			continue;
 		}
-		const double cash = std::max(0.0, city.firm_cash);
+		const double cash = std::max(0.0, city.firm_liquidity());
 		if (cash <= 0.0) {
 			continue;
 		}
@@ -128,7 +128,7 @@ double destroy_local_money(WorldState& ws, const Currency& currency,
 		if (part <= 0.0) {
 			continue;
 		}
-		city.firm_cash -= part;
+		city.firm_pay(part);
 		assigned += part;
 		if (assigned >= take - kEpsilon) {
 			break;
@@ -141,10 +141,10 @@ double destroy_local_money(WorldState& ws, const Currency& currency,
 			if (!nation_in(currency, city.nation)) {
 				continue;
 			}
-			const double cash = std::max(0.0, city.firm_cash);
+			const double cash = std::max(0.0, city.firm_liquidity());
 			const double part = std::min(take - assigned, cash);
 			if (part > 0.0) {
-				city.firm_cash -= part;
+				city.firm_pay(part);
 				assigned += part;
 				break;
 			}
@@ -188,7 +188,7 @@ void create_local_money(WorldState& ws, const Currency& currency,
 		}
 		const double part = total > 0.0
 			? amount * value / total : amount - assigned;
-		city.firm_cash += std::max(0.0, part);
+		city.firm_receive(std::max(0.0, part));
 		assigned += std::max(0.0, part);
 		any = true;
 		if (assigned >= amount - kEpsilon) {
@@ -851,7 +851,7 @@ GoldTrade gold_trade(WorldState& ws, const std::string& currency_code,
 		const double value = qty * price;
 		city.government_budget -= value;
 		// O vendedor é a firma local (mesmo contrato do storage_trade).
-		city.firm_cash += value;
+		city.firm_receive(value);
 		city.revenue_by_product[gold] += value;
 		market.stock -= qty;
 		market.demand += qty;
@@ -868,13 +868,13 @@ GoldTrade gold_trade(WorldState& ws, const std::string& currency_code,
 		return out;
 	}
 	double qty = std::min(tonnes, std::max(0.0, site.stock[slot]));
-	qty = std::min(qty, std::max(0.0, city.firm_cash) / price);
+	qty = std::min(qty, std::max(0.0, city.firm_liquidity()) / price);
 	if (qty <= kEpsilon) {
 		out.error = "sem ouro para vender/caixa do comprador";
 		return out;
 	}
 	const double value = qty * price;
-	city.firm_cash -= value;
+	city.firm_pay(value);
 	city.government_budget += value;
 	market.stock += qty;
 	site.stock[slot] -= qty;

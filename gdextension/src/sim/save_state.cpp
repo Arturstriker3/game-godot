@@ -314,6 +314,11 @@ Value to_value(const WorldState& ws, const SimCore& core,
 	data["version"] = kSaveVersion;
 	data["active"] = ws.active;
 	data["world_mode"] = ws.world_mode;
+	// R1a: estado da flag `rework.regional_cash`. So entra quando ligada; um
+	// save desligado continua sem a chave (byte-identico ao anterior).
+	if (ws.regional_cash) {
+		data["regional_cash"] = true;
+	}
 	data["day"] = ws.day;
 	// A6: cadência por sistema. Muda QUANDO cada cidade fecha o mês/semana, então
 	// é estado verdadeiro do mundo (não configuração de exibição).
@@ -1088,6 +1093,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 		migrate_index, legacy_substitute, has_saved_products,
 		needs_legacy_migration, legacy_fuel_index,
 		legacy_gasoline, legacy_diesel, legacy_jet);
+	// R1a: aplica a flag do caixa unico regional DEPOIS das cidades. A flag do
+	// save vence a configuracao; cidade sem `private_cash` (save anterior) e
+	// sincronizada a partir dos dois espelhos, preservando o total.
+	core.apply_regional_cash_after_load(
+		bool(data.get("regional_cash", false)),
+		data.has("regional_cash"));
 
 	ws.in_transit.clear();
 	Array transit = data.get("in_transit", Array());

@@ -404,10 +404,10 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			const double hh_paid = std::min(due * household_part,
 				safe_nonneg(city.pop.savings));
 			const double firm_paid = std::min(due * (1.0 - household_part),
-				safe_nonneg(city.firm_cash));
+				safe_nonneg(city.firm_liquidity()));
 			// B2: o IPTU da família sai da poupança rateada pelos quintis.
 			core.charge_households(city.pop, hh_paid);
-			city.firm_cash = safe_nonneg(city.firm_cash) - firm_paid;
+			city.firm_pay(firm_paid);
 			gov.cash += hh_paid + firm_paid;
 			gov.month_revenue_iptu = hh_paid + firm_paid;
 		}
@@ -419,9 +419,9 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			* safe_nonneg(city.service_revenue)
 			* static_cast<double>(kMonthDays) * month_fraction;
 		const double fee_paid = std::min(fee_due,
-			safe_nonneg(city.service_cash));
+			safe_nonneg(city.service_liquidity()));
 		if (fee_paid > 0.0) {
-			city.service_cash = safe_nonneg(city.service_cash) - fee_paid;
+			city.service_pay(fee_paid);
 			gov.cash += fee_paid;
 			gov.month_revenue_fees = fee_paid;
 		}
@@ -449,7 +449,7 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			std::min(maintenance_due, safe_nonneg(gov.cash));
 		if (maintenance_paid > 0.0) {
 			gov.cash -= maintenance_paid;
-			city.service_cash += maintenance_paid;
+			city.service_receive(maintenance_paid);
 			gov.month_expense_maintenance = maintenance_paid;
 		}
 		if (!has_project(gov)) {

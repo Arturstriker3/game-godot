@@ -138,6 +138,14 @@ public:
 	// ------------------------------------------------------------------
 	City* find_city(const std::string& id);
 	const City* find_city(const std::string& id) const;
+	// R1a - caixa unico regional. Liga/desliga a flag em `ws_.regional_cash` e
+	// aplica a todas as cidades (ao ligar, `private_cash` nasce da soma dos
+	// dois caixas; ao desligar, volta a 0). Chamado no fim de initialize_world
+	// e pelo setter de definicoes; idempotente.
+	void set_regional_cash(bool enabled);
+	// Depois do load: a flag do save (ou a configuracao) manda; cidade que veio
+	// sem `private_cash` e sincronizada a partir dos dois espelhos.
+	void apply_regional_cash_after_load(bool saved_flag, bool has_saved_flag);
 	// Teto físico de capacidade agrícola (t/dia) de uma cidade para um produto.
 	// Dado de GEOGRAFIA: não é serializado no save — chega do GeographyService
 	// e viaja no bloco `definitions` do snapshot. Produto fora de

@@ -60,6 +60,8 @@ const CRISIS_PATH := "res://data/definitions/economy/crisis.json"
 const AI_BRAIN_PATH := "res://data/definitions/economy/ai_brain.json"
 ## G2: semente industrial do dia 0 (participação real × âncora × seed_fraction).
 const BOOTSTRAP_PATH := "res://data/definitions/economy/bootstrap_industry.json"
+## R1a: flags do rework (caixa unico regional). Override por env/arg para A/B.
+const REWORK_PATH := "res://data/definitions/economy/rework.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
@@ -118,6 +120,10 @@ var _ai_brain_set := false
 # Sem a flag vale o `enabled` do JSON (default do jogo = ligado).
 var _bootstrap_on := true
 var _bootstrap_set := false
+# R1a: braco A/B do caixa unico regional (--regional-cash=0/1 / OGS_C1_REGIONAL_CASH).
+# Sem override vale o enabled do rework.json (default do jogo = desligado).
+var _regional_cash_on := false
+var _regional_cash_set := false
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -218,6 +224,9 @@ func _init() -> void:
 	if OS.get_environment("OGS_C1_BOOTSTRAP") != "":
 		_bootstrap_on = OS.get_environment("OGS_C1_BOOTSTRAP") != "0"
 		_bootstrap_set = true
+	if OS.get_environment("OGS_C1_REGIONAL_CASH") != "":
+		_regional_cash_on = OS.get_environment("OGS_C1_REGIONAL_CASH") != "0"
+		_regional_cash_set = true
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
@@ -232,6 +241,9 @@ func _init() -> void:
 		elif arg.begins_with("--ai-brain="):
 			_ai_brain_on = arg.split("=", true, 1)[1] != "0"
 			_ai_brain_set = true
+		elif arg.begins_with("--regional-cash="):
+			_regional_cash_on = arg.split("=", true, 1)[1] != "0"
+			_regional_cash_set = true
 		elif arg.begins_with("--bootstrap="):
 			_bootstrap_on = arg.split("=", true, 1)[1] != "0"
 			_bootstrap_set = true
@@ -678,6 +690,17 @@ func _make_world() -> Object:
 				% ["1" if float(brain_params.get("enabled", 0.0)) > 0.5 else "0"])
 	sim.set_needs(_load(NEEDS_PATH))
 	# G2: semente industrial por produtores reais (mesma ordem do autoload).
+	# R1a: caixa unico regional antes do mundo (mesma ordem do autoload).
+	if sim.has_method("set_rework_params"):
+		var rework: Variant = _load(REWORK_PATH)
+		if rework is Dictionary:
+			var rework_params: Dictionary = rework
+			if _regional_cash_set:
+				var block: Dictionary = rework_params.get("regional_cash", {})
+				block["enabled"] = _regional_cash_on
+				rework_params["regional_cash"] = block
+			sim.set_rework_params(rework_params)
+			print("[c1] R1a caixa unico regional: enabled=%s" % ["1" if bool((rework_params.get("regional_cash", {}) as Dictionary).get("enabled", false)) else "0"])
 	if sim.has_method("set_bootstrap_industry"):
 		var bootstrap: Variant = _load(BOOTSTRAP_PATH)
 		if bootstrap is Dictionary:

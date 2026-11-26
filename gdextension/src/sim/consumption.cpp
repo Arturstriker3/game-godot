@@ -146,7 +146,7 @@ void SimCore::phase_income() {
 			service_base = std::max(0.0, domestic_income - basket_cost);
 		}
 		pop.service_spend = service_base * kServiceSpendShare;
-		city.service_cash += pop.service_spend;
+		city.service_receive(pop.service_spend);
 		city.government_budget += pop.taxes - pop.transfers;
 
 		// F7 calibração — RENDA POR ESTRATO. A folha por escolaridade vem do
@@ -348,7 +348,7 @@ void SimCore::phase_income() {
 			consumed += quantity * factor;
 			pop.consumed_by_category[slot] += quantity;
 			city.revenue_by_product[product] += paid;
-			city.firm_cash += paid;
+			city.firm_receive(paid);
 			scratch.consumed_total[city_index * n_products
 				+ static_cast<std::size_t>(product)] += quantity;
 			scratch.consumed_today[city_index * n_products
@@ -1007,7 +1007,7 @@ double SimCore::consume_category(City& city,
 		budget -= paid;
 		spend += paid;
 		city.revenue_by_product[product] += paid;
-		city.firm_cash += paid;
+		city.firm_receive(paid);
 		scratch.consumed_total[city_index * scratch.n_products
 			+ static_cast<std::size_t>(product)] += quantity;
 		scratch.consumed_today[city_index * scratch.n_products
@@ -1096,7 +1096,7 @@ void SimCore::consume_government(City& city,
 		market.sold += quantity;
 		city.government_budget -= paid;
 		city.government_goods_spend += paid;
-		city.firm_cash += paid;
+		city.firm_receive(paid);
 		city.revenue_by_product[product] += paid;
 		scratch.consumed_total[city_index * scratch.n_products
 			+ static_cast<std::size_t>(product)] += quantity;

@@ -96,7 +96,7 @@ double owner_cash(const WorldState& ws, const City& city,
 		return std::max(0.0, city.government_budget);
 	}
 	if (building.owner == "private") {
-		return std::max(0.0, city.firm_cash);
+		return std::max(0.0, city.firm_liquidity());
 	}
 	const std::string id = owner_group_id(building.owner);
 	if (id.empty()) {
@@ -124,8 +124,8 @@ double debit_owner(WorldState& ws, City& city, Building& building,
 		return paid;
 	}
 	if (building.owner == "private") {
-		const double paid = std::min(amount, std::max(0.0, city.firm_cash));
-		city.firm_cash -= paid;
+		const double paid = std::min(amount, std::max(0.0, city.firm_liquidity()));
+		city.firm_pay(paid);
 		return paid;
 	}
 	Group* group = owner_group(ws, building);
@@ -147,7 +147,7 @@ void credit_owner(WorldState& ws, City& city, Building& building,
 		return;
 	}
 	if (building.owner == "private") {
-		city.firm_cash += amount;
+		city.firm_receive(amount);
 		return;
 	}
 	Group* group = owner_group(ws, building);
@@ -157,7 +157,7 @@ void credit_owner(WorldState& ws, City& city, Building& building,
 	}
 	// Dono desconhecido: mantém o dinheiro no caixa das firmas da cidade em vez
 	// de destruí-lo (conservação antes de semântica de propriedade).
-	city.firm_cash += amount;
+	city.firm_receive(amount);
 }
 
 // Capacidade efetiva do par (cidade, produto), sem depender de `last_*`.
@@ -193,8 +193,7 @@ double city_credit_limit_impl(const WorldState& ws, std::size_t city_index) {
 		return 0.0;
 	}
 	const City& city = ws.cities[city_index];
-	double assets = std::max(0.0, city.firm_cash)
-		+ std::max(0.0, city.service_cash);
+	double assets = city.private_liquidity();
 	if (city_index < ws.buildings_by_city.size()) {
 		for (const int bi : ws.buildings_by_city[city_index]) {
 			const Building& building =
@@ -356,7 +355,7 @@ void pay_auction_proceeds(WorldState& ws, SimCore& core, City& city,
 		city.government_budget += remainder;
 		return;
 	}
-	city.firm_cash += remainder;
+	city.firm_receive(remainder);
 }
 
 // Venda imediata do prédio. Sem comprador marca `bankrupt` (remoção no
@@ -730,7 +729,7 @@ void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
 			* std::clamp(ws.crisis.mothball_opex_share, 0.0, 1.0);
 		const double paid = debit_plant_owner(ws, city, plant, maintenance);
 		if (paid > 0.0) {
-			city.service_cash += paid;
+			city.service_receive(paid);
 		}
 		if (paid + 1e-9 < maintenance) {
 			plant.mothball_unpaid_days += 1;
@@ -754,7 +753,7 @@ void react_power(WorldState& ws, SimCore& core, PowerPlant& plant,
 			const double paid_reopen = debit_plant_owner(ws, city, plant,
 				reopen_cost);
 			if (paid_reopen > 0.0) {
-				city.service_cash += paid_reopen;
+				city.service_receive(paid_reopen);
 				plant.mothballed = false;
 				plant.mothball_day = -1;
 				plant.reopen_signal_days = 0;
@@ -1053,7 +1052,7 @@ bool borrow_working_capital(WorldState& ws, SimCore& core,
 			}
 		}
 		need = std::max(0.0, ws.crisis.credit_working_days * daily
-			- std::max(0.0, city->firm_cash));
+			- std::max(0.0, city->firm_liquidity()));
 	}
 	const double limit = city_credit_limit_impl(ws, city_index);
 	const double ask = std::min(need, limit);
@@ -1191,7 +1190,7 @@ bool reopen(WorldState& ws, SimCore& core, const std::string& city_id,
 		}
 		return false;
 	}
-	city->service_cash += paid;
+	city->service_receive(paid);
 	building->mothballed = false;
 	building->mothball_day = -1;
 	building->mothball_unpaid_days = 0;
@@ -1262,7 +1261,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 				* std::clamp(ws.crisis.mothball_opex_share, 0.0, 1.0);
 			const double paid = debit_owner(ws, *city, building, maintenance);
 			if (paid > 0.0) {
-				city->service_cash += paid;
+				city->service_receive(paid);
 				building.paid_opex = paid;
 			}
 			if (paid + 1e-9 < maintenance) {
@@ -1376,7 +1375,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 		if (city == nullptr) {
 			continue;
 		}
-		if (city->service_cash >= std::max(0.0, city->service_wage_bill)
+		if (city->service_liquidity() >= std::max(0.0, city->service_wage_bill)
 				* std::max(1.0, ws.crisis.credit_working_days)) {
 			continue;
 		}
@@ -1387,7 +1386,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 			ws.crisis.credit_working_days
 				* (std::max(0.0, city->service_wage_bill)
 					+ std::max(0.0, city->service_input_cost))
-				- std::max(0.0, city->service_cash));
+				- std::max(0.0, city->service_liquidity()));
 		const std::size_t city_index = static_cast<std::size_t>(
 			city - ws.cities.data());
 		const double limit = city_credit_limit_impl(ws, city_index);

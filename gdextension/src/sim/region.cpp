@@ -245,7 +245,7 @@ void SimCore::phase_region() {
 			const double gross = region.employment * kFarmWage
 				* kRegionRuralWageDiscount * double(week_period)
 				* infra_productivity_multiplier(region);
-			const double paid = std::min(gross, std::max(0.0, city.firm_cash));
+			const double paid = std::min(gross, std::max(0.0, city.firm_liquidity()));
 			// C1: o que o caixa da firma não cobriu do salário rural é SALÁRIO
 			// ATRASADO — passivo das firmas da cidade-polo e ativo das famílias
 			// do interior. Vale a regra do período corrente (o não pago da
@@ -254,7 +254,7 @@ void SimCore::phase_region() {
 			city.rural_wage_arrears = region.arrears_receivable;
 			const double tax = paid * kTaxRate;
 			const double net = std::max(0.0, paid - tax);
-			city.firm_cash = std::max(0.0, city.firm_cash - paid);
+			city.firm_pay(paid);
 			city.government_budget += tax;
 			region_credit(region, net);
 			// Publicação em base DIÁRIA (o salário é pago por semana; o status
@@ -330,7 +330,7 @@ void SimCore::phase_region() {
 			region.food_spend += paid_food;
 			region.food_consumed += quantity * factor;
 			city.revenue_by_product[product] += firm_share;
-			city.firm_cash += firm_share;
+			city.firm_receive(firm_share);
 			ws_.transport_cash += freight;
 			ws_.consumed_total[product] += quantity;
 			ws_.consumed_today[product] += quantity;
@@ -360,7 +360,7 @@ void SimCore::phase_region() {
 				std::max(0.0, city.government_budget));
 			city.government_budget = std::max(0.0,
 				city.government_budget - paid);
-			city.service_cash += paid;
+			city.service_receive(paid);
 		}
 
 		// --- Diário: serviços informais do interior (B7, agregado sem firma).

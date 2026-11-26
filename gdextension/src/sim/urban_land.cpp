@@ -613,7 +613,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 		budget = std::max(0.0, city.government_budget);
 	} else {
 		committed = committed_cost(ws, city.id, commit_owner);
-		budget = std::max(0.0, city.firm_cash);
+		budget = std::max(0.0, city.firm_liquidity());
 	}
 	if (committed + cost > budget) {
 		if (error != nullptr) {
@@ -653,7 +653,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 	} else if (commit_owner == "state") {
 		city.government_budget -= cost;
 	} else {
-		city.firm_cash -= cost;
+		city.firm_pay(cost);
 	}
 	core.add_construction_project(project);
 	// MID→HIGH: a receita de obra troca para aço/elétrica (mesma fração do
