@@ -279,7 +279,113 @@ Artefatos: `G:\opengs_tmp\h1c_365_on.json` e `h1c_365_off.json`.
 - O runner ficou na fila do lock global enquanto o worktree `opengs-wt-g1b` rodava testes; sem
   conflito, só espera.
 
+## Sincronização com o `main` (G2) e baseline recapturado
+
+Antes do H1e o worktree foi sincronizado com o `main` de **128ae77b** (merge do G2) em
+**2d1418e5**. Três conflitos, todos resolvidos por composição:
+
+- `GAME_STATE.md`: linhas aditivas dos dois lados (H1a/H1b/H1d/H1c do ramo + G1 parte 1 e G2
+  do `main`).
+- `tools/c1_world_ai_365.gd`: o comentário da precedência `%` × `+` (correção de harness do H1a)
+  ficou; o `main` não alterou o trecho.
+- `gdextension/src/economy_sim.cpp`: a fachada ficou com o lado H1 (funções movidas ausentes) e
+  os blocos que o G2 acrescentou **dentro de funções já movidas** foram portados verbatim para o
+  módulo dono: o bloco §2.6 de `seed_industry` (1.569 bytes, SHA-256 `73de193d…`) e a função nova
+  `set_bootstrap_industry` (1.976 bytes, `51c75b29…`) para `edge/definitions_loader.cpp`; o
+  diagnóstico `bootstrap` de `get_status` (373 bytes, `0edbd62e…`) para `edge/status_cache.cpp`.
+  Os blocos são byte-idênticos aos do `main`; os corpos movidos, comparados sem esses blocos, são
+  byte-idênticos aos dos TUs (`seed_industry` e `get_status`). As demais mudanças do G2 na
+  fachada (includes, `_bind_methods`, `tick_and_publish`, `get_profile`, `get_day_summary`,
+  save/load) entraram por auto-merge.
+
+Build debug + `sim_unit_tests`: **74/74** casos, 754 asserções. Baseline recapturado no worktree
+pós-merge, **sem** mudança do H1e (DLL debug, `--days=365`, `threads=1`):
+
+| Rodada | SHA-256 | Falências | Comida (<0,975) | Drift |
+| --- | --- | --- | --- | --- |
+| **ON** (`--bootstrap=1 --ai-brain=1`) | `b4a4ab38…` | 2 | 95/179 (mediana 0,970682) | 0,014103 |
+| **OFF** (`--bootstrap=0 --ai-brain=0`) | `ded6f54b…` | 0 | 97/179 (mediana 0,968398) | 0,016673 |
+
+Os dois shas são **exatamente** os do G2 (`b4a4ab38…`/`ded6f54b…`): o merge + a porta dos
+blocos do G2 não mexeram no mundo. Artefatos: `G:\opengs_tmp\h1e_base_365_on.json` e
+`h1e_base_365_off.json` (runner `20261126_033550`, 2/2 OK; ON 786,77 s e OFF 383,88 s).
+
+## H1e — `edge/commands_bridge` (fila A3 + despachante)
+
+**Escopo:** mover para `gdextension/src/edge/commands_bridge.{h,cpp}` a ponte de comandos: os
+conversores `command_to_dict`/`command_from_dict` (namespace anônimo do TU), `dispatch_command`,
+`apply_pending_locked`, `apply_commands`, `pending_command_count`, `get_command_log`,
+`clear_command_log`, `command_log_truncated`, `replay_commands` e `EconomySim::apply_one_locked`
+(o `switch` de tipos de comando que chama os `apply_*`). Movidos **verbatim**: mesmas linhas,
+mesma ordem de aplicação e de chaves, mesmos nomes de campo.
+
+| Bloco | Linhas em `economy_sim.cpp` (antes) | Linhas movidas |
+| --- | --- | --- |
+| Fila, log e replay (contíguo, com os conversores) | 1627-1834 | 208 |
+| `EconomySim::apply_one_locked` (cabeçalho + corpo) | 6177-6180 + 6190-6459 | 4 + 270 |
+| **Total** | | **482** |
+
+**Antes/depois:**
+
+- `gdextension/src/economy_sim.cpp`: **9.808 → 9.322 linhas** (−486: 482 de corpo + 4 linhas em
+  branco separadoras). `git diff --numstat` = `0 486`: só remoção, zero inserção. O `to_std`
+  continua na fachada (a superfície que enfileira — `invest`, `build`, … — segue lá).
+- `gdextension/src/edge/commands_bridge.cpp`: **519 linhas** (33 de preâmbulo + 208 da fila + 1 em
+  branco + 4 do cabeçalho do despachante + 1 em branco + 270 do corpo + 1 em branco + 1 de fecho).
+- `gdextension/src/edge/commands_bridge.h`: âncora do módulo (documentação; as declarações
+  continuam em `economy_sim.h`, porque os métodos são de `EconomySim`).
+- `gdextension/CMakeLists.txt`: `src/edge/commands_bridge.cpp` no alvo `economy_gdextension`.
+
+**SHA-256 dos blocos (byte-exato):** `e1a06cfb…` (fila/log/replay, 208 linhas), `9a92a71e…`
+(cabeçalho + `apply_one_locked`, 274 linhas) e `63080795…` (só a função, 270 linhas). Nada foi
+reescrito; o mojibake pré-existente dos comentários viajou junto.
+
+**Por que continuam métodos de `EconomySim`:** os corpos leem `ws_`, `commands_`, `mutex_`,
+`tick_in_progress_`, `tick_thread_` e `current_day_` da fachada; extrair para funções livres
+exigiria abrir membros privados — o passo pede só a mudança de arquivo.
+
+**Dependências:** `current_thread_hash` é o único helper do namespace anônimo de
+`economy_sim.cpp` usado pelo bloco movido (`dispatch_command`); foi duplicado inline no TU novo
+com o mesmo corpo (como o `safe_nonneg` do H1a) e o original fica (usado também no
+`tick_thread_.store`). O novo TU inclui `sim/bank.h`, `sim/central_bank.h` e `sim/crisis.h`
+(usados pelo despachante); `ogs::Command` e os slots vêm de `sim/commands.h` via
+`economy_sim.h`.
+
+## Portão de bit-identidade (H1e)
+
+Build: DLL debug (`cmake --build gdextension/build-debug`) e `sim_unit_tests`
+(`build-unit-tests`), clang 23.1.5, godot-cpp 4.7.
+
+| Checagem | Resultado |
+| --- | --- |
+| `sim_unit_tests` | **74/74** casos, 754 asserções, exit 0 |
+| 365 d **ON** pós-merge (baseline) | `trajectory_sha256` **b4a4ab38…** (2 falências, comida 95/179, drift 0,014103) |
+| 365 d **ON** com o H1e | **b4a4ab38…** = baseline, bit a bit |
+| 365 d **OFF** pós-merge (baseline) | `trajectory_sha256` **ded6f54b…** (0 falências, comida 97/179, drift 0,016673) |
+| 365 d **OFF** com o H1e | **ded6f54b…** = baseline, bit a bit |
+| JSON completo × baseline | **idêntico** nas duas rodadas (só `wall_s`/metadados de tempo mudam) |
+| `tools/run_tests.ps1 -Tier pr -Base main` | ver "Bateria (H1e)" |
+
+Artefatos: `G:\opengs_tmp\h1e_gate_365_on.json` e `h1e_gate_365_off.json`
+(runner `20261126_035753`).
+
+## Bateria (H1e)
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_tests.ps1 -Tier pr -Base main`
+(seleção por diff: `gdextension/src/**` → conjunto amplo de núcleo + sentinelas `pr`), com o
+mapa temporário do portão (cópia do `tools/test_impact_map.json` + as duas rodadas 365 no tier
+`pr`, mesmo mecanismo do H1c).
+
+- **44/44 OK**, 0 falha, 0 crash, 0 timeout, 0 pulado — run `20261126_035753`
+  (`G:\opengs_tmp\opengs_test_run_20261126_035753\summary.json`).
+- Inclui `sim_unit_tests` (CLI, 0,28 s), 39 testes Godot (de 21,8 s a 294,7 s — `c2b2_fx_stress`,
+  `housing_market`, `services_business_audit`), a rodada c1 de **90 d** (`c1_world_ai_90`,
+  184,37 s), `determinism_cross_process` (64,7 s) e as duas rodadas **365 d do portão**
+  (ON 682,37 s; OFF 390,9 s).
+- O runner esperou o lock global do worktree `opengs-wt-g3` antes de começar; sem conflito, só
+  espera.
+
 ## Próximos passos
 
-H1e (`edge/commands_bridge`), depois H1f, H1g — na ordem do plano, cada um com o mesmo
+H1e (`edge/commands_bridge`) fechado; seguem H1f e H1g — na ordem do plano, cada um com o mesmo
 portão. Sem merge até o QA fechar a série.
