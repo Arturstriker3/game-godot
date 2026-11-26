@@ -302,6 +302,30 @@ struct BootstrapGood {
 	std::string id;            // id do bem em goods.json
 	std::string source;        // citação da participação real
 	std::string params_source; // declared:balancing quando não há fonte
+	// G3 (D-G3-1): fração da âncora semeada por bem/lote. 0 = herda
+	// `BootstrapIndustry::seed_fraction` (comportamento G2 inalterado).
+	double seed_fraction = 0.0;
+	// G3 (correção 2): teto da planta em t/dia por 100 mil habitantes
+	// simulados, proporcional à cidade-alvo. 0 = usa o teto fixo
+	// `BootstrapIndustry::capacity_max` (caminho G2 inalterado). Quando > 0, o
+	// alvo do país é dividido pelo número de cidades-alvo e cada planta só é
+	// limitada por `valor × população / 100 000` (fábricas de massa são grandes;
+	// centenas de plantas minúsculas saturam a semeadura e custam mais tick).
+	double max_plant_capacity_per_100k = 0.0;
+	// G3 (L2): bem-insumo sem âncora de demanda final própria. Quando declarado,
+	// o alvo mundial da semente é o consumo do bem pelos planos JÁ SEMEADOS do
+	// bem-fonte (capacidade × qty / yield da receita escolhida), e não
+	// `âncora × seed_fraction`. As participações distribuem esse total e são
+	// normalizadas sem o residual "outros" (o insumo do lote precisa ser
+	// coberto). O bem-fonte deve ser declarado antes deste no JSON.
+	std::string capacity_from;
+	// G3 (L2, correção 2): `funding` do bem. `true` (ausente/"budget") mantém o
+	// caminho G2: a planta só nasce se couber no `budget_share` do orçamento
+	// municipal e o custo é debitado. `false` ("none") marca ENTRADA NOVA que é
+	// ativo herdado do dia 0 (o mundo real nasce construído): o plano não
+	// consome orçamento e a construção não debita nem credita o setor de obras.
+	// O custo continua gravado na planta (valor de livro).
+	bool funded = true;
 	std::vector<BootstrapProducer> producers;
 };
 
@@ -328,7 +352,13 @@ struct BootstrapPlanRow {
 	double cost = 0.0;
 	int recipe = -1;
 	bool seeded = false;
-	std::string reason;  // "" | "no_city" | "budget" | "no_recipe"
+	// G3 (L2, correção 2): herda o `funding` do bem; `false` = não debita
+	// orçamento na execução da semente.
+	bool funded = true;
+	// "" | "no_city" | "budget" | "capacity" | "no_recipe" | "no_anchor" |
+	// "no_input_need" | "no_producer". "capacity" só aparece em bem não
+	// financiado (o que sobra não é falta de orçamento, é teto de planta).
+	std::string reason = "";
 };
 
 struct WorldState {

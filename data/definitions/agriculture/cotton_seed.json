@@ -1,0 +1,38 @@
+{
+	"_meta": {
+		"dataset": "cotton_seed",
+		"version": "g3-lote1-correcao3",
+		"generated_by": "manual (G3 lote 1, correção 3 — cadeia a montante do tecido)",
+		"retrieved": "2026-11-26",
+		"purpose": "Semear o ALGODÃO do dia 0 junto da semente industrial do lote 1 (clothes/fabric/shoes): a capacidade de tecido semeada é muito maior que a oferta de algodão herdada (3 lavouras de 20 t/dia), então o algodão vira o gargalo e o custo unitário do tecido sobe a cadeia toda. Esta semente expande a ÁREA de safra de algodão dos produtores reais para cobrir a demanda de tecido instalada no dia 0.",
+		"rule": "alvo_algodao = min(capacidade instalada de fabric, demanda instalada de tecido da cadeia) × algodão por tecido (recipes.json). O alvo é rateado pela PARTICIPAÇÃO DE PRODUÇÃO dos produtores reais (este arquivo) e, dentro da nação, pela área cultivável × aptidão da cidade (GeographyService), só onde a aptidão ≥ suitability_min. Área = alvo / yield_t_ha. Janela: sem calendário de algodão no dado (crop_calendar.json cobre só os 5 primários de comida), usa-se a janela CONTÍNUA declarada (1..365), a mesma convenção do fallback D-099 — nenhum mês de plantio/colheita é inventado. A sobra de participação (\"resto\") não é semeada e fica declarada no relatório.",
+		"data_quality": "published_aggregate",
+		"source": "USDA FAS, Cotton: World Markets and Trade (mar/2026): produção de algodão em pluma 2024/25 = 119,86 M fardos de 480 lb, área colhida 30,04 Mha, rendimento 859 kg/ha; participação por país = produção 2024/25 / mundo (China 32,0 / Índia 24,0 / Brasil 17,0 / EUA 14,4 / Paquistão 5,0 / Austrália 5,6 / Turquia 4,0 / Uzbequistão 3,0 M fardos)",
+		"simulation_note": "Os números são AGREGADOS REAIS por país; a escala do mundo do jogo é a da simulação (não a do mundo físico): o alvo em t/dia vem da cadeia instalada do lote 1, não da produção mundial real. Nenhum preço, custo ou estoque inicial é inventado por este arquivo."
+	},
+	"good": "cotton",
+	"yield_t_ha": 0.859,
+	"yield_source": "USDA FAS, Cotton: World Markets and Trade (mar/2026), rendimento mundial 2024/25 = 859 kg/ha (pluma)",
+	"suitability_min": 0.30,
+	"capacity_min_t_day": 1.0,
+	"max_cities_per_nation": 3,
+	"producers": {
+		"CHN": 0.27,
+		"IND": 0.20,
+		"BRA": 0.14,
+		"USA": 0.12,
+		"PAK": 0.04,
+		"AUS": 0.05,
+		"TUR": 0.03,
+		"UZB": 0.03
+	},
+	"producers_source": "USDA FAS, Cotton: World Markets and Trade (mar/2026), produção 2024/25 em % do mundo (arredondada): China 26,7%, Índia 20,0%, Brasil 14,2%, EUA 12,0%, Paquistão 4,2%, Austrália 4,7%, Turquia 3,3%, Uzbequistão 2,5% = 87,6% declarados; demais 12,4% NÃO semeados (declarado)",
+	"calendar": {
+		"window": "continuous",
+		"plant_start": 1,
+		"plant_end": 365,
+		"harvest_start": 1,
+		"harvest_end": 365,
+		"note": "Janela contínua declarada: entrega 1/365 do orçamento anual por dia. Sem calendário de algodão observado no dado do jogo; inventar meses seria pior."
+	}
+}

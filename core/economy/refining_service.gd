@@ -33,6 +33,7 @@ class_name RefiningService
 const DATA_PATH := "res://data/definitions/transport/refining_capacity.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+const COTTON_SEED_SCRIPT := preload("res://core/economy/cotton_seed.gd")
 const RECIPE_ID := "gasoline_a"
 const PRODUCT_ID := "gasoline"
 const MAX_CITIES_PER_NATION := 3
@@ -69,6 +70,29 @@ func apply_to_sim(sim: Object, cities: Array, ports: Array = [],
 	# Ordem: farinha/pao ANTES do refino (ver o cabecalho).
 	if sim.has_method("seed_industry"):
 		sim.seed_industry()
+
+	# G3 lote 1 (correção 3): o ALGODÃO do dia 0 depende da capacidade de tecido
+	# que o seed industrial acabou de criar — por isso roda aqui, imediatamente
+	# depois de `seed_industry` e antes do refino. O serviço é no-op com a
+	# semente industrial desligada (baseline OFF intacto).
+	var cotton := COTTON_SEED_SCRIPT.new()
+	var cotton_report := cotton.apply_to_sim(sim, cities,
+		{"geo": options.get("geo", null)})
+	if int(cotton_report.get("plans", 0)) > 0:
+		print(("[algodão] alvo=%.1f t/dia (fabric %.1f, final %.1f, lavouras "
+			+ "existentes %.1f) planos=%d área=%.0f ha rendimento=%.3f t/ha "
+			+ "produtores=%s sobra=%.1f%%") % [
+			float(cotton_report.get("target_t_day", 0.0)),
+			float(cotton_report.get("fabric_capacity_t_day", 0.0)),
+			float(cotton_report.get("final_capacity_t_day", 0.0)),
+			float(cotton_report.get("existing_cotton_t_day", 0.0)),
+			int(cotton_report.get("plans", 0)),
+			float(cotton_report.get("area_ha", 0.0)),
+			float(cotton_report.get("yield_t_ha", 0.0)),
+			String(cotton_report.get("producer_nations", "")),
+			100.0 * float(cotton_report.get("unseeded_share", 0.0))])
+	elif String(cotton_report.get("reason", "")) not in ["bootstrap_off", "no_textile_capacity"]:
+		print("[algodão] não semeado: %s" % String(cotton_report.get("reason", "")))
 
 	# Save que ja tem refino manda: nada e reescrito.
 	if sim.has_method("get_status") and _has_refining(sim):

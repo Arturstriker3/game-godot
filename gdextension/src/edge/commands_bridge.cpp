@@ -255,7 +255,7 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 			return apply_build(String(cmd.s[0].c_str()), String(cmd.s[1].c_str()),
 				String(cmd.s[2].c_str()), cmd.i[0], cmd.i[1], cmd.v[0], cmd.v[1],
 				cmd.v[2], cmd.v[3], cmd.v[4], String(cmd.s[3].c_str()), cmd.v[5],
-				String(cmd.s[4].c_str()));
+				String(cmd.s[4].c_str()), cmd.b);
 		case ogs::CommandType::SpendGovernment:
 			result["ok"] = apply_spend_government(String(cmd.s[0].c_str()), cmd.v[0]);
 			return result;

@@ -3,6 +3,7 @@
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
+#include "sim/actions.h"
 #include "sim/ai/ai_phase.h"
 #include "sim/ai/ai_view.h"
 #include "sim/ai_brain.h"
@@ -355,6 +356,199 @@ TEST_CASE("G2 bootstrap: gate da cidade-semente (5 M, senao maior >=1 M)") {
 	CHECK(none_plan.seeded == 0);
 	REQUIRE_FALSE(none_plan.rows.empty());
 	CHECK(none_plan.rows.back().reason == "no_city");
+}
+
+TEST_CASE("G3: seed_fraction por bem sobrepoe o global e o ausente herda") {
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	// Ancora de `final` = 1e-4 x 1e6 = 100 t/dia.
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-4;
+	ws.cities[0].government_budget = 1e9;
+	ogs::BootstrapGood good;
+	good.id = "final";
+	good.producers.push_back({"AAA", 1.0});
+	good.seed_fraction = 0.02;
+	ws.bootstrap.goods.push_back(good);
+
+	const ogs::bootstrap::Plan l1 = ogs::bootstrap::plan(ws);
+	REQUIRE(l1.seeded == 1);
+	CHECK(l1.rows[0].capacity == Approx(2.0));  // 100 x 0,02
+
+	// Sem a fracao por bem, herda o global (100 x 0,10 = 10).
+	ws.bootstrap.goods[0].seed_fraction = 0.0;
+	const ogs::bootstrap::Plan inherited = ogs::bootstrap::plan(ws);
+	REQUIRE(inherited.seeded == 1);
+	CHECK(inherited.rows[0].capacity == Approx(10.0));
+}
+
+TEST_CASE("G3 correcao 2: teto proporcional por cidade e ausente mantem o G2") {
+	// Duas cidades-alvo com populacoes diferentes: com o teto proporcional a
+	// cidade, cada planta so pode passar de X t/dia por 100 mil habitantes
+	// simulados — sem o teto fixo de 20 t/dia que saturava a semeadura.
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-3;
+	ws.cities[0].id = "C1";
+	ws.cities[0].simulation_population = 10000000.0;
+	ws.cities[0].government_budget = 1e9;
+	ogs::City second;
+	second.id = "C2";
+	second.nation = "AAA";
+	second.simulation_population = 5000000.0;
+	second.government_budget = 1e9;
+	ws.cities.push_back(second);
+	ogs::BootstrapGood good;
+	good.id = "mid";
+	good.producers.push_back({"AAA", 1.0});
+	good.max_plant_capacity_per_100k = 1.0;
+	ws.bootstrap.goods.push_back(good);
+
+	const ogs::bootstrap::Plan plan = ogs::bootstrap::plan(ws);
+	REQUIRE(plan.seeded == 2);
+	// Alvo 750 t/dia (15 M x 1e-3 x 0,5 x 0,10) dividido por 2 cidades = 375;
+	// o teto proporcional corta C1 (10 M -> 100 t/dia) e C2 (5 M -> 50 t/dia).
+	CHECK(plan.rows[0].city == "C1");
+	CHECK(plan.rows[0].capacity == Approx(100.0));
+	CHECK(plan.rows[1].city == "C2");
+	CHECK(plan.rows[1].capacity == Approx(50.0));
+	CHECK(plan.shortfall == Approx(600.0));
+	// Determinismo: duas chamadas no mesmo mundo devolvem as mesmas capacidades.
+	const ogs::bootstrap::Plan again = ogs::bootstrap::plan(ws);
+	REQUIRE(again.rows.size() == plan.rows.size());
+	for (std::size_t index = 0; index < plan.rows.size(); ++index) {
+		CHECK(again.rows[index].capacity
+			== doctest::Approx(plan.rows[index].capacity));
+	}
+
+	// Campo ausente/0: caminho do G2 inalterado (blocos de `capacity_max`).
+	ws.bootstrap.goods[0].max_plant_capacity_per_100k = 0.0;
+	const ogs::bootstrap::Plan g2 = ogs::bootstrap::plan(ws);
+	REQUIRE(g2.seeded == 2);
+	// 750 / ceil(750 / 20) = 750 / 38 blocos.
+	CHECK(g2.rows[0].capacity == Approx(750.0 / 38.0));
+	CHECK(g2.rows[1].capacity == Approx(750.0 / 38.0));
+}
+
+TEST_CASE("G3 L2: insumo do lote dimensiona pelo consumo do bem-fonte") {
+	// `final` (bem-fonte) consome `mid` 1:1 na receita; o insumo nao tem
+	// ancora final propria (a propagacao daria so o desconto de 0,5). Com
+	// `capacity_from`, o alvo e a necessidade do plano do bem-fonte (10 t/dia)
+	// distribuida sem o residual "outros".
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-4;
+	ws.cities[0].government_budget = 1e9;
+	ogs::BootstrapGood source;
+	source.id = "final";
+	source.producers.push_back({"AAA", 1.0});
+	ws.bootstrap.goods.push_back(source);
+	ogs::BootstrapGood input;
+	input.id = "mid";
+	input.capacity_from = "final";
+	input.producers.push_back({"AAA", 0.6});
+	ws.bootstrap.goods.push_back(input);
+
+	const ogs::bootstrap::Plan tied = ogs::bootstrap::plan(ws);
+	REQUIRE(tied.seeded == 2);
+	CHECK(tied.rows[0].good == "final");
+	CHECK(tied.rows[0].capacity == Approx(10.0));  // 100 x 0,10
+	CHECK(tied.rows[1].good == "mid");
+	// 10 t/dia de `final` x 1 / 1 = 10; o unico produtor cobre 100% do total.
+	CHECK(tied.rows[1].capacity == Approx(10.0));
+	CHECK(tied.shortfall == Approx(0.0));
+
+	// Sem plano do bem-fonte nao ha consumidor: declara (nao omite).
+	ogs::BootstrapGood orphan;
+	orphan.id = "other_mid";
+	orphan.capacity_from = "raw";
+	orphan.producers.push_back({"AAA", 1.0});
+	ws.bootstrap.goods.push_back(orphan);
+	const ogs::bootstrap::Plan orphan_plan = ogs::bootstrap::plan(ws);
+	REQUIRE_FALSE(orphan_plan.rows.empty());
+	CHECK(orphan_plan.rows.back().good == "other_mid");
+	CHECK(orphan_plan.rows.back().reason == "no_input_need");
+}
+
+TEST_CASE("G3 correcao 2: funding none isenta o orcamento e marca a linha") {
+	// Mesmo mundo do caso de shortfall de orcamento: 30 t/dia de alvo com
+	// orcamento para 15. Financiado semeia 15; marcado `funding: none` (ativo
+	// herdado do dia 0) semeia o alvo inteiro e nao consome `budget_share`.
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	ws.bootstrap.max_cities_per_nation = 1;
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-3;
+	ws.cities[0].government_budget = 50000.0;  // teto 25 000
+	ogs::BootstrapGood good;
+	good.id = "mid";
+	// Teto proporcional: a única cidade (1 M) pode hospedar 100 t/dia numa
+	// planta só, então o bloqueio medido é orçamento, não capacidade.
+	good.max_plant_capacity_per_100k = 10.0;
+	good.producers.push_back({"AAA", 1.0});
+	ws.bootstrap.goods.push_back(good);
+
+	const ogs::bootstrap::Plan funded = ogs::bootstrap::plan(ws);
+	// 50 t/dia de alvo; a planta custa 50 x 1000 = 50 000 > teto de 25 000.
+	REQUIRE(funded.seeded == 0);
+	CHECK(funded.shortfall == Approx(50.0));
+	CHECK(funded.rows[0].funded);
+	CHECK(funded.rows[0].reason == "budget");
+
+	ws.bootstrap.goods[0].funded = false;
+	const ogs::bootstrap::Plan free = ogs::bootstrap::plan(ws);
+	REQUIRE(free.seeded == 1);  // o orçamento deixou de cortar
+	CHECK(free.rows[0].capacity == Approx(50.0));
+	CHECK(free.shortfall == Approx(0.0));
+	CHECK_FALSE(free.rows[0].funded);
+	CHECK(free.rows[0].reason.empty());
+}
+
+TEST_CASE("G3 correcao 2: build nao financiado nao debita nem credita obra") {
+	// Cidade sem orcamento: a obra financiada falha; a mesma obra como ativo
+	// herdado (funding none) nasce e o orcamento continua zerado, sem receita
+	// de construcao pendente (nao houve obra nova).
+	ogs::test::PocketWorld world;
+	const int planks = world.product("planks");
+	const int recipe = world.recipe("planks");
+	REQUIRE(planks >= 0);
+	REQUIRE(recipe >= 0);
+	ogs::City* found = world.core.find_city("PORTUS");
+	REQUIRE(found != nullptr);
+	ogs::City& city = *found;
+	const double budget_before = city.government_budget;
+	const double revenue_before = city.construction_revenue_pending;
+
+	const ogs::BuildResult blocked = ogs::action_build(world.ws, world.core,
+		city.id, "PORTUS_FREE_A", "planks", -1, planks, 5.0, 0.0, 0.0, 0.0,
+		1.0, "state", 5000.0, "planks", true, true, false);
+	CHECK_FALSE(blocked.created);
+	CHECK(blocked.error == "orçamento insuficiente");
+
+	const ogs::BuildResult free = ogs::action_build(world.ws, world.core,
+		city.id, "PORTUS_FREE_B", "planks", -1, planks, 5.0, 0.0, 0.0, 0.0,
+		1.0, "state", 5000.0, "planks", true, true, true);
+	CHECK(free.created);
+	CHECK(city.government_budget == Approx(budget_before));
+	CHECK(city.construction_revenue_pending == Approx(revenue_before));
+	REQUIRE(world.building("PORTUS_FREE_B") != nullptr);
+	// O custo continua no valor de livro da planta.
+	CHECK(world.building("PORTUS_FREE_B")->capital_per_capacity
+		== Approx(1000.0));
 }
 
 TEST_CASE("G2: semeadura deterministica (duas cargas = mesmo plano)") {

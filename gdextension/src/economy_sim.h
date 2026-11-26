@@ -1379,7 +1379,15 @@ private:
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const String& owner, double cost,
-		const String& recipe_id);
+		const String& recipe_id, bool unfunded);
+	// G3 (L2, correção 2): `build` sem cobrança de orçamento para a semente
+	// marcada `funding: "none"` (ativo herdado do dia 0). Só a fachada usa;
+	// a API GDScript continua sendo `build()` (sempre financiado).
+	Dictionary build_internal(const String& city_id, const String& building_id,
+		const String& resource, int input_product, int output_product,
+		double capacity, double jobs, double wage, double opex,
+		double input_per_output, const String& owner, double cost,
+		const String& recipe_id, bool unfunded);
 	bool apply_spend_government(const String& city_id, double amount);
 	void apply_price_shock(const String& product, double multiplier);
 	void apply_set_suitability(const String& city_id, const String& product,

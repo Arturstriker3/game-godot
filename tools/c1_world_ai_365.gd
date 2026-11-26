@@ -7,7 +7,7 @@ const TmpPaths := preload("res://tools/tmp_paths.gd")
 ##   godot --headless --path . --script res://tools/c1_world_ai_365.gd -- \
 ##     [--days=365] [--out=docs/economy/perf/c1_world_ai_365.json] [--power=0]
 ##     [--refining=0] [--refining-diag=1] [--fuel-diag=1] [--oil-diag=1]
-##     [--crisis=0]
+##     [--crisis=0] [--bootstrap=0] [--bootstrap-path=<arquivo.json>]
 ##
 ## `--crisis=0` é o braço "sem a sobrevivência em crise" do A/B da D-126 (só
 ## medição): o JSON é aplicado com `enabled=0`, então o mundo roda como antes
@@ -118,6 +118,9 @@ var _ai_brain_set := false
 # Sem a flag vale o `enabled` do JSON (default do jogo = ligado).
 var _bootstrap_on := true
 var _bootstrap_set := false
+# G3: braço A/B de um LOTE (`--bootstrap-path=` / OGS_C1_BOOTSTRAP_PATH):
+# mede o mesmo código com outro catálogo de semente, sem tocar o dado do jogo.
+var _bootstrap_path := BOOTSTRAP_PATH
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -218,6 +221,8 @@ func _init() -> void:
 	if OS.get_environment("OGS_C1_BOOTSTRAP") != "":
 		_bootstrap_on = OS.get_environment("OGS_C1_BOOTSTRAP") != "0"
 		_bootstrap_set = true
+	if OS.get_environment("OGS_C1_BOOTSTRAP_PATH") != "":
+		_bootstrap_path = OS.get_environment("OGS_C1_BOOTSTRAP_PATH")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
@@ -232,6 +237,8 @@ func _init() -> void:
 		elif arg.begins_with("--ai-brain="):
 			_ai_brain_on = arg.split("=", true, 1)[1] != "0"
 			_ai_brain_set = true
+		elif arg.begins_with("--bootstrap-path="):
+			_bootstrap_path = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--bootstrap="):
 			_bootstrap_on = arg.split("=", true, 1)[1] != "0"
 			_bootstrap_set = true
@@ -679,7 +686,7 @@ func _make_world() -> Object:
 	sim.set_needs(_load(NEEDS_PATH))
 	# G2: semente industrial por produtores reais (mesma ordem do autoload).
 	if sim.has_method("set_bootstrap_industry"):
-		var bootstrap: Variant = _load(BOOTSTRAP_PATH)
+		var bootstrap: Variant = _load(_bootstrap_path)
 		if bootstrap is Dictionary:
 			var bootstrap_params: Dictionary = bootstrap
 			if _bootstrap_set:
@@ -754,7 +761,8 @@ func _make_world() -> Object:
 	# A/B de medicao (nao existe no jogo).
 	if _refining_on:
 		var refining := RefiningScript.new()
-		var refining_report := refining.apply_to_sim(sim, cities, ports)
+		var refining_report := refining.apply_to_sim(sim, cities, ports,
+			{"geo": geo})
 		print(("[c1] refino: nações=%d plantas=%d capacidade=%.1f t/dia "
 			+ "maduras=%d (%s)") % [
 			(refining_report.get("nations", []) as Array).size(),
@@ -1844,6 +1852,9 @@ func _run() -> void:
 		"food_gate_extras": gate_extras,
 		"food_gate_control": _control_path,
 		"goods_diag": _goods_diag_report() if not _goods_diag_ids.is_empty() else {},
+		# G2/G3: agregado da semente industrial (plantas, shortfall e residual)
+		# lido do status do dia final; só medição.
+		"bootstrap": status_final.get("bootstrap", {}),
 		"efficiency_override": _eff_override_path,
 		"brain_override": _brain_override_path,
 		"fuel_diag": fuel_reports,

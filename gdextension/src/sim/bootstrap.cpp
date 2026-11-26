@@ -63,6 +63,43 @@ int choose_recipe(const WorldState& ws, const City& city, int product) {
 	return first;
 }
 
+// Linha de plano com o `funding` do bem já propagado (toda linha do bem
+// carrega a mesma marca; a execução usa isso para não debitar orçamento).
+BootstrapPlanRow make_row(const BootstrapGood& good) {
+	BootstrapPlanRow row;
+	row.good = good.id;
+	row.funded = good.funded;
+	return row;
+}
+
+// G3 (L2): consumo de `product` pelos planos já semeados de `source_good`, na
+// receita escolhida para cada planta (capacidade × qty / yield). É a
+// necessidade do lote — não a âncora mundial do bem-insumo.
+double dependent_input_need(const WorldState& ws,
+		const std::vector<BootstrapPlanRow>& rows,
+		const std::string& source_good, int product) {
+	double need = 0.0;
+	for (const BootstrapPlanRow& row : rows) {
+		if (!row.seeded || row.good != source_good) {
+			continue;
+		}
+		if (row.recipe < 0
+				|| row.recipe >= static_cast<int>(ws.recipes.size())) {
+			continue;
+		}
+		const Recipe& recipe = ws.recipes[static_cast<std::size_t>(row.recipe)];
+		if (recipe.yield <= 0.0) {
+			continue;
+		}
+		for (int slot = 0; slot < recipe.input_count; ++slot) {
+			if (recipe.inputs[slot] == product) {
+				need += row.capacity * recipe.input_qty[slot] / recipe.yield;
+			}
+		}
+	}
+	return need;
+}
+
 double city_score(const WorldState& ws, const City& city, int product,
 		const Recipe& recipe, double capacity) {
 	(void)product;
@@ -126,31 +163,49 @@ Plan plan(const WorldState& ws) {
 	for (const BootstrapGood& good : cfg.goods) {
 		const int product = find_product(ws, good.id);
 		if (product < 0 || product >= products) {
-			BootstrapPlanRow row;
-			row.good = good.id;
+			BootstrapPlanRow row = make_row(good);
 			row.reason = "no_recipe";
 			out.rows.push_back(row);
 			continue;
 		}
 		if (!has_recipe_for(ws, product)) {
 			// Sem receita não há planta: declara (não omite nem indexa -1).
-			BootstrapPlanRow row;
-			row.good = good.id;
+			BootstrapPlanRow row = make_row(good);
 			row.reason = "no_recipe";
 			out.rows.push_back(row);
 			continue;
 		}
-		const double world_anchor = anchor[static_cast<std::size_t>(product)];
-		if (world_anchor <= 0.0) {
-			// Ausência honesta: sem âncora não há semente, mas fica declarado
-			// (aviso) em vez de omitir o bem em silêncio.
-			BootstrapPlanRow row;
-			row.good = good.id;
-			row.reason = "no_anchor";
-			out.rows.push_back(row);
-			continue;
+		// G3 (L2): insumo do lote — o alvo é o consumo do bem pelos planos já
+		// semeados do bem-fonte. Esse insumo não tem âncora de demanda final
+		// própria, então o caminho `âncora × seed_fraction` não se aplica.
+		const bool input_tied = !good.capacity_from.empty();
+		double seed_world = 0.0;
+		if (input_tied) {
+			seed_world = dependent_input_need(ws, out.rows,
+				good.capacity_from, product);
+			if (seed_world <= 0.0) {
+				// Ausência honesta: sem plano do bem-fonte não há consumidor.
+				BootstrapPlanRow row = make_row(good);
+				row.reason = "no_input_need";
+				out.rows.push_back(row);
+				continue;
+			}
+		} else {
+			const double world_anchor = anchor[static_cast<std::size_t>(product)];
+			if (world_anchor <= 0.0) {
+				// Ausência honesta: sem âncora não há semente, mas fica
+				// declarado (aviso) em vez de omitir o bem em silêncio.
+				BootstrapPlanRow row = make_row(good);
+				row.reason = "no_anchor";
+				out.rows.push_back(row);
+				continue;
+			}
+			// G3: o bem pode declarar a própria fração (lotes L1–L5). Ausente
+			// (0) herda o global — o G2 continua idêntico.
+			const double fraction = good.seed_fraction > 0.0
+				? good.seed_fraction : cfg.seed_fraction;
+			seed_world = world_anchor * fraction;
 		}
-		const double seed_world = world_anchor * cfg.seed_fraction;
 		// Nações por participação desc e ISO3 asc (§2.7).
 		std::vector<BootstrapProducer> producers = good.producers;
 		std::sort(producers.begin(), producers.end(),
@@ -160,26 +215,44 @@ Plan plan(const WorldState& ws) {
 				}
 				return a.nation < b.nation;
 			});
+		// Insumo do lote: as participações só DISTRIBUEM a necessidade e são
+		// normalizadas sem o residual "outros" (o insumo precisa ser coberto;
+		// deixar 20% em "outros" deixaria o lote sem embalagem).
+		double share_total = 0.0;
+		if (input_tied) {
+			for (const BootstrapProducer& producer : producers) {
+				if (producer.nation != "outros") {
+					share_total += producer.share;
+				}
+			}
+			if (share_total <= 0.0) {
+				BootstrapPlanRow row = make_row(good);
+				row.reason = "no_producer";
+				out.rows.push_back(row);
+				continue;
+			}
+		}
 		for (const BootstrapProducer& producer : producers) {
 			if (producer.nation == "outros") {
-				out.unseeded_share += producer.share;
+				if (!input_tied) {
+					out.unseeded_share += producer.share;
+				}
 				continue;
 			}
 			const auto nation_it = by_nation.find(producer.nation);
 			if (nation_it == by_nation.end() || nation_it->second.empty()) {
 				out.unseeded_share += producer.share;
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.nation = producer.nation;
 				row.reason = "no_city";
 				out.rows.push_back(row);
 				continue;
 			}
-			const double target = producer.share * seed_world;
+			const double target = producer.share
+				* (input_tied ? seed_world / share_total : seed_world);
 			if (target < cfg.capacity_min) {
 				out.unseeded_share += producer.share;
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.nation = producer.nation;
 				row.reason = "capacity_min";
 				out.rows.push_back(row);
@@ -210,8 +283,7 @@ Plan plan(const WorldState& ws) {
 				}
 				if (largest < 0) {
 					out.unseeded_share += producer.share;
-					BootstrapPlanRow row;
-					row.good = good.id;
+					BootstrapPlanRow row = make_row(good);
 					row.nation = producer.nation;
 					row.reason = "no_city";
 					out.rows.push_back(row);
@@ -248,15 +320,40 @@ Plan plan(const WorldState& ws) {
 					}
 					return a.id < b.id;
 				});
-			// Teto por planta: divide em blocos de `capacity_max`.
-			const int chunks = std::max(1,
-				static_cast<int>(std::ceil(target / cfg.capacity_max)));
-			const double chunk_capacity = target / static_cast<double>(chunks);
-			const int max_cities = std::max(cfg.max_cities_per_nation, chunks);
+			// G3 (correção 2): bem de massa pode declarar teto proporcional à
+			// cidade (`max_plant_capacity_per_100k`) em vez do teto fixo de
+			// `capacity_max`. Aí o alvo do país é dividido pelo número de
+			// cidades-alvo (as elegíveis, sem criar blocos artificiais de
+			// 20 t/dia) e cada planta é limitada só por X t/dia por 100 mil
+			// habitantes simulados. `max_plant_capacity_per_100k == 0` mantém o
+			// caminho do G2 bit a bit (blocos de `capacity_max`).
+			const bool proportional = good.max_plant_capacity_per_100k > 0.0;
+			double chunk_capacity = 0.0;
+			int max_cities = 0;
+			if (proportional) {
+				// Não divide em migalhas: cada cidade-alvo recebe ao menos
+				// `capacity_min` (o alvo pequeno usa menos cidades).
+				int target_cities = static_cast<int>(candidates.size());
+				if (cfg.capacity_min > 0.0) {
+					target_cities = std::min(target_cities, std::max(1,
+						static_cast<int>(target / cfg.capacity_min)));
+				}
+				max_cities = std::max(1, target_cities);
+				chunk_capacity = target / static_cast<double>(max_cities);
+			} else {
+				const int chunks = std::max(1,
+					static_cast<int>(std::ceil(target / cfg.capacity_max)));
+				chunk_capacity = target / static_cast<double>(chunks);
+				max_cities = std::max(cfg.max_cities_per_nation, chunks);
+			}
+			// Alvo coberto por N plantas de target/N pode deixar um resíduo de
+			// ponto flutuante; o limiar acompanha o tamanho do alvo.
+			const double remaining_eps =
+				proportional ? 1e-9 * std::max(1.0, target) : 1e-12;
 			int used_cities = 0;
 			double remaining = target;
 			for (const int city_index : candidates) {
-				if (remaining <= 1e-12) {
+				if (remaining <= remaining_eps) {
 					break;
 				}
 				if (used_cities >= max_cities) {
@@ -270,34 +367,49 @@ Plan plan(const WorldState& ws) {
 				}
 				const Recipe& recipe =
 					ws.recipes[static_cast<std::size_t>(recipe_index)];
-				const double capacity = std::min(chunk_capacity,
+				double capacity = std::min(chunk_capacity,
 					std::min(cfg.capacity_max, remaining));
+				if (proportional) {
+					const double city_ceiling =
+						good.max_plant_capacity_per_100k
+						* city.simulation_population / 100000.0;
+					const double planned = std::min(chunk_capacity, city_ceiling);
+					if (planned < cfg.capacity_min) {
+						continue;  // cidade pequena demais para planta mínima
+					}
+					capacity = std::min(remaining, planned);
+				}
 				const double cost = capacity * recipe.capital_per_capacity;
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.nation = producer.nation;
 				row.city = city.id;
 				row.capacity = capacity;
 				row.cost = cost;
 				row.recipe = recipe_index;
-				if (cost > budget_of(city_index) + 1e-6) {
-					row.reason = "budget";
-					out.rows.push_back(row);
-					continue;
+				// G3 (L2, correção 2): bem não financiado é ativo herdado do
+				// dia 0 — não consome o `budget_share` municipal (e, por isso,
+				// também não encurta o orçamento dos bens do G2).
+				if (good.funded) {
+					if (cost > budget_of(city_index) + 1e-6) {
+						row.reason = "budget";
+						out.rows.push_back(row);
+						continue;
+					}
+					budget_left[city_index] -= cost;
 				}
-				budget_left[city_index] -= cost;
 				row.seeded = true;
 				out.rows.push_back(row);
 				++out.seeded;
 				++used_cities;
 				remaining = std::max(0.0, remaining - capacity);
 			}
-			if (remaining > 1e-12) {
+			if (remaining > remaining_eps) {
 				out.shortfall += remaining;
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.nation = producer.nation;
-				row.reason = "budget";
+				// O que sobra num bem não financiado não é falta de
+				// orçamento: é teto de cidade/planta.
+				row.reason = good.funded ? "budget" : "capacity";
 				out.rows.push_back(row);
 			}
 		}

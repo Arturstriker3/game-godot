@@ -636,10 +636,14 @@ void EconomySim::seed_industry() {
 			const String city_id(row.city.c_str());
 			const String building_id(
 				("SEED-" + row.good + "-" + row.city).c_str());
-			Dictionary result = build(city_id, building_id,
+			// `funding: "none"` (G3 L2, correção 2): a planta nasce como ativo
+			// herdado do dia 0 — sem débito no orçamento municipal e sem
+			// crédito de obra no setor de construção. O custo continua na
+			// planta como valor de livro.
+			Dictionary result = build_internal(city_id, building_id,
 				String(row.good.c_str()), -1, product, row.capacity,
 				0.0, 0.0, 0.0, 1.0, "state", row.cost,
-				String(recipe.id.c_str()));
+				String(recipe.id.c_str()), !row.funded);
 			if (!bool(result.get("created", false))) {
 				continue;
 			}
@@ -695,6 +699,20 @@ void EconomySim::set_bootstrap_industry(const Dictionary& values) {
 			std::string(String(entry.get("source", "")).utf8().get_data());
 		good.params_source = std::string(
 			String(entry.get("params_source", "")).utf8().get_data());
+		// G3 (D-G3-1): fração por bem (0 = herda o `seed_fraction` global).
+		good.seed_fraction = std::max(0.0,
+			double(entry.get("seed_fraction", 0.0)));
+		// G3 (correção 2): teto proporcional por cidade em t/dia por 100 mil
+		// habitantes simulados (0/ausente = teto fixo `capacity_max` do G2).
+		good.max_plant_capacity_per_100k = std::max(0.0,
+			double(entry.get("max_plant_capacity_per_100k", 0.0)));
+		// G3 (L2): insumo do lote dimensionado pelos planos do bem-fonte.
+		good.capacity_from = std::string(
+			String(entry.get("capacity_from", "")).utf8().get_data());
+		// G3 (L2, correção 2): `funding: "none"` marca entrada NOVA que é
+		// ativo herdado do dia 0 — não consome orçamento municipal. Ausente
+		// (ou qualquer outro valor) mantém o caminho G2 bit a bit.
+		good.funded = String(entry.get("funding", "budget")) != "none";
 		const Dictionary producers = entry.get("producers", Dictionary());
 		for (const Variant& key : producers.keys()) {
 			BootstrapProducer producer;

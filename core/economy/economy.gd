@@ -342,7 +342,8 @@ func _ready() -> void:
 	# pular a farinha/pão.
 	if sim.has_method("build") and sim.has_method("get_products"):
 		var refining := RefiningServiceScript.new()
-		var refining_report := refining.apply_to_sim(sim, cities, _load_ports())
+		var refining_report := refining.apply_to_sim(sim, cities, _load_ports(),
+			{"geo": geo})
 		print("[refino] nações=%d plantas=%d capacidade=%.0f t/dia maduras=%d (%s)" % [
 			(refining_report.get("nations", []) as Array).size(),
 			int(refining_report.get("applied", 0)),
