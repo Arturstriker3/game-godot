@@ -688,12 +688,6 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 	double margin = entry.margin;
 	const double shortage = entry.shortage;
 	const double desired = entry.desired;
-	if (brain && ai_risk::loss_blocked(ctx.ws, ctx.ws.ai_brain, std::string(),
-			group.id, entry.product)) {
-		// R5: planta do MESMO grupo no bem e já na escada D-126 há 30 dias.
-		ctx.state.brain_loss_blocked += 1;
-		return false;
-	}
 	if (foreign) {
 		// IDE só quando o mercado local justifica e a abertura permite.
 		if (shortage <= 0.0 && desired < 1.0) {
@@ -774,6 +768,15 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 			if (cheap_payback > payback_limit + 1e-6) {
 				return false;
 			}
+		}
+		// R5: planta do MESMO grupo no bem e já na escada D-126 há 30 dias.
+		// G2 perf rodada 4: a varredura dos prédios (cara) roda DEPOIS dos
+		// gates baratos; o conjunto de rejeições é o mesmo (o predicado só
+		// depende de grupo + bem, não do caixa).
+		if (ai_risk::loss_blocked(ctx.ws, ctx.ws.ai_brain, std::string(),
+				group.id, entry.product)) {
+			ctx.state.brain_loss_blocked += 1;
+			return false;
 		}
 		ai_brain::ForecastInput in;
 		in.cash = cash;
