@@ -300,11 +300,12 @@ off365_f090,off365_fix,off365_c3,smoke_f090,smoke_fix,smoke_c3_30}.json` e logs 
 
 ## 10. LOTE 2 — alimentos/bebidas (andamento)
 
-**Dado.** `meat`, `feed`, `canned_food`, `alcohol`, `premium_spirits` e `containers` entram no
+**Dado.** `meat`, `feed`, `canned_food`, `alcohol` e `containers` entram no
 `bootstrap_industry.json` com `lot: L2`, `seed_fraction: 0,90` (princípio do §7) e
 `max_plant_capacity_per_100k: 10` (teto da correção 2). Participações = tabela §4 da spec rev.2
 (FAO *Meat Market Review 2024* no `meat`; o resto `declared:balancing`), cada linha somando 1,00
-com `outros` residual.
+com `outros` residual. `premium_spirits`, que estava no lote, **saiu para o LOTE 4**: a receita
+depende de `planks` (L4) e o bem não tem como nascer abastecido antes disso (mediu 0 vendido).
 
 **Insumos a montante.** Os cinco primários que alimentam `feed` e `alcohol` (maize, wheat, rice,
 soy, potato) **já** nascem semeados por produtores reais: o `AgricultureService` declara, por
@@ -327,13 +328,71 @@ aluminum_ingot`; `G:/opengs_tmp/g3/l2_smoke_30.json`, trajetória `35e1c82e…`,
 | grãos a montante | maize **413 kt/dia em 164 países** (MA30 1,0026), wheat **697 kt/dia em 134** (1,0402) |
 | vendas (avg30) | meat 1 415 t/dia em 10 · feed 3 288 em 10 · alcohol 82 em 6 · containers 66 em 5 · canned_food 0,7 em 1 · premium_spirits 0 |
 
-**Bloqueios medidos (para a próxima tarefa).** (1) `containers` escolhe a **primeira** receita
-(`containers_a`, `aluminum_ingot`), porque nenhum insumo tem aptidão local no `choose_recipe`; o
-alumínio não tem planta no dia 0 (preço 18,75 fixo, 0 vendido) → embalagem sem insumo →
-`canned_food` em 1 país. (2) `premium_spirits` depende de `planks` (L4) e fica em 0. (3) O
-shortfall de 207 kt/dia mostra que a fração 0,90 não chega ao plano nos bens de massa (mesma
-família do §7, agora com âncoras maiores). A correção de (1) pede campo `recipe` por bem no
-bootstrap (núcleo) ou a semente de alumínio — nenhuma das duas cabe neste lote.
+**Bloqueios medidos.** (1) `containers` escolhe a **primeira** receita (`containers_a`,
+`aluminum_ingot`), porque nenhum insumo tem aptidão local no `choose_recipe`; o alumínio não tem
+planta no dia 0 (preço 18,75 fixo, 0 vendido) → embalagem sem insumo → `canned_food` em 1 país.
+(3) O shortfall de 207 kt/dia mostra que a fração 0,90 não chega ao plano nos bens de massa
+(mesma família do §7, agora com âncoras maiores).
 
-**Próximo passo:** gate de 365 d do L2 no acumulado (L1 + L2), com braço de controle no mesmo
-dia para atribuir a comida.
+### 10.1 Correção do elo do alumínio (após o merge do H1 `806554ef`)
+
+**Mecanismo (dado, não regra).** O bootstrap ganha o campo opcional por bem
+`capacity_from: "<bem-fonte>"`: o alvo mundial do bem-insumo passa a ser o consumo dos planos
+**já semeados** do bem-fonte — `Σ capacidade × qty / yield` da receita escolhida para cada planta
+— e não `âncora × seed_fraction`. As participações só distribuem esse total e são normalizadas
+sem o residual `outros` (o insumo do lote precisa ser coberto). O bem-fonte deve ser declarado
+antes no JSON; campo ausente/0 mantém o caminho G2 **bit a bit** (teste C++ novo cobre os dois
+caminhos e o caso `no_input_need`).
+
+**Dado.** `aluminum_ingot` entra no L2 com `capacity_from: containers` e as participações USGS
+— *Mineral Commodity Summaries 2025*, Aluminum, World Smelter Production 2024e (kt): China
+44 000, Índia 4 200, Rússia 3 880, Canadá 3 320, EAU 2 690; normalizadas sobre os cinco
+produtores nomeados (0,7574 / 0,0723 / 0,0668 / 0,0572 / 0,0463). A bauxita **já** nasce
+minerada no dia 0 (`extraction_production_2024.json`, USGS MCS 2025, 13 países): o lote não
+duplica a mineração. `aluminum_ingot` é a única transformação nova (`1 bauxita → 1 lingote`,
+`recipes.json`).
+
+**Medição do plano (2 d, instrumentação removida depois).** O alvo do alumínio = **9 312 t/dia**
+(capacidade `containers_a` semeada do lote); semeia **497 t/dia** (25 plantas de 20 t/dia), o
+resto barrado pelo `budget_share` das cidades (as mesmas cidades-alvo de `containers`). Os
+containers só consomem ~580 t/dia no ano, então o alvo do plano é capacidade potencial, não a
+demanda realizada — é a mesma natureza do shortfall dos outros bens do lote.
+
+**Smoke 30 d ON (corrigido).** `--days=30 --bootstrap=1 --ai-brain=1 --goods-diag=meat,feed,
+canned_food,alcohol,containers,aluminum_ingot,bauxite,plastic,maize,wheat`
+(`G:/opengs_tmp/g3/l2_fix_smoke30.json`, 9,4 s): 0 falências/0 violações/0 travados; drift
+**0,017448**; comida 108/179 (igual ao smoke anterior; a correção não mexe na comida em 30 d);
+**544** plantas construídas (plano 556), shortfall **214 377 t/dia** (era 207 143 — o alumínio
+acrescenta 8,8 kt/dia de alvo que o orçamento não constrói); `aluminum_ingot` **produz 395,7
+t/dia e vende 740,3 em 6 países** (stock em trânsito); `containers` **840 t/dia em 8 países**
+(era 66 em 5); `canned_food` **15,4 t/dia em 2** (era 0,7 em 1); bauxita 81 países produtores.
+
+### 10.2 Gate de 365 d do L2 (acumulado L1 + L2) — REPROVADO
+
+`c1_world_ai_365.gd --days=365 --bootstrap=1 --ai-brain=1 --goods-diag=...`
+(`G:/opengs_tmp/g3/l2_on365.json`, trajetória `21cb74ae…`, 476 s). Controle **sem o L2** no
+mesmo código (`--bootstrap-path=G:/opengs_tmp/g3/bootstrap_l1_only.json`, trajetória
+`c4668fb4…` = o ON do L1): drift 0,023558, comida 95/179, 2 falências, 426 plantas.
+
+| critério | medido (L2) | veredito |
+|---|---|---|
+| violações / travados | 0 / 0 | OK |
+| falências | 2 (≤3) | OK |
+| comida (avg30) | **91/179** (≤97; mediana 0,97297) | OK |
+| drift | **0,032657** (máx. diário 0,036812) | **REPROVA** (>0,03) |
+| bens do lote ≥3 países | meat 12, feed 10, alcohol 9, containers 7, aluminum 7, **canned_food 2** | **REPROVA** (canned_food) |
+| MA30 d365÷d0 ≤1,15 | meat 0,9663; alcohol 0,9760; aluminum 0,9108; **feed 1,4279; containers 1,2076; canned_food 1,1886** | **REPROVA** (3 bens) |
+
+**Atribuição.** O braço de controle (L1-only) reproduz o ON do L1 bit a bit (`c4668fb4…`,
+drift 0,023558, comida 95/179), então o merge do H1 não muda nada e o delta é do L2: drift
+**+0,009099** (0,023558 → 0,032657) e comida **-4** (95 → 91). O `canned_food` só vende em CHN e
+IND (2 países) apesar de o alumínio e os containers estarem vivos: o gargalo passou a ser a
+própria demanda/fábrica de `canned_food`, não o insumo.
+
+**Leitura honesta.** A correção do alumínio funciona (o elo existe, produz e vende; containers
+saem de 66 → 840 t/dia e `canned_food` de 0,7 → 15,4), mas o **gate de 365 d do L2 REPROVA** nos
+três critérios acima — nada foi afrouxado. O shortfall do plano **não caiu** (207 143 → 214 377)
+porque o alvo do alumínio (capacidade dos containers do lote) é potencial e o orçamento das
+cidades só constrói 497 t/dia; medir o elo pela demanda realizada exigiria um critério novo no
+bootstrap (fora desta tarefa). O merge do L2 fica bloqueado até uma decisão sobre drift/preços/
+`canned_food`.
