@@ -64,8 +64,14 @@ Artefatos: `G:\opengs_tmp\h1_wt_365_on.json` e `h1_wt_365_off.json` (fora do rep
 ## Bateria
 
 `powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_tests.ps1 -Tier pr -Base main`
-(mais `determinism_cross_process` e a rodada c1 de 90 d do próprio tier). Resultado: registrado
-no commit/abaixo quando a bateria fechar.
+(seleção por diff: `gdextension/src/**` → conjunto amplo de núcleo + sentinelas `pr`).
+
+- **42/42 OK**, 0 falha, 0 crash, 0 timeout, 0 pulado — run `20261125_201647`
+  (`G:\opengs_tmp\opengs_test_run_20261125_201647\summary.json`), 20:16→21:28.
+- Inclui `sim_unit_tests` (CLI, 0,28 s), a rodada c1 de **90 d** (`c1_world_ai_90`, 225,65 s) e
+  `determinism_cross_process` (65,8 s).
+- O runner ficou ~45 min na fila do lock global porque outro agente (worktree `opengs-wt-g1b`)
+  usava o lock; sem conflito, só espera.
 
 ## Próximos passos
 
