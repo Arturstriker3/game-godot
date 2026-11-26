@@ -60,7 +60,9 @@ add_library(opengs_sim STATIC
     src/sim/central_bank.cpp
     src/sim/monetary.cpp
     src/sim/storage.cpp    src/sim/prices.cpp
-    src/sim/power.cpp
+    src/sim/power/grid.cpp
+    src/sim/power/plants.cpp
+    src/sim/power/retail.cpp
     src/sim/consumption.cpp
     src/sim/labor.cpp
     src/sim/services.cpp
@@ -92,6 +94,11 @@ add_library(opengs_sim STATIC
     src/sim/ai/ai_phase.cpp
     src/sim/save_value.cpp
     src/sim/save_state.cpp
+    src/sim/save/city.cpp
+    src/sim/save/pop.cpp
+    src/sim/save/region.cpp
+    src/sim/save/power.cpp
+    src/sim/save/finance.cpp
     src/sim/save_definitions.cpp
 )
 
@@ -111,7 +118,12 @@ if(OPENGS_BUILD_EXTENSION)
 add_library(economy_gdextension SHARED
     src/register_types.cpp
     src/economy_sim.cpp
+    src/edge/commands_bridge.cpp
+    src/edge/definitions_loader.cpp
     src/edge/save_load.cpp
+    src/edge/status_cache.cpp
+    src/edge/status_city.cpp
+    src/edge/status_nation.cpp
     src/edge/value_bridge.cpp
 )
 
