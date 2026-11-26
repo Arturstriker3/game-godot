@@ -326,3 +326,84 @@ mudar a semântica do piso para bens com mercado.
 varredura mensal do privado foi revertida, então o aceite de 365 d da rodada 2
 (367 investimentos) não vale mais.
 
+## Perf rodada 4 — custo residual do forecast (2026-11-25)
+
+O forecast mensal era o maior bloco da IA (36,8 ms/dia com o piso ligado). O
+custo não estava na aritmética dos gates: `month_production` rodava
+`eff::mean_between` **reiniciando a sonda D-125 no dia 0 para cada mês**, e o
+cálculo era repetido no dimensionamento fechado (`unit_month`) e de novo no
+fluxo final — O(H²) passos por candidato (H até 12 meses).
+
+**Otimização (a) — memoização determinística dentro do forecast:** os meses do
+horizonte saem de **uma única varredura** (`ai_brain::month_table`): a mesma
+sonda, o mesmo passo diário e cada dia entra no mês a que pertence. Os totais
+mensais têm a mesma sequência de adições e a mesma divisão de `mean_between`,
+então o resultado é **bit-idêntico** — sha ON `3453589a…` e OFF `7fd0a848…`
+da rodada 3 preservados nos 30 d, com os mesmos 24/37 investimentos.
+
+**Correção barata adjacente:** o `loss_blocked` (varredura de todos os prédios
+por candidato) passou para depois dos gates baratos do grupo. O predicado só
+depende de grupo + bem, então o conjunto de rejeições é o mesmo.
+
+**A/B 30 d, mesmo cenário, DLL debug (novo) × debug (rodada 3):**
+
+| | OFF rodada 3 | OFF rodada 4 | ON rodada 3 | ON rodada 4 |
+|---|---:|---:|---:|---:|
+| parede 30 d | 56,19 s | **37,79 s** | 77,30 s | **48,74 s** |
+| `tick_day` (`counter_tick_us_total`) | 64,3 ms/d | **44,2** | 87,3 | **54,4** |
+| IA (perfil) | 38,0 | **18,1** | 61,2 | **29,0** |
+| forecast | 22,7 | **4,1** | 36,8 | **6,7** |
+| `loss_blocked` | 5,5 | **4,1** | 9,2 | **7,1** |
+| `group_attempts` | 208 079 | 208 079 | 368 187 | 368 187 |
+| investimentos | 24 | 24 | 37 | 37 |
+
+O forecast caiu ~5,5× nos dois braços; o delta ON−OFF de parede caiu de
+**21,1 s para 11,0 s em 30 d (+37,6% → +29,0%)**. A contagem de candidatos não
+mudou (o resíduo continua sendo o piso elevando `shortage` em bens com mercado
+real), mas cada forecast custa 5,5× menos.
+
+### Critério de perf final — RELEASE (caminho do jogo)
+
+DLL `template_release` compilada com `-j2` (`23:27:37`, `-O3`), A/B 30 d pelo
+`c1_world_ai_365.gd --perf-path=publish`:
+
+| braço | parede 30 d | ms/dia | sha |
+|---|---:|---:|---|
+| piso OFF | **8,086 s** | 269,5 | `7fd0a848…` |
+| piso ON | **9,250 s** | 308,3 | `3453589a…` |
+
+**Overhead = +1,164 s em 30 d = +38,8 ms/dia = +14,4% ≤ 20% → APROVA.**
+Os shas são **os mesmos do debug** (30 d), então o release é bit-idêntico ao
+debug neste mundo; a rodada de 365 d abaixo foi feita com a DLL release pelo
+mesmo motivo (o caminho que o jogador roda).
+
+## Re-aceite 365 d — rodada 4 (DLL release, HEAD do commit de perf)
+
+### ON — `--bootstrap=1 --ai-brain=1 --goods-diag=…`
+
+- 365 d em **121,125 s (0,33 s/dia)**; 0 violações, 0 dias travados,
+  **2 falências** (≤3), `trajectory_sha256 b4a4ab38…`, drift **0,014201**
+  (<0,03).
+- Comida **95/179** abaixo de 0,975 (≤97; mediana 0,97068).
+- **571 investimentos** (484 privado / 87 grupo), herd máx. **3**.
+- `chips` e `microchips` produzidos/vendidos em **8 e 12 países** (≥3);
+  `computer` 7, `phone` 6, `steel` 9, `plastic` 9, `precision_tools` 8.
+- MA30 do dia 365 ÷ base: `chips` **1,2016 — REPROVA o teto 1,10** (o MA30 do
+  dia 0 já era 1,189× a base, herdado dos preços da C/D);
+  `microchips` 1,4071; `computer` 1,1125; `phone` 1,2810; `steel` 1,2660;
+  `plastic` 1,0937; `precision_tools` 1,1984.
+- Comparação: a rodada 3 (sem a rodada 4) não tinha 365 d; a rodada 4 **não
+  muda decisão** (30 d idêntico), então este é o primeiro 365 d do mundo da
+  rodada 3 (correção do candidato de grupo): invests 367 → **571**.
+
+### OFF — `--bootstrap=0 --ai-brain=0`
+
+- 365 d em **88,983 s (0,24 s/dia)**; 0 violações, 0 travados, 0 falências,
+  comida **97/179** (mediana 0,96840), drift **0,016915**,
+  `trajectory_sha256 ded6f54b…` **idêntico** ao controle (o sha que abriu a
+  pendência do G2), 3 106 investimentos.
+
+**Veredito da rodada 4:** critério de perf **APROVADO em release (+14,4%)**;
+365 d ON dentro de todos os critérios **exceto o MA30 de `chips` (1,2016 >
+1,10)**, que já vinha acima da base no dia 0 — decisão do dono.
+
