@@ -68,7 +68,11 @@ real; piso desligado mantém a view e os totais; semeadura determinística
 (duas cargas = mesmo plano); cache mensal (dia 0 recalcula, dia 1 reusa com a
 população congelada, dia 30 recalcula e mudança de parâmetro invalida).
 
-## Rodada 365 d (cache mensal, 25/11/2026)
+## Rodada 365 d — rodada 1 (cache mensal, HEAD `6e62fe9b`, 25/11/2026)
+
+> Rodada anterior à varredura mensal do investidor (rodada 2, abaixo). Os
+> números de ON desta seção não valem para o HEAD novo; o OFF
+> (`--bootstrap=0 --ai-brain=0`) é o controle bit a bit e continua `ded6f54b…`.
 
 DLL debug `17:44:17`, `threads=1`, mundo real. As rodadas passaram pelo
 `tools/run_tests.ps1` (mapa temporário em `G:\opengs_tmp`), com o script
@@ -156,6 +160,48 @@ IA e bootstrap ligados nos dois braços (`--brain-override=PATH`, laboratório):
   dono/designer; o critério de perf segue reprovado.
 
 Números brutos: `docs/economy/perf/g2_potential_cache.json`.
+
+### Perf rodada 2 — varredura mensal escalonada do investidor (25/11/2026)
+
+Com o cérebro ligado, cada agente só avalia candidatos a cada
+`scan_interval_days` (default 30, declarado em `ai_brain.json`), com offset
+determinístico `(dia − índice) % intervalo == 0`: a cidade `i` no investidor
+privado e o grupo `i` no investidor de grupo. Entre varreduras não há candidato
+novo (obras em andamento seguem); governo e armazém continuam semanais. O
+privado saiu da visita semanal (a cada ~7 d) para a varredura mensal; o grupo
+já era mensal pela A6 e agora lê o mesmo parâmetro. `enabled=false` ignora o
+campo e mantém as cadências antigas — o braço OFF continua bit a bit.
+
+Também foram movidos para antes do forecast do grupo os gates baratos: caixa
+mínimo (`0,5 × capital`) e payback D-125 (capital ÷ margem × eficiência), que
+reprovam sem montar o fluxo mensal.
+
+A/B de 30 d na mesma DLL (`19:46:36`, HEAD `f91e77a3`), IA e bootstrap ligados
+nos dois braços (`--brain-override` só alterna o piso):
+
+| braço | wall 30 d | tick do harness | IA (perfil) | `group_attempts` |
+| --- | --- | --- | --- | --- |
+| piso OFF | 56,815 s | **1,574 s/dia** | 36,4 ms/dia | 208 258 |
+| piso ON | 142,404 s | **4,425 s/dia** | 134,0 ms/dia | 687 981 |
+
+- **A varredura do privado funcionou:** o ON caiu de 164,628 s (rodada 1) para
+  142,404 s em 30 d (−13,5%). O `ai_view` segue ~1,9 ms/dia nos dois braços (o
+  cache mensal do piso continua).
+- **O alvo de 20% NÃO fecha:** +181% no tick do harness. O delta de IA é
+  **97,6 ms/dia** (3,4% do delta de 2,85 s/dia); o resto do `tick_day()` é a
+  montagem completa do `get_status()`, que fica **fora** do profiler e que o
+  jogo (A4) não monta por dia. Mesmo zerando a IA, 20% não fecharia nesse
+  harness.
+- **A causa é o piso, não a frequência:** o grupo já varria uma vez por mês; a
+  varredura mensal do privado corta a frequência dele, mas o piso faz o grupo
+  avaliar **3,3×** mais candidatos por varredura (688 mil × 208 mil). Os gates
+  baratos derrubaram as tentativas de 835 mil para 688 mil (−17,6%) sem alterar
+  a decisão do gate (e).
+- **Conclusão:** a varredura mensal é determinística e necessária (privado
+  4,3× menos visitas), mas o critério de perf segue reprovado. Para fechar 20%
+  é preciso mexer na semântica do piso no escopo do grupo (decisão do dono) ou
+  medir sem o `get_status()` do harness. Números brutos:
+  `docs/economy/perf/g2_scan_perf.json`.
 
 ### Testes
 
