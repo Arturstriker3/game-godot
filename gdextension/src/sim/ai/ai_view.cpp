@@ -10,6 +10,8 @@
 #include "../agriculture.h"
 #include "../efficiency.h"
 #include "../monetary.h"
+#include "../potential_demand.h"
+#include "../profiling.h"
 #include "../sim_core.h"
 #include "../sim_constants.h"
 #include "../storage.h"
@@ -34,9 +36,60 @@ void city_range(const std::vector<int>& offset, int city, int& begin, int& end) 
 	end = offset[static_cast<std::size_t>(city) + 1];
 }
 
+// G2 (perf): aplica o piso de demanda potencial aos mercados da view. O piso
+// vem do cache mensal quando informado (`snapshot_ai_view` do jogo); sem cache
+// e recalculado a cada chamada (testes). Desligado nao executa nada.
+void apply_potential_floor(const WorldState& ws, AiView& view,
+		PotentialDemandCache* cache) {
+	if (!ws.ai_brain.enabled || !ws.ai_brain.potential_enabled
+			|| !ws.needs_loaded) {
+		return;
+	}
+	OGS_SIM_ZONE(kPhaseAiFloor);
+	PotentialDemandCache local;
+	PotentialDemandCache* target = cache != nullptr ? cache : &local;
+	if (cache == nullptr || potential_demand_cache_stale(ws, *target)) {
+		potential_demand_refresh_cache(ws, *target);
+	}
+	const std::size_t products = static_cast<std::size_t>(view.products);
+	const std::size_t expected =
+		static_cast<std::size_t>(view.cities) * products;
+	if (target->values.size() != expected) {
+		return;  // dimensoes inesperadas: ausencia honesta, sem piso
+	}
+	// G2 perf rodada 3 (só medição): quantas células cidade × bem recebem o
+	// piso por dia e quantas têm potencial positivo. É a medida que separa
+	// "aplicar o piso é caro" de "o candidato que ele cria é caro".
+	int floored_cells = 0;
+	int potential_cells = 0;
+	for (std::size_t city_index = 0;
+			city_index < static_cast<std::size_t>(view.cities);
+			++city_index) {
+		for (std::size_t product = 0; product < products; ++product) {
+			AiMarketRow& row =
+				view.markets[city_index * products + product];
+			const double potential =
+				target->values[city_index * products + product];
+			if (potential <= 0.0) {
+				continue;
+			}
+			++potential_cells;
+			const double gap = potential - row.desired;
+			if (gap > 0.0) {
+				row.desired += gap;
+				row.shortage += gap;
+				++floored_cells;
+			}
+		}
+	}
+	OGS_SIM_COUNTER("floor_cells", static_cast<double>(floored_cells));
+	OGS_SIM_COUNTER("potential_cells", static_cast<double>(potential_cells));
+}
+
 } // namespace
 
-void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
+void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view,
+		PotentialDemandCache* potential_cache) {
 	const std::size_t cities = ws.cities.size();
 	const std::size_t products =
 		static_cast<std::size_t>(std::max(ws.products, 0));
@@ -88,6 +141,9 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 			target.sold = market.sold;
 			target.shortage = market.shortage;
 			target.desired = market.desired;
+			// G2 perf rodada 3: retrato REAL antes de `apply_potential_floor`.
+			target.real_shortage = market.shortage;
+			target.real_desired = market.desired;
 			view.c_land_capacity[city_index * products + product] =
 				city.land_capacity[product];
 		}
@@ -98,6 +154,17 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 		pop.labor_force = city.pop.labor_force;
 		pop.unemployed = city.pop.unemployed;
 	}
+
+	// 1a. G2 — PISO DE DEMANDA POTENCIAL (spec §3.3). Um único ponto: depois
+	// de copiar os mercados e antes dos totais. O potencial é a demanda final
+	// propagada para trás pela árvore de receitas, com desconto por nível.
+	// `d = max(0, potencial - desired)` é PISO, não soma: onde a demanda viva
+	// já é maior, nada muda; onde é zero (chips/microchips sem comprador ao
+	// vivo), aparece o sinal. A view é cópia descartável: produção, preços e
+	// o mercado real ficam intactos. Desligado = nenhum cálculo.
+	// G2 perf: o cache mensal (quando informado) evita repayar a propagação
+	// a cada dia; a semântica do piso é a mesma dentro do mês.
+	apply_potential_floor(ws, view, potential_cache);
 
 	// 1b. G2 — armazenagem e calendário de safra (dado que a IA privada/governo
 	// usa para decidir guardar/vender e construir). Nenhuma leitura viva depois
@@ -313,9 +380,12 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	view.tot_surplus.assign(products, 0.0);
 	view.tot_sold.assign(products, 0.0);
 	view.tot_desired.assign(products, 0.0);
-	for (const City& city : ws.cities) {
+	// A cópia `view.markets` é a fonte: sem o piso (desligado) tem exatamente
+	// os valores vivos, bit a bit; com o piso, o total enxerga o potencial.
+	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		for (std::size_t product = 0; product < products; ++product) {
-			const Market& market = city.markets[product];
+			const AiMarketRow& market =
+				view.markets[city_index * products + product];
 			if (market.surplus > 0.0) {
 				view.tot_surplus[product] += market.surplus;
 			}
@@ -380,6 +450,8 @@ double ai_market(const AiView& view, int city, int product, AiMarketField field)
 	case kAiSold: return row.sold;
 	case kAiShortage: return row.shortage;
 	case kAiDesired: return row.desired;
+	case kAiRealShortage: return row.real_shortage;
+	case kAiRealDesired: return row.real_desired;
 	}
 	return 0.0;
 }

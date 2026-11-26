@@ -4,6 +4,7 @@
 #include "pocket_world.h"
 
 #include "sim/save_definitions.h"
+#include "sim/potential_demand.h"
 #include "sim/save_state.h"
 #include "sim/sim_core.h"
 
@@ -125,6 +126,58 @@ TEST_CASE("save/load: roundtrip preserva construction_days e plant_class (G1)") 
 	const std::string after = ogs::save::dump_json(
 		ogs::save::definitions_to(target.ws));
 	CHECK_MESSAGE(after == before, first_difference(before, after));
+}
+
+TEST_CASE("save/load: roundtrip preserva o cache mensal do piso (G2)") {
+	// G2 QA: o cache do piso viaja como chave aditiva `potential_cache`
+	// (esparsa, so celulas nao nulas) e volta bit a bit; save sem a chave
+	// deixa o cache vazio (recalculado no proximo snapshot).
+	ogs::test::PocketWorld source;
+	ogs::PotentialDemandCache cache;
+	cache.cities = 2;
+	cache.products = 3;
+	cache.day = 41;
+	cache.recipes = 17;
+	cache.needs_levels = 4;
+	cache.government_products = 2;
+	cache.durable_decay = 0.000289;
+	cache.discount = 0.5;
+	cache.cap = 1.0;
+	cache.needs_loaded = true;
+	cache.values.assign(6, 0.0);
+	cache.values[0] = 12.5;   // cidade 0, produto 0
+	cache.values[5] = 0.25;   // cidade 1, produto 2
+
+	const ogs::save::Value saved =
+		ogs::save::to_value(source.ws, source.core, &cache);
+
+	ogs::test::PocketWorld target;
+	ogs::PotentialDemandCache loaded;
+	ogs::save::from_value(target.ws, target.core, saved, &loaded);
+	CHECK(loaded.day == 41);
+	CHECK(loaded.cities == 2);
+	CHECK(loaded.products == 3);
+	CHECK(loaded.recipes == 17u);
+	CHECK(loaded.needs_levels == 4u);
+	CHECK(loaded.government_products == 2u);
+	CHECK(loaded.durable_decay == Approx(0.000289));
+	CHECK(loaded.discount == Approx(0.5));
+	CHECK(loaded.cap == Approx(1.0));
+	CHECK(loaded.needs_loaded);
+	REQUIRE(loaded.values.size() == cache.values.size());
+	for (std::size_t cell = 0; cell < cache.values.size(); ++cell) {
+		CHECK(loaded.values[cell] == Approx(cache.values[cell]));
+	}
+
+	// Save sem a chave (antigo, ou brain/piso desligado): cache vazio.
+	ogs::test::PocketWorld plain;
+	const ogs::save::Value no_cache =
+		ogs::save::to_value(plain.ws, plain.core);
+	CHECK_FALSE(no_cache.has("potential_cache"));
+	ogs::PotentialDemandCache untouched;
+	ogs::save::from_value(plain.ws, plain.core, no_cache, &untouched);
+	CHECK(untouched.values.empty());
+	CHECK(untouched.day == -1);
 }
 
 TEST_CASE("save/load: carregar duas vezes no mesmo mundo e idempotente") {

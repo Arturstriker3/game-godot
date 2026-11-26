@@ -58,6 +58,8 @@ const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
 const CRISIS_PATH := "res://data/definitions/economy/crisis.json"
 ## D-131: cérebro econômico da IA (fase A; preço esperado + previsão de caixa).
 const AI_BRAIN_PATH := "res://data/definitions/economy/ai_brain.json"
+## G2: semente industrial do dia 0 (participação real × âncora × seed_fraction).
+const BOOTSTRAP_PATH := "res://data/definitions/economy/bootstrap_industry.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
@@ -112,6 +114,10 @@ var _crisis_on := true
 # flag `0` DESLIGA só nesta rodada de laboratório (o caminho off bit a bit).
 var _ai_brain_on := false
 var _ai_brain_set := false
+# G2: braço A/B da semente industrial (`--bootstrap=0` / OGS_C1_BOOTSTRAP=0).
+# Sem a flag vale o `enabled` do JSON (default do jogo = ligado).
+var _bootstrap_on := true
+var _bootstrap_set := false
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -119,6 +125,9 @@ var _refining_diag := false
 # D-125: override de laboratorio dos parametros de eficiencia (JSON com merge
 # profundo sobre o arquivo commitado). Nao existe no jogo: serve so ao A/B.
 var _eff_override_path := ""
+# G2: override de laboratorio do cerebro da IA (JSON com merge profundo sobre
+# `ai_brain.json`). Serve so ao A/B do potential_demand; nao existe no jogo.
+var _brain_override_path := ""
 var _out := "res://docs/economy/perf/c1_world_ai_365.json"
 var _fx_seed_days := 0
 # C3 (D-107) + D-111: forçar o crédito de empresa por flag. Desde a D-111 o
@@ -146,11 +155,33 @@ var _oil_diag := false
 # algodão no mundo e a contagem de fazendas de algodão/têxteis por nação.
 # Não existe no jogo: serve só para explicar as falências da rodada base.
 var _cotton_diag := false
+# G2 (perf): custo por fase do nucleo (`set_profiling(true)` + `get_profile`).
+# So medicao: instrumenta sem mudar o mundo (mesmo caminho do b6/g2).
+var _profile := false
+# G2 perf rodada 3: `tick` (padrão, tick_day + status completo — caminho dos
+# goldens) ou `publish` (caminho do jogo: tick_and_publish + get_day_summary).
+# Só medição: o mundo é o mesmo.
+var _perf_path := "tick"
+# G2 (perf): tempo de parede medido no GDScript (tick x status) quando
+# `--profile=1`; o profiler do nucleo nao cobre a marshalling do Dictionary.
+var _prof_tick_us := 0
+var _prof_status_us := 0
+var _prof_summary_us := 0
+## G2 perf rodada 3: soma por fase AO LONGO DOS DIAS. `get_profile()` devolve os
+## slots do ÚLTIMO tick (Zone/lap sobrescrevem), então ler uma vez no fim e
+## dividir pelos dias subreporta ~N×. Aqui cada dia é somado.
+var _phase_acc: Dictionary = {}
 var _cotton_farms: Dictionary = {}
 var _cotton_counts: Array = []
 var _cotton_prices: Array = []
 var _cotton_last_day := 0
 var _cotton_index := -1
+# G1: diag de bens (preço MA30 e oferta/produção por nação) — só medição.
+var _goods_diag_ids: Array[String] = []
+var _goods_diag_prices: Dictionary = {}
+var _goods_diag_supply: Dictionary = {}
+var _goods_diag_sold: Dictionary = {}
+var _goods_price_base: Dictionary = {}
 var _products: PackedStringArray = PackedStringArray()
 # Agregado do mercado de algodão do snapshot corrente (medido dentro da mesma
 # passada pesada de `_buildings_snapshot` — sem uma segunda varredura).
@@ -184,6 +215,9 @@ func _init() -> void:
 	if OS.get_environment("OGS_C1_AI_BRAIN") != "":
 		_ai_brain_on = OS.get_environment("OGS_C1_AI_BRAIN") != "0"
 		_ai_brain_set = true
+	if OS.get_environment("OGS_C1_BOOTSTRAP") != "":
+		_bootstrap_on = OS.get_environment("OGS_C1_BOOTSTRAP") != "0"
+		_bootstrap_set = true
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
@@ -198,6 +232,9 @@ func _init() -> void:
 		elif arg.begins_with("--ai-brain="):
 			_ai_brain_on = arg.split("=", true, 1)[1] != "0"
 			_ai_brain_set = true
+		elif arg.begins_with("--bootstrap="):
+			_bootstrap_on = arg.split("=", true, 1)[1] != "0"
+			_bootstrap_set = true
 		elif arg.begins_with("--refining-diag"):
 			var refining_value := "1"
 			if arg.contains("="):
@@ -220,6 +257,8 @@ func _init() -> void:
 			_control_path = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--eff-override="):
 			_eff_override_path = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--brain-override="):
+			_brain_override_path = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--fuel-diag"):
 			var fuel_value := "1"
 			if arg.contains("="):
@@ -235,6 +274,19 @@ func _init() -> void:
 			if arg.contains("="):
 				cotton_value = arg.split("=", true, 1)[1]
 			_cotton_diag = cotton_value != "0"
+		elif arg.begins_with("--profile"):
+			var profile_value := "1"
+			if arg.contains("="):
+				profile_value = arg.split("=", true, 1)[1]
+			_profile = profile_value != "0"
+		elif arg.begins_with("--perf-path="):
+			_perf_path = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--goods-diag="):
+			# G1: lista de bens a vigiar (ex.: chips,microchips). Só medição.
+			for raw_id in arg.split("=", true, 1)[1].split(",", false):
+				var good_id := raw_id.strip_edges()
+				if not good_id.is_empty():
+					_goods_diag_ids.append(good_id)
 	if _control_path.is_empty() and OS.get_environment("OGS_C1_CONTROL") != "":
 		_control_path = OS.get_environment("OGS_C1_CONTROL")
 	_run()
@@ -610,12 +662,31 @@ func _make_world() -> Object:
 		var brain: Variant = _load(AI_BRAIN_PATH)
 		if brain is Dictionary:
 			var brain_params: Dictionary = brain.duplicate(true)
+			if not _brain_override_path.is_empty():
+				var override: Variant = _load(_brain_override_path)
+				if override is Dictionary:
+					_merge_dict(brain_params, override)
+					print("[c1] G2 override do cerebro: " + _brain_override_path)
+				else:
+					print("[c1] FALHA: override do cerebro ilegivel: "
+						+ _brain_override_path)
+					return null
 			if _ai_brain_set:
 				brain_params["enabled"] = 1.0 if _ai_brain_on else 0.0
 			sim.set_ai_brain_params(brain_params)
 			print("[c1] D-131 cérebro da IA: enabled=%s"
 				% ["1" if float(brain_params.get("enabled", 0.0)) > 0.5 else "0"])
 	sim.set_needs(_load(NEEDS_PATH))
+	# G2: semente industrial por produtores reais (mesma ordem do autoload).
+	if sim.has_method("set_bootstrap_industry"):
+		var bootstrap: Variant = _load(BOOTSTRAP_PATH)
+		if bootstrap is Dictionary:
+			var bootstrap_params: Dictionary = bootstrap
+			if _bootstrap_set:
+				bootstrap_params["enabled"] = _bootstrap_on
+			sim.set_bootstrap_industry(bootstrap_params)
+			print("[c1] G2 bootstrap industrial: enabled=%s"
+				% ["1" if bool(bootstrap_params.get("enabled", false)) else "0"])
 	sim.set_services(_load(SERVICES_PATH))
 	# C2c (D-108): regime real por moeda ANTES do carregamento das moedas.
 	if sim.has_method("set_fx_regimes"):
@@ -709,6 +780,26 @@ func _make_world() -> Object:
 			% ["LIGADO" if _harvest_rate else "DESLIGADO",
 				1 if _harvest_rate else 0])
 	return sim
+
+
+## G2 (perf): custo por fase do nucleo (`get_profile`, µs acumulados) em µs/dia.
+func _profile_block(sim: Object) -> Dictionary:
+	var raw: Dictionary = sim.get_profile()
+	var total_us := 0.0
+	var per_phase: Dictionary = {}
+	for key: Variant in raw:
+		var value := float(raw[key])
+		per_phase[String(key)] = value
+		total_us += value
+	var per_day: Dictionary = {}
+	for key: Variant in per_phase:
+		per_day[key] = float(per_phase[key]) / float(maxi(1, _days))
+	return {
+		"total_us": total_us,
+		"total_us_per_day": total_us / float(maxi(1, _days)),
+		"per_phase_us": per_phase,
+		"per_phase_us_per_day": per_day,
+	}
 
 
 func _food_ratio(status: Dictionary) -> Dictionary:
@@ -1492,6 +1583,8 @@ func _run() -> void:
 	# D-125: índice do algodão no mundo (diagnóstico do algodão).
 	_products = sim.get_products()
 	_cotton_index = _products.find("cotton")
+	if _profile and sim.has_method("set_profiling"):
+		sim.set_profiling(true)
 	if _fx_seed_days > 0 and sim.has_method("seed_central_bank_reserves"):
 		# C2b2 (D-106): o cenário funda as reservas DEPOIS de 30 dias de comércio
 		# (no dia 0 não há importação medida); o laço abaixo faz a chamada.
@@ -1534,7 +1627,29 @@ func _run() -> void:
 			# mundo (dia 30; no dia 0 não há comércio).
 			var seeded: float = sim.seed_central_bank_reserves(_fx_seed_days)
 			print("[c1] cenário C2b2: reservas = %.3f âncora no dia 30" % seeded)
-		var summary: Dictionary = sim.tick_day()
+		var _tick_start := Time.get_ticks_usec() if _profile else 0
+		var summary: Dictionary = {}
+		if _perf_path == "publish":
+			# G2 perf rodada 3: mede o caminho REAL do jogo separando o dia
+			# (`tick_and_publish`, no worker) do resumo leve (`get_day_summary`,
+			# na main). O `tick_day()` dos goldens monta o status completo do
+			# mundo e não é o caminho do jogo.
+			sim.tick_and_publish()
+			if _profile:
+				_prof_tick_us += Time.get_ticks_usec() - _tick_start
+			var _summary_start := Time.get_ticks_usec() if _profile else 0
+			summary = sim.get_day_summary()
+			if _profile:
+				_prof_summary_us += Time.get_ticks_usec() - _summary_start
+		else:
+			summary = sim.tick_day()
+			if _profile:
+				_prof_tick_us += Time.get_ticks_usec() - _tick_start
+		if _profile:
+			var day_profile: Dictionary = sim.get_profile()
+			for key: Variant in day_profile:
+				_phase_acc[key] = float(_phase_acc.get(key, 0.0)) \
+					+ float(day_profile[key])
 		for violation in Array(summary.get("invariant_violations", [])):
 			violation_count += 1
 			if violation_samples.size() < 10:
@@ -1544,7 +1659,10 @@ func _run() -> void:
 		if day_now <= day_before:
 			stalled += 1
 		day_before = day_now
+		var _status_start := Time.get_ticks_usec() if _profile else 0
 		var status: Dictionary = sim.get_status()
+		if _profile:
+			_prof_status_us += Time.get_ticks_usec() - _status_start
 		var money := float(status.get("money_total", 0.0))
 		if money_start > 0.0:
 			max_drift = maxf(max_drift, absf(money - money_start) / money_start)
@@ -1552,6 +1670,8 @@ func _run() -> void:
 		history.append(ratio)
 		if history.size() > WINDOW:
 			history.pop_front()
+		if not _goods_diag_ids.is_empty():
+			_goods_diag_sample(day_now, status)
 		if _fuel_diag and day_now == 1:
 			# F0 (D-123): retrato do dia 1 — antes de qualquer obra da IA.
 			var fuel_day1 := _fuel_report(sim, status, day_now)
@@ -1723,7 +1843,9 @@ func _run() -> void:
 		"food_chain": food_chain,
 		"food_gate_extras": gate_extras,
 		"food_gate_control": _control_path,
+		"goods_diag": _goods_diag_report() if not _goods_diag_ids.is_empty() else {},
 		"efficiency_override": _eff_override_path,
+		"brain_override": _brain_override_path,
 		"fuel_diag": fuel_reports,
 		"refining_diag": refining_reports,
 		"oil_diag": oil_reports,
@@ -1733,6 +1855,16 @@ func _run() -> void:
 			if _power_on else {},
 		"wall_s": (Time.get_ticks_msec() - wall_start) / 1000.0,
 	}
+	# G2 (perf): custo por fase do nucleo (us/dia); so instrumentacao.
+	if _profile:
+		out["profile"] = _profile_block(sim)
+		out["profile"]["harness_tick_us_per_day"] = \
+			float(_prof_tick_us) / float(maxi(1, _days))
+		out["profile"]["harness_status_us_per_day"] = \
+			float(_prof_status_us) / float(maxi(1, _days))
+		out["profile"]["harness_summary_us_per_day"] = \
+			float(_prof_summary_us) / float(maxi(1, _days))
+		out["profile"]["perf_path"] = _perf_path
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
 	if _cotton_diag:
@@ -1766,6 +1898,8 @@ func _run() -> void:
 		print("[c1] D-117 falências: " + " | ".join(lines))
 	if _cotton_diag:
 		print(_cotton_summary(out.get("cotton_diag", {}), bankruptcies_detail))
+	if not _goods_diag_ids.is_empty():
+		_print_goods_diag(out["goods_diag"])
 	var crisis_report: Dictionary = out.get("bank_crisis", {})
 	print("[c1] C6: corridas=%d resoluções=%d eventos=%d fundo=%.2f prêmios=%.2f "
 		% [int(crisis_report.get("runs", 0)),
@@ -1810,8 +1944,8 @@ func _run() -> void:
 			% [int(d131.get("investments_total", 0)),
 				int(d131.get("investments_private", 0)),
 				int(d131.get("investments_group", 0))])
-		print("[c1] D-131 B: candidatos únicos/mês=%d rejeitados caixa/mês=%d "
-			+ "risco=%d anti-manada máx 30d=%d"
+		print(("[c1] D-131 B: candidatos únicos/mês=%d rejeitados caixa/mês=%d "
+			+ "risco=%d anti-manada máx 30d=%d")
 			% [int(d131.get("unique_candidates_month", 0)),
 				int(d131.get("unique_rejected_month", 0)),
 				int(d131.get("risk_rejected", 0)),
@@ -2254,6 +2388,7 @@ func _load_goods_meta() -> void:
 		_goods_sector[good_id] = String(row.get("sector", ""))
 		_goods_food[good_id] = bool(row.get("food", false))
 		_goods_kind[good_id] = String(row.get("kind", ""))
+		_goods_price_base[good_id] = float(row.get("base_price", 0.0))
 
 
 ## Retrato dos edifícios (id → última operação conhecida) + energia da cidade.
@@ -2930,4 +3065,139 @@ func _link_report(acc: Dictionary, power: Dictionary) -> Dictionary:
 		"top_by_flow": rows.slice(0, mini(15, rows.size())),
 		"zero_flow": zero.slice(0, mini(30, zero.size())),
 	}
+
+
+# ---------------------------------------------------------------------------
+# G1 — diag de bens (preço MA30 e oferta/produção por nação). Só medição.
+# ---------------------------------------------------------------------------
+
+## Amostra diária barata: `status.light` traz preço/vendido/oferta por cidade
+## sem chamar `get_city_status`. `m_supply` é a oferta ao mercado do dia e serve
+## de proxy de produção por nação (mesma leitura do `price_trajectory_365`).
+func _goods_diag_sample(day: int, status: Dictionary) -> void:
+	var light: Dictionary = status.get("light", {})
+	var per_city := int(light.get("product_count", 0))
+	var products: Array = status.get("products", [])
+	var prices: PackedFloat64Array = light.get("m_price", PackedFloat64Array())
+	var sold: PackedFloat64Array = light.get("m_sold", PackedFloat64Array())
+	var supply: PackedFloat64Array = light.get("m_supply", PackedFloat64Array())
+	var cities: Array = status.get("cities", [])
+	if per_city <= 0 or products.is_empty():
+		return
+	for good_id: String in _goods_diag_ids:
+		var index := products.find(good_id)
+		if index < 0:
+			continue
+		var weighted := 0.0
+		var weight := 0.0
+		var plain := 0.0
+		var priced := 0
+		var by_nation: Dictionary = {}
+		var sold_by_nation: Dictionary = {}
+		for slot in cities.size():
+			var at: int = slot * per_city + index
+			if at >= prices.size():
+				break
+			var price := float(prices[at])
+			var quantity := float(sold[at]) if at < sold.size() else 0.0
+			if price > 0.0:
+				priced += 1
+				plain += price
+				weighted += price * quantity
+				weight += quantity
+			var produced := float(supply[at]) if at < supply.size() else 0.0
+			if produced > 0.0 or quantity > 0.0:
+				var nation := String((cities[slot] as Dictionary).get("nation", ""))
+				if not nation.is_empty():
+					if produced > 0.0:
+						by_nation[nation] = float(by_nation.get(nation, 0.0)) + produced
+					if quantity > 0.0:
+						sold_by_nation[nation] = \
+							float(sold_by_nation.get(nation, 0.0)) + quantity
+		var mean := 0.0
+		if weight > 0.0:
+			mean = weighted / weight
+		elif priced > 0:
+			mean = plain / float(priced)
+		var series: Array = _goods_diag_prices.get(good_id, [])
+		series.append(mean)
+		_goods_diag_prices[good_id] = series
+		var supply_series: Array = _goods_diag_supply.get(good_id, [])
+		supply_series.append(by_nation)
+		_goods_diag_supply[good_id] = supply_series
+		var sold_series: Array = _goods_diag_sold.get(good_id, [])
+		sold_series.append(sold_by_nation)
+		_goods_diag_sold[good_id] = sold_series
+
+
+func _mean_price(series: Array) -> float:
+	var total := 0.0
+	var count := 0
+	for value: Variant in series:
+		var price := float(value)
+		if price > 0.0:
+			total += price
+			count += 1
+	return total / count if count > 0 else 0.0
+
+
+func _avg30_by_nation(series: Array) -> Dictionary:
+	var window: Array = series.slice(
+		maxi(0, series.size() - WINDOW), series.size())
+	var totals: Dictionary = {}
+	for day_row: Dictionary in window:
+		for nation in day_row:
+			totals[nation] = float(totals.get(nation, 0.0)) \
+				+ float(day_row[nation])
+	var days := maxi(1, window.size())
+	var by_nation: Dictionary = {}
+	for nation in totals:
+		by_nation[nation] = float(totals[nation]) / float(days)
+	return {"by_nation": by_nation, "days": days}
+
+
+func _goods_diag_report() -> Dictionary:
+	var out: Dictionary = {}
+	for good_id: String in _goods_diag_ids:
+		var series: Array = _goods_diag_prices.get(good_id, [])
+		var first := series.slice(0, mini(WINDOW, series.size()))
+		var last := series.slice(maxi(0, series.size() - WINDOW), series.size())
+		var supply := _avg30_by_nation(_goods_diag_supply.get(good_id, []))
+		var sold := _avg30_by_nation(_goods_diag_sold.get(good_id, []))
+		var nations: Dictionary = {}
+		for nation in supply["by_nation"]:
+			if float(supply["by_nation"][nation]) > 1e-9:
+				nations[nation] = true
+		for nation in sold["by_nation"]:
+			if float(sold["by_nation"][nation]) > 1e-9:
+				nations[nation] = true
+		var base := float(_goods_price_base.get(good_id, 0.0))
+		var ma30_last := _mean_price(last)
+		out[good_id] = {
+			"base_price": base,
+			"ma30_first": _mean_price(first),
+			"ma30_last": ma30_last,
+			"ratio_last_base": ma30_last / base if base > 0.0 else 0.0,
+			"producing_nations_30d": nations.size(),
+			"supply_avg30_by_nation": supply["by_nation"],
+			"sold_avg30_by_nation": sold["by_nation"],
+		}
+	return out
+
+
+func _print_goods_diag(report: Dictionary) -> void:
+	for good_id in report:
+		var row: Dictionary = report[good_id]
+		var supply_total := 0.0
+		for value: Variant in (row["supply_avg30_by_nation"] as Dictionary).values():
+			supply_total += float(value)
+		var sold_total := 0.0
+		for value: Variant in (row["sold_avg30_by_nation"] as Dictionary).values():
+			sold_total += float(value)
+		print("[c1] G1 %s: base=%.2f MA30_dia0=%.2f MA30_final=%.2f razão=%.4f supply30d=%.4f sold30d=%.4f t/dia em %d países"
+			% [String(good_id), float(row["base_price"]),
+			float(row["ma30_first"]), float(row["ma30_last"]),
+			float(row["ratio_last_base"]), supply_total, sold_total,
+			int(row["producing_nations_30d"])])
+
 

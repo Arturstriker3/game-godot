@@ -80,6 +80,8 @@ add_library(opengs_sim STATIC
     src/sim/scenario_fixture.cpp
     src/sim/commands.cpp
     src/sim/actions.cpp
+    src/sim/potential_demand.cpp
+    src/sim/bootstrap.cpp
     src/sim/ai/ai_templates.cpp
     src/sim/ai/ai_view.cpp
     src/sim/ai/ai_risk.cpp
@@ -192,6 +194,7 @@ if(OPENGS_BUILD_UNIT_TESTS)
         tests/test_determinism.cpp
         tests/test_crisis.cpp
         tests/test_ai_brain.cpp
+        tests/test_g2_bootstrap.cpp 
     )
 
     target_link_libraries(sim_unit_tests PRIVATE opengs_sim)

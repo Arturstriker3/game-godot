@@ -47,6 +47,7 @@
 namespace ogs {
 
 class SimCore;
+struct PotentialDemandCache;
 
 // Linha de mercado de uma cidade para um produto (os 7 doubles do `light`).
 struct AiMarketRow {
@@ -57,6 +58,12 @@ struct AiMarketRow {
 	double sold = 0.0;
 	double shortage = 0.0;
 	double desired = 0.0;
+	// G2 perf rodada 3: o mercado REAL do dia, antes do piso de demanda
+	// potencial. O piso continua valendo para dimensionar/precificar a
+	// decisão; estes campos são o gatilho de "esta cidade precisa deste bem?"
+	// — sem eles o piso transforma toda cidade × bem em candidato.
+	double real_shortage = 0.0;
+	double real_desired = 0.0;
 };
 
 // Escalares da POP que a IA lê (bloco `p_*` do `light`).
@@ -218,7 +225,14 @@ double ai_food_calories(const AiView& view, int product);
 // Fotografa o dia em `view` (limpa e preenche). `core` só empresta
 // `SimCore::owner_kind` (o parser de dono que o núcleo já tem) para montar a
 // lista de incumbentes: nenhuma leitura viva acontece depois do snapshot.
-void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view);
+//
+// `potential_cache` (opcional, G2 perf): quando informado, o piso de demanda
+// potencial é recalculado no dia 0 e a cada `potential_demand.recompute_days`
+// dias e reusado entre recalculos (cache mensal deterministico). Sem cache o
+// piso é recalculado a cada chamada (mesmo resultado do caminho diario, usado
+// pelos testes unitarios).
+void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view,
+	PotentialDemandCache* potential_cache = nullptr);
 
 // ==== Helpers de leitura (só a view; nunca o WorldState vivo) ====
 
@@ -231,6 +245,8 @@ enum AiMarketField : int {
 	kAiSold,
 	kAiShortage,
 	kAiDesired,
+	kAiRealShortage,
+	kAiRealDesired,
 };
 
 // Escalar da POP (as chaves `p_*` do bloco `light`).

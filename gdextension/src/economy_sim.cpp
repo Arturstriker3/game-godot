@@ -5,6 +5,7 @@
 #include "sim/agriculture.h"
 #include "sim/balance.h"
 #include "sim/bank.h"
+#include "sim/bootstrap.h"
 #include "sim/bank_crisis.h"
 #include "sim/central_bank.h"
 #include "sim/crisis.h"
@@ -28,6 +29,10 @@
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/packed_float64_array.hpp>
 #include <godot_cpp/variant/string.hpp>
+
+#if defined(OGS_PROFILING)
+#include <chrono>
+#endif
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 
@@ -381,6 +386,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_recipes);
 	ClassDB::bind_method(D_METHOD("set_needs", "needs"),
 	                     &EconomySim::set_needs);
+	ClassDB::bind_method(D_METHOD("set_bootstrap_industry", "values"),
+	                     &EconomySim::set_bootstrap_industry);
 	ClassDB::bind_method(D_METHOD("set_services", "services"),
 	                     &EconomySim::set_services);
 	ClassDB::bind_method(D_METHOD("set_sector_employment", "data"),
@@ -1782,7 +1789,21 @@ void EconomySim::tick_and_publish() {
 	ogs::profile::Sink phase_sink{profile_us_, kPhaseCount, &profile_};
 	const ogs::profile::SinkScope phase_scope(&phase_sink);
 #endif
+#if defined(OGS_PROFILING)
+	const auto tick_perf_start = std::chrono::steady_clock::now();
+	auto tick_perf_mark = tick_perf_start;
+	const auto perf_mark = [&tick_perf_mark]() {
+		const auto now = std::chrono::steady_clock::now();
+		const double us = std::chrono::duration<double, std::micro>(
+			now - tick_perf_mark).count();
+		tick_perf_mark = now;
+		return us;
+	};
+#endif
 	tick_core();
+#if defined(OGS_PROFILING)
+	OGS_SIM_COUNTER("tick_us_core", perf_mark());
+#endif
 	if (ai_enabled_) {
 		// A5/D-076: fase da IA no FIM do dia, jÃ¡ com o dia fechado (`ws_.day` Ã©
 		// o dia que acabou de rodar) e ANTES da publicaÃ§Ã£o do status. A IA lÃª
@@ -1797,6 +1818,9 @@ void EconomySim::tick_and_publish() {
 		ai_phase_.run(ws_, sim_core_, commands_, instant_construction_,
 			bootstrap_construction_);
 	}
+#if defined(OGS_PROFILING)
+	OGS_SIM_COUNTER("tick_us_ai", perf_mark());
+#endif
 	{
 		// Fase `status` (RAII). A4: o dia NÃƒO monta mais o Dictionary do mundo
 		// inteiro. No fecho semanal captura-se o retrato de trabalho das naÃ§Ãµes
@@ -1809,6 +1833,13 @@ void EconomySim::tick_and_publish() {
 	}
 	current_day_.store(ws_.day, std::memory_order_relaxed);
 	++data_version_;
+#if defined(OGS_PROFILING)
+	OGS_SIM_COUNTER("tick_us_status", perf_mark());
+	const double tick_total_us =
+		std::chrono::duration<double, std::micro>(
+			std::chrono::steady_clock::now() - tick_perf_start).count();
+	OGS_SIM_COUNTER("tick_us_total", tick_total_us);
+#endif
 }
 
 void EconomySim::status_invalidate() {
@@ -2070,7 +2101,11 @@ Dictionary EconomySim::get_profile() const {
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
 		"region", "migration", "social", "property", "agriculture", "storage",
-		"stock",
+		"stock", "bank_crisis", "crisis", "power", "power_settle",
+		// G2 perf rodada 3: subdivisão da fase `ai` (só medição).
+		"ai_floor", "ai_prepare", "ai_supply_cache", "ai_exposure_cache",
+		"ai_groups", "ai_private", "ai_gov", "ai_storage", "ai_refinery",
+		"ai_loss_scan", "ai_forecast",
 	};
 	Dictionary profile;
 	if (!profile_) {
@@ -2085,6 +2120,16 @@ Dictionary EconomySim::get_profile() const {
 	for (int part = 0; part < 4; ++part) {
 		profile[kStatusNames[part]] = status_sub_us_[part];
 	}
+#if defined(OGS_PROFILING)
+	// G2 perf rodada 3: contadores não-temporais (células do piso/dia,
+	// candidatos, forecasts). O último valor do dia; só medição.
+	for (const ogs::profile::CounterSample& sample :
+			ogs::profile::counter_samples()) {
+		if (sample.name != nullptr) {
+			profile[String("counter_") + String(sample.name)] = sample.value;
+		}
+	}
+#endif
 	return profile;
 }
 
@@ -4214,6 +4259,15 @@ Dictionary EconomySim::get_status() {
 	root[k.mode] = "demo";
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
+	// G2: diagnóstico da semente (critério 9: residual e falta publicados).
+	if (ws_.bootstrap.loaded) {
+		Dictionary bootstrap;
+		bootstrap["enabled"] = ws_.bootstrap.enabled;
+		bootstrap["plants"] = ws_.bootstrap_plants;
+		bootstrap["shortfall"] = ws_.bootstrap_shortfall;
+		bootstrap["unseeded_share"] = ws_.bootstrap_unseeded_share;
+		root["bootstrap"] = bootstrap;
+	}
 	root[k.money_total] = money_total();
 	// D-126: dinheiro bancário criado/destruído (M1) acumulado nos dias válidos.
 	// `money_total` pode crescer por crédito legítimo; os guardas de conservação
@@ -4496,6 +4550,15 @@ Dictionary EconomySim::get_day_summary() {
 	root[k.mode] = "demo";
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
+	// G2: diagnóstico da semente (critério 9: residual e falta publicados).
+	if (ws_.bootstrap.loaded) {
+		Dictionary bootstrap;
+		bootstrap["enabled"] = ws_.bootstrap.enabled;
+		bootstrap["plants"] = ws_.bootstrap_plants;
+		bootstrap["shortfall"] = ws_.bootstrap_shortfall;
+		bootstrap["unseeded_share"] = ws_.bootstrap_unseeded_share;
+		root["bootstrap"] = bootstrap;
+	}
 	root[k.money_total] = money_total();
 	// D-126: dinheiro bancário criado/destruído (M1) acumulado nos dias válidos.
 	// `money_total` pode crescer por crédito legítimo; os guardas de conservação
@@ -5289,12 +5352,105 @@ void EconomySim::seed_industry() {
 			}
 		}
 	}
+	// G2 §2.6 — SEMENTE INDUSTRIAL POR PRODUTORES REAIS. Bloco aditivo no fim:
+	// o plano vem de `sim/bootstrap.cpp` (dado estático + âncora potencial);
+	// aqui só se executa `build()`. Desligado/ausente = zero build.
+	if (ws_.bootstrap.enabled && !ws_.bootstrap.goods.empty()) {
+		const ogs::bootstrap::Plan plan = ogs::bootstrap::plan(ws_);
+		ws_.bootstrap_rows = plan.rows;
+		ws_.bootstrap_shortfall = plan.shortfall;
+		ws_.bootstrap_unseeded_share = plan.unseeded_share;
+		int seeded_plants = 0;
+		for (const BootstrapPlanRow& row : plan.rows) {
+			if (!row.seeded || row.city.empty() || row.recipe < 0
+					|| row.recipe >= static_cast<int>(ws_.recipes.size())) {
+				continue;
+			}
+			const int product = product_index(String(row.good.c_str()));
+			if (product < 0) {
+				continue;
+			}
+			const Recipe& recipe =
+				ws_.recipes[static_cast<std::size_t>(row.recipe)];
+			const String city_id(row.city.c_str());
+			const String building_id(
+				("SEED-" + row.good + "-" + row.city).c_str());
+			Dictionary result = build(city_id, building_id,
+				String(row.good.c_str()), -1, product, row.capacity,
+				0.0, 0.0, 0.0, 1.0, "state", row.cost,
+				String(recipe.id.c_str()));
+			if (!bool(result.get("created", false))) {
+				continue;
+			}
+			if (Building* built = find_building(row.city, std::string(
+					building_id.utf8().get_data()))) {
+				built->strategic = true;
+			}
+			sim_core_.mark_project_strategic(
+				std::string(building_id.utf8().get_data()));
+			++seeded_plants;
+		}
+		ws_.bootstrap_plants = seeded_plants;
+		created += seeded_plants;
+	}
 	bootstrap_construction_ = previous_bootstrap;
 	ws_.industry_seeded = true;
 	if (created > 0) {
 		UtilityFunctions::print(String(("economia: bootstrap industrial (estimativa) â€” "
 			+ std::to_string(created) + " plantas de referÃªncia semeadas").c_str()));
 	}
+}
+
+void EconomySim::set_bootstrap_industry(const Dictionary& values) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	BootstrapIndustry cfg;
+	cfg.loaded = true;
+	cfg.enabled = bool(values.get("enabled", false));
+	cfg.budget_share = std::clamp(
+		double(values.get("budget_share", cfg.budget_share)), 0.0, 1.0);
+	cfg.seed_fraction = std::max(0.0,
+		double(values.get("seed_fraction", cfg.seed_fraction)));
+	cfg.capacity_min = std::max(0.0,
+		double(values.get("capacity_min", cfg.capacity_min)));
+	cfg.capacity_max = std::max(cfg.capacity_min,
+		double(values.get("capacity_max", cfg.capacity_max)));
+	cfg.max_cities_per_nation = std::max(1,
+		int(values.get("max_cities_per_nation",
+			cfg.max_cities_per_nation)));
+	const Array score_inputs = values.get("score_inputs", Array());
+	for (int index = 0; index < score_inputs.size(); ++index) {
+		cfg.score_inputs.push_back(
+			std::string(String(score_inputs[index]).utf8().get_data()));
+	}
+	const Array goods = values.get("goods", Array());
+	for (int index = 0; index < goods.size(); ++index) {
+		const Dictionary entry = goods[index];
+		BootstrapGood good;
+		good.id = std::string(String(entry.get("id", "")).utf8().get_data());
+		if (good.id.empty()) {
+			continue;
+		}
+		good.source =
+			std::string(String(entry.get("source", "")).utf8().get_data());
+		good.params_source = std::string(
+			String(entry.get("params_source", "")).utf8().get_data());
+		const Dictionary producers = entry.get("producers", Dictionary());
+		for (const Variant& key : producers.keys()) {
+			BootstrapProducer producer;
+			producer.nation = std::string(String(key).utf8().get_data());
+			producer.share = std::max(0.0, double(producers.get(key, 0.0)));
+			if (producer.share > 0.0) {
+				good.producers.push_back(producer);
+			}
+		}
+		cfg.goods.push_back(good);
+	}
+	ws_.bootstrap = cfg;
+	ws_.bootstrap_rows.clear();
+	ws_.bootstrap_shortfall = 0.0;
+	ws_.bootstrap_unseeded_share = 0.0;
+	ws_.bootstrap_plants = 0;
+	status_invalidate();
 }
 
 void EconomySim::set_needs(const Dictionary& needs) {
@@ -8165,7 +8321,7 @@ bool EconomySim::apply_spend_government(const String& city_id, double amount) {
 
 Dictionary EconomySim::to_dict() const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
-	return ogs::edge::to_dict(ws_, sim_core_);
+	return ogs::edge::to_dict(ws_, sim_core_, &ai_phase_.potential_cache());
 }
 
 void EconomySim::set_urban(const Dictionary& urban_land,
@@ -8717,7 +8873,7 @@ void EconomySim::from_dict(const Dictionary& data) {
 	// A3: save carregado nÃ£o herda a fila nem o log do mundo anterior.
 	commands_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
-	ogs::edge::from_dict(ws_, sim_core_, data);
+	ogs::edge::from_dict(ws_, sim_core_, data, &ai_phase_.potential_cache());
 	// C4 (D-110): o save v31 migrado nÃ£o tem nomes e o v32 pode vir de outro
 	// dado; as definiÃ§Ãµes de `banks.json` sÃ£o reaplicadas para nomear os
 	// bancos e â€” se o dado nÃ£o declara estrangeiro â€” fundir o papel no
@@ -8734,7 +8890,7 @@ Dictionary EconomySim::to_snapshot() const {
 	Dictionary snapshot;
 	snapshot["definitions"] =
 		ogs::edge::to_godot(ogs::save::definitions_to(ws_));
-	snapshot["save"] = ogs::edge::to_dict(ws_, sim_core_);
+	snapshot["save"] = ogs::edge::to_dict(ws_, sim_core_, &ai_phase_.potential_cache());
 	return snapshot;
 }
 
@@ -8774,7 +8930,7 @@ void EconomySim::from_snapshot(const Dictionary& snapshot) {
 	const ogs::save::Value definition_data = ogs::edge::from_godot(definitions);
 	ogs::save::definitions_from(ws_, definition_data);
 	ogs::edge::from_dict(ws_, sim_core_,
-		static_cast<Dictionary>(save_block));
+		static_cast<Dictionary>(save_block), &ai_phase_.potential_cache());
 	// `land_capacity` Ã© dado de geografia e sÃ³ pode entrar depois das cidades:
 	// `definitions_from` rodou com o mundo vazio e ignorou os itens.
 	ogs::save::apply_land_capacity(ws_, sim_core_, definition_data);
@@ -8786,7 +8942,8 @@ bool EconomySim::to_snapshot_file(const String& path) const {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	ogs::save::Value snapshot = ogs::save::Value::make_object();
 	snapshot["definitions"] = ogs::save::definitions_to(ws_);
-	snapshot["save"] = ogs::save::to_value(ws_, sim_core_);
+	snapshot["save"] = ogs::save::to_value(ws_, sim_core_,
+		&ai_phase_.potential_cache());
 	// A serializaÃ§Ã£o Ã© a da BIBLIOTECA (nlohmann via dump_json), nÃ£o a do
 	// Godot: Ã© o Ãºnico caminho com round-trip IEEE-exato para |x| < 1.
 	const std::string text = ogs::save::dump_json(snapshot, 2);
@@ -8856,7 +9013,8 @@ bool EconomySim::from_snapshot_file(const String& path) {
 	// carregados (Ã­ndices incluÃ­dos). `save::from_value` Ã© exatamente o que
 	// `edge::from_dict` chama: nada de Variant no meio do caminho.
 	ogs::save::definitions_from(ws_, definitions);
-	ogs::save::from_value(ws_, sim_core_, save_block);
+	ogs::save::from_value(ws_, sim_core_, save_block,
+		&ai_phase_.potential_cache());
 	// SÃ³ agora as cidades existem: o teto agrÃ­cola do bloco estÃ¡tico entra no
 	// nÃºcleo depois do estado dinÃ¢mico (mesmo motivo de from_snapshot).
 	ogs::save::apply_land_capacity(ws_, sim_core_, definitions);

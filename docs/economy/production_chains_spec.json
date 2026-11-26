@@ -1281,7 +1281,8 @@
    "use": [
     "chips",
     "sensors",
-    "micromotor"
+    "micromotor",
+    "microchips"
    ],
    "durable": false,
    "note": ""
@@ -1515,7 +1516,7 @@
     {
      "inputs": [
       "mechanical_parts",
-      "chips",
+      "microchips",
       "micromotor",
       "sensors",
       "electrical_material"
@@ -1847,11 +1848,8 @@
    ],
    "byproducts": [],
    "use": [
-    "sensors",
-    "robots",
-    "computer",
-    "phone",
-    "drone"
+    "drone",
+    "fpv_drone"
    ],
    "durable": false,
    "note": ""
@@ -1864,7 +1862,7 @@
    "recipes": [
     {
      "inputs": [
-      "chips",
+      "microchips",
       "processed_rare_earths"
      ],
      "yield": 1.0
@@ -1938,7 +1936,7 @@
     {
      "inputs": [
       "circuit_board",
-      "chips",
+      "microchips",
       "plastic_parts"
      ],
      "yield": 1.0
@@ -1961,7 +1959,7 @@
     {
      "inputs": [
       "circuit_board",
-      "chips",
+      "microchips",
       "plastic_parts",
       "batteries"
      ],
@@ -2199,9 +2197,13 @@
    "recipes": [
     {
      "inputs": [
-      "drone",
-      "ammunition",
-      "carbon_fiber"
+      "plastic_parts",
+      "micromotor",
+      "sensors",
+      "batteries",
+      "microchips",
+      "carbon_fiber",
+      "ammunition"
      ],
      "yield": 1.0
     }
@@ -2211,7 +2213,7 @@
     "army"
    ],
    "durable": false,
-   "note": ""
+   "note": "G1/D4: montado de peças (fuselagem, motor, sensores, bateria, microchips, fibra e munição) em vez de consumir um drone pronto."
   },
   {
    "id": "infantry_gear",
@@ -2508,6 +2510,70 @@
    },
    "params_source": "reuse:small_arms/infantry_gear",
    "note": "Lançador antiaéreo portátil (inclui o míssil): sensores + componentes eletrônicos + explosivos + lingote de alumínio. D-130."
+  },
+  {
+   "id": "microchips",
+   "name": "Microchips",
+   "sector": "electronics",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "chips",
+      "processed_rare_earths"
+     ],
+     "yield": 1.0,
+     "params": {
+      "jobs_per_ton": 3.0,
+      "wage": 3.5,
+      "opex_per_ton": 40.0,
+      "capital_per_capacity": 180000.0
+     },
+     "params_source": "estimated:declared_balance:D5/D6",
+     "plant_class": "semiconductor_fab",
+     "construction_days": 180
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "military_drone",
+    "sensors",
+    "computer",
+    "phone",
+    "robots"
+   ],
+   "durable": false,
+   "note": "G1/A′ (D2/D5/D6): Fab de semicondutores; chips + terras raras. Opex 40/t = químicos 20 + energia 20, sem água ultrapura (D6); capex 180.000/t/dia e obra de 180 d (D5)."
+  },
+  {
+   "id": "fpv_drone",
+   "name": "Drone FPV de ataque",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "chips",
+      "batteries",
+      "plastic_parts",
+      "micromotor",
+      "explosives"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [],
+   "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
+   "durable": false,
+   "params": {
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0
+   },
+   "params_source": "reuse:small_arms/infantry_gear",
+   "note": "G1/A′ (D4): FPV descartável montado com chips (não microchips) + baterias + plástico + micromotor + explosivos."
   }
  ],
  "pop_needs": {

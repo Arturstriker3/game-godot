@@ -1,0 +1,322 @@
+{
+  "_comment": "G2 (spec G2_bootstrap_industrial.md, revisao 2) - semente do dia 0 por PRODUTORES REAIS. Nenhuma capacidade literal: cap_planta = participacao x ancora_mundial(bem) x seed_fraction, com ancora = demanda final de needs.json propagada pela arvore de receitas (mesma funcao do potencial da IA). Participacoes arredondadas somam 1,00; 'outros' e residual declarado e NAO vira planta. Fonte por bem no campo `source`; `params_source: declared:balancing` quando nao ha producao publicada.",
+  "version": 1,
+  "meta": {
+    "id": "G2",
+    "spec": "G2_bootstrap_industrial.md",
+    "params_source": "declared:balancing"
+  },
+  "enabled": true,
+  "budget_share": 0.5,
+  "seed_fraction": 0.1,
+  "capacity_min": 0.05,
+  "capacity_max": 20.0,
+  "max_cities_per_nation": 1,
+  "score_inputs": [
+    "copper",
+    "gold",
+    "rare_earths",
+    "iron",
+    "coal",
+    "lead"
+  ],
+  "goods": [
+    {
+      "id": "chips",
+      "source": "SEMI World Fab Forecast 2024 (capacidade de fab 30 M wpm: China 8,85 / Taiwan 5,7 / Coreia 5,4 / Japao 4,7 / Americas 3,1 / Europa 2,7 / SEA 1,8)",
+      "params_source": "measured:semi_world_fab_forecast_2024",
+      "producers": {
+        "CHN": 0.29,
+        "TWN": 0.19,
+        "KOR": 0.17,
+        "JPN": 0.16,
+        "USA": 0.1,
+        "DEU": 0.05,
+        "SGP": 0.02,
+        "MYS": 0.02
+      }
+    },
+    {
+      "id": "microchips",
+      "source": "TrendForce receita de foundry 4T24-2T26 (TSMC 62-72%, Samsung 6-11%, SMIC 5,7%, UMC 5,7%, GF 5,1%) + logica <=7 nm",
+      "params_source": "measured:trendforce_foundry_2024_2026",
+      "producers": {
+        "TWN": 0.68,
+        "KOR": 0.12,
+        "CHN": 0.08,
+        "USA": 0.05,
+        "JPN": 0.04,
+        "SGP": 0.02,
+        "ISR": 0.01
+      }
+    },
+    {
+      "id": "circuit_board",
+      "source": "Prismark 2024-25 (producao por local; Taiwan 29,7% por sede mas 63,7% do output na China)",
+      "params_source": "measured:prismark_pcb_2024_2025",
+      "producers": {
+        "CHN": 0.57,
+        "TWN": 0.1,
+        "JPN": 0.08,
+        "KOR": 0.08,
+        "THA": 0.06,
+        "VNM": 0.05,
+        "USA": 0.03,
+        "DEU": 0.03
+      }
+    },
+    {
+      "id": "electronic_components",
+      "source": "default:balancing sobre base setorial Paumanok/TrendForce (passivos/conectores)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "JPN": 0.35,
+        "CHN": 0.25,
+        "TWN": 0.15,
+        "KOR": 0.1,
+        "USA": 0.07,
+        "DEU": 0.05,
+        "outros": 0.03
+      }
+    },
+    {
+      "id": "sensors",
+      "source": "Yole MEMS 2024 (US$ 15,4 bi; Bosch, STMicro, TDK; Grande China 10%)",
+      "params_source": "measured:yole_mems_2024",
+      "producers": {
+        "DEU": 0.2,
+        "JPN": 0.2,
+        "USA": 0.18,
+        "CHN": 0.1,
+        "FRA": 0.09,
+        "TWN": 0.08,
+        "KOR": 0.06,
+        "outros": 0.09
+      }
+    },
+    {
+      "id": "computer",
+      "source": "TrendForce 2024 (notebooks: China ~88%, realocacao 12,4% e Vietna 6%)",
+      "params_source": "measured:trendforce_notebooks_2024",
+      "producers": {
+        "CHN": 0.7,
+        "VNM": 0.08,
+        "TWN": 0.06,
+        "MEX": 0.06,
+        "USA": 0.05,
+        "IND": 0.03,
+        "outros": 0.02
+      }
+    },
+    {
+      "id": "phone",
+      "source": "Counterpoint/IDC 2024 (montagem de celular)",
+      "params_source": "measured:counterpoint_idc_phone_2024",
+      "producers": {
+        "CHN": 0.62,
+        "IND": 0.15,
+        "VNM": 0.12,
+        "IDN": 0.04,
+        "BRA": 0.03,
+        "MEX": 0.02,
+        "outros": 0.02
+      }
+    },
+    {
+      "id": "batteries",
+      "source": "BNEF/IEA 2023 (celulas de litio; China ~76%)",
+      "params_source": "measured:bnef_iea_batteries_2023",
+      "producers": {
+        "CHN": 0.75,
+        "KOR": 0.07,
+        "USA": 0.05,
+        "JPN": 0.04,
+        "POL": 0.04,
+        "HUN": 0.03,
+        "outros": 0.02
+      }
+    },
+    {
+      "id": "plastic",
+      "source": "default:balancing (base ACC/PlasticsEurope)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.35,
+        "USA": 0.14,
+        "DEU": 0.08,
+        "JPN": 0.06,
+        "KOR": 0.05,
+        "IND": 0.04,
+        "outros": 0.28
+      }
+    },
+    {
+      "id": "plastic_parts",
+      "source": "default:balancing (base ACC/PlasticsEurope)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.35,
+        "USA": 0.14,
+        "DEU": 0.08,
+        "JPN": 0.06,
+        "KOR": 0.05,
+        "IND": 0.04,
+        "outros": 0.28
+      }
+    },
+    {
+      "id": "copper_ingot",
+      "source": "ICSG 2023 (cobre refinado)",
+      "params_source": "measured:icsg_copper_2023",
+      "producers": {
+        "CHN": 0.45,
+        "CHL": 0.09,
+        "JPN": 0.06,
+        "COD": 0.05,
+        "USA": 0.04,
+        "PER": 0.03,
+        "KOR": 0.03,
+        "outros": 0.25
+      }
+    },
+    {
+      "id": "gold_bar",
+      "source": "default:balancing (refino; WGC/USGS como base)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHE": 0.2,
+        "CHN": 0.15,
+        "AUS": 0.08,
+        "RUS": 0.08,
+        "USA": 0.06,
+        "ZAF": 0.05,
+        "outros": 0.38
+      }
+    },
+    {
+      "id": "chemicals",
+      "source": "default:balancing (base CEFIC/ACC)",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.42,
+        "USA": 0.14,
+        "DEU": 0.06,
+        "JPN": 0.05,
+        "KOR": 0.04,
+        "IND": 0.04,
+        "outros": 0.25
+      }
+    },
+    {
+      "id": "processed_rare_earths",
+      "source": "IEA 2023 (refino de ETR: China >90%)",
+      "params_source": "measured:iea_rare_earths_2023",
+      "producers": {
+        "CHN": 0.9,
+        "MYS": 0.05,
+        "JPN": 0.02,
+        "EST": 0.01,
+        "USA": 0.01,
+        "outros": 0.01
+      }
+    },
+    {
+      "id": "precision_tools",
+      "source": "Gardner 2023 (maquinas-ferramenta)",
+      "params_source": "measured:gardner_machine_tools_2023",
+      "producers": {
+        "CHN": 0.3,
+        "DEU": 0.13,
+        "JPN": 0.1,
+        "USA": 0.08,
+        "ITA": 0.06,
+        "KOR": 0.05,
+        "TWN": 0.05,
+        "outros": 0.23
+      }
+    },
+    {
+      "id": "industrial_tools",
+      "source": "default:balancing",
+      "params_source": "declared:balancing",
+      "producers": {
+        "CHN": 0.3,
+        "USA": 0.12,
+        "DEU": 0.1,
+        "JPN": 0.08,
+        "TWN": 0.06,
+        "ITA": 0.05,
+        "outros": 0.29
+      }
+    },
+    {
+      "id": "steel",
+      "source": "worldsteel 2024 (1.882 Mt: China 1.005 Mt)",
+      "params_source": "measured:worldsteel_2024",
+      "producers": {
+        "CHN": 0.54,
+        "IND": 0.08,
+        "JPN": 0.05,
+        "USA": 0.04,
+        "RUS": 0.04,
+        "KOR": 0.03,
+        "outros": 0.22
+      }
+    },
+    {
+      "id": "iron_ingot",
+      "source": "worldsteel 2024 (gusa)",
+      "params_source": "measured:worldsteel_pig_iron_2024",
+      "producers": {
+        "CHN": 0.6,
+        "IND": 0.05,
+        "JPN": 0.04,
+        "RUS": 0.035,
+        "KOR": 0.025,
+        "BRA": 0.02,
+        "outros": 0.23
+      }
+    },
+    {
+      "id": "tungsten_ingot",
+      "source": "USGS Mineral Commodity Summaries 2024 (minerio de tungstenio)",
+      "params_source": "measured:usgs_tungsten_2024",
+      "producers": {
+        "CHN": 0.82,
+        "VNM": 0.05,
+        "RUS": 0.03,
+        "BOL": 0.02,
+        "RWA": 0.02,
+        "outros": 0.06
+      }
+    },
+    {
+      "id": "coal",
+      "source": "IEA Coal 2023",
+      "params_source": "measured:iea_coal_2023",
+      "producers": {
+        "CHN": 0.5,
+        "IND": 0.12,
+        "IDN": 0.09,
+        "USA": 0.07,
+        "AUS": 0.07,
+        "RUS": 0.05,
+        "outros": 0.1
+      }
+    },
+    {
+      "id": "lead_ingot",
+      "source": "ILZSG/USGS 2023 (chumbo refinado)",
+      "params_source": "measured:ilzsg_lead_2023",
+      "producers": {
+        "CHN": 0.42,
+        "USA": 0.1,
+        "KOR": 0.07,
+        "IND": 0.06,
+        "DEU": 0.04,
+        "MEX": 0.03,
+        "outros": 0.28
+      }
+    }
+  ]
+}

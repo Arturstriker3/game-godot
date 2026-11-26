@@ -19,6 +19,7 @@
 #include "../bank_crisis.h"
 #include "../crisis.h"
 #include "../efficiency.h"
+#include "../profiling.h"
 #include "../sim_constants.h"
 
 #include <algorithm>
@@ -333,11 +334,17 @@ void AiPrivateInvestor::prepare(const AiContext& ctx) {
 					history.erase(history.begin());
 				}
 			}
-			ai_risk::build_supply_cache(ctx.ws, ctx.view, ctx.templates,
-				ctx.ws.ai_brain, state.brain_demand_history,
-				state.brain_supply);
-			ai_risk::build_exposure_cache(ctx.ws, ctx.view, ctx.templates,
-				state.brain_exposure);
+			{
+				OGS_SIM_ZONE(kPhaseAiSupplyCache);
+				ai_risk::build_supply_cache(ctx.ws, ctx.view, ctx.templates,
+					ctx.ws.ai_brain, state.brain_demand_history,
+					state.brain_supply);
+			}
+			{
+				OGS_SIM_ZONE(kPhaseAiExposureCache);
+				ai_risk::build_exposure_cache(ctx.ws, ctx.view, ctx.templates,
+					state.brain_exposure);
+			}
 			// O preço esperado é recalculado no dia; o cache é do dia.
 			state.brain_price_expected.clear();
 			state.brain_cache_day = ctx.day;
@@ -849,8 +856,11 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 		forecast_in.expected_efficiency = expected_efficiency;
 		forecast_in.payback_limit_days = payback_limit;
 		forecast_in.min_capacity = kMinCapacity;
-		const ai_brain::ForecastResult forecast =
-			ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws, forecast_in);
+		const ai_brain::ForecastResult forecast = [&]() {
+			OGS_SIM_ZONE_ADD(kPhaseAiForecast);
+			return ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws,
+				forecast_in);
+		}();
 		if (!forecast.pass || forecast.capacity < kMinCapacity) {
 			ctx.state.brain_rejected += 1;
 			// D-131 fase C (diagnóstico): gate que reprovou + amostra.

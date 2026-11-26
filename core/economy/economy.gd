@@ -97,6 +97,9 @@ const CRISIS_PATH := "res://data/definitions/economy/crisis.json"
 const AI_BRAIN_PATH := "res://data/definitions/economy/ai_brain.json"
 ## Necessidades das POPs (cesta básica data-driven; níveis completos em F3).
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+## G2: bootstrap industrial (semente por produtores reais). Ausente/desligado
+## mantem o mundo bit-identico (nenhuma planta nova no dia 0).
+const BOOTSTRAP_INDUSTRY_PATH := "res://data/definitions/economy/bootstrap_industry.json"
 ## Serviços (F8): 20 setores, compradores, insumos e mistura de escolaridade.
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 ## Moedas e taxas de câmbio por nação (F5; âncora XGS, regime peg/float).
@@ -199,6 +202,12 @@ func _ready() -> void:
 		if not brain.is_empty():
 			sim.set_ai_brain_params(brain)
 	sim.set_needs(_load_json_dict(NEEDS_PATH))
+	# G2: semente industrial (participacao real x ancora x seed_fraction).
+	# Antes do mundo; ausente/desligada nao cria nada.
+	if sim.has_method("set_bootstrap_industry"):
+		var bootstrap := _load_json_dict_optional(BOOTSTRAP_INDUSTRY_PATH)
+		if not bootstrap.is_empty():
+			sim.set_bootstrap_industry(bootstrap)
 	# F8: serviços (catálogo). Antes do mundo: os negócios iniciais e o preço-âncora
 	# dos 20 setores dependem dele.
 	sim.set_services(_load_json_dict(SERVICES_PATH))

@@ -12,6 +12,7 @@
 #include "central_bank.h"
 #include "crisis.h"
 #include "exchange.h"
+#include "potential_demand.h"
 #include "sim_constants.h"
 #include "sim_core.h"
 #include "stock.h"
@@ -306,7 +307,8 @@ static int product_or_legacy(const SimCore& core, const char* modern,
 
 } // namespace
 
-Value to_value(const WorldState& ws, const SimCore& core) {
+Value to_value(const WorldState& ws, const SimCore& core,
+		const PotentialDemandCache* potential_cache) {
 	Dictionary data = make_object();
 	data["version"] = kSaveVersion;
 	data["active"] = ws.active;
@@ -2090,16 +2092,106 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		ports.append(entry);
 	}
 	data["ports"] = ports;
+	// G2 (save aditivo, sem bump): cache mensal do piso de demanda potencial.
+	// Esparso (só células não nulas) para não inflar o arquivo; ausente quando
+	// o piso não rodou (brain/piso desligado) e em saves antigos.
+	if (potential_cache != nullptr && potential_cache->needs_loaded
+			&& potential_cache->day >= 0 && potential_cache->cities > 0
+			&& potential_cache->products > 0
+			&& potential_cache->values.size()
+				== static_cast<std::size_t>(potential_cache->cities)
+					* static_cast<std::size_t>(
+						potential_cache->products)) {
+		Dictionary floor = make_object();
+		floor["day"] = potential_cache->day;
+		floor["cities"] = potential_cache->cities;
+		floor["products"] = potential_cache->products;
+		floor["recipes"] = static_cast<long long>(potential_cache->recipes);
+		floor["needs_levels"] =
+			static_cast<long long>(potential_cache->needs_levels);
+		floor["government_products"] =
+			static_cast<long long>(potential_cache->government_products);
+		floor["durable_decay"] = potential_cache->durable_decay;
+		floor["discount"] = potential_cache->discount;
+		floor["cap"] = potential_cache->cap;
+		Array entries = make_array();
+		const int products = potential_cache->products;
+		for (std::size_t cell = 0; cell < potential_cache->values.size();
+				++cell) {
+			const double value = potential_cache->values[cell];
+			if (value == 0.0) {
+				continue;  // esparso: zero é ausência de piso
+			}
+			Array cell_value = make_array();
+			cell_value.append(static_cast<long long>(
+				static_cast<int>(cell) / products));
+			cell_value.append(static_cast<long long>(
+				static_cast<int>(cell) % products));
+			cell_value.append(value);
+			entries.append(cell_value);
+		}
+		floor["values"] = entries;
+		data["potential_cache"] = floor;
+	}
 	return data;
 }
 
 // Restaura o estado do cenário a partir de to_dict() (load + migrações).
-void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
+void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
+		PotentialDemandCache* potential_cache) {
 	// Recusa save de versão futura (maior que a que este binário conhece).
 	const int version = int(data.get("version", 0));
 	if (version > kSaveVersion) {
 		ws.active = false;
 		return;
+	}
+	// G2: restaura o cache mensal do piso (chave aditiva; save antigo ou
+	// brain desligado não a tem e o cache fica vazio = recalculado no dia).
+	if (potential_cache != nullptr) {
+		*potential_cache = PotentialDemandCache{};
+		const Dictionary floor = data.get("potential_cache", Dictionary());
+		if (floor.size() > 0) {
+			const int day = int(floor.get("day", -1));
+			const int cities = int(floor.get("cities", 0));
+			const int products = int(floor.get("products", 0));
+			const Array entries = floor.get("values", Array());
+			const std::size_t cells =
+				static_cast<std::size_t>(std::max(cities, 0))
+				* static_cast<std::size_t>(std::max(products, 0));
+			if (day >= 0 && cities > 0 && products > 0) {
+				potential_cache->values.assign(cells, 0.0);
+				for (int index = 0; index < entries.size(); ++index) {
+					const Array cell_value = entries[index];
+					if (cell_value.size() != 3) {
+						continue;
+					}
+					const int city = int(cell_value[0]);
+					const int product = int(cell_value[1]);
+					if (city < 0 || city >= cities || product < 0
+							|| product >= products) {
+						continue;
+					}
+					potential_cache->values[
+						static_cast<std::size_t>(city * products + product)]
+						= double(cell_value[2]);
+				}
+				potential_cache->cities = cities;
+				potential_cache->products = products;
+				potential_cache->day = day;
+				potential_cache->recipes = static_cast<std::size_t>(
+					int(floor.get("recipes", 0)));
+				potential_cache->needs_levels = static_cast<std::size_t>(
+					int(floor.get("needs_levels", 0)));
+				potential_cache->government_products =
+					static_cast<std::size_t>(
+						int(floor.get("government_products", 0)));
+				potential_cache->durable_decay =
+					double(floor.get("durable_decay", 0.0));
+				potential_cache->discount = double(floor.get("discount", -1.0));
+				potential_cache->cap = double(floor.get("cap", -1.0));
+				potential_cache->needs_loaded = true;
+			}
+		}
 	}
 	// Saves v1/v2 (antes da remoção de farinha/pão) trazem índices de produto
 	// no layout antigo (farinha=1, pão=2, ferro=3...): remapeia para o layout

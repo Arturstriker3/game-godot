@@ -36,29 +36,84 @@ struct MonthProd {
 	double prod_per_capacity = 0.0;  // t/dia de capacidade
 };
 
-MonthProd month_production(const WorldState& ws, const AiBrainParams& params,
-		const ForecastInput& in, int month) {
+// G2 perf rodada 4: a tabela dos meses é montada numa ÚNICA varredura da rampa
+// D-125. Antes, cada mês reiniciava a sonda no dia 0 (`eff::mean_between`) no
+// dimensionamento, e o fluxo final recalculava os mesmos meses: O(H²) passos
+// por forecast. Aqui a sonda avança uma vez, dia a dia, e cada dia entra no
+// mês a que pertence — a MESMA sonda, a MESMA ordem de adições por mês e a
+// mesma divisão de `mean_between`, então o resultado é bit-idêntico: nenhuma
+// decisão do cérebro muda (só o custo).
+std::vector<MonthProd> month_table(const WorldState& ws,
+		const AiBrainParams& params, const ForecastInput& in, int months) {
 	const int month_days = std::max(1, params.month_days);
-	MonthProd out;
-	const int month_begin = (month - 1) * month_days;
-	const int month_end = month * month_days - 1;
 	const int construction_days = std::max(0, in.construction_days);
-	const int op_begin = std::max(month_begin, construction_days);
-	if (month_end < op_begin) {
-		return out;
+	const int count = std::max(1, months);
+	std::vector<MonthProd> table(static_cast<std::size_t>(count));
+	std::vector<int> first(static_cast<std::size_t>(count), -1);
+	std::vector<int> last(static_cast<std::size_t>(count), -1);
+	std::vector<double> sums(static_cast<std::size_t>(count), 0.0);
+	int max_last = -1;
+	for (int month = 1; month <= count; ++month) {
+		const int month_begin = (month - 1) * month_days;
+		const int month_end = month * month_days - 1;
+		const int op_begin = std::max(month_begin, construction_days);
+		if (month_end < op_begin) {
+			continue;
+		}
+		// `mean_between` recebe dias de OPERAÇÃO (0 = primeiro dia de
+		// produção), não dias de projeto: o índice desconta a obra, senão a
+		// rampa começa `construction_days` adiantada e o forecast fica
+		// otimista.
+		const std::size_t slot = static_cast<std::size_t>(month - 1);
+		first[slot] = op_begin - construction_days;
+		last[slot] = month_end - construction_days;
+		table[slot].op_days = month_end - op_begin + 1;
+		max_last = std::max(max_last, last[slot]);
 	}
-	out.op_days = month_end - op_begin + 1;
-	// `mean_between` recebe dias de OPERAÇÃO (0 = primeiro dia de produção),
-	// não dias de projeto: o índice precisa descontar a obra, senão a rampa
-	// começa `construction_days` adiantada e o forecast fica otimista.
-	out.mean_eff = eff::mean_between(ws, in.efficiency_class,
-		in.from_efficiency, in.equipment_active,
-		op_begin - construction_days, month_end - construction_days);
 	const double site = std::max(0.0, in.aptitude)
 		* std::max(0.0, in.stage_factor) * std::max(0.0, in.area_scale);
-	out.prod_per_capacity = site * out.mean_eff
-		* static_cast<double>(out.op_days);
-	return out;
+	if (max_last < 0) {
+		return table;
+	}
+	const double initial = std::clamp(in.from_efficiency, 0.0, 1.0);
+	Building probe;
+	probe.production_efficiency = initial;
+	probe.equipment = in.equipment_active ? 1.0 : 0.0;
+	probe.equipment_active = in.equipment_active;
+	const double ceiling = eff::cap(ws, probe, in.efficiency_class);
+	// Mesma convenção de `mean_efficiency`/`mean_between`: o dia usa a
+	// eficiência DEPOIS do passo diário.
+	std::size_t cursor = 0;
+	while (cursor < table.size() && last[cursor] < 0) {
+		++cursor;
+	}
+	for (int day = 0; day <= max_last; ++day) {
+		const double rate = eff::step(ws, probe, in.efficiency_class,
+			in.equipment_active);
+		if (probe.production_efficiency < ceiling) {
+			probe.production_efficiency = std::min(ceiling,
+				probe.production_efficiency + rate);
+		}
+		while (cursor < table.size() && last[cursor] >= 0
+				&& day > last[cursor]) {
+			++cursor;
+		}
+		// Janelas de meses são disjuntas e contíguas: no máximo um mês por dia.
+		if (cursor < table.size() && last[cursor] >= 0
+				&& day >= first[cursor] && day <= last[cursor]) {
+			sums[cursor] += probe.production_efficiency;
+		}
+	}
+	for (std::size_t slot = 0; slot < table.size(); ++slot) {
+		if (table[slot].op_days <= 0) {
+			continue;
+		}
+		table[slot].mean_eff =
+			sums[slot] / static_cast<double>(table[slot].op_days);
+		table[slot].prod_per_capacity = site * table[slot].mean_eff
+			* static_cast<double>(table[slot].op_days);
+	}
+	return table;
 }
 
 // Custo/receita MENSAIS por unidade de capacidade com uma capacidade de
@@ -67,10 +122,10 @@ struct UnitMonth {
 	double burn = 0.0;  // custo + juro - receita, por unidade de capacidade
 };
 
-UnitMonth unit_month(const WorldState& ws, const AiBrainParams& params,
-		const ForecastInput& in, int month, double ref_capacity) {
+UnitMonth unit_month(const AiBrainParams& params,
+		const ForecastInput& in, const MonthProd& prod,
+		double ref_capacity) {
 	UnitMonth out;
-	const MonthProd prod = month_production(ws, params, in, month);
 	const double capacity = std::max(0.0, ref_capacity);
 	// `tons` é a produção do MÊS por unidade de capacidade (já inclui os
 	// `op_days`). O opex NÃO usa `tons`: é custo por capacidade-dia (o núcleo
@@ -175,6 +230,23 @@ void apply_params(WorldState& ws, const std::map<std::string, double>& values) {
 	p.block_loss_days = std::max(0,
 		int(get("crisis_link.block_loss_days", "block_loss_days",
 			p.block_loss_days)));
+	// G2 — piso de demanda potencial (regra declarada; off não executa nada).
+	p.potential_enabled = get("potential_demand.enabled",
+		"potential_enabled", p.potential_enabled ? 1.0 : 0.0) > 0.5;
+	p.potential_discount = std::clamp(get("potential_demand.discount",
+		"potential_discount", p.potential_discount), 0.0, 1.0);
+	p.potential_cap = std::max(0.0, get("potential_demand.cap",
+		"potential_cap", p.potential_cap));
+	// G2 (perf): periodo do recalculo do piso (1 = todo dia, o comportamento
+	// antigo; 30 = cache mensal). Deterministico: dia 0 e multiplos de N.
+	p.potential_recompute_days = std::max(1, int(get(
+		"potential_demand.recompute_days", "potential_recompute_days",
+		double(p.potential_recompute_days))));
+	// G2 (perf): varredura mensal escalonada do investidor (cidade/grupo `i`
+	// avalia quando `(dia - i) % N == 0`). 1 reproduz a varredura diaria.
+	p.scan_interval_days = std::max(1, int(get(
+		"scan_interval_days", "scan_interval_days",
+		double(p.scan_interval_days))));
 }
 
 std::map<std::string, double> params_map(const WorldState& ws) {
@@ -202,6 +274,15 @@ std::map<std::string, double> params_map(const WorldState& ws) {
 		{"herd.max_new_capacity_share_30d", p.max_new_capacity_share_30d},
 		{"herd.food_multiplier", p.food_multiplier},
 		{"crisis_link.block_loss_days", double(p.block_loss_days)},
+		// G2: diagnóstico; o save só grava a seção quando difere do default.
+		{"potential_demand.enabled", p.potential_enabled ? 1.0 : 0.0},
+		{"potential_demand.discount", p.potential_discount},
+		{"potential_demand.cap", p.potential_cap},
+		{"potential_demand.recompute_days",
+			double(p.potential_recompute_days)},
+		// G2 (perf): cadencia da varredura do investidor (diagnostico/save
+		// aditivo; so grava quando difere do default).
+		{"scan_interval_days", double(p.scan_interval_days)},
 	};
 }
 
@@ -284,8 +365,11 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 	// `burn_m` é avaliado na capacidade candidata (a parcela de mercado é a
 	// única não linear e fica congelada no ponto de projeto).
 	double max_burden = -1e300;
+	const std::vector<MonthProd> table =
+		month_table(ws, params, in, months);
 	for (int month = 1; month <= months; ++month) {
-		const UnitMonth row = unit_month(ws, params, in, month, candidate);
+		const UnitMonth row = unit_month(params, in,
+			table[static_cast<std::size_t>(month - 1)], candidate);
 		max_burden = std::max(max_burden, unit_capex + row.burn);
 	}
 	const double cap_by_cash = max_burden > 1e-9
@@ -320,7 +404,8 @@ ForecastResult forecast_monthly(const AiBrainParams& params,
 	// no primeiro mês operacional positivo.
 	int loss_days = 0;
 	for (int month = 1; month <= months; ++month) {
-		const MonthProd prod = month_production(ws, params, in, month);
+		const MonthProd prod =
+			table[static_cast<std::size_t>(month - 1)];
 		const double tons = prod.prod_per_capacity;
 		const double total_prod = capacity * tons;
 		// Mesma correção de dupla contagem de `unit_month`: o preço esperado

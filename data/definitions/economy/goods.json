@@ -1268,7 +1268,8 @@
     "use": [
       "chips",
       "sensors",
-      "micromotor"
+      "micromotor",
+      "microchips"
     ]
   },
   {
@@ -1450,7 +1451,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 75313.17,
+    "base_price": 93269.74,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#8FA6B8",
@@ -1610,7 +1611,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 56493.95,
+    "base_price": 66469.82,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#3F6E8A",
@@ -1644,7 +1645,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 57028.32,
+    "base_price": 67004.19,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#5F86A8",
@@ -1702,11 +1703,8 @@
     "icon_color": "#8A7FB0",
     "food": false,
     "use": [
-      "sensors",
-      "robots",
-      "computer",
-      "phone",
-      "drone"
+      "drone",
+      "fpv_drone"
     ]
   },
   {
@@ -1717,7 +1715,7 @@
     "kind": "intermediate",
     "tier": "semi",
     "durable": false,
-    "base_price": 19668.58,
+    "base_price": 25210.73,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#4F8FA0",
@@ -1776,7 +1774,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 38760.62,
+    "base_price": 46741.32,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#5A6B7A",
@@ -1794,7 +1792,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 38915.32,
+    "base_price": 46896.01,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#3F5F7F",
@@ -1811,7 +1809,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 64307.77,
+    "base_price": 74283.64,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#7A8FA0",
@@ -1951,7 +1949,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 37348.56,
+    "base_price": 47324.43,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#5A5F4A",
@@ -1968,14 +1966,15 @@
     "kind": "final",
     "tier": "final",
     "durable": false,
-    "base_price": 93771.35,
+    "base_price": 66793.58,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#5F6F5A",
     "food": false,
     "use": [
       "army"
-    ]
+    ],
+    "note": "G1/D4: montado de peças (fuselagem, motor, sensores, bateria, microchips, fibra e munição) em vez de consumir um drone pronto."
   },
   {
     "order": 112,
@@ -2093,7 +2092,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 78716.88,
+    "base_price": 93082.14,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#4E6B7A",
@@ -2161,7 +2160,7 @@
     "kind": "final",
     "tier": "final",
     "durable": true,
-    "base_price": 44323.99,
+    "base_price": 54299.86,
     "base_price_source": "derived:v1",
     "price_source": "derived",
     "icon_color": "#556B5A",
@@ -2169,5 +2168,44 @@
     "use": [],
     "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
     "note": "Lançador antiaéreo portátil (inclui o míssil): sensores + componentes eletrônicos + explosivos + lingote de alumínio. D-130."
+  },
+  {
+    "order": 123,
+    "id": "microchips",
+    "name": "Microchips",
+    "sector": "electronics",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 19668.58,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8A7FB0",
+    "food": false,
+    "use": [
+      "military_drone",
+      "sensors",
+      "computer",
+      "phone",
+      "robots"
+    ],
+    "note": "G1/A′ (D2/D5/D6): Fab de semicondutores; chips + terras raras. Opex 40/t = químicos 20 + energia 20, sem água ultrapura (D6); capex 180.000/t/dia e obra de 180 d (D5)."
+  },
+  {
+    "order": 124,
+    "id": "fpv_drone",
+    "name": "Drone FPV de ataque",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 23408.09,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5F6F5A",
+    "food": false,
+    "use": [],
+    "consumer_note": "pendente: demanda militar adiada por decisão do dono (sistema militar futuro)",
+    "note": "G1/A′ (D4): FPV descartável montado com chips (não microchips) + baterias + plástico + micromotor + explosivos."
   }
 ]

@@ -1,0 +1,120 @@
+{
+  "_comment": "G2 perf rodada 2 - varredura mensal escalonada do investidor. 30 d, mesma DLL debug (25/11/2026 19:46:36, HEAD f91e77a3), threads=1, mundo real. Braco OFF = ai_brain ligado com potential_demand.enabled=false; ON = ai_brain + piso ligados (--brain-override em G:/opengs_tmp/g2_scan_perf/). O tick do harness chama tick_day(), que inclui get_status() (montagem completa do Dictionary) FORA do profiler; o perfil cobre so as fases do tick.",
+  "days": 30,
+  "threads": 1,
+  "scenario": "data/definitions/scenario/cities.json (849 cidades, 125 bens)",
+  "dll": "economy_gdextension.windows.template_debug.x86_64.dll 25/11/2026 19:46:36",
+  "wall_s": {
+    "off": 56.815,
+    "on": 142.404,
+    "on_vs_off_pct": 150.6,
+    "on_previous_round_s": 164.628,
+    "on_reduction_pct": 13.5
+  },
+  "harness_tick_s_per_day": {
+    "off": 1.574317,
+    "on": 4.425104,
+    "overhead_pct": 181.1,
+    "target_max_pct": 20.0,
+    "met": false
+  },
+  "profile_ms_per_day": {
+    "_comment": "Soma das zonas instrumentadas = 70.8 (OFF) / 169.1 (ON) ms/dia. Delta de 98.3 ms/dia e praticamente todo IA. O resto do tick medido pelo harness e get_status(), sem zona.",
+    "ai_off": 36.4,
+    "ai_on": 134.0,
+    "ai_delta": 97.6,
+    "ai_view_off": 1.82,
+    "ai_view_on": 1.90,
+    "total_off": 70.8,
+    "total_on": 169.1
+  },
+  "counters_30d": {
+    "group_attempts_off": 208258,
+    "group_attempts_on": 687981,
+    "group_attempts_ratio": 3.30,
+    "group_rejected_off": 60799,
+    "group_rejected_on": 249353,
+    "group_executed_off": 45,
+    "group_executed_on": 73,
+    "group_created_off": 10,
+    "group_created_on": 18,
+    "investments_private_off": 14,
+    "investments_private_on": 17,
+    "investments_group_off": 10,
+    "investments_group_on": 18,
+    "investments_total_off": 24,
+    "investments_total_on": 35,
+    "exposure_rejected_off": 53879,
+    "exposure_rejected_on": 164865,
+    "herd_rejected_off": 89412,
+    "herd_rejected_on": 252581,
+    "risk_rejected_off": 143291,
+    "risk_rejected_on": 417446
+  },
+  "changes": {
+    "scan_interval_days": 30,
+    "private_schedule": "cidade i avalia quando (dia - i) % scan_interval_days == 0; governo/armazem seguem semanais",
+    "group_schedule": "grupo i avalia quando (dia - i) % scan_interval_days == 0 (ja era mensal pela A6; agora le o parametro do cerebro)",
+    "off_bitwise": "enabled=false ignora scan_interval_days e mantem as cadencias antigas"
+  },
+  "round2_365": {
+    "_comment": "Aceite 365 d da varredura mensal (DLL 19:46:36, threads=1, mundo real). ON = bootstrap+ai-brain+goods-diag; OFF = bootstrap=0/ai-brain=0.",
+    "on": {
+      "wall_s": 1759.868,
+      "s_per_day": 4.82,
+      "wall_vs_round1_pct": -16.0,
+      "trajectory_sha256": "f324c424b959f487f1d730b6f8cb07338933c1f9b4d39020792c78ed87659557",
+      "invariant_violations": 0,
+      "stalled_days": 0,
+      "bankruptcies": 2,
+      "food_below_gate": 97,
+      "food_nations": 179,
+      "food_median": 0.967409803425998,
+      "max_daily_drift": 0.0144773312611591,
+      "investments_total": 367,
+      "investments_private": 284,
+      "investments_group": 83,
+      "herd_max_plants_30d": 3,
+      "group_attempts": 8829607,
+      "group_created": 83
+    },
+    "off": {
+      "wall_s": 357.843,
+      "s_per_day": 0.98,
+      "trajectory_sha256": "ded6f54ba2851133c6f264b5e361bb2181ff6bd3ceb99d2aba8cbc806332006c",
+      "invariant_violations": 0,
+      "stalled_days": 0,
+      "bankruptcies": 0,
+      "food_below_gate": 97,
+      "food_nations": 179,
+      "food_median": 0.968397746303318,
+      "max_daily_drift": 0.0169150008393119,
+      "investments_total": 3106
+    },
+    "thermometer_30d_union_produced_or_sold": {
+      "chips": 8,
+      "microchips": 8,
+      "computer": 5,
+      "phone": 3,
+      "steel": 8,
+      "plastic": 7,
+      "precision_tools": 9
+    },
+    "ma30_ratio_last_base": {
+      "chips": 1.11370359212148,
+      "microchips": 1.16709885023373,
+      "computer": 1.19686048309073,
+      "phone": 1.43117819420796,
+      "steel": 1.24307284746376,
+      "plastic": 1.00255737711052,
+      "precision_tools": 1.10791682804134
+    },
+    "chips_target": 1.10,
+    "chips_met": false
+  },
+  "root_cause_round2": {
+    "perf_target_met": false,
+    "reason": "a varredura mensal do privado cortou 13,5% da parede ON (164,6 -> 142,4 s/30 d), mas o piso de demanda continua multiplicando candidatos DENTRO da varredura mensal do grupo: 688 mil tentativas ON contra 208 mil OFF (3,3x). O delta de IA e 97,6 ms/dia (3,4% do delta de 2,85 s/dia do tick_day); o restante do tick_day e get_status(), que o jogo (A4) nao monta por dia. Mesmo zerando a IA, o alvo de 20% nao fecha neste harness.",
+    "next_step_if_owner_wants_target": "reduzir a semantica do piso no escopo de candidatos do grupo (ex.: so pares com escassez local) ou tirar get_status do tick_day do harness; nao foi feito por ser decisao de balanceamento."
+  }
+}

@@ -1924,6 +1924,15 @@ private:
 	 * Mantém a cesta de 5 culturas quando o dicionário não traz o dado.
 	 */
 	void set_needs(const Dictionary& needs);
+	/**
+	 * G2 — bootstrap industrial: dado estático de
+	 * `data/definitions/economy/bootstrap_industry.json`. Define os bens, as
+	 * participações reais por nação e os parâmetros da semente; a capacidade
+	 * sai da âncora de demanda (potencial) e de `seed_fraction`. Sem o
+	 * arquivo/`enabled=false` o vetor fica vazio e `seed_industry` não cria
+	 * nada (mundo bit-idêntico).
+	 */
+	void set_bootstrap_industry(const Dictionary& values);
 	// F3: zera/redimensiona o estado de necessidades de uma POP (duráveis por
 	// produto, vetores dos 3 níveis) sem apagar estoque já acumulado.
 	void init_pop_needs(Pop& pop) const { sim_core_.init_pop_needs(pop); }
