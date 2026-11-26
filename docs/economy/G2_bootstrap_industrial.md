@@ -203,7 +203,49 @@ nos dois braços (`--brain-override` só alterna o piso):
   medir sem o `get_status()` do harness. Números brutos:
   `docs/economy/perf/g2_scan_perf.json`.
 
+## Rodada 365 d — rodada 2 (varredura mensal, HEAD `f91e77a3`)
+
+DLL debug `19:46:36`, `threads=1`, mundo real, `--days=365`.
+
+### ON — `--bootstrap=1 --ai-brain=1 --goods-diag=…`
+
+- 365 d em **1 759,868 s (4,82 s/dia)**, contra 2 094,038 s (5,74 s/dia) da
+  rodada 1: **−16,0%**.
+- 0 violações, 0 dias travados, **2 falências** (≤3),
+  `trajectory_sha256 f324c424…` (novo, esperado).
+- Comida **97/179** abaixo de 0,975 (≤97; mediana 0,96741), drift **0,014477**
+  (<0,03).
+- **367 investimentos** (284 privado / 83 grupo), herd máx. **3**. A varredura
+  mensal cortou as oportunidades do privado (602 → 284); o total caiu de 689
+  para 367.
+- Termômetro (união dos 30 dias finais; produção **ou** venda > 0): `chips`
+  **8**, `microchips` **8**, `computer` 5, `phone` 3, `steel` 8, `plastic` 7,
+  `precision_tools` 9.
+- MA30 do dia 365 ÷ base: `chips` **1,1137 — REPROVA o teto 1,10 (+1,24%)**;
+  `microchips` 1,1671; `computer` 1,1969; `phone` 1,4312; `steel` 1,2431;
+  `plastic` 1,0026; `precision_tools` 1,1079. A cadência mensal **não** reduziu
+  o pico de `chips` (1,1046 → 1,1137).
+
+### OFF — `--bootstrap=0 --ai-brain=0`
+
+- 365 d em **357,843 s (0,98 s/dia)**;
+  **`trajectory_sha256 ded6f54b…` idêntico** ao controle (o mesmo da rodada 1
+  e da pendência original).
+- 0 falências, 0 violações, 0 travados, comida 97/179 (mediana 0,96840), drift
+  0,016673; **3 106 investimentos** (o mundo sem mecanismos).
+- Nada novo roda com as flags off: `enabled=false` ignora `scan_interval_days`
+  e mantém as cadências antigas.
+
+**Veredito da rodada 2:** a varredura mensal é determinística, reduz a parede
+ON em 16% e mantém o OFF bit a bit, mas **o critério de perf (≤20%) e o MA30 de
+`chips` (≤1,10) continuam reprovados**.
+
 ### Testes
+
+`-Tier pr -Base main` (run `20261125_200945`, HEAD `f91e77a3`): **46/46 OK** —
+`sim_unit_tests` **70/70** (novo caso da agenda `(dia − índice) % intervalo`),
+`c1_world_ai_90`, `determinism_cross_process` e os testes de template verdes.
+O A/B de 30 d (2 runs) e a rodada 365 (2 runs) também fecharam com exit 0.
 
 `-Tier pr -Base main` (run `20261125_184841`, HEAD `6e62fe9b`): **46/46 OK** —
 `sim_unit_tests` 69/69, `population_template_test` **35,57 s** e

@@ -57,6 +57,61 @@
     "group_schedule": "grupo i avalia quando (dia - i) % scan_interval_days == 0 (ja era mensal pela A6; agora le o parametro do cerebro)",
     "off_bitwise": "enabled=false ignora scan_interval_days e mantem as cadencias antigas"
   },
+  "round2_365": {
+    "_comment": "Aceite 365 d da varredura mensal (DLL 19:46:36, threads=1, mundo real). ON = bootstrap+ai-brain+goods-diag; OFF = bootstrap=0/ai-brain=0.",
+    "on": {
+      "wall_s": 1759.868,
+      "s_per_day": 4.82,
+      "wall_vs_round1_pct": -16.0,
+      "trajectory_sha256": "f324c424b959f487f1d730b6f8cb07338933c1f9b4d39020792c78ed87659557",
+      "invariant_violations": 0,
+      "stalled_days": 0,
+      "bankruptcies": 2,
+      "food_below_gate": 97,
+      "food_nations": 179,
+      "food_median": 0.967409803425998,
+      "max_daily_drift": 0.0144773312611591,
+      "investments_total": 367,
+      "investments_private": 284,
+      "investments_group": 83,
+      "herd_max_plants_30d": 3,
+      "group_attempts": 8829607,
+      "group_created": 83
+    },
+    "off": {
+      "wall_s": 357.843,
+      "s_per_day": 0.98,
+      "trajectory_sha256": "ded6f54ba2851133c6f264b5e361bb2181ff6bd3ceb99d2aba8cbc806332006c",
+      "invariant_violations": 0,
+      "stalled_days": 0,
+      "bankruptcies": 0,
+      "food_below_gate": 97,
+      "food_nations": 179,
+      "food_median": 0.968397746303318,
+      "max_daily_drift": 0.0169150008393119,
+      "investments_total": 3106
+    },
+    "thermometer_30d_union_produced_or_sold": {
+      "chips": 8,
+      "microchips": 8,
+      "computer": 5,
+      "phone": 3,
+      "steel": 8,
+      "plastic": 7,
+      "precision_tools": 9
+    },
+    "ma30_ratio_last_base": {
+      "chips": 1.11370359212148,
+      "microchips": 1.16709885023373,
+      "computer": 1.19686048309073,
+      "phone": 1.43117819420796,
+      "steel": 1.24307284746376,
+      "plastic": 1.00255737711052,
+      "precision_tools": 1.10791682804134
+    },
+    "chips_target": 1.10,
+    "chips_met": false
+  },
   "root_cause_round2": {
     "perf_target_met": false,
     "reason": "a varredura mensal do privado cortou 13,5% da parede ON (164,6 -> 142,4 s/30 d), mas o piso de demanda continua multiplicando candidatos DENTRO da varredura mensal do grupo: 688 mil tentativas ON contra 208 mil OFF (3,3x). O delta de IA e 97,6 ms/dia (3,4% do delta de 2,85 s/dia do tick_day); o restante do tick_day e get_status(), que o jogo (A4) nao monta por dia. Mesmo zerando a IA, o alvo de 20% nao fecha neste harness.",
