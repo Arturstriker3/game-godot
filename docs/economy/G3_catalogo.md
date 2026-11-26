@@ -298,7 +298,7 @@ reais) + `max_plant_capacity_per_100k` por bem.
 Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,on365_f090,on365_fix,on365_c3,off365,
 off365_f090,off365_fix,off365_c3,smoke_f090,smoke_fix,smoke_c3_30}.json` e logs `*.log`.
 
-## 10. LOTE 2 — alimentos/bebidas (andamento)
+## 10. LOTE 2 — alimentos/bebidas (ESTACIONADO; só medição)
 
 **Dado.** `meat`, `feed`, `canned_food`, `alcohol` e `containers` entram no
 `bootstrap_industry.json` com `lot: L2`, `seed_fraction: 0,90` (princípio do §7) e
@@ -454,3 +454,57 @@ de 1,15 no ano. Sem nova iteração nesta tarefa: o L2 FECHA como **reprovado**,
 medido contra o controle L1-only no mesmo código. `-Tier pr -Base main` **49/49 OK** (run
 `20261126_115250`; 0 falha/crash/timeout) e `sim_unit_tests` **79/79** na DLL final sem a
 instrumentação.
+
+### 10.4 Decisão do dono — merge L1-ONLY; L2 estacionado até pós-R1-R3
+
+Em **2026-11-26** o dono decidiu que o G3 entra no merge **somente com o LOTE 1**
+(vestuário/calçado). O LOTE 2 (alimentos/bebidas + elo do alumínio) fica
+**estacionado**, fora do dado versionado, até depois de R1-R3 — as medições abaixo
+são preservadas como evidência e o lote deve ser **re-rodado** quando o rework
+mudar preços/drift. Não é novo balanceamento: é o mesmo L2 reprovado no §10.3.
+
+**O que sai do dado (`bootstrap_industry.json`).** As entradas `meat`, `feed`
+(inclusive o `capacity_from: meat`), `canned_food`, `alcohol`, `containers` e
+`aluminum_ingot`; `premium_spirits` já estava fora desde o §10 (LOTE 4). O arquivo
+volta a **24 bens**: os 21 do G2 + `clothes`/`fabric`/`shoes`.
+
+**O que fica.**
+
+- **L1 no dado:** `clothes`, `fabric` e `shoes` com `lot: L1`, `funding: "none"`,
+  `seed_fraction: 0,90` e `max_plant_capacity_per_100k: 10` (§7–§9).
+- **Algodão:** `data/definitions/agriculture/cotton_seed.json` e
+  `core/economy/cotton_seed.gd`, chamados pelo `RefiningService` (§9).
+- **Todo o código do núcleo, neutro e sem dado que o use:** `funding`/`build`
+  sem orçamento (`bfb8cc4d`), `capacity_from` (§10.1), teto proporcional por
+  cidade (§8) e `seed_fraction` por bem (§2). Os campos continuam cobertos por
+  `sim_unit_tests`; campo ausente/0 mantém o G2 bit a bit.
+
+**Por que o L2 não entra (medições preservadas).** O controle **L1-only** no
+mesmo código (`G:/opengs_tmp/g3/bootstrap_l1_only_c2.json`, trajetória
+`6287b12d…`) mediu drift **0,021834**, comida **93/179**, **1 falência**, 439
+plantas e shortfall 5 951 t/dia. O L2 completo (`l2_c2_on365.json`,
+`de4e919d…`) mediu:
+
+| métrica | L1-only (controle) | L1+L2 | veredito do L2 |
+|---|---:|---:|---|
+| drift | 0,021834 | **0,053063** (máx. diário 0,054302) | REPROVA (>0,03); delta **+0,031229** |
+| comida (avg30) | 93/179 | 96/179 | OK, mas +3 do L2 |
+| falências | 1 | 2 (CHL `wheat` d210, GIN `bauxite` d287) | ≤3, OK |
+| MA30 d365÷d0 | — | **feed 1,6676 · canned_food 1,6943 · containers 1,2424** | REPROVA (3 bens >1,15) |
+| bens do lote ≥3 países | — | meat 17 · feed 12 · alcohol 13 · containers 11 · Al 11 · canned_food 6 | OK (era 2) |
+| plantas / shortfall | 439 / 5 951 t/dia | 764 / 82 224 t/dia | abastecimento melhora |
+
+O `funding: "none"` (§10.3) resolveu o abastecimento, mas o drift quase dobrou
+(expansão de crédito, sem violação diária) e três preços passaram do teto no ano.
+**Merge bloqueado para o L2**; o L1 (fechado pela métrica oficial no §9) segue.
+
+**Gate do estado final L1-ONLY.** `sim_unit_tests`, 365 d ON, 365 d OFF
+(`ded6f54b…`) e `-Tier pr -Base main` — resultados na tabela abaixo (DLL do
+merge `main` c3b61d4b + G3, sem o L2).
+
+| gate | resultado |
+|---|---|
+| `sim_unit_tests` | **79/79** (799 asserções) |
+| 365 d ON (L1-only) | `6287b12d…` **idêntico ao controle do §10.2**: 0 violações/0 travados, **1 falência**, comida **93/179** (mediana 0,97207), drift **0,021834** (máx. diário 0,022398), 439 plantas, shortfall 5 951 t/dia; MA30 d365÷d0 **clothes 0,9778 · fabric 0,6840 · shoes 0,8556** (≤1,15) e vendas em **16 / 16 / 6** países (≥3) |
+| 365 d OFF | `ded6f54b…` idêntico ao baseline: 0 falências/0 violações, comida 97/179, drift 0,016673 |
+| `-Tier pr -Base main` | **49/49 OK** (run `20261126_135201`; 0 falha/crash/timeout; inclui c1 de 90 d e determinismo entre processos) |
