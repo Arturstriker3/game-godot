@@ -100,4 +100,26 @@ struct AiTemplates {
 // Reconstrói `out` (limpa e preenche) a partir de goods.json + recipes.json.
 void build_ai_templates(const WorldState& ws, AiTemplates& out);
 
+// ---------------------------------------------------------------------------
+// R0.2 — VISÃO ESTÁTICA DOS PRIMÁRIOS (fonte única para o world-gen GDScript).
+//
+// A tabela `kPrimaries` continua sendo a única cópia dos números de engenharia
+// dos 21 primários. Estas funções a expõem sem exigir um `WorldState` (o
+// `GeographyService` semeia as minas ANTES de `initialize_world`) e sem
+// duplicar a lista no GDScript. Os índices de produto NÃO aparecem aqui: quem
+// cria o mundo resolve o id pelo `product_lookup`.
+// ---------------------------------------------------------------------------
+struct PrimaryTemplateInfo {
+	std::string resource;
+	double jobs_per_ton = 0.0;
+	double wage = 0.0;
+	double opex_per_ton = 0.0;
+	double caloric_factor = 0.0;
+};
+std::vector<PrimaryTemplateInfo> primary_template_table();
+std::vector<std::string> food_resource_ids();
+std::vector<std::string> mineral_resource_ids();
+std::vector<std::string> land_competing_resource_ids();
+std::vector<std::string> bulk_low_value_resource_ids();
+
 } // namespace ogs

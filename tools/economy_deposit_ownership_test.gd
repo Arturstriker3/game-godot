@@ -14,7 +14,6 @@ extends SceneTree
 ## Uso: godot --headless --path . --script res://tools/economy_deposit_ownership_test.gd
 
 const GeoScript := preload("res://core/economy/geography_service.gd")
-const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -42,9 +41,13 @@ const LEGITIMATE_NEIGHBOR_CITIES: Array[String] = [
 const DAYS := 180
 
 var _failures: Array[String] = []
+## R0.2: minerais vêm da tabela do núcleo (fonte única), não de uma cópia.
+var _mineral_resources: Array = []
 
 
 func _init() -> void:
+	_mineral_resources = Array(
+		EconomySim.get_industry_templates().get("minerals", []))
 	var geo := GeoScript.new()
 	if not geo.load_data():
 		print("[deposit] FALHA: geografia não carregou")
@@ -276,7 +279,7 @@ func _check_extractors(geo, city_list: Array, cities_raw: Array) -> void:
 				_fail("%s: jazida própria de %s não chegou ao núcleo" % [city_id, resource])
 		for building in heavy.get("buildings", []):
 			var resource := String(building.get("resource", ""))
-			if not Templates.MINERAL_RESOURCES.has(resource):
+			if not _mineral_resources.has(resource):
 				continue
 			mines += 1
 			if not own.has(resource):

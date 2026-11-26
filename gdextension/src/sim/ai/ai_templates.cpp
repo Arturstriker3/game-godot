@@ -267,4 +267,45 @@ void build_ai_templates(const WorldState& ws, AiTemplates& out) {
 	}
 }
 
+namespace {
+
+template <std::size_t N>
+std::vector<std::string> names_to_vector(const char* const (&names)[N]) {
+	std::vector<std::string> out;
+	out.reserve(N);
+	for (std::size_t slot = 0; slot < N; ++slot) {
+		out.emplace_back(names[slot]);
+	}
+	return out;
+}
+
+} // namespace
+
+// R0.2 — a tabela de primários e os conjuntos, sem depender de `WorldState`.
+std::vector<PrimaryTemplateInfo> primary_template_table() {
+	std::vector<PrimaryTemplateInfo> out;
+	out.reserve(sizeof(kPrimaries) / sizeof(kPrimaries[0]));
+	for (const PrimarySpec& spec : kPrimaries) {
+		out.push_back({spec.resource, spec.jobs_per_ton, spec.wage,
+			spec.opex_per_ton, spec.caloric_factor});
+	}
+	return out;
+}
+
+std::vector<std::string> food_resource_ids() {
+	return names_to_vector(kFood);
+}
+
+std::vector<std::string> mineral_resource_ids() {
+	return names_to_vector(kMinerals);
+}
+
+std::vector<std::string> land_competing_resource_ids() {
+	return names_to_vector(kLandCompeting);
+}
+
+std::vector<std::string> bulk_low_value_resource_ids() {
+	return names_to_vector(kBulkLowValue);
+}
+
 } // namespace ogs
