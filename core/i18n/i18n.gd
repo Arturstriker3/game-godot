@@ -29,7 +29,7 @@ const TEMPLATE_STRINGS := {
 		"tpl.footer.search": "/ buscar",
 		"tpl.footer.filters": "F filtros",
 		"tpl.footer.indicator": "I trocar indicador",
-		"tpl.footer.group": "G trocar grupo",
+		"tpl.footer.group": "G trocar comparação",
 		"tpl.footer.tabs_switch": "← → trocar aba · ESC fechar",
 
 		"tpl.dossie.crumb": "Política › Dossiê",
@@ -203,7 +203,7 @@ const TEMPLATE_STRINGS := {
 		"tpl.quadro.ind.gdp": "PIB",
 		"tpl.quadro.ind.food": "Comida",
 		"tpl.quadro.ind.minerals": "Reservas minerais",
-		"tpl.quadro.group": "Grupo",
+		"tpl.quadro.group": "Comparar com",
 		"tpl.quadro.group.g7": "G7",
 		"tpl.quadro.group.g7_select": "G7 ▾",
 		"tpl.quadro.ranking": "Ranking · População (milhões)",
@@ -284,7 +284,7 @@ const TEMPLATE_STRINGS := {
 		"tpl.footer.search": "/ search",
 		"tpl.footer.filters": "F filters",
 		"tpl.footer.indicator": "I switch indicator",
-		"tpl.footer.group": "G switch group",
+		"tpl.footer.group": "G switch comparison",
 		"tpl.footer.tabs_switch": "← → switch tab · ESC close",
 
 		"tpl.dossie.crumb": "Politics › Dossier",
@@ -458,7 +458,7 @@ const TEMPLATE_STRINGS := {
 		"tpl.quadro.ind.gdp": "GDP",
 		"tpl.quadro.ind.food": "Food",
 		"tpl.quadro.ind.minerals": "Mineral reserves",
-		"tpl.quadro.group": "Group",
+		"tpl.quadro.group": "Compare with",
 		"tpl.quadro.group.g7": "G7",
 		"tpl.quadro.group.g7_select": "G7 ▾",
 		"tpl.quadro.ranking": "Ranking · Population (millions)",
@@ -539,7 +539,7 @@ const TEMPLATE_STRINGS := {
 		"tpl.footer.search": "/ buscar",
 		"tpl.footer.filters": "F filtros",
 		"tpl.footer.indicator": "I cambiar indicador",
-		"tpl.footer.group": "G cambiar grupo",
+		"tpl.footer.group": "G cambiar comparación",
 		"tpl.footer.tabs_switch": "← → cambiar pestaña · ESC cerrar",
 
 		"tpl.dossie.crumb": "Política › Dosier",
@@ -713,7 +713,7 @@ const TEMPLATE_STRINGS := {
 		"tpl.quadro.ind.gdp": "PIB",
 		"tpl.quadro.ind.food": "Comida",
 		"tpl.quadro.ind.minerals": "Reservas minerales",
-		"tpl.quadro.group": "Grupo",
+		"tpl.quadro.group": "Comparar com",
 		"tpl.quadro.group.g7": "G7",
 		"tpl.quadro.group.g7_select": "G7 ▾",
 		"tpl.quadro.ranking": "Ranking · Población (millones)",
@@ -785,6 +785,39 @@ const TEMPLATE_STRINGS := {
 	},
 }
 
+## R0.1 — Nomes visíveis dos cinco estratos de renda (Opção A). A ORDEM é a
+## mesma dos quintis do núcleo (Q1..Q5): índice 0 = mais pobre. As chaves
+## internas do save continuam `strata`/`income_strata`; isto é só o rótulo.
+const STRATA_STRINGS := {
+	"pt_BR": {
+		"strata.vulnerable": "Vulneráveis",
+		"strata.working": "Classe baixa",
+		"strata.middle": "Classe média",
+		"strata.upper_middle": "Classe média alta",
+		"strata.elite": "Elite",
+	},
+	"en": {
+		"strata.vulnerable": "Vulnerable",
+		"strata.working": "Working class",
+		"strata.middle": "Middle class",
+		"strata.upper_middle": "Upper middle class",
+		"strata.elite": "Elite",
+	},
+	"es": {
+		"strata.vulnerable": "Vulnerables",
+		"strata.working": "Clase baja",
+		"strata.middle": "Clase media",
+		"strata.upper_middle": "Clase media alta",
+		"strata.elite": "Elite",
+	},
+}
+
+## Chaves de `STRATA_STRINGS`, na ordem dos quintis (Q1..Q5).
+const STRATA_KEYS: Array[String] = [
+	"strata.vulnerable", "strata.working", "strata.middle",
+	"strata.upper_middle", "strata.elite",
+]
+
 var STRINGS: Dictionary = {}
 
 var locale: String = DEFAULT_LOCALE
@@ -812,14 +845,20 @@ func _load_strings() -> void:
 
 ## Mescla os textos do gerador de telas sobre o JSON (sem reescrever o CSV).
 func _merge_template_strings() -> void:
-	for code in TEMPLATE_STRINGS:
+	_merge_table(TEMPLATE_STRINGS)
+	_merge_table(STRATA_STRINGS)
+	if not STRINGS.has(DEFAULT_LOCALE):
+		STRINGS[DEFAULT_LOCALE] = {}
+
+
+## Mescla uma tabela por idioma sobre `STRINGS` (sem reescrever o CSV).
+func _merge_table(table_by_locale: Dictionary) -> void:
+	for code in table_by_locale:
 		var table: Dictionary = STRINGS.get(code, {})
-		var extra: Dictionary = TEMPLATE_STRINGS[code]
+		var extra: Dictionary = table_by_locale[code]
 		for key in extra:
 			table[key] = extra[key]
 		STRINGS[code] = table
-	if not STRINGS.has(DEFAULT_LOCALE):
-		STRINGS[DEFAULT_LOCALE] = {}
 
 
 
@@ -831,6 +870,14 @@ func t(key: String, params: Dictionary = {}) -> String:
 	if params.is_empty():
 		return text
 	return text.format(params)
+
+
+## R0.1 — Nome visível do estrato de renda pelo índice do quintil (0 = Q1,
+## mais pobre; 4 = Q5, Elite). Fora da faixa devolve "—" (ausência honesta).
+func stratum_name(index: int) -> String:
+	if index < 0 or index >= STRATA_KEYS.size():
+		return "—"
+	return t(STRATA_KEYS[index])
 
 
 ## Troca o idioma ativo e avisa as telas.

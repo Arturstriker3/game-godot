@@ -619,6 +619,27 @@ public:
 	Dictionary get_storage_product_types() const;
 
 	/**
+	 * R0.2 — tabela ESTÁTICA dos 21 primários (fonte única em
+	 * `sim/ai/ai_templates.cpp`), exposta ao GDScript do world-gen. Devolve
+	 * `{templates: {id: {jobs_per_ton, wage, opex_per_ton, caloric_factor}},
+	 *   food: [ids], minerals: [ids], land_competing: [ids],
+	 *   bulk_low_value: [ids]}`.
+	 * É ESTÁTICA de propósito: o `GeographyService` semeia as minas ANTES de
+	 * `initialize_world`, quando ainda não há `WorldState`. Não lê nem muta o
+	 * mundo.
+	 */
+	static Dictionary get_industry_templates();
+
+	/**
+	 * R0.3 — constantes de armazenagem declaradas no núcleo
+	 * (`sim/sim_constants.h`): `{initial_months, government_share}`.
+	 * O `StorageService` consome esta tabela; as constantes GDScript ficam só
+	 * como fallback para binário antigo (documentado em `storage_service.gd`).
+	 * Estática: são valores de REGRA, independentes do mundo.
+	 */
+	static Dictionary get_storage_constants();
+
+	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
 	 * (D-086: referência de profundidade, não um limite físico — o recurso nunca
 	 * acaba). As minas da cidade debitam `remaining_kt` como contabilidade, mas

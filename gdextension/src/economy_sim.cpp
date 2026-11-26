@@ -336,6 +336,14 @@ void EconomySim::_bind_methods() {
 		"owner", "product", "tons"), &EconomySim::set_storage_stock);
 	ClassDB::bind_method(D_METHOD("get_storage_product_types"),
 		&EconomySim::get_storage_product_types);
+	// R0.2: fonte única dos TEMPLATES (estática; sem instância/mundo).
+	ClassDB::bind_static_method("EconomySim",
+		D_METHOD("get_industry_templates"),
+		&EconomySim::get_industry_templates);
+	// R0.3: constantes de armazenagem (fonte: sim_constants.h).
+	ClassDB::bind_static_method("EconomySim",
+		D_METHOD("get_storage_constants"),
+		&EconomySim::get_storage_constants);
 	// PARTE E (D-116) â€” energia elÃ©trica (save v35).
 	ClassDB::bind_method(D_METHOD("set_power_definitions", "nations", "cities",
 		"params", "only_missing"), &EconomySim::set_power_definitions,
@@ -8459,6 +8467,42 @@ Dictionary EconomySim::get_storage_product_types() const {
 			String(ogs::storage_type_name(type)
 				? ogs::storage_type_name(type) : "");
 	}
+	return out;
+}
+
+Dictionary EconomySim::get_industry_templates() {
+	// R0.2: lê a tabela estática do núcleo (`kPrimaries`), sem `WorldState`.
+	const auto names_array = [](const std::vector<std::string>& names) {
+		Array out;
+		for (const std::string& name : names) {
+			out.push_back(String(name.c_str()));
+		}
+		return out;
+	};
+	Dictionary templates;
+	for (const ogs::PrimaryTemplateInfo& spec
+			: ogs::primary_template_table()) {
+		Dictionary row;
+		row["resource"] = String(spec.resource.c_str());
+		row["jobs_per_ton"] = spec.jobs_per_ton;
+		row["wage"] = spec.wage;
+		row["opex_per_ton"] = spec.opex_per_ton;
+		row["caloric_factor"] = spec.caloric_factor;
+		templates[String(spec.resource.c_str())] = row;
+	}
+	Dictionary out;
+	out["templates"] = templates;
+	out["food"] = names_array(ogs::food_resource_ids());
+	out["minerals"] = names_array(ogs::mineral_resource_ids());
+	out["land_competing"] = names_array(ogs::land_competing_resource_ids());
+	out["bulk_low_value"] = names_array(ogs::bulk_low_value_resource_ids());
+	return out;
+}
+
+Dictionary EconomySim::get_storage_constants() {
+	Dictionary out;
+	out["initial_months"] = ogs::kStorageInitialMonths;
+	out["government_share"] = ogs::kStorageGovernmentShare;
 	return out;
 }
 
