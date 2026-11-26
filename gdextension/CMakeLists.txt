@@ -113,6 +113,7 @@ add_library(economy_gdextension SHARED
     src/edge/save_load.cpp
     src/edge/status_cache.cpp
     src/edge/status_city.cpp
+    src/edge/status_nation.cpp
     src/edge/value_bridge.cpp
 )
 
