@@ -133,7 +133,7 @@ Dois defeitos de integração foram encontrados e corrigidos por este teste:
 - **save do dia**: o bloco de energia não guardava a geração do dia nem os efeitos por
   cidade, e o load criava `power_cities` mesmo sem bloco — o round-trip das C1–C6
   divergia. O save passou a guardar os campos e a não inventar estado (`save_state.cpp`,
-  `power.cpp`).
+  `sim/save/power.cpp`).
 
 Regressão coberta: `economy_save_load_roundtrip_test`, `economy_integration_test`,
 `c3_bank_credit_test`, `c4_banks_test`, `c5_stock_exchange_test`, `c6_bank_crisis_test`
@@ -220,7 +220,7 @@ diagnóstico, sem merge/push:
 A curva de demanda foi reajustada por dado, não por chute (§3 e
 `meta.demand_calibration` em `power_params.json`): OLS log-log da demanda Ember por
 pessoa/dia contra o índice de renda, descontando acesso e perdas T&D (os termos que
-`sim/power.cpp` aplica). n=135, R²=0,681, expoente **0,912238** e âncora
+`sim/power/grid.cpp` aplica). n=135, R²=0,681, expoente **0,912238** e âncora
 **7,93828 kWh/pessoa/dia** (eram 9,0 e 1,0). Foram excluídas 40 nações com Ember
 < 1,37 kWh/pessoa/dia (cobertura fraca), com regra e lista no JSON; não há série
 pública de clima/indústria no repositório independente da renda (o emprego
@@ -277,7 +277,7 @@ Nada disso move dinheiro: o hash de trajetória do mesmo mundo não muda.
 
 ### 7.1 Bug do runner (corrigido)
 
-`import_mwh`/`export_mwh` da rede são **acumulados no ano** em `sim/power.cpp`
+`import_mwh`/`export_mwh` da rede são **acumulados no ano** em `sim/power/grid.cpp`
 e não são resetados no laço diário; o runner dividia por 24 como se fossem do
 dia, inflando a média em MW **365×** (ITA aparecia com 536.667 MW em vez de
 1.470). A média correta é `mwh / (dias × 24)`, e a participação é
@@ -383,7 +383,7 @@ Sem alterar o sim. Evidência: `docs/economy/perf/c1_world_ai_365_e2e3.json` (ca
 `e2e3_anchor_365.json` (sem E5), `e2e3_diag_365_before.json` (dado antigo) e
 `c6_gate_base.json` (controle sem energia). O runner passa a publicar, por nação,
 `model_scale`, `demand_vs_ember_demand` e `served_vs_ember_generation` (mesma razão de
-`sim/power.cpp`), para o próximo QA não confundir fração simulada com déficit.
+`sim/power/grid.cpp`), para o próximo QA não confundir fração simulada com déficit.
 
 ### 8.1 (1) ATG, AUS, KWT, VCT: **não** há déficit de 32–35 % — não há bug a corrigir
 
@@ -598,7 +598,7 @@ têm ponta sem operador nacional).
 capacidade da linha (4,1 MW médios). `MDA–ROU` e `XKX–MKD` ficaram em **0 MWh**. O
 importado no ano vai de 54,820 para 54,843 TWh (+0,04 %). Motivo: os quatro
 vizinhos são **importadores líquidos** no ano-base Ember (ALB +0,33; SRB +2,03;
-MKD +0,92; ROU +3,74 TWh) e a regra da E5 (`sim/power.cpp`) vende só a
+MKD +0,92; ROU +3,74 TWh) e a regra da E5 (`sim/power/grid.cpp`) vende só a
 **capacidade disponível não despachada** do exportador — rede 100 % servida quase
 não tem sobra, e a ALB só tem sobra hídrica em poucos dias. O tamanho do déficit
 modelado é coerente com a realidade:
@@ -896,7 +896,7 @@ o sistema amolecia. Correção (HEAD desta rodada):
   caixa do setor, soma da tarifa de varejo por rede e fluxo de importação
   (campos 12–17 de `FIELDS`). Sem energia semeada o núcleo publica zeros
   declarados. Trajetórias de energia diferentes passam a dar sha diferente.
-- `power.cpp`: guarda `plant_city_in_range` (assert + skip determinístico) nas
+- `sim/power/retail.cpp`: guarda `plant_city_in_range` (assert + skip determinístico) nas
   três listas do `phase_power_settle` que indexam `cities[plant.city_index]`;
   comentários do E5/E7 corrigidos (o importado é ledger `import_value`; o
   pagamento é a tarifa no caixa global, não débito imediato em `power_cash`).

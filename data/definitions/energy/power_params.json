@@ -54,7 +54,7 @@
       }
     },
     "demand_calibration": {
-      "method": "OLS log-log da demanda Ember por pessoa/dia contra o indice de renda (PIB PPP pc relativo a media ponderada pela populacao), com o acesso e as perdas T&D do proprio dado descontados - sao os termos que a formula do nucleo (sim/power.cpp) aplica: demanda = ancora * indice^expoente * acesso / (1 - perdas).",
+      "method": "OLS log-log da demanda Ember por pessoa/dia contra o indice de renda (PIB PPP pc relativo a media ponderada pela populacao), com o acesso e as perdas T&D do proprio dado descontados - sao os termos que a formula do nucleo (sim/power/grid.cpp) aplica: demanda = ancora * indice^expoente * acesso / (1 - perdas).",
       "source_id": "ember_yearly",
       "source": "Ember (2026). Yearly Electricity Data, serie 'Demand', ultimo ano disponivel por pais (2024 ou 2025).",
       "sources_file": "data/definitions/energy/_sources.json",

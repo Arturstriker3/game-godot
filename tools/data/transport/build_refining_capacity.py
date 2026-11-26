@@ -349,7 +349,7 @@ def main():
             },
             "simulated_fraction": {
                 "rule": "sum(sim_population) / sum(population) das cidades da nacao",
-                "same_as": "D-116/D-119 - fracao simulada aplicada por sim/power.cpp ao parque eletrico",
+                "same_as": "D-116/D-119 - fracao simulada aplicada por sim/power/grid.cpp ao parque eletrico",
                 "applied_to": ("NAO aplicada a capacity_t_per_day (mantida como "
                                "referencia; a ancora de demanda/oferta ja esta "
                                "na escala do mundo simulado)"),
