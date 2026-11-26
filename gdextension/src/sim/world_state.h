@@ -319,6 +319,13 @@ struct BootstrapGood {
 	// normalizadas sem o residual "outros" (o insumo do lote precisa ser
 	// coberto). O bem-fonte deve ser declarado antes deste no JSON.
 	std::string capacity_from;
+	// G3 (L2, correção 2): `funding` do bem. `true` (ausente/"budget") mantém o
+	// caminho G2: a planta só nasce se couber no `budget_share` do orçamento
+	// municipal e o custo é debitado. `false` ("none") marca ENTRADA NOVA que é
+	// ativo herdado do dia 0 (o mundo real nasce construído): o plano não
+	// consome orçamento e a construção não debita nem credita o setor de obras.
+	// O custo continua gravado na planta (valor de livro).
+	bool funded = true;
 	std::vector<BootstrapProducer> producers;
 };
 
@@ -345,7 +352,13 @@ struct BootstrapPlanRow {
 	double cost = 0.0;
 	int recipe = -1;
 	bool seeded = false;
-	std::string reason;  // "" | "no_city" | "budget" | "no_recipe"
+	// G3 (L2, correção 2): herda o `funding` do bem; `false` = não debita
+	// orçamento na execução da semente.
+	bool funded = true;
+	// "" | "no_city" | "budget" | "capacity" | "no_recipe" | "no_anchor" |
+	// "no_input_need" | "no_producer". "capacity" só aparece em bem não
+	// financiado (o que sobra não é falta de orçamento, é teto de planta).
+	std::string reason = "";
 };
 
 struct WorldState {

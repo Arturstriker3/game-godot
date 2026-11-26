@@ -147,7 +147,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const std::string& owner, double cost,
 		const std::string& recipe_id, bool instant_construction,
-		bool bootstrap_construction) {
+		bool bootstrap_construction, bool unfunded) {
 	BuildResult result;
 	result.created = false;
 	result.cost = 0.0;
@@ -228,18 +228,23 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 	if (instant_construction || bootstrap_construction) {
 		// Hook de teste (construção instantânea): comportamento anterior —
 		// prédio pronto na hora e custo integral debitado do dono.
-		if (state_owned) {
-			if (city->government_budget < cost) {
-				result.error = "orçamento insuficiente";
-				return result;
+		// G3 (L2, correção 2): `unfunded` = ativo herdado do dia 0 (entrada
+		// marcada `funding: "none"`): nada é debitado e nada entra como receita
+		// de obra — a planta simplesmente já existia no mundo real.
+		if (!unfunded) {
+			if (state_owned) {
+				if (city->government_budget < cost) {
+					result.error = "orçamento insuficiente";
+					return result;
+				}
+				city->government_budget -= cost;
+			} else {
+				if (city->firm_cash < cost) {
+					result.error = "capital insuficiente";
+					return result;
+				}
+				city->firm_cash -= cost;
 			}
-			city->government_budget -= cost;
-		} else {
-			if (city->firm_cash < cost) {
-				result.error = "capital insuficiente";
-				return result;
-			}
-			city->firm_cash -= cost;
 		}
 
 		Building building;
@@ -293,9 +298,12 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 		}
 
 		// O investimento é pago ao setor de construção doméstico e entra no PIB
-		// do próximo tick como receita de construção.
-		city->service_cash += cost;
-		city->construction_revenue_pending += cost;
+		// do próximo tick como receita de construção. Planta não financiada é
+		// estoque herdado (dia 0): não houve obra nova a faturar.
+		if (!unfunded) {
+			city->service_cash += cost;
+			city->construction_revenue_pending += cost;
+		}
 		result.created = true;
 		result.cost = cost;
 		return result;

@@ -122,7 +122,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const std::string& owner, double cost,
 		const std::string& recipe_id, bool instant_construction,
-		bool bootstrap_construction);
+		bool bootstrap_construction, bool unfunded = false);
 
 // Obra nova de um grupo (F9: FDI, joint venture e produção primária).
 GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,

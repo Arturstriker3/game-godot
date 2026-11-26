@@ -4571,7 +4571,7 @@ Dictionary EconomySim::apply_build(const String& city_id,
 		int output_product,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const String& owner, double cost,
-		const String& recipe_id) {
+		const String& recipe_id, bool unfunded) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const ogs::BuildResult outcome = ogs::action_build(ws_, sim_core_,
 		std::string(city_id.utf8().get_data()),
@@ -4580,7 +4580,7 @@ Dictionary EconomySim::apply_build(const String& city_id,
 		capacity, jobs, wage, opex, input_per_output,
 		std::string(owner.utf8().get_data()), cost,
 		std::string(recipe_id.utf8().get_data()), instant_construction_,
-		bootstrap_construction_);
+		bootstrap_construction_, unfunded);
 	Dictionary result;
 	result["created"] = outcome.created;
 	result["cost"] = outcome.cost;
@@ -5992,6 +5992,16 @@ Dictionary EconomySim::build(const String& city_id, const String& building_id,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const String& owner, double cost,
 		const String& recipe_id) {
+	return build_internal(city_id, building_id, resource, input_product,
+		output_product, capacity, jobs, wage, opex, input_per_output, owner,
+		cost, recipe_id, false);
+}
+
+Dictionary EconomySim::build_internal(const String& city_id,
+		const String& building_id, const String& resource, int input_product,
+		int output_product, double capacity, double jobs, double wage,
+		double opex, double input_per_output, const String& owner, double cost,
+		const String& recipe_id, bool unfunded) {
 	ogs::Command cmd;
 	cmd.type = ogs::CommandType::Build;
 	cmd.s[0] = to_std(city_id);
@@ -6007,6 +6017,8 @@ Dictionary EconomySim::build(const String& city_id, const String& building_id,
 	cmd.v[3] = opex;
 	cmd.v[4] = input_per_output;
 	cmd.v[5] = cost;
+	// `unfunded` viaja no comando: vale mesmo se ele for enfileirado.
+	cmd.b = unfunded;
 	return dispatch_command(cmd);
 }
 

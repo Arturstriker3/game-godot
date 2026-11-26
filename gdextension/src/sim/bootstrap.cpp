@@ -63,6 +63,15 @@ int choose_recipe(const WorldState& ws, const City& city, int product) {
 	return first;
 }
 
+// Linha de plano com o `funding` do bem já propagado (toda linha do bem
+// carrega a mesma marca; a execução usa isso para não debitar orçamento).
+BootstrapPlanRow make_row(const BootstrapGood& good) {
+	BootstrapPlanRow row;
+	row.good = good.id;
+	row.funded = good.funded;
+	return row;
+}
+
 // G3 (L2): consumo de `product` pelos planos já semeados de `source_good`, na
 // receita escolhida para cada planta (capacidade × qty / yield). É a
 // necessidade do lote — não a âncora mundial do bem-insumo.
@@ -154,16 +163,14 @@ Plan plan(const WorldState& ws) {
 	for (const BootstrapGood& good : cfg.goods) {
 		const int product = find_product(ws, good.id);
 		if (product < 0 || product >= products) {
-			BootstrapPlanRow row;
-			row.good = good.id;
+			BootstrapPlanRow row = make_row(good);
 			row.reason = "no_recipe";
 			out.rows.push_back(row);
 			continue;
 		}
 		if (!has_recipe_for(ws, product)) {
 			// Sem receita não há planta: declara (não omite nem indexa -1).
-			BootstrapPlanRow row;
-			row.good = good.id;
+			BootstrapPlanRow row = make_row(good);
 			row.reason = "no_recipe";
 			out.rows.push_back(row);
 			continue;
@@ -178,8 +185,7 @@ Plan plan(const WorldState& ws) {
 				good.capacity_from, product);
 			if (seed_world <= 0.0) {
 				// Ausência honesta: sem plano do bem-fonte não há consumidor.
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.reason = "no_input_need";
 				out.rows.push_back(row);
 				continue;
@@ -189,8 +195,7 @@ Plan plan(const WorldState& ws) {
 			if (world_anchor <= 0.0) {
 				// Ausência honesta: sem âncora não há semente, mas fica
 				// declarado (aviso) em vez de omitir o bem em silêncio.
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.reason = "no_anchor";
 				out.rows.push_back(row);
 				continue;
@@ -221,8 +226,7 @@ Plan plan(const WorldState& ws) {
 				}
 			}
 			if (share_total <= 0.0) {
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.reason = "no_producer";
 				out.rows.push_back(row);
 				continue;
@@ -238,8 +242,7 @@ Plan plan(const WorldState& ws) {
 			const auto nation_it = by_nation.find(producer.nation);
 			if (nation_it == by_nation.end() || nation_it->second.empty()) {
 				out.unseeded_share += producer.share;
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.nation = producer.nation;
 				row.reason = "no_city";
 				out.rows.push_back(row);
@@ -249,8 +252,7 @@ Plan plan(const WorldState& ws) {
 				* (input_tied ? seed_world / share_total : seed_world);
 			if (target < cfg.capacity_min) {
 				out.unseeded_share += producer.share;
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.nation = producer.nation;
 				row.reason = "capacity_min";
 				out.rows.push_back(row);
@@ -281,8 +283,7 @@ Plan plan(const WorldState& ws) {
 				}
 				if (largest < 0) {
 					out.unseeded_share += producer.share;
-					BootstrapPlanRow row;
-					row.good = good.id;
+					BootstrapPlanRow row = make_row(good);
 					row.nation = producer.nation;
 					row.reason = "no_city";
 					out.rows.push_back(row);
@@ -379,19 +380,23 @@ Plan plan(const WorldState& ws) {
 					capacity = std::min(remaining, planned);
 				}
 				const double cost = capacity * recipe.capital_per_capacity;
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.nation = producer.nation;
 				row.city = city.id;
 				row.capacity = capacity;
 				row.cost = cost;
 				row.recipe = recipe_index;
-				if (cost > budget_of(city_index) + 1e-6) {
-					row.reason = "budget";
-					out.rows.push_back(row);
-					continue;
+				// G3 (L2, correção 2): bem não financiado é ativo herdado do
+				// dia 0 — não consome o `budget_share` municipal (e, por isso,
+				// também não encurta o orçamento dos bens do G2).
+				if (good.funded) {
+					if (cost > budget_of(city_index) + 1e-6) {
+						row.reason = "budget";
+						out.rows.push_back(row);
+						continue;
+					}
+					budget_left[city_index] -= cost;
 				}
-				budget_left[city_index] -= cost;
 				row.seeded = true;
 				out.rows.push_back(row);
 				++out.seeded;
@@ -400,10 +405,11 @@ Plan plan(const WorldState& ws) {
 			}
 			if (remaining > remaining_eps) {
 				out.shortfall += remaining;
-				BootstrapPlanRow row;
-				row.good = good.id;
+				BootstrapPlanRow row = make_row(good);
 				row.nation = producer.nation;
-				row.reason = "budget";
+				// O que sobra num bem não financiado não é falta de
+				// orçamento: é teto de cidade/planta.
+				row.reason = good.funded ? "budget" : "capacity";
 				out.rows.push_back(row);
 			}
 		}

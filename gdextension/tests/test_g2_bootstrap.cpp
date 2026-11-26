@@ -3,6 +3,7 @@
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
+#include "sim/actions.h"
 #include "sim/ai/ai_phase.h"
 #include "sim/ai/ai_view.h"
 #include "sim/ai_brain.h"
@@ -478,6 +479,76 @@ TEST_CASE("G3 L2: insumo do lote dimensiona pelo consumo do bem-fonte") {
 	REQUIRE_FALSE(orphan_plan.rows.empty());
 	CHECK(orphan_plan.rows.back().good == "other_mid");
 	CHECK(orphan_plan.rows.back().reason == "no_input_need");
+}
+
+TEST_CASE("G3 correcao 2: funding none isenta o orcamento e marca a linha") {
+	// Mesmo mundo do caso de shortfall de orcamento: 30 t/dia de alvo com
+	// orcamento para 15. Financiado semeia 15; marcado `funding: none` (ativo
+	// herdado do dia 0) semeia o alvo inteiro e nao consome `budget_share`.
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	ws.bootstrap.max_cities_per_nation = 1;
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-3;
+	ws.cities[0].government_budget = 50000.0;  // teto 25 000
+	ogs::BootstrapGood good;
+	good.id = "mid";
+	// Teto proporcional: a única cidade (1 M) pode hospedar 100 t/dia numa
+	// planta só, então o bloqueio medido é orçamento, não capacidade.
+	good.max_plant_capacity_per_100k = 10.0;
+	good.producers.push_back({"AAA", 1.0});
+	ws.bootstrap.goods.push_back(good);
+
+	const ogs::bootstrap::Plan funded = ogs::bootstrap::plan(ws);
+	// 50 t/dia de alvo; a planta custa 50 x 1000 = 50 000 > teto de 25 000.
+	REQUIRE(funded.seeded == 0);
+	CHECK(funded.shortfall == Approx(50.0));
+	CHECK(funded.rows[0].funded);
+	CHECK(funded.rows[0].reason == "budget");
+
+	ws.bootstrap.goods[0].funded = false;
+	const ogs::bootstrap::Plan free = ogs::bootstrap::plan(ws);
+	REQUIRE(free.seeded == 1);  // o orçamento deixou de cortar
+	CHECK(free.rows[0].capacity == Approx(50.0));
+	CHECK(free.shortfall == Approx(0.0));
+	CHECK_FALSE(free.rows[0].funded);
+	CHECK(free.rows[0].reason.empty());
+}
+
+TEST_CASE("G3 correcao 2: build nao financiado nao debita nem credita obra") {
+	// Cidade sem orcamento: a obra financiada falha; a mesma obra como ativo
+	// herdado (funding none) nasce e o orcamento continua zerado, sem receita
+	// de construcao pendente (nao houve obra nova).
+	ogs::test::PocketWorld world;
+	const int planks = world.product("planks");
+	const int recipe = world.recipe("planks");
+	REQUIRE(planks >= 0);
+	REQUIRE(recipe >= 0);
+	ogs::City* found = world.core.find_city("PORTUS");
+	REQUIRE(found != nullptr);
+	ogs::City& city = *found;
+	const double budget_before = city.government_budget;
+	const double revenue_before = city.construction_revenue_pending;
+
+	const ogs::BuildResult blocked = ogs::action_build(world.ws, world.core,
+		city.id, "PORTUS_FREE_A", "planks", -1, planks, 5.0, 0.0, 0.0, 0.0,
+		1.0, "state", 5000.0, "planks", true, true, false);
+	CHECK_FALSE(blocked.created);
+	CHECK(blocked.error == "orçamento insuficiente");
+
+	const ogs::BuildResult free = ogs::action_build(world.ws, world.core,
+		city.id, "PORTUS_FREE_B", "planks", -1, planks, 5.0, 0.0, 0.0, 0.0,
+		1.0, "state", 5000.0, "planks", true, true, true);
+	CHECK(free.created);
+	CHECK(city.government_budget == Approx(budget_before));
+	CHECK(city.construction_revenue_pending == Approx(revenue_before));
+	REQUIRE(world.building("PORTUS_FREE_B") != nullptr);
+	// O custo continua no valor de livro da planta.
+	CHECK(world.building("PORTUS_FREE_B")->capital_per_capacity
+		== Approx(1000.0));
 }
 
 TEST_CASE("G2: semeadura deterministica (duas cargas = mesmo plano)") {
