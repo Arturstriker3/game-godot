@@ -1237,8 +1237,10 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	// F9: grupos/empresas a partir dos ativos privados existentes.
 	seed_groups();
 	// R1a: aplica a flag do caixa unico regional (se ligada, o pool privado nasce
-	// da soma dos dois caixas). Desligada e no-op.
-	sim_core_.set_regional_cash(ws_.regional_cash);
+	// da soma dos dois caixas). Desligada e no-op. O modo do sub-teto externo
+	// vem da configuracao ja lida (sem isso este segundo apply o zeraria para
+	// o default "all" e a calibracao seria inerte).
+	sim_core_.set_regional_cash(ws_.regional_cash, ws_.external_subceiling);
 }
 
 // ---------------------------------------------------------------------------
