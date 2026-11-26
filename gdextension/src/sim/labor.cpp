@@ -152,7 +152,7 @@ void SimCore::phase_labor() {
 				}
 				const double interest = paid * rate * span;
 				const double take = std::min(interest,
-					city.firm_external_room());
+					city.firm_external_room_request(interest));
 				if (take <= 1e-12) {
 					continue;
 				}
@@ -161,7 +161,7 @@ void SimCore::phase_labor() {
 				if (credited <= 0.0) {
 					continue;
 				}
-				city.firm_external_pay(credited);
+				city.firm_external_pay(credited, City::kR1Finance);
 			}
 		}
 	}
@@ -666,7 +666,7 @@ double SimCore::labor_day(City& city) {
 	// cheio e o pagamento conjunto excederia o caixa. Desligado (default), os
 	// caixas sao separados e nenhum numero muda com a antecipacao.
 	const double firm_payroll = buildings_payroll * pay_scale;
-	city.firm_pay(firm_payroll);
+	city.firm_pay(firm_payroll, City::kR1Wages);
 	const double full_service_bill = city.service_jobs * service_power
 		* service_payroll_per_job;
 	const double paid_service_bill = std::min(full_service_bill,
@@ -716,7 +716,7 @@ double SimCore::labor_day(City& city) {
 	}
 	pop.wage_income = pop.wage_income_by_level[0]
 		+ pop.wage_income_by_level[1] + pop.wage_income_by_level[2];
-	city.service_pay(paid_service_bill);
+	city.service_pay(paid_service_bill, City::kR1Wages);
 	return pop.wage_income;
 }
 void SimCore::refresh_income_classes(City& city) const {

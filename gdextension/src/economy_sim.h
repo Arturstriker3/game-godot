@@ -195,6 +195,20 @@ public:
 	 */
 	Dictionary get_city_columns();
 
+	/**
+	 * R1a (t163) — instrumentação de medição (`--r1-diag`), só leitura.
+	 * Liga/desliga o livro por cidade; com `false` nenhuma escrita acontece e
+	 * o mundo é bit-idêntico ao de antes da sonda.
+	 */
+	void set_r1_diag(bool enabled);
+	/**
+	 * Livro do DIA por cidade: caixas (pool e espelhos), saídas por categoria
+	 * (folha, importação internacional, comércio interno, energia, juros,
+	 * impostos, investimento, dividendos, outros), entradas e os contadores
+	 * de corte do sub-teto externo. Zero quando a sonda está desligada.
+	 */
+	Dictionary get_r1_diag_status();
+
 	/** Colunas por nação (179 posições), mesmos valores do `nations[]`. */
 	Dictionary get_nation_columns();
 

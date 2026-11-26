@@ -128,7 +128,7 @@ double destroy_local_money(WorldState& ws, const Currency& currency,
 		if (part <= 0.0) {
 			continue;
 		}
-		city.firm_pay(part);
+		city.firm_pay(part, City::kR1Finance);
 		assigned += part;
 		if (assigned >= take - kEpsilon) {
 			break;
@@ -144,7 +144,7 @@ double destroy_local_money(WorldState& ws, const Currency& currency,
 			const double cash = std::max(0.0, city.firm_liquidity());
 			const double part = std::min(take - assigned, cash);
 			if (part > 0.0) {
-				city.firm_pay(part);
+				city.firm_pay(part, City::kR1Finance);
 				assigned += part;
 				break;
 			}

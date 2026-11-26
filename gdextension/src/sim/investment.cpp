@@ -143,7 +143,7 @@ void SimCore::route_group_profit(int group_index,
 		if (group.state_owned) {
 			// Lucro de estatal -> orçamento do anfitrião (dinheiro conservado).
 			const double moved = std::min(profit, firm_surplus);
-			city.firm_pay(moved);
+			city.firm_pay(moved, City::kR1Dividends);
 			city.government_budget += moved;
 			firm_surplus -= moved;
 			return;
@@ -154,14 +154,14 @@ void SimCore::route_group_profit(int group_index,
 		const double tax_rate = std::clamp(
 			kCorporateTaxRate * (1.0 - holiday), 0.0, 1.0);
 		const double tax = std::min(profit * tax_rate, firm_surplus);
-		city.firm_pay(tax);
+		city.firm_pay(tax, City::kR1Taxes);
 		city.government_budget += tax;
 		firm_surplus -= tax;
 		group.taxes_total += tax;
 		ws_.group_flows[host_nation].taxes += tax;
 		const double net = profit - tax;
 		const double moved = std::min(net, firm_surplus);
-		city.firm_pay(moved);
+		city.firm_pay(moved, City::kR1Dividends);
 		group.cash += moved;
 		group.distributable += moved;
 		firm_surplus -= moved;

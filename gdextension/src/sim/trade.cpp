@@ -864,7 +864,8 @@ void SimCore::trade_food() {
 			// modo `nonessential` a firma pode usar o pool inteiro, que e o
 			// ponto do sub-teto que estrangulava a comida das economias
 			// pequenas (food_calories > 0 e a mesma classificacao do food_ratio).
-			const double firm_cash = buyer.city->firm_external_room(true);
+			const double firm_cash = buyer.city->firm_external_room_request(
+				(amount_wanted_ge / factor) * unit_cost, true);
 			const double gov_budget = std::max(0.0, buyer.city->government_budget);
 			const double savings = std::max(0.0, buyer.city->pop.savings);
 			const double payable = firm_cash + gov_budget + savings;
@@ -921,7 +922,14 @@ void SimCore::trade_food() {
 			const double freight = unit_freight * amount_tons;
 			const double tariff_paid = unit_tariff * amount_tons;
 
-			buyer.city->firm_external_pay(firm_share);
+			buyer.city->firm_external_pay(firm_share,
+				seller->nation != buyer.city->nation
+					? City::kR1ImportsAbroad : City::kR1TradeDomestic);
+			if (buyer.city->r1_diag && seller->nation != buyer.city->nation) {
+				// R1a (t163): comercio internacional do dia (valor de origem).
+				buyer.city->r1_import_abroad += cost;
+				seller->r1_export_abroad += cost;
+			}
 			buyer.city->government_budget -= gov_share;
 			// B2: a parcela da importação paga pela poupança sai rateada pelos
 			// quintis (a soma dos estratos acompanha o escalar).
@@ -1418,7 +1426,8 @@ void SimCore::trade_goods() {
 				// frete ao serviço do comprador. Governo cobre o que a firma não
 				// puder (insumo essencial), conservando o dinheiro.
 				const double unit_cost = offer.unit_cost;
-				const double payable = buyer_city.firm_external_room()
+				const double payable = buyer_city.firm_external_room_request(
+						amount * unit_cost)
 					+ std::max(0.0, buyer_city.government_budget);
 				if (amount * unit_cost > payable) {
 					amount = unit_cost > 0.0 ? payable / unit_cost : 0.0;
@@ -1472,7 +1481,14 @@ void SimCore::trade_goods() {
 				const double goods_value = amount * offer.origin_anchor;
 				const double freight = amount * offer.unit_freight;
 				const double tariff_paid = amount * offer.unit_tariff;
-				buyer_city.firm_external_pay(firm_share);
+				buyer_city.firm_external_pay(firm_share,
+					seller.nation != buyer_city.nation
+						? City::kR1ImportsAbroad : City::kR1TradeDomestic);
+				if (buyer_city.r1_diag && seller.nation != buyer_city.nation) {
+					// R1a (t163): comercio internacional do dia (valor de origem).
+					buyer_city.r1_import_abroad += goods_value;
+					seller.r1_export_abroad += goods_value;
+				}
 				buyer_city.government_budget -= gov_share;
 				seller.firm_receive(goods_value);
 				buyer_city.service_receive(freight);

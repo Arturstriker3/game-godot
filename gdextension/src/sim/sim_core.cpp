@@ -92,6 +92,15 @@ void SimCore::set_regional_cash(bool enabled, int external_subceiling) {
 	}
 }
 
+void SimCore::set_r1_diag(bool enabled) {
+	// R1a (t163): instrumentacao de medicao. Nao decide nada; so habilita as
+	// escritas do livro por cidade (com false, nenhum numero do mundo muda).
+	for (City& city : ws_.cities) {
+		city.r1_diag = enabled;
+		city.r1_reset_day();
+	}
+}
+
 void SimCore::apply_regional_cash_after_load(bool saved_flag,
 		bool has_saved_flag) {
 	const bool enabled = has_saved_flag ? saved_flag : ws_.regional_cash;
@@ -502,6 +511,8 @@ void SimCore::phase_reset() {
 		// Sub-teto diario dos pagamentos externos: recomeca zerado todo dia.
 		city.firm_external_paid_today = 0.0;
 		city.service_external_paid_today = 0.0;
+		// R1a (t163): o livro de medicao tambem e do dia.
+		city.r1_reset_day();
 		city.pop.wage_income = 0.0;
 		city.pop.capital_income = 0.0;
 		city.pop.transfers = 0.0;
@@ -742,13 +753,15 @@ void SimCore::phase_accounting() {
 			const double royalty_paid = std::min({
 				building.revenue * building.royalty,
 				std::max(0.0, building.profit),
-				city.firm_external_room()});
+				city.firm_external_room_request(std::min(
+					building.revenue * building.royalty,
+					std::max(0.0, building.profit)))});
 			if (royalty_paid <= 0.0) {
 				continue;
 			}
 			building.profit -= royalty_paid;
 			building.royalty_paid = royalty_paid;
-			city.firm_external_pay(royalty_paid);
+			city.firm_external_pay(royalty_paid, City::kR1Taxes);
 			city.government_budget += royalty_paid;
 		}
 
@@ -841,7 +854,8 @@ void SimCore::phase_accounting() {
 		// R1a: o debito das firmas acontece ANTES de ler a liquidez dos servicos;
 		// com caixa unico os dois dividem o pool e o pagamento conjunto nao pode
 		// exceder o que existe. Desligado, a ordem nao muda numero nenhum.
-		city.firm_pay(modeled_distribution + state_distribution);
+		city.firm_pay(modeled_distribution + state_distribution,
+			City::kR1Dividends);
 		const double service_surplus = std::max(0.0,
 			city.service_liquidity() - service_target);
 		// F8: o lucro do setor é renda da POP dona (plano §13). O caixa guarda
@@ -853,7 +867,7 @@ void SimCore::phase_accounting() {
 		const double service_distribution = std::min(
 			std::max(0.0, city.service_profit * kCapitalDistribution),
 			service_surplus);
-		city.service_pay(service_distribution);
+		city.service_pay(service_distribution, City::kR1Dividends);
 		city.government_budget += state_distribution;
 		// §19 W3: a renda de capital do dia SOMA ao crédito pendente em vez de
 		// substituí-lo — o aluguel pago às famílias donas (fase 5b) já está

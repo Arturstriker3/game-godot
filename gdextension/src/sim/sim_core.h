@@ -145,6 +145,9 @@ public:
 	// `external_subceiling` (R1a medicao: 0=off, 1=all, 2=nonessential) e
 	// propagado para as cidades; default preserva o teto por fatia.
 	void set_regional_cash(bool enabled, int external_subceiling = 1);
+	// R1a (t163): liga o livro de medicao por cidade (`--r1-diag`). Com false
+	// nada e escrito e o mundo e bit-identico ao de antes da sonda.
+	void set_r1_diag(bool enabled);
 	// Depois do load: a flag do save (ou a configuracao) manda; cidade que veio
 	// sem `private_cash` e sincronizada a partir dos dois espelhos.
 	void apply_regional_cash_after_load(bool saved_flag, bool has_saved_flag);

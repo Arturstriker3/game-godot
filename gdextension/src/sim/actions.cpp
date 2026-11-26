@@ -81,7 +81,7 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 	const double capacity_added = amount / std::max(1.0, building->capital_per_capacity);
 
 	if (instant_construction) {
-		city->firm_pay(amount);
+		city->firm_pay(amount, City::kR1Invest);
 		// A expansão é construída por serviços domésticos: o dinheiro vira
 		// receita de construção (contada no PIB do próximo tick) e não
 		// desaparece em um caixa inerte.
@@ -133,7 +133,7 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 	project.total_cost = amount;
 	// §15 calibração: reserva o capital da obra no início (investimento).
 	project.reserved = amount;
-	city->firm_pay(amount);
+	city->firm_pay(amount, City::kR1Invest);
 	core.add_construction_project(project);
 	result.invested = amount;
 	result.capacity_added = capacity_added;
@@ -239,7 +239,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 				result.error = "capital insuficiente";
 				return result;
 			}
-			city->firm_pay(cost);
+			city->firm_pay(cost, City::kR1Invest);
 		}
 
 		Building building;
@@ -372,7 +372,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 	if (state_owned) {
 		city->government_budget -= cost;
 	} else {
-		city->firm_pay(cost);
+		city->firm_pay(cost, City::kR1Invest);
 	}
 	core.add_construction_project(project);
 	result.created = true;
@@ -1004,7 +1004,7 @@ StorageBuildResult action_storage_build(WorldState& ws, SimCore& core,
 		if (government) {
 			city->government_budget -= cost;
 		} else {
-			city->firm_pay(cost);
+			city->firm_pay(cost, City::kR1Invest);
 		}
 		// Construção doméstica: o dinheiro vira receita do setor de construção
 		// (contabilizada no próximo tick), como nas demais obras instantâneas.
@@ -1038,7 +1038,7 @@ StorageBuildResult action_storage_build(WorldState& ws, SimCore& core,
 	if (government) {
 		city->government_budget -= cost;
 	} else {
-		city->firm_pay(cost);
+		city->firm_pay(cost, City::kR1Invest);
 	}
 	core.add_construction_project(project);
 	result.started = true;

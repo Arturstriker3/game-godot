@@ -653,7 +653,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 	} else if (commit_owner == "state") {
 		city.government_budget -= cost;
 	} else {
-		city.firm_pay(cost);
+		city.firm_pay(cost, City::kR1Invest);
 	}
 	core.add_construction_project(project);
 	// MID→HIGH: a receita de obra troca para aço/elétrica (mesma fração do

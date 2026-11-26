@@ -254,7 +254,7 @@ void SimCore::phase_region() {
 			city.rural_wage_arrears = region.arrears_receivable;
 			const double tax = paid * kTaxRate;
 			const double net = std::max(0.0, paid - tax);
-			city.firm_pay(paid);
+			city.firm_pay(paid, City::kR1Wages);
 			city.government_budget += tax;
 			region_credit(region, net);
 			// Publicação em base DIÁRIA (o salário é pago por semana; o status

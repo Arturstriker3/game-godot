@@ -214,6 +214,11 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_profile"), &EconomySim::get_profile);
 	ClassDB::bind_method(D_METHOD("warm_status"), &EconomySim::warm_status);
 	ClassDB::bind_method(D_METHOD("get_status"), &EconomySim::get_status);
+	// R1a (t163): instrumentacao de medicao (`--r1-diag`). So leitura.
+	ClassDB::bind_method(D_METHOD("set_r1_diag", "enabled"),
+	                     &EconomySim::set_r1_diag);
+	ClassDB::bind_method(D_METHOD("get_r1_diag_status"),
+	                     &EconomySim::get_r1_diag_status);
 	ClassDB::bind_method(D_METHOD("get_city_status", "city_id"),
 	                     &EconomySim::get_city_status);
 	// A4: consultas sob demanda (status leve + colunas + fichas + ranking).
@@ -2171,6 +2176,53 @@ Dictionary EconomySim::get_city_status(const String& city_id) {
 	StatusCitySlot slot;
 	fill_city_status(city_index, slot, in_transit, true);
 	return slot.dict;
+}
+
+
+void EconomySim::set_r1_diag(bool enabled) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	sim_core_.set_r1_diag(enabled);
+}
+
+
+Dictionary EconomySim::get_r1_diag_status() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["day"] = ws_.day;
+	out["enabled"] = !ws_.cities.empty() && ws_.cities.front().r1_diag;
+	Array cities;
+	cities.resize(static_cast<int>(ws_.cities.size()));
+	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+		const City& city = ws_.cities[index];
+		Dictionary row;
+		row["id"] = String(city.id.c_str());
+		row["nation"] = String(city.nation.c_str());
+		row["unified"] = city.unified_cash;
+		row["private_cash"] = city.private_cash;
+		row["firm_cash"] = city.firm_cash;
+		row["service_cash"] = city.service_cash;
+		row["firm_in"] = city.r1_firm_in;
+		row["service_in"] = city.r1_service_in;
+		row["cut_firm"] = city.r1_ext_cut_firm;
+		row["cut_service"] = city.r1_ext_cut_service;
+		row["cut_n_firm"] = city.r1_ext_cut_n_firm;
+		row["cut_n_service"] = city.r1_ext_cut_n_service;
+		row["import_abroad"] = city.r1_import_abroad;
+		row["export_abroad"] = city.r1_export_abroad;
+		PackedFloat64Array firm_out;
+		PackedFloat64Array service_out;
+		firm_out.resize(static_cast<int>(City::kR1FlowCount));
+		service_out.resize(static_cast<int>(City::kR1FlowCount));
+		for (int flow = 0; flow < static_cast<int>(City::kR1FlowCount); ++flow) {
+			firm_out[flow] = city.r1_firm_out[flow];
+			service_out[flow] = city.r1_service_out[flow];
+		}
+		row["firm_out"] = firm_out;
+		row["service_out"] = service_out;
+		cities[static_cast<int>(index)] = row;
+	}
+	out["cities"] = cities;
+	return out;
 }
 
 

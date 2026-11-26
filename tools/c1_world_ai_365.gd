@@ -133,6 +133,12 @@ var _external_subceiling_set := false
 # credito leem, para decompor o efeito do caixa unico. So medicao
 # (--r1-diag / OGS_C1_R1_DIAG=1): nao altera o mundo.
 var _r1_diag := false
+# R1a (t163): países do recorte da instrumentação por país/mês.
+const R1_FOCUS := ["VCT", "TTO", "JAM", "QAT", "SOM"]
+const R1_FLOW_NAMES := ["other", "wages", "imports_abroad",
+	"trade_domestic", "energy", "finance", "taxes", "invest", "dividends"]
+# Somas mensais por país (chave "mes|pais"), só com --r1-diag.
+var _r1_nations: Dictionary = {}
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -1046,6 +1052,174 @@ func _r1_diag_row(sim: Object, status: Dictionary, day: int) -> Dictionary:
 ## local ponderado pelo estoque, capacidade instalada de refino/rotas por
 ## receita e o frete pago por tonelada de comida importada (ordens do dia).
 ## Só leitura (`get_city_status`, `get_trade_orders`): nada é movido.
+## R1a (t163): soma o livro do dia (`get_r1_diag_status`) por nação e acumula
+## em meses de 30 d para o recorte R1_FOCUS + agregado do mundo ("_ALL").
+## Só leitura: não altera o mundo.
+func _r1_blank_flows() -> Array:
+	var flows: Array = []
+	for _name: String in R1_FLOW_NAMES:
+		flows.append(0.0)
+	return flows
+
+
+func _r1_add_city(per_nation: Dictionary, key: String, row: Dictionary) -> void:
+	var acc: Dictionary = per_nation.get(key, {})
+	if acc.is_empty():
+		acc = {
+			"firm_out": _r1_blank_flows(),
+			"service_out": _r1_blank_flows(),
+			"firm_in": 0.0,
+			"service_in": 0.0,
+			"cut_firm": 0.0,
+			"cut_n_firm": 0,
+			"cut_service": 0.0,
+			"cut_n_service": 0,
+			"import_abroad": 0.0,
+			"export_abroad": 0.0,
+			"private_cash": 0.0,
+			"firm_cash": 0.0,
+			"service_cash": 0.0,
+			"unified": false,
+		}
+	var firm_out: Array = acc["firm_out"]
+	var service_out: Array = acc["service_out"]
+	var row_firm: PackedFloat64Array = row.get(
+		"firm_out", PackedFloat64Array())
+	var row_service: PackedFloat64Array = row.get(
+		"service_out", PackedFloat64Array())
+	for index in R1_FLOW_NAMES.size():
+		if index < row_firm.size():
+			firm_out[index] = float(firm_out[index]) + float(row_firm[index])
+		if index < row_service.size():
+			service_out[index] = float(service_out[index]) \
+				+ float(row_service[index])
+	acc["firm_in"] = float(acc["firm_in"]) + float(row.get("firm_in", 0.0))
+	acc["service_in"] = float(acc["service_in"]) \
+		+ float(row.get("service_in", 0.0))
+	acc["cut_firm"] = float(acc["cut_firm"]) \
+		+ float(row.get("cut_firm", 0.0))
+	acc["cut_n_firm"] = int(acc["cut_n_firm"]) \
+		+ int(row.get("cut_n_firm", 0))
+	acc["cut_service"] = float(acc["cut_service"]) \
+		+ float(row.get("cut_service", 0.0))
+	acc["cut_n_service"] = int(acc["cut_n_service"]) \
+		+ int(row.get("cut_n_service", 0))
+	acc["import_abroad"] = float(acc["import_abroad"]) \
+		+ float(row.get("import_abroad", 0.0))
+	acc["export_abroad"] = float(acc["export_abroad"]) \
+		+ float(row.get("export_abroad", 0.0))
+	acc["private_cash"] = float(acc["private_cash"]) \
+		+ float(row.get("private_cash", 0.0))
+	acc["firm_cash"] = float(acc["firm_cash"]) \
+		+ float(row.get("firm_cash", 0.0))
+	acc["service_cash"] = float(acc["service_cash"]) \
+		+ float(row.get("service_cash", 0.0))
+	acc["unified"] = bool(acc["unified"]) or bool(row.get("unified", false))
+	per_nation[key] = acc
+
+
+func _r1_collect_nations(sim: Object, day: int) -> void:
+	if not sim.has_method("get_r1_diag_status"):
+		return
+	var diag: Dictionary = sim.get_r1_diag_status()
+	if not bool(diag.get("enabled", false)):
+		return
+	var month := (maxi(1, day) - 1) / 30 + 1
+	var per_nation: Dictionary = {}
+	for raw: Variant in Array(diag.get("cities", [])):
+		var row: Dictionary = raw
+		var nation := String(row.get("nation", ""))
+		if R1_FOCUS.has(nation):
+			_r1_add_city(per_nation, nation, row)
+		_r1_add_city(per_nation, "_ALL", row)
+	for nation_key: Variant in per_nation:
+		var day_acc: Dictionary = per_nation[nation_key]
+		var key := "%d|%s" % [month, String(nation_key)]
+		var acc: Dictionary = _r1_nations.get(key, {})
+		if acc.is_empty():
+			acc = {
+				"month": month,
+				"nation": String(nation_key),
+				"firm_out": _r1_blank_flows(),
+				"service_out": _r1_blank_flows(),
+				"firm_in": 0.0,
+				"service_in": 0.0,
+				"cut_firm": 0.0,
+				"cut_n_firm": 0,
+				"cut_service": 0.0,
+				"cut_n_service": 0,
+				"import_abroad": 0.0,
+				"export_abroad": 0.0,
+				"private_cash": 0.0,
+				"firm_cash": 0.0,
+				"service_cash": 0.0,
+				"unified": false,
+			}
+		var firm_out: Array = acc["firm_out"]
+		var service_out: Array = acc["service_out"]
+		var day_firm: Array = day_acc["firm_out"]
+		var day_service: Array = day_acc["service_out"]
+		for index in R1_FLOW_NAMES.size():
+			firm_out[index] = float(firm_out[index]) + float(day_firm[index])
+			service_out[index] = float(service_out[index]) \
+				+ float(day_service[index])
+		for scalar_key: String in [
+				"firm_in", "service_in", "cut_firm", "cut_service",
+				"import_abroad", "export_abroad"]:
+			acc[scalar_key] = float(acc[scalar_key]) \
+				+ float(day_acc[scalar_key])
+		for count_key: String in ["cut_n_firm", "cut_n_service"]:
+			acc[count_key] = int(acc[count_key]) + int(day_acc[count_key])
+		# Caixa: retrato do FIM do dia (o último dia do mês fica no registro).
+		acc["private_cash"] = float(day_acc["private_cash"])
+		acc["firm_cash"] = float(day_acc["firm_cash"])
+		acc["service_cash"] = float(day_acc["service_cash"])
+		acc["unified"] = bool(day_acc["unified"])
+		_r1_nations[key] = acc
+
+
+## Converte o acumulador mensal em linhas legíveis (listas de saída por nome).
+func _r1_nations_report() -> Array:
+	var rows: Array = []
+	var keys: Array = _r1_nations.keys()
+	keys.sort()
+	for key: Variant in keys:
+		var acc: Dictionary = _r1_nations[key]
+		var firm_out: Dictionary = {}
+		var service_out: Dictionary = {}
+		var total_out := 0.0
+		var total_in := float(acc["firm_in"]) + float(acc["service_in"])
+		for index in R1_FLOW_NAMES.size():
+			var name := String(R1_FLOW_NAMES[index])
+			var firm_value := float(acc["firm_out"][index])
+			var service_value := float(acc["service_out"][index])
+			firm_out[name] = firm_value
+			service_out[name] = service_value
+			total_out += firm_value + service_value
+		rows.append({
+			"month": int(acc["month"]),
+			"nation": String(acc["nation"]),
+			"firm_out": firm_out,
+			"service_out": service_out,
+			"total_out": total_out,
+			"total_in": total_in,
+			"net_out": total_out - total_in,
+			"cut_firm": float(acc["cut_firm"]),
+			"cut_n_firm": int(acc["cut_n_firm"]),
+			"cut_service": float(acc["cut_service"]),
+			"cut_n_service": int(acc["cut_n_service"]),
+			"import_abroad": float(acc["import_abroad"]),
+			"export_abroad": float(acc["export_abroad"]),
+			"net_abroad": float(acc["import_abroad"]) \
+				- float(acc["export_abroad"]),
+			"private_cash": float(acc["private_cash"]),
+			"firm_cash": float(acc["firm_cash"]),
+			"service_cash": float(acc["service_cash"]),
+			"unified": bool(acc["unified"]),
+		})
+	return rows
+
+
 func _fuel_report(sim: Object, status: Dictionary, day: int) -> Dictionary:
 	var products: PackedStringArray = sim.get_products()
 	var tracked: Dictionary = {}
@@ -1816,6 +1990,9 @@ func _run() -> void:
 		return
 	# D-125: índice do algodão no mundo (diagnóstico do algodão).
 	_products = sim.get_products()
+	# R1a (t163): livro de medição por cidade (só com --r1-diag).
+	if sim.has_method("set_r1_diag"):
+		sim.set_r1_diag(_r1_diag)
 	_cotton_index = _products.find("cotton")
 	if _profile and sim.has_method("set_profiling"):
 		sim.set_profiling(true)
@@ -1908,6 +2085,7 @@ func _run() -> void:
 			history.pop_front()
 		if _r1_diag:
 			r1_diag.append(_r1_diag_row(sim, status, day_now))
+			_r1_collect_nations(sim, day_now)
 		if not _goods_diag_ids.is_empty():
 			_goods_diag_sample(day_now, status)
 		if _fuel_diag and day_now == 1:
@@ -2070,6 +2248,7 @@ func _run() -> void:
 		"monetary_timeline": monetary_timeline,
 		# R1a (diagnóstico): série diária das entradas do portão e do crédito.
 		"r1_diag": r1_diag,
+		"r1_diag_nations": _r1_nations_report() if _r1_diag else [],
 		# PARTE E (D-116): energia — preço médio, % servida, racionamento,
 		# conexão das cidades e geração por fonte. Só medição.
 		"power": _power_digest(sim, power_samples) if _power_on else {},

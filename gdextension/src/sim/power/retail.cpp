@@ -76,12 +76,12 @@ void SimCore::phase_power_settle() {
 		// caixa unico ele sai do pool uma vez e respeita o sub-teto do setor
 		// (fatia da receita medida). Desligado, e a conta de antes.
 		const double paid_i = std::min(bill_i,
-			city.firm_external_room());
-		city.firm_external_pay(paid_i);
+			city.firm_external_room_request(bill_i));
+		city.firm_external_pay(paid_i, City::kR1Energy);
 		pool += paid_i;
 		const double paid_s = std::min(bill_s,
-			city.service_external_room());
-		city.service_external_pay(paid_s);
+			city.service_external_room_request(bill_s));
+		city.service_external_pay(paid_s, City::kR1Energy);
 		pool += paid_s;
 		const double paid_g = std::min(bill_g,
 			std::max(0.0, city.government_budget));

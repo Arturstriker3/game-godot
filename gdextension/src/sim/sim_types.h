@@ -1813,6 +1813,60 @@ struct Region {
 		double firm_revenue_share = -1.0;
 		double firm_external_paid_today = 0.0;
 		double service_external_paid_today = 0.0;
+		// ------------------------------------------------------------------
+		// R1a (t163) - INSTRUMENTACAO DE MEDICAO (`--r1-diag`), so leitura.
+		//
+		// Nao entra em nenhuma decisao: com `r1_diag` falso, nenhuma escrita
+		// acontece e o mundo e bit-identico ao de antes da sonda. Cada debito/
+		// credito dos quatro primitivos (`firm_pay`, `service_pay`,
+		// `firm_receive`, `service_receive`) soma no livro do setor e da
+		// categoria; os pagamentos externos levam a categoria do destino
+		// (importacao, energia, juros, IPTU/taxas) passada pelo chamador.
+		// `*_external_room_request` mede se o SUB-TETO cortou o pedido: guarda
+		// quantas vezes o teto ficou abaixo do que o chamador queria pagar e a
+		// soma cortada (por setor). Tudo zerado no inicio de cada dia
+		// (`phase_reset`) e publicado por `get_r1_diag_status`.
+		// ------------------------------------------------------------------
+		enum R1Flow {
+			kR1Other = 0,
+			kR1Wages = 1,
+			kR1ImportsAbroad = 2,
+			kR1TradeDomestic = 3,
+			kR1Energy = 4,
+			kR1Finance = 5,
+			kR1Taxes = 6,
+			kR1Invest = 7,
+			kR1Dividends = 8,
+			kR1FlowCount = 9
+		};
+		bool r1_diag = false;
+		double r1_firm_out[kR1FlowCount] = {};
+		double r1_service_out[kR1FlowCount] = {};
+		double r1_firm_in = 0.0;
+		double r1_service_in = 0.0;
+		double r1_ext_cut_firm = 0.0;
+		double r1_ext_cut_service = 0.0;
+		int r1_ext_cut_n_firm = 0;
+		int r1_ext_cut_n_service = 0;
+		// Comercio INTERNACIONAL liquidado neste dia (valor de origem da carga):
+		// saida = comprado de vendedor de outra nacao; entrada = vendido para
+		// comprador de outra nacao. Frete/tarifa ficam no pais do comprador.
+		double r1_import_abroad = 0.0;
+		double r1_export_abroad = 0.0;
+		void r1_reset_day() {
+			for (int i = 0; i < kR1FlowCount; ++i) {
+				r1_firm_out[i] = 0.0;
+				r1_service_out[i] = 0.0;
+			}
+			r1_firm_in = 0.0;
+			r1_service_in = 0.0;
+			r1_ext_cut_firm = 0.0;
+			r1_ext_cut_service = 0.0;
+			r1_ext_cut_n_firm = 0;
+			r1_ext_cut_n_service = 0;
+			r1_import_abroad = 0.0;
+			r1_export_abroad = 0.0;
+		}
 
 		// Liquidez que cada setor pode gastar HOJE (leitura). Com o caixa
 		// unico, os dois vem do pool - nunca somar as duas leituras.
@@ -1899,28 +1953,98 @@ struct Region {
 				private_cash = firm_cash + service_cash;
 			}
 		}
+		// R1a (t163): registra se o SUB-TETO cortou o pedido do chamador.
+		// `want` e o valor que o chamador queria pagar fora do setor privado.
+		// So conta quando a FATIA e a restricao ativa (modo `off` desliga o
+		// teto e `nonessential` ignora a fatia no pagamento essencial) E a
+		// fatia e menor que o pool: se o pool ja era o limite, o corte nao e
+		// do teto. Mede o que a fatia negou, nao o que o pool ja nao tinha.
+		void r1_note_external_request(double want, bool firm, bool essential) {
+			if (!unified_cash) {
+				return;
+			}
+			const bool share_applies = external_subceiling == kSubceilingAll
+				|| (external_subceiling == kSubceilingNonessential
+					&& !essential);
+			if (!share_applies) {
+				return;
+			}
+			const double share = firm ? measured_firm_revenue_share()
+				: (1.0 - measured_firm_revenue_share());
+			const double paid = firm ? firm_external_paid_today
+				: service_external_paid_today;
+			const double share_room = external_payment_base() * share - paid;
+			const double pool = std::max(0.0, private_cash);
+			if (share_room >= want - 1e-9) {
+				return;
+			}
+			// O pool e mais restritivo que a fatia: o corte nao e do teto.
+			if (pool <= share_room + 1e-9) {
+				return;
+			}
+			const double gap = want - std::max(0.0, share_room);
+			if (!(gap > 1e-9)) {
+				return;
+			}
+			if (firm) {
+				r1_ext_cut_firm += gap;
+				++r1_ext_cut_n_firm;
+			} else {
+				r1_ext_cut_service += gap;
+				++r1_ext_cut_n_service;
+			}
+		}
+		// Leitura do teto que mede o corte (devolve o MESMO valor do teto).
+		double firm_external_room_request(double want, bool essential = false) {
+			const double room = firm_external_room(essential);
+			if (r1_diag) {
+				r1_note_external_request(want, true, essential);
+			}
+			return room;
+		}
+		double service_external_room_request(double want, bool essential = false) {
+			const double room = service_external_room(essential);
+			if (r1_diag) {
+				r1_note_external_request(want, false, essential);
+			}
+			return room;
+		}
 		// Debito/credito de um setor. Desligado = a mesma conta de antes;
 		// ligado = mexe no pool e no espelho (transferencia interna entre os
-		// dois cancela o pool).
-		void firm_pay(double value) {
+		// dois cancela o pool). `flow` so alimenta o livro de medicao.
+		void firm_pay(double value, int flow = kR1Other) {
+			if (r1_diag) {
+				r1_firm_out[static_cast<int>(std::clamp(flow, 0,
+					static_cast<int>(kR1FlowCount) - 1))] += value;
+			}
 			if (unified_cash) {
 				private_cash -= value;
 			}
 			firm_cash -= value;
 		}
 		void firm_receive(double value) {
+			if (r1_diag) {
+				r1_firm_in += value;
+			}
 			if (unified_cash) {
 				private_cash += value;
 			}
 			firm_cash += value;
 		}
-		void service_pay(double value) {
+		void service_pay(double value, int flow = kR1Other) {
+			if (r1_diag) {
+				r1_service_out[static_cast<int>(std::clamp(flow, 0,
+					static_cast<int>(kR1FlowCount) - 1))] += value;
+			}
 			if (unified_cash) {
 				private_cash -= value;
 			}
 			service_cash -= value;
 		}
 		void service_receive(double value) {
+			if (r1_diag) {
+				r1_service_in += value;
+			}
 			if (unified_cash) {
 				private_cash += value;
 			}
@@ -1929,20 +2053,20 @@ struct Region {
 		// Pagamento EXTERNO (fora do setor privado) de um setor. Desligada a
 		// flag e o mesmo `firm_pay`/`service_pay` de antes; ligada, debita o
 		// pool e consome o sub-teto diario daquele setor.
-		void firm_external_pay(double value) {
+		void firm_external_pay(double value, int flow = kR1Other) {
 			if (value <= 0.0) {
 				return;
 			}
-			firm_pay(value);
+			firm_pay(value, flow);
 			if (unified_cash) {
 				firm_external_paid_today += value;
 			}
 		}
-		void service_external_pay(double value) {
+		void service_external_pay(double value, int flow = kR1Other) {
 			if (value <= 0.0) {
 				return;
 			}
-			service_pay(value);
+			service_pay(value, flow);
 			if (unified_cash) {
 				service_external_paid_today += value;
 			}

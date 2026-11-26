@@ -696,7 +696,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 		ws.city_gov[city_index].cash =
 			safe_nonneg(ws.city_gov[city_index].cash) - total_cost;
 	} else {
-		city.firm_pay(total_cost);
+		city.firm_pay(total_cost, City::kR1Invest);
 	}
 	core.add_construction_project(project);
 	return true;
