@@ -221,8 +221,8 @@ DLL debug `19:46:36`, `threads=1`, mundo real, `--days=365`.
   rodada 1: **−16,0%**.
 - 0 violações, 0 dias travados, **2 falências** (≤3),
   `trajectory_sha256 f324c424…` (novo, esperado).
-- Comida **97/179** abaixo de 0,975 (≤97; mediana 0,96741), drift **0,014477**
-  (<0,03).
+- Comida **97/179** abaixo de 0,975 (≤97; mediana 0,96741), drift **0,014380**
+  (<0,03; máximo diário 0,014477).
 - **367 investimentos** (284 privado / 83 grupo), herd máx. **3**. A varredura
   mensal cortou as oportunidades do privado (602 → 284); o total caiu de 689
   para 367.
@@ -246,8 +246,10 @@ DLL debug `19:46:36`, `threads=1`, mundo real, `--days=365`.
   e mantém as cadências antigas.
 
 **Veredito da rodada 2:** a varredura mensal é determinística, reduz a parede
-ON em 16% e mantém o OFF bit a bit, mas **o critério de perf (≤20%) e o MA30 de
-`chips` (≤1,10) continuam reprovados**.
+ON em 16% e mantém o OFF bit a bit; **o critério de perf (≤20%) continua
+reprovado** e o preço de `chips` (dia 365 ÷ dia 0 = 0,9365) já estava dentro do
+teto atual de 1,15 (o "reprovado" da época era ÷base 1,1137 > 1,10, razão
+substituída pela decisão do dono de 2026-11-25).
 
 ### Testes
 
