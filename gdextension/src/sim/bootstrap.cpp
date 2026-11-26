@@ -252,15 +252,40 @@ Plan plan(const WorldState& ws) {
 					}
 					return a.id < b.id;
 				});
-			// Teto por planta: divide em blocos de `capacity_max`.
-			const int chunks = std::max(1,
-				static_cast<int>(std::ceil(target / cfg.capacity_max)));
-			const double chunk_capacity = target / static_cast<double>(chunks);
-			const int max_cities = std::max(cfg.max_cities_per_nation, chunks);
+			// G3 (correção 2): bem de massa pode declarar teto proporcional à
+			// cidade (`max_plant_capacity_per_100k`) em vez do teto fixo de
+			// `capacity_max`. Aí o alvo do país é dividido pelo número de
+			// cidades-alvo (as elegíveis, sem criar blocos artificiais de
+			// 20 t/dia) e cada planta é limitada só por X t/dia por 100 mil
+			// habitantes simulados. `max_plant_capacity_per_100k == 0` mantém o
+			// caminho do G2 bit a bit (blocos de `capacity_max`).
+			const bool proportional = good.max_plant_capacity_per_100k > 0.0;
+			double chunk_capacity = 0.0;
+			int max_cities = 0;
+			if (proportional) {
+				// Não divide em migalhas: cada cidade-alvo recebe ao menos
+				// `capacity_min` (o alvo pequeno usa menos cidades).
+				int target_cities = static_cast<int>(candidates.size());
+				if (cfg.capacity_min > 0.0) {
+					target_cities = std::min(target_cities, std::max(1,
+						static_cast<int>(target / cfg.capacity_min)));
+				}
+				max_cities = std::max(1, target_cities);
+				chunk_capacity = target / static_cast<double>(max_cities);
+			} else {
+				const int chunks = std::max(1,
+					static_cast<int>(std::ceil(target / cfg.capacity_max)));
+				chunk_capacity = target / static_cast<double>(chunks);
+				max_cities = std::max(cfg.max_cities_per_nation, chunks);
+			}
+			// Alvo coberto por N plantas de target/N pode deixar um resíduo de
+			// ponto flutuante; o limiar acompanha o tamanho do alvo.
+			const double remaining_eps =
+				proportional ? 1e-9 * std::max(1.0, target) : 1e-12;
 			int used_cities = 0;
 			double remaining = target;
 			for (const int city_index : candidates) {
-				if (remaining <= 1e-12) {
+				if (remaining <= remaining_eps) {
 					break;
 				}
 				if (used_cities >= max_cities) {
@@ -274,8 +299,18 @@ Plan plan(const WorldState& ws) {
 				}
 				const Recipe& recipe =
 					ws.recipes[static_cast<std::size_t>(recipe_index)];
-				const double capacity = std::min(chunk_capacity,
+				double capacity = std::min(chunk_capacity,
 					std::min(cfg.capacity_max, remaining));
+				if (proportional) {
+					const double city_ceiling =
+						good.max_plant_capacity_per_100k
+						* city.simulation_population / 100000.0;
+					const double planned = std::min(chunk_capacity, city_ceiling);
+					if (planned < cfg.capacity_min) {
+						continue;  // cidade pequena demais para planta mínima
+					}
+					capacity = std::min(remaining, planned);
+				}
 				const double cost = capacity * recipe.capital_per_capacity;
 				BootstrapPlanRow row;
 				row.good = good.id;
@@ -296,7 +331,7 @@ Plan plan(const WorldState& ws) {
 				++used_cities;
 				remaining = std::max(0.0, remaining - capacity);
 			}
-			if (remaining > 1e-12) {
+			if (remaining > remaining_eps) {
 				out.shortfall += remaining;
 				BootstrapPlanRow row;
 				row.good = good.id;

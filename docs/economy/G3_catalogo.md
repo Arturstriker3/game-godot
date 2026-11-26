@@ -7,6 +7,11 @@
 **Revisão 2 (recalibração):** o 0,02 reprovou no gate de 365 d; o L1 passa a **0,90** por bem
 (princípio “básico maduro nasce abastecido”, §7). A decisão registrada era 0,02 — a mudança
 **aguarda confirmação do dono antes do merge**.
+**Revisão 3 (correção 2, §8):** a saturação da semeadura (55 330 t/dia de shortfall com 439
+plantas) foi atacada no teto por planta: o L1 declara `max_plant_capacity_per_100k = 10`
+(t/dia por 100 mil habitantes simulados) e o alvo do país é dividido pelas cidades-alvo. O gate
+de 365 d **continua reprovando** `clothes` (1,7750) e agora também `fabric` (1,3041); a hipótese
+medida é que o gargalo restante está a montante (algodão/tecido), não no teto da planta.
 
 Este lote entrega **somente o LOTE 1** (`clothes`, `fabric`, `shoes`) e o **reuso** do mecanismo
 G2. Lotes 2–5 não aterrissam aqui; o gate é medido no acumulado (hoje, G2 + L1).
@@ -147,17 +152,74 @@ De 0,10 para 0,90 o alvo cresce 9×, mas só entram **+9 plantas** (430 → 439)
 cresce 7,3×: o gargalo é a capacidade por planta/cidade, não a fração em si. A produção de
 `clothes` sobe 25,6% (109,2 → 137,1) e o preço cai de 2,51 para 2,27, mas não fecha 1,15. Fechar o princípio de
 verdade exige **capacidade por planta proporcional ao bem** (ou mais de uma planta por cidade) —
-mudança de núcleo/design fora deste lote; nenhum limiar, participação ou âncora foi afrouxado.
+implementado na correção 2 (§8); nenhum limiar, participação ou âncora foi afrouxado.
 
-## 8. Estado e próximos passos
+## 8. Correção 2 — teto da planta proporcional à cidade (medida)
 
-- **Sem merge.** Branch `feat/g3-catalogo`. O gate do L1 continua **reprovado** no preço de
-  `clothes` (2,2733 > 1,15); todo o resto do lote passa.
-- **Aguarda confirmação do dono (a decisão era 0,02) antes do merge.** O 0,90 é a correção
-  proposta; o bloqueio real medido é a capacidade por planta/cidade.
+**O que mudou (núcleo):** o teto fixo de **20 t/dia por planta** não conta a âncora de massa.
+`BootstrapGood` ganhou o campo opcional `max_plant_capacity_per_100k` (t/dia por 100 mil
+habitantes **simulados**; `0`/ausente = caminho do G2 inalterado). Quando declarado:
+
+- o alvo do país (`share × âncora × fração`) é dividido pelo **número de cidades-alvo**
+  (as elegíveis pelo gate 5 M → maior ≥1 M), sem blocos artificiais de 20 t/dia; o piso
+  `capacity_min` limita quantas cidades entram (não cria migalhas);
+- cada planta só é limitada por `valor × população / 100 000` (a cidade pode ter fábrica
+  grande; 10 t/dia/100k é o default declarado do lote) — abaixo do orçamento por cidade
+  (`pop/6000` t/dia com `capital_per_capacity = 3 000` e `budget_share = 0,5`), então o teto
+  não briga com o caixa;
+- `set_bootstrap_industry` lê `entry.max_plant_capacity_per_100k`;
+- **G2 intacto:** os 21 bens não declaram o campo e passam pelo mesmo código (blocos de
+  `capacity_max`); `sim_unit_tests` cobre os dois caminhos no mesmo mundo.
+- JSON: `clothes`, `fabric` e `shoes` declaram `max_plant_capacity_per_100k: 10.0`.
+
+**Testes:** `sim_unit_tests` **76/76** (771 asserções, era 75/758), incluindo o caso novo
+“teto proporcional por cidade e ausente mantém o G2”.
+
+**Smoke de 30 d** (`--days=30 --bootstrap=1 --ai-brain=1 --goods-diag=clothes,fabric,shoes`;
+`G:/opengs_tmp/g3/smoke_fix.json`):
+
+| | 0,90 saturado | correção 2 |
+|---|---:|---:|
+| plantas (G2+L1) | 439 | **426** |
+| `bootstrap_shortfall` (t/dia) | 55 330 | **10 262** (−81,5%) |
+
+O shortfall cai drasticamente mas não zera: o que sobra é o teto proporcional batendo em
+cidades pequenas das nações produtoras (ex.: uma única cidade de ~2 M não absorve o alvo
+nacional) e o orçamento local — nada foi inventado para “fechar” o número.
+
+**Gate de 365 d com a correção** (`G:/opengs_tmp/g3/on365_fix.json`, trajetória `51386a8e…`):
+
+| critério | meta | 0,02 | 0,90 | correção 2 |
+|---|---|---:|---:|---:|
+| violações / dias travados | 0 / 0 | 0 / 0 | 0 / 0 | **0 / 0** |
+| falências | ≤ 3 | 3 | 2 | **2** (BRA/iron d120, CHL/wheat d210) |
+| portão de comida | ≤ 97/179 | 95 | 94 | **93/179** |
+| drift / máx. diário | < 0,03 | 0,014485 | 0,014074 | **0,020888** |
+| `clothes`/`fabric`/`shoes` produzido **e** vendido | ≥ 3 países | 4/5/2 | 4/5/4 | **3/4/1** |
+| `clothes` MA30 d365 ÷ d0 | ≤ 1,15 | 3,1064 | 2,2733 | **1,7750** (225,21 / 140,05) |
+| `fabric` idem | ≤ 1,15 | 1,2770 | 1,1166 | **1,3041** (114,11 / 87,93) |
+| `shoes` idem | ≤ 1,15 | 1,2196 | 1,1114 | **1,0800** (225,12 / 221,34) |
+
+**Leitura medida.** A capacidade semeada deixou de saturar: `clothes` produzido+vendido sobe de
+137 para **299 t/dia** (CHN 226, USA 59, BRA 15) e o preço cai de 2,27 para **1,78** — a
+correção ataca o gargalo certo da planta. Mas o preço **não fecha** e `fabric` **piora**
+(1,12 → 1,30): a produção de `clothes` agora acompanha o **tecido** disponível (347 t/dia de
+`fabric` vendido; a cadeia é limitada pelo algodão), e a capacidade de `fabric` 37× maior
+disputa o algodão e sobe o custo unitário (fabric 114 vs 98 no dia 365). `shoes` passa no preço
+(1,08) mas cai de 4 para **1 país** produtor: as plantas de BRA/ITA etc. ficam sem insumo/caixa
+e não vendem. Ou seja: o teto de 20 t/dia era **um** gargalo, não **o** gargalo; o restante
+está a montante (algodão → tecido) e na cobertura de países — fora do escopo desta correção.
+
+## 9. Estado e próximos passos
+
+- **Sem merge.** Branch `feat/g3-catalogo`. O gate do L1 continua **reprovado**: `clothes`
+  1,7750 > 1,15 e `fabric` 1,3041 > 1,15; `shoes` passa no preço (1,0800) mas não nos países
+  (1 < 3).
+- **Aguarda confirmação/decisão do dono:** (a) manter o 0,90 com a correção 2, (b) revisar o
+  escopo (cadeia do algodão/tecido) ou (c) voltar à decisão original de 0,02.
 - **Lotes 2–5 não aterrissaram.**
-- `sim_unit_tests` **75/75** (758 asserções). `-Tier pr -Base main` **42/42 OK** (run
-  `20261126_050646`; 0 falha, 0 crash, 0 timeout) — o runner recomenda `-Tier nightly` antes
+- `sim_unit_tests` **76/76** (771 asserções). `-Tier pr -Base main` **42/42 OK** (run
+  `20261126_061255`; 0 falha, 0 crash, 0 timeout) — o runner recomenda `-Tier nightly` antes
   de um merge.
-- Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,on365_f090,off365,off365_f090}.json` e logs
-  `*.log`.
+- Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,on365_f090,on365_fix,off365,off365_f090,
+  off365_fix,smoke_f090,smoke_fix}.json` e logs `*.log`.

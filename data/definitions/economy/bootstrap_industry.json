@@ -1,5 +1,5 @@
 ﻿{
-  "_comment": "G2 (spec G2_bootstrap_industrial.md, revisao 2) + G3 LOTE 1 (spec G3_semeadura_catalogo.md, revisao 2) - semente do dia 0 por PRODUTORES REAIS. Nenhuma capacidade literal: cap_planta = participacao x ancora_mundial(bem) x seed_fraction, com ancora = demanda final de needs.json propagada pela arvore de receitas (mesma funcao do potencial da IA). Participacoes arredondadas somam 1,00; 'outros' e residual declarado e NAO vira planta. Fonte por bem no campo `source`; `params_source: declared:balancing` quando nao ha producao publicada. G3: cada bem pode declarar `seed_fraction` proprio (ausente/0 herda o global). Principio (G3 rev. 2): bem de NECESSIDADE BASICA madura nasce ~abastecido - `seed_fraction` ~0,90 do necessario para a demanda-ancora (o cerebro constroi o crescimento e a margem); fracao pequena (0,02-0,10) fica para bens em crescimento. O LOTE 1 (clothes/fabric/shoes) usa 0,90 (recalibracao pos-diagnostico); os 21 bens do G2 continuam em 0,10.",
+  "_comment": "G2 (spec G2_bootstrap_industrial.md, revisao 2) + G3 LOTE 1 (spec G3_semeadura_catalogo.md, revisao 2) - semente do dia 0 por PRODUTORES REAIS. Nenhuma capacidade literal: cap_planta = participacao x ancora_mundial(bem) x seed_fraction, com ancora = demanda final de needs.json propagada pela arvore de receitas (mesma funcao do potencial da IA). Participacoes arredondadas somam 1,00; 'outros' e residual declarado e NAO vira planta. Fonte por bem no campo `source`; `params_source: declared:balancing` quando nao ha producao publicada. G3: cada bem pode declarar `seed_fraction` proprio (ausente/0 herda o global). Principio (G3 rev. 2): bem de NECESSIDADE BASICA madura nasce ~abastecido - `seed_fraction` ~0,90 do necessario para a demanda-ancora (o cerebro constroi o crescimento e a margem); fracao pequena (0,02-0,10) fica para bens em crescimento. O LOTE 1 (clothes/fabric/shoes) usa 0,90 (recalibracao pos-diagnostico); os 21 bens do G2 continuam em 0,10. Correcao 2: cada bem pode declarar `max_plant_capacity_per_100k` (teto da planta em t/dia por 100 mil habitantes simulados; ausente/0 mantem o teto fixo capacity_max=20 t/dia do G2). O LOTE 1 declara 10 t/dia/100k (declared:balancing) porque 1 planta por cidade com teto de 20 t/dia satura a semeadura dos bens de massa; o valor fica abaixo do limite de orcamento por cidade (pop/6000 t/dia com capital 3000 e budget_share 0,5).",
   "version": 2,
   "meta": {
     "id": "G2+G3",
@@ -322,6 +322,7 @@
       "id": "clothes",
       "lot": "L1",
       "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
       "anchor_source": "needs:basic/clothing",
       "source": "WTO World Trade Statistical Review 2024 (exportacoes de vestuario como proxy de local)",
       "params_source": "measured:wto_wtsr_2024",
@@ -349,6 +350,7 @@
       "id": "fabric",
       "lot": "L1",
       "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
       "anchor_source": "needs:basic/clothing + life/footwear",
       "source": "default:balancing (base ITMF/UN Comtrade)",
       "params_source": "declared:balancing",
@@ -370,6 +372,7 @@
       "id": "shoes",
       "lot": "L1",
       "seed_fraction": 0.9,
+      "max_plant_capacity_per_100k": 10.0,
       "anchor_source": "needs:life/footwear",
       "source": "APICCAPS World Footwear Yearbook 2024 (outros 0,06: residual fecha 1,00; a linha da spec imprime 0,04 e soma 0,98)",
       "params_source": "measured:apiccaps_world_footwear_2024",

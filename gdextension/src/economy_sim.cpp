@@ -5437,6 +5437,10 @@ void EconomySim::set_bootstrap_industry(const Dictionary& values) {
 		// G3 (D-G3-1): fração por bem (0 = herda o `seed_fraction` global).
 		good.seed_fraction = std::max(0.0,
 			double(entry.get("seed_fraction", 0.0)));
+		// G3 (correção 2): teto proporcional por cidade em t/dia por 100 mil
+		// habitantes simulados (0/ausente = teto fixo `capacity_max` do G2).
+		good.max_plant_capacity_per_100k = std::max(0.0,
+			double(entry.get("max_plant_capacity_per_100k", 0.0)));
 		const Dictionary producers = entry.get("producers", Dictionary());
 		for (const Variant& key : producers.keys()) {
 			BootstrapProducer producer;

@@ -384,6 +384,58 @@ TEST_CASE("G3: seed_fraction por bem sobrepoe o global e o ausente herda") {
 	CHECK(inherited.rows[0].capacity == Approx(10.0));
 }
 
+TEST_CASE("G3 correcao 2: teto proporcional por cidade e ausente mantem o G2") {
+	// Duas cidades-alvo com populacoes diferentes: com o teto proporcional a
+	// cidade, cada planta so pode passar de X t/dia por 100 mil habitantes
+	// simulados — sem o teto fixo de 20 t/dia que saturava a semeadura.
+	ogs::WorldState ws = demand_world();
+	ws.bootstrap.enabled = true;
+	ws.bootstrap.seed_fraction = 0.10;
+	ws.bootstrap.capacity_min = 0.05;
+	ws.bootstrap.capacity_max = 20.0;
+	ws.bootstrap.budget_share = 0.5;
+	ws.needs_levels[0].categories[0].per_capita_day = 1e-3;
+	ws.cities[0].id = "C1";
+	ws.cities[0].simulation_population = 10000000.0;
+	ws.cities[0].government_budget = 1e9;
+	ogs::City second;
+	second.id = "C2";
+	second.nation = "AAA";
+	second.simulation_population = 5000000.0;
+	second.government_budget = 1e9;
+	ws.cities.push_back(second);
+	ogs::BootstrapGood good;
+	good.id = "mid";
+	good.producers.push_back({"AAA", 1.0});
+	good.max_plant_capacity_per_100k = 1.0;
+	ws.bootstrap.goods.push_back(good);
+
+	const ogs::bootstrap::Plan plan = ogs::bootstrap::plan(ws);
+	REQUIRE(plan.seeded == 2);
+	// Alvo 750 t/dia (15 M x 1e-3 x 0,5 x 0,10) dividido por 2 cidades = 375;
+	// o teto proporcional corta C1 (10 M -> 100 t/dia) e C2 (5 M -> 50 t/dia).
+	CHECK(plan.rows[0].city == "C1");
+	CHECK(plan.rows[0].capacity == Approx(100.0));
+	CHECK(plan.rows[1].city == "C2");
+	CHECK(plan.rows[1].capacity == Approx(50.0));
+	CHECK(plan.shortfall == Approx(600.0));
+	// Determinismo: duas chamadas no mesmo mundo devolvem as mesmas capacidades.
+	const ogs::bootstrap::Plan again = ogs::bootstrap::plan(ws);
+	REQUIRE(again.rows.size() == plan.rows.size());
+	for (std::size_t index = 0; index < plan.rows.size(); ++index) {
+		CHECK(again.rows[index].capacity
+			== doctest::Approx(plan.rows[index].capacity));
+	}
+
+	// Campo ausente/0: caminho do G2 inalterado (blocos de `capacity_max`).
+	ws.bootstrap.goods[0].max_plant_capacity_per_100k = 0.0;
+	const ogs::bootstrap::Plan g2 = ogs::bootstrap::plan(ws);
+	REQUIRE(g2.seeded == 2);
+	// 750 / ceil(750 / 20) = 750 / 38 blocos.
+	CHECK(g2.rows[0].capacity == Approx(750.0 / 38.0));
+	CHECK(g2.rows[1].capacity == Approx(750.0 / 38.0));
+}
+
 TEST_CASE("G2: semeadura deterministica (duas cargas = mesmo plano)") {
 	ogs::WorldState ws = demand_world();
 	ws.bootstrap.enabled = true;

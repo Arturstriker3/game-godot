@@ -305,6 +305,13 @@ struct BootstrapGood {
 	// G3 (D-G3-1): fração da âncora semeada por bem/lote. 0 = herda
 	// `BootstrapIndustry::seed_fraction` (comportamento G2 inalterado).
 	double seed_fraction = 0.0;
+	// G3 (correção 2): teto da planta em t/dia por 100 mil habitantes
+	// simulados, proporcional à cidade-alvo. 0 = usa o teto fixo
+	// `BootstrapIndustry::capacity_max` (caminho G2 inalterado). Quando > 0, o
+	// alvo do país é dividido pelo número de cidades-alvo e cada planta só é
+	// limitada por `valor × população / 100 000` (fábricas de massa são grandes;
+	// centenas de plantas minúsculas saturam a semeadura e custam mais tick).
+	double max_plant_capacity_per_100k = 0.0;
 	std::vector<BootstrapProducer> producers;
 };
 
