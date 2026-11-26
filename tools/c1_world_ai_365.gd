@@ -158,10 +158,19 @@ var _cotton_diag := false
 # G2 (perf): custo por fase do nucleo (`set_profiling(true)` + `get_profile`).
 # So medicao: instrumenta sem mudar o mundo (mesmo caminho do b6/g2).
 var _profile := false
+# G2 perf rodada 3: `tick` (padrão, tick_day + status completo — caminho dos
+# goldens) ou `publish` (caminho do jogo: tick_and_publish + get_day_summary).
+# Só medição: o mundo é o mesmo.
+var _perf_path := "tick"
 # G2 (perf): tempo de parede medido no GDScript (tick x status) quando
 # `--profile=1`; o profiler do nucleo nao cobre a marshalling do Dictionary.
 var _prof_tick_us := 0
 var _prof_status_us := 0
+var _prof_summary_us := 0
+## G2 perf rodada 3: soma por fase AO LONGO DOS DIAS. `get_profile()` devolve os
+## slots do ÚLTIMO tick (Zone/lap sobrescrevem), então ler uma vez no fim e
+## dividir pelos dias subreporta ~N×. Aqui cada dia é somado.
+var _phase_acc: Dictionary = {}
 var _cotton_farms: Dictionary = {}
 var _cotton_counts: Array = []
 var _cotton_prices: Array = []
@@ -270,6 +279,8 @@ func _init() -> void:
 			if arg.contains("="):
 				profile_value = arg.split("=", true, 1)[1]
 			_profile = profile_value != "0"
+		elif arg.begins_with("--perf-path="):
+			_perf_path = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--goods-diag="):
 			# G1: lista de bens a vigiar (ex.: chips,microchips). Só medição.
 			for raw_id in arg.split("=", true, 1)[1].split(",", false):
@@ -1617,9 +1628,28 @@ func _run() -> void:
 			var seeded: float = sim.seed_central_bank_reserves(_fx_seed_days)
 			print("[c1] cenário C2b2: reservas = %.3f âncora no dia 30" % seeded)
 		var _tick_start := Time.get_ticks_usec() if _profile else 0
-		var summary: Dictionary = sim.tick_day()
+		var summary: Dictionary = {}
+		if _perf_path == "publish":
+			# G2 perf rodada 3: mede o caminho REAL do jogo separando o dia
+			# (`tick_and_publish`, no worker) do resumo leve (`get_day_summary`,
+			# na main). O `tick_day()` dos goldens monta o status completo do
+			# mundo e não é o caminho do jogo.
+			sim.tick_and_publish()
+			if _profile:
+				_prof_tick_us += Time.get_ticks_usec() - _tick_start
+			var _summary_start := Time.get_ticks_usec() if _profile else 0
+			summary = sim.get_day_summary()
+			if _profile:
+				_prof_summary_us += Time.get_ticks_usec() - _summary_start
+		else:
+			summary = sim.tick_day()
+			if _profile:
+				_prof_tick_us += Time.get_ticks_usec() - _tick_start
 		if _profile:
-			_prof_tick_us += Time.get_ticks_usec() - _tick_start
+			var day_profile: Dictionary = sim.get_profile()
+			for key: Variant in day_profile:
+				_phase_acc[key] = float(_phase_acc.get(key, 0.0)) \
+					+ float(day_profile[key])
 		for violation in Array(summary.get("invariant_violations", [])):
 			violation_count += 1
 			if violation_samples.size() < 10:
@@ -1832,6 +1862,9 @@ func _run() -> void:
 			float(_prof_tick_us) / float(maxi(1, _days))
 		out["profile"]["harness_status_us_per_day"] = \
 			float(_prof_status_us) / float(maxi(1, _days))
+		out["profile"]["harness_summary_us_per_day"] = \
+			float(_prof_summary_us) / float(maxi(1, _days))
+		out["profile"]["perf_path"] = _perf_path
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
 	if _cotton_diag:
@@ -1911,8 +1944,8 @@ func _run() -> void:
 			% [int(d131.get("investments_total", 0)),
 				int(d131.get("investments_private", 0)),
 				int(d131.get("investments_group", 0))])
-		print("[c1] D-131 B: candidatos únicos/mês=%d rejeitados caixa/mês=%d "
-			+ "risco=%d anti-manada máx 30d=%d"
+		print(("[c1] D-131 B: candidatos únicos/mês=%d rejeitados caixa/mês=%d "
+			+ "risco=%d anti-manada máx 30d=%d")
 			% [int(d131.get("unique_candidates_month", 0)),
 				int(d131.get("unique_rejected_month", 0)),
 				int(d131.get("risk_rejected", 0)),

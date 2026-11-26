@@ -269,3 +269,60 @@ que o tick, então 600 frames podiam vencer antes do resumo. O teto passou a ser
 de **tempo de parede (120 s)**, só nesses dois testes. Rodada direcionada:
 `population_template_test` **36,17 s OK** e `services_template_test`
 **28,72 s OK**. O `sim_unit_tests` ganhou o caso do cache (69/69).
+
+## Perf rodada 3 — perfil antes de mexer (2026-11-25)
+
+O harness `c1_world_ai_365.gd --profile` somava as fases lendo
+`get_profile()` UMA vez no fim; os slots do profiler são sobrescritos a cada
+tick, então o valor lido era o do ÚLTIMO dia e a divisão por N subreportava
+~N×. A rodada 3 passou a acumular as fases dia a dia (`--profile`), separou o
+dia (`tick_and_publish`) do resumo (`get_day_summary`) com
+`--perf-path=publish` e instrumentou o interior da fase `ai` (piso, caches do
+dia, grupos, privado, governo, armazém, refinaria, forecast, varredura de
+`loss_blocked`). Os números de parede por relógio (`counter_tick_us_*`) fecham
+com a soma das zonas.
+
+**Decomposição (30 d, debug, threads=1, caminho do jogo; ms/dia):**
+
+| | OFF (piso off) | ON rodada 2 (piso full) | ON rodada 3 |
+|---|---:|---:|---:|
+| `tick_and_publish` | 1 519,4 | 2 259 | 2 227,6 |
+| core (fases do dia) | 26,2 | 26,4 | 26,1 |
+| IA total | 38,0 | 63,0 | 61,2 |
+| grupos | 35,1 | 59,3 | 57,9 |
+| forecast | 22,7 | 37,8 | 36,8 |
+| `loss_blocked` | 5,5 | 9,4 | 9,2 |
+| piso aplicado (`ai_floor`) | — | 0,02 | 0,02 |
+| `group_attempts` (30 d) | 208 079 | 368 851 | 368 187 |
+| investimentos | 24 | 37 | 37 |
+
+O piso **aplicado** custa 0,02 ms/dia (1 479 células cidade×bem/dia): não é
+ele. O custo é o piso inflando `desired`/`shortage` na view: `append_candidate`
+enumerava 849 cidades × bem (a barreira `shortage<=0 && sold<=0 && desired<=0`
+nunca dispara) e o forecast mensal do grupo — 2/3 da IA — rodava 3,3× mais.
+O `get_status()` do harness (52 ms/dia) e o `tick_day()` dos goldens não são o
+caminho do jogo; o resumo leve da A4 custa 0,5 ms.
+
+**Correção dirigida (uma):** a view guarda o mercado REAL antes do piso
+(`real_shortage`/`real_desired`) e o candidato do grupo exige lacuna ou venda
+reais. O sinal do piso em bem sem mercado fica restrito à **cidade-semente da
+nação** (maior necessidade de comida) e só quando a nação ainda não tem
+capacidade daquele bem — o bootstrap de cadeias novas continua, sem abrir
+candidato em toda cidade. A varredura mensal do privado foi **revertida**
+(privado/governo/armazém voltam à cadência semanal da A6; grupo segue mensal):
+o perfil mostrou que ela não era o custo dominante e custava investimentos
+(689→367 em 365 d).
+
+**A/B 30 d depois (mesma DLL debug, caminho do jogo):** parede **56,2 →
+77,3 s (+37,6%)**; `tick_and_publish` **1 519 → 2 228 ms/dia (+46,6%)**; IA
+**38,0 → 61,2 ms/dia**; forecast **22,7 → 36,8**; tentativas de grupo
+**208 079 → 368 187 (1,77×, era 3,3×)**; investimentos **24 → 37**. Alvo ≤20%
+**não atingido**: o que resta é o piso ainda elevando `shortage` (dimensionar)
+em bens com demanda real, que mantém 1,77× os forecasts. Nenhum número de
+balanceamento foi inventado; o ganho de perf é 3,3× → 1,77× de candidatos sem
+mudar a semântica do piso para bens com mercado.
+
+**Pendente:** re-aceite 365 d ON/OFF e `-Tier pr -Base main` desta rodada; a
+varredura mensal do privado foi revertida, então o aceite de 365 d da rodada 2
+(367 investimentos) não vale mais.
+

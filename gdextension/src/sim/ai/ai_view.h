@@ -58,6 +58,12 @@ struct AiMarketRow {
 	double sold = 0.0;
 	double shortage = 0.0;
 	double desired = 0.0;
+	// G2 perf rodada 3: o mercado REAL do dia, antes do piso de demanda
+	// potencial. O piso continua valendo para dimensionar/precificar a
+	// decisão; estes campos são o gatilho de "esta cidade precisa deste bem?"
+	// — sem eles o piso transforma toda cidade × bem em candidato.
+	double real_shortage = 0.0;
+	double real_desired = 0.0;
 };
 
 // Escalares da POP que a IA lê (bloco `p_*` do `light`).
@@ -239,6 +245,8 @@ enum AiMarketField : int {
 	kAiSold,
 	kAiShortage,
 	kAiDesired,
+	kAiRealShortage,
+	kAiRealDesired,
 };
 
 // Escalar da POP (as chaves `p_*` do bloco `light`).

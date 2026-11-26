@@ -11,6 +11,7 @@
 #include "../efficiency.h"
 #include "../monetary.h"
 #include "../potential_demand.h"
+#include "../profiling.h"
 #include "../sim_core.h"
 #include "../sim_constants.h"
 #include "../storage.h"
@@ -44,6 +45,7 @@ void apply_potential_floor(const WorldState& ws, AiView& view,
 			|| !ws.needs_loaded) {
 		return;
 	}
+	OGS_SIM_ZONE(kPhaseAiFloor);
 	PotentialDemandCache local;
 	PotentialDemandCache* target = cache != nullptr ? cache : &local;
 	if (cache == nullptr || potential_demand_cache_stale(ws, *target)) {
@@ -55,6 +57,11 @@ void apply_potential_floor(const WorldState& ws, AiView& view,
 	if (target->values.size() != expected) {
 		return;  // dimensoes inesperadas: ausencia honesta, sem piso
 	}
+	// G2 perf rodada 3 (só medição): quantas células cidade × bem recebem o
+	// piso por dia e quantas têm potencial positivo. É a medida que separa
+	// "aplicar o piso é caro" de "o candidato que ele cria é caro".
+	int floored_cells = 0;
+	int potential_cells = 0;
 	for (std::size_t city_index = 0;
 			city_index < static_cast<std::size_t>(view.cities);
 			++city_index) {
@@ -63,13 +70,20 @@ void apply_potential_floor(const WorldState& ws, AiView& view,
 				view.markets[city_index * products + product];
 			const double potential =
 				target->values[city_index * products + product];
+			if (potential <= 0.0) {
+				continue;
+			}
+			++potential_cells;
 			const double gap = potential - row.desired;
 			if (gap > 0.0) {
 				row.desired += gap;
 				row.shortage += gap;
+				++floored_cells;
 			}
 		}
 	}
+	OGS_SIM_COUNTER("floor_cells", static_cast<double>(floored_cells));
+	OGS_SIM_COUNTER("potential_cells", static_cast<double>(potential_cells));
 }
 
 } // namespace
@@ -127,6 +141,9 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view,
 			target.sold = market.sold;
 			target.shortage = market.shortage;
 			target.desired = market.desired;
+			// G2 perf rodada 3: retrato REAL antes de `apply_potential_floor`.
+			target.real_shortage = market.shortage;
+			target.real_desired = market.desired;
 			view.c_land_capacity[city_index * products + product] =
 				city.land_capacity[product];
 		}
@@ -433,6 +450,8 @@ double ai_market(const AiView& view, int city, int product, AiMarketField field)
 	case kAiSold: return row.sold;
 	case kAiShortage: return row.shortage;
 	case kAiDesired: return row.desired;
+	case kAiRealShortage: return row.real_shortage;
+	case kAiRealDesired: return row.real_desired;
 	}
 	return 0.0;
 }

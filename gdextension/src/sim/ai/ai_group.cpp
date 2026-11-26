@@ -32,6 +32,7 @@
 #include "../bank.h"
 #include "../bank_crisis.h"
 #include "../efficiency.h"
+#include "../profiling.h"
 #include "../stock.h"
 
 #include <algorithm>
@@ -111,6 +112,10 @@ struct ResourceCandidate {
 	// D-125: eficiência média esperada da rampa (a mesma conta do investidor
 	// privado, `ai_expected_new_efficiency`); 1,0 na cesta alimentar.
 	double ramp = 1.0;
+	// G2 perf rodada 3: o bem tem lacuna REAL no mercado do dia (ou venda).
+	// Só candidatos com lacuna real recebem forecast em toda cidade; o sinal
+	// do piso de demanda potencial fica restrito à cidade-semente da nação.
+	bool real_gap = false;
 };
 
 // Melhor oportunidade de um grupo (== retorno de `_score_candidate`).
@@ -149,6 +154,18 @@ struct GroupDay {
 
 	// Base por recurso, válida para o dia (== `_base`, já completa).
 	std::unordered_map<std::string, std::vector<ResourceCandidate>> base;
+
+	// G2 perf rodada 3: cidade-semente por nação (maior necessidade de comida,
+	// proxy determinístico da população). O piso de demanda potencial só cria
+	// candidato em cidade sem lacuna real nesta cidade — uma por nação × bem,
+	// em vez de 849 × bem.
+	std::unordered_map<std::string, int> seed_city;
+	bool is_seed_city(int city_index) const;
+	// Capacidade EXISTENTE por nação × produto (soma da view). A semente só
+	// olha bem que a nação ainda não produz — o piso não reabre candidato onde
+	// o país já tem a indústria.
+	std::unordered_map<std::string, std::vector<double>> nation_capacity;
+	double seed_capacity(const std::string& nation, int product) const;
 
 	// Fila de grupos da vez, na ordem do ranking (índices de `view.groups`).
 	std::vector<int> queue;
@@ -222,6 +239,44 @@ void GroupDay::run() {
 	// grupos (a ordem de `_load_signals` em relação à fila não muda valores).
 	food_secure = compute_food_secure(view);
 	load_signals();
+	// G2 perf rodada 3: cidade-semente por nação (maior `pop.need`, empate no
+	// menor índice). Determinístico e independente do piso.
+	seed_city.clear();
+	for (int index = 0; index < view.cities; ++index) {
+		const std::string& nation =
+			view.city_rows[static_cast<std::size_t>(index)].nation;
+		const double need = ai_pop(view, index, kAiNeed);
+		auto found = seed_city.find(nation);
+		if (found == seed_city.end()) {
+			seed_city.emplace(nation, index);
+		} else if (need > ai_pop(view, found->second, kAiNeed)) {
+			found->second = index;
+		}
+	}
+	// Capacidade existente por nação × produto (para a semente do piso).
+	nation_capacity.clear();
+	for (const auto& row : seed_city) {
+		nation_capacity[row.first].assign(
+			static_cast<std::size_t>(std::max(0, view.products)), 0.0);
+	}
+	for (int index = 0; index < view.cities; ++index) {
+		const std::string& nation =
+			view.city_rows[static_cast<std::size_t>(index)].nation;
+		auto found = nation_capacity.find(nation);
+		if (found == nation_capacity.end()) {
+			continue;
+		}
+		std::vector<double>& capacity = found->second;
+		for (int slot = ai_b_begin(view, index); slot < ai_b_end(view, index);
+				++slot) {
+			const int product = view.b_output[static_cast<std::size_t>(slot)];
+			if (product < 0 || product >= view.products) {
+				continue;
+			}
+			capacity[static_cast<std::size_t>(product)] +=
+				std::max(0.0, view.b_capacity[static_cast<std::size_t>(slot)]);
+		}
+	}
 
 	for (const int index : queue) {
 		if (!has_capital(index)) {
@@ -235,6 +290,28 @@ void GroupDay::run() {
 			execute(index, best);
 		}
 	}
+}
+
+bool GroupDay::is_seed_city(int city_index) const {
+	if (city_index < 0 || city_index >= ctx.view.cities) {
+		return false;
+	}
+	const std::string& nation =
+		ctx.view.city_rows[static_cast<std::size_t>(city_index)].nation;
+	const auto found = seed_city.find(nation);
+	return found != seed_city.end() && found->second == city_index;
+}
+
+double GroupDay::seed_capacity(const std::string& nation, int product) const {
+	if (product < 0) {
+		return 0.0;
+	}
+	const auto found = nation_capacity.find(nation);
+	if (found == nation_capacity.end()
+			|| product >= static_cast<int>(found->second.size())) {
+		return 0.0;
+	}
+	return found->second[static_cast<std::size_t>(product)];
 }
 
 bool GroupDay::has_capital(int group_index) const {
@@ -396,6 +473,25 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 	const bool is_food = context.is_food;
 	const bool brain = ctx.ws.ai_brain.enabled;
 	const double raw_shortage = std::max(0.0, shortage);
+	// G2 perf rodada 3: o piso de demanda potencial infla `desired`/`shortage`
+	// em TODA a view. O candidato passa a exigir lacuna ou venda REAIS; sem
+	// isso, só a cidade-semente da nação (e só se ainda não tem o bem) enxerga
+	// o sinal do piso. Sem esta barreira, o piso transforma 849 cidades × bem
+	// em candidato e o forecast do grupo (o custo dominante do dia) explode.
+	const double real_shortage =
+		ai_market(view, city_index, product, kAiRealShortage);
+	const double real_desired =
+		ai_market(view, city_index, product, kAiRealDesired);
+	const bool real_gap = real_shortage > 0.0 || sold > 0.0
+		|| real_desired > 0.0;
+	if (!real_gap) {
+		if (!is_seed_city(city_index)
+				|| seed_capacity(
+					view.city_rows[static_cast<std::size_t>(city_index)].nation,
+					product) > 0.0) {
+			return;
+		}
+	}
 	double scope_supply = 0.0;
 	double scope_demand = 0.0;
 	if (brain) {
@@ -544,6 +640,7 @@ void GroupDay::append_candidate(std::vector<ResourceCandidate>& out,
 	entry.ramp = ramp;
 	entry.supply_future = scope_supply;
 	entry.demand_future = scope_demand;
+	entry.real_gap = real_gap;
 	out.push_back(std::move(entry));
 }
 
@@ -726,8 +823,10 @@ bool GroupDay::score_candidate(int group_index, const ResourceCandidate& entry,
 		in.payback_limit_days = payback_limit;
 		in.min_capacity = 0.5;
 		ctx.state.brain_group_attempts += 1;
-		const ai_brain::ForecastResult forecast =
-			ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws, in);
+		const ai_brain::ForecastResult forecast = [&]() {
+			OGS_SIM_ZONE_ADD(kPhaseAiForecast);
+			return ai_brain::forecast_monthly(ctx.ws.ai_brain, ctx.ws, in);
+		}();
 		if (!forecast.pass || forecast.capacity < 0.5) {
 			ctx.state.brain_group_rejected += 1;
 			// D-131 fase C (diagnóstico): gate que reprovou + amostra.

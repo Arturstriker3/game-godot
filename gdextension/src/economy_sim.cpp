@@ -29,6 +29,10 @@
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/packed_float64_array.hpp>
 #include <godot_cpp/variant/string.hpp>
+
+#if defined(OGS_PROFILING)
+#include <chrono>
+#endif
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 
@@ -1785,7 +1789,21 @@ void EconomySim::tick_and_publish() {
 	ogs::profile::Sink phase_sink{profile_us_, kPhaseCount, &profile_};
 	const ogs::profile::SinkScope phase_scope(&phase_sink);
 #endif
+#if defined(OGS_PROFILING)
+	const auto tick_perf_start = std::chrono::steady_clock::now();
+	auto tick_perf_mark = tick_perf_start;
+	const auto perf_mark = [&tick_perf_mark]() {
+		const auto now = std::chrono::steady_clock::now();
+		const double us = std::chrono::duration<double, std::micro>(
+			now - tick_perf_mark).count();
+		tick_perf_mark = now;
+		return us;
+	};
+#endif
 	tick_core();
+#if defined(OGS_PROFILING)
+	OGS_SIM_COUNTER("tick_us_core", perf_mark());
+#endif
 	if (ai_enabled_) {
 		// A5/D-076: fase da IA no FIM do dia, jÃ¡ com o dia fechado (`ws_.day` Ã©
 		// o dia que acabou de rodar) e ANTES da publicaÃ§Ã£o do status. A IA lÃª
@@ -1800,6 +1818,9 @@ void EconomySim::tick_and_publish() {
 		ai_phase_.run(ws_, sim_core_, commands_, instant_construction_,
 			bootstrap_construction_);
 	}
+#if defined(OGS_PROFILING)
+	OGS_SIM_COUNTER("tick_us_ai", perf_mark());
+#endif
 	{
 		// Fase `status` (RAII). A4: o dia NÃƒO monta mais o Dictionary do mundo
 		// inteiro. No fecho semanal captura-se o retrato de trabalho das naÃ§Ãµes
@@ -1812,6 +1833,13 @@ void EconomySim::tick_and_publish() {
 	}
 	current_day_.store(ws_.day, std::memory_order_relaxed);
 	++data_version_;
+#if defined(OGS_PROFILING)
+	OGS_SIM_COUNTER("tick_us_status", perf_mark());
+	const double tick_total_us =
+		std::chrono::duration<double, std::micro>(
+			std::chrono::steady_clock::now() - tick_perf_start).count();
+	OGS_SIM_COUNTER("tick_us_total", tick_total_us);
+#endif
 }
 
 void EconomySim::status_invalidate() {
@@ -2073,7 +2101,11 @@ Dictionary EconomySim::get_profile() const {
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
 		"region", "migration", "social", "property", "agriculture", "storage",
-		"stock",
+		"stock", "bank_crisis", "crisis", "power", "power_settle",
+		// G2 perf rodada 3: subdivisão da fase `ai` (só medição).
+		"ai_floor", "ai_prepare", "ai_supply_cache", "ai_exposure_cache",
+		"ai_groups", "ai_private", "ai_gov", "ai_storage", "ai_refinery",
+		"ai_loss_scan", "ai_forecast",
 	};
 	Dictionary profile;
 	if (!profile_) {
@@ -2088,6 +2120,16 @@ Dictionary EconomySim::get_profile() const {
 	for (int part = 0; part < 4; ++part) {
 		profile[kStatusNames[part]] = status_sub_us_[part];
 	}
+#if defined(OGS_PROFILING)
+	// G2 perf rodada 3: contadores não-temporais (células do piso/dia,
+	// candidatos, forecasts). O último valor do dia; só medição.
+	for (const ogs::profile::CounterSample& sample :
+			ogs::profile::counter_samples()) {
+		if (sample.name != nullptr) {
+			profile[String("counter_") + String(sample.name)] = sample.value;
+		}
+	}
+#endif
 	return profile;
 }
 

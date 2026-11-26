@@ -552,20 +552,38 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 	AiContext ctx{ws, core, queue, templates_, view_, state_, day, instant,
 		bootstrap};
 
+	// G2 perf rodada 3: zonas acumuladoras do dia (uma chamada por cidade).
+	OGS_SIM_PHASE_RESET(kPhaseAiPrivate);
+	OGS_SIM_PHASE_RESET(kPhaseAiGov);
+	OGS_SIM_PHASE_RESET(kPhaseAiStorage);
+	OGS_SIM_PHASE_RESET(kPhaseAiLossScan);
+	OGS_SIM_PHASE_RESET(kPhaseAiForecast);
+	const int attempts_start = state_.brain_attempts;
+	const int group_attempts_start = state_.brain_group_attempts;
+
 	// 4b. Medidas do dia que não mudam entre cidades (== `prepare_totals` no
 	// `plan()` do GDScript): balanço alimentar mundo/região, capacidade em obras
 	// por produto e o caixa local dos grupos. Uma vez por dia, ANTES das
 	// cidades — `run_city` do privado não remede.
-	private_investor_.prepare(ctx);
+	{
+		OGS_SIM_ZONE(kPhaseAiPrepare);
+		private_investor_.prepare(ctx);
+	}
 
 	// 4c. Grupos (F9): a decisão do dia vem ANTES das cidades e na ordem do
 	// ranking, como no `plan()` do `economic_ai.gd` (grupos → cidades).
-	group_investor_.run(ctx);
+	{
+		OGS_SIM_ZONE(kPhaseAiGroups);
+		group_investor_.run(ctx);
+	}
 
 	// 4d. D-125: modo das refinarias existentes. Roda em toda cidade (as
 	// refinarias do ano-base já estão no mundo) e só troca quando o ganho paga
 	// a transição; o comando entra no mesmo log A3.
-	run_refinery_modes(ctx);
+	{
+		OGS_SIM_ZONE(kPhaseAiRefinery);
+		run_refinery_modes(ctx);
+	}
 
 	// 5. Agenda: `dia % período` escolhe as cidades da vez (A6: período no
 	// estado `cadence` do mundo; antes era o literal 7). Cenário menor que um
@@ -573,28 +591,11 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 	// (== `phase >= mini(_city_count, interval_days)` do GDScript).
 	const int interval = std::max(1, ws.cadence.weekly_period);
 	const int phase = day % interval;
-	// G2 perf - VARREDURA MENSAL ESCALONADA DO INVESTIDOR. Com o cérebro
-	// ligado o privado avalia candidatos só no dia da cidade
-	// (`(dia - índice) % scan_interval_days == 0`, offset determinístico, sem
-	// cursor no save); nos outros dias não há candidato novo. Governo e
-	// armazém continuam na agenda semanal da A6. Desligado, o laço único
-	// abaixo mantém a cadência antiga bit a bit.
-	if (ws.ai_brain.enabled) {
-		const int scan = std::max(1, ws.ai_brain.scan_interval_days);
-		for (int index = 0; index < view_.cities; ++index) {
-			// Ordem do dia por cidade: privado, governo e, por último, armazém
-			// (compra/liberação e obra). O armazém vem depois para não competir
-			// com as decisões de produção pelo caixa congelado da view.
-			if (ai_scan_due(day, index, scan)) {
-				private_investor_.run_city(ctx, index);
-			}
-			if (index % interval == phase) {
-				government_.run_city(ctx, index);
-				storage_investor_.run_city(ctx, index);
-			}
-		}
-		return;
-	}
+	// G2 perf rodada 3 — a varredura MENSAL do privado foi REVERTIDA: o perfil
+	// mostrou que ela não era o custo dominante (o forecast do grupo era) e
+	// custava investimentos (689 -> 367 em 365 d). Privado/governo/armazém
+	// voltam à cadência semanal da A6; o investidor de grupo continua mensal
+	// pela própria cadência (`scan_interval_days`/`CadenceState`).
 	if (view_.cities > 0 && phase >= std::min(view_.cities, interval)) {
 		return;
 	}
@@ -602,10 +603,23 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 		// Ordem do dia por cidade: privado, governo e, por último, armazém
 		// (compra/liberação e obra). O armazém vem depois para não competir
 		// com as decisões de produção pelo caixa congelado da view.
-		private_investor_.run_city(ctx, index);
-		government_.run_city(ctx, index);
-		storage_investor_.run_city(ctx, index);
+		{
+			OGS_SIM_ZONE_ADD(kPhaseAiPrivate);
+			private_investor_.run_city(ctx, index);
+		}
+		{
+			OGS_SIM_ZONE_ADD(kPhaseAiGov);
+			government_.run_city(ctx, index);
+		}
+		{
+			OGS_SIM_ZONE_ADD(kPhaseAiStorage);
+			storage_investor_.run_city(ctx, index);
+		}
 	}
+	OGS_SIM_COUNTER("attempts_private_day",
+		static_cast<double>(state_.brain_attempts - attempts_start));
+	OGS_SIM_COUNTER("attempts_group_day",
+		static_cast<double>(state_.brain_group_attempts - group_attempts_start));
 }
 
 } // namespace ogs
