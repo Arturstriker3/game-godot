@@ -94,6 +94,11 @@ add_library(opengs_sim STATIC
     src/sim/ai/ai_phase.cpp
     src/sim/save_value.cpp
     src/sim/save_state.cpp
+    src/sim/save/city.cpp
+    src/sim/save/pop.cpp
+    src/sim/save/region.cpp
+    src/sim/save/power.cpp
+    src/sim/save/finance.cpp
     src/sim/save_definitions.cpp
 )
 
