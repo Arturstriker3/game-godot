@@ -385,7 +385,80 @@ mapa temporário do portão (cópia do `tools/test_impact_map.json` + as duas ro
 - O runner esperou o lock global do worktree `opengs-wt-g3` antes de começar; sem conflito, só
   espera.
 
+## H1f — `sim/power/{grid,plants,retail}` (energia por domínio)
+
+**Escopo:** dividir `gdextension/src/sim/power.cpp` (2.604 linhas) em três TUs por domínio:
+`sim/power/grid.cpp` (rede, despacho por mérito, interconexões e a fase do dia),
+`sim/power/plants.cpp` (usinas: parâmetros/custo, combustível, semeadura do parque,
+estabilização pós-load e obra) e `sim/power/retail.cpp` (liquidação: tarifa de varejo paga,
+remuneração do atacado, combustível, O&M/salários e lucro do dono). Blocos movidos **verbatim**;
+nenhuma regra, ordem de iteração ou número mudou.
+
+| Arquivo | Linhas | Blocos movidos |
+| --- | --- | --- |
+| `grid.cpp` | 1.672 | 1.626 (15 blocos, incl. `phase_power` 1.226) |
+| `plants.cpp` | 737 | 698 (15 blocos) |
+| `retail.cpp` | 254 | 226 (3 blocos, incl. `phase_power_settle` 211) |
+| `power_internal.h` | 28 | declarações + `kPowerHoursPerYear` |
+| **Total movido** | | **2.550 linhas em 33 blocos** + 1 linha da constante |
+
+**Antes/depois:** `gdextension/src/sim/power.cpp` sai (2.604 linhas) e entram os quatro arquivos
+(2.691 linhas; +87 de preâmbulos/includes/namespace). `gdextension/CMakeLists.txt` troca
+`src/sim/power.cpp` pelos três `.cpp` no alvo `opengs_sim`.
+
+**SHA-256 dos blocos (byte-exato):** `bcc59a01…` (`phase_power`, 1.226 l.), `1736468f…` (`seed`,
+270), `a2b4d848…` (`phase_power_settle`, 211), `3a56a6ed…` (`PowerParams::apply`, 122),
+`face6b00…` (`build_interconnect`, 96), `cb6bd88b…` (`build_power_plant`, 86),
+`2d4813da…` (`seed_interconnects`, 84), `d7ded0d7…` (`power_params_to_map`, 67),
+`da7e6a9c…` (`build_power_line`, 61), `2f68b8c5…` (`apply_power_plant_project`, 43),
+`a8512133…` (`after_load`, 38), `2463c9a1…` (`power_day_factor`, 33), `51547d22…`
+(`fuel_product_of`, 30), `022655d9…` (`power_salary_day_xgs`, 24), `be87f5c1…` (`power_local_cf`,
+20). Os 33 blocos foram extraídos por bytes e verificados no destino (substring byte-idêntica);
+o mojibake pré-existente dos comentários viajou junto.
+
+**Header compartilhado:** `power_internal.h` declara `month_of_day` e `fuel_product_of` (usados
+pelo grid e pela liquidação) no namespace `power_detail`, com definição única em `grid.cpp`;
+`kPowerHoursPerYear` foi para o header como `inline constexpr` (mesmo tipo e valor). Nenhuma
+função de regra foi reescrita.
+
+**Por que `phase_power` fica inteira em `grid.cpp`:** é uma única função determinística de 1.226
+linhas que contém o rateio da demanda, o despacho e a tarifa de varejo do dia. Dividi-la em
+funções mudaria o corpo e a ordem de avaliação; a refatoração pura exige o bloco verbatim. A
+liquidação (`phase_power_settle`) é um método separado e foi para `retail.cpp`; a demanda e a
+tarifa continuam no TU do despacho que as consome.
+
+## Portão de bit-identidade (H1f)
+
+Build: DLL debug (`cmake --build gdextension/build-debug -j2`) e `sim_unit_tests`
+(`build-unit-tests`, `-j2`), clang 23.1.5, godot-cpp 4.7.
+
+| Checagem | Resultado |
+| --- | --- |
+| `sim_unit_tests` | **74/74** casos, 754 asserções, exit 0 |
+| 365 d **ON** (`--bootstrap=1 --ai-brain=1`) | `trajectory_sha256` **b4a4ab38…** = baseline G2/H1e (2 falências, comida 95/179, drift 0,014103) |
+| 365 d **OFF** (`--bootstrap=0 --ai-brain=0`) | `trajectory_sha256` **ded6f54b…** = baseline G2/H1e (0 falências, comida 97/179, drift 0,016673) |
+| JSON completo × baseline | **idêntico** nas duas rodadas (0 diferenças exceto `wall_s`) |
+| `tools/run_tests.ps1 -Tier pr -Base main` | ver "Bateria (H1f)" |
+
+Artefatos: `G:\opengs_tmp\h1f_gate_365_on.json` e `h1f_gate_365_off.json`
+(runner `20261126_051222`).
+
+## Bateria (H1f)
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_tests.ps1 -Tier pr -Base main`
+(seleção por diff: `gdextension/src/**` → conjunto amplo de núcleo + sentinelas `pr`), com o
+mapa temporário do portão (cópia do `tools/test_impact_map.json` + as duas rodadas 365 no tier
+`pr`, mesmo mecanismo do H1c/H1e).
+
+- **44/44 OK**, 0 falha, 0 crash, 0 timeout, 0 pulado — run `20261126_051222`
+  (`G:\opengs_tmp\opengs_test_run_20261126_051222\summary.json`).
+- Inclui `sim_unit_tests` (CLI, 0,28 s), 39 testes Godot, a rodada c1 de **90 d**
+  (`c1_world_ai_90`, 179,34 s), `determinism_cross_process` (61,18 s) e as duas rodadas **365 d
+  do portão** (ON 702,69 s; OFF 394,17 s).
+- O runner aguardou o lock global do worktree `opengs-wt-g3` (`economy_long_run_test`) antes de
+  começar; sem conflito, só espera.
+
 ## Próximos passos
 
-H1e (`edge/commands_bridge`) fechado; seguem H1f e H1g — na ordem do plano, cada um com o mesmo
-portão. Sem merge até o QA fechar a série.
+H1f (`sim/power/`) fechado; segue H1g — na ordem do plano, com o mesmo portão. Sem merge até o
+QA fechar a série.
