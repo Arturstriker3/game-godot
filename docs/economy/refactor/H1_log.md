@@ -458,7 +458,77 @@ mapa temporário do portão (cópia do `tools/test_impact_map.json` + as duas ro
 - O runner aguardou o lock global do worktree `opengs-wt-g3` (`economy_long_run_test`) antes de
   começar; sem conflito, só espera.
 
+
+## H1g — `sim/save/{city,pop,region,power,finance}` (save por blocos)
+
+**Escopo:** dividir `gdextension/src/sim/save_state.cpp` (**5.523 linhas**) por domínio, mantendo
+`to_value`/`from_value` como orquestradores em `save_state.cpp` e movendo cada bloco contíguo
+**verbatim** para o TU dono. A ordem de escrita das chaves é a do arquivo original: as chamadas
+de domínio ocupam exatamente a posição dos blocos removidos (o dump é um objeto com ordem
+de inserção; qualquer reordenação muda os bytes do save).
+
+| Arquivo | Linhas | Blocos movidos |
+| --- | --- | --- |
+| `save/city.cpp` | 1.463 | `cities` (848 l., com pop/region aninhados), `cities`+`buildings`+`construction_projects` na carga (1.112 l.), `services` (52), `urban` (145), `city_gov` (54), `housing` (107) |
+| `save/pop.cpp` | 562 | bloco `pop` da escrita (209 l.), leitura (313 l.) e categorias (12 l.) |
+| `save/region.cpp` | 365 | bloco `region` da escrita (130 l.) e da leitura (212 l.) |
+| `save/finance.cpp` | 1.280 | `currencies`..`stock` na escrita (407 l.); `currencies`..`banks` (540), `tariffs` (28), `stock` (140) e `bank_crisis` (132) na carga |
+| `save/power.cpp` | 479 | bloco `power` da escrita (174 l.) e da carga (282 l.) |
+| `save/save_internal.h` | 95 | helpers `detail` + contrato dos cinco domínios |
+| **`save_state.cpp`** | **1.533** (de 5.523) | `to_value`/`from_value` + chaves de núcleo + helpers |
+
+**Antes/depois:** `git diff --numstat` do commit de código = `34 4038` em `save_state.cpp` (34
+inserções: o include, `namespace detail`/`using`, e as 13 chamadas; 4.038 remoções). Os
+`make_object`/`make_array`, os blocos `save_*/load_*` (informal/mortality/dissatisfaction) e os
+helpers de valor continuam definidos em `save_state.cpp`, agora no namespace `detail` e declarados
+em `save_internal.h` (ligação externa só para o que os TUs usam). `kLegacyFuel*Share` virou
+`inline constexpr` no header (mesmo tipo e valor) e `legacy_recipe_alias` ganhou ligação
+externa (antes `static`), porque a migração de combustível vive no TU de cidade.
+
+**SHA-256 dos blocos (byte-exato):** `c7819157…` (`cities`/edificações na escrita, 848 l.),
+`dacdcf74…` (cidades/edificações/obras na carga, 1.112 l.), `96a0fb8d…` (`currencies`→`stock`,
+407), `47331238…` (`currencies`→`banks`, 540), `19f0050a…` (`power` escrita, 174),
+`d957377e…` (`power` carga, 282). Blocos aninhados: `614565f7…` (`pop` escrita, 209),
+`8edde3e3…` (`pop` carga, 313), `8f1fc76c…` (`region` escrita, 130), `52a52137…`
+(`region` carga, 212), `a29da9e3…` (categorias, 12). Os demais: `5dcbca67…` (services),
+`f07c7431…` (urban), `eedb8f33…` (city_gov), `3a419850…` (housing), `a0fcbe07…`
+(tariffs), `ea69255d…` (stock), `e9c032ea…` (bank_crisis).
+
+**Indentação dos blocos aninhados:** `pop`/`region` ficavam dentro do laço de cidades (2 tabs) e
+as funções os recebem a 1 tab (pop) ou sem os braces do bloco (region, 3→1 tab). Só
+whitespace inicial mudou; o texto normalizado (tabs removidas) foi conferido como substring dos
+originais — todos os 22 segmentos verificados. O mojibake pré-existente dos comentários viajou
+junto.
+
+**Por que o orquestrador fica em `save_state.cpp`:** `to_value`/`from_value` mantêm a ordem global
+das chaves e as decisões que cruzam domínios (produtos/migrações, crise, agricultura, storage,
+trânsito, portos, potencial). As migrações de produto são passadas à carga de cidade como
+`std::function` com os MESMOS nomes de variável (`migrate_array`, `migrate_index`,
+`legacy_substitute`, `has_saved_products`, `needs_legacy_migration`), então as linhas movidas não
+mudaram. `pop::read_categories` relê `entry["pop"]` (o mesmo dicionário) porque o bloco original
+usava o `pop` carregado antes — mesmo valor, mesma ordem.
+
+## Portão de bit-identidade (H1g)
+
+Build: DLL debug (`cmake --build gdextension/build-debug -j2`) e `sim_unit_tests`
+(`build-unit-tests`, `-j2`), clang 23.1.5, godot-cpp 4.7.
+
+| Checagem | Resultado |
+| --- | --- |
+| `sim_unit_tests` | **74/74** casos, 754 asserções, exit 0 |
+| **Bytes do save** (snapshot com todos os blocos, `--threads=1`) | `d0`: baseline e H1g **F11841a5…** (70.726.416 B, idênticos); `d3`: **A76f50a9…** |
+| 365 d **ON** (`--bootstrap=1 --ai-brain=1`) | `trajectory_sha256` **b4a4ab38…** = baseline G2/H1e (drift 0,014103; rodada extra em `20261126_071804`, 669,11 s) |
+| 365 d **OFF** (`--bootstrap=0 --ai-brain=0`) | `trajectory_sha256` **ded6f54b…** = baseline D-126/H1e (0 falhas, comida 97/179, drift 0,016673) |
+| `tools/run_tests.ps1 -Tier pr -Base main` | **44/44 OK**, 0 falha (run `20261126_062236`): 39 testes Godot, `sim_unit_tests`, 90 d, determinismo, e as duas rodadas 365 d (ON 672,78 s; OFF 384,08 s) |
+
+**Teste de bytes do save:** o snapshot `G:\opengs_tmp\h1g_world.json` foi gerado pelo build H1g
+(`tools/export_world_snapshot.gd`, 849 cidades, 861 construções, energia/bolsa/bancos presentes)
+e serviu de entrada para o CLI baseline (`G:/projetos/opengs-game`, HEAD main com
+`save_state.cpp` de SHA `facda1c0…`, idêntico ao baseline `cc67f647`) e para o CLI H1g. As saídas
+`{"definitions","save"}` têm sha256 idêntico tanto em `--days=0` (load→save) quanto em
+`--days=3` (mundo tickado), provando que a divisão não mudou um byte do save. Artefatos:
+`h1g_base_d0.json`/`h1g_new_d0.json` e `h1g_base_d3.json`/`h1g_new_d3.json`.
+
 ## Próximos passos
 
-H1f (`sim/power/`) fechado; segue H1g — na ordem do plano, com o mesmo portão. Sem merge até o
-QA fechar a série.
+H1g (`sim/save/`) fechado: último passo do plano H1. Sem merge até o QA fechar a série.

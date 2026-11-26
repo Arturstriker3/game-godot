@@ -154,6 +154,10 @@ void write(Dictionary& entry, const City& city) {
 
 void read(Dictionary& entry, City& city, const WorldState& ws,
 		SimCore& core, int version) {
+	// B3 (save v19): região da cidade (estados inteiros). Save v18 e
+	// anteriores migram no mundo real: `region_pop = max(0, population -
+	// simulation_population)` (dado já no save), coortes/estratos da nação e
+	// mix neutro (sem dado de urbanização). Nada é inventado.
 	Region region;
 	const Dictionary saved_region = entry.get("region", Dictionary());
 	if (version >= 19 && !saved_region.is_empty()) {
