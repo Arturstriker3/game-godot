@@ -156,5 +156,8 @@ mudança de núcleo/design fora deste lote; nenhum limiar, participação ou ân
 - **Aguarda confirmação do dono (a decisão era 0,02) antes do merge.** O 0,90 é a correção
   proposta; o bloqueio real medido é a capacidade por planta/cidade.
 - **Lotes 2–5 não aterrissaram.**
+- `sim_unit_tests` **75/75** (758 asserções). `-Tier pr -Base main` **42/42 OK** (run
+  `20261126_050646`; 0 falha, 0 crash, 0 timeout) — o runner recomenda `-Tier nightly` antes
+  de um merge.
 - Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,on365_f090,off365,off365_f090}.json` e logs
   `*.log`.
