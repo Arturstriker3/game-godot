@@ -1844,20 +1844,27 @@ struct Region {
 		}
 		// Quanto o setor ainda pode comprometer FORA do setor privado hoje.
 		// Desligada a flag: o proprio caixa (caminho antigo, bit a bit).
+		// Ligada: a fatia da base, MAS nunca acima do pool que ainda existe -
+		// o outro setor pode ter pago primeiro e a fatia dele nao e dinheiro
+		// disponivel para este.
 		double firm_external_room() const {
 			if (!unified_cash) {
 				return std::max(0.0, firm_cash);
 			}
-			return std::max(0.0, external_payment_base()
-				* measured_firm_revenue_share() - firm_external_paid_today);
+			const double share_room = external_payment_base()
+				* measured_firm_revenue_share() - firm_external_paid_today;
+			return std::max(0.0,
+				std::min(share_room, std::max(0.0, private_cash)));
 		}
 		double service_external_room() const {
 			if (!unified_cash) {
 				return std::max(0.0, service_cash);
 			}
-			return std::max(0.0, external_payment_base()
+			const double share_room = external_payment_base()
 				* (1.0 - measured_firm_revenue_share())
-				- service_external_paid_today);
+				- service_external_paid_today;
+			return std::max(0.0,
+				std::min(share_room, std::max(0.0, private_cash)));
 		}
 		// Espelho: private_cash := firm_cash + service_cash (ligacao/legado).
 		void sync_private_cash() {

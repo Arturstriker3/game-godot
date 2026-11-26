@@ -169,6 +169,13 @@ TEST_CASE("R1a: sub-teto externo por setor usa a fatia da receita") {
 	CHECK(city.firm_external_room() + city.service_external_room()
 		== Approx(city.private_cash));
 
+	// O servico paga a fatia dele DEPOIS da firma. O teto da firma nao pode
+	// ultrapassar o pool que sobrou (o pagamento do outro setor ja saiu).
+	city.service_external_pay(30000.0);
+	CHECK(city.private_cash == Approx(30000.0));
+	CHECK(city.service_external_room() == Approx(0.0));
+	CHECK(city.firm_external_room() == Approx(30000.0));
+
 	// Desligado: o teto volta a ser o proprio caixa (caminho antigo).
 	world.core.set_regional_cash(false);
 	seed_cash(world, 50000.0, 30000.0);
