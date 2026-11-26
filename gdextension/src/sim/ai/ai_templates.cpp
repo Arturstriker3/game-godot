@@ -1,10 +1,11 @@
 // Implementação de ai_templates.h (A5): a fonte única dos parâmetros de
 // engenharia da IA econômica.
 //
-// A tabela de primários é a MESMA de core/economy/ai/industry_templates.gd
-// (`TEMPLATES`) e do GAME_STATE §15 — mesmos números, uma cópia só. Os índices
-// de produto NÃO são fixos aqui: saem de `ws.product_lookup`, então a ordem do
-// goods.json pode mudar sem corromper a IA.
+// A tabela `kPrimaries` abaixo é a única cópia dos 21 primários; o GAME_STATE
+// §15 documenta os mesmos números (o espelho GDScript saiu no R0.2, ver
+// `docs/economy/rework/R0.md`). Os índices de produto NÃO são fixos aqui: saem
+// de `ws.product_lookup`, então a ordem do goods.json pode mudar sem corromper
+// a IA.
 //
 // Nenhuma ordem depende de hash: as entradas de `all` vêm da tabela (ordem de
 // declaração) e depois das receitas na ordem do arquivo; os conjuntos são
@@ -265,6 +266,47 @@ void build_ai_templates(const WorldState& ws, AiTemplates& out) {
 			out.non_food.push_back(index);
 		}
 	}
+}
+
+namespace {
+
+template <std::size_t N>
+std::vector<std::string> names_to_vector(const char* const (&names)[N]) {
+	std::vector<std::string> out;
+	out.reserve(N);
+	for (std::size_t slot = 0; slot < N; ++slot) {
+		out.emplace_back(names[slot]);
+	}
+	return out;
+}
+
+} // namespace
+
+// R0.2 — a tabela de primários e os conjuntos, sem depender de `WorldState`.
+std::vector<PrimaryTemplateInfo> primary_template_table() {
+	std::vector<PrimaryTemplateInfo> out;
+	out.reserve(sizeof(kPrimaries) / sizeof(kPrimaries[0]));
+	for (const PrimarySpec& spec : kPrimaries) {
+		out.push_back({spec.resource, spec.jobs_per_ton, spec.wage,
+			spec.opex_per_ton, spec.caloric_factor});
+	}
+	return out;
+}
+
+std::vector<std::string> food_resource_ids() {
+	return names_to_vector(kFood);
+}
+
+std::vector<std::string> mineral_resource_ids() {
+	return names_to_vector(kMinerals);
+}
+
+std::vector<std::string> land_competing_resource_ids() {
+	return names_to_vector(kLandCompeting);
+}
+
+std::vector<std::string> bulk_low_value_resource_ids() {
+	return names_to_vector(kBulkLowValue);
 }
 
 } // namespace ogs

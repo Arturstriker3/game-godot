@@ -1,11 +1,11 @@
 #pragma once
 // A5 — TEMPLATES DE ENGENHARIA DA IA ECONÔMICA (fonte única em C++).
 //
-// Hoje os parâmetros de construção da IA (empregos/t, salário, opex, insumo,
-// fator calórico e capital por capacidade) vivem duplicados em dois lugares:
-// a tabela `TEMPLATES` de `core/economy/ai/industry_templates.gd` e a lista do
-// GAME_STATE §15. Este módulo é a fonte única: os três investidores e o
-// governo passam a ler daqui.
+// Os parâmetros de construção da IA (empregos/t, salário, opex, insumo,
+// fator calórico e capital por capacidade) têm uma cópia só: a tabela
+// `kPrimaries` de ai_templates.cpp. O GAME_STATE §15 mantém a lista
+// documentada (mesmos números) e o espelho GDScript saiu no R0.2
+// (`docs/economy/rework/R0.md`). Os três investidores e o governo leem daqui.
 //
 // Escopo: só DADO derivado de `WorldState` (goods.json + recipes.json). Nada
 // de mercado, caixa, status ou RNG; nenhuma mutação do mundo. STL puro.
@@ -99,5 +99,27 @@ struct AiTemplates {
 
 // Reconstrói `out` (limpa e preenche) a partir de goods.json + recipes.json.
 void build_ai_templates(const WorldState& ws, AiTemplates& out);
+
+// ---------------------------------------------------------------------------
+// R0.2 — VISÃO ESTÁTICA DOS PRIMÁRIOS (fonte única para o world-gen GDScript).
+//
+// A tabela `kPrimaries` continua sendo a única cópia dos números de engenharia
+// dos 21 primários. Estas funções a expõem sem exigir um `WorldState` (o
+// `GeographyService` semeia as minas ANTES de `initialize_world`) e sem
+// duplicar a lista no GDScript. Os índices de produto NÃO aparecem aqui: quem
+// cria o mundo resolve o id pelo `product_lookup`.
+// ---------------------------------------------------------------------------
+struct PrimaryTemplateInfo {
+	std::string resource;
+	double jobs_per_ton = 0.0;
+	double wage = 0.0;
+	double opex_per_ton = 0.0;
+	double caloric_factor = 0.0;
+};
+std::vector<PrimaryTemplateInfo> primary_template_table();
+std::vector<std::string> food_resource_ids();
+std::vector<std::string> mineral_resource_ids();
+std::vector<std::string> land_competing_resource_ids();
+std::vector<std::string> bulk_low_value_resource_ids();
 
 } // namespace ogs

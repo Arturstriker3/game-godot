@@ -33,7 +33,8 @@ const COASTAL_RADIUS_CELLS := 20
 ## D-086b: custo de engenharia da mina (emprego/t, salário e opex/t) — a MESMA
 ## tabela que a IA usa para abrir/expandir mina. A semente não pode nascer com a
 ## régua da fazenda (7,5 empregos/t), que é ~2-4× a da mina e afunda a firma.
-const IndustryTemplatesScript := preload("res://core/economy/ai/industry_templates.gd")
+## R0.2: a tabela vem do NÚCLEO por `EconomySim.get_industry_templates()`
+## (fonte única em `gdextension/src/sim/ai/ai_templates.cpp`); não há cópia aqui.
 ## B5 (D-089): níveis iniciais de infraestrutura por estado (dado World Bank).
 const InitialInfraScript := preload("res://core/economy/initial_infra.gd")
 const MAP_W := 5000.0
@@ -102,6 +103,10 @@ static var _inequality_ready := false
 ## ausente; o núcleo cai na regra histórica (último estágio, piso de 5%).
 static var _extraction_seed: Dictionary = {}
 static var _extraction_seed_ready := false
+
+## R0.2: tabela de engenharia dos primários lida da API do núcleo (fonte única).
+static var _industry_templates: Dictionary = {}
+static var _industry_templates_ready := false
 
 ## Renda externa: piso do índice (fração da média mundial). Sem piso, países
 ## pobres ficariam com ~0,04 da média e a cidade sem terra não importaria nada —
@@ -889,6 +894,18 @@ func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
 	return resolved
 
 
+## R0.2 — engenharia de um primário lida da tabela do NÚCLEO
+## (`EconomySim.get_industry_templates()`). Sem a API (binário antigo), devolve
+## {} e o chamador cai no default declarado no ponto de uso.
+static func _industry_template(resource: String) -> Dictionary:
+	if not _industry_templates_ready:
+		_industry_templates_ready = true
+		if ClassDB.class_exists("EconomySim"):
+			var table: Dictionary = EconomySim.get_industry_templates()
+			_industry_templates = Dictionary(table.get("templates", {}))
+	return Dictionary(_industry_templates.get(resource, {}))
+
+
 ## D-086 — MINAS/POÇOS INICIAIS. Duas regras de estágio inicial:
 ##
 ## 1. **Com produção real atribuível (D-086b):** toda (cidade, mineral) da lista
@@ -941,8 +958,7 @@ func resolve_initial_mines(buildings: Array, cities: Array,
 				# EFETIVA do dia 0 seja a produção real do local.
 				var efficiency := 0.5 + 0.5 * clampf(quality, 0.0, 1.0)
 				var nominal := float(seed_entry["capacity_t_day"]) / efficiency
-				var spec: Dictionary = IndustryTemplatesScript.TEMPLATES.get(
-					String(resource), {})
+				var spec: Dictionary = _industry_template(String(resource))
 				out.append({
 					"city_id": city_id,
 					"id": "%s_%s_mine" % [city_id.to_lower().replace("-", "_"), resource],

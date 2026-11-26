@@ -85,9 +85,9 @@ MARGIN_DURABLE = 0.80
 MARGIN_LUXURY = 0.80
 
 # Parâmetros de engenharia por setor (empregos/t, salário, opex/t, capital por
-# t/dia de capacidade). Ordem de grandeza copiada de
-# core/economy/ai/industry_templates.gd (fazenda 7,5 / 2,0 / 2,5) e do exemplo do
-# plano (motor: 4,0 / 1,8 / 12,0 / 6.000). ESTIMATIVA até o laboratório de F2.
+# t/dia de capacidade). Ordem de grandeza copiada de `kPrimaries` em
+# gdextension/src/sim/ai/ai_templates.cpp (fazenda 7,5 / 2,0 / 2,5) e do exemplo
+# do plano (motor: 4,0 / 1,8 / 12,0 / 6.000). ESTIMATIVA até o laboratório de F2.
 BUILDING_PARAMS = {
     "food": (6.0, 1.8, 6.0, 4000.0),
     "agro": (6.0, 1.8, 7.0, 5000.0),
