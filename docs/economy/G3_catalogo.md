@@ -1,9 +1,12 @@
 # G3 — Semeadura do catálogo (LOTE 1: vestuário/calçado)
 
 **Data:** 2026-11-26 · **Branch:** `feat/g3-catalogo` (worktree `opengs-wt-g3`) · **Base:** `main` `128ae77b` (G2)
-**Spec:** `G3_semeadura_catalogo.md` + princípio “Semeadura por produtores reais” (G2 §2.3–2.7)
+**Spec:** `G3_semeadura_catalogo.md` (rev. 2) + princípio “Semeadura por produtores reais” (G2 §2.3–2.7)
 **Decisões do dono:** `seed_fraction` 0,02 em L1–L3 e 0,10 em L4–L5 (D-G3-1); teto de preço
 `MA30(dia 365) ÷ MA30(dia 0) ≤ 1,15`.
+**Revisão 2 (recalibração):** o 0,02 reprovou no gate de 365 d; o L1 passa a **0,90** por bem
+(princípio “básico maduro nasce abastecido”, §7). A decisão registrada era 0,02 — a mudança
+**aguarda confirmação do dono antes do merge**.
 
 Este lote entrega **somente o LOTE 1** (`clothes`, `fabric`, `shoes`) e o **reuso** do mecanismo
 G2. Lotes 2–5 não aterrissam aqui; o gate é medido no acumulado (hoje, G2 + L1).
@@ -99,9 +102,59 @@ fração aprovada e também no braço A.
 (0 falências, 0 violações, comida 97/179, drift 0,016673). O L1 fica atrás de `enabled`; com as
 flags off nada novo roda.
 
-## 7. Estado e próximos passos
+## 7. Recalibração — princípio “básico maduro nasce abastecido” (0,90)
 
-- **Sem merge** (QA depois dos lotes 1–3, conforme o briefing). Branch `feat/g3-catalogo`.
-- **Lotes 2–5 não aterrissaram.** O gate do L1 está reprovado; a decisão de continuar/rever
-  a âncora ou o critério de preço de bens finais de massa é do dono/Game Systems Designer.
-- Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,off365}.json` e logs `*.log`.
+**Por que o 0,02 reprovou.** Vestuário é **necessidade básica de massa**, não bem em crescimento:
+a demanda-âncora é enorme (17,6 kt/dia só em `clothes`) e o mundo real já nasce abastecido.
+Semear 2–10% cria escassez artificial; o cérebro não a fecha em 1 ano porque o investidor tem
+teto anti-manada (3 plantas por 30 d). A fração pequena serve a bens em crescimento (eletrônicos,
+duráveis novos), não a básicos maduros.
+
+**Princípio novo.** Para bem de necessidade básica madura, `seed_fraction` por bem ≈ **0,90 do
+necessário para a demanda-âncora** (default declarado). A capacidade continua
+`participação × âncora_mundial × seed_fraction`, distribuída pelos produtores reais como sempre;
+o cérebro ainda constrói o crescimento e a margem. Aplicado a `clothes`, `fabric` e `shoes`
+(`data/definitions/economy/bootstrap_industry.json`); os 21 bens do G2 seguem em 0,10.
+
+**Gate de 365 d a 0,90** (`c1_world_ai_365.gd --days=365 --bootstrap=1 --ai-brain=1
+--goods-diag=clothes,fabric,shoes`; saída `G:/opengs_tmp/g3/on365_f090.json`, trajetória
+`108d9ad9…`, parede 114,3 s):
+
+| critério | meta | medido (0,90) | resultado |
+|---|---|---|---|
+| violações / dias travados | 0 / 0 | **0 / 0** | OK |
+| falências | ≤ 3 | **2** (BRA/iron d120, CHL/wheat d210) | OK |
+| portão de comida | ≤ 97/179 | **94/179** (mediana 0,9704) | OK |
+| drift / máx. diário | < 0,03 | **0,014074** | OK |
+| `clothes`/`fabric`/`shoes` produzido **e** vendido | ≥ 3 países | **4 / 5 / 4** | OK |
+| `clothes` MA30 d365 ÷ d0 | ≤ 1,15 | **2,2733** (318,37 / 140,05) | **REPROVA** |
+| `fabric` idem | ≤ 1,15 | **1,1166** (98,19 / 87,93) | OK |
+| `shoes` idem | ≤ 1,15 | **1,1114** (249,98 / 224,91) | OK |
+
+**Por que `clothes` ainda reprova — hipótese medida.** A fração não chega ao plano: a semente
+não coloca 0,90 da âncora no mundo, porque o número de **plantas satura**. O plano só pode criar
+**uma planta por cidade elegível**, com teto de **20 t/dia** por planta; nas nações produtoras
+não há cidades suficientes para cobrir a âncora de massa. Evidência na mesma DLL/mundo:
+
+| | 0,02 | 0,10 (braço A) | 0,90 |
+|---|---:|---:|---:|
+| plantas semeadas (G2+L1) | 334 | 430 | **439** |
+| `bootstrap_shortfall` (t/dia) | 4 865 | 7 620 | **55 330** |
+| `clothes` produzido (t/dia) | 83,3 | 109,2 | **137,1** |
+| `clothes` MA30 d365 ÷ d0 | 3,1064 | 2,5127 | **2,2733** |
+
+De 0,10 para 0,90 o alvo cresce 9×, mas só entram **+9 plantas** (430 → 439) e o shortfall
+cresce 7,3×: o gargalo é a capacidade por planta/cidade, não a fração em si. A produção de
+`clothes` sobe 25,6% (109,2 → 137,1) e o preço cai de 2,51 para 2,27, mas não fecha 1,15. Fechar o princípio de
+verdade exige **capacidade por planta proporcional ao bem** (ou mais de uma planta por cidade) —
+mudança de núcleo/design fora deste lote; nenhum limiar, participação ou âncora foi afrouxado.
+
+## 8. Estado e próximos passos
+
+- **Sem merge.** Branch `feat/g3-catalogo`. O gate do L1 continua **reprovado** no preço de
+  `clothes` (2,2733 > 1,15); todo o resto do lote passa.
+- **Aguarda confirmação do dono (a decisão era 0,02) antes do merge.** O 0,90 é a correção
+  proposta; o bloqueio real medido é a capacidade por planta/cidade.
+- **Lotes 2–5 não aterrissaram.**
+- Evidências: `G:/opengs_tmp/g3/{on365,on365_f010,on365_f090,off365,off365_f090}.json` e logs
+  `*.log`.
