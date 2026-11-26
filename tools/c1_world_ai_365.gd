@@ -124,6 +124,10 @@ var _bootstrap_set := false
 # Sem override vale o enabled do rework.json (default do jogo = desligado).
 var _regional_cash_on := false
 var _regional_cash_set := false
+# R1a (diagnostico): serie diaria das entradas que o portao de comida e o
+# credito leem, para decompor o efeito do caixa unico. So medicao
+# (--r1-diag / OGS_C1_R1_DIAG=1): nao altera o mundo.
+var _r1_diag := false
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -227,6 +231,8 @@ func _init() -> void:
 	if OS.get_environment("OGS_C1_REGIONAL_CASH") != "":
 		_regional_cash_on = OS.get_environment("OGS_C1_REGIONAL_CASH") != "0"
 		_regional_cash_set = true
+	if OS.get_environment("OGS_C1_R1_DIAG") != "":
+		_r1_diag = OS.get_environment("OGS_C1_R1_DIAG") != "0"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
@@ -244,6 +250,9 @@ func _init() -> void:
 		elif arg.begins_with("--regional-cash="):
 			_regional_cash_on = arg.split("=", true, 1)[1] != "0"
 			_regional_cash_set = true
+		elif arg.begins_with("--r1-diag"):
+			_r1_diag = not arg.contains("=") \
+				or arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--bootstrap="):
 			_bootstrap_on = arg.split("=", true, 1)[1] != "0"
 			_bootstrap_set = true
@@ -828,6 +837,191 @@ func _profile_block(sim: Object) -> Dictionary:
 func _food_ratio(status: Dictionary) -> Dictionary:
 	# Dono único da conta (portão e hash): tools/trajectory_digest.gd.
 	return TrajectoryDigest.food_ratios(status)
+
+
+## R1a (diagnóstico): uma linha por dia com as entradas que o portão de comida e
+## o crédito leem — comida, folha/atraso, caixa privado, M0/M1, empréstimos,
+## gatilhos da crise. Só leitura (`get_status`/`get_balance_status`/
+## `get_central_bank_status`/`get_bank_status`/`get_crisis_status`).
+func _r1_diag_row(sim: Object, status: Dictionary, day: int) -> Dictionary:
+	var light: Dictionary = status.get("light", {})
+	var need: PackedFloat64Array = light.get("p_need", PackedFloat64Array())
+	var consumed: PackedFloat64Array = light.get("p_consumed", PackedFloat64Array())
+	var need_total := 0.0
+	var consumed_total := 0.0
+	for value: float in need:
+		need_total += value
+	for value: float in consumed:
+		consumed_total += value
+	# Agregados leves de TODAS as cidades (cache diária do mapa):
+	# renda disponível = disposable_per_capita × população simulada.
+	var disposable := 0.0
+	var firm_cash := 0.0
+	var service_cash := 0.0
+	var city_count := 0
+	if sim.has_method("get_city_columns"):
+		var columns: Dictionary = sim.get_city_columns()
+		var cap: PackedFloat64Array = columns.get(
+			"disposable_per_capita", PackedFloat64Array())
+		var sim_pop: PackedFloat64Array = columns.get(
+			"simulation_population", PackedFloat64Array())
+		var firm_cash_col: PackedFloat64Array = columns.get(
+			"firm_cash", PackedFloat64Array())
+		var service_cash_col: PackedFloat64Array = columns.get(
+			"service_cash", PackedFloat64Array())
+		city_count = mini(cap.size(), sim_pop.size())
+		for index in city_count:
+			disposable += cap[index] * sim_pop[index]
+		for index in mini(city_count, firm_cash_col.size()):
+			firm_cash += firm_cash_col[index]
+		for index in mini(city_count, service_cash_col.size()):
+			service_cash += service_cash_col[index]
+	# Amostra fixa de cidades (1 em cada ~30) para os fluxos que o status
+	# diário leve não publica (folha/consumo das famílias). Mesmo índice nos
+	# dois braços do A/B; a soma é comparável, não é o total do mundo.
+	var wage_income := 0.0
+	var food_spend := 0.0
+	var service_spend := 0.0
+	var needs_spend := 0.0
+	var sample_consumed := 0.0
+	var sample_savings := 0.0
+	var sample_cities := 0
+	if sim.has_method("get_city_status") and sim.has_method("get_city_columns"):
+		var columns: Dictionary = sim.get_city_columns()
+		var ids: PackedStringArray = columns.get("id", PackedStringArray())
+		var step := maxi(1, ids.size() / 30)
+		for index in range(0, ids.size(), step):
+			var city_status: Dictionary = sim.get_city_status(ids[index])
+			var pop: Dictionary = city_status.get("pop", {})
+			if pop.is_empty():
+				continue
+			wage_income += float(pop.get("wage_income", 0.0))
+			food_spend += float(pop.get("food_spend", 0.0))
+			service_spend += float(pop.get("service_spend", 0.0))
+			needs_spend += float(pop.get("needs_spend", 0.0))
+			sample_consumed += float(pop.get("consumed", 0.0))
+			sample_savings += float(pop.get("savings", 0.0))
+			sample_cities += 1
+	var out := {
+		"day": day,
+		"food_sum": TrajectoryDigest.food_sum(_food_ratio(status)),
+		"need_t": need_total,
+		"consumed_t": consumed_total,
+		"hh_disposable": disposable,
+		"hh_savings_sample": sample_savings,
+		"sample_cities": sample_cities,
+		"hh_wage_income": wage_income,
+		"hh_food_spend": food_spend,
+		"hh_service_spend": service_spend,
+		"hh_needs_spend": needs_spend,
+		"food_price": (food_spend / sample_consumed)
+			if sample_consumed > 1e-9 else 0.0,
+		"firm_cash": firm_cash,
+		"service_cash": service_cash,
+		"city_count": city_count,
+	}
+	# Comida por uso: o status publica o total consumido/produzido por produto
+	# (todos os usos, inclusive insumo de planta/serviço). Separar isso do
+	# `p_consumed` das famílias é o que mostra quem comeu a prateleira.
+	var food_consumed_t := 0.0
+	var food_produced_t := 0.0
+	var food_sold_t := 0.0
+	var food_demand_t := 0.0
+	var consumed_by_product: PackedFloat64Array = status.get(
+		"consumed_total", PackedFloat64Array())
+	var produced_by_product: PackedFloat64Array = status.get(
+		"produced_today", PackedFloat64Array())
+	var market_totals: Dictionary = status.get("market_totals", {})
+	var sold_by_product: PackedFloat64Array = market_totals.get(
+		"sold", PackedFloat64Array())
+	var demand_by_product: PackedFloat64Array = market_totals.get(
+		"demand", PackedFloat64Array())
+	if not _products.is_empty():
+		for index in _products.size():
+			var good := String(_products[index])
+			if not bool(_goods_food.get(good, false)):
+				continue
+			if index < consumed_by_product.size():
+				food_consumed_t += consumed_by_product[index]
+			if index < produced_by_product.size():
+				food_produced_t += produced_by_product[index]
+			if index < sold_by_product.size():
+				food_sold_t += sold_by_product[index]
+			if index < demand_by_product.size():
+				food_demand_t += demand_by_product[index]
+	out["food_consumed_t"] = food_consumed_t
+	out["food_produced_t"] = food_produced_t
+	out["food_sold_t"] = food_sold_t
+	out["food_demand_t"] = food_demand_t
+	# Estoque privado de comida por nação (só leitura): a prateleira de amanhã.
+	if sim.has_method("get_nation_rows"):
+		var food_stock := 0.0
+		for nation_row: Dictionary in sim.get_nation_rows():
+			var by_product: Dictionary = nation_row.get(
+				"private_by_product", {})
+			for good: Variant in by_product:
+				if bool(_goods_food.get(String(good), false)):
+					food_stock += float(by_product[good])
+		out["private_food_stock_t"] = food_stock
+	if sim.has_method("get_balance_status"):
+		var bal: Dictionary = sim.get_balance_status()
+		var invariant: Dictionary = bal.get("invariant", {})
+		out["arrears_plants"] = float(invariant.get("arrears_plants", 0.0))
+		out["arrears_service"] = float(invariant.get("arrears_service", 0.0))
+		out["arrears_rural"] = float(invariant.get("arrears_rural", 0.0))
+		var world: Dictionary = bal.get("world", {})
+		var families: Dictionary = world.get("families", {})
+		out["families_cash"] = float(families.get("cash", 0.0))
+		out["families_receivables"] = float(
+			families.get("receivables", 0.0))
+	if sim.has_method("get_central_bank_status"):
+		var bank: Dictionary = sim.get_central_bank_status()
+		var totals: Dictionary = bank.get("totals", {})
+		out["m0"] = float(totals.get("m0", 0.0))
+		out["m1"] = float(totals.get("m1", 0.0))
+		out["emission_total"] = float(totals.get("emission_total", 0.0))
+	if sim.has_method("get_bank_status"):
+		var banks: Dictionary = sim.get_bank_status()
+		var totals: Dictionary = banks.get("totals", {})
+		out["loans"] = float(totals.get("loans", 0.0))
+		out["loans_count"] = int(totals.get("loans_count", 0))
+		out["group_debt"] = float(totals.get("group_debt", 0.0))
+		out["bank_arrears"] = float(totals.get("arrears", 0.0))
+		out["deposits"] = float(totals.get("deposits", 0.0))
+		out["credit_capacity"] = TrajectoryDigest.totals(sim).get(
+			"credit_capacity", -1.0)
+	if sim.has_method("get_crisis_status"):
+		var crisis: Dictionary = sim.get_crisis_status()
+		out["crisis_loans"] = float(crisis.get("loans", 0.0))
+		out["crisis_layoffs"] = int(crisis.get("layoffs", 0))
+		out["crisis_liquidations"] = int(crisis.get("liquidations", 0))
+		out["crisis_mothballs"] = int(crisis.get("mothballs", 0))
+		out["crisis_renegotiations"] = int(
+			crisis.get("renegotiations", 0))
+		out["crisis_jobs_cut"] = float(crisis.get("jobs_cut", 0.0))
+		# Gatilhos do crédito de giro por cidade (espelho de `get_crisis_status`).
+		var firm_debt := 0.0
+		var credit_arrears := 0.0
+		var credit_defaults := 0
+		var credit_rate_add := 0.0
+		var credit_cities := 0
+		for city_row: Dictionary in crisis.get("cities", []):
+			firm_debt += float(city_row.get("firm_debt", 0.0))
+			credit_arrears += float(
+				city_row.get("firm_credit_arrears", 0.0))
+			credit_defaults += int(
+				city_row.get("firm_credit_defaults", 0))
+			credit_rate_add += float(
+				city_row.get("firm_credit_rate_add", 0.0))
+			credit_cities += 1
+		out["firm_debt"] = firm_debt
+		out["firm_credit_arrears"] = credit_arrears
+		out["firm_credit_defaults"] = credit_defaults
+		out["firm_credit_rate_add"] = credit_rate_add \
+			/ float(maxi(1, credit_cities))
+	out["bankruptcies"] = int(status.get("bankruptcies", 0))
+	out["money_total"] = float(status.get("money_total", 0.0))
+	return out
 
 
 ## F0 (D-123): diagnóstico de combustíveis por nação. Mede, no dia `day`:
@@ -1628,6 +1822,8 @@ func _run() -> void:
 	var monetary_timeline: Array = []
 	var power_samples: Array = []
 	var power_timeline: Array = []
+	# R1a: série diária do diagnóstico (só com --r1-diag).
+	var r1_diag: Array = []
 	# E2/E3/E5 (D-117) — diagnóstico por entidade e escala econômica.
 	var bankruptcies_detail: Array = []
 	var buildings_prev: Dictionary = {}
@@ -1693,6 +1889,8 @@ func _run() -> void:
 		history.append(ratio)
 		if history.size() > WINDOW:
 			history.pop_front()
+		if _r1_diag:
+			r1_diag.append(_r1_diag_row(sim, status, day_now))
 		if not _goods_diag_ids.is_empty():
 			_goods_diag_sample(day_now, status)
 		if _fuel_diag and day_now == 1:
@@ -1853,6 +2051,8 @@ func _run() -> void:
 		"stock": _stock_report(sim, stock_start, status_final, stock_formed),
 		"stock_timeline": stock_timeline,
 		"monetary_timeline": monetary_timeline,
+		# R1a (diagnóstico): série diária das entradas do portão e do crédito.
+		"r1_diag": r1_diag,
 		# PARTE E (D-116): energia — preço médio, % servida, racionamento,
 		# conexão das cidades e geração por fonte. Só medição.
 		"power": _power_digest(sim, power_samples) if _power_on else {},
