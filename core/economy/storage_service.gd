@@ -66,7 +66,8 @@ const EXTRACTION_KEY := "commodities"
 const CROP_STOCKS_KEY := "nations"
 
 ## Espelhos das constantes do núcleo (`gdextension/src/sim/sim_constants.h`).
-## Mudar lá exige mudar aqui — o teste confere os dois números.
+## R0.3: são FALLBACK de binário antigo — `_read_core_constants()` consome a
+## API `EconomySim.get_storage_constants()` e sobrescreve estes valores.
 const STORAGE_INITIAL_MONTHS := 2.0      # kStorageInitialMonths
 const STORAGE_GOVERNMENT_SHARE := 0.25   # kStorageGovernmentShare
 const YEAR_DAYS := 365.0
@@ -110,6 +111,21 @@ var _coverage: Dictionary = {}
 var _extraction: Dictionary = {}
 var _crop_stocks: Dictionary = {}
 var _loaded := false
+## R0.3: valores efetivos (API do núcleo quando presente; senão os fallbacks).
+var _initial_months := STORAGE_INITIAL_MONTHS
+var _government_share := STORAGE_GOVERNMENT_SHARE
+
+
+## R0.3 — lê as constantes de armazenagem do NÚCLEO (fonte: sim_constants.h).
+## As constantes do topo ficam só como fallback de binário antigo.
+func _read_core_constants() -> void:
+	if not ClassDB.class_exists("EconomySim"):
+		return
+	var values: Dictionary = EconomySim.get_storage_constants()
+	_initial_months = float(values.get("initial_months",
+		STORAGE_INITIAL_MONTHS))
+	_government_share = float(values.get("government_share",
+		STORAGE_GOVERNMENT_SHARE))
 
 
 ## Carrega os JSONs. Idempotente. Devolve false quando os três da G2 faltam — o
@@ -149,6 +165,7 @@ static func core_type(json_name: String) -> String:
 ##     Default `true`.
 func apply_to_sim(sim: Object, cities: Array, buildings: Array,
 		options: Dictionary = {}) -> Dictionary:
+	_read_core_constants()
 	var report := _empty_report(options)
 	if not load_data():
 		return report
@@ -345,7 +362,7 @@ func _nation_capacity(tag: String, nation_cities: Array,
 		if type == "fuel_tank":
 			# Tanque: o PRIVADO não tem cobertura publicada (regra de meses); a
 			# reserva pública tem DIAS de importação (dado) — as duas somam.
-			var private_t := _rule_capacity(flow, STORAGE_INITIAL_MONTHS)
+			var private_t := _rule_capacity(flow, _initial_months)
 			var public_t := _oil_public_capacity(tag, flow, out)
 			out["total"]["fuel_tank"] = private_t + public_t
 			out["government"]["fuel_tank"] = public_t
@@ -363,7 +380,7 @@ func _nation_capacity(tag: String, nation_cities: Array,
 		if type == "silo":
 			government = _grain_public_capacity(tag, flow, out)
 		if government < 0.0:
-			government = total * STORAGE_GOVERNMENT_SHARE
+			government = total * _government_share
 		out["government"][type] = minf(maxf(government, 0.0), total)
 	return out
 
@@ -379,7 +396,7 @@ func _coverage_months(tag: String, type: String) -> Dictionary:
 		var months := _num(grain.get("months_of_production"))
 		if months > 0.0:
 			return {"months": months, "basis": "data"}
-		return {"months": STORAGE_INITIAL_MONTHS, "basis": "rule"}
+		return {"months": _initial_months, "basis": "rule"}
 	if type == "gas":
 		var gas: Dictionary = capacity.get("gas", {})
 		var twh := _num(gas.get("working_capacity_twh"))
@@ -393,7 +410,7 @@ func _coverage_months(tag: String, type: String) -> Dictionary:
 	# produção/consumo real do tipo por nação no repositório (o frio tem m³,
 	# não a produção de perecíveis; o pátio e o armazém geral não têm
 	# capacidade observada). Regra declarada do núcleo.
-	return {"months": STORAGE_INITIAL_MONTHS, "basis": "rule"}
+	return {"months": _initial_months, "basis": "rule"}
 
 
 ## Capacidade de GOVERNO do silo a partir da rede pública de grãos (Índia,
@@ -807,8 +824,8 @@ func _empty_report(options: Dictionary) -> Dictionary:
 			"gas_kt_per_twh": GAS_KT_PER_TWH,
 		},
 		"rules": {
-			"initial_months": STORAGE_INITIAL_MONTHS,
-			"government_share": STORAGE_GOVERNMENT_SHARE,
+			"initial_months": _initial_months,
+			"government_share": _government_share,
 			"scale": "cobertura_real x fluxo_do_jogo (D-101)",
 		},
 		"coverage": _coverage.duplicate(true),
