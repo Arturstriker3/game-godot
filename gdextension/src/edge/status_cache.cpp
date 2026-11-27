@@ -384,10 +384,14 @@ Dictionary EconomySim::get_status() {
 	if (!ws_.treasury_config_error.empty()) {
 		root["treasury_config_error"] = String(
 			ws_.treasury_config_error.c_str());
+	} else {
+		root.erase("treasury_config_error");
 	}
 	if (!ws_.firms_config_error.empty()) {
 		root["firms_own_cash_config_error"] = String(
 			ws_.firms_config_error.c_str());
+	} else {
+		root.erase("firms_own_cash_config_error");
 	}
 	// G2: diagnóstico da semente (critério 9: residual e falta publicados).
 	if (ws_.bootstrap.loaded) {
