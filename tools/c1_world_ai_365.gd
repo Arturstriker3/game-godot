@@ -732,7 +732,7 @@ func _make_world() -> Object:
 			var rc: Dictionary = rework_params.get("regional_cash", {})
 			print("[c1] R1a caixa unico regional: enabled=%s sub-teto=%s" % [
 				"1" if bool(rc.get("enabled", false)) else "0",
-				String(rc.get("external_subceiling", "all"))])
+				String(rc.get("external_subceiling", "off"))])
 	if sim.has_method("set_bootstrap_industry"):
 		var bootstrap: Variant = _load(BOOTSTRAP_PATH)
 		if bootstrap is Dictionary:
