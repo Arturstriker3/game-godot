@@ -7608,13 +7608,16 @@ void EconomySim::set_bank_seed(const Dictionary& values) {
 	const Variant nations_variant = values.get("nations", Variant());
 	if (nations_variant.get_type() == Variant::DICTIONARY) {
 		const Dictionary nations = nations_variant;
-		for (const auto& row_entry : nations.entries()) {
-			const std::string code(row_entry.first.utf8().get_data());
+		const Array codes = nations.keys();
+		for (int code_index = 0; code_index < codes.size(); ++code_index) {
+			const std::string code(String(codes[code_index]).utf8().get_data());
+			const Variant row_variant = nations.get(codes[code_index],
+				Variant());
 			if (code.empty()
-					|| row_entry.second.get_type() != Variant::DICTIONARY) {
+					|| row_variant.get_type() != Variant::DICTIONARY) {
 				continue;
 			}
-			const Dictionary row = row_entry.second;
+			const Dictionary row = row_variant;
 			BankSeedRow data;
 			data.steady_loans = std::max(0.0,
 				double(row.get("steady_loans", 0.0)));

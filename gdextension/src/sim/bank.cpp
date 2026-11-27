@@ -797,6 +797,13 @@ double city_business_daily_cost(const WorldState& ws, std::size_t city_index) {
 
 } // namespace
 
+// R2a: fecho mensal do dividendo pela MESMA regra que a fase usa. Exposto para
+// o teste unitario provar a transferencia (caixa debitado, Δdepositos = 0 e
+// `money_total` constante) sem depender dos outros passos do dia.
+void pay_dividends(WorldState& ws) {
+	distribute_dividends(ws, policy(ws));
+}
+
 int phase(WorldState& ws, double* bank_money_delta) {
 	if (bank_money_delta != nullptr) {
 		*bank_money_delta = 0.0;

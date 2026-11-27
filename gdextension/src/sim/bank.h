@@ -189,8 +189,11 @@ void reassign_claims(WorldState& ws, const std::string& from_bank,
 double cut_funding_claims(WorldState& ws, const std::string& bank_id,
 	double amount);
 
-// Fase do dia: juros, atraso, amortização, calote e dividendo mensal.
-// Devolve o nº de calotes. `bank_money_delta` (opcional) recebe a criação/
+// Fecho mensal do dividendo (mesma regra da fase, exposta para o teste):
+// debita `bank.cash` e credita o dono; nunca cria depósito (ΔD = 0).
+void pay_dividends(WorldState& ws);
+
+// Fase do dia: juros, atraso, amortização, calote e dividendo mensal.// Devolve o nº de calotes. `bank_money_delta` (opcional) recebe a criação/
 // destruição de dinheiro bancário que o invariante soma ao `money_total`:
 // juro pago e amortização (−) e dividendo (+). O caixa tomado na execução
 // apenas troca depósito por caixa do banco e não entra nesse fluxo.
