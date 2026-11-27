@@ -1468,3 +1468,27 @@ implementação do leilão depende dos claims por credor.
    não o R2.
 5. **Títulos** — `Bank::gov_bonds` é gancho; a dívida pública de mercado exige
    comprador não-BC e fica para a fase política.
+
+## 14. Decisões da implementação do R2a (t190)
+
+1. **Seed real, medido** — `steady_loans` e `model_gdp_annual` saem do baseline
+   default 365 d (`tools/c1_world_ai_365.gd --banks-diag`, `trajectory 81eccf2a…`)
+   e `capital_to_assets` do WDI `FB.BNK.CAPA.ZS`; 134 nações com dado e 41 com o
+   fallback declarado 0,10 (§10.6). `assets_pct_gdp`/`capital_pct_gdp` ficam
+   `null` (`no_data`): sem série inequívoca de ativos/PIB, nada é digitado à mão.
+2. **Share da C5 intocada pelo seed** — a share usada pela bolsa soma 1 sobre as
+   LINHAS de banco (inclusive `no_data`); escrevê-la no seed fazia a carteira
+   passar das ações emitidas e o dia era revertido. O alvo por papel usa peso
+   local 0,45/0,40/0,15 renormalizado entre os `present`.
+3. **Depósito do grupo fica no banco de relacionamento** — o claim é único
+   (`deposit_bank_id`); o sweep não troca de banco (a competição é do R2b), para
+   `Σ claims == Σ D_f` fechar todo dia.
+4. **`bank::pay_dividends` exposto** — a fase e o teste chamam a mesma regra;
+   o divendo debita `bank.cash` e credita o dono (ΔD = 0, T constante).
+5. **Save v44 aditivo** — bloco `banks.rework` e campos novos só no ON; load
+   marca `seed_source = loaded_save` e não capitaliza para trás.
+6. **Gates** — 10/90/365 d ON e 365 d OFF medidos; 10 d OFF bit a bit o main e
+   365 d OFF bit a bit `81eccf2a…`. **R2a (capital) verde**; a sub-flag
+   `banks.deposits` reprovou o gate de falências (14 > 3, todas minas) porque o
+   sweep deixa o depósito ilíquido: só liga depois do R2b1. Números em
+   `docs/economy/rework/R2.md` §6.

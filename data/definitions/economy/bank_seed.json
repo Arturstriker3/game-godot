@@ -1,0 +1,3084 @@
+{
+ "artifact": "off365_banks.json",
+ "capital_to_loans_target": 0.1,
+ "counts": {
+  "fallback": 41,
+  "no_loans": 0,
+  "no_roles": 7,
+  "wdi": 134
+ },
+ "fallback_note": "capital_to_assets sem WDI = 0,10 declarado (§10.6, igual nas quatro faixas de renda); nao e medicao",
+ "model_gdp_source": "harness tools/c1_world_ai_365.gd (baseline default, bancos desligados): PIB diario por cidade somado por nacao e anualizado x365",
+ "nations": {
+  "AFG": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 68644523.9710183,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 210726.656446587
+  },
+  "AGO": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.11950052351190299,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 293711809.620325,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 977284.953913835
+  },
+  "ALB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0908599039902296,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 5557797.7573015,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 211917.944152171
+  },
+  "ARE": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.112780232919953,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 133304074.093433,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 415254.03772615
+  },
+  "ARG": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.206030092466593,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 23119685.0439021,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 85812.7037497999
+  },
+  "ARM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.140898349963827,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 14257768.7795877,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 130372.105642666
+  },
+  "ATG": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.11236958,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 892070.074829918,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 15181.3765190568
+  },
+  "AUS": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0565810937028656,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 390238350.849852,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 5082352.12843699
+  },
+  "AUT": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0853540044679741,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 29737843.9913734,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 176883.273234278
+  },
+  "AZE": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0207436031527928,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 58847370.9977338,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 200560.623633374
+  },
+  "BDI": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.105869461748325,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 8455788.98183411,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 72239.215459224
+  },
+  "BEL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0583474111496001,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 60429307.0878541,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 923843.697382594
+  },
+  "BEN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 37743257.2437412,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 140427.313919076
+  },
+  "BFA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 49615123.5691587,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 33076.0784777807
+  },
+  "BGD": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0229413315478589,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 356595018.161815,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 3932894.58497635
+  },
+  "BGR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.10441799080660599,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 20760363.6930494,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 215721.95282064
+  },
+  "BHR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 16749562.787224,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 28050.5121335981
+  },
+  "BHS": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 3909278.03009525,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 50550.0655034993
+  },
+  "BIH": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.106451086481249,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 8509124.78572513,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 124773.927148207
+  },
+  "BLR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.128893659102217,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 20735922.0514648,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 93203.7041645877
+  },
+  "BLZ": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0961941289736902,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 678920.628403822,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 1286.04972328175
+  },
+  "BOL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0704239653639851,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 24972892.2182019,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 111586.08953224
+  },
+  "BRA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.08217926764110381,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 673919444.571772,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 4321405.65154822
+  },
+  "BRB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.112318558867574,
+   "confidence": "partial",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 1687644.75166639,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 9169.9088352832
+  },
+  "BRN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.09735412075605859,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 1375733.71705311,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 15302.8759579594
+  },
+  "BTN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0789731959636914,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 1196083.82837791,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 35739.8913825097
+  },
+  "BWA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0830083268005664,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 2981479.80741588,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 47254.8101652502
+  },
+  "CAF": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.111229153798641,
+   "confidence": "partial",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 26697797.6109678,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 157630.48933909
+  },
+  "CAN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.046682012770070294,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 115526851.718287,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 761298.884077698
+  },
+  "CHE": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0764983580169753,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 12329991.825833,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 308766.55462389
+  },
+  "CHL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0894601367406624,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 44887684.855634,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 295126.536895811
+  },
+  "CHN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0775345301609578,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 2769672503.8234,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 26622359.3987001
+  },
+  "CIV": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 112976302.003639,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 224741.813503199
+  },
+  "CMR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.066466485170834,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 159621202.711011,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 460833.721014936
+  },
+  "COD": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0931134329502437,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 387060954.354619,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 625539.250346789
+  },
+  "COG": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0886472326776593,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 63506668.1133955,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 254072.90266929
+  },
+  "COL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.110030798314663,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 406703720.990993,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 1322097.3228752
+  },
+  "CRI": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.103143504092584,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 34157072.4772344,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 426972.73314295
+  },
+  "CUB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 27454750.3401166,
+   "private_share": null,
+   "public_share": 1.0,
+   "reference_target": null,
+   "roles_present": [
+    "public"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 120050.366564085
+  },
+  "CYP": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.096518620423983,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 2545924.06338845,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 32608.5239806214
+  },
+  "CZE": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.06075609677320679,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 34902188.736342,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 356551.617521617
+  },
+  "DEU": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0737912120136639,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 384556421.234273,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2706439.11968407
+  },
+  "DJI": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0792160358199741,
+   "confidence": "partial",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 7446840.32947571,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 36718.7660248705
+  },
+  "DMA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.09588911,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 290868.362762649,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 4001.22575864672
+  },
+  "DNK": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0455561352949207,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 31739255.4619145,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 140783.559874309
+  },
+  "DOM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0937919888750767,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 41117479.0857096,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 199747.784212292
+  },
+  "DZA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0910587939405734,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 110480056.450511,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 613242.406064755
+  },
+  "ECU": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.10850415991752299,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 73968939.174622,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 302910.925969193
+  },
+  "EGY": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 475790013.985785,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 885975.466352051
+  },
+  "ERI": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 8818855.17315588,
+   "private_share": null,
+   "public_share": 1.0,
+   "reference_target": null,
+   "roles_present": [
+    "public"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 16746.695737645
+  },
+  "ESP": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0575171241288821,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 259471129.709071,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 1182783.61683276
+  },
+  "EST": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0847090994193912,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 2644003.34423586,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 18.2161482785176
+  },
+  "ETH": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0705751396667351,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 84600428.8962321,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 436684.814232217
+  },
+  "FIN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0612802075298244,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 15040715.3383511,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 131800.582644827
+  },
+  "FJI": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.107835447006076,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 2414611.6865199,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 91770.4358457771
+  },
+  "FRA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.055551079622217496,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 303145476.170254,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2132396.30170349
+  },
+  "GAB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.085860735562067,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 21664024.3049309,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 131229.019450939
+  },
+  "GBR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0599783412794139,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 306702076.661107,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 1282190.54044395
+  },
+  "GEO": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.155320119131166,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 13832585.877006,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 261715.142518556
+  },
+  "GHA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.050994060226281,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 155198517.192118,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 511210.312577914
+  },
+  "GIN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.113530933851907,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 193528957.525526,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 736455.6478167
+  },
+  "GMB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.121461423511356,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 2237868.42614631,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 69130.7927072055
+  },
+  "GNB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 17181320.6973483,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 87387.2135177218
+  },
+  "GNQ": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": -0.0640252879823414,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 4277187.00990529,
+   "private_share": null,
+   "public_share": 1.0,
+   "reference_target": null,
+   "roles_present": [
+    "public"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 35681.2992023443
+  },
+  "GRC": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.07661596198575299,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 31422771.6874544,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 171008.975972904
+  },
+  "GRD": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0960634,
+   "confidence": "partial",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 189911.292287353,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 859.586365300057
+  },
+  "GTM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.07347724033042739,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 18584153.4877346,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 73334.4557491909
+  },
+  "GUY": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 6425163.6013917,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 242898.456724958
+  },
+  "HND": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.059908612036979,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 20000351.0737652,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 146202.405692857
+  },
+  "HRV": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0926718992566005,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 13215243.5662704,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 163844.533957655
+  },
+  "HTI": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 14333002.1369319,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 116005.9505215
+  },
+  "HUN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0948374304914145,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 35613576.5299933,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 36232.4161022806
+  },
+  "IDN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.134428246518284,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 1189633118.34937,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 9825054.00674197
+  },
+  "IND": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.08414345867205411,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 1837736029.17802,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 8673091.03175766
+  },
+  "IRL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.095119189688455,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 19837606.9643868,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 162147.557990148
+  },
+  "IRN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 373803774.223794,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 448796.135035558
+  },
+  "IRQ": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.138615112768946,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 76652376.1045482,
+   "private_share": null,
+   "public_share": 1.0,
+   "reference_target": null,
+   "roles_present": [
+    "public"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 185952.588852842
+  },
+  "ISL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.133138290370023,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 4985651.52539147,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 31436.9299476257
+  },
+  "ISR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0730932068090567,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 76174602.4149595,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 375336.740919265
+  },
+  "ITA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0627228661436411,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 264296622.7607,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2627518.55742242
+  },
+  "JAM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 10281540.0524396,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 145672.829029193
+  },
+  "JOR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.10494018399230001,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 95958405.8532424,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 395042.632340399
+  },
+  "JPN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.04067677427737,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 539377613.119083,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 1497100.71717062
+  },
+  "KAZ": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.13917464865231,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 105142572.769001,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 842799.287150178
+  },
+  "KEN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.116896167282259,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 163069991.659178,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 1047459.54297142
+  },
+  "KGZ": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.11583602756106699,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 12672171.2288953,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 26846.2750222344
+  },
+  "KHM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.143603842208196,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 58909376.5895546,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 541740.539267272
+  },
+  "KNA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.10593254,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 268903.259630747,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 24472.6772275632
+  },
+  "KOR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.062899613496518,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 251948864.927298,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2132269.14621629
+  },
+  "KWT": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.11687442701448299,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 42817003.2149661,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 138691.332393034
+  },
+  "LAO": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 16697622.1805512,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 114154.476938576
+  },
+  "LBN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0856312376259306,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 20462724.5475226,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 597884.297826059
+  },
+  "LBR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 39651966.1110604,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 118242.314219159
+  },
+  "LBY": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 49254505.199312,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 87448.3268105199
+  },
+  "LCA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.08679031999999999,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 474151.425621068,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 24460.0391995365
+  },
+  "LKA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0772767388723155,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 78447322.1842589,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 661159.054190854
+  },
+  "LSO": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.111573393670899,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 1797976.38794519,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 14518.5434732981
+  },
+  "LTU": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.062257576268663496,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 7190685.59467942,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 104052.290992625
+  },
+  "LUX": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0880141202328424,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 1355329.24358321,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 8860.34007510219
+  },
+  "LVA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0934717284789512,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 2189553.51172484,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 186.460804963573
+  },
+  "MAR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0843299041353463,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 183600620.637745,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 880615.428900455
+  },
+  "MDA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.12423264868112699,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 8820445.2448887,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 81462.1711429706
+  },
+  "MDG": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0746420560770474,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 18300293.7020412,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 264914.03724701
+  },
+  "MEX": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0988552033185785,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 378203686.922542,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2341669.70727658
+  },
+  "MKD": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.12090351048461401,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 5166762.75837324,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 42115.958557636
+  },
+  "MLI": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 39612580.8990412,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 50989.7997402779
+  },
+  "MLT": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0815459976971989,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 737213.818096296,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 10188.0448506983
+  },
+  "MMR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 79379625.4018199,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 251520.659387135
+  },
+  "MNE": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0882864887253128,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 2942166.22596563,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 130541.329554735
+  },
+  "MNG": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0940309299656565,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 14067730.5051655,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 157995.914468903
+  },
+  "MOZ": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.125153531903382,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 24935308.7004655,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 223832.581851574
+  },
+  "MRT": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 27515075.1077173,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 69278.3024606555
+  },
+  "MWI": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0823216208972469,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 12915650.7243125,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 64533.3679062252
+  },
+  "MYS": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0755266909743325,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 211922924.365237,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 1143495.36064943
+  },
+  "NAM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.103537324724615,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 7867627.38585358,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 123821.643939272
+  },
+  "NED": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 64930541.0077936,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 339277.631932089
+  },
+  "NER": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 52433337.0398034,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 190565.060513923
+  },
+  "NGA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0520104814288029,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 896190383.846859,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2440935.70734071
+  },
+  "NIC": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0829390591949087,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 20366549.6743636,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 139978.269583366
+  },
+  "NOR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.07755258784874801,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 18715257.8175547,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 109990.811725673
+  },
+  "NPL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0647269987603723,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 35208783.9990417,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 97508.2945757517
+  },
+  "NZL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 32297667.8357616,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 336010.139785422
+  },
+  "OMN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 36203878.7330526,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 176194.34996514
+  },
+  "PAK": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.049769080762754,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 598763013.285849,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2950923.04943266
+  },
+  "PAN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.119935762523127,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 32845722.3908496,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 421740.173686313
+  },
+  "PER": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.11686881842464,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 117469921.907439,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 294502.817208425
+  },
+  "PHL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0950047606504711,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 443483495.053534,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 231679.139151988
+  },
+  "PNG": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.12341195085906,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 15497291.4103006,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 109009.161924485
+  },
+  "POL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0628120003128102,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 97988454.4394319,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 531257.909097423
+  },
+  "PRK": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": null,
+   "confidence": "no_data",
+   "foreign_share": null,
+   "model_gdp_annual": 21063709.8015203,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [],
+   "source_key": "declared_default",
+   "steady_loans": 97298.1586280968
+  },
+  "PRT": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0772814313089006,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 41406284.8744793,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 31001.4724895959
+  },
+  "PRY": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.08436311564587379,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 12780676.1105749,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 218855.277396822
+  },
+  "PSX": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 7358046.82259547,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 86604.8855642543
+  },
+  "QAT": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 29109434.8707625,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 76909.3392036739
+  },
+  "ROU": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.08613353073200561,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 45630894.7222246,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 323599.526600965
+  },
+  "RUS": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.08082794683482909,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 420440377.094299,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2247077.92598191
+  },
+  "RWA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.123846237963325,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 20377880.2751375,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 282850.699300725
+  },
+  "SAH": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 351961.708417788,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 796.451490706611
+  },
+  "SAU": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.134539414634241,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 320660712.538859,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 1252977.58076933
+  },
+  "SDN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 176641712.613986,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 483748.575235023
+  },
+  "SEN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 48010889.2954921,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 410854.094881016
+  },
+  "SGP": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0823996458301581,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 37183813.7060417,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 201903.948103135
+  },
+  "SLB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.144557361760496,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 1045827.23355572,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 49078.4568327484
+  },
+  "SLE": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 52649113.6975103,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 217831.431292599
+  },
+  "SLV": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0838108058498597,
+   "confidence": "partial",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 7541266.70546952,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 153901.849860422
+  },
+  "SOL": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 19807959.1528313,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 158646.714100062
+  },
+  "SOM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 33304367.2810005,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 182392.511328203
+  },
+  "SRB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 20371716.4054306,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 192238.530657915
+  },
+  "SSD": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 11241262.158675,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 64509.7731108515
+  },
+  "SUR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 2225206.80162931,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 23099.5284579184
+  },
+  "SVK": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.07968311821074239,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 12781728.5278004,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 113140.58183937
+  },
+  "SVN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.10036301244967699,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 1712546.26547447,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 23739.9346591872
+  },
+  "SWE": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0601718122901812,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 16195619.2450007,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 31514.4019830087
+  },
+  "SWZ": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.130312672010472,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 831586.829658357,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 31.6869846143016
+  },
+  "SYR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": null,
+   "confidence": "no_data",
+   "foreign_share": null,
+   "model_gdp_annual": 137298847.365013,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [],
+   "source_key": "declared_default",
+   "steady_loans": 256227.69052646
+  },
+  "TCD": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": -0.010436273486247101,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 40424294.6279118,
+   "private_share": null,
+   "public_share": 1.0,
+   "reference_target": null,
+   "roles_present": [
+    "public"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 69268.293581192
+  },
+  "TGO": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 50847324.0656932,
+   "private_share": 1.0,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 198397.213759776
+  },
+  "THA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.11125634912273,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 198702376.752279,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 2170534.33686692
+  },
+  "TJK": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.209222699816233,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 20559328.5439389,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 40867.0187926638
+  },
+  "TKM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": null,
+   "confidence": "no_data",
+   "foreign_share": null,
+   "model_gdp_annual": 18389159.0986531,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [],
+   "source_key": "declared_default",
+   "steady_loans": 165129.383522461
+  },
+  "TLS": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 1468660.99428723,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 36942.870260737
+  },
+  "TTO": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.11916882975551299,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 1189708.76127405,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 30885.1503759484
+  },
+  "TUN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 57315310.6602775,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 190580.220872222
+  },
+  "TUR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0667005773491148,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 561660200.963696,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 5465504.25435931
+  },
+  "TWN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 130014141.467284,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 159011.985831144
+  },
+  "TZA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.129652966625694,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 31651835.2548377,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 307979.139157607
+  },
+  "UGA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.154853553307953,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 42494916.7762346,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 237989.353363026
+  },
+  "UKR": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0748901471949161,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 108877694.06226,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 687017.882141675
+  },
+  "URY": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.10460301084212001,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 7060781.78135511,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 208781.118863578
+  },
+  "USA": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0891167153440461,
+   "confidence": "partial",
+   "foreign_share": 0.2727272727272727,
+   "model_gdp_annual": 1158344496.99866,
+   "private_share": 0.7272727272727273,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 10308708.351769
+  },
+  "UZB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.13338580256271299,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 73249078.8110166,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 295988.457529226
+  },
+  "VCT": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.06910801,
+   "confidence": "partial",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 407249.743222701,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 8821.7700661414
+  },
+  "VEN": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": null,
+   "model_gdp_annual": 167173267.850857,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 1310471.36598915
+  },
+  "VNM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0855370173162123,
+   "confidence": "partial",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 521641545.020054,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 3857102.76931628
+  },
+  "XKX": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.111489139707442,
+   "confidence": "partial",
+   "foreign_share": 1.0,
+   "model_gdp_annual": 5069732.05576725,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 72351.4857831446
+  },
+  "YEM": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": null,
+   "confidence": "no_data",
+   "foreign_share": null,
+   "model_gdp_annual": 110888266.270313,
+   "private_share": null,
+   "public_share": null,
+   "reference_target": null,
+   "roles_present": [],
+   "source_key": "declared_default",
+   "steady_loans": 176352.244674129
+  },
+  "ZAF": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.0781376716672933,
+   "confidence": "partial",
+   "foreign_share": null,
+   "model_gdp_annual": 34738997.8298543,
+   "private_share": 0.47058823529411764,
+   "public_share": 0.5294117647058824,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 142194.130642171
+  },
+  "ZMB": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.11413704277118301,
+   "confidence": "partial",
+   "foreign_share": 0.25,
+   "model_gdp_annual": 28940756.7329247,
+   "private_share": null,
+   "public_share": 0.75,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "foreign"
+   ],
+   "source_key": "wdi_fb_bnk_capa",
+   "steady_loans": 361997.121851642
+  },
+  "ZWE": {
+   "assets_pct_gdp": null,
+   "capital_pct_gdp": null,
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
+   "foreign_share": 0.15,
+   "model_gdp_annual": 20319577.2688684,
+   "private_share": 0.4,
+   "public_share": 0.45,
+   "reference_target": null,
+   "roles_present": [
+    "public",
+    "private",
+    "foreign"
+   ],
+   "source_key": "declared_default",
+   "steady_loans": 153491.374651169
+  }
+ },
+ "reference_note": "assets_pct_gdp/capital_pct_gdp/reference_target = null (no_data): sem serie inequivoca de ativos/PIB; nada digitado a mao",
+ "source": "World Bank GFDD/WDI + BIS; ver docs/economy/rework/R2_plano.md",
+ "steady_loans_source": "harness tools/c1_world_ai_365.gd no fecho do baseline default (banks.diag >= dia): carteira de credito por nacao (steady state medido)",
+ "wdi_source": "World Bank WDI FB.BNK.CAPA.ZS (Bank capital to assets ratio, %), ultimo ano disponivel por pais",
+ "wdi_url": "https://api.worldbank.org/v2/country/all/indicator/FB.BNK.CAPA.ZS?format=json&date=2015:2024&per_page=20000",
+ "year": 2024
+}

@@ -97,7 +97,8 @@ def main() -> int:
 
     out_nations = {}
     stats = {"wdi": 0, "fallback": 0, "no_loans": 0, "no_roles": 0}
-    for iso in sorted(set(nations) | set(wdi)):
+    known = set((banks.get("nations") or {}).keys())
+    for iso in sorted(set(nations) & known):
         bank_row = nations.get(iso, {})
         steady = float(bank_row.get("loans", 0.0))
         model_gdp = float(gdp.get(iso, 0.0))

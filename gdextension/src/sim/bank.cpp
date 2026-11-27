@@ -1405,7 +1405,7 @@ double liquidity_floor(const WorldState& ws, const Bank& bank) {
 
 void seed_capital(WorldState& ws) {
 	const BanksRework& br = ws.banks_rework;
-	if (!br.enabled || !br.capital) {
+	if (!br.enabled || !br.capital || !br.seed_enabled) {
 		return;
 	}
 	if (br.seed_source == "loaded_save") {
@@ -1431,6 +1431,7 @@ void seed_capital(WorldState& ws) {
 				: 0.0);
 		// Papéis presentes SOMENTE (`present`); none/no_data nunca capitaliza.
 		std::vector<Bank*> present;
+		std::vector<double> present_weight;
 		double weight_sum = 0.0;
 		for (const int role : {kRolePublic, kRolePrivate, kRoleForeign}) {
 			Bank* bank = find_mut(ws, nation, role);
@@ -1444,18 +1445,22 @@ void seed_capital(WorldState& ws) {
 				}
 				continue;
 			}
+			// `bank.share` fica com a renormalizacao da C4/C5 (soma 1 sobre as
+			// LINHAS de banco existentes, inclusive `no_data`): a C5 rateia as
+			// acoes do grupo por ela. O seed usa o peso local so para o alvo.
 			const double weight = role == kRolePublic ? kSharePublic
 				: (role == kRolePrivate ? kSharePrivate : kShareForeign);
-			bank->share = weight;
 			weight_sum += weight;
 			present.push_back(bank);
+			present_weight.push_back(weight);
 		}
 		if (present.empty() || weight_sum <= 1e-9) {
 			continue;
 		}
-		for (Bank* bank : present) {
-			bank->share /= weight_sum;
-			bank->capital_target = model_target * bank->share;
+		for (std::size_t slot = 0; slot < present.size(); ++slot) {
+			Bank* bank = present[slot];
+			bank->capital_target = model_target * present_weight[slot]
+				/ weight_sum;
 			bank->capital_ratio_target = br.dividend_target_ratio;
 			bank->charter = "declared";
 			bank->seed_scale = 0.0;
@@ -1593,7 +1598,20 @@ void sweep_deposits(WorldState& ws) {
 		if (excess <= 1e-9) {
 			continue;
 		}
-		Bank* bank = lender(ws, group);
+		// O claim do grupo e' UM so (deposit_bank_id): se ele ja tem deposito num
+		// banco presente, o sweep continua nele. Trocar de banco deixaria a
+		// passividade D_f no antigo e o claim apontando para o novo (Σ claims
+		// != Σ D_f). A competicao por banco e' do R2b, nao do sweep.
+		Bank* bank = nullptr;
+		if (group.bank_deposit > 1e-9 && !group.deposit_bank_id.empty()) {
+			const auto current = ws.banks.find(group.deposit_bank_id);
+			if (current != ws.banks.end() && bank_present(current->second)) {
+				bank = &current->second;
+			}
+		}
+		if (bank == nullptr) {
+			bank = lender(ws, group);
+		}
 		if (bank == nullptr) {
 			continue;
 		}

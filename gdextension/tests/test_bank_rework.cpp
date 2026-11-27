@@ -14,6 +14,7 @@
 
 #include "sim/balance.h"
 #include "sim/bank.h"
+#include "sim/save_state.h"
 #include "sim/sim_core.h"
 
 using doctest::Approx;
@@ -211,6 +212,12 @@ TEST_CASE("R2a: papel none/no_data nunca e' capitalizado") {
 	CHECK(none_bank->capital_target == Approx(0.0));
 	CHECK(none_bank->seed_scale == Approx(0.0));
 	CHECK(none_bank->charter == "none");
+	// A share da C5 nao e' tocada pelo seed: a soma sobre as LINHAS de banco
+	// existentes continua 1 (inclusive um papel `no_data`).
+	const ogs::Bank* public_bank = ogs::bank::find(world.ws, "AAA",
+		ogs::bank::kRolePublic);
+	REQUIRE(public_bank != nullptr);
+	CHECK(public_bank->share + none_bank->share == Approx(1.0));
 }
 
 TEST_CASE("R2a: dividendo debita caixa, nao cria deposito e conserva T") {
@@ -237,6 +244,68 @@ TEST_CASE("R2a: dividendo debita caixa, nao cria deposito e conserva T") {
 	CHECK(bank.deposits_funding == Approx(0.0));
 	CHECK(bank.capital == Approx(100.0));
 	CHECK(world.core.money_total() == Approx(money_before));
+}
+
+TEST_CASE("R2a: seed.enabled=0 nao capitaliza nada") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, false);
+	world.ws.banks_rework.seed_enabled = false;
+	present(world, ogs::bank::kRolePrivate);
+	world.ws.bank_seed.loaded = true;
+	world.ws.bank_seed.capital_to_loans_target = 0.10;
+	ogs::BankSeedRow row;
+	row.steady_loans = 1000.0;
+	world.ws.bank_seed.nations["AAA"] = row;
+	ogs::City& city = world.ws.cities.front();
+	city.pop.stratum_savings[ogs::kIncomeStrata - 1] = 1000.0;
+	city.pop.savings = stratum_total(city.pop);
+
+	const double money_before = world.core.money_total();
+	ogs::bank::seed_capital(world.ws);
+	CHECK(ogs::bank::totals(world.ws).capital == Approx(0.0));
+	CHECK(world.core.money_total() == Approx(money_before));
+	CHECK(city.pop.savings == Approx(1000.0));
+}
+
+TEST_CASE("R2a: save v44 carrega sem capitalizar de novo") {
+	ogs::test::PocketWorld source;
+	enable_banks(source, true, false);
+	present(source, ogs::bank::kRolePrivate);
+	source.ws.bank_seed.loaded = true;
+	source.ws.bank_seed.capital_to_loans_target = 0.10;
+	ogs::BankSeedRow row;
+	row.steady_loans = 1000.0;
+	row.roles_present = {"public", "private"};
+	source.ws.bank_seed.nations["AAA"] = row;
+	ogs::City& city = source.ws.cities.front();
+	city.pop.stratum_savings[ogs::kIncomeStrata - 1] = 1000.0;
+	city.pop.savings = stratum_total(city.pop);
+	ogs::bank::seed_capital(source.ws);
+	const double capital_before = ogs::bank::find(source.ws, "AAA",
+		ogs::bank::kRolePrivate)->capital;
+	REQUIRE(capital_before > 0.0);
+
+	const ogs::save::Value saved = ogs::save::to_value(source.ws,
+		source.core);
+	ogs::test::PocketWorld target;
+	ogs::save::from_value(target.ws, target.core, saved);
+
+	CHECK(target.ws.banks_rework.enabled);
+	CHECK(target.ws.banks_rework.capital);
+	CHECK(target.ws.banks_rework.seed_source == "loaded_save");
+	const ogs::Bank* loaded = ogs::bank::find(target.ws, "AAA",
+		ogs::bank::kRolePrivate);
+	REQUIRE(loaded != nullptr);
+	CHECK(loaded->capital == Approx(capital_before));
+	CHECK(loaded->capital_target == Approx(source.ws.banks.find("AAA/private")
+		->second.capital_target));
+	// O load nao capitaliza retroativamente: chamar o gancho do dia 0 nao move
+	// dinheiro nem capital de um mundo carregado.
+	const double money_before = target.core.money_total();
+	ogs::bank::seed_capital(target.ws);
+	CHECK(ogs::bank::find(target.ws, "AAA", ogs::bank::kRolePrivate)->capital
+		== Approx(capital_before));
+	CHECK(target.core.money_total() == Approx(money_before));
 }
 
 TEST_CASE("R2a: funding do grupo entra no claim e o sweep e' conservativo") {
