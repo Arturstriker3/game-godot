@@ -475,13 +475,22 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			gov.target_revenue_month * kMaintenanceShareOfTarget
 			* static_cast<double>(elapsed) / static_cast<double>(kMonthDays);
 		// R1b: com o Tesouro, a manutenção sai do limite de serviços do
-		// orçamento regional (`government_budget`), limitada a uma fração
-		// declarada dele (`maintenance_share`) — o resto fica para
-		// alimentação/crise. Sem a flag, o caminho antigo (caixa municipal).
+		// orçamento regional (`government_budget`). O teto é
+		// `maintenance_share` da DOTAÇÃO de serviços do mês — não do
+		// restante: o teto da manutenção não encolhe conforme o mês consome
+		// (QA t173). O restante do contador continua sendo o limite duro.
+		// Sem a flag, o caminho antigo (caixa municipal).
 		double maintenance_paid = 0.0;
 		if (ws.national_treasury) {
-			const double services_cap = safe_nonneg(city.government_budget)
-				* safe_unit(ws.regional_budget_maintenance_share);
+			const double services_now = safe_nonneg(city.government_budget);
+			double services_dotation = services_now;
+			if (city.regional_budget_limit_month > 0.0) {
+				services_dotation = city.regional_budget_limit_month
+					* (1.0 - safe_unit(ws.regional_budget_works_share));
+			}
+			const double services_cap = std::min(services_now,
+				services_dotation
+					* safe_unit(ws.regional_budget_maintenance_share));
 			maintenance_paid = std::min(maintenance_due, services_cap);
 			if (maintenance_paid > 0.0) {
 				city.government_budget -= maintenance_paid;

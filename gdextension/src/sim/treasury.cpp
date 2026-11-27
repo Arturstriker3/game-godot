@@ -177,19 +177,28 @@ double reconcile(WorldState& ws) {
 			+ (city.regional_budget_open_works - works_now);
 		if (spent > 0.0) {
 			double& cash = ws.nation_treasury[city.nation];
-			const double paid = std::min(spent, safe_nonneg(cash));
-			cash = std::max(0.0, cash - paid);
+			// Saldo ANTES do debito: e o maximo que o Tesouro pode honrar.
+			const double balance = safe_nonneg(cash);
+			const double paid = std::min(spent, balance);
+			cash = std::max(0.0, balance - paid);
 			city.regional_budget_spent_month += paid;
 			city.regional_budget_spent_total += paid;
 			ws.treasury_spent_total += paid;
 			spent_total += paid;
 			if (paid + 1e-9 < spent) {
 				// Sem saldo no Tesouro: o excesso nao e gasto (despesa
-				// adiada). O contador volta a refletir o que nao foi pago.
-				const double deferred = spent - paid;
-				city.government_budget += deferred;
-				services_now += deferred;
-				city.regional_budget_deferred_month += deferred;
+				// adiada). O contador volta a refletir o que nao foi pago,
+				// mas o adiado NUNCA excede o saldo que existia antes do
+				// debito: sem o clamp um gasto sem lastro voltava inteiro ao
+				// contador e a despesa seguinte voltava a criar dinheiro
+				// (QA t173). Com os limites derivados do saldo da abertura o
+				// ramo e inalcancavel; o clamp e defensivo.
+				const double deferred = std::min(spent - paid, balance);
+				if (deferred > 0.0) {
+					city.government_budget += deferred;
+					services_now += deferred;
+					city.regional_budget_deferred_month += deferred;
+				}
 			}
 		} else if (spent < 0.0) {
 			// Receita publica do intervalo: entra no Tesouro e NAO aumenta a

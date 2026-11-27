@@ -19,6 +19,7 @@ const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const EFFICIENCY_PATH := "res://data/definitions/production/efficiency.json"
 const CRISIS_PATH := "res://data/definitions/economy/crisis.json"
+const SaveSchema := preload("res://core/economy/save_schema.gd")
 
 const EPS := 1e-4
 
@@ -548,8 +549,10 @@ func _test_save_load_v41() -> void:
 	sim.crisis_layoff("AGRIA", "D126-SAVE", 0.5)
 	sim.crisis_mothball("AGRIA", "D126-SAVE")
 	var save: Dictionary = sim.to_dict()
-	# D-131 fase A subiu o save para v42 (bloco aditivo definitions.ai_brain).
-	_check("(7) save v42", int(save.get("version", 0)) == 42,
+	# A versão do schema vem do núcleo (`kSaveVersion` via get_save_version):
+	# nunca fixar o literal (QA t173 — o save subiu para v43 com o R1b).
+	_check("(7) save v%d (kSaveVersion)" % SaveSchema.current(),
+			int(save.get("version", 0)) == SaveSchema.current(),
 			"version=%d" % int(save.get("version", 0)))
 	var loaded := _load(save)
 	var row := _crisis_row(loaded, "D126-SAVE")

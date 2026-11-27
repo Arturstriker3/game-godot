@@ -1115,38 +1115,6 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 	core.apply_regional_cash_after_load(
 		bool(data.get("regional_cash", false)),
 		data.has("regional_cash"));
-	// R1b: Tesouro Nacional. A flag do save vence a configuracao, mas so vale
-	// com `regional_cash` ligada (o core trata ON sem regional como config
-	// invalida e desliga). Saldos/acumulados vem do bloco `treasury`
-	// (versionado); save sem o bloco = Tesouro vazio.
-	{
-		std::map<std::string, double> treasury_balances;
-		double collected_total = 0.0;
-		double spent_total = 0.0;
-		const Variant block_variant = data.get("treasury", Dictionary());
-		if (block_variant.get_type() == Variant::DICTIONARY) {
-			const Dictionary& block = block_variant;
-			collected_total = double(block.get("collected_total", 0.0));
-			// v1 (envelopes) guardava `distributed_total`; v2 usa `spent_total`.
-			spent_total = double(block.get("spent_total",
-				block.get("distributed_total", 0.0)));
-			const Variant nations_variant = block.get("nations", Dictionary());
-			if (nations_variant.get_type() == Variant::DICTIONARY) {
-				const Dictionary& nations = nations_variant;
-				for (const auto& row : nations.entries()) {
-					if (row.first.empty()) {
-						continue;
-					}
-					treasury_balances[row.first] = double(row.second);
-				}
-			}
-		}
-		core.apply_national_treasury_after_load(
-			bool(data.get("national_treasury", false)),
-			data.has("national_treasury"), treasury_balances,
-			collected_total, spent_total);
-	}
-
 	ws.in_transit.clear();
 	Array transit = data.get("in_transit", Array());
 	for (int index = 0; index < transit.size(); ++index) {
@@ -1395,6 +1363,44 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 		if (!city.pop.strata_ready) {
 			core.seed_strata(city, nullptr);
 		}
+	}
+	// R1b: Tesouro Nacional — so DEPOIS de todo o load por cidade. O
+	// `government_budget` vem de `city::read` e o caixa de obras
+	// (`CityGov::cash`) so existe depois de `read_urban`; aplicar antes (QA
+	// t173) fazia o 1o reconcile ler resto de obras = 0, tratar o caixa da
+	// prefeitura como receita do Tesouro (criando dinheiro) e zerar a dotacao
+	// de obras do mes. A flag do save vence a configuracao, mas so vale com
+	// `regional_cash` ligada (o core trata ON sem regional como config
+	// invalida e desliga). Saldos/acumulados vem do bloco `treasury`
+	// (versionado); save sem o bloco = Tesouro vazio (ou migracao v42->v43:
+	// o caixa publico municipal e absorvido, ver
+	// `apply_national_treasury_after_load`).
+	{
+		std::map<std::string, double> treasury_balances;
+		double collected_total = 0.0;
+		double spent_total = 0.0;
+		const Variant block_variant = data.get("treasury", Dictionary());
+		if (block_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& block = block_variant;
+			collected_total = double(block.get("collected_total", 0.0));
+			// v1 (envelopes) guardava `distributed_total`; v2 usa `spent_total`.
+			spent_total = double(block.get("spent_total",
+				block.get("distributed_total", 0.0)));
+			const Variant nations_variant = block.get("nations", Dictionary());
+			if (nations_variant.get_type() == Variant::DICTIONARY) {
+				const Dictionary& nations = nations_variant;
+				for (const auto& row : nations.entries()) {
+					if (row.first.empty()) {
+						continue;
+					}
+					treasury_balances[row.first] = double(row.second);
+				}
+			}
+		}
+		core.apply_national_treasury_after_load(
+			bool(data.get("national_treasury", false)),
+			data.has("national_treasury"), treasury_balances,
+			collected_total, spent_total);
 	}
 	// G (v24) — estado da safra por (cidade, produto, safra). Save v23 e
 	// anteriores não têm o bloco: o estado nasce zerado (a safra do ano

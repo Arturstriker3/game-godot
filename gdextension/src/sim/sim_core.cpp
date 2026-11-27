@@ -64,6 +64,20 @@ const City* SimCore::find_city(const std::string& id) const {
 }
 
 void SimCore::set_regional_cash(bool enabled, int external_subceiling) {
+	// R1b (QA t173): o Tesouro Nacional so existe com o caixa unico regional.
+	// Desligar o caixa regional desliga o Tesouro na MESMA chamada —
+	// reconcilia o gasto pendente, devolve o saldo do Tesouro ao mundo OFF
+	// (dinheiro real na primeira cidade da nacao) e limpa a flag. Sem isso a
+	// combinacao invalida sobrevivia e `treasury::enabled()` continuava true.
+	if (!enabled && ws_.national_treasury) {
+		treasury::reconcile(ws_);
+		treasury::clear_counters(ws_);
+		treasury::drain_to_regions(ws_);
+		ws_.national_treasury = false;
+		ws_.gov_cash_open.clear();
+		ws_.treasury_config_error =
+			"regional_cash desligado; national_treasury tratado como desligado";
+	}
 	ws_.regional_cash = enabled;
 	ws_.external_subceiling = external_subceiling;
 	for (City& city : ws_.cities) {
@@ -159,6 +173,7 @@ void SimCore::set_national_treasury(bool enabled, double budget_share,
 			"flag tratada como desligada";
 		if (ws_.national_treasury) {
 			treasury::reconcile(ws_);
+			treasury::clear_counters(ws_);
 			treasury::drain_to_regions(ws_);
 		}
 		ws_.national_treasury = false;
@@ -177,9 +192,13 @@ void SimCore::set_national_treasury(bool enabled, double budget_share,
 		ws_.national_treasury = true;
 	}
 	if (!enabled && ws_.national_treasury) {
-		// Desligar nao destroi dinheiro: o Tesouro e os restantes virtuais
-		// viram dinheiro real na primeira cidade da nacao (mundo OFF).
+		// Desligar nao destroi dinheiro: o saldo do Tesouro (o unico caixa
+		// publico sob ON) vira dinheiro real na primeira cidade da nacao
+		// (mundo OFF). Os contadores regionais sao LIMITE do mes: entram
+		// zerados (somar os dois contava o mesmo dinheiro duas vezes e criava
+		// moeda com o mes aberto — QA t173).
 		treasury::reconcile(ws_);
+		treasury::clear_counters(ws_);
 		treasury::drain_to_regions(ws_);
 		ws_.national_treasury = false;
 		ws_.gov_cash_open.clear();
@@ -231,6 +250,23 @@ void SimCore::apply_national_treasury_after_load(bool saved_flag,
 		? std::max(0.0, collected_total) : 0.0;
 	ws_.treasury_spent_total = std::isfinite(spent_total)
 		? std::max(0.0, spent_total) : 0.0;
+	if (!has_saved_flag) {
+		// Migracao v42->v43 (save anterior ao R1b) carregado com a flag ON
+		// pela configuracao: no mundo antigo `government_budget` e
+		// `CityGov::cash` eram dinheiro real, mas sob ON os contadores sao
+		// limite e nao entram em `money_total`. Sem absorver, o caixa
+		// municipal saia do total (o dinheiro sumia) e a dotacao derivada
+		// ficava sem lastro (o 1o gasto adiava tudo) — QA t173. Absorver
+		// conserva o total: o caixa vira saldo do Tesouro e o mes corrente
+		// abre com dotacao, o mesmo caminho da primeira aplicacao em mundo
+		// vivo. O valor absorvido entra em `treasury_collected_total`, para a
+		// identidade `coletado == gasto + saldo` continuar valendo. Nada e
+		// criado nem destruido.
+		treasury::absorb_public_cash(ws_);
+		treasury::start_month(ws_);
+		ws_.gov_cash_open.clear();
+		return;
+	}
 	ws_.regional_budget_started = true;
 	const std::size_t gov_count = std::min(ws_.cities.size(),
 		ws_.city_gov.size());
