@@ -11,6 +11,7 @@
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
+#include "sim/central_bank.h"
 #include "sim/save_state.h"
 #include "sim/sim_core.h"
 #include "sim/treasury.h"
@@ -81,6 +82,30 @@ TEST_CASE("R1b: arrecadacao e envelope conservam (arrecadado == distribuido + "
 		== Approx(world.ws.treasury_distributed_total
 			+ ogs::treasury::total_balance(world.ws)));
 	CHECK(world.core.money_total() == Approx(money_before + 900.0));
+}
+
+TEST_CASE("R1b: o saldo do Tesouro e atribuido a moeda da nacao") {
+	// Regressao (t169): o saldo do Tesouro entrou no `money_total`, mas a
+	// alocacao por moeda (invariante da C2a) nao o conhecia e o tick era
+	// revertido todo dia (smoke ON travado em 10/10). O caixa arrecadado tem
+	// de ser integralmente atribuido: residual zero, nenhuma violacao.
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	enable_treasury(world, 0.5);
+	ogs::treasury::collect(world.ws, "AAA", 900.0);
+	const double money = world.core.money_total();
+	const ogs::central_bank::MoneyAllocation money_after =
+		ogs::central_bank::allocate_money(world.ws, money);
+	CHECK(money_after.residual() == Approx(0.0));
+	CHECK(money_after.allocated_total() == Approx(money));
+
+	// Depois do envelope a atribuicao continua fechando (o saldo vive no
+	// orcamento/prefeitura das regioes).
+	ogs::treasury::distribute_envelopes(world.ws);
+	const double after_envelope = world.core.money_total();
+	const ogs::central_bank::MoneyAllocation redistributed =
+		ogs::central_bank::allocate_money(world.ws, after_envelope);
+	CHECK(redistributed.residual() == Approx(0.0));
 }
 
 TEST_CASE("R1b: envelope e proporcional a populacao com piso por regiao") {

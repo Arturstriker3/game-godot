@@ -159,6 +159,13 @@ MoneyAllocation allocate_money(const WorldState& ws, double money_total) {
 	for (const auto& row : ws.deposit_insurance) {
 		add(currency_index_of(ws, row.first), row.second.fund);
 	}
+	// R1b: o saldo do Tesouro Nacional é caixa público na moeda da própria
+	// nação — o mesmo termo que `SimCore::money_total()` já soma. Sem esta
+	// linha a atribuição do dia fica menor que o `money_total` e o invariante
+	// da C2a reverte o tick (dia travado).
+	for (const auto& row : ws.nation_treasury) {
+		add(currency_index_of(ws, row.first), row.second);
+	}
 	// Caixas de setor sem nação atribuível e a posição do exterior.
 	out.sector_cash = ws.transport_cash + ws.construction_cash;
 	out.external = ws.foreign_cash;
