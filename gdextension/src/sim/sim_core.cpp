@@ -393,10 +393,17 @@ double SimCore::money_total() const {
 		// capital_income_next é um crédito pendente às famílias: entra no total
 		// para a conservação valer em qualquer ponto do tick. O caixa da região
 		// (B3) é dinheiro do mundo, como o das famílias.
-		total += city.pop.savings + city.private_total()
-		       + (ws_.national_treasury ? 0.0 : city.government_budget)
-		       + city.capital_income_next
-		       + city.rent_income_next + city.region.cash;
+		// A expressão do OFF é a MESMA do mundo anterior, termo a termo: em
+		// debug (sem otimização) reordenar a soma muda ulps e o digest.
+		if (!ws_.national_treasury) {
+			total += city.pop.savings + city.private_total()
+			       + city.government_budget + city.capital_income_next
+			       + city.rent_income_next + city.region.cash;
+		} else {
+			total += city.pop.savings + city.private_total()
+			       + city.capital_income_next
+			       + city.rent_income_next + city.region.cash;
+		}
 	}
 	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
 	// pagar). Sem ele, mover lucro da firma para o grupo pareceria destruição.

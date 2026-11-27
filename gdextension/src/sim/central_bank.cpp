@@ -120,13 +120,18 @@ MoneyAllocation allocate_money(const WorldState& ws, double money_total) {
 		const City& city = ws.cities[index];
 		// R1b: com o Tesouro, o orçamento regional (serviços/obras) é limite,
 		// não caixa; o saldo público vive em `nation_treasury` (abaixo). A
-		// ordem das parcelas mantém o OFF bit a bit (soma em ponto flutuante).
-		double cash = city.pop.savings + city.private_total();
+		// expressão do OFF é a MESMA do mundo anterior, termo a termo: a soma
+		// em ponto flutuante (debug, sem otimização) não pode mudar de árvore.
+		double cash = 0.0;
 		if (!ws.national_treasury) {
-			cash += city.government_budget;
+			cash = city.pop.savings + city.private_total()
+				+ city.government_budget + city.capital_income_next
+				+ city.rent_income_next + city.region.cash;
+		} else {
+			cash = city.pop.savings + city.private_total()
+				+ city.capital_income_next
+				+ city.rent_income_next + city.region.cash;
 		}
-		cash += city.capital_income_next
-			+ city.rent_income_next + city.region.cash;
 		if (index < gov_count) {
 			const CityGov& gov = ws.city_gov[index];
 			if (!ws.national_treasury) {
