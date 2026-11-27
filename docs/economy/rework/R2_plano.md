@@ -1,4 +1,4 @@
-# R2 — BANCOS: plano de implementação (rev2)
+# R2 — BANCOS: plano de implementação (rev3)
 
 > Branch `rework/r2-bancos`, worktree `G:/projetos/opengs-wt-r2`, base `main` `dbf5e73d`
 > (merge do R1). Spec: `REWORK_spec_mestre.md` §1.5 e §12 (R2), no repo
@@ -22,6 +22,23 @@
 > | 8 | cascata Tesouro→dívida→imprimir | ordem alinhada a `rescue_with_debt`/`emission`; dívida só com comprador; válvula ≤1% M0/dia; `treasury_debt_rescue=false` no R2c |
 > | 9 | fallback capitaliza todos | fallback só em papel `present`; `none`/`no_data` não são capitalizados |
 > | 10 | load v43 com seed no 1º load | seed só em **mundo novo**; save v43 carregado não recebe capital retroativo; converge por retenção |
+>
+> **rev3 (27/11/2026):** fecha os dois PARCIAIS e a ressalva do crítico 1 do
+> re-QA **t187** (`G:/opengs_tmp/qa_r2plano.md`, seção rev2). Só documento —
+> nenhuma linha de código, nenhum número de mundo muda nesta entrega.
+>
+> | # | rev2 dizia | rev3 passa a dizer |
+> | --- | --- | --- |
+> | 1 | seed público 2,0 M no dia 0 (piso 3 d) e total 5,6 M | **seed público = 0 no dia 0** (o Tesouro nasce vazio: dia 1 = 73.458,41); primeira capitalização no **fecho do 1º mês** (dia 30) = `min(alvo_restante, 0,10 × max(0, saldo − piso 3 d))`, com ticket mínimo de 25% do alvo restante; alvo público (4,05 M) completo no **dia 90** com os saldos medidos. Seed privado 3,6 M **inalterado** |
+> | 2 | convergência 5,6 M / ~0,4 ano; sem seed ~1,1 ano | com o seed público adiado: **~83–103 d (0,23–0,28 ano)** para `equity/loans ≥ 10%`; sem seed público algum o número é **0,73 ano** (QA confirmado: o `equity` do dia 0 é 0; o 0,857 M do rev2 era o resultado do dia 365 e encurtava a reta). Os 5,6 M / 0,4 ano ficam superados |
+> | 3 | saque no mesmo dia só em `private_liquidity`/`firm_liquidity` | **contrato único**: todo caminho que avalia capacidade de pagamento ou cobra lê **caixa + claim sacável no dia**, ordem **caixa primeiro, depósito depois**, saque atômico refletido em claim/ledger; `*_room`, servicing de grupo, safra e C6 incluídos — tabela de integração R2b1 (§4.6) |
+> | 4 | gate "M0 idêntico ao ledger" | gate compara **`M0_gross = T − ΣD_l`** (publicado) com **`M0_net = M0_gross − monetary_claims`** (campo do ledger) e a **ponte `monetary_claims`**; no LoLR, `M0_gross` sobe 20, `monetary_claims` sobe 20 e `M0_net` fica em 0 (§2.7) |
+>
+> Números desta revisão: saldos do Tesouro medidos em `fix5_on365.json` (R1b
+> 365 d ON): dia 1 = 73.458,41; dia 29 = 13.794.732,24 (pré-fecho); dia 59 =
+> 28.786.407,00; dia 89 = 31.956.767,79; dia 365 = 4.687.161,50. O gate do R2a
+> **remede** dia 0/30/60/90 no baseline final (`81eccf2a…`) antes de publicar
+> `seed_scale`; a regra do plano não depende do artefato antigo.
 
 Base herdada do R1 (default ON desde `97e869df`): caixa único regional com
 sub-saldos `firm_sub`/`service_sub`, Tesouro Nacional + orçamento regional
@@ -34,8 +51,8 @@ Baselines pós-merge: default/ON `81eccf2a…`, legado OFF `6287b12d…`.
 
 **Entra no R2** (decisões do dono já fechadas — não rediscutidas aqui):
 
-1. **Capitalização no dia 0 com dado real** (% do PIB por país), nos bancos que o
-   dado declara.
+1. **Capitalização no início do mundo com dado real** (% do PIB por país), nos
+   bancos que o dado declara: privado no dia 0, público pelo fluxo mensal (§3.3).
 2. **Competição real** entre bancos privados por taxa e capacidade; fim do monopólio
    público em giro/safra/investimento.
 3. **Depósitos** vindos das **regiões** (pool privado) e das **empresas** (caixa de
@@ -191,7 +208,7 @@ dívida, `bank_crisis.cpp:250-315`) e o **deserto bancário** como estado explí
 
 | Hoje | R2 |
 | --- | --- |
-| `capital = 0` no mundo real; `set_bank_capital` só em teste | **R2a**: capitalização no dia 0 com dado real + política de adequação |
+| `capital = 0` no mundo real; `set_bank_capital` só em teste | **R2a**: capitalização no início (privado d0, público mensal) + política de adequação |
 | dividendo 50% fixo do lucro retido, mensal | **R2a**: retém até a meta de adequação; distribui só o excedente em caixa |
 | taxa única `base + 2 p.p.` para todos | **R2b**: spread por banco (custo de capital, liquidez, NPL, política dirigida) |
 | `lender()` por hash; giro/investimento só no público | **R2b**: escolha por taxa+capacidade; público participa e pode ter desconto dirigido |
@@ -244,7 +261,9 @@ O rev1 dizia: "sweep D → `private_cash−D`, `bank.cash+D`, `bank.deposits+D`,
 | `D_l` | `Bank::deposits` — depósito **criado por empréstimo** (dinheiro bancário) | `bank.cpp:428-433, 491-497` |
 | `D_f` | `Bank::deposits_funding` — **claim do depositante** (região/empresa), lastreado por `bank.cash` | novo |
 | `D_t` | `D_l + D_f` — base de depósitos para a C6 (confiança, seguro, corrida) | C6 |
-| `M0` | **`T − Σ D_l`** — base monetária; funding **não** subtrai | substitui `sim_core.cpp:504-509` |
+| `M0` | **`T − Σ D_l`** — base monetária **bruta** (o `m0` publicado); funding **não** subtrai | substitui `sim_core.cpp:504-509` |
+| `BC_claims` | `Ledger.monetary_claims` — títulos na carteira do BC + `bank_borrowing` + bonds externos | `balance.cpp:76-124` |
+| `M0_net` | **`M0 − BC_claims`** — passivo **líquido** do emissor; é o campo `Ledger.monetary_base` | `balance.cpp:123-125` |
 | `M1_legacy` | **`T − Σ bank.cash`** — dinheiro fora dos bancos (o `m1` publicado hoje) | `central_bank.cpp:391` |
 | `broad` | **`M1_legacy + Σ D_f`** — dinheiro fora dos bancos + claims de funding; é o agregado que o sweep **conserva** | novo, publicado no status |
 
@@ -252,34 +271,42 @@ Por que `M1_legacy` cai e `broad` fica constante no sweep: o caixa que virou
 reserva saiu do "dinheiro fora dos bancos" (−D_f) e o claim entrou (+D_f). O
 `m1` atual não enxerga o claim; por isso o rev1 não podia prometer M1 constante.
 O `m1` **publicado** continua sendo `M1_legacy` para não quebrar UI/save; o status
-ganha `broad_money`, `deposits_funding` e `m0_loan_deposits`.
+ganha `broad_money`, `deposits_funding`, `m0_loan_deposits`, `m0_gross` e
+`monetary_claims`. O campo `Ledger.monetary_base` (e a chave `monetary_base` do
+status) continua no save, mas é documentado como **`M0_net`**: ele sempre foi
+`M0_gross − monetary_claims` (`balance.cpp:123-125`), não a base bruta.
 
 ### 2.3 O ciclo completo no papel (cada agregado conferindo)
 
 Cenário inicial: R=0, C=100, D_l=0, D_f=0, L=0, K=0, T=100, M0=100, M1=100,
 broad=100. As linhas são **deltas**; a coluna "checagem" é a identidade que o gate
-tem de reproduzir.
+tem de reproduzir. A coluna `M0` é a base **bruta** (`M0_gross`);
+`M0_net = M0 − monetary_claims`.
 
 | # | Evento | R | C | D_l | D_f | L | K | T | M0 | M1 | broad | Checagem |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | 1 | Funding: região deposita 40 | +40 | −40 | 0 | +40 | 0 | 0 | 0 | 0 | −40 | **0** | claim +40 = passivo +40; broad conserva |
-| 2 | Empréstimo 50 ao grupo | 0 | +50 | +50 | 0 | +50 | 0 | +50 | 0 | +50 | +50 | M0 constante; M1/broad +50 (dinheiro criado) |
+| 2 | Empréstimo 50 ao grupo | 0 | +50 | +50 | 0 | +50 | 0 | +50 | 0 | +50 | +50 | `M0_gross`/`M0_net` constantes; M1/broad +50 (dinheiro criado) |
 | 2a | Pagamento 15 (folha/insumos) | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | transferência dentro de C; nenhum agregado muda |
 | 2b | Pagamento 15 via claim (mesmo banco) | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | claim do pagador −15, do recebedor +15; D_f total igual |
-| 3 | Juro 5 pago pelo tomador | 0 | −5 | −5 | 0 | 0 | +5 | −5 | 0 | −5 | −5 | depósito destruído; K +5 |
+| 3 | Juro 5 pago do caixa de empréstimo | 0 | −5 | −5 | 0 | 0 | +5 | −5 | 0 | −5 | −5 | depósito de crédito destruído; K +5 |
+| 3b | Juro 5 pago do claim (funding) | 0 | 0 | 0 | −5 | 0 | +5 | 0 | 0 | 0 | −5 | claim vira capital do banco; T não muda |
 | 4 | Principal 20 | 0 | −20 | −20 | 0 | −20 | 0 | −20 | 0 | −20 | −20 | dinheiro bancário destruído |
 | 5 | Calote/baixa 10 | 0 | 0 | 0 | 0 | −10 | −10 | 0 | 0 | 0 | 0 | perda absorvida pelo capital; depósito não some |
-| 6 | LoLR +20 (antes do saque) | +20 | 0 | 0 | 0 | 0 | 0 | +20 | +20 | 0 | 0 | M0 +20; M1 não (reserva não é caixa público) |
+| 6 | LoLR +20 (antes do saque) | +20 | 0 | 0 | 0 | 0 | 0 | +20 | +20 | 0 | 0 | `M0_gross` +20; `monetary_claims` +20; `M0_net` 0; M1 não (reserva não é caixa público) |
 | 7 | Saque 30 do funding | −30 | +30 | 0 | −30 | 0 | 0 | 0 | 0 | +30 | **0** | claim vira caixa; broad conserva |
 | 8 | Bail-in 10 do funding | 0 | 0 | 0 | −10 | 0 | +10 | 0 | 0 | 0 | −10 | claim cortado; broad cai 10 (perda do depositante) |
 | 9a | Tesouro recapitaliza 10 | +10 | −10 | 0 | 0 | 0 | +10 | 0 | 0 | −10 | −10 | caixa público vira reserva; M1/broad caem 10 |
 | 9b | Banco paga 10 de depósitos | −10 | +10 | 0 | −10 | 0 | 0 | 0 | 0 | +10 | 0 | claim vira caixa; broad não muda; a perda fica no K |
-| 10 | Válvula emite 5 (LoLR) | +5 | 0 | 0 | 0 | 0 | 0 | +5 | +5 | 0 | 0 | M0 +5; dívida `bc_borrowing` +5 |
+| 10 | Válvula emite 5 (LoLR) | +5 | 0 | 0 | 0 | 0 | 0 | +5 | +5 | 0 | 0 | `M0_gross` +5; `monetary_claims` +5; `M0_net` 0; dívida `bc_borrowing` +5 |
 
 Leituras que o R2 tem de publicar e testar:
 
-- **M0** só muda com LoLR/emissão (linhas 6 e 10) e com a destruição de `D_l`
-  (linhas 3–4 não mudam M0 porque T e D_l caem juntos);
+- **`M0_gross`** só muda com LoLR/emissão (linhas 6 e 10) e com a destruição de
+  `D_l` (linhas 3–4 não mudam `M0_gross` porque T e D_l caem juntos); **`M0_net`**
+  só muda com a destruição de `D_l` e com a emissão, porque o LoLR cria o claim do
+  emissor na mesma linha (linha 6: `+20` em `M0_gross` e `+20` em
+  `monetary_claims` → `M0_net` 0);
 - **broad** conserva no funding e no saque (linhas 1 e 7) e cai no bail-in
   (linha 8) e na recapitalização líquida (9a+9b) — a perda é do depositante ou do
   Tesouro, não dinheiro novo;
@@ -294,7 +321,7 @@ Leituras que o R2 tem de publicar e testar:
    - `bank_deposits_loan` e `bank_deposits_funding` (separados);
    - `deposit_claims` (claim dos depositantes: cidade + grupo);
    - `monetary_base = money_total − monetary_claims − bank_deposits_loan`
-     (não subtrai o funding).
+     (não subtrai o funding; é o **`M0_net`** da §2.2).
 3. `Sheet` ganha `deposit_claims` em `financial_assets()`; `firms()` soma os
    claims de cidade/grupo (o depositante do R2 é a região/empresa); `families()`
    **não** soma (poupança não é depositante no R2). `cash_total()` **não** muda
@@ -302,9 +329,9 @@ Leituras que o R2 tem de publicar e testar:
 4. `banking` subtrai `bank_deposits_loan + bank_deposits_funding` (passivo total).
 5. `financial_sum()` passa a fechar **estruturalmente** com o claim, não por plug.
    A conta (com o claim em firmas e o passivo em `banking`):
-   `famílias+firmas+governo+exterior + banking + claims − gov_debt − M0 = 0`.
+   `famílias+firmas+governo+exterior + banking + claims − gov_debt − M0_net = 0`.
 6. C6 passa a usar `D_t = deposits + deposits_funding` em confiança, liquidez,
-   seguro, corrida e bail-in; **M0 usa só `deposits`**.
+   seguro, corrida e bail-in; **`M0_gross` usa só `deposits`**.
 
 ### 2.5 Dividendo: debita `bank.cash`, nunca cria dinheiro
 
@@ -356,9 +383,12 @@ legado continua e o gate do OFF não muda.
 - `financial_sum` = 0 **com** `deposit_claims` (não por plug);
 - `cash_residual` = 0;
 - `Σ deposit_claims == Σ deposits_funding` ao centavo;
-- `M0 = T − Σ D_l` e `broad = M1 + Σ D_f` publicados e idênticos ao cálculo do
-  ledger;
-- sweep conserva `T`, `M0` e `broad`; `M1` cai exatamente `ΔD_f` (declarado);
+- `M0_gross = T − Σ D_l` (publicado) e `M0_net = M0_gross − monetary_claims`
+  (o campo `Ledger.monetary_base`): o gate compara **os dois e a ponte**
+  `monetary_claims`, nunca `M0_gross` cru contra `monetary_base`;
+- `broad = M1_legacy + Σ D_f` publicado e idêntico ao cálculo do ledger;
+- sweep conserva `T`, `M0_gross`, `M0_net` e `broad`; `M1_legacy` cai exatamente
+  `ΔD_f` (declarado);
 - dividendo: `Δbank.cash = −payout`, `Δdono = +payout`, `T` constante,
   `Δdeposits = 0`;
 - corrida: `T` constante; `ΔD_f = −saques`;
@@ -368,7 +398,27 @@ legado continua e o gate do OFF não muda.
 - recapitalização: `Δtreasury = −payout`, `Δbank.cash = +payout`, `T` constante;
   pagamento de depósito: `ΔD_f = −pago`, `ΔC = +pago`, `Δbank.cash = −pago`,
   `T` constante;
-- LoLR/emissão: `ΔT = ΔM0 = Δbc_borrowing` (ou `emission`), `M1` constante.
+- LoLR/emissão: `ΔT = ΔM0_gross = Δbc_borrowing` (ou `emission`),
+  `Δmonetary_claims = +Δbc_borrowing` (o claim do BC), `ΔM0_net = 0`,
+  `M1_legacy` constante. Emissão **pura** (sem claim do BC, fora do R2) seria a
+  única operação com `ΔM0_net > 0` e exige flag própria declarada.
+
+**Por que o gate não compara `M0` cru com `monetary_base` (ressalva do crítico
+1).** `monetary_base` é, desde a C2b1/C3, o passivo **líquido** do emissor:
+subtrai os títulos na carteira do BC, os bonds externos e o `bc_borrowing`
+(`balance.cpp:76-124`). O `m0_total()` publicado é a base **bruta**
+(`T − Σ D_l`, `sim_core.cpp:504-509`). No LoLR de 20 os dois divergem **por
+construção**: o BC compra o claim do banco (ativo do emissor +20) e credita
+reserva (+20); a base bruta sobe, o passivo líquido não. O gate do R2 compara,
+portanto, três identidades exatas:
+
+1. `M0_gross_published == T − Σ D_l` (o agregado que a §2.3 conserva/mede);
+2. `Ledger.monetary_base == M0_gross_published − monetary_claims` (ponte);
+3. `broad_published == M1_legacy + Σ D_f`.
+
+`M0_net` é a leitura do emissor usada no `financial_sum`; **não** é a mesma
+grandeza de `M0_gross` e não deve ser comparado a ele. A linha 6 da §2.3 fica:
+`M0_gross +20`, `monetary_claims +20`, `M0_net 0`, `M1_legacy 0`.
 
 ---
 
@@ -414,45 +464,103 @@ não como injeção.
 `present` (§10.4), com as shares renormalizadas. O seed é **realocação**: debita o
 dono e credita `bank.cash`/`bank.capital`; `money_total` antes = depois.
 
-| Papel | Share do alvo (9,0 M) | Fonte | Medida | Seed viável |
-| --- | ---: | --- | ---: | ---: |
-| Público | 45% = 4,05 M | `nation_treasury` (via `treasury::spend`) | saldo 4,69 M; gasto/dia 0,894 M; piso 3 d = 2,68 M | **2,0 M** (piso 3 d) / 0 (piso 7 d) |
-| Privado | 40% = 3,60 M | `pop.savings` (`pay_from_households`) | caixa das famílias 8,9 bi (365 d); piso social irrelevante a 0,04% | **3,6 M** |
-| Estrangeiro | 15% = 1,35 M | `foreign_cash` | posição **−7,26 bi** | **0** |
-| **Total** | 9,0 M | — | — | **5,6 M** (~62% do alvo) |
+| Papel | Share do alvo (9,0 M) | Fonte | Medida | Seed no dia 0 | Capitalização |
+| --- | ---: | --- | ---: | ---: | --- |
+| Público | 45% = 4,05 M | `nation_treasury` (`treasury::spend`) | saldo dia 1 = **73.458,41**; dia 29 = 13.794.732,24; gasto/dia ≈ 0,894 M; piso 3 d = 2,68 M | **0** | 1,11 M no dia 30; 2,61 M no dia 60; 0,33 M no dia 90 → **4,05 M** |
+| Privado | 40% = 3,60 M | `pop.savings` (`pay_from_households`) | caixa das famílias no dia 1 = 4,10 bi (365 d: 8,35 bi); 3,6 M = **0,088%** | **3,6 M** | inalterado |
+| Estrangeiro | 15% = 1,35 M | `foreign_cash` | posição **−7,26 bi** | **0** | 0 |
+| **Total** | 9,0 M | — | — | **3,6 M** (40% do alvo) | **7,65 M** (85%) até o dia 90 |
 
-- `seed_scale_i = semeado_i / alvo_modelo_i` (publicado por banco e agregado).
-- `reference_scale_i = capital_i / alvo_referência_i` (publicado; será ~0,2%).
+- **Seed público = 0 no dia 0.** `initialize_world` **não** capitaliza o papel
+  público; o Tesouro nasce vazio (dia 1 = 73.458,41, QA t187). Qualquer valor
+  calculado a partir do saldo do dia 365 (4,69 M) é o erro do rev2 e está
+  proibido: o saldo do dia 365 não existe no dia 0.
+- **Primeira capitalização pública no fecho do mês** (`day % 30 == 0`), pela
+  regra declarada:
+  ```
+  available = max(0, treasury_balance − floor_days × daily_spend)
+  ticket    = X × available
+  pay       = min(remaining_public_target, ticket)
+  se pay < min_ticket_frac × remaining_public_target: pay = 0 (posterga)
+  ```
+  Defaults: `X = 0,10`, `floor_days = 3,0`, `min_ticket_frac = 0,25`. O saque
+  público roda **antes** de `treasury::start_month` (`treasury.cpp:81`, chamado em
+  `city_gov.cpp:610`): o limite do mês
+  enxerga o saldo pós-seed, então o corte é explícito e não cria despesa adiada.
+  Com os saldos medidos: 10% × (13,79 − 2,68) = **1,11 M** no dia 30 (8,1% do
+  orçamento do mês; o Tesouro fica com 12,68 M = 14,2 dias de gasto, acima do
+  piso de 3 d).
+- Se o saldo do mês não passar de `piso + ticket mínimo`, a capitalização é
+  **postergada** para o mês seguinte — estado declarado no status
+  (`public_cap_deferred`), não falha do gate.
+- `seed_scale_i = semeado_i / alvo_modelo_i` (publicado por banco e agregado;
+  dia 0 = 0,40; dia 90 = 0,85). `reference_scale_i = capital_i /
+  alvo_referência_i` (publicado; será ~0,2%).
 - O seed público usa `treasury::spend` quando `national_treasury` está ON
   (`treasury.cpp:44-61`); **nunca** `government_budget` como caixa (o código atual
   faz isso em `bank.cpp:596` e em `pay_from_government`, `bank_crisis.cpp:81-84` —
   os dois têm de mudar no R2).
 - Piso do Tesouro = `floor_days × gasto_diário` (declarado; default 3 d); o dono
-  escolhe 0/3/7 d na P1. Com 3 d, o seed público é 2,0 M e o Tesouro fica com
-  ~2,7 M (3 dias); com 7 d, o seed é 0. **Os valores de saldo/gasto acima são os
-  do 365 d (referência); o gate do R2a mede o saldo do dia 0 e publica o cap.**
+  escolhe 0/3/7 d na P1. Os saldos acima são os medidos em `fix5_on365.json`
+  (R1b 365 d ON); **o gate do R2a remede dia 0/30/60/90 no baseline final
+  (`81eccf2a…`) antes de publicar `seed_scale`.**
 - Sem emissão para cobrir seed. Se o caixa do dono não basta, `seed_scale < 1` e o
   déficit fica publicado.
 
-### 3.4 Convergência por retenção (o número que fecha)
+### 3.4 Convergência (o número que fecha, com o seed público adiado)
 
-Medido: `equity` 0,857 M; alvo do modelo 9,0 M; gap **8,13 M**; lucro anual antes
-do dividendo = `dividends 6,54 M + retained 0,86 M` = **7,40 M**. Retendo 100%:
+**Ponto de partida corrigido — `equity` no dia 0 = 0.** Em mundo novo o banco
+nasce com `cash = loans = deposits = 0` (`r1b_on1.json`, dia 1; no dia 10 o
+`equity` já é 238). O **0,857 M do rev2 é o resultado do 365º dia**, não o ponto
+de partida; usá-lo como dia 0 encurtava a convergência em ~0,12 ano. O QA t187
+usou 0 implicitamente (`9,0 − 3,6 = 5,4 → 0,73 ano`) e está **certo** no modelo
+linear. Medido: alvo do modelo 9,0 M; lucro anual antes do dividendo = `dividends
+6,54 M + retained 0,86 M` = **7,40 M** (20,27 mil/dia, no steady state; no dia 0
+o lucro é 0 e sobe — a curva real é **mais lenta** que a reta, e o gate mede).
 
-- sem seed: 8,13 / 7,40 = **~1,1 ano** até `equity/loans = 10%`;
-- com seed público 2,0 M + privado 3,6 M (5,6 M): gap 2,5 M → **~0,4 ano**.
+Retendo 100% (o R2a não distribui abaixo da meta):
 
-O seed acelera, mas **não é o mecanismo principal**: a retenção é. Isso torna a
-decisão 1 da spec ("capitalizar no dia 0") executável na escala do modelo: o dia 0
-semeia o que o dinheiro existente permite; a meta é atingida em ~1 ano.
+| Cenário | `equity` no dia 0 | Seed público | `equity/loans ≥ 10%` em | Anos |
+| --- | ---: | ---: | ---: | ---: |
+| Sem seed nenhum | 0 | 0 | dia 444 | **1,22** |
+| Só o seed privado (3,6 M) | 3,6 M | 0 | dia 266 | **0,73** |
+| **rev3** (privado 3,6 M + público pela regra §3.3) | 3,6 M | 1,11 M (d30) + 2,61 M (d60) + 0,33 M (d90) | **~dia 83** com os saldos medidos; até **~dia 103** se o saldo do 2º mês ficar no nível do 1º | **0,23–0,28** |
+
+- **QA confirmado:** o 0,73 ano do re-QA é o número correto para "só privado"
+  (`5,4 / 7,40 = 0,730`). O rev2 errava dos dois lados: 1,1 ano (sem seed) e
+  0,4 ano (com 5,6 M) usavam 0,857 M no dia 0, que é o **fim** do ano, não o
+  começo. Os 5,6 M / 0,4 ano ficam **superados**.
+- **rev3, com os saldos medidos:** dia 0 = 3,6; dia 30 = `3,6 + 0,608 + 1,111 =
+  5,319`; dia 60 = `5,319 + 0,608 + 2,610 = 8,537`; gap 0,463 → ~23 dias de
+  retenção → **~dia 83**. No dia 90 o alvo público completa (4,05 M) e o
+  `equity` chega a **9,47 M** (9,47 / 89,9 = 10,5%), com 0 emissão.
+- **Caso conservador** (2º mês com o saldo do 1º): dia 60 = `3,6 + 1,216 +
+  1,111 + 1,111 = 7,038`; dia 90 = `7,038 + 0,608 + 1,111 = 8,757`; gap 0,243 →
+  ~12 dias → **~dia 102** (0,28 ano).
+- O modelo é linear e usa o lucro de steady state desde o dia 0; os dois números
+  são **piso** de convergência. O gate do R2a mede a curva real e publica
+  `equity/loans` por mês; o alvo de ≤24 meses continua folgado.
+- **O seed não é o mecanismo principal**: mesmo sem público, a retenção fecha em
+  0,73 ano. O público encurta a primeira metade.
 
 ### 3.5 Capitalização pública dentro do Tesouro real
 
-- Receita anual 331,03 M; saldo final 4,69 M; gasto/dia ~0,894 M; saldo ≈ 5,2 dias.
-- Alvo público do modelo 4,05 M = **1,2% da receita anual**, mas **86% do saldo**.
-  É comportável no fluxo (0,4 M/mês de sobra), não no estoque sem um piso.
-- Recomendação: seed público 2,0 M no dia 0 (piso 3 d) + 2,05 M por retenção em
-  ~7 meses. Sem emissão, sem vender títulos sem comprador.
+- Receita anual 331,03 M; saldo **final** 4,69 M; gasto/dia ≈ 0,894 M; o saldo
+  final equivale a ~5,2 dias. **No dia 0 o saldo é 0** (dia 1 = 73.458,41): não
+  existe estoque para semear; o fluxo mensal é a única fonte.
+- Fechos mensais medidos (`fix5_on365`, antes do limite do mês): dia 29 = 13,79 M;
+  dia 59 = 28,79 M; dia 89 = 31,96 M; dia 119 = 32,00 M. Acima do piso de 3 d:
+  11,11 M / 26,10 M / 29,27 M.
+- Pela regra §3.3 (X = 0,10): **1,11 M no dia 30** (27% do alvo público; 8,1% do
+  orçamento do mês), **2,61 M no dia 60** e **0,33 M no dia 90** → alvo público
+  de 4,05 M completo em 3 meses, sem emissão e sem vender título sem comprador.
+  O total público é **1,2% da receita anual**, diluído no fluxo; nunca é 86% de
+  um saldo que não existe.
+- **Custo declarado:** cada capitalização corta o orçamento regional do mês em
+  `X × (saldo − piso)` (1,11 M de 13,79 M no 1º mês). O gate do R2a mede comida
+  contra o R1b; se piorar (>1 nação no portão), `X` cai para 0,05 ou o piso sobe
+  para 7 d — a capitalização **posterga**, não cancela, e `public_cap_deferred`
+  registra o motivo.
 - O alvo de referência público (1,08 bi) é **3,26× a receita anual**; está fora do
   R2 por decisão, não por falta de dado — é o `reference_gap`.
 
@@ -460,10 +568,15 @@ semeia o que o dinheiro existente permite; a meta é atingida em ~1 ano.
 
 - conservação do seed (`money_total` antes = depois; `Σ débitos = Σ créditos`);
 - `seed_scale ∈ [0,1]`; `Σ seed = Σ bank.capital` (só o pago);
-- `equity/loans ≥ 10%` em ≤24 meses no mundo ON, com 0 violações;
+- **seed público no dia 0 = 0** e nenhuma capitalização pública fora do fecho
+  mensal: `Δtreasury + Δbank.cash = 0` em cada aporte, `pay ≤ X × (saldo − piso)`,
+  `pay ≥ min_ticket` ou `public_cap_deferred` no status;
+- **não** usar o saldo do dia 365 como base do dia 0 (o gate publica
+  `treasury_balance` no dia do aporte e compara com o piso);
+- `equity/loans ≥ 10%` em ≤24 meses no mundo ON, com 0 violações (meta de
+  projeto: ≤120 d; medido 83–103 d);
 - `reference_gap` publicado por nação; **não** é gate;
 - nenhum papel `none`/`no_data` capitalizado;
-- seed público ≤ `max(0, treasury_balance − floor_days × daily_spend)`;
 - dividendo: caixa debitado, `Δdeposits = 0`, `T` constante.
 
 ---
@@ -500,25 +613,78 @@ sweep_i = max(0, private_cash_i − protected_cash_i)
 - Se o floor dominar (sweep ~0), o R2b1 publica o ratio e o dono pode reduzir a
   cesta para 3 meses na P1; o default da spec é 6.
 
-### 4.3 Depósitos contam na liquidez
+### 4.3 Depósitos contam na liquidez — e no pagamento
 
-- `firm_liquidity() = firm_sub + firm_deposit_claim` (claim no banco de
-  relacionamento);
-- `service_liquidity() = service_sub + service_deposit_claim`;
-- `private_liquidity() = private_cash + Σ claims` (nunca conta o mesmo dinheiro
-  duas vezes: `private_cash` é caixa, claim é depósito);
-- `private_total()` continua **caixa** (não soma claim); o status ganha
-  `private_wealth = private_cash + Σ claims`;
-- `money_total` **não** soma claim (só `bank.cash`), como hoje.
+O rev2 só incluía o claim na **leitura** de liquidez. O re-QA mostrou que isso não
+basta: `*_room`, `city_credit_limit`, o servicing de grupo, a safra e a C6
+continuam lendo caixa puro e cobrando só o float. A rev3 fecha o contrato:
+**todo caminho que avalia capacidade de pagamento ou cobra lê caixa + claim
+sacável no dia**, com ordem de saque declarada e efeito imediato no claim/ledger.
 
-O claim é "liquidez para decisão", não dinheiro: se o banco não tem caixa, o
-pagamento espera/LoLR; o gate de comida mede o efeito.
+**Leitura (capacidade).**
+
+```
+cash_now(s)   = firm_sub | service_sub (city)  /  group.cash (grupo)
+claim_now(s)  = Σ bank_accounts[b].{firm|service} (cidade) / Group::bank_deposit
+liquid_now(s) = cash_now(s) + min(claim_now(s),
+                      bank.cash × claim_now(s) / Σ claims de funding do banco)
+```
+
+- `firm_liquidity()`, `service_liquidity()` e `private_liquidity()` passam a
+  devolver `liquid_now` (capacidade), não caixa;
+- `private_total()` **continua caixa** (não soma claim); `money_total`,
+  `allocate_money` e a atribuição por moeda **nunca** somam claim;
+- `city_credit_limit`, `firm_external_room`, `service_external_room`,
+  `firm_internal_room` e `trade_firm_room` usam `liquid_now` (o sub-teto externo
+  incide sobre o total);
+- o status ganha `private_wealth = private_cash + Σ claims` e publica o claim por
+  banco; `private_cash` continua sendo o caixa.
+
+**Pagamento (cobrança), ordem determinística — caixa primeiro, depósito depois.**
+
+```
+pay_liquid(s, value):
+    from_cash = min(value, cash_now(s))
+    need      = value − from_cash
+    from_claim = withdraw(s, need)       // 0 se não houver claim (OFF/legado)
+    return from_cash + from_claim
+
+withdraw(s, want):
+    x = min(want, claim_now(s), bank.cash)   // pro rata se bank.cash < ΣD_f
+    claim_now(s) −= x; bank.deposits_funding −= x
+    bank.cash    −= x; cash_now(s)           += x
+    return x
+```
+
+- o saque é **atômico**: claim, `D_f`, `bank.cash` e o caixa do pagador mudam na
+  mesma chamada; o ledger do dia já enxerga o efeito (sem reconciliação adiada);
+- `T` constante, `M0_gross` constante (D_f não entra em M0), `M1_legacy += x`,
+  `broad` constante; a linha 7 da §2.3 é essa operação;
+- o saque é no **banco de relacionamento** do pagador (um só); não é roteamento
+  por banco (P3 continua adiada) nem muda quem recebe;
+- **atribuição do passivo**: o pagamento que usou o claim já debitou `D_f` no
+  saque; o `bank.deposits` (`D_l`) só cai quando o pagamento sai do **caixa de
+  empréstimo**. O servicing registra a origem do caixa (`loan` vs `claim`) e
+  **não** debita `D_l` de novo; sem isso, o mesmo juro destruiria `D_l` e `D_f`
+  (dupla contagem que o gate `ΣD_f = Σclaims` e o delta por origem pegam);
+- se o banco não tem caixa, o saque é limitado pro rata e o resto **espera**
+  (despesa adiada determinística) ou vai ao LoLR na crise; o claim nunca fica
+  negativo e `bank.cash` nunca fica negativo;
+- o saque que deixar `bank.cash < liquidity_floor` sem LoLR acende o sinal de
+  liquidez da C6 (não bloqueia o pagamento, registra);
+- sem claim (OFF ou save legado), `withdraw` devolve 0 e o caminho é
+  **bit-a-bit** o de hoje.
+
+**Não-objetivo:** isto não é "pagar por banco" em todos os primitivos; é o saque
+no mesmo dia quando o float não basta, e a leitura de capacidade que inclui o
+claim. O que o re-QA cobrou é o **efeito** (a região pode pagar com o depósito),
+não o roteamento.
 
 ### 4.4 Saque no mesmo dia quando o pagamento excede o float
 
-Ordem determinística de pagamento (por sub-saldo):
+Ordem determinística de pagamento (por sub-saldo), agora com a primitiva da §4.3:
 
-1. debita o **float** (`firm_sub`/`service_sub`);
+1. debita o **float** (`firm_sub`/`service_sub`/`group.cash`);
 2. se faltar, **saque no mesmo dia** do claim no banco de relacionamento
    (`claim -= x`, `D_f -= x`, `bank.cash -= x`, `private_cash += x`) e paga;
 3. se o banco não tiver caixa, o saque é limitado por `bank.cash × claim/total`
@@ -534,11 +700,59 @@ Isso é o "depósito líquido" da P3: não se roteia **todo** pagamento por banc
 
 - A/B de 90 d: float 5 d **vs** floor de 6 meses + orçamento; comida ≤97/179;
   falências ≤3; drift <0,03; 0 violações;
+- **A/B de claim**: `liquid_now` **vs** caixa puro nos mesmos caminhos da §4.6;
+  comida e falências não podem piorar vs R1a; o ON de claim tem de mostrar
+  **menos** despesa adiada/atraso de folha que o caixa puro;
 - identidade `Σ claims = Σ D_f` ao centavo;
-- sweep conserva `T`, `M0`, `broad`; `M1` cai `ΔD_f` (declarado);
-- nenhum claim > `bank.cash` sem LoLR no dia;
+- sweep conserva `T`, `M0_gross`, `M0_net`, `broad`; `M1_legacy` cai `ΔD_f`;
+- cada saque: `Δclaim = ΔD_f = −Δbank.cash = −Δcaixa_do_pagador` (mesma função),
+  `T`/`M0_gross`/`broad` constantes;
+- todo claim criado pelo sweep tem `bank.cash` correspondente no mesmo dia
+  (`Δbank.cash = ΔD_f`); a razão `bank.cash / D_t` é publicada e a corrida/LoLR
+  cobre o caso de ela cair;
 - `private_liquidity` inclui claims e o gate de comida não piora vs R1a;
+- **cobertura de grep**: nenhum call site de pagamento/cobrança pode ler
+  `private_cash`/`firm_sub`/`service_sub`/`group.cash` direto; a tabela §4.6 é a
+  lista de revisão e o teste de regressão percorre os caminhos;
 - round-trip v44.
+
+### 4.6 Tabela de integração R2b1 — quem lê capacidade e quem cobra
+
+Levantada por busca em `gdextension/src` (`private_liquidity(`, `firm_liquidity(`,
+`service_liquidity(`, `group.cash`). **Toda** linha passa a usar `liquid_now` /
+`pay_liquid`; a coluna "hoje" é o que o código faz em `1a81ea58`.
+
+| # | Caminho | Ponto de código | Lê hoje | rev3 |
+| --- | --- | --- | --- | --- |
+| 1 | `City::firm_liquidity` / `service_liquidity` / `private_liquidity` | `sim_types.h:1902-1916` | sub-saldo/caixa | caixa + claim sacável |
+| 2 | `City::firm_external_room` / `service_external_room` / `firm_internal_room` / `trade_firm_room` | `sim_types.h:1950-1997` | sub-saldo | sub-saldo + claim; sub-teto sobre o total |
+| 3 | `City::firm_external_room_request` / `service_external_room_request` | `sim_types.h:2120-2133` | idem | idem |
+| 4 | `City::firm_pay` / `service_pay` / `firm_external_pay` / `service_external_pay` | `sim_types.h:2139-2255` | clampa no sub-saldo | saque do claim quando o float não cobre |
+| 5 | `crisis::city_credit_limit_impl` + `city_credit_limit` | `crisis.cpp:191-209, 857-859` | `private_liquidity` (caixa) + ativos | + claim |
+| 6 | `crisis::borrow_city_impl` (teto do desembolso) | `crisis.cpp:226` | `city_credit_limit` | idem |
+| 7 | `crisis::borrow_working_capital` (giro) | `crisis.cpp:1054-1057` | `firm_liquidity` + teto | + claim |
+| 8 | Escada/generator de crise (serviços) | `crisis.cpp:1378-1392` | `service_liquidity` + teto | + claim |
+| 9 | Escada de crise (construções) | `crisis.cpp:1333-1336` | `city_credit_limit` | idem |
+| 10 | `ai_private::ai_investment_credit` + caixa vivo | `ai_private.cpp:275-287, 1050-1056` | `city_credit_limit` + `firm_liquidity` | + claim |
+| 11 | **Servicing de grupo** — juro | `bank.cpp:785-789` | `group.cash` (e `bank.deposits`) | `group.cash + claim`; claim debita `D_f`, caixa de empréstimo debita `D_l` |
+| 12 | Servicing de grupo — multa/renegociação | `bank.cpp:827-831` | `group.cash` | idem |
+| 13 | Servicing de grupo — amortização | `bank.cpp:856-864` | `group.cash − working` | idem |
+| 14 | Servicing de grupo — execução/calote | `bank.cpp:878-885` | `group.cash` | idem |
+| 15 | **Servicing de cidade** — juro | `bank.cpp:949-959` | `firm/service_external_room_request` | + claim |
+| 16 | Servicing de cidade — amortização | `bank.cpp:979-989` | `firm_liquidity` + rooms | + claim |
+| 17 | Servicing de cidade — multa | `bank.cpp:1019-1048` | `private_total` + rooms | + claim |
+| 18 | Servicing de cidade — execução | `bank.cpp:1046-1061` | `private_liquidity` + rooms | + claim |
+| 19 | **Safra** — liquidez da lavoura e juro | `labor.cpp:87,96,105,148-164` | `firm_liquidity` / rooms; credita o público | + claim; credita o banco real (§8) |
+| 20 | `bank::receive_harvest_interest` | `bank.cpp:632-644` | credita `kRolePublic` | credita `bank_id` (R2b2) |
+| 21 | **C6** — `charge_depositors` | `bank_crisis.cpp:250-316` | `group.cash` | `group.cash + claim` (D_f); ordem caixa→depósito |
+| 22 | C6 — `apply_loss` / `resolve` | `bank_crisis.cpp:319-374, 388-471` | só grupos + `lender()` | `debt_claims` + `D_t` (R2b2) |
+| 23 | Food/folha/opex/serviços/armazém/região/ações | `labor.cpp:96-112`; `services.cpp:141,223,662,773`; `storage.cpp:599,652`; `region.cpp:248`; `informality.cpp:310`; `housing.cpp:460,667`; `urban_land.cpp:616`; `actions.cpp:71,111,244,351,1019,1135,1179`; `ai_view.cpp:113`; `sim_core.cpp:1069-1096` | todas leem `firm_liquidity` e depois pagam | centralizado na primitiva; pagamento saca |
+| 24 | FX / destruição de dinheiro local | `exchange.cpp:108-158, 871` | soma `firm_liquidity`, depois `firm_pay` | **sacar antes de pagar** (senão `part > caixa`); a queima reduz `T`/`M0_gross` (intervenção declarada) |
+| 25 | `money_total` / `allocate_money` / ledger | `sim_core.cpp:449-509`; `central_bank.cpp:380-391` | caixa (`bank.cash`, `private_cash`) | **não** somar claim (dupla contagem); só caixa |
+
+Regra de revisão: qualquer novo `firm_pay`/`service_pay`/cobrança que não passe
+pela primitiva é falha de contrato; o teste do R2b1 faz grep dos caminhos e
+compara o A/B claim vs caixa puro.
 
 ---
 
@@ -553,7 +767,10 @@ Isso é o "depósito líquido" da P3: não se roteia **todo** pagamento por banc
   "deposits": true,
   "resolution": true,
   "dividend": { "target_ratio": 0.10, "cash_floor_ratio": 0.10 },
-  "seed": { "enabled": true, "target": "model_loans", "floor_days_treasury": 3.0 },
+  "seed": {
+    "enabled": true, "target": "model_loans", "floor_days_treasury": 3.0,
+    "public_month_frac": 0.10, "public_min_ticket_frac": 0.25
+  },
   "deposits_alloc": {
     "min_capital_ratio": 0.08, "pendulum_month": 0.10,
     "weights": { "rel": 0.50, "sol": 0.35, "pend": 0.15 }
@@ -584,7 +801,8 @@ bloco inteiro e o `get_status` publica `banks_config_error` (só quando há erro
 ### 5.2 R2a — Capitalização, adequação e dividendo
 
 **Objetivo:** os bancos nascem capitalizados com dado real **até o limite do
-dinheiro existente** e passam a se comportar como capitalizados (retenção por meta,
+dinheiro existente** — o privado no dia 0 e o público no primeiro fecho mensal
+com caixa — e passam a se comportar como capitalizados (retenção por meta,
 dividendo só do caixa excedente).
 
 Escopo técnico:
@@ -595,9 +813,16 @@ Escopo técnico:
    `year`, `source`, `confidence`. O **nível** usa o PIB do modelo (harness);
    o ratio real é unitless. Builder/validator em `tools/`.
 2. `bank::seed_capital(WorldState&)` no fim de `initialize_world`, **só em mundo
-   novo**; `load` de save v43 **não** semeia (§7.7). Aloca só papéis `present`;
-   debita Tesouro/famílias/exterior; limita pelo caixa e pelos pisos; publica
-   `seed_scale`, `reference_scale`, `reference_gap`.
+   novo**; `load` de save v43 **não** semeia (§7.7). Semeia **só o papel privado
+   `present` (3,6 M)**; o **público fica em 0 no dia 0** e só recebe no papel
+   `present`. A capitalização pública é um
+   segundo gancho, `bank::capitalize_public_monthly(WorldState&)`, chamado no
+   fecho mensal **antes** de `treasury::start_month` (`city_gov.cpp:610`; §3.3) e
+   **só quando o mundo é novo** (a flag de mundo novo desliga os dois ganchos no
+   load; §7.7):
+   `pay = min(alvo_restante, X × max(0, treasury_balance − floor))`, com ticket
+   mínimo e `public_cap_deferred` no status. Ambos publicam `seed_scale`,
+   `reference_scale`, `reference_gap`; nenhum usa o saldo do dia 365 como base.
 3. Adequação: `capital_ratio = equity / max(loans, eps)`; `target_ratio = 0.10`
    (carteira); `paid_in_ratio = capital / loans` publicado; o aperto da C6 lê
    `equity/loans` contra a meta e mantém o piso `capital.min_ratio` (0,1% dos
@@ -618,12 +843,17 @@ banco; `deposits_funding`); OFF não ganha chave.
 
 Gates R2a: 10/90/365 d ON e OFF; OFF = baseline da fase anterior (§6); ON dentro
 de comida ≤97/179, falências ≤3, drift <0,03, 0 violações; conservação do capital
-semeado (`money_total` antes = depois); `seed_scale` ∈ [0,1]; `equity/loans ≥ 10%`
-em ≤24 meses; 0 papéis `none/no_data` capitalizados; dividendo conserva caixa.
+semeado (`money_total` antes = depois); `seed_scale` ∈ [0,1]; **seed público no
+dia 0 = 0** e aporte público só no fecho mensal, `≤ X × (saldo − piso)` com
+`public_cap_deferred` quando não couber; `equity/loans ≥ 10%` em ≤24 meses (meta
+de projeto ≤90 d com os saldos medidos); 0 papéis `none/no_data` capitalizados;
+dividendo conserva caixa.
 
 Risco principal: **escala** (resolvida por dois alvos: referência 2,4 bi fica como
-gap; modelo 9 M é o alvo). O seed público é limitado pelo piso do Tesouro (3 d
-recomendado; 7 d zera o seed), e o resto vem de retenção (~1,1 ano).
+gap; modelo 9 M é o alvo). O seed público é **0 no dia 0** e entra pelo fluxo
+mensal (1,11 M no 1º fecho, 4,05 M até o 3º), limitado por `X × (saldo − piso)`;
+o privado entra no dia 0 (3,6 M). Com a regra da §3.3 a meta fecha em **83–103 d**
+(0,23–0,28 ano); sem o seed público, a retenção sozinha levaria **0,73 ano**.
 
 ### 5.3 R2b — Depósitos, alocação e competição
 
@@ -632,27 +862,33 @@ recomendado; 7 d zera o seed), e o resto vem de retenção (~1,1 ano).
 - sweep diário do **excesso** sobre `protected_cash` (§4.2), por sub-saldo
   (`firm_sub`/`service_sub` separados, para não quebrar "quem zerou, para");
 - o depósito sai de `private_cash` e entra em `bank.cash`, com
-  `bank.deposits_funding += D`; `money_total` constante, `M0` constante,
-  `M1` cai, `broad` constante (§2.3);
+  `bank.deposits_funding += D`; `money_total` constante, `M0_gross`/`M0_net`
+  constantes, `M1` cai, `broad` constante (§2.3);
 - empresas: o excesso do `group.cash` acima do float vai a depósito no banco de
   relacionamento (o mesmo `lender()` do grupo), com `Group::bank_deposit`;
 - alocação entre bancos: `score = w_rel × relacionamento + w_sol × solidez
   (equity/loans) + w_pend × pêndulo` (0,50/0,35/0,15, ±10%/mês), normalizado;
   sem juros de depósito;
 - pagamentos **não** são roteados por banco no b1: o float paga; se faltar, o
-  saque do claim no mesmo dia (§4.4) — o depósito é **líquido**, não reserva
+  saque do claim no mesmo dia (§4.3/§4.4) — o depósito é **líquido**, não reserva
   intocável. Roteamento total fica para a fase política (P3);
+- **todo** caminho de capacidade/cobrança da §4.6 usa `liquid_now`/`pay_liquid`
+  (rooms, `city_credit_limit`, servicing de grupo, safra, C6); a tabela é a lista
+  de revisão do b1;
 - C6 passa a usar `D_t` (não só `deposits`).
 
-Gates R2b1: OFF = R2a-ON (§6); ON com A/B obrigatório do floor (6 meses vs 5 d);
-comida ≤97/179; falências ≤3; drift <0,03; 0 violações; identidade
-`Σ claims = Σ D_f`; `T`/`M0`/`broad` conservados; M1 cai `ΔD_f`; round-trip v44.
+Gates R2b1: OFF = R2a-ON (§6); ON com A/B obrigatório do floor (6 meses vs 5 d) e
+do claim (caixa puro vs `liquid_now`); comida ≤97/179; falências ≤3; drift <0,03;
+0 violações; identidade `Σ claims = Σ D_f`; `T`/`M0_gross`/`M0_net`/`broad`
+conservados; M1 cai `ΔD_f`; cada saque reflete claim/ledger na mesma chamada;
+round-trip v44.
 
 Riscos: (a) o sweep enxuga liquidez e reabre a falha de comida do R1a — mitigação:
-floor de 6 meses + orçamento, sweep só do excesso, saque no mesmo dia, A/B de 90 d;
-(b) alocação não determinística — vetores ordenados, nunca `unordered_map`;
-(c) dupla contagem em `money_total`/`allocate_money` (lição do t169) — claims fora
-do caixa.
+floor de 6 meses + orçamento, sweep só do excesso, saque no mesmo dia em **todos**
+os caminhos da §4.6, A/B de 90 d; (b) alocação não determinística — vetores
+ordenados, nunca `unordered_map`; (c) dupla contagem em
+`money_total`/`allocate_money` (lição do t169) — claims fora do caixa; (d) caminho
+de pagamento que escapa da primitiva — grep de revisão + A/B claim vs caixa puro.
 
 **R2b2 — competição no ativo (preço e capacidade).**
 
@@ -824,6 +1060,8 @@ struct BanksRework {
     double dividend_cash_floor_ratio = 0.10;
     bool seed_enabled = true;
     double seed_floor_days_treasury = 3.0;
+    double seed_public_month_frac = 0.10;    // X da regra §3.3
+    double seed_public_min_ticket_frac = 0.25;
     double deposits_float_days = 5.0;       // legado do rev1; não é o floor
     double protected_food_months = 6.0;
     double alloc_min_capital_ratio = 0.08;
@@ -869,9 +1107,12 @@ struct BanksRework {
   `deposit_bank_id` por grupo, `debt_claims` por grupo/cidade, `charter`.
 - **Load de save v43 com a flag ON: sem capitalização retroativa.** `seed_scale = 0`
   declarado; o banco converge por retenção (a `equity` já existente conta para a
-  meta). Não há "seed no 1º load": a decisão é **mundo novo apenas**. Se o dono
-  quiser o contrário, é uma decisão explícita (seed retroativo documentado, com
-  débito do dono no dia do load) — a rev2 **não** faz.
+  meta). Não há "seed no 1º load": a decisão é **mundo novo apenas**. O gancho
+  mensal `capitalize_public_monthly` também **não** roda em save carregado — a
+  flag de mundo novo desliga os dois (privado e público) e o status publica
+  `seed_source = "loaded_save"`. Se o dono quiser o contrário, é uma decisão
+  explícita (seed retroativo documentado, com débito do dono no dia do load) — a
+  rev3 **não** faz.
 - Round-trip bit-exato por fase, como no R1.
 
 ---
@@ -1094,20 +1335,27 @@ Nenhuma delas é pré-requisito para o R2a; P1 entra no R2a, P2 no R2c, P3 no R2
 cesta de 6 meses e o orçamento regional do mês; publicar `seed_scale` e a
 convergência por retenção; **nunca** emitir para cobrir seed.
 
-**Números:** alvo do modelo 9,0 M; caixa dos donos permite 5,6 M (público 2,0 M
-com piso de 3 d; privado 3,6 M; estrangeiro 0 por `foreign_cash` negativo); o resto
-(3,4 M) vem de retenção em ~0,5 ano. Alvo de referência 2,40 bi = 36,6% do dinheiro
-e 7,25× a receita do Tesouro (a parte pública, 1,08 bi, é 3,26×) → **não** é seed;
-é `reference_gap`.
+**Números (rev3):** alvo do modelo 9,0 M; **`equity` no dia 0 = 0**. No **dia 0**
+só o privado é semeado (3,6 M de `pop.savings`, 0,088% do caixa das famílias); o
+**público é 0** (o Tesouro nasce vazio) e entra pelo fluxo: **1,11 M no dia 30,
+2,61 M no dia 60, 0,33 M no dia 90** = 4,05 M (85% do alvo com o privado).
+Convergência `equity/loans ≥ 10%`: **~83 d** com os saldos medidos, até **~103 d**
+no caso conservador (0,23–0,28 ano); sem o público, **0,73 ano** — o número do QA
+está **confirmado** (o 0,857 M do rev2 era o `equity` do dia 365, não do dia 0).
+Alvo de referência 2,40 bi = 36,6% do dinheiro e 7,25× a receita do Tesouro (a
+parte pública, 1,08 bi, é 3,26×) → **não** é seed; é `reference_gap`.
 
 **Alternativas:**
-- A) **Sem seed** (só retenção): 0,857 M de equity → 9,0 M em ~1,1 ano; zero
+- A) **Sem seed** (só retenção): 0 de equity → 9,0 M em **1,22 ano**; zero
   risco de distorção; bancos começam sem capital pago.
 - B) **Seed integral do alvo de referência** (2,40 bi): rejeitado — exigiria
   emissão ou expropriar 36,6% do dinheiro do mundo.
-- C) **Seed público com piso de 7 d**: 0; Tesouro fica intacto; com o seed privado
-  de 3,6 M a convergência é ~0,7 ano; sem ele, ~1,1 ano.
-- D) **Seed público com piso de 3 d** (recomendado): 2,0 M; convergência ~0,4 ano.
+- C) **Seed público com `X = 0,05` e piso 7 d**: o 1º mês não atinge o ticket
+  mínimo e posterga; o público completa em ~5 meses; com o privado de 3,6 M a
+  convergência fica em **~0,33 ano**.
+- D) **Seed público mensal `X = 0,10`, piso 3 d, antes do orçamento regional**
+  (recomendado): 1,11 M no 1º fecho; 4,05 M até o 3º; convergência **~83–103 d**;
+  corte de 8,1% no orçamento do 1º mês, medido pelo gate de comida.
 
 **Decisão do dono:** _pendente_ (A/B/C/D).
 
@@ -1136,7 +1384,9 @@ do charter no cenário forçado.
 
 **Recomendação (QA):** adiar o roteamento, **mas** tornar o depósito líquido:
 incluir em `private_liquidity()`/`firm_liquidity()` e permitir saque no mesmo dia
-quando o pagamento exceder o float; senão o b1 repete o R1a.
+quando o pagamento exceder o float; senão o b1 repete o R1a. **A rev3 fechou o
+contrato** (§4.3/§4.6): o saque vale em `*_room`, `city_credit_limit`, servicing
+de grupo, safra e C6, com ordem caixa→depósito e efeito imediato no claim/ledger.
 
 **Alternativas:**
 - A) **Adiar o roteamento** (recomendado): float + saque no mesmo dia; menor risco,
@@ -1150,23 +1400,25 @@ quando o pagamento exceder o float; senão o b1 repete o R1a.
 
 ## 12. Riscos, esforço e artefatos
 
-### 12.1 Riscos (rev2)
+### 12.1 Riscos (rev3)
 
 | Risco | Prob. | Impacto | Mitigação |
 | --- | --- | --- | --- |
-| Contrato contábil errado (M0/M1/broad, claim fora do ledger) | alta | alto | §2; gate `financial_sum=0` com claim; `M0` só `D_l`; broad publicado |
-| Escala do seed (alvo real 2,4 bi) | alta | alto | dois alvos; seed 5,6 M; `reference_gap`; retenção ~1 ano |
-| Seed público sem caixa no Tesouro | alta | médio | piso 3 d → 2,0 M; 7 d → 0; `treasury::spend`; nunca emissão |
-| Sweep enxuga liquidez e reabre R1a | alta | alto | floor 6 meses + orçamento; sweep só do excesso; saque no mesmo dia; A/B 90 d |
+| Contrato contábil errado (M0/M1/broad, claim fora do ledger) | alta | alto | §2; gate `financial_sum=0` com claim; `M0_gross = T − ΣD_l` e `M0_net = M0_gross − monetary_claims`; broad publicado |
+| Escala do seed (alvo real 2,4 bi) | alta | alto | dois alvos; seed 7,65 M (privado 3,6 + público 4,05 via fluxo); `reference_gap` |
+| Seed público sem caixa no Tesouro | alta | médio | **0 no dia 0**; aporte mensal `≤ 0,10 × (saldo − piso 3 d)`; `treasury::spend`; nunca emissão; `public_cap_deferred` |
+| Seed público corta o orçamento regional | média | médio | 8,1% no 1º mês; piso 3 d; aporte antes do limite; gate de comida; `X` cai para 0,05 se piorar |
+| Sweep enxuga liquidez e reabre R1a | alta | alto | floor 6 meses + orçamento; sweep só do excesso; saque no mesmo dia em **todos** os caminhos da §4.6; A/B 90 d |
+| Caminho de pagamento/cobrança escapa do claim | alta | alto | §4.3/§4.6; `liquid_now`/`pay_liquid`; grep de revisão; A/B claim vs caixa puro |
 | Bail-in cobra o tomador, não o depositante | alta | alto | D_f corta claim; D_l corta caixa do tomador (proxy); ordem definida |
 | Dividendo cria dinheiro | alta | alto | debita `bank.cash`; floor de liquidez; `Δdeposits=0` |
 | Servicing por hash (dívida órfã) | alta | alto | claims por credor; `phase()` sem `lender()`; safra com `bank_id` |
 | Baseline OFF errado por fase | média | alto | tabela §6; OFF = ON anterior; SHA medido no fecho |
 | Cascata duplica C6 / dívida = emissão | alta | alto | um FSM; `treasury_debt_rescue=false` no R2c; válvula ≤1% M0 |
 | `run_cash` destrói dinheiro | média | alto | corrida claim-based; `T` constante; gate |
-| Load v43 contraditório | média | médio | seed só em mundo novo; `seed_scale=0`; retenção |
+| Load v43 contraditório | média | médio | seed privado só em mundo novo; público só no fecho mensal; `seed_scale=0`; retenção |
 | Fallback capitaliza `none/no_data` | média | médio | só `present`; contagem no status |
-| Dupla contagem em `money_total`/`allocate_money` (t169) | média | alto | claims fora do caixa; residual zero |
+| Dupla contagem em `money_total`/`allocate_money` (t169) | média | alto | claims fora do caixa; residual zero; §4.6 linha 25 |
 | Não determinismo na alocação/resolução | média | médio | vetores ordenados; desempate por id |
 | R2c duplicar a C6 (dois resolvedores) | alta | médio | estender `bank_crisis::resolve`; um FSM |
 | Acoplamento com R3 (`foreign_cash`) | média | médio | seed estrangeiro 0 quando `foreign_cash<0`; contrato provisório |
@@ -1178,11 +1430,11 @@ Dias de desenvolvimento (agente + build + testes unitários), sem espera de gate
 
 | Sub-fase | Dados | Núcleo | Testes | Gates/medição | Total |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| R2a — contrato, capital, adequação, dividendo | 2–3 | 3–4 | 1,5 | 1–1,5 | **7,5–10** |
-| R2b1 — depósitos (estoque/alocação/liquidez) | 0 | 3–4 | 1,5 | 1,5–2 | **6–7,5** |
+| R2a — contrato, capital, adequação, dividendo | 2–3 | 3,5–4,5 | 1,5 | 1–1,5 | **8–10,5** |
+| R2b1 — depósitos (estoque/alocação/liquidez) | 0 | 4–5 | 2 | 1,5–2 | **7,5–9** |
 | R2b2 — competição (taxa/capacidade/servicing) | 0,5 | 3–4 | 1,5 | 1 | **6–7** |
 | R2c — leilão, bail-in, cascata, deserto | 0 | 4–6 | 2 | 2–2,5 | **8–10,5** |
-| **Total** | 2,5–3,5 | 13–18 | 6,5 | 5,5–7 | **27,5–35** |
+| **Total** | 2,5–3,5 | 14,5–19,5 | 7 | 5,5–7 | **29,5–37** |
 
 Caminho crítico: **contrato contábil → R2a → R2b1 (gate do floor) → R2b2
 (servicing) → R2c**. O desenho do R2c pode andar em paralelo ao R2b2; a
@@ -1190,10 +1442,12 @@ implementação do leilão depende dos claims por credor.
 
 ### 12.3 Artefatos e definição de pronto
 
-- `G:/opengs_tmp/qa_r2plano.md` (QA t185, gravado na t186);
+- `G:/opengs_tmp/qa_r2plano.md` (QA t185 + re-QA t187, seção rev2);
 - `G:/opengs_tmp/r2/gdp10.json` e `gdp60.json` (PIB medido);
+- `G:/opengs_tmp/r1/fix5_on365.json` (saldos mensais do Tesouro usados na §3.3);
 - doc de fase (`R2a.md`, `R2b.md`, `R2c.md`) com números medidos e limites honestos;
-- sonda `--r2-diag` só leitura: `deposits`/`deposits_funding`, `M0`/`M1`/broad,
+- sonda `--r2-diag` só leitura: `deposits`/`deposits_funding`,
+  `M0_gross`/`M0_net`/`M1`/broad,
   claims por banco, float/floor por cidade, taxa/capacidade/servicing por banco,
   leilões e rombo por parte;
 - artefatos de 10/90/365 d em `G:/opengs_tmp/r2/`;
