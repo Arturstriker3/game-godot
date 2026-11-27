@@ -121,22 +121,23 @@ var _ai_brain_set := false
 var _bootstrap_on := true
 var _bootstrap_set := false
 # R1a: braco A/B do caixa unico regional (--regional-cash=0/1 / OGS_C1_REGIONAL_CASH).
-# Sem override vale o enabled do rework.json (default do jogo = desligado).
+# Sem override vale o enabled do rework.json (default do jogo = LIGADO desde o
+# merge do R1, 27/11/2026; `--regional-cash=0` e o caminho legado bit a bit).
 var _regional_cash_on := false
 var _regional_cash_set := false
 # R1a (medicao R1a-M1/M2): override do modo do sub-teto externo
 # (`--external-subceiling=off|all|nonessential` / OGS_C1_EXTERNAL_SUBCEILING).
-# Sem override vale o rework.json (default "all"). Só laboratório.
+# Sem override vale o rework.json (default "off"). Só laboratório.
 var _external_subceiling := ""
 var _external_subceiling_set := false
 # R1b: braço A/B do Tesouro Nacional + orçamento regional
 # (`--national-treasury=0/1` / OGS_C1_NATIONAL_TREASURY). Sem override vale o
-# enabled do rework.json (default do jogo = desligado). Só laboratório.
+# enabled do rework.json (default do jogo = LIGADO desde o merge do R1).
 var _national_treasury_on := false
 var _national_treasury_set := false
 # R1c: braço A/B das empresas operando 100% do caixa próprio
 # (`--firms-own-cash=0/1` / OGS_C1_FIRMS_OWN_CASH). Sem override vale o
-# enabled do rework.json (default do jogo = desligado). Só laboratório.
+# enabled do rework.json (default do jogo = LIGADO desde o merge do R1).
 var _firms_own_cash_on := false
 var _firms_own_cash_set := false
 # R1a (diagnostico): serie diaria das entradas que o portao de comida e o

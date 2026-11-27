@@ -100,9 +100,10 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 ## G2: bootstrap industrial (semente por produtores reais). Ausente/desligado
 ## mantem o mundo bit-identico (nenhuma planta nova no dia 0).
 const BOOTSTRAP_INDUSTRY_PATH := "res://data/definitions/economy/bootstrap_industry.json"
-## R1a (rework): flags do rework. egional_cash.enabled liga o caixa unico
-## do setor privado (firm_cash + service_cash = City.private_cash). Desligado
-## mantem o mundo byte-a-byte anterior. Lido ANTES do mundo (aplica ao criar) e
+## R1a (rework): flags do rework em `rework.json`. `regional_cash.enabled` liga
+## o caixa unico do setor privado (firm_cash + service_cash = City.private_cash).
+## Ligado por default desde o merge do R1 (27/11/2026); desligado mantem o mundo
+## byte-a-byte anterior (caminho legado). Lido ANTES do mundo (aplica ao criar) e
 ## o save carrega o estado da flag.
 const REWORK_PATH := "res://data/definitions/economy/rework.json"
 ## Serviços (F8): 20 setores, compradores, insumos e mistura de escolaridade.

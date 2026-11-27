@@ -3,13 +3,13 @@
   "source": "REWORK_spec_mestre §1.2/§1.4/§12 (R1a/R1b) — decisão de design, não dado de mundo",
   "note": "Flags do rework R1. Lido por core/economy/economy.gd (REWORK_PATH) e por tools/c1_world_ai_365.gd; o núcleo recebe em EconomySim.set_rework_params(). Cada flag desligada mantém o mundo byte-a-byte anterior (save, status e digest).",
   "regional_cash": {
-    "enabled": false,
+    "enabled": true,
     "external_subceiling": "off",
-    "note": "R1a: firm_cash + service_cash passam a operar como UM caixa privado por região (City.private_cash), com dois sub-saldos virtuais rastreados (firm_sub/service_sub; firm_sub + service_sub == private_cash). Crédito por origem (bens → firm_sub, serviços → service_sub); todo gasto de um setor é autorizado só até o seu sub-saldo — sem transferência automática entre eles, como no caixa separado. Transferências internas (opex firmas→serviços, insumos, frete, construção) movem valor entre os sub-saldos e são no-op no total. Desligado (default) = comportamento anterior.",
+    "note": "R1a: firm_cash + service_cash passam a operar como UM caixa privado por região (City.private_cash), com dois sub-saldos virtuais rastreados (firm_sub/service_sub; firm_sub + service_sub == private_cash). Crédito por origem (bens → firm_sub, serviços → service_sub); todo gasto de um setor é autorizado só até o seu sub-saldo — sem transferência automática entre eles, como no caixa separado. Transferências internas (opex firmas→serviços, insumos, frete, construção) movem valor entre os sub-saldos e são no-op no total. LIGADO POR DEFAULT desde o merge do R1 (27/11/2026); enabled=false = comportamento anterior, bit a bit (caminho legado, que o fallback compilado e o CLI ainda alcançam, como no ai_brain da D-131 fase C).",
     "external_subceiling_note": "R1a (medição): calibração do sub-teto dos pagamentos EXTERNOS por setor, só vale com enabled=true. \"off\" (default) = sem teto por fatia; quem limita é o sub-saldo do setor. O mecanismo por fatia (t160-t163) está superado pelos sub-saldos e fica como experimento: \"all\" = cada setor paga fora no máximo a sua fatia da receita privada (nunca acima do sub-saldo); \"nonessential\" = a fatia vale para energia/juros/taxas, mas a importação de bem ESSENCIAL ignora a fatia. Essencial = cesta alimentar (food_calories(product) > 0: wheat, rice, maize, potato, soy), a mesma classificação do food_ratio; insumos agrícolas não alimentares seguem no teto."
   },
   "national_treasury": {
-    "enabled": false,
+    "enabled": true,
     "regional_budget": {
       "share": 1.0,
       "population_floor_fraction": 0.5,
@@ -21,7 +21,7 @@
     "regional_budget_note": "Parâmetros DECLARADOS do limite regional (defaults a balancear; futuramente decisão do jogador). population_floor_fraction: peso de cada região = max(pop_share_i, floor/n_regiões) — 0,5 = toda região recebe ao menos metade do rateio igualitário (piso mínimo por região). share: fração do saldo do Tesouro disponibilizada como limite a cada mês (1,0 = todo o saldo; o resto fica como reserva no Tesouro). O limite é um teto de gasto, não uma carteira: não há crédito regional. works_share: fração do limite reservada à conta de obras da região (CityGov.cash); o resto vai para o limite de serviços (City.government_budget). maintenance_share: teto da manutenção urbana dentro do limite de serviços (o excedente fica com o restante: alimentação/crise)."
   },
   "firms_own_cash": {
-    "enabled": false,
+    "enabled": true,
     "note": "R1c (§1.2/§12): EMPRESAS OPERAM 100% DO CAIXA PROPRIO. Só vale com regional_cash.enabled=true (qualquer outra combinação é config inválida: a flag é tratada como desligada e o motivo vai para o log/status em firms_own_cash_config_error). Ligada, morrem os aportes PUBLICOS AUTOMATICOS a empresas/plantas: (1) o subsídio setorial ad valorem do incentivo (sector_incentive.subsidy), (2) a cobertura do prejuízo da planta estratégica do bootstrap industrial e (3) a cobertura do déficit tarifário do setor elétrico. Compras publicas legitimas continuam: alimentação/crise, obras e manutenção urbana, serviços, frota, armazenagem e aquisição em leilão. Investimento e operação seguem como hoje - grupo paga o capex do próprio caixa e a operação sai do pool privado regional (sub-saldos firm/service do R1a). A construção privada nunca debita orçamento público; a regra de falência/inadimplência (arrears 60 d) NÃO muda (bancos são R2)."
   }
 }
