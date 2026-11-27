@@ -1971,21 +1971,55 @@ struct Region {
 				- service_external_paid_today;
 			return std::max(0.0, std::min(share_room, sub_room));
 		}
+		// R1a (QA t167): compra de outra cidade do MESMO pais. O pagamento vai
+		// para o caixa de outra firma do setor privado nacional - NAO e um
+		// pagamento EXTERNO (energia/importacao de fora do pais/juros/taxas) e
+		// por isso nao consome o sub-teto do experimento t160-t163. Autoriza
+		// so pelo sub-saldo do setor (desligada a flag, o proprio caixa - o
+		// caminho antigo).
+		double firm_internal_room() const {
+			return std::max(0.0, unified_cash ? firm_sub : firm_cash);
+		}
+		// Leitura/pagamento da compra inter-cidade: `abroad` = vendedor fora
+		// do pais. So entao o experimento do sub-teto se aplica.
+		double trade_firm_room(bool abroad, double want = 0.0,
+				bool essential = false) {
+			if (!abroad) {
+				return firm_internal_room();
+			}
+			return want > 0.0 ? firm_external_room_request(want, essential)
+				: firm_external_room(essential);
+		}
+		double trade_firm_pay(bool abroad, double value,
+				int flow = kR1Other) {
+			if (value <= 0.0) {
+				return 0.0;
+			}
+			if (abroad) {
+				return firm_external_pay(value, flow);
+			}
+			return firm_pay(value, flow);
+		}
 		// Semeia os sub-saldos a partir dos dois caixas antigos (conversao
 		// flag-ON) ou de um save legado. Preserva o total armazenado e deixa
 		// `firm_sub + service_sub == private_cash` exato. Cada espelho antigo
 		// negativo e zerado (a dívida cruzada nao atravessa o sub-saldo).
+		//
+		// R1a (QA t167): `private_cash` e a fonte da verdade e NUNCA cresce
+		// aqui. O total so sai dos espelhos quando a conversao ja o gravou em
+		// `sync_private_cash` (pool = soma). O fallback antigo "pool 0 ->
+		// total dos espelhos" criava dinheiro num save ON legado com pool 0 e
+		// espelhos +X/-X (o estado do dreno t163): o clamp do espelho negativo
+		// zerava a divida e injetava X. Agora pool 0 com espelhos opostos da
+		// 0/0; o pool manda.
 		void seed_subbalances_from_mirrors() {
 			if (!unified_cash) {
 				return;
 			}
-			double total = std::max(0.0, private_cash);
+			const double total = std::max(0.0, private_cash);
 			const double firm = std::max(0.0, firm_cash);
 			const double service = std::max(0.0, service_cash);
 			const double mirror_total = firm + service;
-			if (total <= 1e-9 && mirror_total > 1e-9) {
-				total = mirror_total;
-			}
 			if (total <= 1e-9) {
 				firm_sub = 0.0;
 				service_sub = 0.0;
@@ -2106,6 +2140,19 @@ struct Region {
 				firm_cash -= value;
 				return value;
 			}
+			if (value < 0.0) {
+				// R1a (QA t167): estorno espelha o caminho OFF - credita o
+				// setor e o pool pelo valor negativo (antes o clamp virava
+				// no-op so no ON, quebrando a semantica de estorno).
+				if (r1_diag) {
+					r1_firm_out[static_cast<int>(std::clamp(flow, 0,
+						static_cast<int>(kR1FlowCount) - 1))] += value;
+				}
+				firm_sub -= value;
+				private_cash -= value;
+				firm_cash = firm_sub;
+				return value;
+			}
 			const double paid = std::clamp(value, 0.0,
 				std::max(0.0, firm_sub));
 			if (r1_diag) {
@@ -2137,6 +2184,18 @@ struct Region {
 						static_cast<int>(kR1FlowCount) - 1))] += value;
 				}
 				service_cash -= value;
+				return value;
+			}
+			if (value < 0.0) {
+				// R1a (QA t167): mesmo estorno do caminho OFF (credita o
+				// setor de servicos e o pool).
+				if (r1_diag) {
+					r1_service_out[static_cast<int>(std::clamp(flow, 0,
+						static_cast<int>(kR1FlowCount) - 1))] += value;
+				}
+				service_sub -= value;
+				private_cash -= value;
+				service_cash = service_sub;
 				return value;
 			}
 			const double paid = std::clamp(value, 0.0,

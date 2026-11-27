@@ -1315,7 +1315,13 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 			check_nonneg("firm_sub", city.firm_sub);
 			check_nonneg("service_sub", city.service_sub);
 			const double sub_sum = city.firm_sub + city.service_sub;
-			const double tolerance = 1e-6 * (1.0 + std::fabs(city.private_cash));
+			// R1a (QA t167): tolerancia apertada. Antes 1e-6*(1+|pool|) dava
+			// ~1.000 num pool de 1e9 e nao pegava deriva grande; os primitivos
+			// mantem a soma a poucos ulps, entao 1e-10 relativo (piso de 1e-6
+			// para pools pequenos) e folgado para o arredondamento e aperta o
+			// guarda em 10.000x.
+			const double tolerance = std::max(1e-6,
+				1e-10 * (1.0 + std::fabs(city.private_cash)));
 			if (!std::isfinite(sub_sum)
 					|| std::fabs(sub_sum - city.private_cash) > tolerance) {
 				violations.push_back("sub-saldos nao somam o pool em "

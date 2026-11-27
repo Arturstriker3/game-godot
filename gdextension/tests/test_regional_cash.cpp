@@ -18,6 +18,7 @@
 
 #include "sim/ai/ai_view.h"
 #include "sim/save_state.h"
+#include "sim/scenario_fixture.h"
 #include "sim/sim_core.h"
 
 #include <string>
@@ -381,4 +382,134 @@ TEST_CASE("R1a: base investivel da IA usa o sub-saldo, sem duplo desconto") {
 	const ogs::AiCityRow& off_row = off_view.city_rows[0];
 	CHECK(off_row.firm_cash == Approx(50000.0));
 	CHECK(off_row.firm_revenue_share == Approx(1.0));
+}
+
+// R1a (QA t167) - achados 1/M1 e 2/M2 e os menores.
+TEST_CASE("R1a: save legado ON com pool 0 e espelhos opostos nao cria dinheiro") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	world.core.set_regional_cash(true);
+	ogs::City& city = world.ws.cities[0];
+	// Estado do dreno t163 (save ON legado sem firm_sub/service_sub): o
+	// pool armazenado e 0 e os espelhos estao cruzados. A semeadura NAO
+	// pode trocar o pool pelo total dos espelhos (o clamp do negativo
+	// viraria dinheiro novo).
+	city.firm_sub = 0.0;
+	city.service_sub = 0.0;
+	city.private_cash = 0.0;
+	city.firm_cash = -5000.0;
+	city.service_cash = 5000.0;
+	city.seed_subbalances_from_mirrors();
+	CHECK(city.private_cash == Approx(0.0));
+	CHECK(city.firm_sub == Approx(0.0));
+	CHECK(city.service_sub == Approx(0.0));
+	check_sub_invariant(city);
+
+	// Pool positivo com os mesmos espelhos cruzados: preserva o pool e
+	// manda tudo para o lado positivo (o negativo zera, sem compensacao
+	// que aumente o total).
+	city.firm_cash = -2000.0;
+	city.service_cash = 42000.0;
+	city.private_cash = 40000.0;
+	city.seed_subbalances_from_mirrors();
+	CHECK(city.private_cash == Approx(40000.0));
+	CHECK(city.firm_sub == Approx(0.0));
+	CHECK(city.service_sub == Approx(40000.0));
+	check_sub_invariant(city);
+}
+
+TEST_CASE("R1a: firm_pay/service_pay negativo estornam como no OFF") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	world.core.set_regional_cash(true);
+	ogs::City& city = world.ws.cities[0];
+	const double total_before = world.core.money_total();
+
+	// Estorno: credita o setor e o pool, exatamente como o OFF credita o
+	// caixa (antes o clamp do ON virava no-op).
+	CHECK(city.firm_pay(-1000.0) == Approx(-1000.0));
+	CHECK(city.firm_sub == Approx(51000.0));
+	CHECK(city.service_sub == Approx(30000.0));
+	CHECK(city.private_cash == Approx(81000.0));
+	CHECK(world.core.money_total() == Approx(total_before + 1000.0));
+	check_sub_invariant(city);
+
+	CHECK(city.service_pay(-500.0) == Approx(-500.0));
+	CHECK(city.service_sub == Approx(30500.0));
+	CHECK(city.private_cash == Approx(81500.0));
+	check_sub_invariant(city);
+
+	// Desligado, a mesma chamada credita o caixa (semantica espelhada).
+	world.core.set_regional_cash(false);
+	seed_cash(world, 50000.0, 30000.0);
+	ogs::City& off_city = world.ws.cities[0];
+	CHECK(off_city.firm_pay(-1000.0) == Approx(-1000.0));
+	CHECK(off_city.firm_cash == Approx(51000.0));
+	CHECK(off_city.service_pay(-500.0) == Approx(-500.0));
+	CHECK(off_city.service_cash == Approx(30500.0));
+}
+
+TEST_CASE("R1a: compra em outra cidade do mesmo pais nao consome o teto externo") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	// Experimento t160-t163 ligado: a fatia existe e e restritiva.
+	world.core.set_regional_cash(true, 1);
+	ogs::City& city = world.ws.cities[0];
+	city.firm_revenue_share = 0.05;
+	CHECK(city.firm_external_room() == Approx(4000.0));
+
+	// Vendedor do proprio pais: autoriza pelo sub-saldo (nao pela fatia) e
+	// o pagamento NAO soma no teto externo do dia.
+	CHECK(city.trade_firm_room(false, 10000.0) == Approx(50000.0));
+	const double domestic = city.trade_firm_pay(false, 10000.0,
+		ogs::City::kR1TradeDomestic);
+	CHECK(domestic == Approx(10000.0));
+	CHECK(city.firm_external_paid_today == Approx(0.0));
+	check_sub_invariant(city);
+
+	// Vendedor de fora do pais: consome o teto externo.
+	const double abroad = city.trade_firm_pay(true, 10000.0,
+		ogs::City::kR1ImportsAbroad);
+	CHECK(abroad == Approx(10000.0));
+	CHECK(city.firm_external_paid_today == Approx(10000.0));
+	check_sub_invariant(city);
+}
+
+TEST_CASE("R1a: cenario minimo respeita a flag ON") {
+	ogs::WorldState ws;
+	ws.regional_cash = true;
+	ws.external_subceiling = ogs::City::kSubceilingOff;
+	ogs::SimCore core(ws);
+	ogs::initialize_scenario_fixture(ws, core);
+	REQUIRE(ws.cities.size() == 2);
+	for (const ogs::City& city : ws.cities) {
+		CHECK(city.unified_cash);
+		CHECK(city.private_cash > 0.0);
+		CHECK(city.firm_sub >= 0.0);
+		CHECK(city.service_sub >= 0.0);
+		CHECK(city.firm_sub + city.service_sub
+			== Approx(city.private_cash).epsilon(1e-9));
+		CHECK(city.firm_cash == Approx(city.firm_sub));
+		CHECK(city.service_cash == Approx(city.service_sub));
+	}
+	// AGRIA/PORTUS do fixture: 50k+30k e 80k+60k.
+	CHECK(ws.cities[0].private_cash == Approx(80000.0));
+	CHECK(ws.cities[0].firm_sub == Approx(50000.0));
+	CHECK(ws.cities[0].service_sub == Approx(30000.0));
+	CHECK(ws.cities[1].private_cash == Approx(140000.0));
+	CHECK(ws.cities[1].firm_sub == Approx(80000.0));
+	CHECK(ws.cities[1].service_sub == Approx(60000.0));
+}
+
+TEST_CASE("R1a: service_pay no limite do sub-saldo e inclusivo e exato") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	world.core.set_regional_cash(true);
+	ogs::City& city = world.ws.cities[0];
+	// Pedido exatamente igual ao sub-saldo: paga tudo, zera o setor e a
+	// soma fecha o pool sem residuo (limite inclusivo).
+	CHECK(city.service_pay(30000.0) == Approx(30000.0));
+	CHECK(city.service_sub == Approx(0.0));
+	CHECK(city.private_cash == Approx(50000.0));
+	check_sub_invariant(city);
 }

@@ -410,13 +410,11 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			if (city.unified_cash) {
 				city.firm_external_pay(firm_paid, City::kR1Taxes);
 			} else {
-				// Caminho OFF preservado bit a bit: o antigo clamp do caixa
-				// antes do debito (caixa negativo impossivel pelo invariante,
-				// mas o digest nao pode depender disso).
-				city.firm_cash = safe_nonneg(city.firm_cash) - firm_paid;
-				if (city.r1_diag) {
-					city.r1_firm_out[City::kR1Taxes] += firm_paid;
-				}
+				// Caminho OFF preservado bit a bit: o MESMO primitivo de
+				// antes (`firm_pay`), que debita o caixa inclusive quando um
+				// save editado o deixou negativo. O clamp extra de `max(0,
+				// cash)` divergia nesse caso (QA t167).
+				city.firm_pay(firm_paid, City::kR1Taxes);
 			}
 			gov.cash += hh_paid + firm_paid;
 			gov.month_revenue_iptu = hh_paid + firm_paid;
@@ -434,12 +432,9 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			if (city.unified_cash) {
 				city.service_external_pay(fee_paid, City::kR1Taxes);
 			} else {
-				// Caminho OFF preservado bit a bit (clamp antigo do caixa).
-				city.service_cash =
-					safe_nonneg(city.service_cash) - fee_paid;
-				if (city.r1_diag) {
-					city.r1_service_out[City::kR1Taxes] += fee_paid;
-				}
+				// Caminho OFF preservado bit a bit: `service_pay` e o
+				// primitivo antigo (sem clamp extra de max(0, cash)).
+				city.service_pay(fee_paid, City::kR1Taxes);
 			}
 			gov.cash += fee_paid;
 			gov.month_revenue_fees = fee_paid;
