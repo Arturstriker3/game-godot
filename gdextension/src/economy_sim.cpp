@@ -2217,6 +2217,11 @@ Dictionary EconomySim::get_r1_diag_status() {
 		row["cut_n_service"] = city.r1_ext_cut_n_service;
 		row["import_abroad"] = city.r1_import_abroad;
 		row["export_abroad"] = city.r1_export_abroad;
+		// R1b: envelope do Tesouro recebido (mes corrente e acumulado) e o
+		// orcamento publico da regiao — sonda de "nenhuma regiao sem envelope".
+		row["envelope_month"] = city.envelope_received_month;
+		row["envelope_total"] = city.envelope_received_total;
+		row["government_budget"] = city.government_budget;
 		PackedFloat64Array firm_out;
 		PackedFloat64Array service_out;
 		firm_out.resize(static_cast<int>(City::kR1FlowCount));

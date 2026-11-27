@@ -406,8 +406,11 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.gov_bonds = ws_.gov_bonds;
 	out.external_bonds = ws_.external_bonds;
 	out.gov_cash_open = ws_.gov_cash_open;
-	// R1b: saldo do Tesouro por nacao (arrecadacao/envelope do dia).
+	// R1b: saldo do Tesouro por nacao (arrecadacao/envelope do dia) e os
+	// acumulados da identidade arrecadado == distribuido + saldo.
 	out.nation_treasury = ws_.nation_treasury;
+	out.treasury_collected_total = ws_.treasury_collected_total;
+	out.treasury_distributed_total = ws_.treasury_distributed_total;
 	// C2b2 (D-106): a intervenção cambial e a desvalorização são estado do dia.
 	out.fx = ws_.fx;
 	out.fx_events = ws_.fx_events;
@@ -1166,6 +1169,8 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.external_bonds = in.external_bonds;
 	ws_.gov_cash_open = in.gov_cash_open;
 	ws_.nation_treasury = in.nation_treasury;
+	ws_.treasury_collected_total = in.treasury_collected_total;
+	ws_.treasury_distributed_total = in.treasury_distributed_total;
 	ws_.fx = in.fx;
 	ws_.fx_events = in.fx_events;
 	ws_.banks = in.banks;

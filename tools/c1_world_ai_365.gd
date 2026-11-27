@@ -981,6 +981,18 @@ func _r1_diag_row(sim: Object, status: Dictionary, day: int) -> Dictionary:
 			treasury_block.get("distributed_total", 0.0))
 		out["treasury_enabled"] = bool(
 			treasury_block.get("enabled", false))
+		# R1b sanidade: quantas regioes ainda nao receberam NENHUM envelope
+		# (acumulado) e o total entregue. Só leitura.
+		var envelope_total := 0.0
+		var envelope_zero := 0
+		for raw_city: Variant in Array(treasury_diag.get("cities", [])):
+			var city_row: Dictionary = raw_city
+			var received := float(city_row.get("envelope_total", 0.0))
+			envelope_total += received
+			if received <= 0.0:
+				envelope_zero += 1
+		out["envelope_total"] = envelope_total
+		out["envelope_zero_cities"] = envelope_zero
 	# Comida por uso: o status publica o total consumido/produzido por produto
 	# (todos os usos, inclusive insumo de planta/serviço). Separar isso do
 	# `p_consumed` das famílias é o que mostra quem comeu a prateleira.

@@ -2608,6 +2608,11 @@ struct Region {
 		// R1b: saldo do Tesouro por nacao (dinheiro do mundo; reverter um tick
 		// tem de desfazer a arrecadacao e o envelope junto).
 		std::map<std::string, double> nation_treasury;
+		// R1b: acumulados desde o inicio. São medição, mas a identidade
+		// `arrecadado == distribuido + saldo` só vale se um tick revertido
+		// também desfizer os acumulados do dia.
+		double treasury_collected_total = 0.0;
+		double treasury_distributed_total = 0.0;
 		// C2b2 (D-106): reservas/paridade/eventos. Reverter um tick tem de
 		// desfazer a intervenção e a desvalorização do dia junto com o caixa.
 		std::map<std::string, FxState> fx;

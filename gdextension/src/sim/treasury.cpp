@@ -66,6 +66,11 @@ double distribute_envelopes(WorldState& ws) {
 	if (share <= 0.0) {
 		return 0.0;
 	}
+	// O envelope e MENSAL: zera a janela do mes para a sonda refletir o
+	// recebido deste fecho (o acumulado fica em `envelope_received_total`).
+	for (City& city : ws.cities) {
+		city.envelope_received_month = 0.0;
+	}
 	// Ordem de primeira aparicao das nacoes (deterministica, como o status).
 	std::vector<std::string> order;
 	std::unordered_map<std::string, std::vector<std::size_t>> by_nation;
