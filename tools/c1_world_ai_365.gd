@@ -167,6 +167,11 @@ const R1C_SAMPLE_DAYS := [1, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300,
 	330, 360, 365]
 var _r1c_nations: Dictionary = {}
 var _r1c_config: Dictionary = {}
+# R1c (QA t177): totais do dia publicados pelo núcleo com a flag ON
+# (`firms_own_cash_uncovered` no status): déficit tarifário NÃO coberto,
+# custo de geração não pago pelo pool do setor e prejuízo das plantas
+# estratégicas. Só leitura; `retail_margin` sob ON é 0 por construção.
+var _r1c_uncovered: Dictionary = {}
 # F0/D-124: diagnostico por refinaria semeada (`--refining-diag=1`): no dia 1
 # e no fecho, capacidade/producao/vendas/estoque/preco/folha+opex/receita de
 # cada `SEED-REFINERY-*` e a oferta de petroleo do cenario.
@@ -1286,6 +1291,8 @@ func _r1c_acc(nation: String) -> Dictionary:
 			"strategic_plants": 0,
 			"tariff_paid": 0.0,
 			"tariff_surplus": 0.0,
+			"tariff_uncovered": 0.0,
+			"strategic_uncovered": 0.0,
 			"samples": [],
 		}
 	return _r1c_nations[nation]
@@ -1307,11 +1314,29 @@ func _r1c_collect(sim: Object, status: Dictionary, power: Dictionary,
 			continue
 		var row: Dictionary = nations[tag]
 		var margin := float(row.get("retail_margin", 0.0))
+		# QA t177: sob ON `retail_margin` é 0 por construção; o déficit real
+		# (não coberto) vem em `retail_uncovered`.
+		var uncovered_day := float(row.get("retail_uncovered", 0.0))
 		var acc := _r1c_acc(String(tag))
+		acc["tariff_uncovered"] = float(acc["tariff_uncovered"]) \
+			+ uncovered_day
 		if margin < 0.0:
 			acc["tariff_paid"] = float(acc["tariff_paid"]) - margin
 		else:
 			acc["tariff_surplus"] = float(acc["tariff_surplus"]) + margin
+	# Contadores do núcleo (QA t177): déficit não coberto e custo não pago do
+	# setor elétrico (+ prejuízo estratégico agregado). Só com a flag ON.
+	var uncovered: Dictionary = status.get("firms_own_cash_uncovered", {})
+	if not uncovered.is_empty():
+		for field: String in ["strategic_loss_total", "power_tariff_deficit",
+				"power_cost_unpaid"]:
+			_r1c_uncovered[field] = float(_r1c_uncovered.get(field, 0.0)) \
+				+ float(uncovered.get(field, 0.0))
+		var by_nation: Dictionary = uncovered.get("strategic_by_nation", {})
+		for tag: Variant in by_nation:
+			var acc := _r1c_acc(String(tag))
+			acc["strategic_uncovered"] = float(acc["strategic_uncovered"]) \
+				+ float(by_nation[tag])
 	if not sim.has_method("get_r1_diag_status"):
 		return
 	var diag: Dictionary = sim.get_r1_diag_status()
@@ -1379,6 +1404,10 @@ func _r1c_collect(sim: Object, status: Dictionary, power: Dictionary,
 			"import_abroad": float(snapshot["import_abroad"]),
 			"export_abroad": float(snapshot["export_abroad"]),
 			"strategic_loss_total": float(acc["strategic_loss"]),
+			"strategic_uncovered_total": float(acc["strategic_uncovered"]),
+			"tariff_uncovered_total": float(acc["tariff_uncovered"]),
+			"power_cost_unpaid_total": float(
+				_r1c_uncovered.get("power_cost_unpaid", 0.0)),
 		})
 
 
@@ -1423,11 +1452,15 @@ func _r1c_report() -> Dictionary:
 	var subsidy := 0.0
 	var strategic := 0.0
 	var tariff := 0.0
+	var tariff_uncovered := 0.0
+	var strategic_uncovered := 0.0
 	for key: Variant in keys:
 		var acc: Dictionary = _r1c_nations[key]
 		subsidy += float(acc["subsidy_paid"])
 		strategic += float(acc["strategic_loss"])
 		tariff += float(acc["tariff_paid"])
+		tariff_uncovered += float(acc["tariff_uncovered"])
+		strategic_uncovered += float(acc["strategic_uncovered"])
 		nations.append(acc)
 	return {
 		"watch": R1C_WATCH,
@@ -1435,6 +1468,15 @@ func _r1c_report() -> Dictionary:
 		"world_subsidy_paid": subsidy,
 		"world_strategic_loss": strategic,
 		"world_tariff_paid": tariff,
+		# QA t177: o que o Estado deixou de pagar (medida real, não tautológica).
+		"world_tariff_uncovered": tariff_uncovered,
+		"world_strategic_uncovered": strategic_uncovered,
+		"world_strategic_uncovered_core": float(
+			_r1c_uncovered.get("strategic_loss_total", 0.0)),
+		"world_power_cost_unpaid": float(
+			_r1c_uncovered.get("power_cost_unpaid", 0.0)),
+		"world_power_tariff_deficit": float(
+			_r1c_uncovered.get("power_tariff_deficit", 0.0)),
 		"config": _r1c_config,
 		"nations": nations,
 	}

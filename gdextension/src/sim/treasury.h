@@ -35,6 +35,14 @@ bool enabled(const WorldState& ws);
 // caixa do pagador (familia/firma/servico); esta funcao so move a contraparte.
 void collect(WorldState& ws, const std::string& nation, double amount);
 
+// R1c (QA t177): debito DIRETO do saldo do Tesouro para uma alavanca explicita
+// (aporte de capital a grupo estatal / criacao de estatal). Devolve o valor
+// efetivamente debitado (limitado ao saldo) e o soma em
+// `treasury_spent_total`, para a identidade `arrecadado == gasto + saldo`
+// continuar valendo. Nao toca nos contadores regionais (que sao limite do mes)
+// e nao cria dinheiro: o credito na contraparte e exatamente o devolvido.
+double spend(WorldState& ws, const std::string& nation, double amount);
+
 // Saldo do Tesouro de uma nacao / do mundo.
 double balance(const WorldState& ws, const std::string& nation);
 double total_balance(const WorldState& ws);

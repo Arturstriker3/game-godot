@@ -23,6 +23,7 @@
 #include "sim/sim_day.h"
 #include "sim/stock.h"
 #include "sim/treasury.h"
+#include "sim/state_levers.h"
 #include "sim/urban_land.h"
 #include "sim/housing.h"
 
@@ -4444,6 +4445,11 @@ Dictionary EconomySim::get_power_status() const {
 	out["day"] = ws_.day;
 	out["ready"] = ws_.power_ready;
 	out["cash"] = ws_.power_cash;
+	// R1c (QA t177): custo do dia que o setor nao pagou. So existe com a flag
+	// ON para o status OFF continuar sem chave nova. So leitura.
+	if (ws_.firms_own_cash) {
+		out["cost_unpaid"] = ws_.power_cost_unpaid;
+	}
 	const ogs::PowerParams& params = ws_.power_params;
 	// D-118: âncora salarial derivada do sim (XGS por salário-dia) e os
 	// limites EFETIVOS em XGS/MWh — diagnóstico do relatório de escala
@@ -4653,6 +4659,11 @@ Dictionary EconomySim::get_power_status() const {
 		entry["average_cost"] = grid.average_cost;
 		entry["scarcity_pass"] = grid.scarcity_pass;
 		entry["retail_margin"] = grid.retail_margin;
+		// R1c (QA t177): deficit tarifario NAO coberto do dia (sob ON e o
+		// deficit integral; sob OFF, o excedente ao orcamento). So leitura.
+		if (ws_.firms_own_cash) {
+			entry["retail_uncovered"] = grid.retail_uncovered;
+		}
 		entry["demand_mwh"] = grid.demand_mwh;
 		entry["served_mwh"] = grid.served_mwh;
 		entry["served_ratio"] = grid.demand_mwh > 0.0
@@ -4888,6 +4899,22 @@ Dictionary EconomySim::get_group(const String& group_id) const {
 
 Dictionary EconomySim::apply_fund_group(const String& group_id, double amount) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// R1c (QA t177): alavanca EXPLICITA sob `firms_own_cash` - o capital sai
+	// do TESOURO NACIONAL (o orcamento regional e limite, nao caixa) e o
+	// comando falha limpo sem saldo. Sem a flag, caminho antigo intacto.
+	if (ogs::treasury_levers_enabled(ws_)) {
+		const ogs::TreasuryFundResult outcome =
+			ogs::action_fund_group_from_treasury(ws_,
+				std::string(group_id.utf8().get_data()), amount);
+		Dictionary funded;
+		funded["funded"] = outcome.funded;
+		funded["moved"] = outcome.moved;
+		funded["error"] = String(outcome.error.c_str());
+		if (outcome.funded) {
+			funded["source"] = "treasury";
+		}
+		return funded;
+	}
 	Dictionary result;
 	result["funded"] = false;
 	result["moved"] = 0.0;
@@ -5035,10 +5062,31 @@ Dictionary EconomySim::apply_set_sector_incentive(const String& nation,
 Dictionary EconomySim::apply_create_state_company(const String& nation,
 		const String& name, double capital) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string tag(nation.utf8().get_data());
+	// R1c (QA t177): alavanca EXPLICITA sob `firms_own_cash` - o capital sai
+	// do TESOURO NACIONAL e, sem saldo, a estatal NAO e criada (falha limpa).
+	if (ogs::treasury_levers_enabled(ws_)) {
+		const String company_name = name.strip_edges();
+		const ogs::TreasuryCompanyResult outcome =
+			ogs::action_create_state_company_from_treasury(ws_, tag,
+				company_name.is_empty() ? std::string()
+					: std::string(company_name.utf8().get_data()), capital);
+		Dictionary created;
+		created["created"] = outcome.created;
+		created["error"] = String(outcome.error.c_str());
+		if (outcome.created) {
+			created["id"] = String(outcome.id.c_str());
+			created["capital"] = outcome.capital;
+			created["source"] = "treasury";
+			if (!outcome.warning.empty()) {
+				created["warning"] = String(outcome.warning.c_str());
+			}
+		}
+		return created;
+	}
 	Dictionary result;
 	result["created"] = false;
 	result["error"] = "";
-	const std::string tag(nation.utf8().get_data());
 	if (tag.empty()) {
 		result["error"] = "naÃ§Ã£o vazia";
 		return result;

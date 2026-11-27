@@ -1687,6 +1687,11 @@ struct Region {
 		double tariff = 0.0;
 		double scarcity_pass = 0.0;
 		double retail_margin = 0.0;
+		// R1c (diagnostico do QA t177): parcela do deficit tarifario do dia
+		// que o Estado NAO cobriu. Com `firms_own_cash` ON e o deficit
+		// integral; com OFF, o excedente ao orcamento da cidade. Derivado,
+		// nao entra na liquidacao nem no save (so status/probe).
+		double retail_uncovered = 0.0;
 		double demand_mwh = 0.0;
 		double served_mwh = 0.0;
 		int ration_days = 0;
@@ -2649,6 +2654,9 @@ struct Region {
 		std::vector<InterconnectState> interconnects;
 		bool power_interconnects_ready = false;
 		double power_cash = 0.0;
+		// R1c (QA t177): diagnostico do dia (perda nao paga do setor); revertido
+		// junto com o tick, como o caixa do setor.
+		double power_cost_unpaid = 0.0;
 		double emission_today = 0.0;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;

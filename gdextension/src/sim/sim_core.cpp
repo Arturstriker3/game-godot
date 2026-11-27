@@ -555,6 +555,7 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.interconnects = ws_.interconnects;
 	out.power_interconnects_ready = ws_.power_interconnects_ready;
 	out.power_cash = ws_.power_cash;
+	out.power_cost_unpaid = ws_.power_cost_unpaid;
 	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
@@ -1333,6 +1334,7 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.interconnects = in.interconnects;
 	ws_.power_interconnects_ready = in.power_interconnects_ready;
 	ws_.power_cash = in.power_cash;
+	ws_.power_cost_unpaid = in.power_cost_unpaid;
 	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;

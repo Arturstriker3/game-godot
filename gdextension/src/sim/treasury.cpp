@@ -41,6 +41,25 @@ double balance(const WorldState& ws, const std::string& nation) {
 	return found == ws.nation_treasury.end() ? 0.0 : found->second;
 }
 
+double spend(WorldState& ws, const std::string& nation, double amount) {
+	const double value = safe_nonneg(amount);
+	if (value <= 0.0) {
+		return 0.0;
+	}
+	const auto found = ws.nation_treasury.find(nation);
+	if (found == ws.nation_treasury.end()) {
+		return 0.0;
+	}
+	const double balance = safe_nonneg(found->second);
+	const double paid = std::min(value, balance);
+	if (paid <= 0.0) {
+		return 0.0;
+	}
+	found->second = balance - paid;
+	ws.treasury_spent_total += paid;
+	return paid;
+}
+
 double total_balance(const WorldState& ws) {
 	double total = 0.0;
 	for (const auto& row : ws.nation_treasury) {

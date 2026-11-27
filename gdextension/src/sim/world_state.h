@@ -784,6 +784,10 @@ struct WorldState {
 	bool power_interconnects_ready = false;
 	bool power_ready = false;
 	double power_cash = 0.0;
+	// R1c (diagnostico, QA t177): custo de geracao do dia que o pool do setor
+	// eletrico nao pagou (perda declarada, nao divida). Derivado; so status/
+	// sonda, nao entra no save.
+	double power_cost_unpaid = 0.0;
 	// REGRA (não persistida): espelho de data/definitions/energy/power_params.json.
 	PowerParams power_params;
 	// Preços-base dos bens (data-driven: set_goods/initialize_world).

@@ -393,6 +393,43 @@ Dictionary EconomySim::get_status() {
 	} else {
 		root.erase("firms_own_cash_config_error");
 	}
+	// R1c (QA t177): contadores dos aportes automaticos que a flag desliga.
+	// Com a flag ON `retail_margin` e 0 por construcao; aqui vao o deficit
+	// tarifario NAO coberto, o custo de geracao nao pago e o prejuizo das
+	// plantas estrategicas (building.profit negativo agregado). So leitura:
+	// so aparecem com a flag ON (OFF sem chave nova) e nao movem dinheiro.
+	if (ws_.firms_own_cash) {
+		Dictionary uncovered;
+		double strategic_total = 0.0;
+		Dictionary strategic_by_nation;
+		for (const Building& building : ws_.buildings) {
+			if (!building.strategic || building.profit >= 0.0) {
+				continue;
+			}
+			const double loss = -building.profit;
+			strategic_total += loss;
+			if (building.city_index < 0
+					|| building.city_index
+						>= static_cast<int>(ws_.cities.size())) {
+				continue;
+			}
+			const String nation(ws_.cities[static_cast<std::size_t>(
+				building.city_index)].nation.c_str());
+			strategic_by_nation[nation] = static_cast<double>(
+				strategic_by_nation.get(nation, 0.0)) + loss;
+		}
+		double tariff_total = 0.0;
+		for (const auto& row : ws_.power_grids) {
+			tariff_total += row.second.retail_uncovered;
+		}
+		uncovered["strategic_loss_total"] = strategic_total;
+		uncovered["strategic_by_nation"] = strategic_by_nation;
+		uncovered["power_tariff_deficit"] = tariff_total;
+		uncovered["power_cost_unpaid"] = ws_.power_cost_unpaid;
+		root["firms_own_cash_uncovered"] = uncovered;
+	} else {
+		root.erase("firms_own_cash_uncovered");
+	}
 	// G2: diagnóstico da semente (critério 9: residual e falta publicados).
 	if (ws_.bootstrap.loaded) {
 		Dictionary bootstrap;

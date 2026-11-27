@@ -68,6 +68,7 @@ add_library(opengs_sim STATIC
     src/sim/services.cpp
     src/sim/fiscal.cpp
     src/sim/treasury.cpp
+    src/sim/state_levers.cpp
     src/sim/fx.cpp
     src/sim/investment.cpp
     src/sim/construction.cpp

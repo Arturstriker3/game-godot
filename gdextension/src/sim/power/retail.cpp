@@ -96,6 +96,10 @@ void SimCore::phase_power_settle() {
 		const double paid_total = paid_h + paid_i + paid_s + paid_g;
 		const double margin = paid_total - served * wholesale;
 		double to_state = 0.0;
+		// R1c (QA t177): deficit que o Estado NAO cobriu no dia. Com a flag ON
+		// e o deficit integral; com OFF, o excedente ao orcamento da cidade.
+		// So medicao: nao muda a liquidacao.
+		double uncovered = 0.0;
 		if (margin > 0.0) {
 			to_state = margin;
 		} else if (margin < 0.0) {
@@ -106,6 +110,7 @@ void SimCore::phase_power_settle() {
 			to_state = ws.firms_own_cash ? 0.0
 				: -std::min(-margin,
 					std::max(0.0, city.government_budget));
+			uncovered = -margin + to_state;
 		}
 		if (to_state > 0.0) {
 			pool -= to_state;
@@ -118,6 +123,7 @@ void SimCore::phase_power_settle() {
 		const auto grid_found = ws.power_grids.find(city.nation);
 		if (grid_found != ws.power_grids.end()) {
 			grid_found->second.retail_margin += to_state;
+			grid_found->second.retail_uncovered += uncovered;
 		}
 	}
 	// 2. Custo das usinas do dia: combustível (mercado) + O&M + salários.
@@ -185,6 +191,10 @@ void SimCore::phase_power_settle() {
 	// combustível aos produtores (ou ao exterior), O&M/salários na cidade.
 	const double pay_ratio = total_cost > 1e-9
 		? std::clamp(pool / total_cost, 0.0, 1.0) : 0.0;
+	// R1c (QA t177): custo de geracao do dia que o pool NAO conseguiu pagar.
+	// Perda declarada do setor (nao vira divida) e contador da sonda
+	// `--r1-diag`; nao muda `pay_ratio` nem os pagamentos.
+	ws.power_cost_unpaid = std::max(0.0, total_cost - pool);
 	double paid_total = 0.0;
 	for (std::size_t p = 0; p < plant_count; ++p) {
 		const PowerPlant& plant = ws.power_plants[p];

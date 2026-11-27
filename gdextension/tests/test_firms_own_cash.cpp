@@ -16,6 +16,8 @@
 #include "sim/actions.h"
 #include "sim/save_state.h"
 #include "sim/sim_core.h"
+#include "sim/state_levers.h"
+#include "sim/treasury.h"
 
 #include <cstddef>
 #include <string>
@@ -55,6 +57,19 @@ int group_index(ogs::test::PocketWorld& world, const std::string& id) {
 void enable_flags(ogs::test::PocketWorld& world, bool firms_own_cash) {
 	world.core.set_regional_cash(true);
 	world.core.set_firms_own_cash(firms_own_cash);
+}
+
+// R1c (QA t177): liga as empresas-do-caixa-proprio E o Tesouro Nacional, com
+// saldo inicial para as alavancas A3 e um orcamento municipal visivel (limite
+// do mes, nao caixa) que os testes provam NAO ser debitado.
+void enable_treasury_levers(ogs::test::PocketWorld& world, double treasury) {
+	world.core.set_regional_cash(true);
+	world.core.set_national_treasury(true, 1.0, 0.5, 0.35, 0.5);
+	world.core.set_firms_own_cash(true);
+	world.ws.nation_treasury["AAA"] = treasury;
+	for (ogs::City& city : world.ws.cities) {
+		city.government_budget = 7000.0;
+	}
 }
 
 // Incentivo setorial do fixture: 20% da receita da madeira.
@@ -202,4 +217,88 @@ TEST_CASE("R1c: save/load preserva a flag ON e OFF nao ganha chave") {
 	seed_cash(off, 50000.0, 30000.0, 1000.0);
 	enable_flags(off, false);
 	CHECK_FALSE(ogs::save::to_value(off.ws, off.core).has("firms_own_cash"));
+}
+
+TEST_CASE("R1c: fund_group sob ON debita o Tesouro, nao o orcamento municipal") {
+	// Alavanca A3 explicita (QA t177): com a flag ON o orcamento municipal e
+	// LIMITE do mes, entao o aporte tem de sair do Tesouro da nacao. Saldo
+	// insuficiente falha limpo (sem debito parcial).
+	ogs::test::PocketWorld world;
+	seed_cash(world, 1000.0, 1000.0, 7000.0);
+	enable_treasury_levers(world, 1000.0);
+	REQUIRE(world.ws.firms_own_cash);
+	REQUIRE(ogs::treasury::enabled(world.ws));
+	const int group = group_index(world, "AAA_WOOD");
+	REQUIRE(group >= 0);
+	world.ws.group_lookup["AAA_WOOD"] = group;
+	const double group_before = world.ws.groups[group].cash;
+	const double budget_before =
+		city_by_id(world, "PORTUS").government_budget;
+	const double money_before = world.core.money_total();
+
+	const ogs::TreasuryFundResult ok =
+		ogs::action_fund_group_from_treasury(world.ws, "AAA_WOOD", 200.0);
+	CHECK(ok.funded);
+	CHECK(ok.moved == Approx(200.0));
+	CHECK(ok.error.empty());
+	CHECK(world.ws.groups[group].cash == Approx(group_before + 200.0));
+	CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(800.0));
+	CHECK(city_by_id(world, "PORTUS").government_budget
+		== Approx(budget_before));
+	// Transferencia Tesouro -> grupo: nenhum dinheiro criado/destruido.
+	CHECK(world.core.money_total() == Approx(money_before));
+
+	// Saldo insuficiente: o comando falha limpo e nada se move.
+	world.ws.nation_treasury["AAA"] = 100.0;
+	const double cash_now = world.ws.groups[group].cash;
+	const double money_now = world.core.money_total();
+	const ogs::TreasuryFundResult fail =
+		ogs::action_fund_group_from_treasury(world.ws, "AAA_WOOD", 200.0);
+	CHECK_FALSE(fail.funded);
+	CHECK(fail.moved == Approx(0.0));
+	CHECK_FALSE(fail.error.empty());
+	CHECK(world.ws.groups[group].cash == Approx(cash_now));
+	CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(100.0));
+	CHECK(world.core.money_total() == Approx(money_now));
+}
+
+TEST_CASE("R1c: create_state_company sob ON debita o Tesouro e falha sem saldo") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 1000.0, 1000.0, 7000.0);
+	enable_treasury_levers(world, 1000.0);
+	REQUIRE(ogs::treasury::enabled(world.ws));
+	const std::size_t groups_before = world.ws.groups.size();
+	const double budget_before = city_by_id(world, "AGRA").government_budget;
+	const double money_before = world.core.money_total();
+
+	const ogs::TreasuryCompanyResult ok =
+		ogs::action_create_state_company_from_treasury(world.ws, "AAA",
+			"Estatal Teste", 300.0);
+	CHECK(ok.created);
+	CHECK(ok.capital == Approx(300.0));
+	CHECK_FALSE(ok.id.empty());
+	CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(700.0));
+	CHECK(world.ws.groups.size() == groups_before + 1);
+	const int created = group_index(world, ok.id);
+	REQUIRE(created >= 0);
+	CHECK(world.ws.groups[static_cast<std::size_t>(created)].cash
+		== Approx(300.0));
+	CHECK(world.ws.groups[static_cast<std::size_t>(created)].state_owned);
+	CHECK(city_by_id(world, "AGRA").government_budget
+		== Approx(budget_before));
+	CHECK(world.core.money_total() == Approx(money_before));
+
+	// Sem saldo: NENHUMA estatal e criada e o Tesouro fica intacto.
+	world.ws.nation_treasury["AAA"] = 100.0;
+	const std::size_t groups_now = world.ws.groups.size();
+	const double money_now = world.core.money_total();
+	const ogs::TreasuryCompanyResult fail =
+		ogs::action_create_state_company_from_treasury(world.ws, "AAA",
+			"Estatal Falha", 300.0);
+	CHECK_FALSE(fail.created);
+	CHECK_FALSE(fail.error.empty());
+	CHECK(fail.capital == Approx(0.0));
+	CHECK(world.ws.groups.size() == groups_now);
+	CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(100.0));
+	CHECK(world.core.money_total() == Approx(money_now));
 }
