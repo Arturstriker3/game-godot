@@ -192,7 +192,7 @@ Indicators indicators(const Bank& bank) {
 	out.loans = std::max(0.0, bank.loans);
 	out.arrears = std::max(0.0, bank.arrears);
 	out.cash = std::max(0.0, bank.cash);
-	out.deposits = std::max(0.0, bank.deposits);
+	out.deposits = bank::total_deposits(bank);
 	out.capital = std::max(0.0, bank.capital);
 	out.assets = out.cash + out.loans + out.arrears;
 	out.equity = bank::equity(bank);
@@ -440,13 +440,29 @@ double resolve(WorldState& ws, const std::string& bank_id,
 	const double uninsured = ind.deposits
 		* clamp01(1.0 - pol.insured_share);
 	if (uninsured > kEps && gap > kEps) {
-		const double cut = charge_depositors(ws, bank,
-			std::min(uninsured, gap));
-		if (cut > kEps) {
-			bank.deposits = std::max(0.0, bank.deposits - cut);
-			bank.bailin_cut += cut;
-			event.cost_depositors = cut;
-			gap -= cut;
+		double cut_total = 0.0;
+		// R2a: o funding (D_f) corta o CLAIM do depositante, sem tocar em
+		// caixa; o depósito de crédito (D_l) mantém o caminho legado (corta o
+		// caixa do tomador). A soma dos dois respeita o alvo não segurado.
+		if (bank.deposits_funding > kEps) {
+			const double funding_cut = bank::cut_funding_claims(ws, bank.id,
+				std::min(uninsured, gap));
+			cut_total += funding_cut;
+			gap -= funding_cut;
+		}
+		const double legacy = std::min(
+			std::max(0.0, uninsured - cut_total), gap);
+		if (legacy > kEps) {
+			const double cut = charge_depositors(ws, bank, legacy);
+			if (cut > kEps) {
+				bank.deposits = std::max(0.0, bank.deposits - cut);
+				cut_total += cut;
+				gap -= cut;
+			}
+		}
+		if (cut_total > kEps) {
+			bank.bailin_cut += cut_total;
+			event.cost_depositors = cut_total;
 			kinds.push_back("bailin");
 		}
 	}
@@ -522,6 +538,13 @@ double resolve(WorldState& ws, const std::string& bank_id,
 			pub->loans += bank.loans;
 			pub->arrears += bank.arrears;
 			pub->deposits += bank.deposits;
+			pub->deposits_funding += bank.deposits_funding;
+			pub->capital_target += bank.capital_target;
+			if (bank.deposits_funding > kEps) {
+				// O claim do depositante acompanha o passivo: o dono passa a
+				// ser o banco público (Σ claims == Σ D_f continua valendo).
+				bank::reassign_claims(ws, bank.id, pub->id);
+			}
 			pub->bc_borrowing += bank.bc_borrowing;
 			pub->writeoffs += bank.writeoffs;
 			pub->defaults += bank.defaults;
@@ -540,6 +563,8 @@ double resolve(WorldState& ws, const std::string& bank_id,
 			bank.loans = 0.0;
 			bank.arrears = 0.0;
 			bank.deposits = 0.0;
+			bank.deposits_funding = 0.0;
+			bank.capital_target = 0.0;
 			bank.bc_borrowing = 0.0;
 			bank.share = 0.0;
 			// Resolvido e absorvido: não está mais "em corrida hoje". O
@@ -629,7 +654,7 @@ void phase(WorldState& ws) {
 	for (const auto& row : ws.banks) {
 		const Bank& bank = row.second;
 		deposits_before += bank.deposits;
-		nation_deposits[bank.nation] += std::max(0.0, bank.deposits);
+		nation_deposits[bank.nation] += bank::total_deposits(bank);
 	}
 
 	// 1. Premio do seguro de deposito: sai do caixa do banco, entra no fundo
@@ -638,7 +663,7 @@ void phase(WorldState& ws) {
 	for (auto& row : ws.banks) {
 		Bank& bank = row.second;
 		if (bank.resolved || !bank.absorbed_into.empty()
-				|| bank.deposits <= kEps) {
+				|| bank::total_deposits(bank) <= kEps) {
 			continue;
 		}
 		DepositInsurance& fund = ws.deposit_insurance[bank.nation];
@@ -649,7 +674,8 @@ void phase(WorldState& ws) {
 		// capital (o mundo base da C4) pagaria o premio com o proprio buraco
 		// e entraria em resolucao por centavos. Sem patrimonio nao ha premio
 		// (ausencia declarada) — o fundo so acumula do que o banco ganhou.
-		const double premium = std::min({ bank.deposits * pol.premium_daily,
+		const double premium = std::min({ bank::total_deposits(bank)
+				* pol.premium_daily,
 			room, std::max(0.0, bank.cash),
 			std::max(0.0, bank::equity(bank)) });
 		if (premium <= kEps) {
@@ -672,7 +698,8 @@ void phase(WorldState& ws) {
 			continue;
 		}
 		if (bank.loans <= kEps && bank.arrears <= kEps
-				&& bank.deposits <= kEps && bank.cash <= kEps) {
+				&& bank::total_deposits(bank) <= kEps
+				&& bank.cash <= kEps) {
 			continue;
 		}
 		confidence_before[bank.id] = bank.confidence;
@@ -942,7 +969,7 @@ Totals totals(const WorldState& ws) {
 			continue;
 		}
 		const bool any = bank.loans > kEps || bank.arrears > kEps
-			|| bank.deposits > kEps || bank.cash > kEps;
+			|| bank::total_deposits(bank) > kEps || bank.cash > kEps;
 		if (!any) {
 			continue;
 		}

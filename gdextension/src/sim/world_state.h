@@ -361,6 +361,66 @@ struct BootstrapPlanRow {
 	std::string reason = "";
 };
 
+// R2a (rework.banks) - CAPITAL + DEPOSITOS DE FUNDING. Flags do bloco
+// `banks` de rework.json (defaults DESLIGADOS: sem o bloco, o mundo e o de
+// antes). `capital` liga seed/adequacao/dividendo; `deposits` liga o sweep
+// regional/empresas e o claim `deposits_funding`. `resolution` e do R2c e
+// fica apenas declarado nesta fase.
+struct BanksRework {
+	bool enabled = false;
+	bool capital = false;
+	bool deposits = false;
+	bool resolution = false;
+	// Meta de adequacao (equity/loans) e piso de caixa do dividendo.
+	double dividend_target_ratio = 0.10;
+	double dividend_cash_floor_ratio = 0.10;
+	// Seed P1: privado no dia 0; publico no fecho mensal, limitado ao caixa do
+	// Tesouro acima de `floor_days` de gasto.
+	bool seed_enabled = true;
+	double seed_floor_days_treasury = 3.0;
+	double seed_public_month_frac = 0.10;
+	double seed_public_min_ticket_frac = 0.25;
+	// Depositos: colchao protegido (meses da cesta alimentar) e alocacao.
+	double protected_food_months = 6.0;
+	double alloc_min_capital_ratio = 0.08;
+	double alloc_pendulum_month = 0.10;
+	double alloc_w_rel = 0.50;
+	double alloc_w_sol = 0.35;
+	double alloc_w_pend = 0.15;
+	double liquidity_min_reserve_ratio = 0.10;
+	// Diagnostico honesto: "world_new" | "loaded_save" | "no_model_gdp" |
+	// "disabled".
+	std::string seed_source = "disabled";
+	// O seed privado já rodou neste mundo (impede dupla semeadura quando
+	// `set_bank_definitions` e `set_bank_seed` são chamados em sequência).
+	bool seeded = false;
+	// Configuracao invalida (capital/deposits sem enabled/regional_cash, ou
+	// deposits sem capital): mensagem para log/status; a sub-flag invalida e
+	// tratada como desligada.
+	std::string config_error;
+};
+
+// R2a - dado do seed por nacao (data/definitions/economy/bank_seed.json).
+// `steady_loans` e o unico numero que define o ALVO DO MODELO por nacao
+// (capital_to_loans_target x steady_loans); a referencia real fica como gap
+// publicado, nunca como injecao. Campo sem dado = 0 (ausencia declarada).
+struct BankSeedRow {
+	double steady_loans = 0.0;
+	double model_gdp_annual = 0.0;
+	double capital_pct_gdp = 0.0;
+	double capital_to_assets = 0.0;
+	double reference_target = 0.0;
+	bool has_capital_pct_gdp = false;
+	std::string confidence = "no_data";
+	std::vector<std::string> roles_present;
+};
+
+struct BankSeed {
+	bool loaded = false;
+	double capital_to_loans_target = 0.10;
+	std::map<std::string, BankSeedRow> nations;
+};
+
 struct WorldState {
 	int day = 0;
 	CadenceState cadence;
@@ -774,6 +834,11 @@ struct WorldState {
 	double bank_interest_cover = 0.0; // 0 = kInterestCoverDefault (2,0)
 	int bank_default_days = 0;        // 0 = kDefaultDaysDefault (30)
 	double bank_repay_share = 0.0;    // 0 = kRepayShareDefault (0,5)
+	// R2a (rework.banks): bloco de politica e o dado do seed por nacao. Sem
+	// `banks_rework.enabled` nenhuma chave nova entra no save e nenhuma soma
+	// muda (OFF bit a bit).
+	BanksRework banks_rework;
+	BankSeed bank_seed;
 	// C6 (D-114) - CRISE BANCARIA: regras declaradas (bank_crisis.json, espelho
 	// em sim/bank_crisis.h), o fundo de seguro por nacao e o anel de eventos.
 	// `enabled` e estado (save v34); o resto e REGRA (0 = default declarado).

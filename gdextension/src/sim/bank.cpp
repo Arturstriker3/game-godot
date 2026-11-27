@@ -10,6 +10,7 @@
 #include "exchange.h"
 #include "monetary.h"
 #include "sim_constants.h"
+#include "treasury.h"
 
 #include <algorithm>
 #include <cmath>
@@ -133,6 +134,17 @@ void merge_into(Bank& into, const Bank& from) {
 	into.loans += from.loans;
 	into.arrears += from.arrears;
 	into.deposits += from.deposits;
+	into.deposits_funding += from.deposits_funding;
+	into.capital_target += from.capital_target;
+	into.capital_ratio_target = std::max(into.capital_ratio_target,
+		from.capital_ratio_target);
+	into.seed_scale = std::max(into.seed_scale, from.seed_scale);
+	into.reference_scale = std::max(into.reference_scale,
+		from.reference_scale);
+	into.gov_bonds += from.gov_bonds;
+	if (into.charter.empty() || into.charter == "no_data") {
+		into.charter = from.charter;
+	}
 	into.bc_borrowing += from.bc_borrowing;
 	into.cash += from.cash;
 	into.capital += from.capital;
@@ -296,10 +308,15 @@ void apply_definitions(WorldState& ws, const std::vector<NameData>& defs) {
 
 double equity(const Bank& bank) {
 	return bank.cash + bank.loans + bank.arrears - bank.bc_borrowing
-		- bank.deposits;
+		- bank.deposits - bank.deposits_funding;
 }
 
 double retained(const Bank& bank) { return equity(bank) - bank.capital; }
+
+double total_deposits(const Bank& bank) {
+	return std::max(0.0, bank.deposits)
+		+ std::max(0.0, bank.deposits_funding);
+}
 
 double credit_limit(const WorldState& ws, const balance::GroupSheet& sheet,
 		double rate) {
@@ -661,12 +678,70 @@ double origin_amount(const WorldState& ws, const Bank& bank, double anchor) {
 }
 
 void distribute_dividends(WorldState& ws, const Policy& pol) {
+	const BanksRework& br = ws.banks_rework;
 	for (auto& row : ws.banks) {
 		Bank& bank = row.second;
 		const double profit = retained(bank);
 		if (profit <= 1e-9) {
 			continue;
 		}
+		if (br.enabled && br.capital) {
+			// R2a: retém até a meta de adequação (com rampa de 24 meses) e
+			// distribui só o EXCEDENTE DE CAIXA. O dividendo debita o caixa do
+			// banco e credita o dono: transferência, nunca criação de depósito.
+			const double assets = bank.loans + bank.arrears;
+			const double current = assets > 1e-9
+				? equity(bank) / assets : 1.0;
+			const double target = bank.capital_ratio_target > 0.0
+				? bank.capital_ratio_target : br.dividend_target_ratio;
+			const double day_frac = std::clamp(
+				static_cast<double>(ws.day) / 730.0, 0.0, 1.0);
+			const double target_eff = std::min(target,
+				current + (target - current) * day_frac);
+			const double retain = std::max(0.0, target_eff * assets
+				- equity(bank));
+			const double floor = br.liquidity_min_reserve_ratio
+				* total_deposits(bank);
+			const double payout = std::min(
+				std::max(0.0, profit - retain),
+				std::max(0.0, bank.cash - floor));
+			if (payout <= 1e-9) {
+				continue;
+			}
+			bool credited = true;
+			if (bank.owner_kind == "state") {
+				if (treasury::enabled(ws)) {
+					treasury::collect(ws, bank.nation, payout);
+				} else {
+					City* city = treasury_city(ws, bank.nation);
+					if (city == nullptr) {
+						credited = false;
+					} else {
+						city->government_budget += payout;
+					}
+				}
+			} else if (bank.owner_kind == "national") {
+				City* city = treasury_city(ws, bank.nation);
+				if (city == nullptr) {
+					credited = false;
+				} else {
+					credit_households(city->pop, payout);
+				}
+			} else {
+				ws.foreign_cash += payout;
+				bank.remittance += payout;
+				bank.remittance_origin += origin_amount(ws, bank, payout);
+			}
+			if (!credited) {
+				continue;
+			}
+			bank.cash -= payout;
+			bank.dividends += payout;
+			bank.last_dividend_day = ws.day;
+			continue;
+		}
+		// Caminho legado (banks.capital desligado): 50% do lucro retido vira
+		// depósito do dono, como na C4. Nenhum número muda no OFF.
 		double payout = pol.dividend_payout * profit;
 		if (payout <= 1e-9) {
 			continue;
@@ -738,6 +813,7 @@ int phase(WorldState& ws, double* bank_money_delta) {
 	for (const auto& row : ws.banks) {
 		if (row.second.loans > 0.0 || row.second.arrears > 0.0
 				|| row.second.deposits > 0.0
+				|| row.second.deposits_funding > 0.0
 				|| row.second.bc_borrowing > 0.0
 				|| std::abs(row.second.cash) > 1e-9) {
 			any = true;
@@ -759,7 +835,9 @@ int phase(WorldState& ws, double* bank_money_delta) {
 	for (auto& row : ws.banks) {
 		Bank& bank = row.second;
 		if (bank.loans <= 0.0 && bank.arrears <= 0.0
-				&& bank.deposits <= 0.0 && bank.bc_borrowing <= 0.0) {
+				&& bank.deposits <= 0.0
+				&& bank.deposits_funding <= 0.0
+				&& bank.bc_borrowing <= 0.0) {
 			continue;
 		}
 		const double rate = loan_rate(ws, bank.nation);
@@ -1078,17 +1156,22 @@ int phase(WorldState& ws, double* bank_money_delta) {
 	// 4. Dividendo mensal ao dono (lucro retido × payout declarado).
 	if (ws.day > 0 && ws.day % kDividendPeriodDays == 0) {
 		double deposits_before = 0.0;
-		for (const auto& row : ws.banks) {
-			deposits_before += row.second.deposits;
+		if (!(ws.banks_rework.enabled && ws.banks_rework.capital)) {
+			for (const auto& row : ws.banks) {
+				deposits_before += row.second.deposits;
+			}
 		}
 		distribute_dividends(ws, pol);
-		double deposits_after = 0.0;
-		for (const auto& row : ws.banks) {
-			deposits_after += row.second.deposits;
+		if (!(ws.banks_rework.enabled && ws.banks_rework.capital)) {
+			double deposits_after = 0.0;
+			for (const auto& row : ws.banks) {
+				deposits_after += row.second.deposits;
+			}
+			// Caminho legado: o dividendo credita o dono e cria o depósito
+			// correspondente (dinheiro bancário do dia). No R2a o dividendo é
+			// transferência de caixa e `money_delta` não muda.
+			money_delta += deposits_after - deposits_before;
 		}
-		// O dividendo credita o dono (governo, famílias ou exterior) e cria o
-		// depósito correspondente: é criação de dinheiro bancário no dia.
-		money_delta += deposits_after - deposits_before;
 	}
 	if (bank_money_delta != nullptr) {
 		*bank_money_delta = money_delta;
@@ -1103,6 +1186,8 @@ Totals totals(const WorldState& ws) {
 		out.loans += bank.loans;
 		out.arrears += bank.arrears;
 		out.deposits += bank.deposits;
+		out.deposits_funding += bank.deposits_funding;
+		out.capital_target += bank.capital_target;
 		out.bc_borrowing += bank.bc_borrowing;
 		out.cash += bank.cash;
 		out.capital += bank.capital;
@@ -1119,6 +1204,9 @@ Totals totals(const WorldState& ws) {
 		out.retained += retained(bank);
 		out.banks += 1;
 	}
+	const double assets = out.loans + out.arrears;
+	out.capital_ratio = assets > 1e-9 ? out.equity / assets : 0.0;
+	out.paid_in_ratio = assets > 1e-9 ? out.capital / assets : 0.0;
 	return out;
 }
 
@@ -1144,6 +1232,448 @@ double deposits_total(const WorldState& ws) {
 		total += std::max(0.0, row.second.deposits);
 	}
 	return total;
+}
+
+namespace {
+
+constexpr double kDaysPerMonth = 365.0 / 12.0;
+
+bool bank_present(const Bank& bank) {
+	return bank.name_status == "present" && bank.absorbed_into.empty();
+}
+
+City::BankAccount* account_of(City& city, const std::string& bank_id) {
+	auto found = std::lower_bound(city.bank_accounts.begin(),
+		city.bank_accounts.end(), bank_id,
+		[](const City::BankAccount& account, const std::string& id) {
+			return account.bank_id < id;
+		});
+	if (found != city.bank_accounts.end() && found->bank_id == bank_id) {
+		return &*found;
+	}
+	City::BankAccount account;
+	account.bank_id = bank_id;
+	return &*city.bank_accounts.insert(found, account);
+}
+
+const City::BankAccount* find_account(const City& city,
+		const std::string& bank_id) {
+	auto found = std::lower_bound(city.bank_accounts.begin(),
+		city.bank_accounts.end(), bank_id,
+		[](const City::BankAccount& account, const std::string& id) {
+			return account.bank_id < id;
+		});
+	return found != city.bank_accounts.end() && found->bank_id == bank_id
+		? &*found : nullptr;
+}
+
+double claim_of(const WorldState& ws, const std::string& bank_id) {
+	double total = 0.0;
+	for (const City& city : ws.cities) {
+		if (const City::BankAccount* account = find_account(city, bank_id)) {
+			total += std::max(0.0, account->firm)
+				+ std::max(0.0, account->service);
+		}
+	}
+	for (const Group& group : ws.groups) {
+		if (group.deposit_bank_id == bank_id) {
+			total += std::max(0.0, group.bank_deposit);
+		}
+	}
+	return total;
+}
+
+// Escolhe o banco do deposito por relacionamento + solidez + pendulo
+// deterministico. Sem banco presente devolve nullptr (o caixa fica em casa).
+Bank* choose_deposit_bank(WorldState& ws, const City& city, bool firm) {
+	const BanksRework& br = ws.banks_rework;
+	std::vector<Bank*> candidates;
+	for (auto& row : ws.banks) {
+		Bank& bank = row.second;
+		if (bank.nation != city.nation || !bank_present(bank)) {
+			continue;
+		}
+		candidates.push_back(&bank);
+	}
+	if (candidates.empty()) {
+		return nullptr;
+	}
+	const auto solvency_of = [](const Bank& bank) {
+		const double assets = bank.loans + bank.arrears;
+		if (assets <= 1e-9) {
+			return 0.0;
+		}
+		return std::clamp(equity(bank) / assets, 0.0, 1.0);
+	};
+	// Solidez minima: quando ha algum banco acima do piso, os abaixo ficam
+	// fora da alocacao (o piso de 8% declarado no bloco).
+	bool any_solid = false;
+	for (const Bank* bank : candidates) {
+		if (solvency_of(*bank) >= br.alloc_min_capital_ratio) {
+			any_solid = true;
+			break;
+		}
+	}
+	const double total_claim = std::max(1e-9, city.claim_total());
+	const std::uint64_t month = static_cast<std::uint64_t>(
+		std::max(0, ws.day) / static_cast<int>(kDaysPerMonth));
+	Bank* best = nullptr;
+	double best_score = -1.0;
+	for (Bank* bank : candidates) {
+		const double sol = solvency_of(*bank);
+		if (any_solid && sol < br.alloc_min_capital_ratio) {
+			continue;
+		}
+		double relation = 0.0;
+		if (const City::BankAccount* account =
+				find_account(city, bank->id)) {
+			relation = (std::max(0.0, account->firm)
+				+ std::max(0.0, account->service)) / total_claim;
+		}
+		const std::uint64_t roll = stable_hash(city.id + "|"
+			+ std::string(role_key(bank->role)) + "|"
+			+ std::to_string(month) + (firm ? "|f" : "|s"));
+		const double unit = static_cast<double>(roll % 10000ULL) / 10000.0;
+		const double pendulum = 1.0 - br.alloc_pendulum_month
+			+ 2.0 * br.alloc_pendulum_month * unit;
+		const double score = br.alloc_w_rel * relation
+			+ br.alloc_w_sol * sol + br.alloc_w_pend * pendulum;
+		if (score > best_score
+				|| (score == best_score
+					&& (best == nullptr || bank->id < best->id))) {
+			best = bank;
+			best_score = score;
+		}
+	}
+	return best;
+}
+
+// Move caixa do setor privado da cidade para o banco e cria o claim.
+void sweep_city_sub(WorldState& ws, City& city, bool firm, double amount) {
+	if (amount <= 1e-9) {
+		return;
+	}
+	Bank* bank = choose_deposit_bank(ws, city, firm);
+	if (bank == nullptr) {
+		return;
+	}
+	const double value = std::min(amount,
+		firm ? std::max(0.0, city.firm_sub)
+			: std::max(0.0, city.service_sub));
+	if (value <= 1e-9) {
+		return;
+	}
+	City::BankAccount* account = account_of(city, bank->id);
+	if (firm) {
+		account->firm += value;
+		city.firm_sub = std::max(0.0, city.firm_sub - value);
+		city.firm_cash = city.firm_sub;
+	} else {
+		account->service += value;
+		city.service_sub = std::max(0.0, city.service_sub - value);
+		city.service_cash = city.service_sub;
+	}
+	city.private_cash = std::max(0.0, city.private_cash - value);
+	bank->cash += value;
+	bank->deposits_funding += value;
+}
+
+} // namespace
+
+double deposit_claims_total(const WorldState& ws) {
+	double total = 0.0;
+	for (const City& city : ws.cities) {
+		total += city.claim_total();
+	}
+	for (const Group& group : ws.groups) {
+		total += std::max(0.0, group.bank_deposit);
+	}
+	return total;
+}
+
+double liquidity_floor(const WorldState& ws, const Bank& bank) {
+	return std::max(0.0, ws.banks_rework.liquidity_min_reserve_ratio)
+		* total_deposits(bank);
+}
+
+void seed_capital(WorldState& ws) {
+	const BanksRework& br = ws.banks_rework;
+	if (!br.enabled || !br.capital) {
+		return;
+	}
+	if (br.seed_source == "loaded_save") {
+		return;
+	}
+	if (br.seeded) {
+		return;
+	}
+	if (!ws.bank_seed.loaded || ws.bank_seed.nations.empty()) {
+		ws.banks_rework.seed_source = "no_model_gdp";
+		return;
+	}
+	const double target_ratio = ws.bank_seed.capital_to_loans_target > 0.0
+		? ws.bank_seed.capital_to_loans_target : 0.10;
+	for (const auto& row : ws.bank_seed.nations) {
+		const std::string& nation = row.first;
+		const BankSeedRow& seed = row.second;
+		const double model_target = target_ratio * std::max(0.0, seed.steady_loans);
+		const double reference_target = seed.reference_target > 0.0
+			? seed.reference_target
+			: (seed.has_capital_pct_gdp
+				? seed.capital_pct_gdp * std::max(0.0, seed.model_gdp_annual)
+				: 0.0);
+		// Papéis presentes SOMENTE (`present`); none/no_data nunca capitaliza.
+		std::vector<Bank*> present;
+		double weight_sum = 0.0;
+		for (const int role : {kRolePublic, kRolePrivate, kRoleForeign}) {
+			Bank* bank = find_mut(ws, nation, role);
+			if (bank == nullptr || !bank_present(*bank)) {
+				if (bank != nullptr) {
+					bank->charter = bank->name_status == "none"
+						? "none" : "no_data";
+					bank->seed_scale = 0.0;
+					bank->reference_scale = 0.0;
+					bank->capital_target = 0.0;
+				}
+				continue;
+			}
+			const double weight = role == kRolePublic ? kSharePublic
+				: (role == kRolePrivate ? kSharePrivate : kShareForeign);
+			bank->share = weight;
+			weight_sum += weight;
+			present.push_back(bank);
+		}
+		if (present.empty() || weight_sum <= 1e-9) {
+			continue;
+		}
+		for (Bank* bank : present) {
+			bank->share /= weight_sum;
+			bank->capital_target = model_target * bank->share;
+			bank->capital_ratio_target = br.dividend_target_ratio;
+			bank->charter = "declared";
+			bank->seed_scale = 0.0;
+			bank->reference_scale = 0.0;
+			bank->public_cap_deferred.clear();
+		}
+		// P1: privado no dia 0 (realocacao das familias); publico = 0 no dia 0
+		// (o Tesouro nasce vazio e a capitalizacao entra no fecho mensal);
+		// estrangeiro = 0.
+		if (Bank* private_bank = find_mut(ws, nation, kRolePrivate)) {
+			if (bank_present(*private_bank)
+					&& private_bank->capital_target > 1e-9) {
+				const double want = private_bank->capital_target;
+				const double paid = pay_from_households(ws, nation, want);
+				if (paid > 0.0) {
+					private_bank->cash += paid;
+					private_bank->capital += paid;
+				}
+				private_bank->seed_scale = paid / want;
+			}
+		}
+		for (Bank* bank : present) {
+			if (bank->role == kRolePrivate) {
+				continue;
+			}
+			bank->seed_scale = 0.0;
+		}
+		if (reference_target > 0.0) {
+			for (Bank* bank : present) {
+				const double role_reference = reference_target * bank->share;
+				if (role_reference > 1e-9) {
+					bank->reference_scale = bank->capital / role_reference;
+				}
+			}
+		}
+	}
+	ws.banks_rework.seed_source = "world_new";
+	ws.banks_rework.seeded = true;
+}
+
+void capitalize_public_monthly(WorldState& ws) {
+	const BanksRework& br = ws.banks_rework;
+	if (!br.enabled || !br.capital || !br.seed_enabled) {
+		return;
+	}
+	if (br.seed_source == "loaded_save") {
+		return;
+	}
+	for (auto& row : ws.banks) {
+		Bank& bank = row.second;
+		if (bank.role != kRolePublic || !bank_present(bank)) {
+			continue;
+		}
+		if (bank.capital_target <= 1e-9) {
+			bank.public_cap_deferred = "no_model_target";
+			continue;
+		}
+		const double remaining = std::max(0.0,
+			bank.capital_target - bank.capital);
+		if (remaining <= 1e-9) {
+			bank.public_cap_deferred.clear();
+			continue;
+		}
+		if (!treasury::enabled(ws)) {
+			bank.public_cap_deferred = "treasury_disabled";
+			continue;
+		}
+		const double balance = treasury::balance(ws, bank.nation);
+		const double day = static_cast<double>(std::max(1, ws.day));
+		const double daily_spend = std::max(0.0,
+			ws.treasury_spent_total / day);
+		const double floor = br.seed_floor_days_treasury * daily_spend;
+		const double available = std::max(0.0, balance - floor);
+		const double ticket = br.seed_public_month_frac * available;
+		const double pay = std::min(remaining, ticket);
+		const double min_ticket = br.seed_public_min_ticket_frac * remaining;
+		if (pay <= 1e-9 || pay < min_ticket) {
+			bank.public_cap_deferred = "ticket_below_min";
+			continue;
+		}
+		const double paid = treasury::spend(ws, bank.nation, pay);
+		if (paid <= 1e-9) {
+			bank.public_cap_deferred = "no_treasury_cash";
+			continue;
+		}
+		bank.cash += paid;
+		bank.capital += paid;
+		bank.public_cap_deferred.clear();
+		if (bank.capital_target > 1e-9) {
+			bank.seed_scale = bank.capital / bank.capital_target;
+		}
+	}
+}
+
+void sweep_deposits(WorldState& ws) {
+	const BanksRework& br = ws.banks_rework;
+	if (!br.enabled || !br.deposits) {
+		return;
+	}
+	for (City& city : ws.cities) {
+		const double food_daily = std::max(0.0, city.pop.food_spend);
+		const double budget = std::max(0.0,
+			city.regional_budget_limit_month);
+		city.protected_cash = std::max(0.0, br.protected_food_months)
+			* kDaysPerMonth * food_daily + budget;
+		if (!city.unified_cash) {
+			continue;
+		}
+		const double total = std::max(0.0, city.private_cash);
+		if (total <= 1e-9) {
+			continue;
+		}
+		const double firm_sub = std::max(0.0, city.firm_sub);
+		const double service_sub = std::max(0.0, city.service_sub);
+		const double firm_share = total > 1e-9 ? firm_sub / total : 0.0;
+		const double firm_excess = std::max(0.0,
+			firm_sub - city.protected_cash * firm_share);
+		const double service_excess = std::max(0.0,
+			service_sub - city.protected_cash * (1.0 - firm_share));
+		sweep_city_sub(ws, city, true, firm_excess);
+		sweep_city_sub(ws, city, false, service_excess);
+	}
+	// Empresas: o excesso do caixa do grupo acima do float (5 dias de custo
+	// medido) vai ao banco de relacionamento (o mesmo `lender()`).
+	const std::vector<balance::GroupSheet> sheets = balance::group_sheets(ws);
+	for (std::size_t index = 0; index < ws.groups.size(); ++index) {
+		Group& group = ws.groups[index];
+		const double daily_cost = index < sheets.size()
+			? std::max(0.0, sheets[index].daily_cost) : 0.0;
+		if (daily_cost <= 1e-9) {
+			continue;
+		}
+		const double float_cash = 5.0 * daily_cost;
+		const double excess = std::max(0.0, group.cash - float_cash);
+		if (excess <= 1e-9) {
+			continue;
+		}
+		Bank* bank = lender(ws, group);
+		if (bank == nullptr) {
+			continue;
+		}
+		// O lender() ja devolve o banco mutavel; garante o papel presente.
+		if (!bank_present(*bank)) {
+			continue;
+		}
+		const double value = std::min(excess, std::max(0.0, group.cash));
+		if (value <= 1e-9) {
+			continue;
+		}
+		group.cash -= value;
+		group.bank_deposit += value;
+		group.deposit_bank_id = bank->id;
+		bank->cash += value;
+		bank->deposits_funding += value;
+	}
+}
+
+void reassign_claims(WorldState& ws, const std::string& from_bank,
+		const std::string& to_bank) {
+	if (from_bank.empty() || to_bank.empty() || from_bank == to_bank) {
+		return;
+	}
+	for (City& city : ws.cities) {
+		auto found = std::lower_bound(city.bank_accounts.begin(),
+			city.bank_accounts.end(), from_bank,
+			[](const City::BankAccount& account, const std::string& id) {
+				return account.bank_id < id;
+			});
+		if (found == city.bank_accounts.end()
+				|| found->bank_id != from_bank) {
+			continue;
+		}
+		const double firm = std::max(0.0, found->firm);
+		const double service = std::max(0.0, found->service);
+		city.bank_accounts.erase(found);
+		if (firm > 0.0 || service > 0.0) {
+			City::BankAccount* target = account_of(city, to_bank);
+			target->firm += firm;
+			target->service += service;
+		}
+	}
+	for (Group& group : ws.groups) {
+		if (group.deposit_bank_id == from_bank) {
+			group.deposit_bank_id = to_bank;
+		}
+	}
+}
+
+double cut_funding_claims(WorldState& ws, const std::string& bank_id,
+		double amount) {
+	const auto found = ws.banks.find(bank_id);
+	if (found == ws.banks.end()) {
+		return 0.0;
+	}
+	Bank& bank = found->second;
+	const double total = std::min(std::max(0.0, amount),
+		std::max(0.0, bank.deposits_funding));
+	if (total <= 1e-9) {
+		return 0.0;
+	}
+	const double factor = 1.0 - total / std::max(1e-9, bank.deposits_funding);
+	double cut = 0.0;
+	for (City& city : ws.cities) {
+		for (City::BankAccount& account : city.bank_accounts) {
+			if (account.bank_id != bank_id) {
+				continue;
+			}
+			const double firm = account.firm * factor;
+			const double service = account.service * factor;
+			cut += (account.firm - firm) + (account.service - service);
+			account.firm = firm;
+			account.service = service;
+		}
+	}
+	for (Group& group : ws.groups) {
+		if (group.deposit_bank_id != bank_id) {
+			continue;
+		}
+		const double left = group.bank_deposit * factor;
+		cut += group.bank_deposit - left;
+		group.bank_deposit = left;
+	}
+	bank.deposits_funding = std::max(0.0,
+		bank.deposits_funding - cut);
+	return cut;
 }
 
 } // namespace bank

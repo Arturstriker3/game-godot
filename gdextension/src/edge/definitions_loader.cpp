@@ -718,6 +718,48 @@ void EconomySim::set_rework_params(const Dictionary& values) {
 			"rework.firms_own_cash requer rework.regional_cash: flag "
 			"firms_own_cash tratada como desligada");
 	}
+	// R2a: `banks` (capital/depositos). Defaults DESLIGADOS: sem o bloco o
+	// mundo e o atual. As sub-flags dependem de `enabled` e `regional_cash`
+	// (validado no core, que registra `banks_rework.config_error`).
+	const Dictionary banks_block = values.get("banks", Dictionary());
+	BanksRework banks;
+	banks.enabled = bool(banks_block.get("enabled", false));
+	banks.capital = bool(banks_block.get("capital", false));
+	banks.deposits = bool(banks_block.get("deposits", false));
+	banks.resolution = bool(banks_block.get("resolution", false));
+	const Dictionary dividend = banks_block.get("dividend", Dictionary());
+	banks.dividend_target_ratio = double(
+		dividend.get("target_ratio", 0.10));
+	banks.dividend_cash_floor_ratio = double(
+		dividend.get("cash_floor_ratio", 0.10));
+	const Dictionary seed = banks_block.get("seed", Dictionary());
+	banks.seed_enabled = bool(seed.get("enabled", true));
+	banks.seed_floor_days_treasury = double(
+		seed.get("floor_days_treasury", 3.0));
+	banks.seed_public_month_frac = double(
+		seed.get("public_month_frac", 0.10));
+	banks.seed_public_min_ticket_frac = double(
+		seed.get("public_min_ticket_frac", 0.25));
+	const Dictionary alloc = banks_block.get("deposits_alloc", Dictionary());
+	banks.alloc_min_capital_ratio = double(
+		alloc.get("min_capital_ratio", 0.08));
+	banks.alloc_pendulum_month = double(
+		alloc.get("pendulum_month", 0.10));
+	const Dictionary weights = alloc.get("weights", Dictionary());
+	banks.alloc_w_rel = double(weights.get("rel", 0.50));
+	banks.alloc_w_sol = double(weights.get("sol", 0.35));
+	banks.alloc_w_pend = double(weights.get("pend", 0.15));
+	const Dictionary liquidity = banks_block.get("liquidity", Dictionary());
+	banks.liquidity_min_reserve_ratio = double(
+		liquidity.get("min_reserve_ratio", 0.10));
+	banks.protected_food_months = double(
+		liquidity.get("protected_food_months", 6.0));
+	sim_core_.set_banks_rework(banks);
+	if (banks.enabled && !enabled) {
+		UtilityFunctions::push_error(
+			"rework.banks requer rework.regional_cash: flag banks tratada "
+			"como desligada");
+	}
 	status_invalidate();
 }
 
@@ -759,6 +801,47 @@ Dictionary EconomySim::get_rework_params() const {
 		firms["config_error"] = String(ws_.firms_config_error.c_str());
 	}
 	out["firms_own_cash"] = firms;
+	// R2a: bloco `banks` (flags, parâmetros e diagnóstico do seed).
+	Dictionary banks;
+	banks["enabled"] = ws_.banks_rework.enabled;
+	banks["capital"] = ws_.banks_rework.capital;
+	banks["deposits"] = ws_.banks_rework.deposits;
+	banks["resolution"] = ws_.banks_rework.resolution;
+	banks["seed_source"] =
+		String(ws_.banks_rework.seed_source.c_str());
+	if (!ws_.banks_rework.config_error.empty()) {
+		banks["config_error"] =
+			String(ws_.banks_rework.config_error.c_str());
+	}
+	Dictionary dividend;
+	dividend["target_ratio"] = ws_.banks_rework.dividend_target_ratio;
+	dividend["cash_floor_ratio"] =
+		ws_.banks_rework.dividend_cash_floor_ratio;
+	banks["dividend"] = dividend;
+	Dictionary seed;
+	seed["enabled"] = ws_.banks_rework.seed_enabled;
+	seed["floor_days_treasury"] =
+		ws_.banks_rework.seed_floor_days_treasury;
+	seed["public_month_frac"] = ws_.banks_rework.seed_public_month_frac;
+	seed["public_min_ticket_frac"] =
+		ws_.banks_rework.seed_public_min_ticket_frac;
+	banks["seed"] = seed;
+	Dictionary alloc;
+	alloc["min_capital_ratio"] = ws_.banks_rework.alloc_min_capital_ratio;
+	alloc["pendulum_month"] = ws_.banks_rework.alloc_pendulum_month;
+	Dictionary weights;
+	weights["rel"] = ws_.banks_rework.alloc_w_rel;
+	weights["sol"] = ws_.banks_rework.alloc_w_sol;
+	weights["pend"] = ws_.banks_rework.alloc_w_pend;
+	alloc["weights"] = weights;
+	banks["deposits_alloc"] = alloc;
+	Dictionary liquidity;
+	liquidity["min_reserve_ratio"] =
+		ws_.banks_rework.liquidity_min_reserve_ratio;
+	liquidity["protected_food_months"] =
+		ws_.banks_rework.protected_food_months;
+	banks["liquidity"] = liquidity;
+	out["banks"] = banks;
 	return out;
 }
 

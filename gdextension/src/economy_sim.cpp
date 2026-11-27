@@ -327,6 +327,8 @@ void EconomySim::_bind_methods() {
 		DEFVAL(String("public")));
 	ClassDB::bind_method(D_METHOD("set_bank_definitions", "definitions"),
 		&EconomySim::set_bank_definitions);
+	ClassDB::bind_method(D_METHOD("set_bank_seed", "values"),
+		&EconomySim::set_bank_seed);
 	ClassDB::bind_method(D_METHOD("group_borrow", "group_id", "amount"),
 		&EconomySim::group_borrow);
 	ClassDB::bind_method(D_METHOD("get_bank_status"), &EconomySim::get_bank_status);
@@ -999,6 +1001,14 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	ws_.active = true;
 	ws_.world_mode = true;
 	ws_.day = 0;
+	// R2a: mundo novo começa com o seed pendente (um save carregado antes na
+	// mesma instância não pode bloquear a capitalização do novo mundo).
+	if (ws_.banks_rework.enabled) {
+		ws_.banks_rework.seeded = false;
+		if (ws_.banks_rework.seed_source == "loaded_save") {
+			ws_.banks_rework.seed_source.clear();
+		}
+	}
 	ws_.cities.clear();
 	ws_.buildings.clear();
 	ws_.construction_projects.clear();
@@ -2231,6 +2241,9 @@ Dictionary EconomySim::get_r1_diag_status() {
 		row["regional_budget_deferred_month"] =
 			city.regional_budget_deferred_month;
 		row["government_budget"] = city.government_budget;
+		// R2a: claim de funding e colchão protegido (só leitura).
+		row["bank_claim"] = city.claim_total();
+		row["protected_cash"] = city.protected_cash;
 		PackedFloat64Array firm_out;
 		PackedFloat64Array service_out;
 		firm_out.resize(static_cast<int>(City::kR1FlowCount));
@@ -2269,6 +2282,67 @@ Dictionary EconomySim::get_r1_diag_status() {
 	}
 	treasury_block["nations"] = treasury_nations;
 	out["treasury"] = treasury_block;
+	// R2a: sonda dos bancos (só leitura): capital pago, funding, claim,
+	// adequação por nação e o alvo do seed. Sem a flag, tudo zero.
+	Dictionary banks_block;
+	banks_block["enabled"] = ws_.banks_rework.enabled;
+	banks_block["capital"] = ws_.banks_rework.capital;
+	banks_block["deposits"] = ws_.banks_rework.deposits;
+	banks_block["seed_source"] =
+		String(ws_.banks_rework.seed_source.c_str());
+	const ogs::bank::Totals bank_totals = ogs::bank::totals(ws_);
+	banks_block["capital_paid"] = bank_totals.capital;
+	banks_block["deposits"] = bank_totals.deposits;
+	banks_block["deposits_funding"] = bank_totals.deposits_funding;
+	banks_block["deposit_claims"] = ogs::bank::deposit_claims_total(ws_);
+	banks_block["m0_gross"] = sim_core_.m0_gross();
+	banks_block["m0_net"] = sim_core_.m0_gross()
+		- sim_core_.monetary_claims();
+	banks_block["broad_money"] = sim_core_.broad_money();
+	banks_block["capital_ratio"] = bank_totals.capital_ratio;
+	banks_block["paid_in_ratio"] = bank_totals.paid_in_ratio;
+	Array bank_nations;
+	std::map<std::string, Dictionary> bank_by_nation;
+	for (const auto& row : ws_.banks) {
+		const ogs::Bank& bank = row.second;
+		auto found = bank_by_nation.find(bank.nation);
+		if (found == bank_by_nation.end()) {
+			Dictionary entry;
+			entry["nation"] = String(bank.nation.c_str());
+			entry["capital"] = 0.0;
+			entry["capital_target"] = 0.0;
+			entry["loans"] = 0.0;
+			entry["equity"] = 0.0;
+			entry["deposits_funding"] = 0.0;
+			entry["seed_scale"] = 0.0;
+			entry["paid_in_ratio"] = 0.0;
+			found = bank_by_nation.emplace(bank.nation, entry).first;
+		}
+		Dictionary entry = found->second;
+		entry["capital"] = double(entry["capital"]) + bank.capital;
+		entry["capital_target"] = double(entry["capital_target"])
+			+ bank.capital_target;
+		entry["loans"] = double(entry["loans"]) + bank.loans;
+		entry["equity"] = double(entry["equity"])
+			+ ogs::bank::equity(bank);
+		entry["deposits_funding"] = double(entry["deposits_funding"])
+			+ bank.deposits_funding;
+		found->second = entry;
+	}
+	for (const auto& row : bank_by_nation) {
+		Dictionary entry = row.second;
+		const double assets = double(entry["loans"]);
+		entry["capital_ratio"] = assets > 1e-9
+			? double(entry["equity"]) / assets : 0.0;
+		entry["paid_in_ratio"] = assets > 1e-9
+			? double(entry["capital"]) / assets : 0.0;
+		entry["seed_scale"] = double(entry["capital_target"]) > 1e-9
+			? double(entry["capital"]) / double(entry["capital_target"])
+			: 0.0;
+		bank_nations.append(entry);
+	}
+	banks_block["nations"] = bank_nations;
+	out["banks"] = banks_block;
 	return out;
 }
 
@@ -7509,6 +7583,72 @@ void EconomySim::set_bank_definitions(const Dictionary& definitions) {
 	}
 	bank_defs_ = defs;
 	ogs::bank::apply_definitions(ws_, bank_defs_);
+	// R2a: seed privado do dia 0, só em MUNDO NOVO e depois das definições
+	// (os papéis `present` vêm de banks.json). Save carregado nunca semeia
+	// (`seed_source = loaded_save`).
+	if (ws_.world_mode && ws_.day == 0 && ws_.banks_rework.enabled
+			&& ws_.banks_rework.capital
+			&& ws_.banks_rework.seed_source != "loaded_save") {
+		ogs::bank::seed_capital(ws_);
+	}
+	status_invalidate();
+}
+
+void EconomySim::set_bank_seed(const Dictionary& values) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// Formato de bank_seed.json: { capital_to_loans_target, nations: { ISO3:
+	// { steady_loans, model_gdp_annual, capital_pct_gdp, capital_to_assets,
+	// reference_target, confidence, roles_present } } }. Campo ausente = 0 /
+	// `no_data` (ausência declarada); nada é digitado à mão aqui.
+	BankSeed seed;
+	seed.loaded = true;
+	const double target = double(values.get("capital_to_loans_target", 0.10));
+	seed.capital_to_loans_target = std::isfinite(target) && target > 0.0
+		? target : 0.10;
+	const Variant nations_variant = values.get("nations", Variant());
+	if (nations_variant.get_type() == Variant::DICTIONARY) {
+		const Dictionary nations = nations_variant;
+		for (const auto& row_entry : nations.entries()) {
+			const std::string code(row_entry.first.utf8().get_data());
+			if (code.empty()
+					|| row_entry.second.get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			const Dictionary row = row_entry.second;
+			BankSeedRow data;
+			data.steady_loans = std::max(0.0,
+				double(row.get("steady_loans", 0.0)));
+			data.model_gdp_annual = std::max(0.0,
+				double(row.get("model_gdp_annual", 0.0)));
+			const Variant capital_pct = row.get("capital_pct_gdp", Variant());
+			if (capital_pct.get_type() == Variant::FLOAT
+					|| capital_pct.get_type() == Variant::INT) {
+				data.capital_pct_gdp = std::max(0.0, double(capital_pct));
+				data.has_capital_pct_gdp = data.capital_pct_gdp > 0.0;
+			}
+			data.capital_to_assets = std::max(0.0,
+				double(row.get("capital_to_assets", 0.0)));
+			data.reference_target = std::max(0.0,
+				double(row.get("reference_target", 0.0)));
+			data.confidence = std::string(
+				String(row.get("confidence", "no_data")).utf8().get_data());
+			const Array roles = row.get("roles_present", Array());
+			for (int index = 0; index < roles.size(); ++index) {
+				data.roles_present.push_back(std::string(
+					String(roles[index]).utf8().get_data()));
+			}
+			seed.nations[code] = std::move(data);
+		}
+	}
+	ws_.bank_seed = std::move(seed);
+	// O seed só roda em mundo novo e depois de banks.json; a chamada aqui é
+	// idempotente com a de `set_bank_definitions` (a segunda não re-semeia
+	// porque o alvo já foi pago, mas `seed_scale` é recalculado igual).
+	if (ws_.world_mode && ws_.day == 0 && ws_.banks_rework.enabled
+			&& ws_.banks_rework.capital
+			&& ws_.banks_rework.seed_source != "loaded_save") {
+		ogs::bank::seed_capital(ws_);
+	}
 	status_invalidate();
 }
 
@@ -8066,6 +8206,11 @@ Dictionary EconomySim::get_bank_status() const {
 		row["group_arrears"] = group_arrears;
 		// C4 (D-110): dinheiro bancÃ¡rio e distribuiÃ§Ã£o ao dono.
 		row["deposits"] = totals.deposits;
+		row["deposits_funding"] = totals.deposits_funding;
+		row["deposits_total"] = totals.deposits + totals.deposits_funding;
+		row["capital_target"] = totals.capital_target;
+		row["capital_ratio"] = totals.capital_ratio;
+		row["paid_in_ratio"] = totals.paid_in_ratio;
 		row["retained"] = totals.retained;
 		row["dividends"] = totals.dividends;
 		row["remittance"] = totals.remittance;
@@ -8080,6 +8225,14 @@ Dictionary EconomySim::get_bank_status() const {
 		}
 		row["m1"] = std::max(0.0, money_total() - vault);
 		row["m0"] = sim_core_.m0_total();
+		// R2a: M0 bruto (T − ΣD_l), M1_legacy, broad = M1_legacy + ΣD_f e os
+		// claims do emissor. Sem a flag os valores são os da C4.
+		row["m0_gross"] = sim_core_.m0_gross();
+		row["monetary_claims"] = sim_core_.monetary_claims();
+		row["m0_net"] = sim_core_.m0_gross()
+			- sim_core_.monetary_claims();
+		row["broad_money"] = sim_core_.broad_money();
+		row["deposit_claims"] = ogs::bank::deposit_claims_total(ws_);
 		// C6 (D-114): totais da crise (fundos, corridas, redesconto, custos).
 		const ogs::bank_crisis::Totals crisis =
 			ogs::bank_crisis::totals(ws_);
@@ -8151,6 +8304,20 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["loans_count"] = bank.loans_count;
 		entry["last_default_day"] = bank.last_default_day;
 		entry["deposits"] = bank.deposits;
+		entry["deposits_funding"] = bank.deposits_funding;
+		entry["deposits_total"] = ogs::bank::total_deposits(bank);
+		entry["capital_ratio_target"] = bank.capital_ratio_target;
+		entry["capital_target"] = bank.capital_target;
+		entry["paid_in_ratio"] = bank.loans + bank.arrears > 1e-9
+			? bank.capital / (bank.loans + bank.arrears) : 0.0;
+		entry["seed_scale"] = bank.seed_scale;
+		entry["reference_scale"] = bank.reference_scale;
+		entry["reference_gap"] = bank.reference_scale > 1e-9
+			? bank.capital / bank.reference_scale - bank.capital : 0.0;
+		entry["charter"] = String(bank.charter.c_str());
+		entry["gov_bonds"] = bank.gov_bonds;
+		entry["public_cap_deferred"] =
+			String(bank.public_cap_deferred.c_str());
 		entry["retained"] = ogs::bank::retained(bank);
 		entry["dividends"] = bank.dividends;
 		entry["remittance"] = bank.remittance;
@@ -8201,6 +8368,10 @@ Dictionary EconomySim::get_bank_status() const {
 			entry["loans"] = 0.0;
 			entry["arrears"] = 0.0;
 			entry["deposits"] = 0.0;
+			entry["deposits_funding"] = 0.0;
+			entry["capital_target"] = 0.0;
+			entry["seed_capital"] = 0.0;
+			entry["seed_target"] = 0.0;
 			entry["bc_borrowing"] = 0.0;
 			entry["cash"] = 0.0;
 			entry["capital"] = 0.0;
@@ -8217,6 +8388,14 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["loans"] = double(entry["loans"]) + bank.loans;
 		entry["arrears"] = double(entry["arrears"]) + bank.arrears;
 		entry["deposits"] = double(entry["deposits"]) + bank.deposits;
+		entry["deposits_funding"] = double(entry["deposits_funding"])
+			+ bank.deposits_funding;
+		entry["capital_target"] = double(entry["capital_target"])
+			+ bank.capital_target;
+		entry["seed_capital"] = double(entry["seed_capital"])
+			+ bank.capital;
+		entry["seed_target"] = double(entry["seed_target"])
+			+ bank.capital_target;
 		entry["bc_borrowing"] = double(entry["bc_borrowing"])
 			+ bank.bc_borrowing;
 		entry["cash"] = double(entry["cash"]) + bank.cash;
@@ -8237,6 +8416,9 @@ Dictionary EconomySim::get_bank_status() const {
 			+ double(entry["arrears"]);
 		entry["equity_ratio"] = assets > 1e-9
 			? double(entry["equity"]) / assets : 0.0;
+		entry["seed_scale"] = double(entry["seed_target"]) > 1e-9
+			? double(entry["seed_capital"]) / double(entry["seed_target"])
+			: 0.0;
 		nations.append(entry);
 	}
 	out["nations"] = nations;

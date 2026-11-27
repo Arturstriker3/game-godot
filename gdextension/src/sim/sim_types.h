@@ -1105,6 +1105,11 @@ namespace ogs {
 		double credit_rate_add = 0.0;
 		int credit_renegotiations = 0;
 		int credit_arrears_days = 0;
+		// R2a (rework.banks.deposits): deposito de funding do grupo no banco
+		// de relacionamento (o mesmo `lender()` da concessao). Nao e caixa:
+		// o caixa real correspondente e `Bank::cash`.
+		double bank_deposit = 0.0;
+		std::string deposit_bank_id;
 	};
 
 	// C4 (D-110) - BANCO COM DONO: a C3 tinha "1 banco agregado por nação";
@@ -1201,6 +1206,31 @@ namespace ogs {
 		double last_capital_ratio = 0.0;
 		double last_liquidity_ratio = 0.0;
 		double last_npl_ratio = 0.0;
+		// ------------------------------------------------------------------
+		// R2a (rework.banks) - CAPITAL + DEPOSITOS DE FUNDING.
+		//
+		// `deposits` continua sendo SO o deposito criado por emprestimo
+		// (D_l). `deposits_funding` e o CLAIM do depositante (cidade/grupo),
+		// lastreado pelo caixa do banco (D_f); `D_t = deposits +
+		// deposits_funding` e a base que a C6 usa. O sweep nunca cria M0:
+		// move caixa privado para o banco e cria o claim correspondente.
+		// ------------------------------------------------------------------
+		double deposits_funding = 0.0;
+		// Meta de adequacao da carteira (equity / loans). 0 = default do
+		// bloco `banks` (0,10); a rampa de 24 meses fica em `bank::phase`.
+		double capital_ratio_target = 0.0;
+		// Alvo do modelo (capital_to_loans_target x steady_loans) do PAPEL,
+		// publicado e usado pela capitalizacao publica mensal.
+		double capital_target = 0.0;
+		// Semeado / alvo do modelo e capital / alvo de referencia (dado real).
+		double seed_scale = 0.0;
+		double reference_scale = 0.0;
+		// Gancho da fase politica; 0 no R2.
+		double gov_bonds = 0.0;
+		// declared | chartered_in_crisis | none | no_data (deserto explicito).
+		std::string charter = "declared";
+		// Motivo publicado quando a capitalizacao publica do mes foi adiada.
+		std::string public_cap_deferred;
 	};
 
 	// C6 (D-114) - FUNDO DE SEGURO DE DEPOSITO por nacao. Entra no dinheiro
@@ -2283,6 +2313,26 @@ struct Region {
 		double regional_budget_deferred_month = 0.0;
 		double regional_budget_open_services = 0.0;
 		double regional_budget_open_works = 0.0;
+		// R2a (rework.banks.deposits): conta do setor privado no banco. O
+		// vetor e ordenado por `bank_id` (determinismo do save/status) e o
+		// claim de cada sub-saldo e o depositante do R2 (regiao). `protected`
+		// e o piso do sweep (cesta de 6 meses + orcamento do mes), recalculado
+		// todo dia; nao e saldo.
+		struct BankAccount {
+			std::string bank_id;
+			double firm = 0.0;
+			double service = 0.0;
+		};
+		std::vector<BankAccount> bank_accounts;
+		double protected_cash = 0.0;
+		double claim_total() const {
+			double total = 0.0;
+			for (const BankAccount& account : bank_accounts) {
+				total += std::max(0.0, account.firm)
+					+ std::max(0.0, account.service);
+			}
+			return total;
+		}
 		// Multiplicador da renda externa (PIB PPP per capita da nação,
 		// normalizado pela média mundial ponderada = 1,0). Ver
 		// set_external_income_index e §20 do balance_review.

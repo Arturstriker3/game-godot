@@ -162,6 +162,10 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// (default) a fase não toca no estado.
 	core.phase_credit();
 
+	// 9e-bis. R2a (rework.banks.deposits): sweep diario do excesso sobre o
+	// colchao protegido (regioes + empresas). Sem a sub-flag nao escreve nada.
+	core.phase_bank_deposits();
+
 	// 9f. C5 (D-112): bolsa de valores. Lucro esperado e confiança (diários),
 	// preço convergente no fechamento SEMANAL e dividendo no fechamento
 	// MENSAL, pagos do caixa do emissor aos detentores (soma zero). A

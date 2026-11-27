@@ -14,6 +14,7 @@
 // apenas para LER saves escritos antes desta integração.
 #include "city_gov.h"
 
+#include "bank.h"
 #include "housing.h"
 #include "sim_constants.h"
 #include "sim_core.h"
@@ -607,8 +608,14 @@ void tick(WorldState& ws, int day, SimCore* core) {
 	// população com piso por região). O dinheiro fica no Tesouro; só o LIMITE
 	// do mês é gravado. Roda no fecho do mês do calendário, antes dos
 	// fechamentos escalonados das cidades, para a região já estar dotada.
-	if (ws.national_treasury && ws.day % kMonthDays == 0) {
-		treasury::start_month(ws);
+	if (ws.day % kMonthDays == 0) {
+		// R2a: capitalizacao publica mensal ANTES de abrir o limite do mes, para
+		// o orcamento regional enxergar o saldo pos-aporte (o corte e explicito).
+		// Sem a flag `banks` a funcao retorna sem tocar no estado.
+		bank::capitalize_public_monthly(ws);
+		if (ws.national_treasury) {
+			treasury::start_month(ws);
+		}
 	}
 	if (core == nullptr) {
 		return;

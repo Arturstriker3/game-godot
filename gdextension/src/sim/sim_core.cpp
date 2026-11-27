@@ -1,6 +1,7 @@
 #include "sim_core.h"
 
 #include "balance.h"
+#include "bank.h"
 #include "central_bank.h"
 #include "monetary.h"
 #include "city_gov.h"
@@ -242,6 +243,73 @@ void SimCore::apply_firms_own_cash_after_load(bool saved_flag,
 	// aplicada (configuracao). A validacao com `regional_cash` e a mesma.
 	const bool enabled = has_saved_flag ? saved_flag : ws_.firms_own_cash;
 	set_firms_own_cash(enabled);
+}
+
+void SimCore::set_banks_rework(const BanksRework& cfg) {
+	ws_.banks_rework = cfg;
+	BanksRework& br = ws_.banks_rework;
+	br.config_error.clear();
+	const auto add_error = [&br](const char* text) {
+		if (!br.config_error.empty()) {
+			br.config_error += "; ";
+		}
+		br.config_error += text;
+	};
+	if (br.enabled && !ws_.regional_cash) {
+		add_error("rework.banks requer rework.regional_cash");
+		br.enabled = false;
+	}
+	if (br.capital && !br.enabled) {
+		add_error("banks.capital requer banks.enabled");
+		br.capital = false;
+	}
+	if (br.deposits && (!br.enabled || !br.capital)) {
+		add_error("banks.deposits requer banks.enabled e banks.capital");
+		br.deposits = false;
+	}
+	if (br.resolution && !br.enabled) {
+		add_error("banks.resolution requer banks.enabled");
+		br.resolution = false;
+	}
+	br.dividend_target_ratio = std::clamp(
+		br.dividend_target_ratio > 0.0 ? br.dividend_target_ratio : 0.10,
+		0.0, 1.0);
+	br.dividend_cash_floor_ratio = std::clamp(
+		br.dividend_cash_floor_ratio, 0.0, 1.0);
+	br.seed_floor_days_treasury = std::max(0.0,
+		br.seed_floor_days_treasury);
+	br.seed_public_month_frac = std::clamp(br.seed_public_month_frac,
+		0.0, 1.0);
+	br.seed_public_min_ticket_frac = std::clamp(
+		br.seed_public_min_ticket_frac, 0.0, 1.0);
+	br.protected_food_months = std::max(0.0, br.protected_food_months);
+	br.alloc_min_capital_ratio = std::max(0.0, br.alloc_min_capital_ratio);
+	br.alloc_pendulum_month = std::clamp(br.alloc_pendulum_month, 0.0, 1.0);
+	br.liquidity_min_reserve_ratio = std::max(0.0,
+		br.liquidity_min_reserve_ratio);
+	if (!br.enabled) {
+		// OFF: nenhuma sub-flag ligada e nenhum campo novo e escrito.
+		br.capital = false;
+		br.deposits = false;
+		br.resolution = false;
+		br.seed_source = "disabled";
+	}
+}
+
+void SimCore::apply_banks_rework_after_load(bool has_saved_flag) {
+	// O bloco salvo (ou a configuracao do rework.json quando o save e anterior
+	// ao v44) passa pela MESMA validacao. O seed NAO roda em save carregado:
+	// `seed_source = loaded_save` desliga o gancho privado e o mensal publico.
+	const BanksRework saved = ws_.banks_rework;
+	(void)has_saved_flag;
+	set_banks_rework(saved);
+	if (ws_.banks_rework.enabled) {
+		ws_.banks_rework.seed_source = "loaded_save";
+	}
+}
+
+void SimCore::phase_bank_deposits() {
+	bank::sweep_deposits(ws_);
 }
 
 void SimCore::apply_national_treasury_after_load(bool saved_flag,
@@ -507,6 +575,26 @@ double SimCore::m0_total() const {
 		deposits += std::max(0.0, row.second.deposits);
 	}
 	return money_total() - deposits;
+}
+
+double SimCore::m0_gross() const { return m0_total(); }
+
+double SimCore::monetary_claims() const {
+	const balance::Ledger book = balance::ledger(ws_, money_total());
+	return book.monetary_claims;
+}
+
+double SimCore::broad_money() const {
+	// broad = M1_legacy + Σ D_f = (T − Σ caixa dos bancos) + Σ D_f. O claim de
+	// funding entra no lugar do caixa que saiu do setor privado: o sweep
+	// conserva o agregado (R2, §2.2).
+	double vault = 0.0;
+	double funding = 0.0;
+	for (const auto& row : ws_.banks) {
+		vault += std::max(0.0, row.second.cash);
+		funding += std::max(0.0, row.second.deposits_funding);
+	}
+	return std::max(0.0, money_total() - vault) + funding;
 }
 
 void SimCore::snapshot_state(Snapshot& out) const {
@@ -1443,13 +1531,31 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 				|| book.bank_borrowing < -1e-6 || book.bank_cash < -1e-6
 				|| book.group_debt < -1e-6
 				|| book.group_arrears < -1e-6
-				|| book.bank_deposits < -1e-6) {
+				|| book.bank_deposits < -1e-6
+				|| book.bank_deposits_funding < -1e-6
+				|| book.deposit_claims < -1e-6) {
 			violations.push_back("posicao de credito negativa: dia="
 				+ std::to_string(ws_.day) + " banco="
 				+ std::to_string(book.bank_loans) + " reservas="
 				+ std::to_string(book.bank_borrowing) + " divida="
 				+ std::to_string(book.group_debt) + " depositos="
-				+ std::to_string(book.bank_deposits));
+				+ std::to_string(book.bank_deposits) + " funding="
+				+ std::to_string(book.bank_deposits_funding));
+		}
+		// R2a: `Σ claims == Σ D_f` ao centavo (só quando há funding; OFF não
+		// escreve nenhuma chave e a identidade é 0 = 0).
+		if (book.bank_deposits_funding > 1e-9
+				|| book.deposit_claims > 1e-9) {
+			const double claim_gap = book.deposit_claims
+				- book.bank_deposits_funding;
+			if (!std::isfinite(claim_gap)
+					|| std::abs(claim_gap) > book_tolerance) {
+				violations.push_back("claim de funding nao fecha: dia="
+					+ std::to_string(ws_.day) + " claims="
+					+ std::to_string(book.deposit_claims) + " D_f="
+					+ std::to_string(book.bank_deposits_funding) + " gap="
+					+ std::to_string(claim_gap));
+			}
 		}
 		// C5 (D-112) - BOLSA: a carteira dos detentores tem de fechar com as
 		// ações emitidas (senão haveria ação criada do nada) e o preço é um
@@ -1483,12 +1589,15 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 		for (const auto& row : ws_.banks) {
 			const Bank& bank = row.second;
 			if (!std::isfinite(bank.deposits) || bank.deposits < -1e-6
+					|| !std::isfinite(bank.deposits_funding)
+					|| bank.deposits_funding < -1e-6
 					|| !std::isfinite(bank.capital)
 					|| bank.capital < -1e-6
 					|| !std::isfinite(bank.cash) || bank.cash < -1e-6) {
 				violations.push_back("banco com posicao negativa: dia="
 					+ std::to_string(ws_.day) + " " + bank.id + " depositos="
-					+ std::to_string(bank.deposits) + " capital="
+					+ std::to_string(bank.deposits) + " funding="
+					+ std::to_string(bank.deposits_funding) + " capital="
 					+ std::to_string(bank.capital) + " caixa="
 					+ std::to_string(bank.cash));
 			}

@@ -156,6 +156,39 @@ double inject_capital(WorldState& ws, const std::string& nation, double amount,
 double receive_harvest_interest(WorldState& ws, const std::string& nation,
 	double amount);
 
+// --- R2a (rework.banks) — capital, adequação, depósitos de funding --------
+// Depósito total (D_t = D_l + D_f): base da C6. `deposits` permanece só o
+// criado por empréstimo; M0 usa apenas ele.
+double total_deposits(const Bank& bank);
+// Claim de funding somado nas cidades + grupos (deve ser == Σ D_f).
+double deposit_claims_total(const WorldState& ws);
+// Piso de liquidez do dividendo: min_reserve_ratio × D_t.
+double liquidity_floor(const WorldState& ws, const Bank& bank);
+
+// Semeia o capital PAGO do papel privado no dia 0 por realocação
+// (`pop.savings`), nunca por emissão. O papel público nasce com 0 e é
+// capitalizado no fecho mensal por `capitalize_public_monthly`; nenhum papel
+// `none`/`no_data` é capitalizado. Só roda em mundo novo (o chamador garante).
+void seed_capital(WorldState& ws);
+// Fecho mensal: `pay = min(alvo_restante, X × max(0, saldo − piso))`, com
+// ticket mínimo; usa `treasury::spend` (nunca `government_budget` como caixa
+// quando o Tesouro está ligado). Deve rodar ANTES de `treasury::start_month`.
+void capitalize_public_monthly(WorldState& ws);
+
+// Sweep diário do EXCESSO sobre o colchão protegido (cesta de
+// `protected_food_months` + orçamento regional do mês) das regiões e das
+// empresas. Move caixa para `bank.cash` e cria `deposits_funding` + claim;
+// `money_total`, `M0_gross` e o broad ficam constantes.
+void sweep_deposits(WorldState& ws);
+// Remove/reassocia claims quando um banco é absorvido (C6). Mantém
+// `Σ claims == Σ D_f`.
+void reassign_claims(WorldState& ws, const std::string& from_bank,
+	const std::string& to_bank);
+// Corte pro rata de `amount` nos claims de funding do banco (bail-in D_f):
+// reduz `D_f` e o claim na mesma proporção, sem tocar em caixa.
+double cut_funding_claims(WorldState& ws, const std::string& bank_id,
+	double amount);
+
 // Fase do dia: juros, atraso, amortização, calote e dividendo mensal.
 // Devolve o nº de calotes. `bank_money_delta` (opcional) recebe a criação/
 // destruição de dinheiro bancário que o invariante soma ao `money_total`:
@@ -167,6 +200,11 @@ struct Totals {
 	double loans = 0.0;
 	double arrears = 0.0;
 	double deposits = 0.0;
+	// R2a: D_f, alvo do modelo, seed e adequacao.
+	double deposits_funding = 0.0;
+	double capital_target = 0.0;
+	double capital_ratio = 0.0;
+	double paid_in_ratio = 0.0;
 	double bc_borrowing = 0.0;
 	double cash = 0.0;
 	double capital = 0.0;

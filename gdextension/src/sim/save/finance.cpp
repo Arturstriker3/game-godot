@@ -225,6 +225,38 @@ void write(Dictionary& data, const WorldState& ws) {
 	{
 		Dictionary block = make_object();
 		block["enabled"] = ws.bank_credit_enabled;
+		// R2a: bloco do rework (só no ON; OFF não ganha chave).
+		if (ws.banks_rework.enabled) {
+			Dictionary rework = make_object();
+			rework["capital"] = ws.banks_rework.capital;
+			rework["deposits"] = ws.banks_rework.deposits;
+			rework["resolution"] = ws.banks_rework.resolution;
+			rework["dividend_target_ratio"] =
+				ws.banks_rework.dividend_target_ratio;
+			rework["dividend_cash_floor_ratio"] =
+				ws.banks_rework.dividend_cash_floor_ratio;
+			rework["seed_enabled"] = ws.banks_rework.seed_enabled;
+			rework["seed_floor_days_treasury"] =
+				ws.banks_rework.seed_floor_days_treasury;
+			rework["seed_public_month_frac"] =
+				ws.banks_rework.seed_public_month_frac;
+			rework["seed_public_min_ticket_frac"] =
+				ws.banks_rework.seed_public_min_ticket_frac;
+			rework["protected_food_months"] =
+				ws.banks_rework.protected_food_months;
+			rework["alloc_min_capital_ratio"] =
+				ws.banks_rework.alloc_min_capital_ratio;
+			rework["alloc_pendulum_month"] =
+				ws.banks_rework.alloc_pendulum_month;
+			rework["alloc_w_rel"] = ws.banks_rework.alloc_w_rel;
+			rework["alloc_w_sol"] = ws.banks_rework.alloc_w_sol;
+			rework["alloc_w_pend"] = ws.banks_rework.alloc_w_pend;
+			rework["liquidity_min_reserve_ratio"] =
+				ws.banks_rework.liquidity_min_reserve_ratio;
+			rework["seed_source"] =
+				sim_str(ws.banks_rework.seed_source.c_str());
+			block["rework"] = rework;
+		}
 		Dictionary rows = make_object();
 		for (const auto& row : ws.banks) {
 			const Bank& bank = row.second;
@@ -285,6 +317,18 @@ void write(Dictionary& data, const WorldState& ws) {
 			entry["last_capital_ratio"] = bank.last_capital_ratio;
 			entry["last_liquidity_ratio"] = bank.last_liquidity_ratio;
 			entry["last_npl_ratio"] = bank.last_npl_ratio;
+			if (ws.banks_rework.enabled) {
+				// R2a: só no ON (save OFF byte-idêntico ao anterior).
+				entry["deposits_funding"] = bank.deposits_funding;
+				entry["capital_ratio_target"] = bank.capital_ratio_target;
+				entry["capital_target"] = bank.capital_target;
+				entry["seed_scale"] = bank.seed_scale;
+				entry["reference_scale"] = bank.reference_scale;
+				entry["gov_bonds"] = bank.gov_bonds;
+				entry["charter"] = sim_str(bank.charter.c_str());
+				entry["public_cap_deferred"] =
+					sim_str(bank.public_cap_deferred.c_str());
+			}
 			rows[sim_str(row.first.c_str())] = entry;
 		}
 		block["banks"] = rows;
@@ -747,6 +791,45 @@ void read_money(WorldState& ws, SimCore& core, const Dictionary& data) {
 	if (data.has("banks")) {
 		const Dictionary block = data.get("banks", Dictionary());
 		ws.bank_credit_enabled = bool(block.get("enabled", false));
+		// R2a (v44): bloco de politica dos bancos. Save anterior não tem a
+		// chave: a configuracao do rework.json continua valendo e o load não
+		// capitaliza retroativamente (`seed_source = loaded_save` na validação).
+		const Variant rework_variant = block.get("rework", Variant());
+		if (rework_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary rework = rework_variant;
+			BanksRework& br = ws.banks_rework;
+			br.enabled = true;
+			br.capital = bool(rework.get("capital", true));
+			br.deposits = bool(rework.get("deposits", false));
+			br.resolution = bool(rework.get("resolution", false));
+			br.dividend_target_ratio = double(
+				rework.get("dividend_target_ratio", 0.10));
+			br.dividend_cash_floor_ratio = double(
+				rework.get("dividend_cash_floor_ratio", 0.10));
+			br.seed_enabled = bool(rework.get("seed_enabled", true));
+			br.seed_floor_days_treasury = double(
+				rework.get("seed_floor_days_treasury", 3.0));
+			br.seed_public_month_frac = double(
+				rework.get("seed_public_month_frac", 0.10));
+			br.seed_public_min_ticket_frac = double(
+				rework.get("seed_public_min_ticket_frac", 0.25));
+			br.protected_food_months = double(
+				rework.get("protected_food_months", 6.0));
+			br.alloc_min_capital_ratio = double(
+				rework.get("alloc_min_capital_ratio", 0.08));
+			br.alloc_pendulum_month = double(
+				rework.get("alloc_pendulum_month", 0.10));
+			br.alloc_w_rel = double(rework.get("alloc_w_rel", 0.50));
+			br.alloc_w_sol = double(rework.get("alloc_w_sol", 0.35));
+			br.alloc_w_pend = double(rework.get("alloc_w_pend", 0.15));
+			br.liquidity_min_reserve_ratio = double(
+				rework.get("liquidity_min_reserve_ratio", 0.10));
+			br.seed_source = std::string(
+				String(rework.get("seed_source", "loaded_save"))
+					.utf8().get_data());
+		} else if (!ws.banks_rework.enabled) {
+			ws.banks_rework.seed_source = "loaded_save";
+		}
 		// v32 (C4/D-110): um registro por banco (`banks`), com papel e dono.
 		const Value& rows_variant = block.get("banks", Value());
 		const Value& nations_variant = block.get("nations", Value());
@@ -870,6 +953,26 @@ void read_money(WorldState& ws, SimCore& core, const Dictionary& data) {
 					row.get("last_liquidity_ratio", 0.0));
 				bank.last_npl_ratio = double(
 					row.get("last_npl_ratio", 0.0));
+				// R2a (v44): campos do rework, só quando o bloco existe. Save
+				// anterior chega com 0/"" (ausência declarada, sem seed
+				// retroativo).
+				bank.deposits_funding = std::max(0.0,
+					double(row.get("deposits_funding", 0.0)));
+				bank.capital_ratio_target = std::max(0.0,
+					double(row.get("capital_ratio_target", 0.0)));
+				bank.capital_target = std::max(0.0,
+					double(row.get("capital_target", 0.0)));
+				bank.seed_scale = std::max(0.0,
+					double(row.get("seed_scale", 0.0)));
+				bank.reference_scale = std::max(0.0,
+					double(row.get("reference_scale", 0.0)));
+				bank.gov_bonds = std::max(0.0,
+					double(row.get("gov_bonds", 0.0)));
+				bank.charter = std::string(
+					String(row.get("charter", "declared")).utf8().get_data());
+				bank.public_cap_deferred = std::string(
+					String(row.get("public_cap_deferred", ""))
+						.utf8().get_data());
 				ws.banks[bank.id] = bank;
 			}
 		} else if (nations_variant.get_type() == Variant::DICTIONARY) {

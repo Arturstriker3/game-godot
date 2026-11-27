@@ -167,6 +167,16 @@ public:
 	// cobertura do deficit tarifario do setor eletrico. Nao muda nenhum caixa
 	// ao ligar/desligar: e so o gate dos fluxos.
 	void set_firms_own_cash(bool enabled);
+	// R2a (rework.banks): bloco de bancos. `capital`/`deposits` exigem
+	// `enabled` e `regional_cash`; `deposits` exige `capital`. Configuração
+	// inválida desliga a sub-flag e registra `banks_rework.config_error`.
+	void set_banks_rework(const BanksRework& cfg);
+	// Depois do load: revalida o bloco salvo (ou a configuração atual quando o
+	// save é anterior ao v44) sem capitalizar retroativamente.
+	void apply_banks_rework_after_load(bool has_saved_flag);
+	// Fase do dia: sweep de depositos de funding (regioes + empresas). Sem a
+	// sub-flag `deposits` nao escreve nada.
+	void phase_bank_deposits();
 	// Depois do load: a flag do save (quando presente) vence a configuracao,
 	// com a mesma validacao de `set_firms_own_cash`.
 	void apply_firms_own_cash_after_load(bool saved_flag, bool has_saved_flag);
@@ -317,6 +327,11 @@ public:
 	double money_total() const;
 	// C4 (D-110): M0 = money_total − depósitos à vista (M1 = money_total).
 	double m0_total() const;
+	// R2a (rework.banks): base BRUTA publicada (`T − Σ D_l`), claim monetário
+	// do emissor (BC) e `broad = M1_legacy + Σ D_f`. Off = mesmos números da C4.
+	double m0_gross() const;
+	double monetary_claims() const;
+	double broad_money() const;
 	void init_pop_needs(Pop& pop) const;
 	static double extraction_efficiency(const Deposit& deposit);
 	double base_price(int product) const;
