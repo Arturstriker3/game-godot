@@ -501,6 +501,19 @@ void SimCore::snapshot_state(Snapshot& out) const {
 // ------------------------------------------------------------------
 
 void SimCore::prologue() {
+	// R1b (t172): fecha o gasto publico ja realizado ANTES do retrato do dia
+	// contra o Tesouro. O orcamento regional e um limite: gastar do contador
+	// (capital publico do banco no setup, comando A3 entre dias, etc.) move
+	// dinheiro para o destinatario, mas a contraparte no Tesouro so existe na
+	// reconciliacao. Se ela ficar para a primeira fase do dia, o tick debita o
+	// Tesouro por um gasto cuja criacao de dinheiro ficou ANTES do
+	// `money_before` e o invariante ve um drift do tamanho exato desse gasto
+	// (~31,36 M no dia 1; ~6,25 M no dia 2 com comandos). Reconciliar aqui poe
+	// os dois lados antes do retrato; a reconciliacao intradiaria (fronteiras
+	// de fase) continua igual. No OFF e no-op.
+	if (ws_.national_treasury && ws_.regional_budget_started) {
+		treasury::reconcile(ws_);
+	}
 	// Retrato para reverter o tick se um invariante rígido for violado.
 	// Buffer PERSISTENTE: os vetores são reutilizados entre dias (com 114 bens
 	// uma cidade custa ~27 KB; realocar 834 cópias por tick custava ~5 ms).

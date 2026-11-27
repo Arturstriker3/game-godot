@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <cstdio>
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -176,15 +175,6 @@ double reconcile(WorldState& ws) {
 		const double spent =
 			(city.regional_budget_open_services - services_now)
 			+ (city.regional_budget_open_works - works_now);
-		if (std::abs(spent) > 1e-6) {
-			std::fprintf(stderr,
-				"[recon-dbg] city=%s spent=%.6f open_s=%.6f now_s=%.6f "
-				"open_w=%.6f now_w=%.6f treasury=%.6f\n",
-				city.id.c_str(), spent,
-				city.regional_budget_open_services, services_now,
-				city.regional_budget_open_works, works_now,
-				balance(ws, city.nation));
-		}
 		if (spent > 0.0) {
 			double& cash = ws.nation_treasury[city.nation];
 			const double paid = std::min(spent, safe_nonneg(cash));
