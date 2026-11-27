@@ -118,12 +118,25 @@ MoneyAllocation allocate_money(const WorldState& ws, double money_total) {
 	const std::size_t gov_count = std::min(ws.cities.size(), ws.city_gov.size());
 	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
 		const City& city = ws.cities[index];
-		double cash = city.pop.savings + city.firm_cash + city.service_cash
-			+ city.government_budget + city.capital_income_next
-			+ city.rent_income_next + city.region.cash;
+		// R1b: com o Tesouro, o orçamento regional (serviços/obras) é limite,
+		// não caixa; o saldo público vive em `nation_treasury` (abaixo). A
+		// expressão do OFF é a MESMA do mundo anterior, termo a termo: a soma
+		// em ponto flutuante (debug, sem otimização) não pode mudar de árvore.
+		double cash = 0.0;
+		if (!ws.national_treasury) {
+			cash = city.pop.savings + city.firm_cash + city.service_cash
+				+ city.government_budget + city.capital_income_next
+				+ city.rent_income_next + city.region.cash;
+		} else {
+			cash = city.pop.savings + city.private_total()
+				+ city.capital_income_next
+				+ city.rent_income_next + city.region.cash;
+		}
 		if (index < gov_count) {
 			const CityGov& gov = ws.city_gov[index];
-			cash += nonneg(gov.cash);
+			if (!ws.national_treasury) {
+				cash += nonneg(gov.cash);
+			}
 			for (int slot = 0; slot < gov.project_count; ++slot) {
 				cash += nonneg(gov.projects[slot].reserved);
 			}
@@ -158,6 +171,13 @@ MoneyAllocation allocate_money(const WorldState& ws, double money_total) {
 	// sua nação (prêmio do banco, pagamento de volta ao banco).
 	for (const auto& row : ws.deposit_insurance) {
 		add(currency_index_of(ws, row.first), row.second.fund);
+	}
+	// R1b: o saldo do Tesouro Nacional é caixa público na moeda da própria
+	// nação — o mesmo termo que `SimCore::money_total()` já soma. Sem esta
+	// linha a atribuição do dia fica menor que o `money_total` e o invariante
+	// da C2a reverte o tick (dia travado).
+	for (const auto& row : ws.nation_treasury) {
+		add(currency_index_of(ws, row.first), row.second);
 	}
 	// Caixas de setor sem nação atribuível e a posição do exterior.
 	out.sector_cash = ws.transport_cash + ws.construction_cash;

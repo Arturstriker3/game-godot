@@ -68,7 +68,7 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 		result.error = "valor inválido";
 		return result;
 	}
-	if (city->firm_cash < amount) {
+	if (city->firm_liquidity() < amount) {
 		result.error = "capital insuficiente";
 		return result;
 	}
@@ -81,14 +81,15 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 	const double capacity_added = amount / std::max(1.0, building->capital_per_capacity);
 
 	if (instant_construction) {
-		city->firm_cash -= amount;
+		const double invested = city->firm_pay(amount, City::kR1Invest);
 		// A expansão é construída por serviços domésticos: o dinheiro vira
 		// receita de construção (contada no PIB do próximo tick) e não
-		// desaparece em um caixa inerte.
-		city->service_cash += amount;
-		city->construction_revenue_pending += amount;
+		// desaparece em um caixa inerte. Credita o que foi efetivamente
+		// debitado (autorização pelo sub-saldo das firmas).
+		city->service_receive(invested);
+		city->construction_revenue_pending += invested;
 		building->capacity += capacity_added;
-		result.invested = amount;
+		result.invested = invested;
 		result.capacity_added = capacity_added;
 		return result;
 	}
@@ -107,7 +108,7 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 	}
 	const double committed =
 		committed_construction(ws, city->id, "private");
-	if (committed + amount > city->firm_cash) {
+	if (committed + amount > city->firm_liquidity()) {
 		result.error = "capital insuficiente";
 		return result;
 	}
@@ -133,7 +134,7 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 	project.total_cost = amount;
 	// §15 calibração: reserva o capital da obra no início (investimento).
 	project.reserved = amount;
-	city->firm_cash -= amount;
+	city->firm_pay(amount, City::kR1Invest);
 	core.add_construction_project(project);
 	result.invested = amount;
 	result.capacity_added = capacity_added;
@@ -231,6 +232,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 		// G3 (L2, correção 2): `unfunded` = ativo herdado do dia 0 (entrada
 		// marcada `funding: "none"`): nada é debitado e nada entra como receita
 		// de obra — a planta simplesmente já existia no mundo real.
+		double paid_cost = cost;
 		if (!unfunded) {
 			if (state_owned) {
 				if (city->government_budget < cost) {
@@ -239,11 +241,11 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 				}
 				city->government_budget -= cost;
 			} else {
-				if (city->firm_cash < cost) {
+				if (city->firm_liquidity() < cost) {
 					result.error = "capital insuficiente";
 					return result;
 				}
-				city->firm_cash -= cost;
+				paid_cost = city->firm_pay(cost, City::kR1Invest);
 			}
 		}
 
@@ -301,11 +303,11 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 		// do próximo tick como receita de construção. Planta não financiada é
 		// estoque herdado (dia 0): não houve obra nova a faturar.
 		if (!unfunded) {
-			city->service_cash += cost;
-			city->construction_revenue_pending += cost;
+			city->service_receive(paid_cost);
+			city->construction_revenue_pending += paid_cost;
 		}
 		result.created = true;
-		result.cost = cost;
+		result.cost = paid_cost;
 		return result;
 	}
 
@@ -346,7 +348,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 	const std::string commit_owner = state_owned ? "state" : "private";
 	const double committed = committed_construction(ws, city->id, commit_owner);
 	const double commit_budget = state_owned ? city->government_budget
-		: city->firm_cash;
+		: city->firm_liquidity();
 	if (committed + cost > commit_budget) {
 		result.error = state_owned ? "orçamento insuficiente"
 			: "capital insuficiente";
@@ -380,7 +382,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 	if (state_owned) {
 		city->government_budget -= cost;
 	} else {
-		city->firm_cash -= cost;
+		city->firm_pay(cost, City::kR1Invest);
 	}
 	core.add_construction_project(project);
 	result.created = true;
@@ -588,7 +590,7 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 		} else {
 			core.rebuild_indexes();
 		}
-		city->service_cash += cost;
+		city->service_receive(cost);
 		city->construction_revenue_pending += cost;
 		result.created = true;
 		result.cost = cost;
@@ -627,7 +629,7 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 		}
 		partner->cash -= partner_cost;
 		partner->capex_total += partner_cost;
-		city->service_cash += partner_cost;
+		city->service_receive(partner_cost);
 		city->construction_revenue_pending += partner_cost;
 	}
 	group->capex_total += owner_cost;
@@ -673,26 +675,40 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 }
 
 namespace {
-// D-086: caixa de quem paga o aprofundamento, pelo dono da MINA —
-// Estado → orçamento da cidade; grupo F9 → caixa do grupo; "private" (legado)
-// → caixa da firma. `commit_key` é a chave do limite de comprometimento de obra
-// (`committed_construction`). nullptr = dono sem caixa localizável.
-double* mine_owner_cash(SimCore& core, City& city, const Building& building,
+// D-086: caixa de quem paga o aprofundamento, pelo dono da MINA -
+// Estado -> orcamento da cidade; grupo F9 -> caixa do grupo; "private" (legado)
+// -> caixa da firma. `commit_key` e a chave do limite de comprometimento de obra
+// (`committed_construction`). nullptr = dono sem caixa localizavel.
+//
+// R1a: com o caixa unico ligado, o "private" paga do POOL (`private_cash`) e o
+// espelho da firma (`firm_cash`) e debitado a parte (`stat`); o sub-saldo das
+// firmas (`firm_sub`) e o que autoriza o gasto. A conta e a mesma de um
+// `firm_pay`, para a estatistica nao divergir do pool.
+struct OwnerCash {
+	double* cash = nullptr;
+	double* stat = nullptr;
+	double* sub = nullptr;
+};
+OwnerCash mine_owner_cash(SimCore& core, City& city, const Building& building,
 		std::string& commit_key) {
 	std::string group_id;
 	std::string origin_nation;
 	const int kind = core.owner_kind(building.owner, &group_id, &origin_nation);
 	if (kind == 0) {
 		commit_key = "state";
-		return &city.government_budget;
+		return { &city.government_budget, nullptr, nullptr };
 	}
 	if (kind == 1 || kind == 2) {
 		commit_key = group_id;
 		Group* group = core.find_group(group_id);
-		return group == nullptr ? nullptr : &group->cash;
+		return group == nullptr ? OwnerCash{}
+			: OwnerCash{ &group->cash, nullptr, nullptr };
 	}
 	commit_key = "private";
-	return &city.firm_cash;
+	if (city.unified_cash) {
+		return { &city.private_cash, &city.firm_cash, &city.firm_sub };
+	}
+	return { &city.firm_cash, nullptr, nullptr };
 }
 } // namespace
 
@@ -738,13 +754,17 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 		return result;
 	}
 	std::string commit_key;
-	double* cash = mine_owner_cash(core, *city, *building, commit_key);
+	OwnerCash owner = mine_owner_cash(core, *city, *building, commit_key);
+	double* cash = owner.cash;
 	if (cash == nullptr) {
 		result.error = "dono sem caixa";
 		return result;
 	}
 	const double committed = committed_construction(ws, city->id, commit_key);
-	if (committed + cost > *cash) {
+	// Com sub-saldos, o gasto das firmas e autorizado pelo `firm_sub`, nao
+	// pelo total armazenado.
+	const double budget = owner.sub != nullptr ? *owner.sub : *cash;
+	if (committed + cost > budget) {
 		result.error = "capital insuficiente";
 		result.cost = cost;
 		return result;
@@ -760,7 +780,13 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 		// Hook de teste/laboratório: obra instantânea, custo integral debitado do
 		// dono e pago ao setor de construção doméstico (dinheiro conservado).
 		*cash -= cost;
-		city->service_cash += cost;
+		if (owner.stat != nullptr) {
+			*owner.stat -= cost;
+		}
+		if (owner.sub != nullptr) {
+			*owner.sub -= cost;
+		}
+		city->service_receive(cost);
 		city->construction_revenue_pending += cost;
 		building->capacity += capacity_added;
 		core.set_mine_stage(*city, *building, stage);
@@ -798,6 +824,12 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 	// Mesma regra do §15: o capital da obra é reservado no início.
 	project.reserved = cost;
 	*cash -= cost;
+	if (owner.stat != nullptr) {
+		*owner.stat -= cost;
+	}
+	if (owner.sub != nullptr) {
+		*owner.sub -= cost;
+	}
 	core.add_construction_project(project);
 	result.started = true;
 	result.project_id = project.id;
@@ -863,7 +895,7 @@ InfraResult action_infra_build(WorldState& ws, SimCore& core,
 		// Hook de teste/laboratório: sobe o nível na hora, custo integral
 		// debitado e pago ao setor de construção (dinheiro conservado).
 		city->government_budget -= cost;
-		city->service_cash += cost;
+		city->service_receive(cost);
 		city->construction_revenue_pending += cost;
 		SimCore::infra_level_up(city->region, infra_type);
 		result.started = true;
@@ -984,22 +1016,23 @@ StorageBuildResult action_storage_build(WorldState& ws, SimCore& core,
 	const char* owner = government ? "state" : "private";
 	const double cost = tons * kStorageCostPerTon[type];
 	const double cash = government ? std::max(0.0, city->government_budget)
-		: std::max(0.0, city->firm_cash);
+		: std::max(0.0, city->firm_liquidity());
 	const double committed = committed_construction(ws, city->id, owner);
 	if (cost > cash - committed + 1e-9) {
 		result.error = "capital insuficiente";
 		return result;
 	}
 	if (instant_construction) {
+		double paid_cost = cost;
 		if (government) {
 			city->government_budget -= cost;
 		} else {
-			city->firm_cash -= cost;
+			paid_cost = city->firm_pay(cost, City::kR1Invest);
 		}
 		// Construção doméstica: o dinheiro vira receita do setor de construção
 		// (contabilizada no próximo tick), como nas demais obras instantâneas.
-		city->service_cash += cost;
-		city->construction_revenue_pending += cost;
+		city->service_receive(paid_cost);
+		city->construction_revenue_pending += paid_cost;
 		const int city_index = static_cast<int>(city - ws.cities.data());
 		add_storage_capacity(ws, city_index, type, scope, tons);
 		result.started = true;
@@ -1028,7 +1061,7 @@ StorageBuildResult action_storage_build(WorldState& ws, SimCore& core,
 	if (government) {
 		city->government_budget -= cost;
 	} else {
-		city->firm_cash -= cost;
+		city->firm_pay(cost, City::kR1Invest);
 	}
 	core.add_construction_project(project);
 	result.started = true;
@@ -1099,20 +1132,22 @@ StorageTradeResult action_storage_trade(WorldState& ws, SimCore& core,
 		double qty = std::min(tons, std::min(std::max(0.0, market.stock),
 			free_capacity));
 		const double cash = government ? std::max(0.0, city->government_budget)
-			: std::max(0.0, city->firm_cash);
+			: std::max(0.0, city->firm_liquidity());
 		qty = std::min(qty, cash / price);
 		if (qty <= 1e-9) {
 			result.error = "sem estoque/capacidade/caixa para comprar";
 			return result;
 		}
 		const double value = qty * price;
+		double paid_value = value;
 		if (government) {
 			city->government_budget -= value;
 		} else {
-			city->firm_cash -= value;
+			paid_value = city->firm_pay(value);
 		}
-		// O vendedor é a firma local: o dinheiro só muda de caixa.
-		city->firm_cash += value;
+		// O vendedor é a firma local: o dinheiro só muda de caixa. Credita o
+		// valor efetivamente debitado (autorização pelo sub-saldo das firmas).
+		city->firm_receive(paid_value);
 		city->revenue_by_product[product] += value;
 		market.stock -= qty;
 		market.demand += qty;
@@ -1141,7 +1176,7 @@ StorageTradeResult action_storage_trade(WorldState& ws, SimCore& core,
 	}
 	double paid_qty = 0.0;
 	if (!relief) {
-		const double payer_cash = std::max(0.0, city->firm_cash);
+		const double payer_cash = std::max(0.0, city->firm_liquidity());
 		paid_qty = std::min(qty, payer_cash / price);
 		qty = paid_qty;
 	}
@@ -1151,13 +1186,13 @@ StorageTradeResult action_storage_trade(WorldState& ws, SimCore& core,
 	}
 	const double value = paid_qty * price;
 	if (paid_qty > 0.0) {
-		city->firm_cash -= value;
+		const double paid_value = city->firm_pay(value);
 		if (government) {
-			city->government_budget += value;
+			city->government_budget += paid_value;
 		} else {
 			// Privado: o comprador e o dono são a mesma firma agregada — o
 			// dinheiro não muda de caixa; o lucro aparece no preço do mercado.
-			city->firm_cash += value;
+			city->firm_receive(paid_value);
 		}
 	}
 	site.stock[static_cast<std::size_t>(product)] -= qty;

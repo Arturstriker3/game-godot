@@ -129,6 +129,18 @@ void initialize_scenario_fixture(WorldState& ws, SimCore& core) {
 	core.seed_services();
 	// F9: grupos a partir dos ativos privados (id determinístico).
 	core.seed_groups();
+	// R1a (QA t167): o cenário mínimo também respeita `rework.regional_cash`.
+	// Como o fixture preserva a flag no WorldState, ligar antes de criá-lo
+	// converte os dois caixas em pool + sub-saldos (antes o demo/teste rodava
+	// OFF em silêncio com a flag ligada). Desligada, não muda nada.
+	core.set_regional_cash(ws.regional_cash, ws.external_subceiling);
+	// R1b: o cenario minimo tambem respeita `rework.national_treasury`.
+	core.set_national_treasury(ws.national_treasury,
+		ws.regional_budget_share, ws.regional_budget_floor_fraction,
+		ws.regional_budget_works_share,
+		ws.regional_budget_maintenance_share);
+	// R1c: o cenario minimo tambem respeita `rework.firms_own_cash`.
+	core.set_firms_own_cash(ws.firms_own_cash);
 }
 
 } // namespace ogs

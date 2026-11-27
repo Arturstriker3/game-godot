@@ -170,7 +170,7 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // parâmetros do cérebro econômico da IA (fase A: previsão de caixa + preço
 // esperado). Save v41 carrega com os defaults do struct (`enabled=false`),
 // que reproduzem as decisões atuais.
-constexpr int kSaveVersion = 42;
+constexpr int kSaveVersion = 43;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional

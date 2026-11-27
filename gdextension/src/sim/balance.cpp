@@ -144,7 +144,7 @@ Ledger ledger(const WorldState& ws, double money_total) {
 
 		// Firmas: caixa das plantas e do setor de serviços; o salário atrasado
 		// é PASSIVO delas (mesma obrigação do ativo acima).
-		out.firms_cash += city.firm_cash + city.service_cash;
+		out.firms_cash += city.private_total();
 		out.payables += city.service_wage_arrears + city.rural_wage_arrears;
 		out.arrears_service += city.service_wage_arrears;
 		out.arrears_rural += city.rural_wage_arrears;
@@ -155,7 +155,10 @@ Ledger ledger(const WorldState& ws, double money_total) {
 		out.group_arrears += city.firm_credit_arrears;
 
 		// Governo: orçamento público da cidade (o "tesouro nacional" do modelo).
-		out.government += city.government_budget;
+		// R1b: com o Tesouro Nacional o orçamento regional é limite, não caixa.
+		if (!ws.national_treasury) {
+			out.government += city.government_budget;
+		}
 	}
 	// Atrasado por planta (o passivo individual do prédio).
 	for (const Building& building : ws.buildings) {
@@ -181,6 +184,10 @@ Ledger ledger(const WorldState& ws, double money_total) {
 
 	// Governo: orçamento nacional por cidade + prefeituras (caixa e obras).
 	out.government += city_gov::money_total(ws);
+	// R1b: o saldo do Tesouro Nacional também é caixa público.
+	for (const auto& row : ws.nation_treasury) {
+		out.government += row.second;
+	}
 	// C4: o claim de capital do Estado já foi somado no laço dos bancos
 	// (`government_claims`); NÃO entra em `government` (que é caixa) nem em
 	// `cash_total`.
@@ -230,7 +237,7 @@ Sheet firms(const WorldState& ws, const std::string& nation) {
 		if (!nation.empty() && city.nation != nation) {
 			continue;
 		}
-		sheet.cash += city.firm_cash + city.service_cash;
+		sheet.cash += city.private_total();
 		sheet.payables += city.service_wage_arrears + city.rural_wage_arrears;
 		// D-126: crédito de capital de giro da cidade.
 		sheet.debt += city.firm_debt + city.firm_credit_arrears;
@@ -288,10 +295,15 @@ Sheet government(const WorldState& ws, const std::string& nation) {
 		if (!nation.empty() && city.nation != nation) {
 			continue;
 		}
-		sheet.cash += city.government_budget;
+		// R1b: com o Tesouro, o restante do orçamento regional é limite.
+		if (!ws.national_treasury) {
+			sheet.cash += city.government_budget;
+		}
 		if (index < gov_count) {
 			const CityGov& gov = ws.city_gov[index];
-			sheet.cash += std::max(0.0, gov.cash);
+			if (!ws.national_treasury) {
+				sheet.cash += std::max(0.0, gov.cash);
+			}
 			for (int slot = 0; slot < gov.project_count; ++slot) {
 				sheet.cash += std::max(0.0, gov.projects[slot].reserved);
 			}
@@ -312,6 +324,17 @@ Sheet government(const WorldState& ws, const std::string& nation) {
 					sheet.inventory += tons * price_of(ws, city, product);
 				}
 			}
+		}
+	}
+	// R1b: o saldo do Tesouro desta nacao tambem e caixa publico.
+	if (nation.empty()) {
+		for (const auto& row : ws.nation_treasury) {
+			sheet.cash += row.second;
+		}
+	} else {
+		const auto found = ws.nation_treasury.find(nation);
+		if (found != ws.nation_treasury.end()) {
+			sheet.cash += found->second;
 		}
 	}
 	// C2b1 (D-104): dívida pública emitida (títulos comprados pelo BC). É

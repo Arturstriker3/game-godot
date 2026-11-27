@@ -110,7 +110,12 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view,
 		row.id = city.id;
 		row.nation = city.nation;
 		row.landmass = city.landmass;
-		row.firm_cash = city.firm_cash;
+		row.firm_cash = city.firm_liquidity();
+		// R1a (correcao dos sub-saldos): `firm_liquidity()` JA e o sub-saldo
+		// das firmas (nao o pool inteiro). Nao aplicar de novo a fatia de
+		// receita — isso duplicaria o desconto do experimento t160-t163. O
+		// campo fica em 1,0 para os consumidores antigos.
+		row.firm_revenue_share = 1.0;
 		row.government_budget = city.government_budget;
 		// C2b1 (D-104): a taxa básica da moeda do país entra na visão do dia
 		// (custo de capital do silo privado). Política do fecho anterior.

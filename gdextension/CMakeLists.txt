@@ -67,6 +67,8 @@ add_library(opengs_sim STATIC
     src/sim/labor.cpp
     src/sim/services.cpp
     src/sim/fiscal.cpp
+    src/sim/treasury.cpp
+    src/sim/state_levers.cpp
     src/sim/fx.cpp
     src/sim/investment.cpp
     src/sim/construction.cpp
@@ -206,7 +208,10 @@ if(OPENGS_BUILD_UNIT_TESTS)
         tests/test_determinism.cpp
         tests/test_crisis.cpp
         tests/test_ai_brain.cpp
-        tests/test_g2_bootstrap.cpp 
+        tests/test_g2_bootstrap.cpp
+        tests/test_regional_cash.cpp
+        tests/test_national_treasury.cpp
+        tests/test_firms_own_cash.cpp
     )
 
     target_link_libraries(sim_unit_tests PRIVATE opengs_sim)

@@ -272,7 +272,7 @@ void refund_project_reserved(WorldState& ws, const ConstructionProject& p) {
 	}
 	if (p.owner == "private") {
 		if (owner_city != nullptr) {
-			owner_city->firm_cash += amount;
+			owner_city->firm_receive(amount);
 		} else {
 			ws.construction_cash += amount;
 		}
@@ -569,11 +569,11 @@ void SimCore::tick_construction() {
 			market.sold += bought;
 			market.desired += bought;
 			market.effective += bought;
-			city->firm_cash += paid;
+			city->firm_receive(paid);
 			city->revenue_by_product[product] += paid;
 			project.material_delivered[m] += bought;
 		}
-		city->service_cash += day_labor_cost;
+		city->service_receive(day_labor_cost);
 		city->construction_revenue_pending += total_out;
 		project.paid += total_out;
 		project.labor_paid += day_labor_cost;

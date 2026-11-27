@@ -93,7 +93,7 @@ void SimCore::phase_labor() {
 			// Opex é comprado de serviços domésticos (manutenção, energia), não é
 			// uma importação: mantém o dinheiro dentro da economia. A liquidez do
 			// opex é a que sobrou do caixa depois da folha.
-			const double opex_available = std::max(0.0, city.firm_cash);
+			const double opex_available = std::max(0.0, city.firm_liquidity());
 			const double opex_scale = opex_total > opex_available
 				? (opex_total > 0.0 ? opex_available / opex_total : 1.0) : 1.0;
 			for (const int bi : local_buildings) {
@@ -108,9 +108,9 @@ void SimCore::phase_labor() {
 					* operating * opex_scale * liquidity;
 			}
 			const double paid_opex = opex_total * opex_scale;
-			city.firm_cash -= paid_opex;
-			city.service_cash += paid_opex;
-			city.opex_revenue = paid_opex;
+			const double opex_paid = city.firm_pay(paid_opex);
+			city.service_receive(opex_paid);
+			city.opex_revenue = opex_paid;
 		}
 	};
 	pool().parallel_for(ws_.cities.size(), process_city);
@@ -152,7 +152,7 @@ void SimCore::phase_labor() {
 				}
 				const double interest = paid * rate * span;
 				const double take = std::min(interest,
-					std::max(0.0, city.firm_cash));
+					city.firm_external_room_request(interest));
 				if (take <= 1e-12) {
 					continue;
 				}
@@ -161,7 +161,7 @@ void SimCore::phase_labor() {
 				if (credited <= 0.0) {
 					continue;
 				}
-				city.firm_cash -= credited;
+				city.firm_external_pay(credited, City::kR1Finance);
 			}
 		}
 	}
@@ -594,7 +594,7 @@ double SimCore::labor_day(City& city) {
 	// caixa disponível (restrição de liquidez do modelo, preservada). O setor de
 	// serviços também só paga até o próprio caixa.
 	const double buildings_full_payroll = buildings_payroll;
-	const double firm_available = std::max(0.0, city.firm_cash);
+	const double firm_available = std::max(0.0, city.firm_liquidity());
 	const double committed = buildings_full_payroll;
 	const double pay_scale = committed > firm_available
 		? firm_available / committed : 1.0;
@@ -661,10 +661,16 @@ double SimCore::labor_day(City& city) {
 	// serviço já nasce limitada por `service_power` (linha ~435) e é esse o
 	// valor creditado às famílias. Cobrar a folha CHEIA aqui destruiria a
 	// diferença (violação de conservação de dinheiro).
+	// R1a: com o caixa unico regional o debito das firmas tem de acontecer ANTES
+	// da leitura de liquidez dos servicos - senao os dois leriam o mesmo pool
+	// cheio e o pagamento conjunto excederia o caixa. Desligado (default), os
+	// caixas sao separados e nenhum numero muda com a antecipacao.
+	const double firm_payroll = buildings_payroll * pay_scale;
+	city.firm_pay(firm_payroll, City::kR1Wages);
 	const double full_service_bill = city.service_jobs * service_power
 		* service_payroll_per_job;
 	const double paid_service_bill = std::min(full_service_bill,
-		std::max(0.0, city.service_cash));
+		std::max(0.0, city.service_liquidity()));
 	// C1: atraso da folha do setor de serviços (caixa insuficiente) — passivo
 	// das firmas de serviço e ativo das famílias. Vale a mesma regra do
 	// período corrente (substitui o do dia anterior). O pagamento não muda.
@@ -710,8 +716,7 @@ double SimCore::labor_day(City& city) {
 	}
 	pop.wage_income = pop.wage_income_by_level[0]
 		+ pop.wage_income_by_level[1] + pop.wage_income_by_level[2];
-	city.firm_cash -= buildings_payroll * pay_scale;
-	city.service_cash -= paid_service_bill;
+	city.service_pay(paid_service_bill, City::kR1Wages);
 	return pop.wage_income;
 }
 void SimCore::refresh_income_classes(City& city) const {

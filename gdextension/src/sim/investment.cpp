@@ -143,7 +143,7 @@ void SimCore::route_group_profit(int group_index,
 		if (group.state_owned) {
 			// Lucro de estatal -> orçamento do anfitrião (dinheiro conservado).
 			const double moved = std::min(profit, firm_surplus);
-			city.firm_cash -= moved;
+			city.firm_pay(moved, City::kR1Dividends);
 			city.government_budget += moved;
 			firm_surplus -= moved;
 			return;
@@ -154,29 +154,33 @@ void SimCore::route_group_profit(int group_index,
 		const double tax_rate = std::clamp(
 			kCorporateTaxRate * (1.0 - holiday), 0.0, 1.0);
 		const double tax = std::min(profit * tax_rate, firm_surplus);
-		city.firm_cash -= tax;
+		city.firm_pay(tax, City::kR1Taxes);
 		city.government_budget += tax;
 		firm_surplus -= tax;
 		group.taxes_total += tax;
 		ws_.group_flows[host_nation].taxes += tax;
 		const double net = profit - tax;
 		const double moved = std::min(net, firm_surplus);
-		city.firm_cash -= moved;
+		city.firm_pay(moved, City::kR1Dividends);
 		group.cash += moved;
 		group.distributable += moved;
 		firm_surplus -= moved;
 		group.profit_by_host[host_nation] += moved;
 		// Incentivo: subsídio ad valorem sobre a receita do ativo, pago pelo
 		// governo do anfitrião (política explícita; 0 por padrão).
-		const double subsidy_rate = sector_subsidy(host_nation, group.sector);
-		if (subsidy_rate > 0.0 && revenue > 0.0) {
-			const double subsidy = std::min(
-				std::max(0.0, city.government_budget), revenue * subsidy_rate);
-			if (subsidy > 0.0) {
-				city.government_budget -= subsidy;
-				group.cash += subsidy;
-				group.distributable += subsidy;
-				ws_.group_flows[host_nation].subsidy += subsidy;
+		// R1c: com `firms_own_cash` ligada não existe aporte público automático
+		// a empresa - o incentivo fica registrado como política, mas não paga.
+		if (!ws_.firms_own_cash) {
+			const double subsidy_rate = sector_subsidy(host_nation, group.sector);
+			if (subsidy_rate > 0.0 && revenue > 0.0) {
+				const double subsidy = std::min(
+					std::max(0.0, city.government_budget), revenue * subsidy_rate);
+				if (subsidy > 0.0) {
+					city.government_budget -= subsidy;
+					group.cash += subsidy;
+					group.distributable += subsidy;
+					ws_.group_flows[host_nation].subsidy += subsidy;
+				}
 			}
 		}
 	} else if (profit < 0.0) {
@@ -185,7 +189,7 @@ void SimCore::route_group_profit(int group_index,
 		const double inject = std::min(-profit, group.cash);
 		if (inject > 0.0) {
 			group.cash -= inject;
-			city.firm_cash += inject;
+			city.firm_receive(inject);
 		}
 	}
 }

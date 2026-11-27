@@ -22,6 +22,8 @@
 #include "sim/scenario_fixture.h"
 #include "sim/sim_day.h"
 #include "sim/stock.h"
+#include "sim/treasury.h"
+#include "sim/state_levers.h"
 #include "sim/urban_land.h"
 #include "sim/housing.h"
 
@@ -214,6 +216,11 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_profile"), &EconomySim::get_profile);
 	ClassDB::bind_method(D_METHOD("warm_status"), &EconomySim::warm_status);
 	ClassDB::bind_method(D_METHOD("get_status"), &EconomySim::get_status);
+	// R1a (t163): instrumentacao de medicao (`--r1-diag`). So leitura.
+	ClassDB::bind_method(D_METHOD("set_r1_diag", "enabled"),
+	                     &EconomySim::set_r1_diag);
+	ClassDB::bind_method(D_METHOD("get_r1_diag_status"),
+	                     &EconomySim::get_r1_diag_status);
 	ClassDB::bind_method(D_METHOD("get_city_status", "city_id"),
 	                     &EconomySim::get_city_status);
 	// A4: consultas sob demanda (status leve + colunas + fichas + ranking).
@@ -396,6 +403,12 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_needs);
 	ClassDB::bind_method(D_METHOD("set_bootstrap_industry", "values"),
 	                     &EconomySim::set_bootstrap_industry);
+	// R1a: flags do rework (regional_cash). Sem o binding o GDScript nao liga a
+	// flag (`has_method` falso) e o mundo ON fica identico ao OFF.
+	ClassDB::bind_method(D_METHOD("set_rework_params", "values"),
+	                     &EconomySim::set_rework_params);
+	ClassDB::bind_method(D_METHOD("get_rework_params"),
+	                     &EconomySim::get_rework_params);
 	ClassDB::bind_method(D_METHOD("set_services", "services"),
 	                     &EconomySim::set_services);
 	ClassDB::bind_method(D_METHOD("set_sector_employment", "data"),
@@ -1230,6 +1243,20 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	seed_services();
 	// F9: grupos/empresas a partir dos ativos privados existentes.
 	seed_groups();
+	// R1a: aplica a flag do caixa unico regional (se ligada, o pool privado nasce
+	// da soma dos dois caixas). Desligada e no-op. O modo do sub-teto externo
+	// vem da configuracao ja lida (sem isso este segundo apply o zeraria para
+	// o default "all" e a calibracao seria inerte).
+	sim_core_.set_regional_cash(ws_.regional_cash, ws_.external_subceiling);
+	// R1b: revalida o Tesouro com o caixa regional ja aplicado (ON sem
+	// regional_cash continua sendo config invalida => desligado).
+	sim_core_.set_national_treasury(ws_.national_treasury,
+		ws_.regional_budget_share, ws_.regional_budget_floor_fraction,
+		ws_.regional_budget_works_share,
+		ws_.regional_budget_maintenance_share);
+	// R1c: revalida a flag das empresas-do-caixa-proprio com o caixa regional
+	// ja aplicado (ON sem regional_cash continua sendo config invalida).
+	sim_core_.set_firms_own_cash(ws_.firms_own_cash);
 }
 
 // ---------------------------------------------------------------------------
@@ -2160,6 +2187,89 @@ Dictionary EconomySim::get_city_status(const String& city_id) {
 	StatusCitySlot slot;
 	fill_city_status(city_index, slot, in_transit, true);
 	return slot.dict;
+}
+
+
+void EconomySim::set_r1_diag(bool enabled) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	sim_core_.set_r1_diag(enabled);
+}
+
+
+Dictionary EconomySim::get_r1_diag_status() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	out["day"] = ws_.day;
+	out["enabled"] = !ws_.cities.empty() && ws_.cities.front().r1_diag;
+	Array cities;
+	cities.resize(static_cast<int>(ws_.cities.size()));
+	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+		const City& city = ws_.cities[index];
+		Dictionary row;
+		row["id"] = String(city.id.c_str());
+		row["nation"] = String(city.nation.c_str());
+		row["unified"] = city.unified_cash;
+		row["private_cash"] = city.private_cash;
+		row["firm_sub"] = city.firm_sub;
+		row["service_sub"] = city.service_sub;
+		row["firm_cash"] = city.firm_cash;
+		row["service_cash"] = city.service_cash;
+		row["firm_in"] = city.r1_firm_in;
+		row["service_in"] = city.r1_service_in;
+		row["cut_firm"] = city.r1_ext_cut_firm;
+		row["cut_service"] = city.r1_ext_cut_service;
+		row["cut_n_firm"] = city.r1_ext_cut_n_firm;
+		row["cut_n_service"] = city.r1_ext_cut_n_service;
+		row["import_abroad"] = city.r1_import_abroad;
+		row["export_abroad"] = city.r1_export_abroad;
+		// R1b: orçamento regional (limite e gasto do mês/acumulado) e o
+		// restante de serviços da região — sonda de "nenhuma região sem
+		// dotação / serviços zerados".
+		row["regional_budget_limit_month"] = city.regional_budget_limit_month;
+		row["regional_budget_spent_month"] = city.regional_budget_spent_month;
+		row["regional_budget_spent_total"] = city.regional_budget_spent_total;
+		row["regional_budget_deferred_month"] =
+			city.regional_budget_deferred_month;
+		row["government_budget"] = city.government_budget;
+		PackedFloat64Array firm_out;
+		PackedFloat64Array service_out;
+		firm_out.resize(static_cast<int>(City::kR1FlowCount));
+		service_out.resize(static_cast<int>(City::kR1FlowCount));
+		for (int flow = 0; flow < static_cast<int>(City::kR1FlowCount); ++flow) {
+			firm_out[flow] = city.r1_firm_out[flow];
+			service_out[flow] = city.r1_service_out[flow];
+		}
+		row["firm_out"] = firm_out;
+		row["service_out"] = service_out;
+		cities[static_cast<int>(index)] = row;
+	}
+	out["cities"] = cities;
+	// R1b: Tesouro Nacional + orçamento regional (só leitura). `total` é o
+	// saldo vivo somado; `collected/spent` são acumulados desde o início.
+	Dictionary treasury_block;
+	treasury_block["enabled"] = ws_.national_treasury;
+	treasury_block["total"] = treasury::total_balance(ws_);
+	treasury_block["collected_total"] = ws_.treasury_collected_total;
+	treasury_block["spent_total"] = ws_.treasury_spent_total;
+	treasury_block["budget_share"] = ws_.regional_budget_share;
+	treasury_block["floor_fraction"] = ws_.regional_budget_floor_fraction;
+	treasury_block["works_share"] = ws_.regional_budget_works_share;
+	treasury_block["maintenance_share"] =
+		ws_.regional_budget_maintenance_share;
+	if (!ws_.treasury_config_error.empty()) {
+		treasury_block["config_error"] =
+			String(ws_.treasury_config_error.c_str());
+	}
+	Array treasury_nations;
+	for (const auto& row : ws_.nation_treasury) {
+		Dictionary entry;
+		entry["nation"] = String(row.first.c_str());
+		entry["cash"] = row.second;
+		treasury_nations.append(entry);
+	}
+	treasury_block["nations"] = treasury_nations;
+	out["treasury"] = treasury_block;
+	return out;
 }
 
 
@@ -4335,6 +4445,11 @@ Dictionary EconomySim::get_power_status() const {
 	out["day"] = ws_.day;
 	out["ready"] = ws_.power_ready;
 	out["cash"] = ws_.power_cash;
+	// R1c (QA t177): custo do dia que o setor nao pagou. So existe com a flag
+	// ON para o status OFF continuar sem chave nova. So leitura.
+	if (ws_.firms_own_cash) {
+		out["cost_unpaid"] = ws_.power_cost_unpaid;
+	}
 	const ogs::PowerParams& params = ws_.power_params;
 	// D-118: âncora salarial derivada do sim (XGS por salário-dia) e os
 	// limites EFETIVOS em XGS/MWh — diagnóstico do relatório de escala
@@ -4544,6 +4659,11 @@ Dictionary EconomySim::get_power_status() const {
 		entry["average_cost"] = grid.average_cost;
 		entry["scarcity_pass"] = grid.scarcity_pass;
 		entry["retail_margin"] = grid.retail_margin;
+		// R1c (QA t177): deficit tarifario NAO coberto do dia (sob ON e o
+		// deficit integral; sob OFF, o excedente ao orcamento). So leitura.
+		if (ws_.firms_own_cash) {
+			entry["retail_uncovered"] = grid.retail_uncovered;
+		}
 		entry["demand_mwh"] = grid.demand_mwh;
 		entry["served_mwh"] = grid.served_mwh;
 		entry["served_ratio"] = grid.demand_mwh > 0.0
@@ -4779,6 +4899,22 @@ Dictionary EconomySim::get_group(const String& group_id) const {
 
 Dictionary EconomySim::apply_fund_group(const String& group_id, double amount) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// R1c (QA t177): alavanca EXPLICITA sob `firms_own_cash` - o capital sai
+	// do TESOURO NACIONAL (o orcamento regional e limite, nao caixa) e o
+	// comando falha limpo sem saldo. Sem a flag, caminho antigo intacto.
+	if (ogs::treasury_levers_enabled(ws_)) {
+		const ogs::TreasuryFundResult outcome =
+			ogs::action_fund_group_from_treasury(ws_,
+				std::string(group_id.utf8().get_data()), amount);
+		Dictionary funded;
+		funded["funded"] = outcome.funded;
+		funded["moved"] = outcome.moved;
+		funded["error"] = String(outcome.error.c_str());
+		if (outcome.funded) {
+			funded["source"] = "treasury";
+		}
+		return funded;
+	}
 	Dictionary result;
 	result["funded"] = false;
 	result["moved"] = 0.0;
@@ -4926,10 +5062,31 @@ Dictionary EconomySim::apply_set_sector_incentive(const String& nation,
 Dictionary EconomySim::apply_create_state_company(const String& nation,
 		const String& name, double capital) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string tag(nation.utf8().get_data());
+	// R1c (QA t177): alavanca EXPLICITA sob `firms_own_cash` - o capital sai
+	// do TESOURO NACIONAL e, sem saldo, a estatal NAO e criada (falha limpa).
+	if (ogs::treasury_levers_enabled(ws_)) {
+		const String company_name = name.strip_edges();
+		const ogs::TreasuryCompanyResult outcome =
+			ogs::action_create_state_company_from_treasury(ws_, tag,
+				company_name.is_empty() ? std::string()
+					: std::string(company_name.utf8().get_data()), capital);
+		Dictionary created;
+		created["created"] = outcome.created;
+		created["error"] = String(outcome.error.c_str());
+		if (outcome.created) {
+			created["id"] = String(outcome.id.c_str());
+			created["capital"] = outcome.capital;
+			created["source"] = "treasury";
+			if (!outcome.warning.empty()) {
+				created["warning"] = String(outcome.warning.c_str());
+			}
+		}
+		return created;
+	}
 	Dictionary result;
 	result["created"] = false;
 	result["error"] = "";
-	const std::string tag(nation.utf8().get_data());
 	if (tag.empty()) {
 		result["error"] = "naÃ§Ã£o vazia";
 		return result;
@@ -5088,7 +5245,7 @@ Dictionary EconomySim::apply_nationalize(const String& city_id,
 		if (Group* owner = find_group(group_id)) {
 			owner->cash += compensation;
 		} else {
-			city->firm_cash += compensation;
+			city->firm_receive(compensation);
 		}
 	}
 	building->owner = "state";
@@ -5263,7 +5420,7 @@ bool EconomySim::apply_spend_government(const String& city_id, double amount) {
 	}
 	city->government_budget -= amount;
 	// ServiÃ§o domÃ©stico (prospecÃ§Ã£o, estudos, licenciamento).
-	city->service_cash += amount;
+	city->service_receive(amount);
 	city->service_revenue += amount;
 	city->service_profit += amount;
 	city->gdp += amount;

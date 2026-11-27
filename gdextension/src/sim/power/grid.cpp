@@ -814,6 +814,7 @@ void SimCore::phase_power() {
 		grid.served_mwh = 0.0;
 		grid.price = 0.0;
 		grid.retail_margin = 0.0;
+		grid.retail_uncovered = 0.0;
 		grid.curtailment_mwh = 0.0;
 		for (int fuel = 0; fuel < kPowerFuelCount; ++fuel) {
 			grid.generation_by_fuel[fuel] = 0.0;

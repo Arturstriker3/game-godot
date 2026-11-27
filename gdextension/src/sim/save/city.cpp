@@ -38,6 +38,24 @@ void write(Dictionary& data, const WorldState& ws, const SimCore& core) {
 		entry["sim_population"] = city.simulation_population;
 		entry["firm_cash"] = city.firm_cash;
 		entry["service_cash"] = city.service_cash;
+		// R1a: com o caixa unico regional ligado, `private_cash` e o dinheiro
+		// real do setor privado. Desligado a chave NAO entra (save byte-identico
+		// ao anterior).
+		if (city.unified_cash) {
+			entry["private_cash"] = city.private_cash;
+			// R1a (correcao): sub-saldos virtuais. A soma dos dois e o pool;
+			// o save OFF nao ganha nenhuma das chaves.
+			entry["firm_sub"] = city.firm_sub;
+			entry["service_sub"] = city.service_sub;
+			// R1a (continuacao): estado do sub-teto externo e da fatia medida.
+			// So no ON (save OFF continua byte-identico ao anterior).
+			entry["firm_revenue_share"] =
+				city.measured_firm_revenue_share();
+			entry["firm_external_paid_today"] =
+				city.firm_external_paid_today;
+			entry["service_external_paid_today"] =
+				city.service_external_paid_today;
+		}
 		// D-126 (v41): crédito de capital de giro da cidade e o prêmio de crise.
 		entry["firm_debt"] = city.firm_debt;
 		entry["firm_credit_arrears"] = city.firm_credit_arrears;
@@ -51,6 +69,18 @@ void write(Dictionary& data, const WorldState& ws, const SimCore& core) {
 		entry["service_wage_arrears"] = city.service_wage_arrears;
 		entry["rural_wage_arrears"] = city.rural_wage_arrears;
 		entry["government_budget"] = city.government_budget;
+		// R1b (save v43): orçamento regional. Só entra com o Tesouro ligado;
+		// save OFF continua byte-idêntico. O gasto acumulado é diagnóstico.
+		if (ws.national_treasury) {
+			entry["regional_budget_limit_month"] =
+				city.regional_budget_limit_month;
+			entry["regional_budget_spent_month"] =
+				city.regional_budget_spent_month;
+			entry["regional_budget_spent_total"] =
+				city.regional_budget_spent_total;
+			entry["regional_budget_deferred_month"] =
+				city.regional_budget_deferred_month;
+		}
 		entry["service_jobs"] = city.service_jobs;
 		entry["service_wage"] = city.service_wage;
 		entry["service_wage_bill"] = city.service_wage_bill;
@@ -568,6 +598,44 @@ void read(WorldState& ws, SimCore& core, const Dictionary& data, int version,
 		city.simulation_population = read_sim_population(entry, city.population);
 		city.firm_cash = double(entry.get("firm_cash", 0.0));
 		city.service_cash = double(entry.get("service_cash", 0.0));
+		// R1a: chave aditiva do caixa unico regional. Sem ela (save anterior ou
+		// flag desligada) o modo vem da configuracao e o pool nasce da soma.
+		if (entry.has("private_cash")) {
+			city.private_cash = double(entry.get("private_cash", 0.0));
+			city.unified_cash = true;
+		}
+		// R1a (correcao): sub-saldos virtuais. Save novo traz os dois; save
+		// legado (ON anterior a correcao, ou sem as chaves) e semeado dos
+		// espelhos antigos, preservando o total. `normalize_subbalances`
+		// fecha a invariante e impede sub-saldo negativo.
+		if (city.unified_cash) {
+			if (entry.has("firm_sub") && entry.has("service_sub")) {
+				city.firm_sub =
+					std::max(0.0, double(entry.get("firm_sub", 0.0)));
+				city.service_sub =
+					std::max(0.0, double(entry.get("service_sub", 0.0)));
+				city.firm_cash = city.firm_sub;
+				city.service_cash = city.service_sub;
+				city.normalize_subbalances();
+			} else {
+				city.seed_subbalances_from_mirrors();
+			}
+		}
+		// R1a (continuacao): fatia medida e pagamentos externos do dia. Sem as
+		// chaves (save OFF ou anterior a correcao), a fatia e derivada dos
+		// espelhos em `apply_regional_cash_after_load` e o dia comeca zerado.
+		if (entry.has("firm_revenue_share")) {
+			city.firm_revenue_share =
+				double(entry.get("firm_revenue_share", -1.0));
+		}
+		city.firm_external_paid_today = entry.has("firm_external_paid_today")
+			? std::max(0.0, double(entry.get("firm_external_paid_today", 0.0)))
+			: 0.0;
+		city.service_external_paid_today =
+			entry.has("service_external_paid_today")
+			? std::max(0.0,
+				double(entry.get("service_external_paid_today", 0.0)))
+			: 0.0;
 		// D-126 (v41): crédito de giro da cidade. Lido pela PRESENÇA da chave,
 		// não pela versão: `banks[].loans` é lido em qualquer versão, e zerar a
 		// dívida de um save reconstruído/rebaixado abriria o gap crédito ×
@@ -596,6 +664,16 @@ void read(WorldState& ws, SimCore& core, const Dictionary& data, int version,
 		city.rural_wage_arrears = version >= 26
 			? std::max(0.0, double(entry.get("rural_wage_arrears", 0.0))) : 0.0;
 		city.government_budget = double(entry.get("government_budget", 0.0));
+		// R1b (save v43): orçamento regional. Save anterior/ausente nasce 0;
+		// `apply_national_treasury_after_load` deriva o limite do restante.
+		city.regional_budget_limit_month = std::max(0.0,
+			double(entry.get("regional_budget_limit_month", 0.0)));
+		city.regional_budget_spent_month = std::max(0.0,
+			double(entry.get("regional_budget_spent_month", 0.0)));
+		city.regional_budget_spent_total = std::max(0.0,
+			double(entry.get("regional_budget_spent_total", 0.0)));
+		city.regional_budget_deferred_month = std::max(0.0,
+			double(entry.get("regional_budget_deferred_month", 0.0)));
 		// Save antigo não tem o índice: mantém a média mundial (1,0).
 		city.external_income_index = std::clamp(
 			double(entry.get("external_income_index", 1.0)), 0.0, 8.0);

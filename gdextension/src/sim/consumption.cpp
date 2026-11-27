@@ -7,6 +7,7 @@
 #include "housing.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
+#include "treasury.h"
 
 #include <algorithm>
 #include <array>
@@ -146,8 +147,16 @@ void SimCore::phase_income() {
 			service_base = std::max(0.0, domestic_income - basket_cost);
 		}
 		pop.service_spend = service_base * kServiceSpendShare;
-		city.service_cash += pop.service_spend;
-		city.government_budget += pop.taxes - pop.transfers;
+		city.service_receive(pop.service_spend);
+		// R1b: o imposto de renda do modelo e 100% rebatido (kTransferShare=1),
+		// entao o liquido e zero; se a politica mudar, o liquido passa a entrar
+		// no Tesouro da nacao com a flag ligada.
+		const double net_tax = pop.taxes - pop.transfers;
+		if (ws_.national_treasury && net_tax > 0.0) {
+			treasury::collect(ws_, city.nation, net_tax);
+		} else {
+			city.government_budget += net_tax;
+		}
 
 		// F7 calibração — RENDA POR ESTRATO. A folha por escolaridade vem do
 		// mercado de trabalho (já paga e escalada pela liquidez); o lucro vai só
@@ -348,7 +357,7 @@ void SimCore::phase_income() {
 			consumed += quantity * factor;
 			pop.consumed_by_category[slot] += quantity;
 			city.revenue_by_product[product] += paid;
-			city.firm_cash += paid;
+			city.firm_receive(paid);
 			scratch.consumed_total[city_index * n_products
 				+ static_cast<std::size_t>(product)] += quantity;
 			scratch.consumed_today[city_index * n_products
@@ -1007,7 +1016,7 @@ double SimCore::consume_category(City& city,
 		budget -= paid;
 		spend += paid;
 		city.revenue_by_product[product] += paid;
-		city.firm_cash += paid;
+		city.firm_receive(paid);
 		scratch.consumed_total[city_index * scratch.n_products
 			+ static_cast<std::size_t>(product)] += quantity;
 		scratch.consumed_today[city_index * scratch.n_products
@@ -1096,7 +1105,7 @@ void SimCore::consume_government(City& city,
 		market.sold += quantity;
 		city.government_budget -= paid;
 		city.government_goods_spend += paid;
-		city.firm_cash += paid;
+		city.firm_receive(paid);
 		city.revenue_by_product[product] += paid;
 		scratch.consumed_total[city_index * scratch.n_products
 			+ static_cast<std::size_t>(product)] += quantity;

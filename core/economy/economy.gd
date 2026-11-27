@@ -100,6 +100,12 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 ## G2: bootstrap industrial (semente por produtores reais). Ausente/desligado
 ## mantem o mundo bit-identico (nenhuma planta nova no dia 0).
 const BOOTSTRAP_INDUSTRY_PATH := "res://data/definitions/economy/bootstrap_industry.json"
+## R1a (rework): flags do rework em `rework.json`. `regional_cash.enabled` liga
+## o caixa unico do setor privado (firm_cash + service_cash = City.private_cash).
+## Ligado por default desde o merge do R1 (27/11/2026); desligado mantem o mundo
+## byte-a-byte anterior (caminho legado). Lido ANTES do mundo (aplica ao criar) e
+## o save carrega o estado da flag.
+const REWORK_PATH := "res://data/definitions/economy/rework.json"
 ## Serviços (F8): 20 setores, compradores, insumos e mistura de escolaridade.
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 ## Moedas e taxas de câmbio por nação (F5; âncora XGS, regime peg/float).
@@ -204,6 +210,12 @@ func _ready() -> void:
 	sim.set_needs(_load_json_dict(NEEDS_PATH))
 	# G2: semente industrial (participacao real x ancora x seed_fraction).
 	# Antes do mundo; ausente/desligada nao cria nada.
+	# R1a: flags do rework (regional_cash). Antes do mundo, como crise/brain.
+	# Ausente ou desligada: nenhuma mudanca (mundo bit-identico).
+	if sim.has_method("set_rework_params"):
+		var rework := _load_json_dict_optional(REWORK_PATH)
+		if not rework.is_empty():
+			sim.set_rework_params(rework)
 	if sim.has_method("set_bootstrap_industry"):
 		var bootstrap := _load_json_dict_optional(BOOTSTRAP_INDUSTRY_PATH)
 		if not bootstrap.is_empty():

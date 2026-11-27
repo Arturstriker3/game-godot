@@ -314,6 +314,32 @@ Value to_value(const WorldState& ws, const SimCore& core,
 	data["version"] = kSaveVersion;
 	data["active"] = ws.active;
 	data["world_mode"] = ws.world_mode;
+	// R1a: estado da flag `rework.regional_cash`. So entra quando ligada; um
+	// save desligado continua sem a chave (byte-identico ao anterior).
+	if (ws.regional_cash) {
+		data["regional_cash"] = true;
+	}
+	// R1b: estado do Tesouro Nacional. So entra quando ligado; saldos por
+	// nacao (std::map = ordem deterministica) e os acumulados da sonda. Um save
+	// desligado continua sem a chave (byte-identico ao anterior).
+	if (ws.national_treasury) {
+		data["national_treasury"] = true;
+		Dictionary block = make_object();
+		block["version"] = 2;
+		Dictionary nations = make_object();
+		for (const auto& row : ws.nation_treasury) {
+			nations[sim_str(row.first.c_str())] = row.second;
+		}
+		block["nations"] = nations;
+		block["collected_total"] = ws.treasury_collected_total;
+		block["spent_total"] = ws.treasury_spent_total;
+		data["treasury"] = block;
+	}
+	// R1c: estado da flag `rework.firms_own_cash`. So entra quando ligada; um
+	// save desligado continua sem a chave (byte-identico ao anterior).
+	if (ws.firms_own_cash) {
+		data["firms_own_cash"] = true;
+	}
 	data["day"] = ws.day;
 	// A6: cadência por sistema. Muda QUANDO cada cidade fecha o mês/semana, então
 	// é estado verdadeiro do mundo (não configuração de exibição).
@@ -1088,7 +1114,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 		migrate_index, legacy_substitute, has_saved_products,
 		needs_legacy_migration, legacy_fuel_index,
 		legacy_gasoline, legacy_diesel, legacy_jet);
-
+	// R1a: aplica a flag do caixa unico regional DEPOIS das cidades. A flag do
+	// save vence a configuracao; cidade sem `private_cash` (save anterior) e
+	// sincronizada a partir dos dois espelhos, preservando o total.
+	core.apply_regional_cash_after_load(
+		bool(data.get("regional_cash", false)),
+		data.has("regional_cash"));
 	ws.in_transit.clear();
 	Array transit = data.get("in_transit", Array());
 	for (int index = 0; index < transit.size(); ++index) {
@@ -1338,6 +1369,50 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 			core.seed_strata(city, nullptr);
 		}
 	}
+	// R1b: Tesouro Nacional — so DEPOIS de todo o load por cidade. O
+	// `government_budget` vem de `city::read` e o caixa de obras
+	// (`CityGov::cash`) so existe depois de `read_urban`; aplicar antes (QA
+	// t173) fazia o 1o reconcile ler resto de obras = 0, tratar o caixa da
+	// prefeitura como receita do Tesouro (criando dinheiro) e zerar a dotacao
+	// de obras do mes. A flag do save vence a configuracao, mas so vale com
+	// `regional_cash` ligada (o core trata ON sem regional como config
+	// invalida e desliga). Saldos/acumulados vem do bloco `treasury`
+	// (versionado); save sem o bloco = Tesouro vazio (ou migracao v42->v43:
+	// o caixa publico municipal e absorvido, ver
+	// `apply_national_treasury_after_load`).
+	{
+		std::map<std::string, double> treasury_balances;
+		double collected_total = 0.0;
+		double spent_total = 0.0;
+		const Variant block_variant = data.get("treasury", Dictionary());
+		if (block_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& block = block_variant;
+			collected_total = double(block.get("collected_total", 0.0));
+			// v1 (envelopes) guardava `distributed_total`; v2 usa `spent_total`.
+			spent_total = double(block.get("spent_total",
+				block.get("distributed_total", 0.0)));
+			const Variant nations_variant = block.get("nations", Dictionary());
+			if (nations_variant.get_type() == Variant::DICTIONARY) {
+				const Dictionary& nations = nations_variant;
+				for (const auto& row : nations.entries()) {
+					if (row.first.empty()) {
+						continue;
+					}
+					treasury_balances[row.first] = double(row.second);
+				}
+			}
+		}
+		core.apply_national_treasury_after_load(
+			bool(data.get("national_treasury", false)),
+			data.has("national_treasury"), treasury_balances,
+			collected_total, spent_total);
+	}
+	// R1c: a flag das empresas-do-caixa-proprio do save vence a configuracao,
+	// mas so vale com `regional_cash` ligada (o core trata ON sem regional como
+	// config invalida e desliga).
+	core.apply_firms_own_cash_after_load(
+		bool(data.get("firms_own_cash", false)),
+		data.has("firms_own_cash"));
 	// G (v24) — estado da safra por (cidade, produto, safra). Save v23 e
 	// anteriores não têm o bloco: o estado nasce zerado (a safra do ano
 	// corrente recomeça do zero no dia do load; nada é inventado para trás).

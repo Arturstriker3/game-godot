@@ -72,11 +72,16 @@ void SimCore::phase_power_settle() {
 		charge_households(city.pop, bill_h);
 		const double paid_h = std::max(0.0, before - city.pop.savings);
 		pool += paid_h;
-		const double paid_i = std::min(bill_i, std::max(0.0, city.firm_cash));
-		city.firm_cash -= paid_i;
+		// R1a: pagamento ao setor de energia e EXTERNO ao caixa privado; com o
+		// caixa unico ele sai do pool uma vez e respeita o sub-teto do setor
+		// (fatia da receita medida). Desligado, e a conta de antes.
+		const double paid_i = std::min(bill_i,
+			city.firm_external_room_request(bill_i));
+		city.firm_external_pay(paid_i, City::kR1Energy);
 		pool += paid_i;
-		const double paid_s = std::min(bill_s, std::max(0.0, city.service_cash));
-		city.service_cash -= paid_s;
+		const double paid_s = std::min(bill_s,
+			city.service_external_room_request(bill_s));
+		city.service_external_pay(paid_s, City::kR1Energy);
 		pool += paid_s;
 		const double paid_g = std::min(bill_g,
 			std::max(0.0, city.government_budget));
@@ -91,11 +96,21 @@ void SimCore::phase_power_settle() {
 		const double paid_total = paid_h + paid_i + paid_s + paid_g;
 		const double margin = paid_total - served * wholesale;
 		double to_state = 0.0;
+		// R1c (QA t177): deficit que o Estado NAO cobriu no dia. Com a flag ON
+		// e o deficit integral; com OFF, o excedente ao orcamento da cidade.
+		// So medicao: nao muda a liquidacao.
+		double uncovered = 0.0;
 		if (margin > 0.0) {
 			to_state = margin;
 		} else if (margin < 0.0) {
-			to_state = -std::min(-margin,
-				std::max(0.0, city.government_budget));
+			// R1c: com `firms_own_cash` ligada o Estado nao cobre
+			// automaticamente o deficit tarifario do setor eletrico (aporte
+			// publico automatico a empresa); a diferenca fica como perda
+			// declarada do setor.
+			to_state = ws.firms_own_cash ? 0.0
+				: -std::min(-margin,
+					std::max(0.0, city.government_budget));
+			uncovered = -margin + to_state;
 		}
 		if (to_state > 0.0) {
 			pool -= to_state;
@@ -108,6 +123,7 @@ void SimCore::phase_power_settle() {
 		const auto grid_found = ws.power_grids.find(city.nation);
 		if (grid_found != ws.power_grids.end()) {
 			grid_found->second.retail_margin += to_state;
+			grid_found->second.retail_uncovered += uncovered;
 		}
 	}
 	// 2. Custo das usinas do dia: combustível (mercado) + O&M + salários.
@@ -175,6 +191,10 @@ void SimCore::phase_power_settle() {
 	// combustível aos produtores (ou ao exterior), O&M/salários na cidade.
 	const double pay_ratio = total_cost > 1e-9
 		? std::clamp(pool / total_cost, 0.0, 1.0) : 0.0;
+	// R1c (QA t177): custo de geracao do dia que o pool NAO conseguiu pagar.
+	// Perda declarada do setor (nao vira divida) e contador da sonda
+	// `--r1-diag`; nao muda `pay_ratio` nem os pagamentos.
+	ws.power_cost_unpaid = std::max(0.0, total_cost - pool);
 	double paid_total = 0.0;
 	for (std::size_t p = 0; p < plant_count; ++p) {
 		const PowerPlant& plant = ws.power_plants[p];
@@ -195,12 +215,14 @@ void SimCore::phase_power_settle() {
 			const double fuel_list = fuel_local[p] + fuel_import[p];
 			const double local_share = fuel_list > 1e-12
 				? fuel_local[p] / fuel_list : 0.0;
-			city.firm_cash += fuel_paid * local_share;
+			// R1a: receita do gerador e do O&M entra pelo credito do setor de
+			// firmas (com o caixa unico, credita o pool; desligado, o caixa).
+			city.firm_receive(fuel_paid * local_share);
 			ws.foreign_cash += fuel_paid * (1.0 - local_share);
 			paid_total += fuel_paid;
 		}
 		const double opex_paid = opex[p] * pay_ratio;
-		city.firm_cash += opex_paid;
+		city.firm_receive(opex_paid);
 		paid_total += opex_paid;
 		const double wages_paid = wages[p] * pay_ratio;
 		credit_households(city.pop, wages_paid);

@@ -857,7 +857,20 @@ void SimCore::trade_food() {
 			// o mesmo dinheiro, não uma transferência nova. Sem isso, uma cidade
 			// com poupança alta e firma sem caixa (São Paulo, 28 M) ficava com
 			// fome enquanto o dinheiro dormia na conta das famílias (§19).
-			const double firm_cash = std::max(0.0, buyer.city->firm_cash);
+			// R1a (continuacao): a parcela da firma respeita o sub-saldo do
+			// setor; governo e familias continuam cobrindo o resto. Desligado,
+			// o teto e o caixa da firma.
+			// R1a (medicao): a cesta alimentar e o pagamento ESSENCIAL - no
+			// modo `nonessential` a firma pode usar o pool inteiro, que e o
+			// ponto do sub-teto que estrangulava a comida das economias
+			// pequenas (food_calories > 0 e a mesma classificacao do food_ratio).
+			// R1a (QA t167): o sub-teto EXTERNO so vale para vendedor de fora
+			// do pais. Compra de outra cidade do mesmo pais e transferencia
+			// dentro do setor privado nacional: autoriza pelo sub-saldo e nao
+			// consome o teto do experimento.
+			const bool abroad = seller->nation != buyer.city->nation;
+			const double firm_cash = buyer.city->trade_firm_room(abroad,
+				(amount_wanted_ge / factor) * unit_cost, true);
 			const double gov_budget = std::max(0.0, buyer.city->government_budget);
 			const double savings = std::max(0.0, buyer.city->pop.savings);
 			const double payable = firm_cash + gov_budget + savings;
@@ -914,15 +927,21 @@ void SimCore::trade_food() {
 			const double freight = unit_freight * amount_tons;
 			const double tariff_paid = unit_tariff * amount_tons;
 
-			buyer.city->firm_cash -= firm_share;
+			buyer.city->trade_firm_pay(abroad, firm_share,
+				abroad ? City::kR1ImportsAbroad : City::kR1TradeDomestic);
+			if (buyer.city->r1_diag && abroad) {
+				// R1a (t163): comercio internacional do dia (valor de origem).
+				buyer.city->r1_import_abroad += cost;
+				seller->r1_export_abroad += cost;
+			}
 			buyer.city->government_budget -= gov_share;
 			// B2: a parcela da importação paga pela poupança sai rateada pelos
 			// quintis (a soma dos estratos acompanha o escalar).
 			if (savings_share > 0.0) {
 				charge_households(buyer.city->pop, savings_share);
 			}
-			seller->firm_cash += cost;
-			buyer.city->service_cash += freight;
+			seller->firm_receive(cost);
+			buyer.city->service_receive(freight);
 			buyer.city->freight_revenue += freight;
 			// Tarifa: paga pelo comprador e recebida pelo próprio governo
 			// (dinheiro conservado; receita publicada no status).
@@ -1035,7 +1054,7 @@ void SimCore::trade_food() {
 					const double demurrage_paid = std::min(
 						demurrage, std::max(0.0, buyer.city->government_budget));
 					buyer.city->government_budget -= demurrage_paid;
-					buyer.city->service_cash += demurrage_paid;
+					buyer.city->service_receive(demurrage_paid);
 					buyer.city->freight_revenue += demurrage_paid;
 					total_freight_cost += demurrage_paid;
 					total_transit += port_delay_days * kHoursPerDay;
@@ -1410,8 +1429,12 @@ void SimCore::trade_goods() {
 				// Pagamento: firma doméstica (comprador) -> firma vendedora +
 				// frete ao serviço do comprador. Governo cobre o que a firma não
 				// puder (insumo essencial), conservando o dinheiro.
+				// R1a (QA t167): só o vendedor de fora do país é pagamento
+				// EXTERNO; outra cidade do mesmo país usa o sub-saldo.
+				const bool abroad = seller.nation != buyer_city.nation;
 				const double unit_cost = offer.unit_cost;
-				const double payable = std::max(0.0, buyer_city.firm_cash)
+				const double payable = buyer_city.trade_firm_room(abroad,
+						amount * unit_cost)
 					+ std::max(0.0, buyer_city.government_budget);
 				if (amount * unit_cost > payable) {
 					amount = unit_cost > 0.0 ? payable / unit_cost : 0.0;
@@ -1455,7 +1478,7 @@ void SimCore::trade_goods() {
 				}
 				const double total_cost = amount * unit_cost;
 				const double firm_share = std::min(total_cost,
-					std::max(0.0, buyer_city.firm_cash));
+					buyer_city.trade_firm_room(abroad));
 				const double gov_share = std::min(total_cost - firm_share,
 					std::max(0.0, buyer_city.government_budget));
 				const double paid = firm_share + gov_share;
@@ -1465,10 +1488,16 @@ void SimCore::trade_goods() {
 				const double goods_value = amount * offer.origin_anchor;
 				const double freight = amount * offer.unit_freight;
 				const double tariff_paid = amount * offer.unit_tariff;
-				buyer_city.firm_cash -= firm_share;
+				buyer_city.trade_firm_pay(abroad, firm_share,
+					abroad ? City::kR1ImportsAbroad : City::kR1TradeDomestic);
+				if (buyer_city.r1_diag && abroad) {
+					// R1a (t163): comercio internacional do dia (valor de origem).
+					buyer_city.r1_import_abroad += goods_value;
+					seller.r1_export_abroad += goods_value;
+				}
 				buyer_city.government_budget -= gov_share;
-				seller.firm_cash += goods_value;
-				buyer_city.service_cash += freight;
+				seller.firm_receive(goods_value);
+				buyer_city.service_receive(freight);
 				buyer_city.freight_revenue += freight;
 				buyer_city.government_budget += tariff_paid;
 				buyer_city.tariff_revenue += tariff_paid;
@@ -1553,7 +1582,7 @@ void SimCore::trade_goods() {
 						const double demurrage_paid = std::min(demurrage,
 							std::max(0.0, buyer_city.government_budget));
 						buyer_city.government_budget -= demurrage_paid;
-						buyer_city.service_cash += demurrage_paid;
+						buyer_city.service_receive(demurrage_paid);
 						buyer_city.freight_revenue += demurrage_paid;
 						total_freight_cost += demurrage_paid;
 						total_transit += port_delay_days * kHoursPerDay;

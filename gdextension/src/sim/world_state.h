@@ -387,6 +387,68 @@ struct WorldState {
 	// (initialize_world), em vez do cenário AGRIA/PORTUS. Ativa o comércio
 	// genérico entre cidades no lugar dos blocos específicos de validação.
 	bool world_mode = false;
+	// R1a: flag `rework.regional_cash` (data/definitions/economy/rework.json).
+	// true = firm_cash+service_cash formam UM caixa privado por regiao
+	// (`City::private_cash`). Default false = comportamento anterior.
+	bool regional_cash = false;
+	// R1a (medicao): modo do sub-teto externo por setor, espelhado em
+	// `City::external_subceiling`. Default `off` = sem teto por fatia; quem
+	// limita o pagamento externo e o sub-saldo do setor. O teto por fatia
+	// (t160-t163) segue como experimento, nao e serializado (configuracao lida
+	// do rework.json).
+	int external_subceiling = 0;
+	// R1b - TESOURO NACIONAL + ORCAMENTO REGIONAL (flag
+	// `rework.national_treasury`).
+	//
+	// Ligada (so com `regional_cash` tambem ligada): a arrecadacao de impostos
+	// municipais (IPTU + taxas locais; o imposto de renda do modelo e rebatido
+	// 100%, ver kTransferShare) passa a entrar no Tesouro da nacao
+	// (`nation_treasury`) em vez do caixa da cidade. A equalizacao fiscal e o
+	// repasse municipal morrem. O dinheiro NAO e transferido para a regiao:
+	// cada regiao recebe apenas um LIMITE mensal de gasto
+	// (`regional_budget_*`), proporcional a populacao com piso minimo; todo
+	// gasto publico debita o Tesouro ate esse limite e o que nao for gasto
+	// permanece no Tesouro.
+	//
+	// Desligada (default): nenhuma chave nova no save, nenhum numero muda.
+	bool national_treasury = false;
+	// Saldo do Tesouro por nacao (XGS). `std::map` pela ordem deterministica do
+	// save/status. So tem valores com a flag ligada.
+	std::map<std::string, double> nation_treasury;
+	// Parametros declarados do orcamento regional (rework.json):
+	//   share                 fracao do saldo do Tesouro disponibilizada como
+	//                         limite no mes (1 = todo o saldo);
+	//   floor_fraction        piso por regiao como fracao do rateio igualitario
+	//                         (peso = max(pop_share, floor/n_regioes));
+	//   works_share           fatia do limite reservada a obras
+	//                         (`CityGov::cash`); o resto vai para servicos;
+	//   maintenance_share     teto da manutencao dentro do limite de servicos.
+	double regional_budget_share = 1.0;
+	double regional_budget_floor_fraction = 0.5;
+	double regional_budget_works_share = 0.35;
+	double regional_budget_maintenance_share = 0.5;
+	// O primeiro mes foi aberto (sweep do caixa publico + dotacao inicial)?
+	// Impede que um segundo apply da mesma configuracao zere o mes em curso.
+	bool regional_budget_started = false;
+	// Somas acumuladas (so diagnostico/teste; nao entram em decisao):
+	// arrecadado no Tesouro e gasto publico debitado do Tesouro. O saldo do
+	// Tesouro e o unico caixa publico sob a flag.
+	double treasury_collected_total = 0.0;
+	double treasury_spent_total = 0.0;
+	// Configuracao invalida (treasury ON sem regional_cash ON): mensagem para
+	// o log/status; a flag e tratada como desligada.
+	std::string treasury_config_error;
+	// R1c - EMPRESAS OPERAM 100% DO CAIXA PROPRIO (flag
+	// `rework.firms_own_cash`). Ligada (so com `regional_cash` tambem ligada):
+	// morrem os aportes publicos automaticos a empresas/plantas - subsidio
+	// setorial ad valorem, cobertura do prejuizo da planta estrategica e a
+	// cobertura do deficit tarifario do setor eletrico. Compras publicas
+	// legitimas (alimentacao, obras, servicos, frota) seguem pagando pelos
+	// canais normais. Desligada (default) = comportamento anterior.
+	bool firms_own_cash = false;
+	// Configuracao invalida (firms ON sem regional_cash ON): mensagem para o
+	// log/status; a flag e tratada como desligada.
+	std::string firms_config_error;
 	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
 	// laboratório; os padrões preservam o comportamento do jogo).
 	double natural_unemployment = 0.04;
@@ -752,6 +814,10 @@ struct WorldState {
 	bool power_interconnects_ready = false;
 	bool power_ready = false;
 	double power_cash = 0.0;
+	// R1c (diagnostico, QA t177): custo de geracao do dia que o pool do setor
+	// eletrico nao pagou (perda declarada, nao divida). Derivado; so status/
+	// sonda, nao entra no save.
+	double power_cost_unpaid = 0.0;
 	// REGRA (não persistida): espelho de data/definitions/energy/power_params.json.
 	PowerParams power_params;
 	// Preços-base dos bens (data-driven: set_goods/initialize_world).

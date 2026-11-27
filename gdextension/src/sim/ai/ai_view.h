@@ -82,6 +82,11 @@ struct AiCityRow {
 	std::string nation;
 	std::string landmass;
 	double firm_cash = 0.0;
+	// R1a (correcao dos sub-saldos): `firm_cash` ja e o sub-saldo das firmas
+	// (o antigo caixa do setor), nunca o pool inteiro. A fatia de receita do
+	// experimento t160-t163 nao entra mais na base do investidor; o campo
+	// permanece (= 1,0) para os consumidores antigos. Desligada a flag = 1.0.
+	double firm_revenue_share = 1.0;
 	// C2b1 (D-104): taxa básica anual da moeda do país (leitura congelada do
 	// dia; 0 = sem moeda/sem política — o custo de capital não entra).
 	double policy_rate = 0.0;

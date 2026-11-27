@@ -435,7 +435,7 @@ void EconomySim::seed_industry() {
 			city.simulation_population * kNeedPerCapita * 0.05, 2.0, 20.0);
 		const Recipe& flour = ws_.recipes[static_cast<std::size_t>(flour_recipe)];
 		const double cost = capacity * flour.capital_per_capacity;
-		if (city.firm_cash + city.government_budget < cost * 2.0) {
+		if (city.private_total() + city.government_budget < cost * 2.0) {
 			continue;
 		}
 		const String city_id(city.id.c_str());
@@ -666,8 +666,103 @@ void EconomySim::seed_industry() {
 	}
 }
 
-void EconomySim::set_bootstrap_industry(const Dictionary& values) {
+void EconomySim::set_rework_params(const Dictionary& values) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// R1a: `regional_cash.enabled` liga o caixa unico do setor privado. A
+	// ausencia do bloco/chave mantem o default (desligado), como os demais
+	// JSON de economia. Aplicar em cidade ja existente preserva o total
+	// (private_cash nasce de firm_cash + service_cash).
+	const Dictionary block = values.get("regional_cash", Dictionary());
+	const bool enabled = bool(block.get("enabled", false));
+	// R1a (medicao): calibracao do sub-teto externo. Ausente = "off" (quem
+	// limita o pagamento externo e o sub-saldo do setor; o modo por fatia
+	// t160-t163 esta superado); "all" = fatia da receita; "nonessential" = a
+	// cesta alimentar (food_calories > 0) ignora a fatia, o resto segue nela.
+	const String mode = block.get("external_subceiling", String("off"));
+	int subceiling = 0;
+	if (mode == "all") {
+		subceiling = 1;
+	} else if (mode == "nonessential") {
+		subceiling = 2;
+	}
+	sim_core_.set_regional_cash(enabled, subceiling);
+	// R1b: `national_treasury` (Tesouro Nacional + orçamento regional). Só vale
+	// com `regional_cash` ligada; a violação é registrada e impressa como erro
+	// claro no log (a flag é tratada como desligada).
+	const Dictionary treasury_block =
+		values.get("national_treasury", Dictionary());
+	const bool treasury_enabled = bool(treasury_block.get("enabled", false));
+	const Dictionary regional_budget =
+		treasury_block.get("regional_budget", Dictionary());
+	const double budget_share = double(regional_budget.get("share", 1.0));
+	const double floor_fraction =
+		double(regional_budget.get("population_floor_fraction", 0.5));
+	const double works_share = double(regional_budget.get("works_share", 0.35));
+	const double maintenance_share =
+		double(regional_budget.get("maintenance_share", 0.5));
+	sim_core_.set_national_treasury(treasury_enabled, budget_share,
+		floor_fraction, works_share, maintenance_share);
+	if (treasury_enabled && !enabled) {
+		UtilityFunctions::push_error(
+			"rework.national_treasury requer rework.regional_cash: flag "
+			"national_treasury tratada como desligada");
+	}
+	// R1c: `firms_own_cash` (empresas operam 100% do caixa proprio). Só vale
+	// com `regional_cash` ligada; a violação é registrada e impressa como erro
+	// claro no log (a flag é tratada como desligada).
+	const Dictionary firms_block = values.get("firms_own_cash", Dictionary());
+	const bool firms_enabled = bool(firms_block.get("enabled", false));
+	sim_core_.set_firms_own_cash(firms_enabled);
+	if (firms_enabled && !enabled) {
+		UtilityFunctions::push_error(
+			"rework.firms_own_cash requer rework.regional_cash: flag "
+			"firms_own_cash tratada como desligada");
+	}
+	status_invalidate();
+}
+
+Dictionary EconomySim::get_rework_params() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	Dictionary block;
+	block["enabled"] = ws_.regional_cash;
+	if (ws_.external_subceiling == 0) {
+		block["external_subceiling"] = String("off");
+	} else if (ws_.external_subceiling == 2) {
+		block["external_subceiling"] = String("nonessential");
+	} else {
+		block["external_subceiling"] = String("all");
+	}
+	out["regional_cash"] = block;
+	// R1b: estado do Tesouro (flag, config inválida e parâmetros do orçamento
+	// regional).
+	Dictionary treasury;
+	treasury["enabled"] = ws_.national_treasury;
+	if (!ws_.treasury_config_error.empty()) {
+		treasury["config_error"] = String(ws_.treasury_config_error.c_str());
+	}
+	Dictionary regional_budget;
+	regional_budget["share"] = ws_.regional_budget_share;
+	regional_budget["population_floor_fraction"] =
+		ws_.regional_budget_floor_fraction;
+	regional_budget["works_share"] = ws_.regional_budget_works_share;
+	regional_budget["maintenance_share"] =
+		ws_.regional_budget_maintenance_share;
+	treasury["regional_budget"] = regional_budget;
+	treasury["collected_total"] = ws_.treasury_collected_total;
+	treasury["spent_total"] = ws_.treasury_spent_total;
+	out["national_treasury"] = treasury;
+	// R1c: estado da flag `firms_own_cash` (ligada e motivo da config inválida).
+	Dictionary firms;
+	firms["enabled"] = ws_.firms_own_cash;
+	if (!ws_.firms_config_error.empty()) {
+		firms["config_error"] = String(ws_.firms_config_error.c_str());
+	}
+	out["firms_own_cash"] = firms;
+	return out;
+}
+
+void EconomySim::set_bootstrap_industry(const Dictionary& values) {	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	BootstrapIndustry cfg;
 	cfg.loaded = true;
 	cfg.enabled = bool(values.get("enabled", false));

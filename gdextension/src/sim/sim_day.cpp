@@ -152,6 +152,8 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// 9d. C2b1: juro básico por moeda e emissão (só o BC controlado monetiza
 	// o déficit medido do dia). Roda depois de todo o gasto/receita do dia, de
 	// modo que o déficit e o caixa do governo do fecho sejam os medidos.
+	// R1b: antes, o gasto público já debitado do Tesouro no dia.
+	core.reconcile_regional_budget();
 	core.phase_monetary();
 
 	// 9e. C3 (D-107): crédito de empresa. Juro do dia, juros vencidos,
@@ -193,6 +195,9 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra
 	// e reverte. O log fica na fachada.
+	// R1b: fecha o gasto/receita públicos do intervalo (crédito/crise) antes do
+	// invariante de conservação.
+	core.reconcile_regional_budget();
 	core.phase_invariants();
 }
 

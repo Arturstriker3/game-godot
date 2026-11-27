@@ -8,6 +8,7 @@
 #include "storage.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
+#include "treasury.h"
 
 #include <algorithm>
 #include <array>
@@ -60,6 +61,263 @@ const City* SimCore::find_city(const std::string& id) const {
 		return nullptr;
 	}
 	return &ws_.cities[static_cast<std::size_t>(found->second)];
+}
+
+void SimCore::set_regional_cash(bool enabled, int external_subceiling) {
+	// R1b (QA t173): o Tesouro Nacional so existe com o caixa unico regional.
+	// Desligar o caixa regional desliga o Tesouro na MESMA chamada —
+	// reconcilia o gasto pendente, devolve o saldo do Tesouro ao mundo OFF
+	// (dinheiro real na primeira cidade da nacao) e limpa a flag. Sem isso a
+	// combinacao invalida sobrevivia e `treasury::enabled()` continuava true.
+	if (!enabled && ws_.national_treasury) {
+		treasury::reconcile(ws_);
+		treasury::clear_counters(ws_);
+		treasury::drain_to_regions(ws_);
+		ws_.national_treasury = false;
+		ws_.gov_cash_open.clear();
+		ws_.treasury_config_error =
+			"regional_cash desligado; national_treasury tratado como desligado";
+	}
+	// R1c: desligar o caixa regional desliga as empresas-do-caixa-proprio na
+	// mesma chamada (a flag nao tem sentido sem o pool).
+	if (!enabled) {
+		ws_.firms_own_cash = false;
+		ws_.firms_config_error.clear();
+	}
+	ws_.regional_cash = enabled;
+	ws_.external_subceiling = external_subceiling;
+	for (City& city : ws_.cities) {
+		// R1a (medicao): o modo do sub-teto vale em qualquer chamada - trocar
+		// de modo nao mexe no dinheiro, so na leitura do teto.
+		city.external_subceiling = external_subceiling;
+		// Preserva o total: ao ligar, o pool nasce da soma dos dois caixas;
+		// ao desligar, os dois campos seguem como o estado (private_cash sai
+		// do save).
+		if (enabled && !city.unified_cash) {
+			city.unified_cash = true;
+			// Semeadura ANTES da fatia: `measured_firm_revenue_share` le os
+			// sub-saldos quando o pool esta ligado; sincronizar primeiro evita
+			// medir 50/50 com os subs ainda zerados.
+			city.sync_private_cash();
+			// R1a (continuacao): a fatia inicial do experimento t160-t163 e a
+			// razao dos dois caixas no instante da fusao; o pendulo mensal a
+			// atualiza depois.
+			if (city.firm_revenue_share < 0.0) {
+				city.firm_revenue_share =
+					city.measured_firm_revenue_share();
+			}
+		} else if (enabled) {
+			// Save/cidade que ja veio com o pool: garante a invariante dos
+			// sub-saldos (idempotente em save novo).
+			city.normalize_subbalances();
+		} else {
+			city.unified_cash = false;
+			city.private_cash = 0.0;
+			city.firm_sub = 0.0;
+			city.service_sub = 0.0;
+			city.firm_revenue_share = -1.0;
+			city.firm_external_paid_today = 0.0;
+			city.service_external_paid_today = 0.0;
+		}
+	}
+}
+
+void SimCore::set_r1_diag(bool enabled) {
+	// R1a (t163): instrumentacao de medicao. Nao decide nada; so habilita as
+	// escritas do livro por cidade (com false, nenhum numero do mundo muda).
+	for (City& city : ws_.cities) {
+		city.r1_diag = enabled;
+		city.r1_reset_day();
+	}
+}
+
+void SimCore::apply_regional_cash_after_load(bool saved_flag,
+		bool has_saved_flag) {
+	const bool enabled = has_saved_flag ? saved_flag : ws_.regional_cash;
+	ws_.regional_cash = enabled;
+	for (City& city : ws_.cities) {
+		// R1a (medicao): o modo vem da configuracao ja aplicada (rework.json).
+		city.external_subceiling = ws_.external_subceiling;
+		if (enabled) {
+			if (!city.unified_cash) {
+				// Save anterior a flag (ou sem a chave): o pool nasce da soma
+				// e os sub-saldos sao semeados dos dois caixas antigos.
+				city.unified_cash = true;
+				city.sync_private_cash();
+			} else {
+				// Save ON: `normalize_subbalances` fecha a invariante e e
+				// idempotente quando o save ja trouxe os dois sub-saldos.
+				city.normalize_subbalances();
+			}
+			// Save sem a fatia medida (anterior a esta correcao): deriva da
+			// razao dos espelhos, que o load preservou.
+			if (city.firm_revenue_share < 0.0) {
+				city.firm_revenue_share =
+					city.measured_firm_revenue_share();
+			}
+		} else {
+			city.unified_cash = false;
+			city.private_cash = 0.0;
+			city.firm_sub = 0.0;
+			city.service_sub = 0.0;
+			city.firm_revenue_share = -1.0;
+			city.firm_external_paid_today = 0.0;
+			city.service_external_paid_today = 0.0;
+		}
+	}
+}
+
+void SimCore::set_national_treasury(bool enabled, double budget_share,
+		double floor_fraction, double works_share,
+		double maintenance_share) {
+	// R1b - configuracao invalida: o Tesouro so existe com o caixa unico
+	// regional (R1a). A flag e tratada como desligada e o motivo fica no
+	// `treasury_config_error` (a fachada imprime no log do Godot).
+	if (enabled && !ws_.regional_cash) {
+		ws_.treasury_config_error =
+			"rework.national_treasury requer rework.regional_cash ligado; "
+			"flag tratada como desligada";
+		if (ws_.national_treasury) {
+			treasury::reconcile(ws_);
+			treasury::clear_counters(ws_);
+			treasury::drain_to_regions(ws_);
+		}
+		ws_.national_treasury = false;
+		return;
+	}
+	ws_.treasury_config_error.clear();
+	ws_.regional_budget_share = std::isfinite(budget_share)
+		? std::clamp(budget_share, 0.0, 1.0) : 1.0;
+	ws_.regional_budget_floor_fraction = std::isfinite(floor_fraction)
+		? std::clamp(floor_fraction, 0.0, 1.0) : 0.5;
+	ws_.regional_budget_works_share = std::isfinite(works_share)
+		? std::clamp(works_share, 0.0, 1.0) : 0.35;
+	ws_.regional_budget_maintenance_share = std::isfinite(maintenance_share)
+		? std::clamp(maintenance_share, 0.0, 1.0) : 0.5;
+	if (enabled && !ws_.national_treasury) {
+		ws_.national_treasury = true;
+	}
+	if (!enabled && ws_.national_treasury) {
+		// Desligar nao destroi dinheiro: o saldo do Tesouro (o unico caixa
+		// publico sob ON) vira dinheiro real na primeira cidade da nacao
+		// (mundo OFF). Os contadores regionais sao LIMITE do mes: entram
+		// zerados (somar os dois contava o mesmo dinheiro duas vezes e criava
+		// moeda com o mes aberto — QA t173).
+		treasury::reconcile(ws_);
+		treasury::clear_counters(ws_);
+		treasury::drain_to_regions(ws_);
+		ws_.national_treasury = false;
+		ws_.gov_cash_open.clear();
+		return;
+	}
+	if (ws_.national_treasury && !ws_.regional_budget_started
+			&& !ws_.cities.empty()) {
+		// Primeira aplicacao com mundo montado: nao pode sobrar caixa
+		// publico estacionado na regiao (vira saldo do Tesouro) e o mes
+		// corrente ja abre com dotacao.
+		treasury::absorb_public_cash(ws_);
+		treasury::start_month(ws_);
+		ws_.gov_cash_open.clear();
+	}
+}
+
+void SimCore::set_firms_own_cash(bool enabled) {
+	// R1c: a flag so existe sobre o caixa unico regional (mesma regra do
+	// Tesouro). A combinacao invalida e tratada como desligada e o motivo fica
+	// em `firms_config_error` (a fachada imprime no log do Godot).
+	if (enabled && !ws_.regional_cash) {
+		ws_.firms_config_error =
+			"rework.firms_own_cash requer rework.regional_cash ligado; "
+			"flag tratada como desligada";
+		ws_.firms_own_cash = false;
+		return;
+	}
+	ws_.firms_config_error.clear();
+	ws_.firms_own_cash = enabled;
+}
+
+void SimCore::apply_firms_own_cash_after_load(bool saved_flag,
+		bool has_saved_flag) {
+	// A flag do save vence a configuracao; save sem a chave mantem a flag ja
+	// aplicada (configuracao). A validacao com `regional_cash` e a mesma.
+	const bool enabled = has_saved_flag ? saved_flag : ws_.firms_own_cash;
+	set_firms_own_cash(enabled);
+}
+
+void SimCore::apply_national_treasury_after_load(bool saved_flag,
+		bool has_saved_flag, const std::map<std::string, double>& saved_balances,
+		double collected_total, double spent_total) {
+	const bool was_on = has_saved_flag && saved_flag;
+	bool enabled = has_saved_flag ? saved_flag : ws_.national_treasury;
+	if (enabled && !ws_.regional_cash) {
+		ws_.treasury_config_error =
+			"save com national_treasury sem regional_cash; flag tratada como "
+			"desligada";
+		enabled = false;
+	}
+	if (!enabled) {
+		ws_.national_treasury = false;
+		if (was_on) {
+			// Os saldos/contadores do save eram virtuais (ON); no mundo OFF
+			// eles viram dinheiro real, sem criar nem destruir total.
+			ws_.nation_treasury = saved_balances;
+			for (auto& row : ws_.nation_treasury) {
+				row.second = std::isfinite(row.second)
+					? std::max(0.0, row.second) : 0.0;
+			}
+			treasury::drain_to_regions(ws_);
+		}
+		return;
+	}
+	ws_.treasury_config_error.clear();
+	ws_.national_treasury = true;
+	ws_.nation_treasury = saved_balances;
+	for (auto& row : ws_.nation_treasury) {
+		row.second = std::isfinite(row.second) ? std::max(0.0, row.second) : 0.0;
+	}
+	ws_.treasury_collected_total = std::isfinite(collected_total)
+		? std::max(0.0, collected_total) : 0.0;
+	ws_.treasury_spent_total = std::isfinite(spent_total)
+		? std::max(0.0, spent_total) : 0.0;
+	if (!has_saved_flag) {
+		// Migracao v42->v43 (save anterior ao R1b) carregado com a flag ON
+		// pela configuracao: no mundo antigo `government_budget` e
+		// `CityGov::cash` eram dinheiro real, mas sob ON os contadores sao
+		// limite e nao entram em `money_total`. Sem absorver, o caixa
+		// municipal saia do total (o dinheiro sumia) e a dotacao derivada
+		// ficava sem lastro (o 1o gasto adiava tudo) — QA t173. Absorver
+		// conserva o total: o caixa vira saldo do Tesouro e o mes corrente
+		// abre com dotacao, o mesmo caminho da primeira aplicacao em mundo
+		// vivo. O valor absorvido entra em `treasury_collected_total`, para a
+		// identidade `coletado == gasto + saldo` continuar valendo. Nada e
+		// criado nem destruido.
+		treasury::absorb_public_cash(ws_);
+		treasury::start_month(ws_);
+		ws_.gov_cash_open.clear();
+		return;
+	}
+	ws_.regional_budget_started = true;
+	const std::size_t gov_count = std::min(ws_.cities.size(),
+		ws_.city_gov.size());
+	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+		City& city = ws_.cities[index];
+		// Save antigo/sem os contadores: deriva o limite do que ainda existe
+		// nos restantes (nada e criado; o Tesouro continua a fonte).
+		if (city.regional_budget_limit_month <= 0.0) {
+			city.regional_budget_limit_month =
+				std::max(0.0, city.government_budget)
+				+ (index < gov_count
+					? std::max(0.0, ws_.city_gov[index].cash) : 0.0);
+		}
+		city.regional_budget_open_services =
+			std::max(0.0, city.government_budget);
+		city.regional_budget_open_works = index < gov_count
+			? std::max(0.0, ws_.city_gov[index].cash) : 0.0;
+	}
+}
+
+void SimCore::reconcile_regional_budget() {
+	treasury::reconcile(ws_);
 }
 
 void SimCore::set_land_capacity(const std::string& city_id, int product,
@@ -191,13 +449,26 @@ void SimCore::rebuild_indexes(bool full) {
 double SimCore::money_total() const {
 	double total = ws_.transport_cash + ws_.foreign_cash + ws_.construction_cash
 		+ ws_.power_cash;
+	// R1b: o saldo do Tesouro Nacional por nacao e o UNICO caixa publico com a
+	// flag ligada. Os restantes de orcamento regional de servicos
+	// (`City::government_budget`) e de obras (`CityGov::cash`) sao apenas
+	// contadores de limite do mes — nao sao dinheiro e nao entram no total.
+	total += treasury::total_balance(ws_);
 	for (const City& city : ws_.cities) {
 		// capital_income_next é um crédito pendente às famílias: entra no total
 		// para a conservação valer em qualquer ponto do tick. O caixa da região
 		// (B3) é dinheiro do mundo, como o das famílias.
-		total += city.pop.savings + city.firm_cash + city.service_cash
-		       + city.government_budget + city.capital_income_next
-		       + city.rent_income_next + city.region.cash;
+		// A expressão do OFF é a MESMA do mundo anterior, termo a termo: em
+		// debug (sem otimização) reordenar a soma muda ulps e o digest.
+		if (!ws_.national_treasury) {
+			total += city.pop.savings + city.firm_cash + city.service_cash
+			       + city.government_budget + city.capital_income_next
+			       + city.rent_income_next + city.region.cash;
+		} else {
+			total += city.pop.savings + city.private_total()
+			       + city.capital_income_next
+			       + city.rent_income_next + city.region.cash;
+		}
 	}
 	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
 	// pagar). Sem ele, mover lucro da firma para o grupo pareceria destruição.
@@ -258,6 +529,11 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.gov_bonds = ws_.gov_bonds;
 	out.external_bonds = ws_.external_bonds;
 	out.gov_cash_open = ws_.gov_cash_open;
+	// R1b: saldo do Tesouro por nacao (arrecadacao/gasto do dia) e os
+	// acumulados diagnosticos. Um tick revertido devolve os dois.
+	out.nation_treasury = ws_.nation_treasury;
+	out.treasury_collected_total = ws_.treasury_collected_total;
+	out.treasury_spent_total = ws_.treasury_spent_total;
 	// C2b2 (D-106): a intervenção cambial e a desvalorização são estado do dia.
 	out.fx = ws_.fx;
 	out.fx_events = ws_.fx_events;
@@ -279,6 +555,7 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.interconnects = ws_.interconnects;
 	out.power_interconnects_ready = ws_.power_interconnects_ready;
 	out.power_cash = ws_.power_cash;
+	out.power_cost_unpaid = ws_.power_cost_unpaid;
 	out.emission_today = ws_.emission_today;
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
@@ -297,6 +574,19 @@ void SimCore::snapshot_state(Snapshot& out) const {
 // ------------------------------------------------------------------
 
 void SimCore::prologue() {
+	// R1b (t172): fecha o gasto publico ja realizado ANTES do retrato do dia
+	// contra o Tesouro. O orcamento regional e um limite: gastar do contador
+	// (capital publico do banco no setup, comando A3 entre dias, etc.) move
+	// dinheiro para o destinatario, mas a contraparte no Tesouro so existe na
+	// reconciliacao. Se ela ficar para a primeira fase do dia, o tick debita o
+	// Tesouro por um gasto cuja criacao de dinheiro ficou ANTES do
+	// `money_before` e o invariante ve um drift do tamanho exato desse gasto
+	// (~31,36 M no dia 1; ~6,25 M no dia 2 com comandos). Reconciliar aqui poe
+	// os dois lados antes do retrato; a reconciliacao intradiaria (fronteiras
+	// de fase) continua igual. No OFF e no-op.
+	if (ws_.national_treasury && ws_.regional_budget_started) {
+		treasury::reconcile(ws_);
+	}
 	// Retrato para reverter o tick se um invariante rígido for violado.
 	// Buffer PERSISTENTE: os vetores são reutilizados entre dias (com 114 bens
 	// uma cidade custa ~27 KB; realocar 834 cópias por tick custava ~5 ms).
@@ -323,15 +613,25 @@ void SimCore::prologue() {
 			ws_.city_gov.size());
 		for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
 			const City& city = ws_.cities[index];
-			double cash = city.government_budget;
+			double cash = ws_.national_treasury ? 0.0 : city.government_budget;
 			if (index < gov_count) {
 				const CityGov& gov = ws_.city_gov[index];
-				cash += std::max(0.0, gov.cash);
+				// O fundo das obras ja iniciadas e dinheiro publico reservado
+				// nos dois modos; o caixa corrente da prefeitura so e dinheiro
+				// no modo OFF.
+				if (!ws_.national_treasury) {
+					cash += std::max(0.0, gov.cash);
+				}
 				for (int slot = 0; slot < gov.project_count; ++slot) {
 					cash += std::max(0.0, gov.projects[slot].reserved);
 				}
 			}
 			ws_.gov_cash_open[city.nation] += cash;
+		}
+		// R1b: o Tesouro Nacional e o caixa publico da nacao na janela do
+		// deficit (o orcamento regional e limite, nao saldo).
+		for (const auto& row : ws_.nation_treasury) {
+			ws_.gov_cash_open[row.first] += row.second;
 		}
 	}
 
@@ -419,6 +719,32 @@ void SimCore::phase_reset() {
 		ws_.consumed_today[index] = 0.0;
 	}
 	for (City& city : ws_.cities) {
+		// R1a (continuacao): pendulo mensal da participacao por setor. A
+		// receita do dia que acabou (vendas das firmas por produto + receita
+		// de servicos) entra como amostra; a fatia anda 1/30 por dia e fica em
+		// [5%, 95%]. So com o caixa unico (desligada nao muda nada).
+		if (city.unified_cash) {
+			double firm_gross = 0.0;
+			for (int product = 0; product < ws_.products; ++product) {
+				firm_gross += std::max(0.0, city.revenue_by_product[product]);
+			}
+			const double service_gross = std::max(0.0, city.service_revenue);
+			const double gross = firm_gross + service_gross;
+			if (gross > 1e-9) {
+				const double current = city.measured_firm_revenue_share();
+				const double sample = firm_gross / gross;
+				city.firm_revenue_share = std::clamp(
+					current + (sample - current)
+						/ City::kRevenueSharePendulumDays,
+					City::kExternalShareFloor,
+					1.0 - City::kExternalShareFloor);
+			}
+		}
+		// Sub-teto diario dos pagamentos externos: recomeca zerado todo dia.
+		city.firm_external_paid_today = 0.0;
+		city.service_external_paid_today = 0.0;
+		// R1a (t163): o livro de medicao tambem e do dia.
+		city.r1_reset_day();
 		city.pop.wage_income = 0.0;
 		city.pop.capital_income = 0.0;
 		city.pop.transfers = 0.0;
@@ -627,18 +953,22 @@ void SimCore::phase_accounting() {
 		// referência em vez de deixá-la fechar. Transferência explícita
 		// governo -> firma: conserva o dinheiro e não maquia o resultado do
 		// setor (a perda continua visível em `profit` antes do subsídio).
-		for (const int bi : local_buildings) {
-			Building& building =
-				ws_.buildings[static_cast<std::size_t>(bi)];
-			if (!building.strategic || building.profit >= 0.0) {
-				continue;
-			}
-			const double subsidy = std::min(-building.profit,
-				std::max(0.0, city.government_budget));
-			if (subsidy > 0.0) {
-				city.government_budget -= subsidy;
-				city.firm_cash += subsidy;
-				building.profit += subsidy;
+		// R1c: com `firms_own_cash` ligada esse socorro automático morre - a
+		// planta opera do caixa próprio (a perda fica com a firma).
+		if (!ws_.firms_own_cash) {
+			for (const int bi : local_buildings) {
+				Building& building =
+					ws_.buildings[static_cast<std::size_t>(bi)];
+				if (!building.strategic || building.profit >= 0.0) {
+					continue;
+				}
+				const double subsidy = std::min(-building.profit,
+					std::max(0.0, city.government_budget));
+				if (subsidy > 0.0) {
+					city.government_budget -= subsidy;
+					city.firm_receive(subsidy);
+					building.profit += subsidy;
+				}
 			}
 		}
 
@@ -659,13 +989,15 @@ void SimCore::phase_accounting() {
 			const double royalty_paid = std::min({
 				building.revenue * building.royalty,
 				std::max(0.0, building.profit),
-				std::max(0.0, city.firm_cash)});
+				city.firm_external_room_request(std::min(
+					building.revenue * building.royalty,
+					std::max(0.0, building.profit)))});
 			if (royalty_paid <= 0.0) {
 				continue;
 			}
 			building.profit -= royalty_paid;
 			building.royalty_paid = royalty_paid;
-			city.firm_cash -= royalty_paid;
+			city.firm_external_pay(royalty_paid, City::kR1Taxes);
 			city.government_budget += royalty_paid;
 		}
 
@@ -734,7 +1066,7 @@ void SimCore::phase_accounting() {
 		// estatais vão para o orçamento público; privados, para as famílias.
 		const double firm_target =
 			city.simulation_population * kFirmCashPerCapita;
-		double firm_surplus = std::max(0.0, city.firm_cash - firm_target);
+		double firm_surplus = std::max(0.0, city.firm_liquidity() - firm_target);
 		// F9: o lucro dos ativos de grupo sai da firma para o grupo (imposto
 		// corporativo fica no anfitrião; o resto vira caixa do grupo e, no
 		// fechamento do dia, dividendo ao estrato dono). A retenção é o que
@@ -743,7 +1075,7 @@ void SimCore::phase_accounting() {
 			route_group_profit(static_cast<int>(row[0]), city.nation,
 				row[1], row[2], city, firm_surplus);
 		}
-		firm_surplus = std::max(0.0, city.firm_cash - firm_target);
+		firm_surplus = std::max(0.0, city.firm_liquidity() - firm_target);
 		const double positive_total = std::max(0.0, private_profit)
 			+ std::max(0.0, state_profit);
 		const double distributable = std::min(
@@ -755,8 +1087,13 @@ void SimCore::phase_accounting() {
 		const double service_target =
 			(city.service_wage_bill + city.service_input_cost)
 			* kServiceCashBufferDays;
+		// R1a: o debito das firmas acontece ANTES de ler a liquidez dos servicos;
+		// com caixa unico os dois dividem o pool e o pagamento conjunto nao pode
+		// exceder o que existe. Desligado, a ordem nao muda numero nenhum.
+		city.firm_pay(modeled_distribution + state_distribution,
+			City::kR1Dividends);
 		const double service_surplus = std::max(0.0,
-			city.service_cash - service_target);
+			city.service_liquidity() - service_target);
 		// F8: o lucro do setor é renda da POP dona (plano §13). O caixa guarda
 		// só o capital de giro (dias de folha + insumos); o resto do lucro é
 		// distribuído no dia seguinte. O alvo antigo por habitante (0,05/pessoa)
@@ -766,8 +1103,7 @@ void SimCore::phase_accounting() {
 		const double service_distribution = std::min(
 			std::max(0.0, city.service_profit * kCapitalDistribution),
 			service_surplus);
-		city.firm_cash -= modeled_distribution + state_distribution;
-		city.service_cash -= service_distribution;
+		city.service_pay(service_distribution, City::kR1Dividends);
 		city.government_budget += state_distribution;
 		// §19 W3: a renda de capital do dia SOMA ao crédito pendente em vez de
 		// substituí-lo — o aluguel pago às famílias donas (fase 5b) já está
@@ -978,6 +1314,9 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.gov_bonds = in.gov_bonds;
 	ws_.external_bonds = in.external_bonds;
 	ws_.gov_cash_open = in.gov_cash_open;
+	ws_.nation_treasury = in.nation_treasury;
+	ws_.treasury_collected_total = in.treasury_collected_total;
+	ws_.treasury_spent_total = in.treasury_spent_total;
 	ws_.fx = in.fx;
 	ws_.fx_events = in.fx_events;
 	ws_.banks = in.banks;
@@ -995,6 +1334,7 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.interconnects = in.interconnects;
 	ws_.power_interconnects_ready = in.power_interconnects_ready;
 	ws_.power_cash = in.power_cash;
+	ws_.power_cost_unpaid = in.power_cost_unpaid;
 	ws_.emission_today = in.emission_today;
 	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;
@@ -1190,8 +1530,33 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 					+ city.id + ": " + std::to_string(value));
 			}
 		};
-		check_nonneg("firm", city.firm_cash);
-		check_nonneg("service", city.service_cash);
+		if (city.unified_cash) {
+			// R1a: com o pool unico, o dinheiro real e `private_cash` e o
+			// direito de gastar de cada setor e o sub-saldo. Os dois sub-saldos
+			// nunca ficam negativos e a soma TEM de fechar o total (invariante
+			// dura dos sub-saldos virtuais).
+			check_nonneg("private", city.private_cash);
+			check_nonneg("firm_sub", city.firm_sub);
+			check_nonneg("service_sub", city.service_sub);
+			const double sub_sum = city.firm_sub + city.service_sub;
+			// R1a (QA t167): tolerancia apertada. Antes 1e-6*(1+|pool|) dava
+			// ~1.000 num pool de 1e9 e nao pegava deriva grande; os primitivos
+			// mantem a soma a poucos ulps, entao 1e-10 relativo (piso de 1e-6
+			// para pools pequenos) e folgado para o arredondamento e aperta o
+			// guarda em 10.000x.
+			const double tolerance = std::max(1e-6,
+				1e-10 * (1.0 + std::fabs(city.private_cash)));
+			if (!std::isfinite(sub_sum)
+					|| std::fabs(sub_sum - city.private_cash) > tolerance) {
+				violations.push_back("sub-saldos nao somam o pool em "
+					+ city.id + ": firm_sub=" + std::to_string(city.firm_sub)
+					+ " service_sub=" + std::to_string(city.service_sub)
+					+ " private_cash=" + std::to_string(city.private_cash));
+			}
+		} else {
+			check_nonneg("firm", city.firm_cash);
+			check_nonneg("service", city.service_cash);
+		}
 		check_nonneg("government", city.government_budget);
 		check_nonneg("savings", city.pop.savings);
 		// B2: a soma dos quintis é o escalar da cidade; negativo em um estrato

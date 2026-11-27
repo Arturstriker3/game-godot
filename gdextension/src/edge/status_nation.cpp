@@ -1,6 +1,7 @@
 #include "status_nation.h"
 
 #include "economy_sim.h"
+#include "sim/treasury.h"
 
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
@@ -222,6 +223,11 @@ void EconomySim::build_nations(StatusCache& cache,
 		}
 		nation[k.name] = String(display);
 		nation[k.city_count] = totals.city_count;
+		// R1b: saldo do Tesouro da nacao (so com a flag ligada; OFF nao ganha
+		// chave nova, preservando o status anterior).
+		if (ws_.national_treasury) {
+			nation["treasury_cash"] = treasury::balance(ws_, tag);
+		}
 		nation[k.population] = totals.population;
 		nation[k.production] = totals.production;
 		nation[k.stockpile] = totals.stockpile;

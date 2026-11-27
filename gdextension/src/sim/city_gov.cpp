@@ -17,6 +17,7 @@
 #include "housing.h"
 #include "sim_constants.h"
 #include "sim_core.h"
+#include "treasury.h"
 #include "urban_land.h"
 
 #include <algorithm>
@@ -404,11 +405,25 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			const double hh_paid = std::min(due * household_part,
 				safe_nonneg(city.pop.savings));
 			const double firm_paid = std::min(due * (1.0 - household_part),
-				safe_nonneg(city.firm_cash));
+				city.firm_external_room_request(due * (1.0 - household_part)));
 			// B2: o IPTU da família sai da poupança rateada pelos quintis.
 			core.charge_households(city.pop, hh_paid);
-			city.firm_cash = safe_nonneg(city.firm_cash) - firm_paid;
-			gov.cash += hh_paid + firm_paid;
+			if (city.unified_cash) {
+				city.firm_external_pay(firm_paid, City::kR1Taxes);
+			} else {
+				// Caminho OFF preservado bit a bit: o MESMO primitivo de
+				// antes (`firm_pay`), que debita o caixa inclusive quando um
+				// save editado o deixou negativo. O clamp extra de `max(0,
+				// cash)` divergia nesse caso (QA t167).
+				city.firm_pay(firm_paid, City::kR1Taxes);
+			}
+			if (ws.national_treasury) {
+				// R1b: a arrecadacao vai ao Tesouro da nacao; o caixa da
+				// prefeitura nao tem receita propria (vive do limite mensal).
+				treasury::collect(ws, city.nation, hh_paid + firm_paid);
+			} else {
+				gov.cash += hh_paid + firm_paid;
+			}
 			gov.month_revenue_iptu = hh_paid + firm_paid;
 		}
 
@@ -419,17 +434,31 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			* safe_nonneg(city.service_revenue)
 			* static_cast<double>(kMonthDays) * month_fraction;
 		const double fee_paid = std::min(fee_due,
-			safe_nonneg(city.service_cash));
+			city.service_external_room_request(fee_due));
 		if (fee_paid > 0.0) {
-			city.service_cash = safe_nonneg(city.service_cash) - fee_paid;
-			gov.cash += fee_paid;
+			if (city.unified_cash) {
+				city.service_external_pay(fee_paid, City::kR1Taxes);
+			} else {
+				// Caminho OFF preservado bit a bit: `service_pay` e o
+				// primitivo antigo (sem clamp extra de max(0, cash)).
+				city.service_pay(fee_paid, City::kR1Taxes);
+			}
+			if (ws.national_treasury) {
+				treasury::collect(ws, city.nation, fee_paid);
+			} else {
+				gov.cash += fee_paid;
+			}
 			gov.month_revenue_fees = fee_paid;
 		}
 
 		// Repasse desejado: fração observada da receita municipal alvo. O
-		// pagamento é por nação no passo seguinte (tesouro comum).
-		transfer_want[city_index] = safe_unit(gov.transfer_share)
-			* gov.target_revenue_month * month_fraction;
+		// pagamento é por nação no passo seguinte (tesouro comum). R1b: com o
+		// Tesouro Nacional o repasse municipal morre; a região gasta direto do
+		// Tesouro até o limite mensal.
+		if (!ws.national_treasury) {
+			transfer_want[city_index] = safe_unit(gov.transfer_share)
+				* gov.target_revenue_month * month_fraction;
+		}
 	}
 	pay_transfers(ws, count, transfer_want);
 	for (std::size_t city_index = 0; city_index < count; ++city_index) {
@@ -445,11 +474,36 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 		const double maintenance_due =
 			gov.target_revenue_month * kMaintenanceShareOfTarget
 			* static_cast<double>(elapsed) / static_cast<double>(kMonthDays);
-		const double maintenance_paid =
-			std::min(maintenance_due, safe_nonneg(gov.cash));
+		// R1b: com o Tesouro, a manutenção sai do limite de serviços do
+		// orçamento regional (`government_budget`). O teto é
+		// `maintenance_share` da DOTAÇÃO de serviços do mês — não do
+		// restante: o teto da manutenção não encolhe conforme o mês consome
+		// (QA t173). O restante do contador continua sendo o limite duro.
+		// Sem a flag, o caminho antigo (caixa municipal).
+		double maintenance_paid = 0.0;
+		if (ws.national_treasury) {
+			const double services_now = safe_nonneg(city.government_budget);
+			double services_dotation = services_now;
+			if (city.regional_budget_limit_month > 0.0) {
+				services_dotation = city.regional_budget_limit_month
+					* (1.0 - safe_unit(ws.regional_budget_works_share));
+			}
+			const double services_cap = std::min(services_now,
+				services_dotation
+					* safe_unit(ws.regional_budget_maintenance_share));
+			maintenance_paid = std::min(maintenance_due, services_cap);
+			if (maintenance_paid > 0.0) {
+				city.government_budget -= maintenance_paid;
+			}
+		} else {
+			maintenance_paid = std::min(maintenance_due,
+				safe_nonneg(gov.cash));
+			if (maintenance_paid > 0.0) {
+				gov.cash -= maintenance_paid;
+			}
+		}
 		if (maintenance_paid > 0.0) {
-			gov.cash -= maintenance_paid;
-			city.service_cash += maintenance_paid;
+			city.service_receive(maintenance_paid);
 			gov.month_expense_maintenance = maintenance_paid;
 		}
 		if (!has_project(gov)) {
@@ -549,6 +603,13 @@ void tick(WorldState& ws, int day, SimCore* core) {
 		return;  // cenário sintético/save antigo: sem estado urbano
 	}
 	advance_projects(ws, count);
+	// R1b: abre o mês do orçamento regional (regra única e determinística:
+	// população com piso por região). O dinheiro fica no Tesouro; só o LIMITE
+	// do mês é gravado. Roda no fecho do mês do calendário, antes dos
+	// fechamentos escalonados das cidades, para a região já estar dotada.
+	if (ws.national_treasury && ws.day % kMonthDays == 0) {
+		treasury::start_month(ws);
+	}
 	if (core == nullptr) {
 		return;
 	}
@@ -561,7 +622,12 @@ void tick(WorldState& ws, int day, SimCore* core) {
 double money_total(const WorldState& ws) {
 	double total = 0.0;
 	for (const CityGov& gov : ws.city_gov) {
-		total += safe_nonneg(gov.cash);
+		// R1b: com o Tesouro Nacional o caixa corrente da prefeitura e apenas
+		// o restante do limite de obras do mes (nao e dinheiro). O fundo
+		// reservado das obras ja iniciadas continua sendo dinheiro publico.
+		if (!ws.national_treasury) {
+			total += safe_nonneg(gov.cash);
+		}
 		for (int slot = 0; slot < gov.project_count; ++slot) {
 			total += safe_nonneg(gov.projects[slot].reserved);
 		}

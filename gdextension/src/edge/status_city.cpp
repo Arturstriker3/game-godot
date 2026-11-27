@@ -115,6 +115,16 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	sync_scalar(k.tariff_revenue, scalars.tariff_revenue);
 	sync_scalar(k.productivity_index, scalars.productivity_index);
 	slot.scalar_written_filled = true;
+	// R1a: com o caixa unico regional, o pool privado real. Chave aditiva - so
+	// existe com a flag ligada (status desligado byte-identico ao anterior).
+	// `firm_cash`/`service_cash` continuam publicados como estatistica por setor.
+	if (city.unified_cash) {
+		dict[StringName("private_cash")] = city.private_cash;
+		// R1a (continuacao): fatia medida das firmas na receita privada (teto
+		// externo e base do investidor). Diagnostico; chave aditiva do ON.
+		dict[StringName("firm_revenue_share")] =
+			city.measured_firm_revenue_share();
+	}
 
 
 	// F9: emprego setorial (4 posiÃ§Ãµes). Espelho de 8 doubles: sÃ³ reescreve o
