@@ -367,38 +367,44 @@ struct WorldState {
 	// (t160-t163) segue como experimento, nao e serializado (configuracao lida
 	// do rework.json).
 	int external_subceiling = 0;
-	// R1b - TESOURO NACIONAL + ENVELOPES (flag `rework.national_treasury`).
+	// R1b - TESOURO NACIONAL + ORCAMENTO REGIONAL (flag
+	// `rework.national_treasury`).
 	//
 	// Ligada (so com `regional_cash` tambem ligada): a arrecadacao de impostos
 	// municipais (IPTU + taxas locais; o imposto de renda do modelo e rebatido
 	// 100%, ver kTransferShare) passa a entrar no Tesouro da nacao
 	// (`nation_treasury`) em vez do caixa da cidade. A equalizacao fiscal e o
-	// repasse municipal morrem; o Tesouro distribui por mes um envelope por
-	// regiao (proporcional a populacao, com piso minimo por regiao). O envelope
-	// banca o que o orcamento municipal bancava: servicos/crise/alimentacao
-	// (`City::government_budget`) e manutencao/obras (`CityGov::cash`).
+	// repasse municipal morrem. O dinheiro NAO e transferido para a regiao:
+	// cada regiao recebe apenas um LIMITE mensal de gasto
+	// (`regional_budget_*`), proporcional a populacao com piso minimo; todo
+	// gasto publico debita o Tesouro ate esse limite e o que nao for gasto
+	// permanece no Tesouro.
 	//
 	// Desligada (default): nenhuma chave nova no save, nenhum numero muda.
 	bool national_treasury = false;
 	// Saldo do Tesouro por nacao (XGS). `std::map` pela ordem deterministica do
 	// save/status. So tem valores com a flag ligada.
 	std::map<std::string, double> nation_treasury;
-	// Parametros declarados de balanceamento do envelope (rework.json):
-	//   share                 fracao do saldo distribuida por mes (1 = tudo);
+	// Parametros declarados do orcamento regional (rework.json):
+	//   share                 fracao do saldo do Tesouro disponibilizada como
+	//                         limite no mes (1 = todo o saldo);
 	//   floor_fraction        piso por regiao como fracao do rateio igualitario
 	//                         (peso = max(pop_share, floor/n_regioes));
-	//   works_share           fatia do envelope para manutencao/obras
+	//   works_share           fatia do limite reservada a obras
 	//                         (`CityGov::cash`); o resto vai para servicos;
-	//   maintenance_share     teto da manutencao dentro do envelope de servicos.
-	double treasury_envelope_share = 1.0;
-	double treasury_floor_fraction = 0.5;
-	double treasury_envelope_works_share = 0.35;
-	double treasury_maintenance_share = 0.5;
+	//   maintenance_share     teto da manutencao dentro do limite de servicos.
+	double regional_budget_share = 1.0;
+	double regional_budget_floor_fraction = 0.5;
+	double regional_budget_works_share = 0.35;
+	double regional_budget_maintenance_share = 0.5;
+	// O primeiro mes foi aberto (sweep do caixa publico + dotacao inicial)?
+	// Impede que um segundo apply da mesma configuracao zere o mes em curso.
+	bool regional_budget_started = false;
 	// Somas acumuladas (so diagnostico/teste; nao entram em decisao):
-	// arrecadado no Tesouro e distribuido em envelopes. A identidade e
-	// arrecadado == distribuido + soma dos saldos.
+	// arrecadado no Tesouro e gasto publico debitado do Tesouro. O saldo do
+	// Tesouro e o unico caixa publico sob a flag.
 	double treasury_collected_total = 0.0;
-	double treasury_distributed_total = 0.0;
+	double treasury_spent_total = 0.0;
 	// Configuracao invalida (treasury ON sem regional_cash ON): mensagem para
 	// o log/status; a flag e tratada como desligada.
 	std::string treasury_config_error;

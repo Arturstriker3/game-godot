@@ -69,6 +69,18 @@ void write(Dictionary& data, const WorldState& ws, const SimCore& core) {
 		entry["service_wage_arrears"] = city.service_wage_arrears;
 		entry["rural_wage_arrears"] = city.rural_wage_arrears;
 		entry["government_budget"] = city.government_budget;
+		// R1b (save v43): orçamento regional. Só entra com o Tesouro ligado;
+		// save OFF continua byte-idêntico. O gasto acumulado é diagnóstico.
+		if (ws.national_treasury) {
+			entry["regional_budget_limit_month"] =
+				city.regional_budget_limit_month;
+			entry["regional_budget_spent_month"] =
+				city.regional_budget_spent_month;
+			entry["regional_budget_spent_total"] =
+				city.regional_budget_spent_total;
+			entry["regional_budget_deferred_month"] =
+				city.regional_budget_deferred_month;
+		}
 		entry["service_jobs"] = city.service_jobs;
 		entry["service_wage"] = city.service_wage;
 		entry["service_wage_bill"] = city.service_wage_bill;
@@ -652,6 +664,16 @@ void read(WorldState& ws, SimCore& core, const Dictionary& data, int version,
 		city.rural_wage_arrears = version >= 26
 			? std::max(0.0, double(entry.get("rural_wage_arrears", 0.0))) : 0.0;
 		city.government_budget = double(entry.get("government_budget", 0.0));
+		// R1b (save v43): orçamento regional. Save anterior/ausente nasce 0;
+		// `apply_national_treasury_after_load` deriva o limite do restante.
+		city.regional_budget_limit_month = std::max(0.0,
+			double(entry.get("regional_budget_limit_month", 0.0)));
+		city.regional_budget_spent_month = std::max(0.0,
+			double(entry.get("regional_budget_spent_month", 0.0)));
+		city.regional_budget_spent_total = std::max(0.0,
+			double(entry.get("regional_budget_spent_total", 0.0)));
+		city.regional_budget_deferred_month = std::max(0.0,
+			double(entry.get("regional_budget_deferred_month", 0.0)));
 		// Save antigo não tem o índice: mantém a média mundial (1,0).
 		city.external_income_index = std::clamp(
 			double(entry.get("external_income_index", 1.0)), 0.0, 8.0);

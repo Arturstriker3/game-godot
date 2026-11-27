@@ -173,7 +173,7 @@ TEST_CASE("D-131: save v42 aditivo preserva ai_brain e v41 carrega defaults") {
 	changed["competition.scope_other"] = 0.0;
 	ogs::ai_brain::apply_params(source.ws, changed);
 	const ogs::save::Value definitions = ogs::save::definitions_to(source.ws);
-	CHECK(ogs::kSaveVersion == 42);
+	CHECK(ogs::kSaveVersion == 43);
 
 	ogs::test::PocketWorld loaded;
 	ogs::save::definitions_from(loaded.ws, definitions);

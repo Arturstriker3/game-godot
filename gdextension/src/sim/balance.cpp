@@ -155,7 +155,10 @@ Ledger ledger(const WorldState& ws, double money_total) {
 		out.group_arrears += city.firm_credit_arrears;
 
 		// Governo: orçamento público da cidade (o "tesouro nacional" do modelo).
-		out.government += city.government_budget;
+		// R1b: com o Tesouro Nacional o orçamento regional é limite, não caixa.
+		if (!ws.national_treasury) {
+			out.government += city.government_budget;
+		}
 	}
 	// Atrasado por planta (o passivo individual do prédio).
 	for (const Building& building : ws.buildings) {
@@ -292,10 +295,15 @@ Sheet government(const WorldState& ws, const std::string& nation) {
 		if (!nation.empty() && city.nation != nation) {
 			continue;
 		}
-		sheet.cash += city.government_budget;
+		// R1b: com o Tesouro, o restante do orçamento regional é limite.
+		if (!ws.national_treasury) {
+			sheet.cash += city.government_budget;
+		}
 		if (index < gov_count) {
 			const CityGov& gov = ws.city_gov[index];
-			sheet.cash += std::max(0.0, gov.cash);
+			if (!ws.national_treasury) {
+				sheet.cash += std::max(0.0, gov.cash);
+			}
 			for (int slot = 0; slot < gov.project_count; ++slot) {
 				sheet.cash += std::max(0.0, gov.projects[slot].reserved);
 			}

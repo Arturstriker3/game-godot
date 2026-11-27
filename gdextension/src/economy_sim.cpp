@@ -1250,8 +1250,9 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	// R1b: revalida o Tesouro com o caixa regional ja aplicado (ON sem
 	// regional_cash continua sendo config invalida => desligado).
 	sim_core_.set_national_treasury(ws_.national_treasury,
-		ws_.treasury_envelope_share, ws_.treasury_floor_fraction,
-		ws_.treasury_envelope_works_share, ws_.treasury_maintenance_share);
+		ws_.regional_budget_share, ws_.regional_budget_floor_fraction,
+		ws_.regional_budget_works_share,
+		ws_.regional_budget_maintenance_share);
 }
 
 // ---------------------------------------------------------------------------
@@ -2217,10 +2218,14 @@ Dictionary EconomySim::get_r1_diag_status() {
 		row["cut_n_service"] = city.r1_ext_cut_n_service;
 		row["import_abroad"] = city.r1_import_abroad;
 		row["export_abroad"] = city.r1_export_abroad;
-		// R1b: envelope do Tesouro recebido (mes corrente e acumulado) e o
-		// orcamento publico da regiao — sonda de "nenhuma regiao sem envelope".
-		row["envelope_month"] = city.envelope_received_month;
-		row["envelope_total"] = city.envelope_received_total;
+		// R1b: orçamento regional (limite e gasto do mês/acumulado) e o
+		// restante de serviços da região — sonda de "nenhuma região sem
+		// dotação / serviços zerados".
+		row["regional_budget_limit_month"] = city.regional_budget_limit_month;
+		row["regional_budget_spent_month"] = city.regional_budget_spent_month;
+		row["regional_budget_spent_total"] = city.regional_budget_spent_total;
+		row["regional_budget_deferred_month"] =
+			city.regional_budget_deferred_month;
 		row["government_budget"] = city.government_budget;
 		PackedFloat64Array firm_out;
 		PackedFloat64Array service_out;
@@ -2235,18 +2240,18 @@ Dictionary EconomySim::get_r1_diag_status() {
 		cities[static_cast<int>(index)] = row;
 	}
 	out["cities"] = cities;
-	// R1b: Tesouro Nacional + envelopes (so leitura). `total` e o saldo vivo
-	// somado; `collected/distributed` sao acumulados desde o inicio e fecham a
-	// identidade arrecadado == distribuido + saldo.
+	// R1b: Tesouro Nacional + orçamento regional (só leitura). `total` é o
+	// saldo vivo somado; `collected/spent` são acumulados desde o início.
 	Dictionary treasury_block;
 	treasury_block["enabled"] = ws_.national_treasury;
 	treasury_block["total"] = treasury::total_balance(ws_);
 	treasury_block["collected_total"] = ws_.treasury_collected_total;
-	treasury_block["distributed_total"] = ws_.treasury_distributed_total;
-	treasury_block["envelope_share"] = ws_.treasury_envelope_share;
-	treasury_block["floor_fraction"] = ws_.treasury_floor_fraction;
-	treasury_block["works_share"] = ws_.treasury_envelope_works_share;
-	treasury_block["maintenance_share"] = ws_.treasury_maintenance_share;
+	treasury_block["spent_total"] = ws_.treasury_spent_total;
+	treasury_block["budget_share"] = ws_.regional_budget_share;
+	treasury_block["floor_fraction"] = ws_.regional_budget_floor_fraction;
+	treasury_block["works_share"] = ws_.regional_budget_works_share;
+	treasury_block["maintenance_share"] =
+		ws_.regional_budget_maintenance_share;
 	if (!ws_.treasury_config_error.empty()) {
 		treasury_block["config_error"] =
 			String(ws_.treasury_config_error.c_str());

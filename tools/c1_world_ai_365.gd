@@ -129,7 +129,7 @@ var _regional_cash_set := false
 # Sem override vale o rework.json (default "all"). Só laboratório.
 var _external_subceiling := ""
 var _external_subceiling_set := false
-# R1b: braco A/B do Tesouro Nacional + envelopes
+# R1b: braço A/B do Tesouro Nacional + orçamento regional
 # (`--national-treasury=0/1` / OGS_C1_NATIONAL_TREASURY). Sem override vale o
 # enabled do rework.json (default do jogo = desligado). Só laboratório.
 var _national_treasury_on := false
@@ -969,30 +969,33 @@ func _r1_diag_row(sim: Object, status: Dictionary, day: int) -> Dictionary:
 		"government_budget": government_budget,
 		"city_count": city_count,
 	}
-	# R1b: Tesouro Nacional + envelopes (identidade arrecadado == distribuido +
-	# saldo). Só leitura; zero/ausente com a flag desligada.
+	# R1b: Tesouro Nacional + orçamento regional. Só leitura; zero/ausente com
+	# a flag desligada.
 	if sim.has_method("get_r1_diag_status"):
 		var treasury_diag: Dictionary = sim.get_r1_diag_status()
 		var treasury_block: Dictionary = treasury_diag.get("treasury", {})
 		out["treasury_total"] = float(treasury_block.get("total", 0.0))
 		out["treasury_collected"] = float(
 			treasury_block.get("collected_total", 0.0))
-		out["treasury_distributed"] = float(
-			treasury_block.get("distributed_total", 0.0))
+		out["treasury_spent"] = float(
+			treasury_block.get("spent_total", 0.0))
 		out["treasury_enabled"] = bool(
 			treasury_block.get("enabled", false))
-		# R1b sanidade: quantas regioes ainda nao receberam NENHUM envelope
-		# (acumulado) e o total entregue. Só leitura.
-		var envelope_total := 0.0
-		var envelope_zero := 0
+		# R1b sanidade: quantas regiões nunca tiveram dotação (ou serviços
+		# zerados por falta de limite) e o gasto público acumulado. Só leitura.
+		var budget_spent_total := 0.0
+		var budget_zero := 0
 		for raw_city: Variant in Array(treasury_diag.get("cities", [])):
 			var city_row: Dictionary = raw_city
-			var received := float(city_row.get("envelope_total", 0.0))
-			envelope_total += received
-			if received <= 0.0:
-				envelope_zero += 1
-		out["envelope_total"] = envelope_total
-		out["envelope_zero_cities"] = envelope_zero
+			var limit := float(
+				city_row.get("regional_budget_limit_month", 0.0))
+			var spent := float(
+				city_row.get("regional_budget_spent_total", 0.0))
+			budget_spent_total += spent
+			if limit <= 0.0:
+				budget_zero += 1
+		out["regional_budget_spent_total"] = budget_spent_total
+		out["regional_budget_zero_cities"] = budget_zero
 	# Comida por uso: o status publica o total consumido/produzido por produto
 	# (todos os usos, inclusive insumo de planta/serviço). Separar isso do
 	# `p_consumed` das famílias é o que mostra quem comeu a prateleira.

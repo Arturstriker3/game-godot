@@ -14,6 +14,9 @@
 
 namespace ogs {
 void SimCore::phase_fiscal() {
+	// R1b: fecha o gasto público das fases anteriores contra o Tesouro antes de
+	// o caixa municipal/fechamento mensal decidir com os contadores do limite.
+	reconcile_regional_budget();
 	// §19 W2: prefeitura — IPTU, taxas locais, repasse do tesouro nacional,
 	// manutenção urbana, obras e decisão de adensar/expandir/moradia social.
 	{
@@ -26,9 +29,9 @@ void SimCore::phase_fiscal() {
 	// Paris sustenta Cayenne). Conserva dinheiro — só move government_budget
 	// entre cidades da MESMA nação.
 	//
-	// R1b: com o Tesouro Nacional ligado a equalização DIÁRIA morre — a
-	// redistribuição passa a ser o envelope mensal do Tesouro (regra única,
-	// proporcional à população com piso por região).
+	// R1b: com o Tesouro Nacional ligado a equalização DIÁRIA morre — o gasto
+	// público é bancado pelo Tesouro até o limite mensal de cada região
+	// (proporcional à população, com piso por região).
 	if (!ws_.national_treasury) {
 	OGS_SIM_ZONE(kPhaseFiscalEqualize);
 	std::unordered_map<std::string, std::vector<City*>> by_nation;

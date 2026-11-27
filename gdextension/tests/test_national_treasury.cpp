@@ -1,13 +1,17 @@
-// R1b - Tesouro Nacional + envelopes (flag `rework.national_treasury`).
+// R1b - Tesouro Nacional + ORCAMENTO REGIONAL (flag
+// `rework.national_treasury`).
 //
 // Garantias, com o fixture `pocket_world` e o MESMO caminho do save real:
 //   a) configuracao invalida (Tesouro ON sem `regional_cash`) e tratada como
 //      desligada e deixa o motivo em `treasury_config_error`;
-//   b) a arrecadacao no Tesouro e a distribuicao do envelope conservam o
-//      dinheiro do mundo: imposto arrecadado == distribuido + saldo do Tesouro;
-//   c) o envelope e proporcional a populacao com piso minimo por regiao;
-//   d) o envelope nao toca os sub-saldos privados do R1a;
-//   e) save/load ON preserva flag e saldos; OFF nao ganha chave nova.
+//   b) o dinheiro NAO e transferido para a regiao: `start_month` grava apenas
+//      limite/contadores e nao move o saldo do Tesouro;
+//   c) o gasto publico debita o Tesouro na reconciliacao, ate o limite; o
+//      contador nunca fica negativo e a soma gasta <= arrecadado + saldo;
+//   d) a dotacao e proporcional a populacao com piso minimo por regiao;
+//   e) o saldo do Tesouro e atribuido a moeda da nacao (regressao t170);
+//   f) o orcamento regional nao toca os sub-saldos privados do R1a;
+//   g) save/load ON preserva flag, saldos e contadores; OFF nao ganha chave.
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
@@ -16,6 +20,7 @@
 #include "sim/sim_core.h"
 #include "sim/treasury.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
 
@@ -37,6 +42,14 @@ void enable_treasury(ogs::test::PocketWorld& world, double floor_fraction,
 	world.core.set_national_treasury(true, 1.0, floor_fraction, works_share, 0.5);
 }
 
+// Gasta do restante de servicos como os chamadores reais fazem: o gasto e
+// limitado pelo contador (o excesso simplesmente nao acontece = adiado).
+double spend_services(ogs::City& city, double demand) {
+	const double paid = std::min(demand, std::max(0.0, city.government_budget));
+	city.government_budget -= paid;
+	return paid;
+}
+
 } // namespace
 
 TEST_CASE("R1b: configuracao invalida (Tesouro sem caixa regional) desliga") {
@@ -53,8 +66,8 @@ TEST_CASE("R1b: configuracao invalida (Tesouro sem caixa regional) desliga") {
 	CHECK(valid.ws.national_treasury);
 	CHECK(valid.ws.treasury_config_error.empty());
 
-	// Desligar nao destroi dinheiro: o saldo volta ao orcamento publico da
-	// primeira cidade da nacao (conservacao do total).
+	// Desligar nao destroi dinheiro: o Tesouro e os contadores virtuais viram
+	// dinheiro real da primeira cidade da nacao (mundo OFF).
 	ogs::treasury::collect(valid.ws, "AAA", 123.0);
 	const double total_before = valid.core.money_total();
 	valid.core.set_national_treasury(false);
@@ -63,8 +76,7 @@ TEST_CASE("R1b: configuracao invalida (Tesouro sem caixa regional) desliga") {
 	CHECK(valid.core.money_total() == Approx(total_before));
 }
 
-TEST_CASE("R1b: arrecadacao e envelope conservam (arrecadado == distribuido + "
-		"saldo)") {
+TEST_CASE("R1b: arrecadar conserva e o dinheiro fica no Tesouro") {
 	ogs::test::PocketWorld world;
 	seed_cash(world, 50000.0, 30000.0);
 	enable_treasury(world, 0.5);
@@ -74,18 +86,20 @@ TEST_CASE("R1b: arrecadacao e envelope conservam (arrecadado == distribuido + "
 	ogs::treasury::collect(world.ws, "AAA", 900.0);
 	CHECK(world.core.money_total() == Approx(money_before + 900.0));
 	CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(900.0));
+	CHECK(world.ws.cities[0].government_budget == Approx(0.0));
+	CHECK(world.ws.cities[1].government_budget == Approx(0.0));
 
-	const double distributed = ogs::treasury::distribute_envelopes(world.ws);
-	CHECK(distributed == Approx(900.0));
-	CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(0.0));
-	CHECK(world.ws.treasury_collected_total
-		== Approx(world.ws.treasury_distributed_total
-			+ ogs::treasury::total_balance(world.ws)));
+	// Abrir o mes NAO transfere: grava dotacao/contadores e o saldo fica.
+	const double limit = ogs::treasury::start_month(world.ws);
+	CHECK(limit == Approx(900.0));
+	CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(900.0));
 	CHECK(world.core.money_total() == Approx(money_before + 900.0));
+	CHECK(world.ws.cities[0].regional_budget_limit_month
+		+ world.ws.cities[1].regional_budget_limit_month == Approx(900.0));
 }
 
 TEST_CASE("R1b: o saldo do Tesouro e atribuido a moeda da nacao") {
-	// Regressao (t169): o saldo do Tesouro entrou no `money_total`, mas a
+	// Regressao (t170): o saldo do Tesouro entrou no `money_total`, mas a
 	// alocacao por moeda (invariante da C2a) nao o conhecia e o tick era
 	// revertido todo dia (smoke ON travado em 10/10). O caixa arrecadado tem
 	// de ser integralmente atribuido: residual zero, nenhuma violacao.
@@ -94,54 +108,68 @@ TEST_CASE("R1b: o saldo do Tesouro e atribuido a moeda da nacao") {
 	enable_treasury(world, 0.5);
 	ogs::treasury::collect(world.ws, "AAA", 900.0);
 	const double money = world.core.money_total();
-	const ogs::central_bank::MoneyAllocation money_after =
+	const ogs::central_bank::MoneyAllocation before =
 		ogs::central_bank::allocate_money(world.ws, money);
-	CHECK(money_after.residual() == Approx(0.0));
-	CHECK(money_after.allocated_total() == Approx(money));
+	CHECK(before.residual() == Approx(0.0));
+	CHECK(before.allocated_total() == Approx(money));
 
-	// Depois do envelope a atribuicao continua fechando (o saldo vive no
-	// orcamento/prefeitura das regioes).
-	ogs::treasury::distribute_envelopes(world.ws);
-	const double after_envelope = world.core.money_total();
-	const ogs::central_bank::MoneyAllocation redistributed =
-		ogs::central_bank::allocate_money(world.ws, after_envelope);
-	CHECK(redistributed.residual() == Approx(0.0));
+	// Abrir o mes (sem transferir) mantem a atribuicao fechando.
+	ogs::treasury::start_month(world.ws);
+	const double after_limit = world.core.money_total();
+	const ogs::central_bank::MoneyAllocation allocated =
+		ogs::central_bank::allocate_money(world.ws, after_limit);
+	CHECK(allocated.residual() == Approx(0.0));
+	CHECK(allocated.allocated_total() == Approx(after_limit));
+
+	// Gasto publico: o Tesouro cai, o contador cai junto e a atribuicao segue
+	// fechando (sem o orcamento regional no total).
+	ogs::City& city = world.ws.cities[0];
+	city.regional_budget_open_services = city.government_budget;
+	spend_services(city, 100.0);
+	ogs::treasury::reconcile(world.ws);
+	const double after_spend = world.core.money_total();
+	const ogs::central_bank::MoneyAllocation spent =
+		ogs::central_bank::allocate_money(world.ws, after_spend);
+	CHECK(spent.residual() == Approx(0.0));
+	CHECK(spent.allocated_total() == Approx(after_spend));
 }
 
-TEST_CASE("R1b: envelope e proporcional a populacao com piso por regiao") {
+TEST_CASE("R1b: dotacao e proporcional a populacao com piso por regiao") {
 	// Sem piso: rateio puro pela populacao (2/3 e 1/3 no fixture 1M/500k).
 	{
 		ogs::test::PocketWorld world;
 		enable_treasury(world, 0.0);
 		ogs::treasury::collect(world.ws, "AAA", 900.0);
-		ogs::treasury::distribute_envelopes(world.ws);
-		CHECK(world.ws.cities[0].envelope_received_month == Approx(600.0));
-		CHECK(world.ws.cities[1].envelope_received_month == Approx(300.0));
+		ogs::treasury::start_month(world.ws);
+		CHECK(world.ws.cities[0].regional_budget_limit_month
+			== Approx(600.0));
+		CHECK(world.ws.cities[1].regional_budget_limit_month
+			== Approx(300.0));
 	}
 	// Piso: uma regiao minuscula (1.000 de 1.001.000) recebe ao menos metade do
-	// rateio igualitario (floor/n = 0,25 => ~18% do envelope, nao 0,1%).
+	// rateio igualitario (floor/n = 0,25 => ~18% da dotacao, nao 0,1%).
 	{
 		ogs::test::PocketWorld world;
 		enable_treasury(world, 0.5);
 		world.ws.cities[0].simulation_population = 1000000.0;
 		world.ws.cities[1].simulation_population = 1000.0;
 		ogs::treasury::collect(world.ws, "AAA", 900.0);
-		ogs::treasury::distribute_envelopes(world.ws);
-		const double agra = world.ws.cities[0].envelope_received_month;
-		const double portus = world.ws.cities[1].envelope_received_month;
+		ogs::treasury::start_month(world.ws);
+		const double agra = world.ws.cities[0].regional_budget_limit_month;
+		const double portus = world.ws.cities[1].regional_budget_limit_month;
 		CHECK(agra + portus == Approx(900.0));
 		CHECK(portus > 179.0);       // muito acima dos 0,9 do rateio puro
 		CHECK(portus < 181.0);       // e abaixo do rateio igualitario (450)
 		CHECK(portus == Approx(900.0 * 0.25 / 1.249000999).epsilon(1e-6));
 	}
 	// works_share: a fatia de obras vai para `CityGov::cash`; o resto para o
-	// orcamento publico (a soma e o envelope recebido).
+	// limite de servicos (a soma e a dotacao).
 	{
 		ogs::test::PocketWorld world;
 		world.ws.city_gov.resize(world.ws.cities.size());
 		enable_treasury(world, 0.0, 0.25);
 		ogs::treasury::collect(world.ws, "AAA", 800.0);
-		ogs::treasury::distribute_envelopes(world.ws);
+		ogs::treasury::start_month(world.ws);
 		const double services =
 			world.ws.cities[0].government_budget
 			+ world.ws.cities[1].government_budget;
@@ -153,7 +181,59 @@ TEST_CASE("R1b: envelope e proporcional a populacao com piso por regiao") {
 	}
 }
 
-TEST_CASE("R1b: envelope nao toca os sub-saldos privados (R1a)") {
+TEST_CASE("R1b: limite exato debita o Tesouro; estouro fica adiado") {
+	ogs::test::PocketWorld world;
+	world.ws.city_gov.resize(world.ws.cities.size());
+	enable_treasury(world, 0.0);
+	ogs::treasury::collect(world.ws, "AAA", 1000.0);
+	ogs::treasury::start_month(world.ws);
+	ogs::City& city = world.ws.cities[0];
+	const double limit = city.regional_budget_limit_month;
+	CHECK(limit > 0.0);
+	city.regional_budget_open_services = city.government_budget;
+	const double treasury_before = ogs::treasury::balance(world.ws, "AAA");
+
+	// Demanda acima do limite: o chamador so consegue debitar o contador.
+	const double paid = spend_services(city, limit * 3.0);
+	CHECK(paid == Approx(limit));
+	CHECK(city.government_budget == Approx(0.0));
+	CHECK(city.government_budget >= -1e-9);
+	ogs::treasury::reconcile(world.ws);
+	CHECK(city.regional_budget_spent_month == Approx(limit));
+	CHECK(ogs::treasury::balance(world.ws, "AAA")
+		== Approx(treasury_before - limit));
+	CHECK(world.ws.treasury_spent_total == Approx(limit));
+
+	// A soma gasta nunca passa do arrecadado + saldo inicial.
+	CHECK(world.ws.treasury_spent_total
+		<= world.ws.treasury_collected_total + 1000.0 + 1e-6);
+}
+
+TEST_CASE("R1b: gastos <= arrecadacao + saldo ao longo dos meses") {
+	ogs::test::PocketWorld world;
+	world.ws.city_gov.resize(world.ws.cities.size());
+	enable_treasury(world, 0.0);
+	const double seed = 500.0;
+	ogs::treasury::collect(world.ws, "AAA", seed);
+	for (int month = 0; month < 6; ++month) {
+		ogs::treasury::start_month(world.ws);
+		for (ogs::City& city : world.ws.cities) {
+			city.regional_budget_open_services = city.government_budget;
+			spend_services(city, city.government_budget * 0.75);
+		}
+		ogs::treasury::reconcile(world.ws);
+		CHECK(ogs::treasury::total_balance(world.ws) >= -1e-9);
+		// Imposto do dia seguinte repoe o Tesouro.
+		ogs::treasury::collect(world.ws, "AAA", 120.0);
+	}
+	CHECK(world.ws.treasury_spent_total
+		== Approx(seed + 6.0 * 120.0
+			- ogs::treasury::total_balance(world.ws)));
+	CHECK(world.ws.treasury_spent_total
+		<= world.ws.treasury_collected_total + 1e-6);
+}
+
+TEST_CASE("R1b: orcamento regional nao toca os sub-saldos privados (R1a)") {
 	ogs::test::PocketWorld world;
 	seed_cash(world, 50000.0, 30000.0);
 	enable_treasury(world, 0.5);
@@ -165,7 +245,7 @@ TEST_CASE("R1b: envelope nao toca os sub-saldos privados (R1a)") {
 	const double service_cash = city.service_cash;
 
 	ogs::treasury::collect(world.ws, "AAA", 500.0);
-	ogs::treasury::distribute_envelopes(world.ws);
+	ogs::treasury::start_month(world.ws);
 
 	CHECK(city.firm_sub == Approx(firm_sub));
 	CHECK(city.service_sub == Approx(service_sub));
@@ -191,15 +271,18 @@ TEST_CASE("R1b: save ON preserva o Tesouro; OFF nao ganha chave") {
 		CHECK(ogs::save::dump_json(
 			ogs::save::to_value(target.ws, target.core)) == before);
 	}
-	// ON: flag, saldos por nacao e acumulados sobrevivem ao round-trip.
+	// ON: flag, saldos por nacao, contadores e acumulados sobrevivem.
 	{
 		ogs::test::PocketWorld world;
 		seed_cash(world, 50000.0, 30000.0);
 		enable_treasury(world, 0.5);
 		ogs::treasury::collect(world.ws, "AAA", 700.0);
-		ogs::treasury::distribute_envelopes(world.ws);
-		ogs::treasury::collect(world.ws, "AAA", 40.0);
-		CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(40.0));
+		ogs::treasury::start_month(world.ws);
+		ogs::City& city = world.ws.cities[0];
+		city.regional_budget_open_services = city.government_budget;
+		spend_services(city, 40.0);
+		ogs::treasury::reconcile(world.ws);
+		CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(660.0));
 
 		const ogs::save::Value saved =
 			ogs::save::to_value(world.ws, world.core);
@@ -209,14 +292,18 @@ TEST_CASE("R1b: save ON preserva o Tesouro; OFF nao ganha chave") {
 		ogs::test::PocketWorld target;
 		ogs::save::from_value(target.ws, target.core, saved);
 		CHECK(target.ws.national_treasury);
-		CHECK(ogs::treasury::balance(target.ws, "AAA") == Approx(40.0));
-		CHECK(target.ws.treasury_collected_total == Approx(740.0));
-		CHECK(target.ws.treasury_distributed_total == Approx(700.0));
-		CHECK(ogs::save::dump_json(
-			ogs::save::to_value(target.ws, target.core)) == before);
+		CHECK(ogs::treasury::balance(target.ws, "AAA") == Approx(660.0));
+		CHECK(target.ws.treasury_collected_total == Approx(700.0));
+		CHECK(target.ws.treasury_spent_total == Approx(40.0));
+		CHECK(target.ws.cities[0].regional_budget_spent_month == Approx(40.0));
+		CHECK(target.ws.cities[0].regional_budget_limit_month
+			== Approx(world.ws.cities[0].regional_budget_limit_month));
+		const std::string after = ogs::save::dump_json(
+			ogs::save::to_value(target.ws, target.core));
+		CHECK(after == before);
 	}
 	// Flag do save ON aplicada sem o caixa regional: config invalida =>
-	// desligado e saldo devolvido as regioes (nao se destroi dinheiro).
+	// desligado e o total publico vira dinheiro real (nao se destroi nada).
 	{
 		ogs::test::PocketWorld target;
 		target.core.set_regional_cash(false);
@@ -229,6 +316,6 @@ TEST_CASE("R1b: save ON preserva o Tesouro; OFF nao ganha chave") {
 		CHECK_FALSE(target.ws.national_treasury);
 		CHECK_FALSE(target.ws.treasury_config_error.empty());
 		CHECK(ogs::treasury::total_balance(target.ws) == Approx(0.0));
-		CHECK(target.core.money_total() == Approx(money_before));
+		CHECK(target.core.money_total() == Approx(money_before + 25.0));
 	}
 }

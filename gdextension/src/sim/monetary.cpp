@@ -30,10 +30,16 @@ double government_cash(const WorldState& ws, const std::string& nation) {
 		if (city.nation != nation) {
 			continue;
 		}
-		cash += city.government_budget;
+		// R1b: com o Tesouro, o orçamento regional é limite (não caixa); o
+		// caixa público da nação é o Tesouro + as obras já reservadas.
+		if (!ws.national_treasury) {
+			cash += city.government_budget;
+		}
 		if (index < gov_count) {
 			const CityGov& gov = ws.city_gov[index];
-			cash += std::max(0.0, gov.cash);
+			if (!ws.national_treasury) {
+				cash += std::max(0.0, gov.cash);
+			}
 			for (int slot = 0; slot < gov.project_count; ++slot) {
 				cash += std::max(0.0, gov.projects[slot].reserved);
 			}
@@ -340,15 +346,20 @@ void tick(WorldState& ws, double money_total,
 	}
 	// C2b1: o caixa do governo no fecho (depois do crédito da emissão) é a base
 	// do déficit do dia seguinte. Uma passada pelas cidades (não uma por nação).
+	// R1b: a emissão creditada no orçamento regional é receita pública; leva-a
+	// ao Tesouro antes de medir a janela, que com a flag é Tesouro + obras.
+	treasury::reconcile(ws);
 	std::map<std::string, double> gov_cash_now;
 	const std::size_t gov_count = std::min(ws.cities.size(),
 		ws.city_gov.size());
 	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
 		const City& city = ws.cities[index];
-		double cash = city.government_budget;
+		double cash = ws.national_treasury ? 0.0 : city.government_budget;
 		if (index < gov_count) {
 			const CityGov& gov = ws.city_gov[index];
-			cash += std::max(0.0, gov.cash);
+			if (!ws.national_treasury) {
+				cash += std::max(0.0, gov.cash);
+			}
 			for (int slot = 0; slot < gov.project_count; ++slot) {
 				cash += std::max(0.0, gov.projects[slot].reserved);
 			}

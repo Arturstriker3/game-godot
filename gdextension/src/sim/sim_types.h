@@ -2262,13 +2262,22 @@ struct Region {
 		// cidade-polo). O atraso por planta fica em `Building::wage_arrears`.
 		double service_wage_arrears = 0.0;
 		double rural_wage_arrears = 0.0;
+		// OFF: dinheiro do orcamento municipal. ON (Tesouro Nacional): NAO e
+		// dinheiro — e a dotacao de SERVICOS ainda disponivel no mes. O gasto
+		// publico debita o Tesouro no fecho do tick (treasury::reconcile) e
+		// nunca deixa este contador negativo.
 		double government_budget = 0.0;
-		// R1b: envelopes recebidos do Tesouro nacional (diagnostico/teste; nao
-		// entram no save). `month` e o ultimo valor distribuido no mes;
-		// `total` e o acumulado desde o inicio. O saldo do envelope e o proprio
-		// `government_budget` (servicos) + `CityGov::cash` (obras).
-		double envelope_received_month = 0.0;
-		double envelope_received_total = 0.0;
+		// R1b: orcamento regional (Tesouro Nacional). `limit_month` e a
+		// dotacao total do mes (servicos + obras); `spent_month/total` sao o
+		// gasto publico efetivamente debitado do Tesouro. Os contadores
+		// `open_*` sao apenas a marca do inicio do intervalo de reconciliacao
+		// (nao entram no save).
+		double regional_budget_limit_month = 0.0;
+		double regional_budget_spent_month = 0.0;
+		double regional_budget_spent_total = 0.0;
+		double regional_budget_deferred_month = 0.0;
+		double regional_budget_open_services = 0.0;
+		double regional_budget_open_works = 0.0;
 		// Multiplicador da renda externa (PIB PPP per capita da nação,
 		// normalizado pela média mundial ponderada = 1,0). Ver
 		// set_external_income_index e §20 do balance_review.
@@ -2606,13 +2615,12 @@ struct Region {
 		std::map<std::string, double> external_bonds;
 		std::map<std::string, double> gov_cash_open;
 		// R1b: saldo do Tesouro por nacao (dinheiro do mundo; reverter um tick
-		// tem de desfazer a arrecadacao e o envelope junto).
+		// tem de desfazer a arrecadacao e o gasto publico junto).
 		std::map<std::string, double> nation_treasury;
-		// R1b: acumulados desde o inicio. São medição, mas a identidade
-		// `arrecadado == distribuido + saldo` só vale se um tick revertido
-		// também desfizer os acumulados do dia.
+		// R1b: acumulados desde o inicio. São medição, mas a conservação do
+		// dia só vale se um tick revertido também desfizer os acumulados.
 		double treasury_collected_total = 0.0;
-		double treasury_distributed_total = 0.0;
+		double treasury_spent_total = 0.0;
 		// C2b2 (D-106): reservas/paridade/eventos. Reverter um tick tem de
 		// desfazer a intervenção e a desvalorização do dia junto com o caixa.
 		std::map<std::string, FxState> fx;

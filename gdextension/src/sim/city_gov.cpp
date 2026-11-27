@@ -419,7 +419,7 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 			}
 			if (ws.national_treasury) {
 				// R1b: a arrecadacao vai ao Tesouro da nacao; o caixa da
-				// prefeitura nao tem receita propria (vive do envelope).
+				// prefeitura nao tem receita propria (vive do limite mensal).
 				treasury::collect(ws, city.nation, hh_paid + firm_paid);
 			} else {
 				gov.cash += hh_paid + firm_paid;
@@ -453,8 +453,8 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 
 		// Repasse desejado: fração observada da receita municipal alvo. O
 		// pagamento é por nação no passo seguinte (tesouro comum). R1b: com o
-		// Tesouro Nacional o repasse municipal morre; a região vive do envelope
-		// mensal distribuído pelo Tesouro.
+		// Tesouro Nacional o repasse municipal morre; a região gasta direto do
+		// Tesouro até o limite mensal.
 		if (!ws.national_treasury) {
 			transfer_want[city_index] = safe_unit(gov.transfer_share)
 				* gov.target_revenue_month * month_fraction;
@@ -474,15 +474,15 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 		const double maintenance_due =
 			gov.target_revenue_month * kMaintenanceShareOfTarget
 			* static_cast<double>(elapsed) / static_cast<double>(kMonthDays);
-		// R1b: com o Tesouro, a manutenção sai do ENVELOPE de serviços
-		// (`government_budget`), limitada a uma fração declarada dele
-		// (`maintenance_share`) — o resto fica com o orçamento público
-		// (alimentação/crise). Sem a flag, o caminho antigo (caixa municipal).
+		// R1b: com o Tesouro, a manutenção sai do limite de serviços do
+		// orçamento regional (`government_budget`), limitada a uma fração
+		// declarada dele (`maintenance_share`) — o resto fica para
+		// alimentação/crise. Sem a flag, o caminho antigo (caixa municipal).
 		double maintenance_paid = 0.0;
 		if (ws.national_treasury) {
-			const double envelope_cap = safe_nonneg(city.government_budget)
-				* safe_unit(ws.treasury_maintenance_share);
-			maintenance_paid = std::min(maintenance_due, envelope_cap);
+			const double services_cap = safe_nonneg(city.government_budget)
+				* safe_unit(ws.regional_budget_maintenance_share);
+			maintenance_paid = std::min(maintenance_due, services_cap);
 			if (maintenance_paid > 0.0) {
 				city.government_budget -= maintenance_paid;
 			}
@@ -594,11 +594,12 @@ void tick(WorldState& ws, int day, SimCore* core) {
 		return;  // cenário sintético/save antigo: sem estado urbano
 	}
 	advance_projects(ws, count);
-	// R1b: envelope mensal do Tesouro (regra unica, deterministica: populacao
-	// com piso por regiao). Roda no fecho do mes do calendario, antes dos
-	// fechamentos escalonados das cidades, para a regiao ja estar bancada.
+	// R1b: abre o mês do orçamento regional (regra única e determinística:
+	// população com piso por região). O dinheiro fica no Tesouro; só o LIMITE
+	// do mês é gravado. Roda no fecho do mês do calendário, antes dos
+	// fechamentos escalonados das cidades, para a região já estar dotada.
 	if (ws.national_treasury && ws.day % kMonthDays == 0) {
-		treasury::distribute_envelopes(ws);
+		treasury::start_month(ws);
 	}
 	if (core == nullptr) {
 		return;
@@ -612,7 +613,12 @@ void tick(WorldState& ws, int day, SimCore* core) {
 double money_total(const WorldState& ws) {
 	double total = 0.0;
 	for (const CityGov& gov : ws.city_gov) {
-		total += safe_nonneg(gov.cash);
+		// R1b: com o Tesouro Nacional o caixa corrente da prefeitura e apenas
+		// o restante do limite de obras do mes (nao e dinheiro). O fundo
+		// reservado das obras ja iniciadas continua sendo dinheiro publico.
+		if (!ws.national_treasury) {
+			total += safe_nonneg(gov.cash);
+		}
 		for (int slot = 0; slot < gov.project_count; ++slot) {
 			total += safe_nonneg(gov.projects[slot].reserved);
 		}

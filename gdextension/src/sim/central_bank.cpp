@@ -119,11 +119,18 @@ MoneyAllocation allocate_money(const WorldState& ws, double money_total) {
 	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
 		const City& city = ws.cities[index];
 		double cash = city.pop.savings + city.private_total()
-			+ city.government_budget + city.capital_income_next
+			+ city.capital_income_next
 			+ city.rent_income_next + city.region.cash;
+		// R1b: com o Tesouro, o orçamento regional (serviços/obras) é limite,
+		// não caixa; o saldo público vive em `nation_treasury` (abaixo).
+		if (!ws.national_treasury) {
+			cash += city.government_budget;
+		}
 		if (index < gov_count) {
 			const CityGov& gov = ws.city_gov[index];
-			cash += nonneg(gov.cash);
+			if (!ws.national_treasury) {
+				cash += nonneg(gov.cash);
+			}
 			for (int slot = 0; slot < gov.project_count; ++slot) {
 				cash += nonneg(gov.projects[slot].reserved);
 			}

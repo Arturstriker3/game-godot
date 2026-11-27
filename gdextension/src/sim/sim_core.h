@@ -147,22 +147,29 @@ public:
 	// propagado para as cidades; default `off` = quem limita e o sub-saldo
 	// (o modo por fatia t160-t163 segue no codigo como experimento superado).
 	void set_regional_cash(bool enabled, int external_subceiling = 0);
-	// R1b - TESOURO NACIONAL + ENVELOPES (`rework.national_treasury`). So vale
-	// com `regional_cash` ligada; ligar com regional_cash desligada registra
-	// `treasury_config_error` e mantem a flag desligada (config invalida).
-	// `share`, `floor_fraction`, `works_share`, `maintenance_share` sao os
-	// parametros declarados do envelope (rework.json). Ao desligar com saldo
-	// positivo, o saldo volta ao orcamento publico da primeira cidade da nacao
-	// (nao se destroi dinheiro).
-	void set_national_treasury(bool enabled, double envelope_share = 1.0,
+	// R1b - TESOURO NACIONAL + ORCAMENTO REGIONAL
+	// (`rework.national_treasury`). So vale com `regional_cash` ligada; ligar
+	// com regional_cash desligada registra `treasury_config_error` e mantem a
+	// flag desligada (config invalida). `share`, `floor_fraction`,
+	// `works_share`, `maintenance_share` sao os parametros declarados do
+	// orcamento regional (rework.json). Ao ligar, o caixa publico regional
+	// existente e levado ao Tesouro e o primeiro mes e aberto; ao desligar, os
+	// contadores regionais sao zerados e o Tesouro fica intacto (o dinheiro
+	// nunca foi da regiao).
+	void set_national_treasury(bool enabled, double budget_share = 1.0,
 		double floor_fraction = 0.5, double works_share = 0.35,
 		double maintenance_share = 0.5);
 	// Depois do load: a flag do save (ou a configuracao) manda; so vale com
 	// `regional_cash` ligada. Saldos do save substituem os do mundo quando a
-	// flag fica ligada; ao desligar, saldo residual volta as regioes.
+	// flag fica ligada; ao desligar, os contadores regionais sao zerados sem
+	// tocar no Tesouro.
 	void apply_national_treasury_after_load(bool saved_flag,
 		bool has_saved_flag, const std::map<std::string, double>& saved_balances,
-		double collected_total, double distributed_total);
+		double collected_total, double spent_total);
+	// `treasury::reconcile`: debita o Tesouro pelo gasto publico do intervalo
+	// desde a ultima chamada (servicos + obras) e credita receitas publicas.
+	// Chamado em fronteiras de fase (fiscal/monetaria/invariantes).
+	void reconcile_regional_budget();
 	// R1a (t163): liga o livro de medicao por cidade (`--r1-diag`). Com false
 	// nada e escrito e o mundo e bit-identico ao de antes da sonda.
 	void set_r1_diag(bool enabled);

@@ -147,7 +147,7 @@ void SimCore::apply_regional_cash_after_load(bool saved_flag,
 	}
 }
 
-void SimCore::set_national_treasury(bool enabled, double envelope_share,
+void SimCore::set_national_treasury(bool enabled, double budget_share,
 		double floor_fraction, double works_share,
 		double maintenance_share) {
 	// R1b - configuracao invalida: o Tesouro so existe com o caixa unico
@@ -157,29 +157,49 @@ void SimCore::set_national_treasury(bool enabled, double envelope_share,
 		ws_.treasury_config_error =
 			"rework.national_treasury requer rework.regional_cash ligado; "
 			"flag tratada como desligada";
+		if (ws_.national_treasury) {
+			treasury::reconcile(ws_);
+			treasury::drain_to_regions(ws_);
+		}
 		ws_.national_treasury = false;
-		treasury::drain_to_regions(ws_);
 		return;
 	}
 	ws_.treasury_config_error.clear();
-	ws_.treasury_envelope_share = std::isfinite(envelope_share)
-		? std::clamp(envelope_share, 0.0, 1.0) : 1.0;
-	ws_.treasury_floor_fraction = std::isfinite(floor_fraction)
+	ws_.regional_budget_share = std::isfinite(budget_share)
+		? std::clamp(budget_share, 0.0, 1.0) : 1.0;
+	ws_.regional_budget_floor_fraction = std::isfinite(floor_fraction)
 		? std::clamp(floor_fraction, 0.0, 1.0) : 0.5;
-	ws_.treasury_envelope_works_share = std::isfinite(works_share)
+	ws_.regional_budget_works_share = std::isfinite(works_share)
 		? std::clamp(works_share, 0.0, 1.0) : 0.35;
-	ws_.treasury_maintenance_share = std::isfinite(maintenance_share)
+	ws_.regional_budget_maintenance_share = std::isfinite(maintenance_share)
 		? std::clamp(maintenance_share, 0.0, 1.0) : 0.5;
-	if (ws_.national_treasury && !enabled) {
-		// Desligar nao destroi dinheiro: o saldo volta as regioes.
-		treasury::drain_to_regions(ws_);
+	if (enabled && !ws_.national_treasury) {
+		ws_.national_treasury = true;
 	}
-	ws_.national_treasury = enabled;
+	if (!enabled && ws_.national_treasury) {
+		// Desligar nao destroi dinheiro: o Tesouro e os restantes virtuais
+		// viram dinheiro real na primeira cidade da nacao (mundo OFF).
+		treasury::reconcile(ws_);
+		treasury::drain_to_regions(ws_);
+		ws_.national_treasury = false;
+		ws_.gov_cash_open.clear();
+		return;
+	}
+	if (ws_.national_treasury && !ws_.regional_budget_started
+			&& !ws_.cities.empty()) {
+		// Primeira aplicacao com mundo montado: nao pode sobrar caixa
+		// publico estacionado na regiao (vira saldo do Tesouro) e o mes
+		// corrente ja abre com dotacao.
+		treasury::absorb_public_cash(ws_);
+		treasury::start_month(ws_);
+		ws_.gov_cash_open.clear();
+	}
 }
 
 void SimCore::apply_national_treasury_after_load(bool saved_flag,
 		bool has_saved_flag, const std::map<std::string, double>& saved_balances,
-		double collected_total, double distributed_total) {
+		double collected_total, double spent_total) {
+	const bool was_on = has_saved_flag && saved_flag;
 	bool enabled = has_saved_flag ? saved_flag : ws_.national_treasury;
 	if (enabled && !ws_.regional_cash) {
 		ws_.treasury_config_error =
@@ -188,9 +208,15 @@ void SimCore::apply_national_treasury_after_load(bool saved_flag,
 		enabled = false;
 	}
 	if (!enabled) {
-		// Mesmo caminho do setter: saldo residual volta as regioes.
 		ws_.national_treasury = false;
-		if (!ws_.nation_treasury.empty()) {
+		if (was_on) {
+			// Os saldos/contadores do save eram virtuais (ON); no mundo OFF
+			// eles viram dinheiro real, sem criar nem destruir total.
+			ws_.nation_treasury = saved_balances;
+			for (auto& row : ws_.nation_treasury) {
+				row.second = std::isfinite(row.second)
+					? std::max(0.0, row.second) : 0.0;
+			}
 			treasury::drain_to_regions(ws_);
 		}
 		return;
@@ -203,8 +229,30 @@ void SimCore::apply_national_treasury_after_load(bool saved_flag,
 	}
 	ws_.treasury_collected_total = std::isfinite(collected_total)
 		? std::max(0.0, collected_total) : 0.0;
-	ws_.treasury_distributed_total = std::isfinite(distributed_total)
-		? std::max(0.0, distributed_total) : 0.0;
+	ws_.treasury_spent_total = std::isfinite(spent_total)
+		? std::max(0.0, spent_total) : 0.0;
+	ws_.regional_budget_started = true;
+	const std::size_t gov_count = std::min(ws_.cities.size(),
+		ws_.city_gov.size());
+	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+		City& city = ws_.cities[index];
+		// Save antigo/sem os contadores: deriva o limite do que ainda existe
+		// nos restantes (nada e criado; o Tesouro continua a fonte).
+		if (city.regional_budget_limit_month <= 0.0) {
+			city.regional_budget_limit_month =
+				std::max(0.0, city.government_budget)
+				+ (index < gov_count
+					? std::max(0.0, ws_.city_gov[index].cash) : 0.0);
+		}
+		city.regional_budget_open_services =
+			std::max(0.0, city.government_budget);
+		city.regional_budget_open_works = index < gov_count
+			? std::max(0.0, ws_.city_gov[index].cash) : 0.0;
+	}
+}
+
+void SimCore::reconcile_regional_budget() {
+	treasury::reconcile(ws_);
 }
 
 void SimCore::set_land_capacity(const std::string& city_id, int product,
@@ -336,15 +384,18 @@ void SimCore::rebuild_indexes(bool full) {
 double SimCore::money_total() const {
 	double total = ws_.transport_cash + ws_.foreign_cash + ws_.construction_cash
 		+ ws_.power_cash;
-	// R1b: o saldo do Tesouro Nacional por nacao e dinheiro do mundo (o
-	// envelope sai daqui para o orcamento regional e volta a ser gasto).
+	// R1b: o saldo do Tesouro Nacional por nacao e o UNICO caixa publico com a
+	// flag ligada. Os restantes de orcamento regional de servicos
+	// (`City::government_budget`) e de obras (`CityGov::cash`) sao apenas
+	// contadores de limite do mes — nao sao dinheiro e nao entram no total.
 	total += treasury::total_balance(ws_);
 	for (const City& city : ws_.cities) {
 		// capital_income_next é um crédito pendente às famílias: entra no total
 		// para a conservação valer em qualquer ponto do tick. O caixa da região
 		// (B3) é dinheiro do mundo, como o das famílias.
 		total += city.pop.savings + city.private_total()
-		       + city.government_budget + city.capital_income_next
+		       + (ws_.national_treasury ? 0.0 : city.government_budget)
+		       + city.capital_income_next
 		       + city.rent_income_next + city.region.cash;
 	}
 	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
@@ -406,11 +457,11 @@ void SimCore::snapshot_state(Snapshot& out) const {
 	out.gov_bonds = ws_.gov_bonds;
 	out.external_bonds = ws_.external_bonds;
 	out.gov_cash_open = ws_.gov_cash_open;
-	// R1b: saldo do Tesouro por nacao (arrecadacao/envelope do dia) e os
-	// acumulados da identidade arrecadado == distribuido + saldo.
+	// R1b: saldo do Tesouro por nacao (arrecadacao/gasto do dia) e os
+	// acumulados diagnosticos. Um tick revertido devolve os dois.
 	out.nation_treasury = ws_.nation_treasury;
 	out.treasury_collected_total = ws_.treasury_collected_total;
-	out.treasury_distributed_total = ws_.treasury_distributed_total;
+	out.treasury_spent_total = ws_.treasury_spent_total;
 	// C2b2 (D-106): a intervenção cambial e a desvalorização são estado do dia.
 	out.fx = ws_.fx;
 	out.fx_events = ws_.fx_events;
@@ -476,18 +527,23 @@ void SimCore::prologue() {
 			ws_.city_gov.size());
 		for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
 			const City& city = ws_.cities[index];
-			double cash = city.government_budget;
+			double cash = ws_.national_treasury ? 0.0 : city.government_budget;
 			if (index < gov_count) {
 				const CityGov& gov = ws_.city_gov[index];
-				cash += std::max(0.0, gov.cash);
+				// O fundo das obras ja iniciadas e dinheiro publico reservado
+				// nos dois modos; o caixa corrente da prefeitura so e dinheiro
+				// no modo OFF.
+				if (!ws_.national_treasury) {
+					cash += std::max(0.0, gov.cash);
+				}
 				for (int slot = 0; slot < gov.project_count; ++slot) {
 					cash += std::max(0.0, gov.projects[slot].reserved);
 				}
 			}
 			ws_.gov_cash_open[city.nation] += cash;
 		}
-		// R1b: o Tesouro Nacional e caixa publico da nacao na janela do
-		// deficit (a distribuicao do envelope e interna ao setor publico).
+		// R1b: o Tesouro Nacional e o caixa publico da nacao na janela do
+		// deficit (o orcamento regional e limite, nao saldo).
 		for (const auto& row : ws_.nation_treasury) {
 			ws_.gov_cash_open[row.first] += row.second;
 		}
@@ -1170,7 +1226,7 @@ void SimCore::restore_state(const Snapshot& in) {
 	ws_.gov_cash_open = in.gov_cash_open;
 	ws_.nation_treasury = in.nation_treasury;
 	ws_.treasury_collected_total = in.treasury_collected_total;
-	ws_.treasury_distributed_total = in.treasury_distributed_total;
+	ws_.treasury_spent_total = in.treasury_spent_total;
 	ws_.fx = in.fx;
 	ws_.fx_events = in.fx_events;
 	ws_.banks = in.banks;

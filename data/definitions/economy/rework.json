@@ -10,14 +10,14 @@
   },
   "national_treasury": {
     "enabled": false,
-    "envelope": {
+    "regional_budget": {
       "share": 1.0,
       "population_floor_fraction": 0.5,
       "works_share": 0.35,
       "maintenance_share": 0.5
     },
-    "note": "R1b: Tesouro Nacional por país + envelopes mensais. Só vale com regional_cash.enabled=true (qualquer outra combinação é config inválida: a flag é tratada como desligada e o motivo vai para o log/status). Ligado: TODA a arrecadação que hoje entra no caixa da cidade/prefeitura (IPTU + taxas locais; o imposto de renda do modelo é 100% rebatido, kTransferShare=1) passa a entrar no Tesouro da nação; a equalização fiscal diária e o repasse municipal morrem; o Tesouro distribui por mês um envelope por região proporcional à população simulada, com piso mínimo por região, e o envelope banca o que o orçamento municipal bancava hoje (serviços/alimentação/crise em City.government_budget e manutenção/obras em CityGov.cash). Nenhum imposto novo: o IPTU existente é apenas redirecionado; o imposto territorial fica para a fase política."
+    "note": "R1b (decisão do dono, 27/11): Tesouro Nacional por país + ORÇAMENTO REGIONAL. Só vale com regional_cash.enabled=true (qualquer outra combinação é config inválida: a flag é tratada como desligada e o motivo vai para o log/status). Ligado: TODA a arrecadação que hoje entra no caixa da cidade/prefeitura (IPTU + taxas locais; o imposto de renda do modelo é 100% rebatido, kTransferShare=1) passa a entrar no Tesouro da nação; a equalização fiscal diária e o repasse municipal morrem. O dinheiro NÃO é transferido para a região: cada região recebe um limite mensal de gasto proporcional à população simulada, com piso mínimo, e toda despesa pública (serviços/alimentação/crise/manutenção/obras) debita o Tesouro diretamente até esse limite; o que excede o limite é despesa adiada (determinística) e o que não foi gasto permanece no Tesouro. Nenhum imposto novo: o IPTU existente é apenas redirecionado; o imposto territorial fica para a fase política."
     ,
-    "envelope_note": "Parâmetros DECLARADOS do envelope (defaults a balancear; futuramente decisão do jogador). population_floor_fraction: peso de cada região = max(pop_share_i, floor/n_regiões) — 0,5 = toda região recebe ao menos metade do rateio igualitário (piso mínimo por região). share: fração do saldo do Tesouro distribuída a cada mês (1,0 = tudo; o resto fica como reserva). works_share: fração do envelope creditada na conta de obras da região (CityGov.cash); o resto vai para o orçamento público (City.government_budget). maintenance_share: teto da manutenção urbana dentro do envelope de serviços (o excedente fica com o restante do orçamento municipal: alimentação/crise)."
+    "regional_budget_note": "Parâmetros DECLARADOS do limite regional (defaults a balancear; futuramente decisão do jogador). population_floor_fraction: peso de cada região = max(pop_share_i, floor/n_regiões) — 0,5 = toda região recebe ao menos metade do rateio igualitário (piso mínimo por região). share: fração do saldo do Tesouro disponibilizada como limite a cada mês (1,0 = todo o saldo; o resto fica como reserva no Tesouro). O limite é um teto de gasto, não uma carteira: não há crédito regional. works_share: fração do limite reservada à conta de obras da região (CityGov.cash); o resto vai para o limite de serviços (City.government_budget). maintenance_share: teto da manutenção urbana dentro do limite de serviços (o excedente fica com o restante: alimentação/crise)."
   }
 }

@@ -1,891 +1,683 @@
 {
   "bankruptcies_by_month": [
     0,
-    11433,
-    22481
+    11,
+    225
   ],
   "by_nation": {
     "BRA": {
-      "closings": 1133,
+      "closings": 0,
       "demand_samples": 45000,
-      "input_cost": 0.0,
+      "input_cost": 176524.345431838,
       "jobs": {
-        "count": 2633,
-        "max": 45.0,
-        "median": 40.0,
-        "min": 21.6
+        "count": 1422,
+        "max": 106788.483819471,
+        "median": 977.804939520293,
+        "min": 18.0
       },
-      "margin_pct": -4182.50757893206,
-      "openings": 2250,
+      "margin_pct": 30.9380716478517,
+      "openings": 1039,
       "profit": {
-        "count": 113347,
-        "max": 0.0,
-        "median": -446.815597760465,
-        "min": -13913.0571409717
+        "count": 96621,
+        "max": 3483.04615239787,
+        "median": 11.8656956194249,
+        "min": -4.39598456412606
       },
-      "revenue": 2074199.33890228,
-      "service_cost": 174577.103062551,
-      "total_cost": 88827743.8906489,
-      "unmet_positive": 44907,
-      "wages": 88653166.7875864
+      "revenue": 14296894.5311418,
+      "service_cost": 922797.934119281,
+      "total_cost": 9873711.05767933,
+      "unmet_positive": 43459,
+      "wages": 8774388.77812821
     },
     "CHN": {
-      "closings": 1242,
-      "demand_samples": 49969,
-      "input_cost": 1014.95892194485,
+      "closings": 0,
+      "demand_samples": 66025,
+      "input_cost": 1460194.17752947,
       "jobs": {
-        "count": 2910,
-        "max": 45.0,
-        "median": 40.0,
-        "min": 21.6
+        "count": 2103,
+        "max": 216233.930186421,
+        "median": 3080.89600421557,
+        "min": 19.8137918357541
       },
-      "margin_pct": -15921.3847943726,
-      "openings": 2475,
+      "margin_pct": 27.6500737876385,
+      "openings": 1520,
       "profit": {
-        "count": 125342,
-        "max": 0.0,
-        "median": -2772.82186251095,
-        "min": -32844.0511548585
+        "count": 142680,
+        "max": 19252.7531964231,
+        "median": 55.8936026373848,
+        "min": -621.93708235477
       },
-      "revenue": 2417000.98756889,
-      "service_cost": 205158.153894359,
-      "total_cost": 387237028.702198,
-      "unmet_positive": 49798,
-      "wages": 387030855.589381
+      "revenue": 115068060.878071,
+      "service_cost": 7497606.89584512,
+      "total_cost": 83251657.1392795,
+      "unmet_positive": 58011,
+      "wages": 74293856.0659049
     },
     "DEU": {
-      "closings": 547,
-      "demand_samples": 21600,
-      "input_cost": 0.0,
+      "closings": 3,
+      "demand_samples": 21599,
+      "input_cost": 28523.8913297376,
       "jobs": {
-        "count": 1267,
-        "max": 45.0,
-        "median": 40.0,
-        "min": 21.6
+        "count": 709,
+        "max": 32130.0125985331,
+        "median": 417.858781098758,
+        "min": 18.0
       },
-      "margin_pct": -3202.1304462992,
-      "openings": 1080,
+      "margin_pct": 22.5148628463427,
+      "openings": 522,
       "profit": {
-        "count": 54593,
-        "max": 0.0,
-        "median": -414.061664022257,
-        "min": -11189.2901207391
+        "count": 46606,
+        "max": 1609.60823367009,
+        "median": 11.226085673001,
+        "min": -164.735461105447
       },
-      "revenue": 1021475.8226069,
-      "service_cost": 85014.7701290909,
-      "total_cost": 33730464.1398875,
-      "unmet_positive": 21577,
-      "wages": 33645449.3697585
+      "revenue": 10092407.8951752,
+      "service_cost": 786225.476774305,
+      "total_cost": 7820116.09968304,
+      "unmet_positive": 16591,
+      "wages": 7005366.731579
     },
     "IND": {
-      "closings": 1089,
-      "demand_samples": 44685,
-      "input_cost": 28.3062099874369,
+      "closings": 0,
+      "demand_samples": 55697,
+      "input_cost": 1131052.91693074,
       "jobs": {
-        "count": 2558,
-        "max": 45.0,
-        "median": 40.0,
-        "min": 21.6
+        "count": 1519,
+        "max": 557244.75498234,
+        "median": 2419.16313757754,
+        "min": 18.0
       },
-      "margin_pct": -3861.43771402786,
-      "openings": 2177,
+      "margin_pct": 25.7160840073599,
+      "openings": 1035,
       "profit": {
-        "count": 111365,
-        "max": 0.0,
-        "median": -533.655992337364,
-        "min": -11574.9943430061
+        "count": 110687,
+        "max": 13437.5847619567,
+        "median": 15.8443765630938,
+        "min": -883.22516291443
       },
-      "revenue": 2113001.39938918,
-      "service_cost": 171557.815691951,
-      "total_cost": 83705234.3333394,
-      "unmet_positive": 44108,
-      "wages": 83533648.2114375
+      "revenue": 46344093.4591396,
+      "service_cost": 2814834.28707466,
+      "total_cost": 34426207.4527379,
+      "unmet_positive": 46330,
+      "wages": 30480320.2487325
     },
     "NGA": {
-      "closings": 594,
-      "demand_samples": 23364,
-      "input_cost": 0.0,
+      "closings": 0,
+      "demand_samples": 23394,
+      "input_cost": 421127.132987335,
       "jobs": {
-        "count": 1378,
-        "max": 45.0,
-        "median": 40.0,
-        "min": 40.0
+        "count": 621,
+        "max": 250204.475750311,
+        "median": 1995.67923551916,
+        "min": 22.0
       },
-      "margin_pct": -1970.28929699092,
-      "openings": 1170,
+      "margin_pct": 28.7928853360687,
+      "openings": 413,
       "profit": {
-        "count": 59567,
-        "max": 0.0,
-        "median": -278.377507014493,
-        "min": -13181.4705386272
+        "count": 46571,
+        "max": 5478.81755374355,
+        "median": 15.2480793990153,
+        "min": -508.872254262257
       },
-      "revenue": 1132795.66869528,
-      "service_cost": 96086.9844013751,
-      "total_cost": 23452147.485775,
-      "unmet_positive": 23308,
-      "wages": 23356060.5013737
+      "revenue": 9517111.66924036,
+      "service_cost": 580965.227472427,
+      "total_cost": 6776860.61901037,
+      "unmet_positive": 21463,
+      "wages": 5774768.25855061
     },
     "USA": {
-      "closings": 1249,
-      "demand_samples": 59180,
-      "input_cost": 26.7303388257507,
+      "closings": 9,
+      "demand_samples": 59207,
+      "input_cost": 75028.7286117214,
       "jobs": {
-        "count": 2714,
-        "max": 45.0,
-        "median": 40.0,
-        "min": 20.7779634105917
+        "count": 1698,
+        "max": 22890.4210805906,
+        "median": 185.018971641648,
+        "min": 18.0
       },
-      "margin_pct": -4483.49083256804,
-      "openings": 2287,
+      "margin_pct": 23.0826291932618,
+      "openings": 1228,
       "profit": {
-        "count": 123027,
-        "max": 4.56094602026083,
-        "median": -487.325339276217,
-        "min": -21009.98129198
+        "count": 110662,
+        "max": 2290.24741976129,
+        "median": 5.45033144851577,
+        "min": -138.23075398413
       },
-      "revenue": 2247121.08124356,
-      "service_cost": 184035.698001388,
-      "total_cost": 102996588.755502,
-      "unmet_positive": 57976,
-      "wages": 102812526.327162
+      "revenue": 23118811.6428601,
+      "service_cost": 1805321.55181132,
+      "total_cost": 17782382.0774501,
+      "unmet_positive": 46781,
+      "wages": 15902031.797027
     }
   },
   "by_sector": {
     "cleaning_security_waste": {
-      "closings": 136,
-      "demand_samples": 12240,
+      "closings": 0,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 194,
-        "max": 40.0,
-        "median": 40.0,
+        "count": 390,
+        "max": 50810.8948956932,
+        "median": 200.94282446555,
         "min": 28.8
       },
-      "margin_pct": -7374.41618845702,
-      "openings": 65,
+      "margin_pct": 20.6148495585016,
+      "openings": 240,
       "profit": {
-        "count": 10016,
-        "max": 1.00692914005475,
-        "median": -521.158223957926,
-        "min": -31275.2604480134
+        "count": 25606,
+        "max": 1474.94162423696,
+        "median": 3.21618021626711,
+        "min": -621.93708235477
       },
-      "revenue": 177968.337463105,
-      "service_cost": 16196.8719153707,
-      "total_cost": 13302094.2256701,
-      "unmet_positive": 12146,
-      "wages": 13285897.3537548
+      "revenue": 4601181.15525306,
+      "service_cost": 497629.435751751,
+      "total_cost": 3652654.58218352,
+      "unmet_positive": 10742,
+      "wages": 3155025.14643177
     },
     "construction": {
       "closings": 0,
-      "demand_samples": 12240,
-      "input_cost": 0.0,
+      "demand_samples": 13590,
+      "input_cost": 1563.71620102403,
       "jobs": {
-        "count": 416,
-        "max": 45.0,
-        "median": 45.0,
+        "count": 5,
+        "max": 192.074229521998,
+        "median": 94.6772054849316,
         "min": 45.0
       },
-      "margin_pct": -9963.02935769118,
-      "openings": 416,
+      "margin_pct": -3.0552568698707,
+      "openings": 5,
       "profit": {
-        "count": 16785,
-        "max": 0.0,
-        "median": -670.224774403726,
-        "min": -9604.28356822239
+        "count": 159,
+        "max": 10.6027807943989,
+        "median": -0.813320678715811,
+        "min": -11.4878243098756
       },
-      "revenue": 224320.522808774,
-      "service_cost": 1722.17676079626,
-      "total_cost": 22573440.0655733,
-      "unmet_positive": 12012,
-      "wages": 22571717.8888125
+      "revenue": 4839.60182990121,
+      "service_cost": 22.710049518162,
+      "total_cost": 4987.46409728365,
+      "unmet_positive": 13534,
+      "wages": 3401.03784674146
     },
     "education": {
-      "closings": 278,
-      "demand_samples": 12240,
+      "closings": 0,
+      "demand_samples": 13590,
+      "input_cost": 0.0,
+      "jobs": {
+        "count": 554,
+        "max": 204275.412635375,
+        "median": 1427.99985341909,
+        "min": 28.0
+      },
+      "margin_pct": 22.422221835517,
+      "openings": 404,
+      "profit": {
+        "count": 37497,
+        "max": 7354.53981475559,
+        "median": 11.7395144813034,
+        "min": -25.3871934430618
+      },
+      "revenue": 14970089.5948217,
+      "service_cost": 494437.36788862,
+      "total_cost": 11613462.8968951,
+      "unmet_positive": 10777,
+      "wages": 11119025.5290065
+    },
+    "finance": {
+      "closings": 0,
+      "demand_samples": 13590,
+      "input_cost": 0.0,
+      "jobs": {
+        "count": 579,
+        "max": 130616.85852372,
+        "median": 1132.33119176197,
+        "min": 23.0
+      },
+      "margin_pct": 34.2324385376956,
+      "openings": 429,
+      "profit": {
+        "count": 44627,
+        "max": 8881.31740505431,
+        "median": 24.4834741637213,
+        "min": -2.4019782916746
+      },
+      "revenue": 16433831.2582912,
+      "service_cost": 1362890.64194192,
+      "total_cost": 10808130.073408,
+      "unmet_positive": 11080,
+      "wages": 9445239.43146613
+    },
+    "food_service": {
+      "closings": 0,
+      "demand_samples": 13590,
+      "input_cost": 374005.838584104,
+      "jobs": {
+        "count": 546,
+        "max": 455537.668695952,
+        "median": 1589.18821974635,
+        "min": 33.0
+      },
+      "margin_pct": 29.2437033994664,
+      "openings": 396,
+      "profit": {
+        "count": 43247,
+        "max": 13437.5847619567,
+        "median": 36.2742487223738,
+        "min": -2.59189889637942
+      },
+      "revenue": 29246000.7958254,
+      "service_cost": 1558861.07472942,
+      "total_cost": 20693387.0668886,
+      "unmet_positive": 11421,
+      "wages": 18760520.1535751
+    },
+    "freight_logistics": {
+      "closings": 0,
+      "demand_samples": 13186,
+      "input_cost": 0.0,
+      "jobs": {
+        "count": 96,
+        "max": 81008.4968340028,
+        "median": 795.758981613038,
+        "min": 28.8
+      },
+      "margin_pct": 30.8393690563372,
+      "openings": 96,
+      "profit": {
+        "count": 8344,
+        "max": 6020.20750765298,
+        "median": 25.2626014948156,
+        "min": -15.7453493762521
+      },
+      "revenue": 4873864.57218911,
+      "service_cost": 465941.113681517,
+      "total_cost": 3370795.48946564,
+      "unmet_positive": 12404,
+      "wages": 2904854.37578413
+    },
+    "health": {
+      "closings": 0,
+      "demand_samples": 13590,
+      "input_cost": 0.0,
+      "jobs": {
+        "count": 520,
+        "max": 250261.592128039,
+        "median": 1408.56953712688,
+        "min": 36.0
+      },
+      "margin_pct": 25.2433493720408,
+      "openings": 370,
+      "profit": {
+        "count": 36592,
+        "max": 6296.58059650123,
+        "median": 14.4948505139131,
+        "min": -15.6268830635845
+      },
+      "revenue": 16977436.7625087,
+      "service_cost": 640907.803851269,
+      "total_cost": 12691763.0861313,
+      "unmet_positive": 10916,
+      "wages": 12050855.28228
+    },
+    "hospitality_tourism": {
+      "closings": 0,
+      "demand_samples": 13590,
+      "input_cost": 57009.7043329877,
+      "jobs": {
+        "count": 577,
+        "max": 114105.130865977,
+        "median": 833.954918416811,
+        "min": 27.0
+      },
+      "margin_pct": 24.5029505141165,
+      "openings": 432,
+      "profit": {
+        "count": 44834,
+        "max": 3367.52339860987,
+        "median": 12.4831314223257,
+        "min": -16.5511421395587
+      },
+      "revenue": 12584199.7120111,
+      "service_cost": 630124.978393486,
+      "total_cost": 9500699.48397944,
+      "unmet_positive": 10791,
+      "wages": 8813564.80125296
+    },
+    "insurance_pension": {
+      "closings": 0,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
         "count": 550,
-        "max": 40.0,
-        "median": 40.0,
+        "max": 206306.100954047,
+        "median": 970.998836326574,
         "min": 28.0
       },
-      "margin_pct": -6593.34454493359,
-      "openings": 420,
+      "margin_pct": 12.9397599188488,
+      "openings": 409,
       "profit": {
-        "count": 31303,
-        "max": 4.56094602026083,
-        "median": -516.128559968301,
-        "min": -31282.1368331986
+        "count": 41773,
+        "max": 3865.9214164005,
+        "median": 6.37350557315126,
+        "min": -488.67844247934
       },
-      "revenue": 550185.501871458,
-      "service_cost": 18080.9363045336,
-      "total_cost": 36825811.2765287,
-      "unmet_positive": 12156,
-      "wages": 36807730.3402242
-    },
-    "finance": {
-      "closings": 512,
-      "demand_samples": 12240,
-      "input_cost": 0.0,
-      "jobs": {
-        "count": 1004,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 23.0
-      },
-      "margin_pct": -5725.45501270268,
-      "openings": 874,
-      "profit": {
-        "count": 34273,
-        "max": 1.27135346044654,
-        "median": -499.451030474219,
-        "min": -31281.6667710868
-      },
-      "revenue": 688025.183236032,
-      "service_cost": 60068.8484470036,
-      "total_cost": 40080597.5254803,
-      "unmet_positive": 12195,
-      "wages": 40020528.6770333
-    },
-    "food_service": {
-      "closings": 516,
-      "demand_samples": 12240,
-      "input_cost": 848.575025684327,
-      "jobs": {
-        "count": 1025,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 33.0
-      },
-      "margin_pct": -6394.74211625028,
-      "openings": 895,
-      "profit": {
-        "count": 42035,
-        "max": 2.43404594616813,
-        "median": -525.616418128703,
-        "min": -31281.6537500287
-      },
-      "revenue": 805089.614928224,
-      "service_cost": 25297.0169072648,
-      "total_cost": 52288494.2943006,
-      "unmet_positive": 12167,
-      "wages": 52262348.7023676
-    },
-    "freight_logistics": {
-      "closings": 480,
-      "demand_samples": 11962,
-      "input_cost": 0.0,
-      "jobs": {
-        "count": 890,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 28.8
-      },
-      "margin_pct": -5884.91279079466,
-      "openings": 890,
-      "profit": {
-        "count": 34012,
-        "max": 0.0,
-        "median": -530.161919853906,
-        "min": -17935.2744254097
-      },
-      "revenue": 675426.581766696,
-      "service_cost": 56165.4181996734,
-      "total_cost": 40423691.8845822,
-      "unmet_positive": 11365,
-      "wages": 40367526.4663825
-    },
-    "health": {
-      "closings": 514,
-      "demand_samples": 12240,
-      "input_cost": 0.0,
-      "jobs": {
-        "count": 619,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 36.0
-      },
-      "margin_pct": -6331.16459078137,
-      "openings": 489,
-      "profit": {
-        "count": 31711,
-        "max": 2.41479136725056,
-        "median": -508.228079284391,
-        "min": -31282.051277643
-      },
-      "revenue": 577293.066442225,
-      "service_cost": 21678.1695869754,
-      "total_cost": 37126667.2740683,
-      "unmet_positive": 12168,
-      "wages": 37104989.1044813
-    },
-    "hospitality_tourism": {
-      "closings": 514,
-      "demand_samples": 12240,
-      "input_cost": 221.420445073717,
-      "jobs": {
-        "count": 1023,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 27.0
-      },
-      "margin_pct": -6834.79794717755,
-      "openings": 894,
-      "profit": {
-        "count": 40107,
-        "max": 0.979286593829273,
-        "median": -519.912972693501,
-        "min": -31282.1769220874
-      },
-      "revenue": 703844.941598122,
-      "service_cost": 34859.8768655622,
-      "total_cost": 48810224.5612596,
-      "unmet_positive": 12104,
-      "wages": 48775143.263949
-    },
-    "insurance_pension": {
-      "closings": 510,
-      "demand_samples": 12240,
-      "input_cost": 0.0,
-      "jobs": {
-        "count": 792,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 28.0
-      },
-      "margin_pct": -6696.28898292843,
-      "openings": 666,
-      "profit": {
-        "count": 31875,
-        "max": 0.343162381714915,
-        "median": -504.42734836057,
-        "min": -31282.7654046271
-      },
-      "revenue": 551217.112344011,
-      "service_cost": 91940.5812159924,
-      "total_cost": 37462307.8782523,
-      "unmet_positive": 12179,
-      "wages": 37370367.2970363
+      "revenue": 13768629.969387,
+      "service_cost": 2279206.07615301,
+      "total_cost": 11987002.3072336,
+      "unmet_positive": 11620,
+      "wages": 9707796.23108061
     },
     "it": {
-      "closings": 134,
-      "demand_samples": 12240,
+      "closings": 0,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 535,
-        "max": 40.0,
-        "median": 40.0,
+        "count": 562,
+        "max": 199649.054949898,
+        "median": 867.204217504545,
         "min": 23.0
       },
-      "margin_pct": -4887.22651472081,
-      "openings": 406,
+      "margin_pct": 43.4216982204158,
+      "openings": 418,
       "profit": {
-        "count": 28927,
-        "max": 1.25582993274256,
-        "median": -515.668111058525,
-        "min": -31280.577951211
+        "count": 36531,
+        "max": 9161.12344763817,
+        "median": 28.0529522993817,
+        "min": -1.9119782916746
       },
-      "revenue": 686566.113034206,
-      "service_cost": 25764.8897935806,
-      "total_cost": 34240607.2303299,
-      "unmet_positive": 12175,
-      "wages": 34214842.3405363
+      "revenue": 11616417.4511849,
+      "service_cost": 416625.030148368,
+      "total_cost": 6572371.72150767,
+      "unmet_positive": 11573,
+      "wages": 6155746.6913593
     },
     "leisure_culture": {
-      "closings": 134,
-      "demand_samples": 12240,
+      "closings": 0,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 411,
-        "max": 40.0,
-        "median": 40.0,
+        "count": 499,
+        "max": 159501.921125687,
+        "median": 845.038692228527,
         "min": 22.0
       },
-      "margin_pct": -6986.07968132082,
-      "openings": 281,
+      "margin_pct": 25.3012593548438,
+      "openings": 349,
       "profit": {
-        "count": 16735,
-        "max": 3.77428511639662,
-        "median": -560.429557400128,
-        "min": -31281.3877206804
+        "count": 26254,
+        "max": 2600.60188013243,
+        "median": 2.19435072236959,
+        "min": -1.33994542289888
       },
-      "revenue": 304627.104382692,
-      "service_cost": 10690.7439161822,
-      "total_cost": 21586119.3474579,
-      "unmet_positive": 12176,
-      "wages": 21575428.6035417
+      "revenue": 8694109.07443228,
+      "service_cost": 335633.002249054,
+      "total_cost": 6494389.98891716,
+      "unmet_positive": 11407,
+      "wages": 6158756.9866681
     },
     "maintenance_repair": {
-      "closings": 129,
-      "demand_samples": 12240,
+      "closings": 0,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 519,
-        "max": 40.0,
-        "median": 40.0,
+        "count": 206,
+        "max": 40210.8932763451,
+        "median": 35.0,
         "min": 35.0
       },
-      "margin_pct": -5173.33555148963,
-      "openings": 390,
+      "margin_pct": 81.347206407808,
+      "openings": 56,
       "profit": {
-        "count": 22505,
-        "max": 4.08157452580924,
-        "median": -536.319859865518,
-        "min": -31278.6428407608
+        "count": 16036,
+        "max": 6970.97863716435,
+        "median": 66.3688672605361,
+        "min": -1.13934903139286
       },
-      "revenue": 523986.146806605,
-      "service_cost": 10747.6278885103,
-      "total_cost": 27631547.7644334,
-      "unmet_positive": 12160,
-      "wages": 27620800.1365449
+      "revenue": 3762116.99018815,
+      "service_cost": 36488.2406706995,
+      "total_cost": 701739.91687658,
+      "unmet_positive": 13022,
+      "wages": 665251.67620588
     },
     "media_advertising": {
-      "closings": 3,
-      "demand_samples": 12240,
+      "closings": 0,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 498,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 20.7779634105917
+        "count": 384,
+        "max": 247199.89882913,
+        "median": 1206.34773376553,
+        "min": 18.0
       },
-      "margin_pct": -5884.55170154153,
-      "openings": 498,
+      "margin_pct": 19.6672582629236,
+      "openings": 384,
       "profit": {
-        "count": 25036,
-        "max": 1.41695736808554,
-        "median": -505.057187734381,
-        "min": -9482.56603559819
+        "count": 19707,
+        "max": 3234.05867953956,
+        "median": 22.1903289220403,
+        "min": -111.233083401746
       },
-      "revenue": 442130.519052132,
-      "service_cost": 58375.9674299037,
-      "total_cost": 26459529.5009687,
-      "unmet_positive": 12180,
-      "wages": 26401153.5335388
+      "revenue": 7313227.39666368,
+      "service_cost": 861377.074878418,
+      "total_cost": 5874916.07720695,
+      "unmet_positive": 11088,
+      "wages": 5013539.00232853
     },
     "passenger_transport": {
-      "closings": 510,
-      "demand_samples": 12240,
+      "closings": 4,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 1001,
-        "max": 42.0,
-        "median": 42.0,
+        "count": 515,
+        "max": 332145.633537985,
+        "median": 1316.98569405409,
         "min": 42.0
       },
-      "margin_pct": -6759.15874721899,
-      "openings": 882,
+      "margin_pct": 21.3246071941329,
+      "openings": 381,
       "profit": {
-        "count": 35952,
-        "max": 2.27293397697101,
-        "median": -542.852745339255,
-        "min": -32844.0511548585
+        "count": 39881,
+        "max": 7647.36713628977,
+        "median": 16.6068070006194,
+        "min": -185.215240091818
       },
-      "revenue": 656257.548823053,
-      "service_cost": 53228.4672816467,
-      "total_cost": 45013747.0643814,
-      "unmet_positive": 12209,
-      "wages": 44960518.5970998
+      "revenue": 17477073.1267611,
+      "service_cost": 1618651.40450295,
+      "total_cost": 13750155.9334479,
+      "unmet_positive": 11315,
+      "wages": 12131504.528945
     },
     "personal_services": {
-      "closings": 99,
-      "demand_samples": 12240,
+      "closings": 0,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 509,
-        "max": 40.0,
-        "median": 40.0,
+        "count": 495,
+        "max": 257724.215302382,
+        "median": 1649.50808103648,
         "min": 27.5
       },
-      "margin_pct": -7293.95129810024,
-      "openings": 419,
+      "margin_pct": 21.3530751456109,
+      "openings": 394,
       "profit": {
-        "count": 20085,
-        "max": 0.860918606063234,
-        "median": -564.675045370069,
-        "min": -31278.4688331986
+        "count": 27586,
+        "max": 3562.00004170417,
+        "median": 12.2642300209678,
+        "min": -98.2595923302609
       },
-      "revenue": 350127.767612113,
-      "service_cost": 15076.4250434117,
-      "total_cost": 25888276.6183652,
-      "unmet_positive": 12102,
-      "wages": 25873200.1933218
+      "revenue": 11697960.9404936,
+      "service_cost": 601145.559079035,
+      "total_cost": 9200086.55036576,
+      "unmet_positive": 9616,
+      "wages": 8598940.99128672
     },
     "professional_services": {
-      "closings": 131,
-      "demand_samples": 12240,
+      "closings": 0,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 532,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 28.5357926218711
+        "count": 566,
+        "max": 235893.378289314,
+        "median": 905.541431972337,
+        "min": 23.0
       },
-      "margin_pct": -5115.33984802788,
-      "openings": 402,
+      "margin_pct": 43.0755315841137,
+      "openings": 416,
       "profit": {
-        "count": 26153,
-        "max": 1.76574505216135,
-        "median": -527.994034091892,
-        "min": -31281.5517607348
+        "count": 34557,
+        "max": 19252.7531964231,
+        "median": 26.9393472915015,
+        "min": -2.2419782916746
       },
-      "revenue": 601560.789680904,
-      "service_cost": 22807.5117058424,
-      "total_cost": 31373439.5743394,
-      "unmet_positive": 12194,
-      "wages": 31350632.0626335
+      "revenue": 13450524.5484353,
+      "service_cost": 476584.600198292,
+      "total_cost": 7656639.59834506,
+      "unmet_positive": 11006,
+      "wages": 7180054.99814676
     },
     "real_estate": {
-      "closings": 136,
-      "demand_samples": 12240,
-      "input_cost": 0.0,
+      "closings": 0,
+      "demand_samples": 13590,
+      "input_cost": 2859871.93370291,
       "jobs": {
-        "count": 544,
-        "max": 40.0,
-        "median": 40.0,
+        "count": 546,
+        "max": 557244.75498234,
+        "median": 1955.69810830179,
         "min": 36.0
       },
-      "margin_pct": -6417.85785985503,
-      "openings": 414,
-      "profit": {
-        "count": 25470,
-        "max": 3.1916239487805,
-        "median": -525.211331601438,
-        "min": -31281.9388331986
-      },
-      "revenue": 464896.407262706,
-      "service_cost": 4336.64191156944,
-      "total_cost": 30301287.0209559,
-      "unmet_positive": 12156,
-      "wages": 30296950.3790444
-    },
-    "retail": {
-      "closings": 513,
-      "demand_samples": 12240,
-      "input_cost": 0.0,
-      "jobs": {
-        "count": 1007,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 40.0
-      },
-      "margin_pct": -7085.15370660599,
-      "openings": 876,
-      "profit": {
-        "count": 44345,
-        "max": 4.02005967166163,
-        "median": -545.034825998119,
-        "min": -31280.6028969545
-      },
-      "revenue": 824620.344618771,
-      "service_cost": 165513.806690086,
-      "total_cost": 59250239.2568027,
-      "unmet_positive": 12228,
-      "wages": 59084725.4501126
-    },
-    "telecom": {
-      "closings": 141,
-      "demand_samples": 12240,
-      "input_cost": 0.0,
-      "jobs": {
-        "count": 525,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 33.0
-      },
-      "margin_pct": -6490.86672670214,
+      "margin_pct": 14.2028133360704,
       "openings": 396,
       "profit": {
-        "count": 29718,
-        "max": 0.0,
-        "median": -525.188935623427,
-        "min": -31279.0528331986
+        "count": 30979,
+        "max": 5295.53170990351,
+        "median": 3.36720265674925,
+        "min": -883.22516291443
       },
-      "revenue": 537855.884565167,
-      "service_cost": 109519.038589453,
-      "total_cost": 35449364.5334151,
-      "unmet_positive": 12239,
-      "wages": 35339845.4948256
+      "revenue": 20830186.1010804,
+      "service_cost": 233896.868047028,
+      "total_cost": 17871713.6515878,
+      "unmet_positive": 11567,
+      "wages": 14777944.8498379
     },
-    "wholesale": {
-      "closings": 464,
-      "demand_samples": 11516,
+    "retail": {
+      "closings": 4,
+      "demand_samples": 13590,
       "input_cost": 0.0,
       "jobs": {
-        "count": 866,
-        "max": 40.0,
-        "median": 40.0,
-        "min": 21.6
+        "count": 198,
+        "max": 17668.9495913757,
+        "median": 36.0,
+        "min": 36.0
       },
-      "margin_pct": -8065.87995913724,
-      "openings": 866,
+      "margin_pct": 22.3675668966892,
+      "openings": 48,
       "profit": {
-        "count": 40198,
-        "max": 0.0,
-        "median": -551.7977253186,
-        "min": -31268.5633960928
+        "count": 16547,
+        "max": 1661.05707718389,
+        "median": 10.0437619425425,
+        "min": -138.23075398413
       },
-      "revenue": 659594.810108361,
-      "service_cost": 114359.50872734,
-      "total_cost": 53861720.410148,
-      "unmet_positive": 11363,
-      "wages": 53747360.9014207
+      "revenue": 3433151.47644247,
+      "service_cost": 778488.808529206,
+      "total_cost": 2665239.02328453,
+      "unmet_positive": 13139,
+      "wages": 1886750.21475532
+    },
+    "telecom": {
+      "closings": 4,
+      "demand_samples": 13590,
+      "input_cost": 0.0,
+      "jobs": {
+        "count": 241,
+        "max": 92111.8656389993,
+        "median": 33.0,
+        "min": 33.0
+      },
+      "margin_pct": 16.6331967807179,
+      "openings": 91,
+      "profit": {
+        "count": 19898,
+        "max": 2982.5497429865,
+        "median": 0.741008487412969,
+        "min": -3.17702163003541
+      },
+      "revenue": 5531164.19134825,
+      "service_cost": 1073280.47045915,
+      "total_cost": 4611154.76713669,
+      "unmet_positive": 12865,
+      "wages": 3537874.29667754
+    },
+    "wholesale": {
+      "closings": 0,
+      "demand_samples": 13116,
+      "input_cost": 0.0,
+      "jobs": {
+        "count": 43,
+        "max": 1387.53064267634,
+        "median": 254.227078151726,
+        "min": 35.7291171803756
+      },
+      "margin_pct": 82.1026824816054,
+      "openings": 43,
+      "profit": {
+        "count": 3172,
+        "max": 2290.24741976129,
+        "median": 168.413379014031,
+        "min": 0.0
+      },
+      "revenue": 1171375.35648099,
+      "service_cost": 45559.1118944832,
+      "total_cost": 209644.76688163,
+      "unmet_positive": 12752,
+      "wages": 164085.654987147
     }
   },
   "closings_by_month": [
     {
       "data": {
-        "BRA": {
-          "cleaning_security_waste": 25,
-          "education": 25,
-          "finance": 25,
-          "food_service": 25,
-          "health": 25,
-          "hospitality_tourism": 25,
-          "insurance_pension": 23,
-          "it": 25,
-          "leisure_culture": 25,
-          "maintenance_repair": 25,
-          "passenger_transport": 21,
-          "personal_services": 14,
-          "professional_services": 25,
-          "real_estate": 25,
-          "retail": 25,
-          "telecom": 25
-        },
-        "CHN": {
-          "cleaning_security_waste": 27,
-          "education": 28,
-          "finance": 28,
-          "food_service": 28,
-          "health": 28,
-          "hospitality_tourism": 27,
-          "insurance_pension": 27,
-          "it": 27,
-          "leisure_culture": 28,
-          "maintenance_repair": 27,
-          "passenger_transport": 27,
-          "personal_services": 22,
-          "professional_services": 28,
-          "real_estate": 28,
-          "retail": 28,
-          "telecom": 27
-        },
         "DEU": {
-          "cleaning_security_waste": 12,
-          "education": 12,
-          "finance": 12,
-          "food_service": 12,
-          "health": 12,
-          "hospitality_tourism": 12,
-          "insurance_pension": 12,
-          "it": 12,
-          "leisure_culture": 12,
-          "maintenance_repair": 12,
-          "passenger_transport": 12,
-          "personal_services": 7,
-          "professional_services": 12,
-          "real_estate": 12,
-          "retail": 12,
-          "telecom": 12
-        },
-        "IND": {
-          "cleaning_security_waste": 24,
-          "education": 24,
-          "finance": 24,
-          "food_service": 24,
-          "health": 24,
-          "hospitality_tourism": 24,
-          "insurance_pension": 24,
-          "it": 24,
-          "leisure_culture": 24,
-          "maintenance_repair": 24,
-          "passenger_transport": 23,
-          "personal_services": 22,
-          "professional_services": 24,
-          "real_estate": 24,
-          "retail": 24,
-          "telecom": 24
-        },
-        "NGA": {
-          "cleaning_security_waste": 13,
-          "education": 13,
-          "finance": 13,
-          "food_service": 13,
-          "health": 13,
-          "hospitality_tourism": 13,
-          "insurance_pension": 13,
-          "it": 13,
-          "leisure_culture": 13,
-          "maintenance_repair": 13,
-          "passenger_transport": 13,
-          "personal_services": 13,
-          "professional_services": 13,
-          "real_estate": 13,
-          "retail": 13,
-          "telecom": 13
+          "passenger_transport": 3
         },
         "USA": {
-          "cleaning_security_waste": 28,
-          "education": 28,
-          "finance": 28,
-          "food_service": 28,
-          "health": 28,
-          "hospitality_tourism": 28,
-          "insurance_pension": 27,
-          "it": 28,
-          "leisure_culture": 28,
-          "maintenance_repair": 28,
-          "passenger_transport": 23,
-          "personal_services": 12,
-          "professional_services": 28,
-          "real_estate": 28,
-          "retail": 28,
-          "telecom": 28
-        }
-      },
-      "month": 1
-    },
-    {
-      "data": {
-        "BRA": {
-          "education": 26,
-          "finance": 75,
-          "food_service": 75,
-          "freight_logistics": 94,
-          "health": 75,
-          "hospitality_tourism": 75,
-          "insurance_pension": 77,
-          "passenger_transport": 79,
-          "retail": 75,
-          "wholesale": 99
-        },
-        "CHN": {
-          "cleaning_security_waste": 4,
-          "education": 31,
-          "finance": 79,
-          "food_service": 83,
-          "freight_logistics": 100,
-          "health": 81,
-          "hospitality_tourism": 80,
-          "insurance_pension": 78,
-          "it": 4,
-          "leisure_culture": 3,
-          "media_advertising": 1,
-          "passenger_transport": 79,
-          "personal_services": 4,
-          "professional_services": 1,
-          "real_estate": 6,
-          "retail": 80,
-          "telecom": 5,
-          "wholesale": 88
-        },
-        "DEU": {
-          "education": 13,
-          "finance": 36,
-          "food_service": 36,
-          "freight_logistics": 47,
-          "health": 36,
-          "hospitality_tourism": 36,
-          "insurance_pension": 36,
-          "passenger_transport": 36,
-          "retail": 36,
-          "wholesale": 48
-        },
-        "IND": {
-          "education": 24,
-          "finance": 72,
-          "food_service": 72,
-          "freight_logistics": 96,
-          "health": 72,
-          "hospitality_tourism": 73,
-          "insurance_pension": 72,
-          "it": 1,
-          "leisure_culture": 1,
-          "media_advertising": 1,
-          "passenger_transport": 73,
-          "personal_services": 1,
-          "retail": 72,
-          "wholesale": 78
-        },
-        "NGA": {
-          "education": 13,
-          "finance": 39,
-          "food_service": 39,
-          "freight_logistics": 52,
-          "health": 39,
-          "hospitality_tourism": 39,
-          "insurance_pension": 39,
-          "passenger_transport": 39,
-          "retail": 39,
-          "wholesale": 48
-        },
-        "USA": {
-          "cleaning_security_waste": 3,
-          "education": 41,
-          "finance": 81,
-          "food_service": 81,
-          "freight_logistics": 91,
-          "health": 81,
-          "hospitality_tourism": 82,
-          "insurance_pension": 82,
-          "media_advertising": 1,
-          "passenger_transport": 85,
-          "personal_services": 4,
-          "retail": 81,
-          "telecom": 7,
-          "wholesale": 103
+          "passenger_transport": 1,
+          "retail": 4,
+          "telecom": 4
         }
       },
       "month": 2
     }
   ],
   "demand_served": {
-    "samples": 243798,
-    "served_mean": 0.0833606353472142,
-    "unmet_positive": 241674,
-    "unmet_share": 0.991287869465705
+    "samples": 270922,
+    "served_mean": 0.493053036186286,
+    "unmet_positive": 232635,
+    "unmet_share": 0.858678881744561
   },
   "employees_equal_40": {
-    "share": 0.886924219910847,
+    "share": 0.0,
     "target": 40
   },
   "employees_per_business": {
-    "count": 13460,
-    "max": 45.0,
-    "median": 40.0,
-    "min": 20.7779634105917
+    "count": 8072,
+    "max": 557244.75498234,
+    "median": 871.012988228936,
+    "min": 18.0
   },
   "findings": [
     {
-      "id": "employees_stuck_at_40",
-      "severity": "bug",
-      "text": "88.7% dos negócios têm exatamente 40 postos (min=20.8 mediana=40.0 max=45.0) — a distribuição de empregados não varia; o teto rígido vem de `40.0/jobs_per_unit` no núcleo (demo_seed_services e entrada por demanda). Trabalhadores efetivos (workers) variam com a utilização: min=1.1 mediana=40.0 max=45.0."
-    },
-    {
       "id": "seed_profit_zero",
       "severity": "info",
-      "text": "no dia 0 (semente) o lucro de todos os 2021 negócios é 0,0 — artefato de captura: o lucro só é calculado no 1º tick (demo_services_day)."
-    },
-    {
-      "id": "profit_overwhelmingly_negative",
-      "severity": "bug",
-      "text": "98.0% dos negócio-dias têm lucro negativo (pos=443 neg=575359 zero=11439) — os negócios de serviço operam estruturalmente no prejuízo."
+      "text": "no dia 0 (semente) o lucro de todos os 2315 negócios é 0,0 — artefato de captura: o lucro só é calculado no 1º tick (services_day)."
     },
     {
       "id": "demand_largely_unserved",
       "severity": "bug",
-      "text": "99.1% dos setor-dias têm demanda não atendida e a fração média atendida é 8.3% — a oferta de serviços não serve a demanda."
-    },
-    {
-      "id": "service_bankruptcy_churn",
-      "severity": "bug",
-      "text": "33914 falências para 45448 negócios ativos em 90 dias (0.75x) — ciclo contínuo de abrir → 60 dias de prejuízo → falir → reabrir."
+      "text": "85.9% dos setor-dias têm demanda não atendida e a fração média atendida é 49.3% — a oferta de serviços não serve a demanda."
     }
   ],
   "meta": {
     "days": 90,
-    "drift": 0.0000553131103515625,
+    "drift": 0.0000220052897930145,
     "focus_nations": [
       "USA",
       "DEU",
@@ -894,104 +686,129 @@
       "NGA",
       "CHN"
     ],
-    "money_final": 2200539587.40005,
-    "money_initial": 2200539587.4,
-    "service_bankruptcies": 33914,
-    "service_businesses": 45448
+    "money_final": 2290607147.76716,
+    "money_initial": 2257930978.05,
+    "service_bankruptcies": 236,
+    "service_businesses": 42601
   },
   "openings_by_month": [
     {
       "data": {
         "BRA": {
+          "cleaning_security_waste": 7,
           "education": 26,
           "finance": 75,
           "food_service": 75,
-          "freight_logistics": 94,
-          "health": 75,
+          "freight_logistics": 12,
+          "health": 24,
           "hospitality_tourism": 75,
-          "insurance_pension": 77,
-          "passenger_transport": 79,
-          "retail": 75,
-          "wholesale": 99
+          "insurance_pension": 74,
+          "it": 21,
+          "leisure_culture": 2,
+          "maintenance_repair": 1,
+          "media_advertising": 18,
+          "passenger_transport": 73,
+          "personal_services": 10,
+          "professional_services": 17,
+          "real_estate": 3,
+          "telecom": 7
         },
         "CHN": {
-          "cleaning_security_waste": 4,
-          "education": 31,
-          "finance": 79,
-          "food_service": 83,
-          "freight_logistics": 100,
-          "health": 81,
-          "hospitality_tourism": 80,
-          "insurance_pension": 78,
-          "it": 4,
-          "leisure_culture": 3,
-          "media_advertising": 1,
-          "passenger_transport": 79,
-          "personal_services": 4,
-          "professional_services": 1,
-          "real_estate": 6,
-          "retail": 80,
-          "telecom": 5,
-          "wholesale": 100
+          "cleaning_security_waste": 16,
+          "education": 49,
+          "finance": 97,
+          "food_service": 96,
+          "freight_logistics": 21,
+          "health": 51,
+          "hospitality_tourism": 95,
+          "insurance_pension": 93,
+          "it": 41,
+          "leisure_culture": 2,
+          "media_advertising": 31,
+          "passenger_transport": 90,
+          "personal_services": 23,
+          "professional_services": 23,
+          "real_estate": 9,
+          "retail": 6,
+          "telecom": 21,
+          "wholesale": 1
         },
         "DEU": {
-          "education": 13,
-          "finance": 36,
-          "food_service": 36,
-          "freight_logistics": 47,
-          "health": 36,
-          "hospitality_tourism": 36,
-          "insurance_pension": 36,
-          "passenger_transport": 36,
-          "retail": 36,
-          "wholesale": 48
+          "cleaning_security_waste": 6,
+          "education": 20,
+          "finance": 25,
+          "food_service": 34,
+          "freight_logistics": 13,
+          "health": 23,
+          "hospitality_tourism": 28,
+          "insurance_pension": 26,
+          "it": 6,
+          "maintenance_repair": 1,
+          "media_advertising": 4,
+          "passenger_transport": 19,
+          "personal_services": 6,
+          "professional_services": 3,
+          "real_estate": 1,
+          "retail": 12,
+          "telecom": 9,
+          "wholesale": 12
         },
         "IND": {
-          "education": 24,
-          "finance": 72,
-          "food_service": 72,
-          "freight_logistics": 96,
-          "health": 72,
-          "hospitality_tourism": 73,
-          "insurance_pension": 72,
-          "it": 1,
-          "leisure_culture": 1,
-          "media_advertising": 1,
-          "passenger_transport": 73,
-          "personal_services": 1,
-          "retail": 72,
-          "wholesale": 97
+          "cleaning_security_waste": 9,
+          "education": 37,
+          "finance": 88,
+          "food_service": 74,
+          "freight_logistics": 13,
+          "health": 41,
+          "hospitality_tourism": 89,
+          "insurance_pension": 87,
+          "it": 33,
+          "maintenance_repair": 1,
+          "media_advertising": 28,
+          "passenger_transport": 82,
+          "personal_services": 13,
+          "professional_services": 25,
+          "real_estate": 5,
+          "telecom": 10
         },
         "NGA": {
-          "education": 13,
+          "cleaning_security_waste": 4,
+          "education": 19,
           "finance": 39,
-          "food_service": 39,
-          "freight_logistics": 52,
-          "health": 39,
+          "food_service": 29,
+          "freight_logistics": 6,
+          "health": 19,
           "hospitality_tourism": 39,
           "insurance_pension": 39,
-          "passenger_transport": 39,
-          "retail": 39,
-          "wholesale": 52
+          "it": 15,
+          "media_advertising": 10,
+          "passenger_transport": 34,
+          "personal_services": 6,
+          "professional_services": 9,
+          "real_estate": 2,
+          "telecom": 4
         },
         "USA": {
-          "cleaning_security_waste": 4,
-          "education": 41,
-          "finance": 84,
-          "food_service": 85,
-          "freight_logistics": 91,
-          "health": 81,
-          "hospitality_tourism": 84,
-          "insurance_pension": 84,
-          "it": 1,
-          "maintenance_repair": 2,
-          "media_advertising": 2,
-          "passenger_transport": 85,
-          "personal_services": 6,
-          "professional_services": 1,
-          "retail": 81,
-          "telecom": 7,
-          "wholesale": 103
+          "cleaning_security_waste": 22,
+          "construction": 1,
+          "education": 32,
+          "finance": 59,
+          "food_service": 77,
+          "freight_logistics": 30,
+          "health": 52,
+          "hospitality_tourism": 70,
+          "insurance_pension": 41,
+          "it": 16,
+          "leisure_culture": 4,
+          "maintenance_repair": 4,
+          "media_advertising": 6,
+          "passenger_transport": 40,
+          "personal_services": 23,
+          "professional_services": 7,
+          "real_estate": 11,
+          "retail": 26,
+          "telecom": 18,
+          "wholesale": 28
         }
       },
       "month": 0
@@ -999,95 +816,102 @@
     {
       "data": {
         "BRA": {
-          "cleaning_security_waste": 3,
-          "construction": 97,
+          "cleaning_security_waste": 30,
           "education": 49,
-          "freight_logistics": 3,
-          "it": 75,
-          "leisure_culture": 38,
-          "maintenance_repair": 75,
-          "media_advertising": 100,
-          "personal_services": 85,
-          "professional_services": 75,
-          "real_estate": 75,
-          "telecom": 75
+          "health": 50,
+          "insurance_pension": 2,
+          "it": 54,
+          "leisure_culture": 53,
+          "media_advertising": 49,
+          "passenger_transport": 1,
+          "personal_services": 55,
+          "professional_services": 57,
+          "real_estate": 57,
+          "telecom": 2
         },
         "CHN": {
-          "cleaning_security_waste": 3,
-          "construction": 100,
-          "education": 53,
-          "finance": 4,
-          "food_service": 1,
-          "health": 3,
-          "hospitality_tourism": 4,
-          "insurance_pension": 5,
-          "it": 79,
-          "leisure_culture": 50,
-          "maintenance_repair": 80,
-          "media_advertising": 105,
+          "cleaning_security_waste": 36,
+          "construction": 1,
+          "education": 59,
+          "finance": 12,
+          "food_service": 5,
+          "health": 55,
+          "hospitality_tourism": 15,
+          "insurance_pension": 11,
+          "it": 66,
+          "leisure_culture": 76,
+          "maintenance_repair": 6,
+          "media_advertising": 65,
           "passenger_transport": 5,
-          "personal_services": 83,
-          "professional_services": 81,
-          "real_estate": 78,
-          "retail": 4,
-          "telecom": 78
+          "personal_services": 66,
+          "professional_services": 79,
+          "real_estate": 86,
+          "telecom": 3,
+          "wholesale": 1
         },
         "DEU": {
-          "cleaning_security_waste": 3,
-          "construction": 38,
-          "education": 23,
-          "it": 36,
-          "leisure_culture": 27,
-          "maintenance_repair": 36,
-          "media_advertising": 48,
-          "personal_services": 41,
-          "professional_services": 36,
-          "real_estate": 36,
-          "telecom": 36
+          "cleaning_security_waste": 9,
+          "education": 14,
+          "finance": 8,
+          "freight_logistics": 1,
+          "health": 11,
+          "hospitality_tourism": 7,
+          "insurance_pension": 5,
+          "it": 28,
+          "leisure_culture": 16,
+          "maintenance_repair": 11,
+          "media_advertising": 30,
+          "passenger_transport": 6,
+          "personal_services": 11,
+          "professional_services": 28,
+          "real_estate": 30,
+          "telecom": 3
         },
         "IND": {
-          "cleaning_security_waste": 1,
-          "construction": 96,
-          "education": 49,
-          "finance": 1,
-          "insurance_pension": 1,
-          "it": 73,
-          "leisure_culture": 45,
-          "maintenance_repair": 72,
-          "media_advertising": 96,
-          "personal_services": 74,
-          "professional_services": 72,
-          "real_estate": 72,
-          "telecom": 72
+          "cleaning_security_waste": 31,
+          "education": 33,
+          "finance": 3,
+          "food_service": 1,
+          "health": 9,
+          "hospitality_tourism": 2,
+          "insurance_pension": 2,
+          "it": 50,
+          "leisure_culture": 42,
+          "media_advertising": 31,
+          "passenger_transport": 1,
+          "personal_services": 56,
+          "professional_services": 54,
+          "real_estate": 56
         },
         "NGA": {
-          "construction": 52,
-          "education": 26,
-          "it": 39,
-          "leisure_culture": 26,
-          "maintenance_repair": 39,
-          "media_advertising": 52,
-          "personal_services": 39,
-          "professional_services": 39,
-          "real_estate": 39,
-          "telecom": 39
+          "cleaning_security_waste": 8,
+          "education": 11,
+          "health": 2,
+          "it": 18,
+          "leisure_culture": 13,
+          "media_advertising": 9,
+          "personal_services": 25,
+          "professional_services": 30,
+          "real_estate": 23
         },
         "USA": {
-          "cleaning_security_waste": 45,
-          "construction": 33,
-          "education": 42,
-          "food_service": 1,
-          "health": 3,
-          "hospitality_tourism": 2,
-          "it": 81,
-          "leisure_culture": 77,
-          "maintenance_repair": 81,
-          "media_advertising": 88,
-          "passenger_transport": 1,
-          "personal_services": 80,
-          "professional_services": 81,
-          "real_estate": 87,
-          "telecom": 74
+          "cleaning_security_waste": 7,
+          "education": 48,
+          "finance": 21,
+          "food_service": 4,
+          "health": 27,
+          "hospitality_tourism": 10,
+          "insurance_pension": 20,
+          "it": 65,
+          "leisure_culture": 36,
+          "maintenance_repair": 22,
+          "media_advertising": 70,
+          "passenger_transport": 22,
+          "personal_services": 18,
+          "professional_services": 61,
+          "real_estate": 61,
+          "retail": 2,
+          "telecom": 10
         }
       },
       "month": 1
@@ -1095,135 +919,112 @@
     {
       "data": {
         "BRA": {
-          "finance": 100,
-          "food_service": 100,
-          "freight_logistics": 91,
-          "health": 4,
-          "hospitality_tourism": 100,
-          "insurance_pension": 56,
-          "passenger_transport": 100,
-          "retail": 100,
-          "wholesale": 99
+          "cleaning_security_waste": 2,
+          "insurance_pension": 1,
+          "leisure_culture": 16,
+          "media_advertising": 3,
+          "passenger_transport": 1,
+          "personal_services": 21,
+          "professional_services": 1,
+          "real_estate": 15
         },
         "CHN": {
-          "education": 7,
-          "finance": 108,
-          "food_service": 110,
-          "freight_logistics": 100,
-          "health": 15,
-          "hospitality_tourism": 108,
-          "insurance_pension": 63,
-          "it": 3,
-          "leisure_culture": 1,
-          "maintenance_repair": 4,
-          "media_advertising": 4,
-          "passenger_transport": 107,
-          "personal_services": 4,
-          "professional_services": 1,
-          "real_estate": 4,
-          "retail": 108,
-          "telecom": 5,
-          "wholesale": 88
+          "cleaning_security_waste": 8,
+          "education": 2,
+          "health": 2,
+          "insurance_pension": 3,
+          "it": 2,
+          "leisure_culture": 27,
+          "maintenance_repair": 5,
+          "media_advertising": 10,
+          "passenger_transport": 1,
+          "personal_services": 21,
+          "professional_services": 7,
+          "real_estate": 15,
+          "retail": 1,
+          "telecom": 3,
+          "wholesale": 1
         },
         "DEU": {
-          "education": 5,
-          "finance": 48,
-          "food_service": 48,
-          "freight_logistics": 32,
-          "health": 19,
-          "hospitality_tourism": 48,
-          "insurance_pension": 31,
-          "it": 1,
-          "leisure_culture": 1,
-          "passenger_transport": 48,
-          "professional_services": 1,
-          "real_estate": 1,
-          "retail": 48,
-          "telecom": 3,
-          "wholesale": 26
+          "cleaning_security_waste": 15,
+          "education": 1,
+          "health": 1,
+          "insurance_pension": 1,
+          "leisure_culture": 17,
+          "media_advertising": 5,
+          "passenger_transport": 1,
+          "personal_services": 9,
+          "professional_services": 2,
+          "real_estate": 4
         },
         "IND": {
-          "education": 1,
-          "finance": 97,
-          "food_service": 96,
-          "freight_logistics": 96,
-          "health": 9,
-          "hospitality_tourism": 97,
-          "insurance_pension": 60,
-          "leisure_culture": 1,
-          "media_advertising": 1,
-          "passenger_transport": 96,
-          "retail": 96,
-          "wholesale": 76
-        },
-        "NGA": {
-          "finance": 52,
-          "food_service": 52,
-          "freight_logistics": 52,
+          "cleaning_security_waste": 3,
+          "education": 2,
           "health": 2,
-          "hospitality_tourism": 52,
-          "insurance_pension": 28,
-          "passenger_transport": 52,
-          "retail": 52,
-          "wholesale": 48
+          "insurance_pension": 1,
+          "leisure_culture": 3,
+          "media_advertising": 1,
+          "personal_services": 10,
+          "professional_services": 1,
+          "real_estate": 6
         },
         "USA": {
-          "cleaning_security_waste": 2,
-          "education": 17,
-          "finance": 79,
-          "food_service": 97,
-          "freight_logistics": 36,
-          "health": 50,
-          "hospitality_tourism": 96,
-          "insurance_pension": 36,
-          "it": 13,
-          "leisure_culture": 11,
-          "maintenance_repair": 1,
-          "passenger_transport": 82,
-          "personal_services": 2,
-          "professional_services": 14,
-          "real_estate": 16,
-          "retail": 85,
-          "telecom": 2,
-          "wholesale": 30
+          "cleaning_security_waste": 27,
+          "construction": 3,
+          "education": 2,
+          "finance": 2,
+          "food_service": 1,
+          "health": 1,
+          "hospitality_tourism": 2,
+          "insurance_pension": 3,
+          "it": 3,
+          "leisure_culture": 42,
+          "maintenance_repair": 5,
+          "media_advertising": 14,
+          "passenger_transport": 5,
+          "personal_services": 21,
+          "professional_services": 12,
+          "real_estate": 12,
+          "retail": 1,
+          "telecom": 1
         }
       },
       "month": 2
     }
   ],
   "profit_daily": {
-    "max": 4.56094602026083,
-    "median": -531.897908980752,
-    "min": -32844.0511548585,
-    "negative": 575359,
-    "positive": 443,
-    "zero": 11439
+    "max": 19252.7531964231,
+    "median": 14.2725435212025,
+    "min": -883.22516291443,
+    "negative": 11529,
+    "positive": 536541,
+    "zero": 5757
   },
   "revenue_vs_costs": {
-    "input_cost": 1069.99547075804,
-    "revenue": 11005594.2984069,
-    "service_cost": 916430.525180999,
-    "total_cost": 719949207.30731,
-    "wages": 719031706.786658
+    "input_cost": 3292451.19282115,
+    "revenue": 218437380.075632,
+    "service_cost": 14407751.3730971,
+    "total_cost": 159930934.445843,
+    "wages": 142230731.879925
   },
   "seed_day0": {
     "jobs": {
-      "count": 2021,
+      "count": 2315,
       "max": 42.0,
-      "median": 40.0,
-      "min": 40.0
+      "median": 28.8,
+      "min": 22.0
     },
     "profit": {
-      "count": 2021,
+      "count": 2315,
       "max": 0.0,
       "median": 0.0,
       "min": 0.0
     }
   },
   "workers_effective": {
-    "count": 587241,
-    "max": 45.0,
-    "median": 40.0,
-    "min": 1.08
+    "count": 553827,
+    "max": 557244.75498234,
+    "median": 498.759381743257,
+    "min": 1.89098908245112
   }
 }

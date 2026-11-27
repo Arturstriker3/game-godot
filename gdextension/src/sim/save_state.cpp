@@ -325,14 +325,14 @@ Value to_value(const WorldState& ws, const SimCore& core,
 	if (ws.national_treasury) {
 		data["national_treasury"] = true;
 		Dictionary block = make_object();
-		block["version"] = 1;
+		block["version"] = 2;
 		Dictionary nations = make_object();
 		for (const auto& row : ws.nation_treasury) {
 			nations[sim_str(row.first.c_str())] = row.second;
 		}
 		block["nations"] = nations;
 		block["collected_total"] = ws.treasury_collected_total;
-		block["distributed_total"] = ws.treasury_distributed_total;
+		block["spent_total"] = ws.treasury_spent_total;
 		data["treasury"] = block;
 	}
 	data["day"] = ws.day;
@@ -1122,12 +1122,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 	{
 		std::map<std::string, double> treasury_balances;
 		double collected_total = 0.0;
-		double distributed_total = 0.0;
+		double spent_total = 0.0;
 		const Variant block_variant = data.get("treasury", Dictionary());
 		if (block_variant.get_type() == Variant::DICTIONARY) {
 			const Dictionary& block = block_variant;
 			collected_total = double(block.get("collected_total", 0.0));
-			distributed_total = double(block.get("distributed_total", 0.0));
+			// v1 (envelopes) guardava `distributed_total`; v2 usa `spent_total`.
+			spent_total = double(block.get("spent_total",
+				block.get("distributed_total", 0.0)));
 			const Variant nations_variant = block.get("nations", Dictionary());
 			if (nations_variant.get_type() == Variant::DICTIONARY) {
 				const Dictionary& nations = nations_variant;
@@ -1142,7 +1144,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 		core.apply_national_treasury_after_load(
 			bool(data.get("national_treasury", false)),
 			data.has("national_treasury"), treasury_balances,
-			collected_total, distributed_total);
+			collected_total, spent_total);
 	}
 
 	ws.in_transit.clear();
