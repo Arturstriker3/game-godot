@@ -682,6 +682,27 @@ void EconomySim::set_rework_params(const Dictionary& values) {
 		subceiling = 2;
 	}
 	sim_core_.set_regional_cash(enabled, subceiling);
+	// R1b: `national_treasury` (Tesouro Nacional + envelopes). So vale com
+	// `regional_cash` ligada; a violacao e registrada e impressa como erro
+	// claro no log (a flag e tratada como desligada).
+	const Dictionary treasury_block =
+		values.get("national_treasury", Dictionary());
+	const bool treasury_enabled = bool(treasury_block.get("enabled", false));
+	const Dictionary envelope =
+		treasury_block.get("envelope", Dictionary());
+	const double envelope_share = double(envelope.get("share", 1.0));
+	const double floor_fraction =
+		double(envelope.get("population_floor_fraction", 0.5));
+	const double works_share = double(envelope.get("works_share", 0.35));
+	const double maintenance_share =
+		double(envelope.get("maintenance_share", 0.5));
+	sim_core_.set_national_treasury(treasury_enabled, envelope_share,
+		floor_fraction, works_share, maintenance_share);
+	if (treasury_enabled && !enabled) {
+		UtilityFunctions::push_error(
+			"rework.national_treasury requer rework.regional_cash: flag "
+			"national_treasury tratada como desligada");
+	}
 	status_invalidate();
 }
 
@@ -698,6 +719,21 @@ Dictionary EconomySim::get_rework_params() const {
 		block["external_subceiling"] = String("all");
 	}
 	out["regional_cash"] = block;
+	// R1b: estado do Tesouro (flag, config invalida e parametros do envelope).
+	Dictionary treasury;
+	treasury["enabled"] = ws_.national_treasury;
+	if (!ws_.treasury_config_error.empty()) {
+		treasury["config_error"] = String(ws_.treasury_config_error.c_str());
+	}
+	Dictionary envelope;
+	envelope["share"] = ws_.treasury_envelope_share;
+	envelope["population_floor_fraction"] = ws_.treasury_floor_fraction;
+	envelope["works_share"] = ws_.treasury_envelope_works_share;
+	envelope["maintenance_share"] = ws_.treasury_maintenance_share;
+	treasury["envelope"] = envelope;
+	treasury["collected_total"] = ws_.treasury_collected_total;
+	treasury["distributed_total"] = ws_.treasury_distributed_total;
+	out["national_treasury"] = treasury;
 	return out;
 }
 

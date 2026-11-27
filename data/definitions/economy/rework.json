@@ -1,11 +1,23 @@
 {
   "schema": 1,
-  "source": "REWORK_spec_mestre §1.2/§12 (R1a) — decisão de design, não dado de mundo",
+  "source": "REWORK_spec_mestre §1.2/§1.4/§12 (R1a/R1b) — decisão de design, não dado de mundo",
   "note": "Flags do rework R1. Lido por core/economy/economy.gd (REWORK_PATH) e por tools/c1_world_ai_365.gd; o núcleo recebe em EconomySim.set_rework_params(). Cada flag desligada mantém o mundo byte-a-byte anterior (save, status e digest).",
   "regional_cash": {
     "enabled": false,
     "external_subceiling": "off",
     "note": "R1a: firm_cash + service_cash passam a operar como UM caixa privado por região (City.private_cash), com dois sub-saldos virtuais rastreados (firm_sub/service_sub; firm_sub + service_sub == private_cash). Crédito por origem (bens → firm_sub, serviços → service_sub); todo gasto de um setor é autorizado só até o seu sub-saldo — sem transferência automática entre eles, como no caixa separado. Transferências internas (opex firmas→serviços, insumos, frete, construção) movem valor entre os sub-saldos e são no-op no total. Desligado (default) = comportamento anterior.",
     "external_subceiling_note": "R1a (medição): calibração do sub-teto dos pagamentos EXTERNOS por setor, só vale com enabled=true. \"off\" (default) = sem teto por fatia; quem limita é o sub-saldo do setor. O mecanismo por fatia (t160-t163) está superado pelos sub-saldos e fica como experimento: \"all\" = cada setor paga fora no máximo a sua fatia da receita privada (nunca acima do sub-saldo); \"nonessential\" = a fatia vale para energia/juros/taxas, mas a importação de bem ESSENCIAL ignora a fatia. Essencial = cesta alimentar (food_calories(product) > 0: wheat, rice, maize, potato, soy), a mesma classificação do food_ratio; insumos agrícolas não alimentares seguem no teto."
+  },
+  "national_treasury": {
+    "enabled": false,
+    "envelope": {
+      "share": 1.0,
+      "population_floor_fraction": 0.5,
+      "works_share": 0.35,
+      "maintenance_share": 0.5
+    },
+    "note": "R1b: Tesouro Nacional por país + envelopes mensais. Só vale com regional_cash.enabled=true (qualquer outra combinação é config inválida: a flag é tratada como desligada e o motivo vai para o log/status). Ligado: TODA a arrecadação que hoje entra no caixa da cidade/prefeitura (IPTU + taxas locais; o imposto de renda do modelo é 100% rebatido, kTransferShare=1) passa a entrar no Tesouro da nação; a equalização fiscal diária e o repasse municipal morrem; o Tesouro distribui por mês um envelope por região proporcional à população simulada, com piso mínimo por região, e o envelope banca o que o orçamento municipal bancava hoje (serviços/alimentação/crise em City.government_budget e manutenção/obras em CityGov.cash). Nenhum imposto novo: o IPTU existente é apenas redirecionado; o imposto territorial fica para a fase política."
+    ,
+    "envelope_note": "Parâmetros DECLARADOS do envelope (defaults a balancear; futuramente decisão do jogador). population_floor_fraction: peso de cada região = max(pop_share_i, floor/n_regiões) — 0,5 = toda região recebe ao menos metade do rateio igualitário (piso mínimo por região). share: fração do saldo do Tesouro distribuída a cada mês (1,0 = tudo; o resto fica como reserva). works_share: fração do envelope creditada na conta de obras da região (CityGov.cash); o resto vai para o orçamento público (City.government_budget). maintenance_share: teto da manutenção urbana dentro do envelope de serviços (o excedente fica com o restante do orçamento municipal: alimentação/crise)."
   }
 }

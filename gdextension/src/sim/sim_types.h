@@ -2263,6 +2263,12 @@ struct Region {
 		double service_wage_arrears = 0.0;
 		double rural_wage_arrears = 0.0;
 		double government_budget = 0.0;
+		// R1b: envelopes recebidos do Tesouro nacional (diagnostico/teste; nao
+		// entram no save). `month` e o ultimo valor distribuido no mes;
+		// `total` e o acumulado desde o inicio. O saldo do envelope e o proprio
+		// `government_budget` (servicos) + `CityGov::cash` (obras).
+		double envelope_received_month = 0.0;
+		double envelope_received_total = 0.0;
 		// Multiplicador da renda externa (PIB PPP per capita da nação,
 		// normalizado pela média mundial ponderada = 1,0). Ver
 		// set_external_income_index e §20 do balance_review.
@@ -2599,6 +2605,9 @@ struct Region {
 		// um tick tem de desfazer o título junto com o caixa que o pagou.
 		std::map<std::string, double> external_bonds;
 		std::map<std::string, double> gov_cash_open;
+		// R1b: saldo do Tesouro por nacao (dinheiro do mundo; reverter um tick
+		// tem de desfazer a arrecadacao e o envelope junto).
+		std::map<std::string, double> nation_treasury;
 		// C2b2 (D-106): reservas/paridade/eventos. Reverter um tick tem de
 		// desfazer a intervenção e a desvalorização do dia junto com o caixa.
 		std::map<std::string, FxState> fx;

@@ -129,6 +129,11 @@ var _regional_cash_set := false
 # Sem override vale o rework.json (default "all"). Só laboratório.
 var _external_subceiling := ""
 var _external_subceiling_set := false
+# R1b: braco A/B do Tesouro Nacional + envelopes
+# (`--national-treasury=0/1` / OGS_C1_NATIONAL_TREASURY). Sem override vale o
+# enabled do rework.json (default do jogo = desligado). Só laboratório.
+var _national_treasury_on := false
+var _national_treasury_set := false
 # R1a (diagnostico): serie diaria das entradas que o portao de comida e o
 # credito leem, para decompor o efeito do caixa unico. So medicao
 # (--r1-diag / OGS_C1_R1_DIAG=1): nao altera o mundo.
@@ -245,6 +250,10 @@ func _init() -> void:
 	if OS.get_environment("OGS_C1_EXTERNAL_SUBCEILING") != "":
 		_external_subceiling = OS.get_environment("OGS_C1_EXTERNAL_SUBCEILING")
 		_external_subceiling_set = true
+	if OS.get_environment("OGS_C1_NATIONAL_TREASURY") != "":
+		_national_treasury_on = \
+			OS.get_environment("OGS_C1_NATIONAL_TREASURY") != "0"
+		_national_treasury_set = true
 	if OS.get_environment("OGS_C1_R1_DIAG") != "":
 		_r1_diag = OS.get_environment("OGS_C1_R1_DIAG") != "0"
 	for arg in OS.get_cmdline_user_args():
@@ -267,6 +276,9 @@ func _init() -> void:
 		elif arg.begins_with("--external-subceiling="):
 			_external_subceiling = arg.split("=", true, 1)[1]
 			_external_subceiling_set = true
+		elif arg.begins_with("--national-treasury="):
+			_national_treasury_on = arg.split("=", true, 1)[1] != "0"
+			_national_treasury_set = true
 		elif arg.begins_with("--r1-diag"):
 			_r1_diag = not arg.contains("=") \
 				or arg.split("=", true, 1)[1] != "0"
@@ -728,11 +740,19 @@ func _make_world() -> Object:
 				if _external_subceiling_set:
 					block["external_subceiling"] = _external_subceiling
 				rework_params["regional_cash"] = block
+			if _national_treasury_set:
+				var treasury_block: Dictionary = rework_params.get(
+					"national_treasury", {})
+				treasury_block["enabled"] = _national_treasury_on
+				rework_params["national_treasury"] = treasury_block
 			sim.set_rework_params(rework_params)
 			var rc: Dictionary = rework_params.get("regional_cash", {})
 			print("[c1] R1a caixa unico regional: enabled=%s sub-teto=%s" % [
 				"1" if bool(rc.get("enabled", false)) else "0",
 				String(rc.get("external_subceiling", "off"))])
+			var nt: Dictionary = rework_params.get("national_treasury", {})
+			print("[c1] R1b Tesouro nacional: enabled=%s" % [
+				"1" if bool(nt.get("enabled", false)) else "0"])
 	if sim.has_method("set_bootstrap_industry"):
 		var bootstrap: Variant = _load(BOOTSTRAP_PATH)
 		if bootstrap is Dictionary:
@@ -881,6 +901,7 @@ func _r1_diag_row(sim: Object, status: Dictionary, day: int) -> Dictionary:
 	var disposable := 0.0
 	var firm_cash := 0.0
 	var service_cash := 0.0
+	var government_budget := 0.0
 	var city_count := 0
 	if sim.has_method("get_city_columns"):
 		var columns: Dictionary = sim.get_city_columns()
@@ -892,6 +913,8 @@ func _r1_diag_row(sim: Object, status: Dictionary, day: int) -> Dictionary:
 			"firm_cash", PackedFloat64Array())
 		var service_cash_col: PackedFloat64Array = columns.get(
 			"service_cash", PackedFloat64Array())
+		var government_budget_col: PackedFloat64Array = columns.get(
+			"government_budget", PackedFloat64Array())
 		city_count = mini(cap.size(), sim_pop.size())
 		for index in city_count:
 			disposable += cap[index] * sim_pop[index]
@@ -899,6 +922,8 @@ func _r1_diag_row(sim: Object, status: Dictionary, day: int) -> Dictionary:
 			firm_cash += firm_cash_col[index]
 		for index in mini(city_count, service_cash_col.size()):
 			service_cash += service_cash_col[index]
+		for index in mini(city_count, government_budget_col.size()):
+			government_budget += government_budget_col[index]
 	# Amostra fixa de cidades (1 em cada ~30) para os fluxos que o status
 	# diário leve não publica (folha/consumo das famílias). Mesmo índice nos
 	# dois braços do A/B; a soma é comparável, não é o total do mundo.
@@ -941,8 +966,21 @@ func _r1_diag_row(sim: Object, status: Dictionary, day: int) -> Dictionary:
 			if sample_consumed > 1e-9 else 0.0,
 		"firm_cash": firm_cash,
 		"service_cash": service_cash,
+		"government_budget": government_budget,
 		"city_count": city_count,
 	}
+	# R1b: Tesouro Nacional + envelopes (identidade arrecadado == distribuido +
+	# saldo). Só leitura; zero/ausente com a flag desligada.
+	if sim.has_method("get_r1_diag_status"):
+		var treasury_diag: Dictionary = sim.get_r1_diag_status()
+		var treasury_block: Dictionary = treasury_diag.get("treasury", {})
+		out["treasury_total"] = float(treasury_block.get("total", 0.0))
+		out["treasury_collected"] = float(
+			treasury_block.get("collected_total", 0.0))
+		out["treasury_distributed"] = float(
+			treasury_block.get("distributed_total", 0.0))
+		out["treasury_enabled"] = bool(
+			treasury_block.get("enabled", false))
 	# Comida por uso: o status publica o total consumido/produzido por produto
 	# (todos os usos, inclusive insumo de planta/serviço). Separar isso do
 	# `p_consumed` das famílias é o que mostra quem comeu a prateleira.

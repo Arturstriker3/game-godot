@@ -25,7 +25,11 @@ void SimCore::phase_fiscal() {
 	// financia a segurança alimentar de uma cidade pobre da mesma nação (ex.:
 	// Paris sustenta Cayenne). Conserva dinheiro — só move government_budget
 	// entre cidades da MESMA nação.
-	{
+	//
+	// R1b: com o Tesouro Nacional ligado a equalização DIÁRIA morre — a
+	// redistribuição passa a ser o envelope mensal do Tesouro (regra única,
+	// proporcional à população com piso por região).
+	if (!ws_.national_treasury) {
 	OGS_SIM_ZONE(kPhaseFiscalEqualize);
 	std::unordered_map<std::string, std::vector<City*>> by_nation;
 	by_nation.reserve(ws_.cities.size() / 4 + 8);

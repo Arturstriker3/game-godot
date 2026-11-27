@@ -181,6 +181,10 @@ Ledger ledger(const WorldState& ws, double money_total) {
 
 	// Governo: orçamento nacional por cidade + prefeituras (caixa e obras).
 	out.government += city_gov::money_total(ws);
+	// R1b: o saldo do Tesouro Nacional também é caixa público.
+	for (const auto& row : ws.nation_treasury) {
+		out.government += row.second;
+	}
 	// C4: o claim de capital do Estado já foi somado no laço dos bancos
 	// (`government_claims`); NÃO entra em `government` (que é caixa) nem em
 	// `cash_total`.
@@ -312,6 +316,17 @@ Sheet government(const WorldState& ws, const std::string& nation) {
 					sheet.inventory += tons * price_of(ws, city, product);
 				}
 			}
+		}
+	}
+	// R1b: o saldo do Tesouro desta nacao tambem e caixa publico.
+	if (nation.empty()) {
+		for (const auto& row : ws.nation_treasury) {
+			sheet.cash += row.second;
+		}
+	} else {
+		const auto found = ws.nation_treasury.find(nation);
+		if (found != ws.nation_treasury.end()) {
+			sheet.cash += found->second;
 		}
 	}
 	// C2b1 (D-104): dívida pública emitida (títulos comprados pelo BC). É

@@ -22,6 +22,7 @@
 #include "sim/scenario_fixture.h"
 #include "sim/sim_day.h"
 #include "sim/stock.h"
+#include "sim/treasury.h"
 #include "sim/urban_land.h"
 #include "sim/housing.h"
 
@@ -1246,6 +1247,11 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	// vem da configuracao ja lida (sem isso este segundo apply o zeraria para
 	// o default "all" e a calibracao seria inerte).
 	sim_core_.set_regional_cash(ws_.regional_cash, ws_.external_subceiling);
+	// R1b: revalida o Tesouro com o caixa regional ja aplicado (ON sem
+	// regional_cash continua sendo config invalida => desligado).
+	sim_core_.set_national_treasury(ws_.national_treasury,
+		ws_.treasury_envelope_share, ws_.treasury_floor_fraction,
+		ws_.treasury_envelope_works_share, ws_.treasury_maintenance_share);
 }
 
 // ---------------------------------------------------------------------------
@@ -2224,6 +2230,31 @@ Dictionary EconomySim::get_r1_diag_status() {
 		cities[static_cast<int>(index)] = row;
 	}
 	out["cities"] = cities;
+	// R1b: Tesouro Nacional + envelopes (so leitura). `total` e o saldo vivo
+	// somado; `collected/distributed` sao acumulados desde o inicio e fecham a
+	// identidade arrecadado == distribuido + saldo.
+	Dictionary treasury_block;
+	treasury_block["enabled"] = ws_.national_treasury;
+	treasury_block["total"] = treasury::total_balance(ws_);
+	treasury_block["collected_total"] = ws_.treasury_collected_total;
+	treasury_block["distributed_total"] = ws_.treasury_distributed_total;
+	treasury_block["envelope_share"] = ws_.treasury_envelope_share;
+	treasury_block["floor_fraction"] = ws_.treasury_floor_fraction;
+	treasury_block["works_share"] = ws_.treasury_envelope_works_share;
+	treasury_block["maintenance_share"] = ws_.treasury_maintenance_share;
+	if (!ws_.treasury_config_error.empty()) {
+		treasury_block["config_error"] =
+			String(ws_.treasury_config_error.c_str());
+	}
+	Array treasury_nations;
+	for (const auto& row : ws_.nation_treasury) {
+		Dictionary entry;
+		entry["nation"] = String(row.first.c_str());
+		entry["cash"] = row.second;
+		treasury_nations.append(entry);
+	}
+	treasury_block["nations"] = treasury_nations;
+	out["treasury"] = treasury_block;
 	return out;
 }
 

@@ -134,6 +134,10 @@ void initialize_scenario_fixture(WorldState& ws, SimCore& core) {
 	// converte os dois caixas em pool + sub-saldos (antes o demo/teste rodava
 	// OFF em silêncio com a flag ligada). Desligada, não muda nada.
 	core.set_regional_cash(ws.regional_cash, ws.external_subceiling);
+	// R1b: o cenario minimo tambem respeita `rework.national_treasury`.
+	core.set_national_treasury(ws.national_treasury,
+		ws.treasury_envelope_share, ws.treasury_floor_fraction,
+		ws.treasury_envelope_works_share, ws.treasury_maintenance_share);
 }
 
 } // namespace ogs

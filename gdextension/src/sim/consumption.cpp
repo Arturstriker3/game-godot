@@ -7,6 +7,7 @@
 #include "housing.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
+#include "treasury.h"
 
 #include <algorithm>
 #include <array>
@@ -147,7 +148,15 @@ void SimCore::phase_income() {
 		}
 		pop.service_spend = service_base * kServiceSpendShare;
 		city.service_receive(pop.service_spend);
-		city.government_budget += pop.taxes - pop.transfers;
+		// R1b: o imposto de renda do modelo e 100% rebatido (kTransferShare=1),
+		// entao o liquido e zero; se a politica mudar, o liquido passa a entrar
+		// no Tesouro da nacao com a flag ligada.
+		const double net_tax = pop.taxes - pop.transfers;
+		if (ws_.national_treasury && net_tax > 0.0) {
+			treasury::collect(ws_, city.nation, net_tax);
+		} else {
+			city.government_budget += net_tax;
+		}
 
 		// F7 calibração — RENDA POR ESTRATO. A folha por escolaridade vem do
 		// mercado de trabalho (já paga e escalada pela liquidez); o lucro vai só

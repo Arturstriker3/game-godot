@@ -7,6 +7,7 @@
 #include "city_gov.h"
 #include "exchange.h"
 #include "sim_core.h"
+#include "treasury.h"
 
 #include <algorithm>
 #include <cmath>
@@ -38,6 +39,7 @@ double government_cash(const WorldState& ws, const std::string& nation) {
 			}
 		}
 	}
+	cash += treasury::balance(ws, nation);
 	return cash;
 }
 
@@ -352,6 +354,10 @@ void tick(WorldState& ws, double money_total,
 			}
 		}
 		gov_cash_now[city.nation] += cash;
+	}
+	// R1b: saldo do Tesouro por nacao entra na janela do deficit (publico).
+	for (const auto& row : ws.nation_treasury) {
+		gov_cash_now[row.first] += row.second;
 	}
 	ws.gov_cash_open = std::move(gov_cash_now);
 }

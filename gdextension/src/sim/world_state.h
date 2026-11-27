@@ -367,6 +367,41 @@ struct WorldState {
 	// (t160-t163) segue como experimento, nao e serializado (configuracao lida
 	// do rework.json).
 	int external_subceiling = 0;
+	// R1b - TESOURO NACIONAL + ENVELOPES (flag `rework.national_treasury`).
+	//
+	// Ligada (so com `regional_cash` tambem ligada): a arrecadacao de impostos
+	// municipais (IPTU + taxas locais; o imposto de renda do modelo e rebatido
+	// 100%, ver kTransferShare) passa a entrar no Tesouro da nacao
+	// (`nation_treasury`) em vez do caixa da cidade. A equalizacao fiscal e o
+	// repasse municipal morrem; o Tesouro distribui por mes um envelope por
+	// regiao (proporcional a populacao, com piso minimo por regiao). O envelope
+	// banca o que o orcamento municipal bancava: servicos/crise/alimentacao
+	// (`City::government_budget`) e manutencao/obras (`CityGov::cash`).
+	//
+	// Desligada (default): nenhuma chave nova no save, nenhum numero muda.
+	bool national_treasury = false;
+	// Saldo do Tesouro por nacao (XGS). `std::map` pela ordem deterministica do
+	// save/status. So tem valores com a flag ligada.
+	std::map<std::string, double> nation_treasury;
+	// Parametros declarados de balanceamento do envelope (rework.json):
+	//   share                 fracao do saldo distribuida por mes (1 = tudo);
+	//   floor_fraction        piso por regiao como fracao do rateio igualitario
+	//                         (peso = max(pop_share, floor/n_regioes));
+	//   works_share           fatia do envelope para manutencao/obras
+	//                         (`CityGov::cash`); o resto vai para servicos;
+	//   maintenance_share     teto da manutencao dentro do envelope de servicos.
+	double treasury_envelope_share = 1.0;
+	double treasury_floor_fraction = 0.5;
+	double treasury_envelope_works_share = 0.35;
+	double treasury_maintenance_share = 0.5;
+	// Somas acumuladas (so diagnostico/teste; nao entram em decisao):
+	// arrecadado no Tesouro e distribuido em envelopes. A identidade e
+	// arrecadado == distribuido + soma dos saldos.
+	double treasury_collected_total = 0.0;
+	double treasury_distributed_total = 0.0;
+	// Configuracao invalida (treasury ON sem regional_cash ON): mensagem para
+	// o log/status; a flag e tratada como desligada.
+	std::string treasury_config_error;
 	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
 	// laboratório; os padrões preservam o comportamento do jogo).
 	double natural_unemployment = 0.04;

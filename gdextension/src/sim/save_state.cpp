@@ -319,6 +319,22 @@ Value to_value(const WorldState& ws, const SimCore& core,
 	if (ws.regional_cash) {
 		data["regional_cash"] = true;
 	}
+	// R1b: estado do Tesouro Nacional. So entra quando ligado; saldos por
+	// nacao (std::map = ordem deterministica) e os acumulados da sonda. Um save
+	// desligado continua sem a chave (byte-identico ao anterior).
+	if (ws.national_treasury) {
+		data["national_treasury"] = true;
+		Dictionary block = make_object();
+		block["version"] = 1;
+		Dictionary nations = make_object();
+		for (const auto& row : ws.nation_treasury) {
+			nations[sim_str(row.first.c_str())] = row.second;
+		}
+		block["nations"] = nations;
+		block["collected_total"] = ws.treasury_collected_total;
+		block["distributed_total"] = ws.treasury_distributed_total;
+		data["treasury"] = block;
+	}
 	data["day"] = ws.day;
 	// A6: cadência por sistema. Muda QUANDO cada cidade fecha o mês/semana, então
 	// é estado verdadeiro do mundo (não configuração de exibição).
@@ -1099,6 +1115,35 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 	core.apply_regional_cash_after_load(
 		bool(data.get("regional_cash", false)),
 		data.has("regional_cash"));
+	// R1b: Tesouro Nacional. A flag do save vence a configuracao, mas so vale
+	// com `regional_cash` ligada (o core trata ON sem regional como config
+	// invalida e desliga). Saldos/acumulados vem do bloco `treasury`
+	// (versionado); save sem o bloco = Tesouro vazio.
+	{
+		std::map<std::string, double> treasury_balances;
+		double collected_total = 0.0;
+		double distributed_total = 0.0;
+		const Variant block_variant = data.get("treasury", Dictionary());
+		if (block_variant.get_type() == Variant::DICTIONARY) {
+			const Dictionary& block = block_variant;
+			collected_total = double(block.get("collected_total", 0.0));
+			distributed_total = double(block.get("distributed_total", 0.0));
+			const Variant nations_variant = block.get("nations", Dictionary());
+			if (nations_variant.get_type() == Variant::DICTIONARY) {
+				const Dictionary& nations = nations_variant;
+				for (const auto& row : nations.entries()) {
+					if (row.first.empty()) {
+						continue;
+					}
+					treasury_balances[row.first] = double(row.second);
+				}
+			}
+		}
+		core.apply_national_treasury_after_load(
+			bool(data.get("national_treasury", false)),
+			data.has("national_treasury"), treasury_balances,
+			collected_total, distributed_total);
+	}
 
 	ws.in_transit.clear();
 	Array transit = data.get("in_transit", Array());
