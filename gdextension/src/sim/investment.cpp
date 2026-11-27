@@ -168,15 +168,19 @@ void SimCore::route_group_profit(int group_index,
 		group.profit_by_host[host_nation] += moved;
 		// Incentivo: subsídio ad valorem sobre a receita do ativo, pago pelo
 		// governo do anfitrião (política explícita; 0 por padrão).
-		const double subsidy_rate = sector_subsidy(host_nation, group.sector);
-		if (subsidy_rate > 0.0 && revenue > 0.0) {
-			const double subsidy = std::min(
-				std::max(0.0, city.government_budget), revenue * subsidy_rate);
-			if (subsidy > 0.0) {
-				city.government_budget -= subsidy;
-				group.cash += subsidy;
-				group.distributable += subsidy;
-				ws_.group_flows[host_nation].subsidy += subsidy;
+		// R1c: com `firms_own_cash` ligada não existe aporte público automático
+		// a empresa - o incentivo fica registrado como política, mas não paga.
+		if (!ws_.firms_own_cash) {
+			const double subsidy_rate = sector_subsidy(host_nation, group.sector);
+			if (subsidy_rate > 0.0 && revenue > 0.0) {
+				const double subsidy = std::min(
+					std::max(0.0, city.government_budget), revenue * subsidy_rate);
+				if (subsidy > 0.0) {
+					city.government_budget -= subsidy;
+					group.cash += subsidy;
+					group.distributable += subsidy;
+					ws_.group_flows[host_nation].subsidy += subsidy;
+				}
 			}
 		}
 	} else if (profit < 0.0) {

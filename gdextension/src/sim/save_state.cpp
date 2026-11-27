@@ -335,6 +335,11 @@ Value to_value(const WorldState& ws, const SimCore& core,
 		block["spent_total"] = ws.treasury_spent_total;
 		data["treasury"] = block;
 	}
+	// R1c: estado da flag `rework.firms_own_cash`. So entra quando ligada; um
+	// save desligado continua sem a chave (byte-identico ao anterior).
+	if (ws.firms_own_cash) {
+		data["firms_own_cash"] = true;
+	}
 	data["day"] = ws.day;
 	// A6: cadência por sistema. Muda QUANDO cada cidade fecha o mês/semana, então
 	// é estado verdadeiro do mundo (não configuração de exibição).
@@ -1402,6 +1407,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 			data.has("national_treasury"), treasury_balances,
 			collected_total, spent_total);
 	}
+	// R1c: a flag das empresas-do-caixa-proprio do save vence a configuracao,
+	// mas so vale com `regional_cash` ligada (o core trata ON sem regional como
+	// config invalida e desliga).
+	core.apply_firms_own_cash_after_load(
+		bool(data.get("firms_own_cash", false)),
+		data.has("firms_own_cash"));
 	// G (v24) — estado da safra por (cidade, produto, safra). Save v23 e
 	// anteriores não têm o bloco: o estado nasce zerado (a safra do ano
 	// corrente recomeça do zero no dia do load; nada é inventado para trás).

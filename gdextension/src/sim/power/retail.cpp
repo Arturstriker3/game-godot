@@ -99,8 +99,13 @@ void SimCore::phase_power_settle() {
 		if (margin > 0.0) {
 			to_state = margin;
 		} else if (margin < 0.0) {
-			to_state = -std::min(-margin,
-				std::max(0.0, city.government_budget));
+			// R1c: com `firms_own_cash` ligada o Estado nao cobre
+			// automaticamente o deficit tarifario do setor eletrico (aporte
+			// publico automatico a empresa); a diferenca fica como perda
+			// declarada do setor.
+			to_state = ws.firms_own_cash ? 0.0
+				: -std::min(-margin,
+					std::max(0.0, city.government_budget));
 		}
 		if (to_state > 0.0) {
 			pool -= to_state;

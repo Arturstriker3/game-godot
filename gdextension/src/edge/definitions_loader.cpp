@@ -703,6 +703,17 @@ void EconomySim::set_rework_params(const Dictionary& values) {
 			"rework.national_treasury requer rework.regional_cash: flag "
 			"national_treasury tratada como desligada");
 	}
+	// R1c: `firms_own_cash` (empresas operam 100% do caixa proprio). Só vale
+	// com `regional_cash` ligada; a violação é registrada e impressa como erro
+	// claro no log (a flag é tratada como desligada).
+	const Dictionary firms_block = values.get("firms_own_cash", Dictionary());
+	const bool firms_enabled = bool(firms_block.get("enabled", false));
+	sim_core_.set_firms_own_cash(firms_enabled);
+	if (firms_enabled && !enabled) {
+		UtilityFunctions::push_error(
+			"rework.firms_own_cash requer rework.regional_cash: flag "
+			"firms_own_cash tratada como desligada");
+	}
 	status_invalidate();
 }
 
@@ -737,6 +748,13 @@ Dictionary EconomySim::get_rework_params() const {
 	treasury["collected_total"] = ws_.treasury_collected_total;
 	treasury["spent_total"] = ws_.treasury_spent_total;
 	out["national_treasury"] = treasury;
+	// R1c: estado da flag `firms_own_cash` (ligada e motivo da config inválida).
+	Dictionary firms;
+	firms["enabled"] = ws_.firms_own_cash;
+	if (!ws_.firms_config_error.empty()) {
+		firms["config_error"] = String(ws_.firms_config_error.c_str());
+	}
+	out["firms_own_cash"] = firms;
 	return out;
 }
 

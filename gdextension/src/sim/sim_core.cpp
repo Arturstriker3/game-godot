@@ -78,6 +78,12 @@ void SimCore::set_regional_cash(bool enabled, int external_subceiling) {
 		ws_.treasury_config_error =
 			"regional_cash desligado; national_treasury tratado como desligado";
 	}
+	// R1c: desligar o caixa regional desliga as empresas-do-caixa-proprio na
+	// mesma chamada (a flag nao tem sentido sem o pool).
+	if (!enabled) {
+		ws_.firms_own_cash = false;
+		ws_.firms_config_error.clear();
+	}
 	ws_.regional_cash = enabled;
 	ws_.external_subceiling = external_subceiling;
 	for (City& city : ws_.cities) {
@@ -213,6 +219,29 @@ void SimCore::set_national_treasury(bool enabled, double budget_share,
 		treasury::start_month(ws_);
 		ws_.gov_cash_open.clear();
 	}
+}
+
+void SimCore::set_firms_own_cash(bool enabled) {
+	// R1c: a flag so existe sobre o caixa unico regional (mesma regra do
+	// Tesouro). A combinacao invalida e tratada como desligada e o motivo fica
+	// em `firms_config_error` (a fachada imprime no log do Godot).
+	if (enabled && !ws_.regional_cash) {
+		ws_.firms_config_error =
+			"rework.firms_own_cash requer rework.regional_cash ligado; "
+			"flag tratada como desligada";
+		ws_.firms_own_cash = false;
+		return;
+	}
+	ws_.firms_config_error.clear();
+	ws_.firms_own_cash = enabled;
+}
+
+void SimCore::apply_firms_own_cash_after_load(bool saved_flag,
+		bool has_saved_flag) {
+	// A flag do save vence a configuracao; save sem a chave mantem a flag ja
+	// aplicada (configuracao). A validacao com `regional_cash` e a mesma.
+	const bool enabled = has_saved_flag ? saved_flag : ws_.firms_own_cash;
+	set_firms_own_cash(enabled);
 }
 
 void SimCore::apply_national_treasury_after_load(bool saved_flag,
@@ -923,18 +952,22 @@ void SimCore::phase_accounting() {
 		// referência em vez de deixá-la fechar. Transferência explícita
 		// governo -> firma: conserva o dinheiro e não maquia o resultado do
 		// setor (a perda continua visível em `profit` antes do subsídio).
-		for (const int bi : local_buildings) {
-			Building& building =
-				ws_.buildings[static_cast<std::size_t>(bi)];
-			if (!building.strategic || building.profit >= 0.0) {
-				continue;
-			}
-			const double subsidy = std::min(-building.profit,
-				std::max(0.0, city.government_budget));
-			if (subsidy > 0.0) {
-				city.government_budget -= subsidy;
-				city.firm_receive(subsidy);
-				building.profit += subsidy;
+		// R1c: com `firms_own_cash` ligada esse socorro automático morre - a
+		// planta opera do caixa próprio (a perda fica com a firma).
+		if (!ws_.firms_own_cash) {
+			for (const int bi : local_buildings) {
+				Building& building =
+					ws_.buildings[static_cast<std::size_t>(bi)];
+				if (!building.strategic || building.profit >= 0.0) {
+					continue;
+				}
+				const double subsidy = std::min(-building.profit,
+					std::max(0.0, city.government_budget));
+				if (subsidy > 0.0) {
+					city.government_budget -= subsidy;
+					city.firm_receive(subsidy);
+					building.profit += subsidy;
+				}
 			}
 		}
 

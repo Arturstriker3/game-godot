@@ -1253,6 +1253,9 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		ws_.regional_budget_share, ws_.regional_budget_floor_fraction,
 		ws_.regional_budget_works_share,
 		ws_.regional_budget_maintenance_share);
+	// R1c: revalida a flag das empresas-do-caixa-proprio com o caixa regional
+	// ja aplicado (ON sem regional_cash continua sendo config invalida).
+	sim_core_.set_firms_own_cash(ws_.firms_own_cash);
 }
 
 // ---------------------------------------------------------------------------

@@ -210,6 +210,7 @@ if(OPENGS_BUILD_UNIT_TESTS)
         tests/test_g2_bootstrap.cpp
         tests/test_regional_cash.cpp
         tests/test_national_treasury.cpp
+        tests/test_firms_own_cash.cpp
     )
 
     target_link_libraries(sim_unit_tests PRIVATE opengs_sim)

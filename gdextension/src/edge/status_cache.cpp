@@ -379,6 +379,16 @@ Dictionary EconomySim::get_status() {
 	root[k.mode] = "demo";
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
+	// R1b/R1c: configuracao invalida das flags do rework exposta no status (a
+	// chave so existe quando ha erro - OFF continua sem chave nova).
+	if (!ws_.treasury_config_error.empty()) {
+		root["treasury_config_error"] = String(
+			ws_.treasury_config_error.c_str());
+	}
+	if (!ws_.firms_config_error.empty()) {
+		root["firms_own_cash_config_error"] = String(
+			ws_.firms_config_error.c_str());
+	}
 	// G2: diagnóstico da semente (critério 9: residual e falta publicados).
 	if (ws_.bootstrap.loaded) {
 		Dictionary bootstrap;

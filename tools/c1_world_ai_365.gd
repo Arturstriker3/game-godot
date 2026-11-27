@@ -134,6 +134,11 @@ var _external_subceiling_set := false
 # enabled do rework.json (default do jogo = desligado). Só laboratório.
 var _national_treasury_on := false
 var _national_treasury_set := false
+# R1c: braço A/B das empresas operando 100% do caixa próprio
+# (`--firms-own-cash=0/1` / OGS_C1_FIRMS_OWN_CASH). Sem override vale o
+# enabled do rework.json (default do jogo = desligado). Só laboratório.
+var _firms_own_cash_on := false
+var _firms_own_cash_set := false
 # R1a (diagnostico): serie diaria das entradas que o portao de comida e o
 # credito leem, para decompor o efeito do caixa unico. So medicao
 # (--r1-diag / OGS_C1_R1_DIAG=1): nao altera o mundo.
@@ -254,6 +259,10 @@ func _init() -> void:
 		_national_treasury_on = \
 			OS.get_environment("OGS_C1_NATIONAL_TREASURY") != "0"
 		_national_treasury_set = true
+	if OS.get_environment("OGS_C1_FIRMS_OWN_CASH") != "":
+		_firms_own_cash_on = \
+			OS.get_environment("OGS_C1_FIRMS_OWN_CASH") != "0"
+		_firms_own_cash_set = true
 	if OS.get_environment("OGS_C1_R1_DIAG") != "":
 		_r1_diag = OS.get_environment("OGS_C1_R1_DIAG") != "0"
 	for arg in OS.get_cmdline_user_args():
@@ -279,6 +288,9 @@ func _init() -> void:
 		elif arg.begins_with("--national-treasury="):
 			_national_treasury_on = arg.split("=", true, 1)[1] != "0"
 			_national_treasury_set = true
+		elif arg.begins_with("--firms-own-cash="):
+			_firms_own_cash_on = arg.split("=", true, 1)[1] != "0"
+			_firms_own_cash_set = true
 		elif arg.begins_with("--r1-diag"):
 			_r1_diag = not arg.contains("=") \
 				or arg.split("=", true, 1)[1] != "0"
@@ -745,6 +757,11 @@ func _make_world() -> Object:
 					"national_treasury", {})
 				treasury_block["enabled"] = _national_treasury_on
 				rework_params["national_treasury"] = treasury_block
+			if _firms_own_cash_set:
+				var firms_block: Dictionary = rework_params.get(
+					"firms_own_cash", {})
+				firms_block["enabled"] = _firms_own_cash_on
+				rework_params["firms_own_cash"] = firms_block
 			sim.set_rework_params(rework_params)
 			var rc: Dictionary = rework_params.get("regional_cash", {})
 			print("[c1] R1a caixa unico regional: enabled=%s sub-teto=%s" % [
@@ -753,6 +770,9 @@ func _make_world() -> Object:
 			var nt: Dictionary = rework_params.get("national_treasury", {})
 			print("[c1] R1b Tesouro nacional: enabled=%s" % [
 				"1" if bool(nt.get("enabled", false)) else "0"])
+			var fc: Dictionary = rework_params.get("firms_own_cash", {})
+			print("[c1] R1c empresas no caixa proprio: enabled=%s" % [
+				"1" if bool(fc.get("enabled", false)) else "0"])
 	if sim.has_method("set_bootstrap_industry"):
 		var bootstrap: Variant = _load(BOOTSTRAP_PATH)
 		if bootstrap is Dictionary:

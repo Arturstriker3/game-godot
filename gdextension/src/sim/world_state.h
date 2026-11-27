@@ -408,6 +408,17 @@ struct WorldState {
 	// Configuracao invalida (treasury ON sem regional_cash ON): mensagem para
 	// o log/status; a flag e tratada como desligada.
 	std::string treasury_config_error;
+	// R1c - EMPRESAS OPERAM 100% DO CAIXA PROPRIO (flag
+	// `rework.firms_own_cash`). Ligada (so com `regional_cash` tambem ligada):
+	// morrem os aportes publicos automaticos a empresas/plantas - subsidio
+	// setorial ad valorem, cobertura do prejuizo da planta estrategica e a
+	// cobertura do deficit tarifario do setor eletrico. Compras publicas
+	// legitimas (alimentacao, obras, servicos, frota) seguem pagando pelos
+	// canais normais. Desligada (default) = comportamento anterior.
+	bool firms_own_cash = false;
+	// Configuracao invalida (firms ON sem regional_cash ON): mensagem para o
+	// log/status; a flag e tratada como desligada.
+	std::string firms_config_error;
 	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
 	// laboratório; os padrões preservam o comportamento do jogo).
 	double natural_unemployment = 0.04;

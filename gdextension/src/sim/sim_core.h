@@ -159,6 +159,17 @@ public:
 	void set_national_treasury(bool enabled, double budget_share = 1.0,
 		double floor_fraction = 0.5, double works_share = 0.35,
 		double maintenance_share = 0.5);
+	// R1c - EMPRESAS OPERAM 100% DO CAIXA PROPRIO (`rework.firms_own_cash`).
+	// So vale com `regional_cash` ligada; ligar com regional_cash desligada
+	// registra `firms_config_error` e mantem a flag desligada (config invalida).
+	// Ligada, os aportes publicos automaticos a empresas/plantas morrem -
+	// subsidio setorial, cobertura do prejuizo de planta estrategica e
+	// cobertura do deficit tarifario do setor eletrico. Nao muda nenhum caixa
+	// ao ligar/desligar: e so o gate dos fluxos.
+	void set_firms_own_cash(bool enabled);
+	// Depois do load: a flag do save (quando presente) vence a configuracao,
+	// com a mesma validacao de `set_firms_own_cash`.
+	void apply_firms_own_cash_after_load(bool saved_flag, bool has_saved_flag);
 	// Depois do load: a flag do save (ou a configuracao) manda; so vale com
 	// `regional_cash` ligada. Saldos do save substituem os do mundo quando a
 	// flag fica ligada; ao desligar, os contadores regionais sao zerados sem

@@ -139,6 +139,8 @@ void initialize_scenario_fixture(WorldState& ws, SimCore& core) {
 		ws.regional_budget_share, ws.regional_budget_floor_fraction,
 		ws.regional_budget_works_share,
 		ws.regional_budget_maintenance_share);
+	// R1c: o cenario minimo tambem respeita `rework.firms_own_cash`.
+	core.set_firms_own_cash(ws.firms_own_cash);
 }
 
 } // namespace ogs
