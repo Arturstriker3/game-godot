@@ -140,16 +140,19 @@ public:
 	const City* find_city(const std::string& id) const;
 	// R1a - caixa unico regional. Liga/desliga a flag em `ws_.regional_cash` e
 	// aplica a todas as cidades (ao ligar, `private_cash` nasce da soma dos
-	// dois caixas; ao desligar, volta a 0). Chamado no fim de initialize_world
-	// e pelo setter de definicoes; idempotente.
+	// dois caixas e os sub-saldos `firm_sub`/`service_sub` sao semeados; ao
+	// desligar, volta a 0). Chamado no fim de initialize_world e pelo setter
+	// de definicoes; idempotente.
 	// `external_subceiling` (R1a medicao: 0=off, 1=all, 2=nonessential) e
-	// propagado para as cidades; default preserva o teto por fatia.
-	void set_regional_cash(bool enabled, int external_subceiling = 1);
+	// propagado para as cidades; default `off` = quem limita e o sub-saldo
+	// (o modo por fatia t160-t163 segue no codigo como experimento superado).
+	void set_regional_cash(bool enabled, int external_subceiling = 0);
 	// R1a (t163): liga o livro de medicao por cidade (`--r1-diag`). Com false
 	// nada e escrito e o mundo e bit-identico ao de antes da sonda.
 	void set_r1_diag(bool enabled);
 	// Depois do load: a flag do save (ou a configuracao) manda; cidade que veio
-	// sem `private_cash` e sincronizada a partir dos dois espelhos.
+	// sem `private_cash` e sincronizada a partir dos dois espelhos e os
+	// sub-saldos sao normalizados.
 	void apply_regional_cash_after_load(bool saved_flag, bool has_saved_flag);
 	// Teto físico de capacidade agrícola (t/dia) de uma cidade para um produto.
 	// Dado de GEOGRAFIA: não é serializado no save — chega do GeographyService

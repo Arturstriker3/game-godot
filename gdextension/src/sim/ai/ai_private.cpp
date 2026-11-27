@@ -1052,10 +1052,8 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 				// de crédito é pelo caixa vivo para não abrir dívida sem planta.
 				const City& live_city = ctx.ws.cities[
 					static_cast<std::size_t>(city_index)];
-				const double live_share = live_city.unified_cash
-					? live_city.measured_firm_revenue_share() : 1.0;
 				const double live_cash = std::max(0.0,
-					live_city.firm_liquidity()) * live_share;
+					live_city.firm_liquidity());
 				const double gap = cost - live_cash;
 				if (gap > 1e-9) {
 					// `lend_city` entrega `pedido x fator` (aperto do banco): pedir

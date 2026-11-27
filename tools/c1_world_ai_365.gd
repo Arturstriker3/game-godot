@@ -1077,6 +1077,8 @@ func _r1_add_city(per_nation: Dictionary, key: String, row: Dictionary) -> void:
 			"import_abroad": 0.0,
 			"export_abroad": 0.0,
 			"private_cash": 0.0,
+			"firm_sub": 0.0,
+			"service_sub": 0.0,
 			"firm_cash": 0.0,
 			"service_cash": 0.0,
 			"unified": false,
@@ -1110,6 +1112,10 @@ func _r1_add_city(per_nation: Dictionary, key: String, row: Dictionary) -> void:
 		+ float(row.get("export_abroad", 0.0))
 	acc["private_cash"] = float(acc["private_cash"]) \
 		+ float(row.get("private_cash", 0.0))
+	acc["firm_sub"] = float(acc["firm_sub"]) \
+		+ float(row.get("firm_sub", 0.0))
+	acc["service_sub"] = float(acc["service_sub"]) \
+		+ float(row.get("service_sub", 0.0))
 	acc["firm_cash"] = float(acc["firm_cash"]) \
 		+ float(row.get("firm_cash", 0.0))
 	acc["service_cash"] = float(acc["service_cash"]) \
@@ -1172,6 +1178,8 @@ func _r1_collect_nations(sim: Object, day: int) -> void:
 			acc[count_key] = int(acc[count_key]) + int(day_acc[count_key])
 		# Caixa: retrato do FIM do dia (o último dia do mês fica no registro).
 		acc["private_cash"] = float(day_acc["private_cash"])
+		acc["firm_sub"] = float(day_acc["firm_sub"])
+		acc["service_sub"] = float(day_acc["service_sub"])
 		acc["firm_cash"] = float(day_acc["firm_cash"])
 		acc["service_cash"] = float(day_acc["service_cash"])
 		acc["unified"] = bool(day_acc["unified"])
@@ -1213,6 +1221,8 @@ func _r1_nations_report() -> Array:
 			"net_abroad": float(acc["import_abroad"]) \
 				- float(acc["export_abroad"]),
 			"private_cash": float(acc["private_cash"]),
+			"firm_sub": float(acc["firm_sub"]),
+			"service_sub": float(acc["service_sub"]),
 			"firm_cash": float(acc["firm_cash"]),
 			"service_cash": float(acc["service_cash"]),
 			"unified": bool(acc["unified"]),

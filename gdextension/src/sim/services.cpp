@@ -661,8 +661,8 @@ void SimCore::services_day(City& city, double* foreign_slots,
 	const double paid_inputs = std::min(total_input_cost,
 		std::max(0.0, city.service_liquidity()));
 	if (paid_inputs > 0.0) {
-		city.service_pay(paid_inputs);
-		city.firm_receive(paid_inputs);
+		const double inputs_paid = city.service_pay(paid_inputs);
+		city.firm_receive(inputs_paid);
 	}
 	city.service_input_cost = total_input_cost;
 

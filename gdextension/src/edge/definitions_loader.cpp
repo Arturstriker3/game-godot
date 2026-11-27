@@ -670,13 +670,14 @@ void EconomySim::set_rework_params(const Dictionary& values) {
 	// (private_cash nasce de firm_cash + service_cash).
 	const Dictionary block = values.get("regional_cash", Dictionary());
 	const bool enabled = bool(block.get("enabled", false));
-	// R1a (medicao): calibracao do sub-teto externo. Ausente = "all" (o teto
-	// por fatia entregue); "off" = sem sub-teto; "nonessential" = a cesta
-	// alimentar (food_calories > 0) usa o pool inteiro, o resto segue na fatia.
-	const String mode = block.get("external_subceiling", String("all"));
-	int subceiling = 1;
-	if (mode == "off") {
-		subceiling = 0;
+	// R1a (medicao): calibracao do sub-teto externo. Ausente = "off" (quem
+	// limita o pagamento externo e o sub-saldo do setor; o modo por fatia
+	// t160-t163 esta superado); "all" = fatia da receita; "nonessential" = a
+	// cesta alimentar (food_calories > 0) ignora a fatia, o resto segue nela.
+	const String mode = block.get("external_subceiling", String("off"));
+	int subceiling = 0;
+	if (mode == "all") {
+		subceiling = 1;
 	} else if (mode == "nonessential") {
 		subceiling = 2;
 	}

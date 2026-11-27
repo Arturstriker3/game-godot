@@ -81,14 +81,15 @@ InvestResult action_invest(WorldState& ws, SimCore& core,
 	const double capacity_added = amount / std::max(1.0, building->capital_per_capacity);
 
 	if (instant_construction) {
-		city->firm_pay(amount, City::kR1Invest);
+		const double invested = city->firm_pay(amount, City::kR1Invest);
 		// A expansão é construída por serviços domésticos: o dinheiro vira
 		// receita de construção (contada no PIB do próximo tick) e não
-		// desaparece em um caixa inerte.
-		city->service_receive(amount);
-		city->construction_revenue_pending += amount;
+		// desaparece em um caixa inerte. Credita o que foi efetivamente
+		// debitado (autorização pelo sub-saldo das firmas).
+		city->service_receive(invested);
+		city->construction_revenue_pending += invested;
 		building->capacity += capacity_added;
-		result.invested = amount;
+		result.invested = invested;
 		result.capacity_added = capacity_added;
 		return result;
 	}
@@ -228,6 +229,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 	if (instant_construction || bootstrap_construction) {
 		// Hook de teste (construção instantânea): comportamento anterior —
 		// prédio pronto na hora e custo integral debitado do dono.
+		double paid_cost = cost;
 		if (state_owned) {
 			if (city->government_budget < cost) {
 				result.error = "orçamento insuficiente";
@@ -239,7 +241,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 				result.error = "capital insuficiente";
 				return result;
 			}
-			city->firm_pay(cost, City::kR1Invest);
+			paid_cost = city->firm_pay(cost, City::kR1Invest);
 		}
 
 		Building building;
@@ -294,10 +296,10 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 
 		// O investimento é pago ao setor de construção doméstico e entra no PIB
 		// do próximo tick como receita de construção.
-		city->service_receive(cost);
-		city->construction_revenue_pending += cost;
+		city->service_receive(paid_cost);
+		city->construction_revenue_pending += paid_cost;
 		result.created = true;
-		result.cost = cost;
+		result.cost = paid_cost;
 		return result;
 	}
 
@@ -671,11 +673,13 @@ namespace {
 // (`committed_construction`). nullptr = dono sem caixa localizavel.
 //
 // R1a: com o caixa unico ligado, o "private" paga do POOL (`private_cash`) e o
-// espelho da firma (`firm_cash`) e debitado a parte (`stat`) - a mesma conta de
-// um `firm_pay`, para a estatistica nao divergir do pool.
+// espelho da firma (`firm_cash`) e debitado a parte (`stat`); o sub-saldo das
+// firmas (`firm_sub`) e o que autoriza o gasto. A conta e a mesma de um
+// `firm_pay`, para a estatistica nao divergir do pool.
 struct OwnerCash {
 	double* cash = nullptr;
 	double* stat = nullptr;
+	double* sub = nullptr;
 };
 OwnerCash mine_owner_cash(SimCore& core, City& city, const Building& building,
 		std::string& commit_key) {
@@ -684,18 +688,19 @@ OwnerCash mine_owner_cash(SimCore& core, City& city, const Building& building,
 	const int kind = core.owner_kind(building.owner, &group_id, &origin_nation);
 	if (kind == 0) {
 		commit_key = "state";
-		return { &city.government_budget, nullptr };
+		return { &city.government_budget, nullptr, nullptr };
 	}
 	if (kind == 1 || kind == 2) {
 		commit_key = group_id;
 		Group* group = core.find_group(group_id);
-		return group == nullptr ? OwnerCash{} : OwnerCash{ &group->cash, nullptr };
+		return group == nullptr ? OwnerCash{}
+			: OwnerCash{ &group->cash, nullptr, nullptr };
 	}
 	commit_key = "private";
 	if (city.unified_cash) {
-		return { &city.private_cash, &city.firm_cash };
+		return { &city.private_cash, &city.firm_cash, &city.firm_sub };
 	}
-	return { &city.firm_cash, nullptr };
+	return { &city.firm_cash, nullptr, nullptr };
 }
 } // namespace
 
@@ -748,7 +753,10 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 		return result;
 	}
 	const double committed = committed_construction(ws, city->id, commit_key);
-	if (committed + cost > *cash) {
+	// Com sub-saldos, o gasto das firmas e autorizado pelo `firm_sub`, nao
+	// pelo total armazenado.
+	const double budget = owner.sub != nullptr ? *owner.sub : *cash;
+	if (committed + cost > budget) {
 		result.error = "capital insuficiente";
 		result.cost = cost;
 		return result;
@@ -766,6 +774,9 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 		*cash -= cost;
 		if (owner.stat != nullptr) {
 			*owner.stat -= cost;
+		}
+		if (owner.sub != nullptr) {
+			*owner.sub -= cost;
 		}
 		city->service_receive(cost);
 		city->construction_revenue_pending += cost;
@@ -807,6 +818,9 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 	*cash -= cost;
 	if (owner.stat != nullptr) {
 		*owner.stat -= cost;
+	}
+	if (owner.sub != nullptr) {
+		*owner.sub -= cost;
 	}
 	core.add_construction_project(project);
 	result.started = true;
@@ -1001,15 +1015,16 @@ StorageBuildResult action_storage_build(WorldState& ws, SimCore& core,
 		return result;
 	}
 	if (instant_construction) {
+		double paid_cost = cost;
 		if (government) {
 			city->government_budget -= cost;
 		} else {
-			city->firm_pay(cost, City::kR1Invest);
+			paid_cost = city->firm_pay(cost, City::kR1Invest);
 		}
 		// Construção doméstica: o dinheiro vira receita do setor de construção
 		// (contabilizada no próximo tick), como nas demais obras instantâneas.
-		city->service_receive(cost);
-		city->construction_revenue_pending += cost;
+		city->service_receive(paid_cost);
+		city->construction_revenue_pending += paid_cost;
 		const int city_index = static_cast<int>(city - ws.cities.data());
 		add_storage_capacity(ws, city_index, type, scope, tons);
 		result.started = true;
@@ -1116,13 +1131,15 @@ StorageTradeResult action_storage_trade(WorldState& ws, SimCore& core,
 			return result;
 		}
 		const double value = qty * price;
+		double paid_value = value;
 		if (government) {
 			city->government_budget -= value;
 		} else {
-			city->firm_pay(value);
+			paid_value = city->firm_pay(value);
 		}
-		// O vendedor é a firma local: o dinheiro só muda de caixa.
-		city->firm_receive(value);
+		// O vendedor é a firma local: o dinheiro só muda de caixa. Credita o
+		// valor efetivamente debitado (autorização pelo sub-saldo das firmas).
+		city->firm_receive(paid_value);
 		city->revenue_by_product[product] += value;
 		market.stock -= qty;
 		market.demand += qty;
@@ -1161,13 +1178,13 @@ StorageTradeResult action_storage_trade(WorldState& ws, SimCore& core,
 	}
 	const double value = paid_qty * price;
 	if (paid_qty > 0.0) {
-		city->firm_pay(value);
+		const double paid_value = city->firm_pay(value);
 		if (government) {
-			city->government_budget += value;
+			city->government_budget += paid_value;
 		} else {
 			// Privado: o comprador e o dono são a mesma firma agregada — o
 			// dinheiro não muda de caixa; o lucro aparece no preço do mercado.
-			city->firm_receive(value);
+			city->firm_receive(paid_value);
 		}
 	}
 	site.stock[static_cast<std::size_t>(product)] -= qty;

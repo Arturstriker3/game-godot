@@ -597,7 +597,7 @@ void SimCore::phase_storage() {
 			double paid = 0.0;
 			if (site.scope == STORAGE_PRIVATE) {
 				paid = std::min(due, std::max(0.0, city.firm_liquidity()));
-				city.firm_pay(paid);
+				paid = city.firm_pay(paid);
 			} else {
 				paid = std::min(due, std::max(0.0, city.government_budget));
 				city.government_budget -= paid;

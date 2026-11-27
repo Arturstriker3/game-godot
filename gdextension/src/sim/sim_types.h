@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <set>
 #include <string>
@@ -1780,9 +1781,27 @@ struct Region {
 		//
 		// O save carrega `private_cash` SO quando ligado (save antigo nao tem
 		// a chave e carrega no modo desligado, byte-identico ao anterior).
+		//
+		// R1a (correcao aprovada) - SUB-SALDOS VIRTUAIS. O pool continua sendo
+		// UMA carteira armazenada (`private_cash`), mas o direito de gastar e
+		// rastreado por origem em `firm_sub`/`service_sub`, com a invariante
+		// DURA `firm_sub + service_sub == private_cash` (a menos de 1e-6).
+		//
+		//   - credito: `firm_receive` -> firm_sub; `service_receive` ->
+		//     service_sub (a origem e o primitivo do design antigo);
+		//   - debito: `firm_pay` so autoriza ate firm_sub; `service_pay` ate
+		//     service_sub. Nada de transferencia automatica: o setor que zerou
+		//     PARA, como no caixa separado (OFF);
+		//   - transferencia interna (opex firmas->servicos, insumos, frete,
+		//     construcao) e o par pay/receive de sempre: move valor de um
+		//     sub-saldo para o outro e continua no-op no total;
+		//   - `firm_cash`/`service_cash` seguem publicados como estatistica por
+		//     setor e espelham os sub-saldos no ON (nunca negativos).
 		// ------------------------------------------------------------------
 		double private_cash = 0.0;
 		bool unified_cash = false;
+		double firm_sub = 0.0;
+		double service_sub = 0.0;
 		// R1a (continuacao) - SUB-TETO DOS PAGAMENTOS EXTERNOS.
 		//
 		// Cada setor pode pagar por dia, FORA do setor privado (tarifa de
@@ -1798,18 +1817,21 @@ struct Region {
 		static constexpr double kRevenueSharePendulumDays = 30.0;
 		// R1a (medicao R1a-M1/M2) - calibracao do sub-teto externo, lida de
 		// `regional_cash.external_subceiling` em rework.json:
-		//   kSubceilingAll (default) = cada setor paga fora no maximo a fatia;
-		//   kSubceilingOff = sem sub-teto (o teto e o pool que existe, como o
-		//     caixa antigo);
+		//   kSubceilingOff (DEFAULT a partir da correcao dos sub-saldos) = sem
+		//     sub-teto de fatia; quem limita o pagamento externo e o proprio
+		//     sub-saldo do setor. O modo e o experimento t160-t163, SUPERADO
+		//     pelos sub-saldos; o codigo fica documentado e inativo por padrao;
+		//   kSubceilingAll = cada setor paga fora no maximo a fatia (nunca
+		//     acima do sub-saldo);
 		//   kSubceilingNonessential = a fatia vale para pagamentos nao
 		//     essenciais, mas a importacao de bem ESSENCIAL (cesta alimentar,
 		//     `food_calories(product) > 0`, a mesma classificacao do food_ratio)
-		//     pode usar o pool inteiro. Energia/juros/taxas seguem no teto.
+		//     pode usar o sub-saldo inteiro. Energia/juros/taxas seguem no teto.
 		// Sem a flag `regional_cash` o modo e irrelevante (teto = caixa).
 		static constexpr int kSubceilingOff = 0;
 		static constexpr int kSubceilingAll = 1;
 		static constexpr int kSubceilingNonessential = 2;
-		int external_subceiling = kSubceilingAll;
+		int external_subceiling = kSubceilingOff;
 		double firm_revenue_share = -1.0;
 		double firm_external_paid_today = 0.0;
 		double service_external_paid_today = 0.0;
@@ -1869,12 +1891,14 @@ struct Region {
 		}
 
 		// Liquidez que cada setor pode gastar HOJE (leitura). Com o caixa
-		// unico, os dois vem do pool - nunca somar as duas leituras.
+		// unico, e o SUB-SALDO do setor (nunca o pool inteiro): cada um paga
+		// apenas o que arrecadou, como no caixa separado. Nunca somar as duas
+		// leituras.
 		double firm_liquidity() const {
-			return unified_cash ? private_cash : firm_cash;
+			return unified_cash ? std::max(0.0, firm_sub) : firm_cash;
 		}
 		double service_liquidity() const {
-			return unified_cash ? private_cash : service_cash;
+			return unified_cash ? std::max(0.0, service_sub) : service_cash;
 		}
 		// Dinheiro do setor privado (soma economica do que existe).
 		double private_total() const {
@@ -1886,15 +1910,18 @@ struct Region {
 				: std::max(0.0, firm_cash) + std::max(0.0, service_cash);
 		}
 		// Participacao MEDIDA do setor de firmas na receita privada, presa em
-		// [5%, 95%]. Sem medicao ainda (-1), deriva da razao dos dois espelhos
-		// (a mesma base que o caminho OFF usava para separar os caixas).
+		// [5%, 95%]. Sem medicao ainda (-1), deriva da razao dos sub-saldos.
+		// Continua servindo so ao experimento t160-t163 (sub-teto externo);
+		// a decisao de gasto dos setores e o sub-saldo, nao esta fatia.
 		double measured_firm_revenue_share() const {
 			if (firm_revenue_share >= 0.0) {
 				return std::clamp(firm_revenue_share, kExternalShareFloor,
 					1.0 - kExternalShareFloor);
 			}
-			const double firm = std::max(0.0, firm_cash);
-			const double service = std::max(0.0, service_cash);
+			const double firm = unified_cash ? std::max(0.0, firm_sub)
+				: std::max(0.0, firm_cash);
+			const double service = unified_cash ? std::max(0.0, service_sub)
+				: std::max(0.0, service_cash);
 			const double total = firm + service;
 			if (total <= 1e-9) {
 				return 0.5;
@@ -1902,63 +1929,118 @@ struct Region {
 			return std::clamp(firm / total, kExternalShareFloor,
 				1.0 - kExternalShareFloor);
 		}
-		// Base do dia para os pagamentos externos: o pool que existe agora mais
-		// o que os dois setores JA pagaram para fora hoje. E o pool de abertura
-		// mais as entradas externas do dia, sem contar duas vezes o dinheiro
-		// que saiu (o teto de cada setor e uma fatia desta base).
+		// Base do dia para o experimento de fatia (t160-t163): o pool que
+		// existe agora mais o que os dois setores JA pagaram para fora hoje.
 		double external_payment_base() const {
 			return std::max(0.0, private_cash + firm_external_paid_today
 				+ service_external_paid_today);
 		}
 		// Quanto o setor ainda pode comprometer FORA do setor privado hoje.
 		// Desligada a flag: o proprio caixa (caminho antigo, bit a bit).
-		// Ligada: a fatia da base, MAS nunca acima do pool que ainda existe -
-		// o outro setor pode ter pago primeiro e a fatia dele nao e dinheiro
-		// disponivel para este.
+		// Ligada: o SUB-SALDO do setor. O experimento t160-t163 (`all`/
+		// `nonessential`) continua no codigo, mas nunca libera acima do
+		// sub-saldo - o mecanismo esta superado e o default e `off`.
 		// `essential` marca um pagamento externo por bem essencial (cesta
-		// alimentar): no modo `nonessential` ele usa o pool inteiro, sem a
-		// fatia. Os demais modos ignoram o argumento.
+		// alimentar): no modo `nonessential` ele ignora a fatia.
 		double firm_external_room(bool essential = false) const {
 			if (!unified_cash) {
 				return std::max(0.0, firm_cash);
 			}
+			const double sub_room = std::max(0.0, firm_sub);
 			if (external_subceiling == kSubceilingOff
 					|| (external_subceiling == kSubceilingNonessential
 						&& essential)) {
-				return std::max(0.0, private_cash);
+				return sub_room;
 			}
 			const double share_room = external_payment_base()
 				* measured_firm_revenue_share() - firm_external_paid_today;
-			return std::max(0.0,
-				std::min(share_room, std::max(0.0, private_cash)));
+			return std::max(0.0, std::min(share_room, sub_room));
 		}
 		double service_external_room(bool essential = false) const {
 			if (!unified_cash) {
 				return std::max(0.0, service_cash);
 			}
+			const double sub_room = std::max(0.0, service_sub);
 			if (external_subceiling == kSubceilingOff
 					|| (external_subceiling == kSubceilingNonessential
 						&& essential)) {
-				return std::max(0.0, private_cash);
+				return sub_room;
 			}
 			const double share_room = external_payment_base()
 				* (1.0 - measured_firm_revenue_share())
 				- service_external_paid_today;
-			return std::max(0.0,
-				std::min(share_room, std::max(0.0, private_cash)));
+			return std::max(0.0, std::min(share_room, sub_room));
 		}
-		// Espelho: private_cash := firm_cash + service_cash (ligacao/legado).
+		// Semeia os sub-saldos a partir dos dois caixas antigos (conversao
+		// flag-ON) ou de um save legado. Preserva o total armazenado e deixa
+		// `firm_sub + service_sub == private_cash` exato. Cada espelho antigo
+		// negativo e zerado (a dívida cruzada nao atravessa o sub-saldo).
+		void seed_subbalances_from_mirrors() {
+			if (!unified_cash) {
+				return;
+			}
+			double total = std::max(0.0, private_cash);
+			const double firm = std::max(0.0, firm_cash);
+			const double service = std::max(0.0, service_cash);
+			const double mirror_total = firm + service;
+			if (total <= 1e-9 && mirror_total > 1e-9) {
+				total = mirror_total;
+			}
+			if (total <= 1e-9) {
+				firm_sub = 0.0;
+				service_sub = 0.0;
+			} else if (mirror_total <= 1e-9) {
+				firm_sub = 0.0;
+				service_sub = total;
+			} else {
+				firm_sub = std::clamp(total * (firm / mirror_total), 0.0,
+					total);
+				service_sub = total - firm_sub;
+			}
+			private_cash = firm_sub + service_sub;
+			firm_cash = firm_sub;
+			service_cash = service_sub;
+		}
+		// Fecha a invariante depois do load (save novo ja traz os sub-saldos):
+		// nao deixa negativo e redistribui o residuo mantendo a proporcao.
+		void normalize_subbalances() {
+			if (!unified_cash) {
+				return;
+			}
+			private_cash = std::max(0.0, private_cash);
+			firm_sub = std::clamp(firm_sub, 0.0, private_cash);
+			service_sub = std::max(0.0, private_cash - firm_sub);
+			const double sum = firm_sub + service_sub;
+			if (std::fabs(sum - private_cash)
+					> 1e-6 * (1.0 + std::fabs(private_cash))) {
+				if (sum > 1e-9) {
+					firm_sub = private_cash * (firm_sub / sum);
+					service_sub = private_cash - firm_sub;
+				} else {
+					firm_sub = 0.0;
+					service_sub = private_cash;
+				}
+			}
+			// A soma exata e a do servico (evita 1 ulp de deriva acumulada).
+			service_sub = private_cash - firm_sub;
+			firm_cash = firm_sub;
+			service_cash = service_sub;
+		}
+		// Espelho/legado: ao converter o caixa separado (OFF) para o pool, o
+		// total nasce da soma e os sub-saldos sao semeados na mesma chamada.
 		void sync_private_cash() {
 			if (unified_cash) {
-				private_cash = firm_cash + service_cash;
+				private_cash = std::max(0.0, firm_cash + service_cash);
+				seed_subbalances_from_mirrors();
 			}
 		}
 		// R1a (t163): registra se o SUB-TETO cortou o pedido do chamador.
 		// `want` e o valor que o chamador queria pagar fora do setor privado.
 		// So conta quando a FATIA e a restricao ativa (modo `off` desliga o
 		// teto e `nonessential` ignora a fatia no pagamento essencial) E a
-		// fatia e menor que o pool: se o pool ja era o limite, o corte nao e
-		// do teto. Mede o que a fatia negou, nao o que o pool ja nao tinha.
+		// fatia e menor que o sub-saldo: se o sub-saldo ja era o limite, o
+		// corte nao e do teto. Mede o que a fatia negou, nao o que o setor
+		// ja nao tinha.
 		void r1_note_external_request(double want, bool firm, bool essential) {
 			if (!unified_cash) {
 				return;
@@ -1974,12 +2056,13 @@ struct Region {
 			const double paid = firm ? firm_external_paid_today
 				: service_external_paid_today;
 			const double share_room = external_payment_base() * share - paid;
-			const double pool = std::max(0.0, private_cash);
+			const double sub_room = firm ? std::max(0.0, firm_sub)
+				: std::max(0.0, service_sub);
 			if (share_room >= want - 1e-9) {
 				return;
 			}
-			// O pool e mais restritivo que a fatia: o corte nao e do teto.
-			if (pool <= share_room + 1e-9) {
+			// O sub-saldo e mais restritivo que a fatia: o corte nao e do teto.
+			if (sub_room <= share_room + 1e-9) {
 				return;
 			}
 			const double gap = want - std::max(0.0, share_room);
@@ -2009,67 +2092,99 @@ struct Region {
 			}
 			return room;
 		}
-		// Debito/credito de um setor. Desligado = a mesma conta de antes;
-		// ligado = mexe no pool e no espelho (transferencia interna entre os
-		// dois cancela o pool). `flow` so alimenta o livro de medicao.
-		void firm_pay(double value, int flow = kR1Other) {
+		// Debito/credito de um setor. Desligado = a mesma conta de antes.
+		// Ligado = autoriza SO ate o sub-saldo do setor (o pagamento pode ser
+		// menor que o pedido; o retorno e o valor efetivamente debitado) e
+		// mantem `firm_sub + service_sub == private_cash`. `flow` so alimenta
+		// o livro de medicao.
+		double firm_pay(double value, int flow = kR1Other) {
+			if (!unified_cash) {
+				if (r1_diag) {
+					r1_firm_out[static_cast<int>(std::clamp(flow, 0,
+						static_cast<int>(kR1FlowCount) - 1))] += value;
+				}
+				firm_cash -= value;
+				return value;
+			}
+			const double paid = std::clamp(value, 0.0,
+				std::max(0.0, firm_sub));
 			if (r1_diag) {
 				r1_firm_out[static_cast<int>(std::clamp(flow, 0,
-					static_cast<int>(kR1FlowCount) - 1))] += value;
+					static_cast<int>(kR1FlowCount) - 1))] += paid;
 			}
-			if (unified_cash) {
-				private_cash -= value;
-			}
-			firm_cash -= value;
+			firm_sub -= paid;
+			private_cash -= paid;
+			firm_cash = firm_sub;
+			return paid;
 		}
-		void firm_receive(double value) {
+		double firm_receive(double value) {
 			if (r1_diag) {
 				r1_firm_in += value;
 			}
 			if (unified_cash) {
+				firm_sub += value;
 				private_cash += value;
+				firm_cash = firm_sub;
+			} else {
+				firm_cash += value;
 			}
-			firm_cash += value;
+			return value;
 		}
-		void service_pay(double value, int flow = kR1Other) {
+		double service_pay(double value, int flow = kR1Other) {
+			if (!unified_cash) {
+				if (r1_diag) {
+					r1_service_out[static_cast<int>(std::clamp(flow, 0,
+						static_cast<int>(kR1FlowCount) - 1))] += value;
+				}
+				service_cash -= value;
+				return value;
+			}
+			const double paid = std::clamp(value, 0.0,
+				std::max(0.0, service_sub));
 			if (r1_diag) {
 				r1_service_out[static_cast<int>(std::clamp(flow, 0,
-					static_cast<int>(kR1FlowCount) - 1))] += value;
+					static_cast<int>(kR1FlowCount) - 1))] += paid;
 			}
-			if (unified_cash) {
-				private_cash -= value;
-			}
-			service_cash -= value;
+			service_sub -= paid;
+			private_cash -= paid;
+			service_cash = service_sub;
+			return paid;
 		}
-		void service_receive(double value) {
+		double service_receive(double value) {
 			if (r1_diag) {
 				r1_service_in += value;
 			}
 			if (unified_cash) {
+				service_sub += value;
 				private_cash += value;
+				service_cash = service_sub;
+			} else {
+				service_cash += value;
 			}
-			service_cash += value;
+			return value;
 		}
 		// Pagamento EXTERNO (fora do setor privado) de um setor. Desligada a
 		// flag e o mesmo `firm_pay`/`service_pay` de antes; ligada, debita o
-		// pool e consome o sub-teto diario daquele setor.
-		void firm_external_pay(double value, int flow = kR1Other) {
+		// sub-saldo e consome o sub-teto diario (experimento) pelo efetivo.
+		double firm_external_pay(double value, int flow = kR1Other) {
 			if (value <= 0.0) {
-				return;
+				return 0.0;
 			}
-			firm_pay(value, flow);
+			const double paid = firm_pay(value, flow);
 			if (unified_cash) {
-				firm_external_paid_today += value;
+				firm_external_paid_today += paid;
 			}
+			return paid;
 		}
-		void service_external_pay(double value, int flow = kR1Other) {
+		double service_external_pay(double value, int flow = kR1Other) {
 			if (value <= 0.0) {
-				return;
+				return 0.0;
 			}
-			service_pay(value, flow);
+			const double paid = service_pay(value, flow);
 			if (unified_cash) {
-				service_external_paid_today += value;
+				service_external_paid_today += paid;
 			}
+			return paid;
 		}
 		// D-126 (save v41) — CRÉDITO DE CAPITAL DE GIRO da cidade (firmas
 		// privadas e serviços, que compartilham o caixa agregado). O passivo é

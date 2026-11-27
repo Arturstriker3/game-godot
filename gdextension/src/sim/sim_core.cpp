@@ -74,17 +74,26 @@ void SimCore::set_regional_cash(bool enabled, int external_subceiling) {
 		// do save).
 		if (enabled && !city.unified_cash) {
 			city.unified_cash = true;
-			// R1a (continuacao): a fatia inicial dos pagamentos externos e a
-			// razao dos dois caixas no instante da fusao (mesma separacao que o
-			// caminho OFF usava); o pendulo mensal a atualiza depois.
+			// Semeadura ANTES da fatia: `measured_firm_revenue_share` le os
+			// sub-saldos quando o pool esta ligado; sincronizar primeiro evita
+			// medir 50/50 com os subs ainda zerados.
+			city.sync_private_cash();
+			// R1a (continuacao): a fatia inicial do experimento t160-t163 e a
+			// razao dos dois caixas no instante da fusao; o pendulo mensal a
+			// atualiza depois.
 			if (city.firm_revenue_share < 0.0) {
 				city.firm_revenue_share =
 					city.measured_firm_revenue_share();
 			}
-			city.sync_private_cash();
-		} else if (!enabled) {
+		} else if (enabled) {
+			// Save/cidade que ja veio com o pool: garante a invariante dos
+			// sub-saldos (idempotente em save novo).
+			city.normalize_subbalances();
+		} else {
 			city.unified_cash = false;
 			city.private_cash = 0.0;
+			city.firm_sub = 0.0;
+			city.service_sub = 0.0;
 			city.firm_revenue_share = -1.0;
 			city.firm_external_paid_today = 0.0;
 			city.service_external_paid_today = 0.0;
@@ -110,9 +119,14 @@ void SimCore::apply_regional_cash_after_load(bool saved_flag,
 		city.external_subceiling = ws_.external_subceiling;
 		if (enabled) {
 			if (!city.unified_cash) {
-				// Save anterior a flag (ou sem a chave): o pool nasce da soma.
+				// Save anterior a flag (ou sem a chave): o pool nasce da soma
+				// e os sub-saldos sao semeados dos dois caixas antigos.
 				city.unified_cash = true;
 				city.sync_private_cash();
+			} else {
+				// Save ON: `normalize_subbalances` fecha a invariante e e
+				// idempotente quando o save ja trouxe os dois sub-saldos.
+				city.normalize_subbalances();
 			}
 			// Save sem a fatia medida (anterior a esta correcao): deriva da
 			// razao dos espelhos, que o load preservou.
@@ -123,6 +137,8 @@ void SimCore::apply_regional_cash_after_load(bool saved_flag,
 		} else {
 			city.unified_cash = false;
 			city.private_cash = 0.0;
+			city.firm_sub = 0.0;
+			city.service_sub = 0.0;
 			city.firm_revenue_share = -1.0;
 			city.firm_external_paid_today = 0.0;
 			city.service_external_paid_today = 0.0;
@@ -1291,10 +1307,22 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 			}
 		};
 		if (city.unified_cash) {
-			// R1a: com um caixa unico, os espelhos por setor podem ficar
-			// negativos (transferencia cruzada registrada); o invariante e o
-			// pool.
+			// R1a: com o pool unico, o dinheiro real e `private_cash` e o
+			// direito de gastar de cada setor e o sub-saldo. Os dois sub-saldos
+			// nunca ficam negativos e a soma TEM de fechar o total (invariante
+			// dura dos sub-saldos virtuais).
 			check_nonneg("private", city.private_cash);
+			check_nonneg("firm_sub", city.firm_sub);
+			check_nonneg("service_sub", city.service_sub);
+			const double sub_sum = city.firm_sub + city.service_sub;
+			const double tolerance = 1e-6 * (1.0 + std::fabs(city.private_cash));
+			if (!std::isfinite(sub_sum)
+					|| std::fabs(sub_sum - city.private_cash) > tolerance) {
+				violations.push_back("sub-saldos nao somam o pool em "
+					+ city.id + ": firm_sub=" + std::to_string(city.firm_sub)
+					+ " service_sub=" + std::to_string(city.service_sub)
+					+ " private_cash=" + std::to_string(city.private_cash));
+			}
 		} else {
 			check_nonneg("firm", city.firm_cash);
 			check_nonneg("service", city.service_cash);

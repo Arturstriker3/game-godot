@@ -108,9 +108,9 @@ void SimCore::phase_labor() {
 					* operating * opex_scale * liquidity;
 			}
 			const double paid_opex = opex_total * opex_scale;
-			city.firm_pay(paid_opex);
-			city.service_receive(paid_opex);
-			city.opex_revenue = paid_opex;
+			const double opex_paid = city.firm_pay(paid_opex);
+			city.service_receive(opex_paid);
+			city.opex_revenue = opex_paid;
 		}
 	};
 	pool().parallel_for(ws_.cities.size(), process_city);

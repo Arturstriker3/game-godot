@@ -1,13 +1,18 @@
 // R1a - caixa unico regional (flag `rework.regional_cash`).
 //
 // Garantias, com o fixture `pocket_world` e o MESMO caminho do save real:
-//   a) a fusao dos dois caixas conserva o total (money_total nao muda);
-//   b) uma transferencia interna (firmas -> servicos) e NO-OP monetario e
-//      continua registrada na estatistica por setor;
-//   c) o save/load com a flag ON preserva bit-a-bit o documento, e com a flag
-//      OFF o documento nao ganha a chave `private_cash` (save anterior);
-//   d) o sub-teto externo por setor usa a fatia da receita e nao consome em
-//      transferencia interna; a base investivel da IA e pool x fatia.
+//   a) a fusao dos dois caixas conserva o total (money_total nao muda) e os
+//      sub-saldos virtuais nascem dos caixas antigos;
+//   b) a invariante DURA `firm_sub + service_sub == private_cash` vale em
+//      credito, debito e transferencia interna;
+//   c) o debito de cada setor e autorizado SO ate o seu sub-saldo (o pedido
+//      pode ser maior; o retorno e o efetivamente pago; nada fica negativo);
+//   d) transferencia interna (firmas <-> servicos) move valor entre os
+//      sub-saldos e e no-op monetario no total;
+//   e) o save/load com a flag ON preserva bit-a-bit o documento (com os dois
+//      sub-saldos) e com a flag OFF o documento nao ganha chave nova;
+//   f) o experimento t160-t163 (sub-teto externo por fatia) segue no codigo,
+//      mas nunca libera acima do sub-saldo e o default e `off`.
 #include "doctest/doctest.h"
 #include "pocket_world.h"
 
@@ -30,9 +35,19 @@ void seed_cash(ogs::test::PocketWorld& world, double firm, double service) {
 	}
 }
 
+void check_sub_invariant(const ogs::City& city) {
+	CHECK(city.firm_sub >= -1e-9);
+	CHECK(city.service_sub >= -1e-9);
+	CHECK(city.firm_sub + city.service_sub
+		== Approx(city.private_cash).epsilon(1e-9));
+	// Os espelhos publicados acompanham os sub-saldos no ON.
+	CHECK(city.firm_cash == Approx(city.firm_sub));
+	CHECK(city.service_cash == Approx(city.service_sub));
+}
+
 } // namespace
 
-TEST_CASE("R1a: fusao do caixa conserva o total") {
+TEST_CASE("R1a: fusao do caixa conserva o total e semeia os sub-saldos") {
 	ogs::test::PocketWorld world;
 	seed_cash(world, 50000.0, 30000.0);
 	const double before = world.core.money_total();
@@ -44,8 +59,10 @@ TEST_CASE("R1a: fusao do caixa conserva o total") {
 	for (const ogs::City& city : world.ws.cities) {
 		CHECK(city.unified_cash);
 		CHECK(city.private_cash == Approx(80000.0));
-		// A soma dos espelhos continua igual ao pool (invariante do status).
-		CHECK(city.firm_cash + city.service_cash == Approx(city.private_cash));
+		// Semeadura: firm_sub/service_sub a partir dos caixas antigos.
+		CHECK(city.firm_sub == Approx(50000.0));
+		CHECK(city.service_sub == Approx(30000.0));
+		check_sub_invariant(city);
 	}
 
 	// Desligar devolve o estado anterior: os dois caixas intactos e o pool 0.
@@ -55,30 +72,92 @@ TEST_CASE("R1a: fusao do caixa conserva o total") {
 	for (const ogs::City& city : world.ws.cities) {
 		CHECK_FALSE(city.unified_cash);
 		CHECK(city.private_cash == Approx(0.0));
+		CHECK(city.firm_sub == Approx(0.0));
+		CHECK(city.service_sub == Approx(0.0));
 	}
 }
 
-TEST_CASE("R1a: transferencia interna e no-op monetario") {
+TEST_CASE("R1a: credito por origem mantem a invariante dos sub-saldos") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	world.core.set_regional_cash(true);
+	ogs::City& city = world.ws.cities[0];
+	const double total_before = world.core.money_total();
+
+	// Receita de bens -> firm_sub; receita de servicos -> service_sub.
+	city.firm_receive(1000.0);
+	CHECK(city.firm_sub == Approx(51000.0));
+	CHECK(city.service_sub == Approx(30000.0));
+	CHECK(city.private_cash == Approx(81000.0));
+	check_sub_invariant(city);
+
+	city.service_receive(2000.0);
+	CHECK(city.firm_sub == Approx(51000.0));
+	CHECK(city.service_sub == Approx(32000.0));
+	CHECK(city.private_cash == Approx(83000.0));
+	check_sub_invariant(city);
+	CHECK(world.core.money_total() == Approx(total_before + 3000.0));
+}
+
+TEST_CASE("R1a: debito autorizado so ate o sub-saldo (sem negativo)") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	world.core.set_regional_cash(true);
+	ogs::City& city = world.ws.cities[0];
+
+	// Pedido maior que o saldo da firma: paga o que existe, nao fica negativo
+	// e nao consome o sub-saldo dos servicos.
+	const double paid_firm = city.firm_pay(60000.0);
+	CHECK(paid_firm == Approx(50000.0));
+	CHECK(city.firm_sub == Approx(0.0));
+	CHECK(city.service_sub == Approx(30000.0));
+	CHECK(city.private_cash == Approx(30000.0));
+	check_sub_invariant(city);
+
+	// Mesma regra para os servicos: autoriza ate service_sub.
+	const double paid_service = city.service_pay(99999.0);
+	CHECK(paid_service == Approx(30000.0));
+	CHECK(city.firm_sub == Approx(0.0));
+	CHECK(city.service_sub == Approx(0.0));
+	CHECK(city.private_cash == Approx(0.0));
+	check_sub_invariant(city);
+
+	// Zero disponivel: o pedido nao move dinheiro nem cria saldo negativo.
+	CHECK(city.firm_pay(10.0) == Approx(0.0));
+	CHECK(city.service_pay(10.0) == Approx(0.0));
+	CHECK(city.private_cash == Approx(0.0));
+	check_sub_invariant(city);
+}
+
+TEST_CASE("R1a: transferencia interna move o sub-saldo sem criar dinheiro") {
 	ogs::test::PocketWorld world;
 	seed_cash(world, 50000.0, 30000.0);
 	world.core.set_regional_cash(true);
 	ogs::City& city = world.ws.cities[0];
 	const double total_before = world.core.money_total();
 	const double pool_before = city.private_cash;
-	const double firm_before = city.firm_cash;
-	const double service_before = city.service_cash;
 
-	// Transferencia interna artificial (o mesmo par pay/receive usado por opex,
-	// insumos de servico, frete e construcao): firmas pagam servicos.
+	// O mesmo par pay/receive usado por opex, insumos de servico, frete e
+	// construcao: firmas pagam servicos.
 	const double amount = 12000.0;
-	city.firm_pay(amount);
-	city.service_receive(amount);
+	const double firm_paid = city.firm_pay(amount);
+	CHECK(firm_paid == Approx(amount));
+	city.service_receive(firm_paid);
 
 	CHECK(city.private_cash == Approx(pool_before));
 	CHECK(world.core.money_total() == Approx(total_before));
-	// A estatistica por setor registra o fluxo (pode ate ficar negativa).
-	CHECK(city.firm_cash == Approx(firm_before - amount));
-	CHECK(city.service_cash == Approx(service_before + amount));
+	CHECK(city.firm_sub == Approx(38000.0));
+	CHECK(city.service_sub == Approx(42000.0));
+	check_sub_invariant(city);
+
+	// E o inverso: servicos compram insumos das firmas.
+	const double service_paid = city.service_pay(5000.0);
+	CHECK(service_paid == Approx(5000.0));
+	city.firm_receive(service_paid);
+	CHECK(city.private_cash == Approx(pool_before));
+	CHECK(city.firm_sub == Approx(43000.0));
+	CHECK(city.service_sub == Approx(37000.0));
+	check_sub_invariant(city);
 
 	// Desligado, a mesma chamada NAO toca no pool e cada setor paga o seu.
 	world.core.set_regional_cash(false);
@@ -109,13 +188,16 @@ TEST_CASE("R1a: save/load com a flag ON e OFF e bit-exato") {
 		for (const ogs::City& city : target.ws.cities) {
 			CHECK_FALSE(city.unified_cash);
 			CHECK(city.private_cash == Approx(0.0));
+			CHECK(city.firm_sub == Approx(0.0));
+			CHECK(city.service_sub == Approx(0.0));
 		}
 		const std::string after = ogs::save::dump_json(
 			ogs::save::to_value(target.ws, target.core));
 		CHECK(after == before);
 	}
 
-	// ON: o documento carrega a flag e o pool; o roundtrip e bit-exato.
+	// ON: o documento carrega a flag, o pool e os dois sub-saldos; o roundtrip
+	// e bit-exato.
 	{
 		ogs::test::PocketWorld world;
 		seed_cash(world, 50000.0, 30000.0);
@@ -133,6 +215,9 @@ TEST_CASE("R1a: save/load com a flag ON e OFF e bit-exato") {
 		for (const ogs::City& city : target.ws.cities) {
 			CHECK(city.unified_cash);
 			CHECK(city.private_cash == Approx(80000.0));
+			CHECK(city.firm_sub == Approx(50000.0));
+			CHECK(city.service_sub == Approx(30000.0));
+			check_sub_invariant(city);
 		}
 		const std::string after = ogs::save::dump_json(
 			ogs::save::to_value(target.ws, target.core));
@@ -140,41 +225,70 @@ TEST_CASE("R1a: save/load com a flag ON e OFF e bit-exato") {
 	}
 }
 
-TEST_CASE("R1a: sub-teto externo por setor usa a fatia da receita") {
+TEST_CASE("R1a: save legado ON sem sub-saldos e semeado dos espelhos") {
+	// Um save ON anterior a correcao tem `private_cash` e os espelhos, mas nao
+	// `firm_sub`/`service_sub`. O load semeia dos espelhos e preserva o total.
 	ogs::test::PocketWorld world;
 	seed_cash(world, 50000.0, 30000.0);
 	world.core.set_regional_cash(true);
 	ogs::City& city = world.ws.cities[0];
+	// Estado que o load legado deixa: pool + espelhos, sub-saldos ausentes.
+	city.firm_sub = 0.0;
+	city.service_sub = 0.0;
+	city.firm_cash = 50000.0;
+	city.service_cash = 30000.0;
+	city.private_cash = 80000.0;
+	city.seed_subbalances_from_mirrors();
+	CHECK(city.firm_sub == Approx(50000.0));
+	CHECK(city.service_sub == Approx(30000.0));
+	CHECK(city.private_cash == Approx(80000.0));
+	check_sub_invariant(city);
+
+	// Espelho negativo no save legado: a divida cruzada nao atravessa o
+	// sub-saldo; o total permanece e o setor negativo zera.
+	city.firm_cash = -2000.0;
+	city.service_cash = 82000.0;
+	city.private_cash = 80000.0;
+	city.seed_subbalances_from_mirrors();
+	CHECK(city.firm_sub == Approx(0.0));
+	CHECK(city.service_sub == Approx(80000.0));
+	CHECK(city.private_cash == Approx(80000.0));
+	check_sub_invariant(city);
+}
+
+TEST_CASE("R1a: sub-teto externo por setor usa a fatia da receita") {
+	ogs::test::PocketWorld world;
+	seed_cash(world, 50000.0, 30000.0);
+	// Experimento t160-t163 explicito: o default agora e `off`.
+	world.core.set_regional_cash(true, 1);
+	ogs::City& city = world.ws.cities[0];
 	CHECK(city.unified_cash);
-	// A fatia nasce da razao dos caixas (50k de 80k) e o pool e 80k.
+	// A fatia nasce da razao dos sub-saldos (50k de 80k) e o pool e 80k.
 	CHECK(city.measured_firm_revenue_share() == Approx(0.625));
 	CHECK(city.firm_external_room() == Approx(50000.0));
 	CHECK(city.service_external_room() == Approx(30000.0));
 
-	// Transferencia INTERNA nao consome o sub-teto (continua no-op monetario).
+	// Transferencia INTERNA move os sub-saldos; a fatia nao muda, mas o teto
+	// efetivo nunca passa do sub-saldo.
 	city.firm_pay(10000.0);
 	city.service_receive(10000.0);
 	CHECK(city.private_cash == Approx(80000.0));
-	CHECK(city.firm_external_room() == Approx(50000.0));
+	CHECK(city.firm_external_room() == Approx(40000.0));
 	CHECK(city.service_external_room() == Approx(30000.0));
 
-	// Pagamento EXTERNO das firmas consome o teto do setor e o pool. A base do
-	// dia (pool + pago) nao encolhe com o proprio pagamento.
+	// Pagamento EXTERNO das firmas consome o teto do setor e o sub-saldo.
 	city.firm_external_pay(20000.0);
 	CHECK(city.private_cash == Approx(60000.0));
 	CHECK(city.firm_external_paid_today == Approx(20000.0));
-	CHECK(city.firm_external_room() == Approx(30000.0));
+	CHECK(city.firm_external_room() == Approx(20000.0));
 	CHECK(city.service_external_room() == Approx(30000.0));
-	// Os dois tetos somam o pool restante: nenhum setor drena o outro.
-	CHECK(city.firm_external_room() + city.service_external_room()
-		== Approx(city.private_cash));
 
-	// O servico paga a fatia dele DEPOIS da firma. O teto da firma nao pode
-	// ultrapassar o pool que sobrou (o pagamento do outro setor ja saiu).
+	// O servico paga a fatia dele DEPOIS da firma, sempre limitado ao saldo.
 	city.service_external_pay(30000.0);
 	CHECK(city.private_cash == Approx(30000.0));
 	CHECK(city.service_external_room() == Approx(0.0));
-	CHECK(city.firm_external_room() == Approx(30000.0));
+	CHECK(city.firm_external_room() == Approx(20000.0));
+	check_sub_invariant(city);
 
 	// Desligado: o teto volta a ser o proprio caixa (caminho antigo).
 	world.core.set_regional_cash(false);
@@ -188,25 +302,26 @@ TEST_CASE("R1a: sub-teto externo por setor usa a fatia da receita") {
 	CHECK(off_city.firm_external_paid_today == Approx(0.0));
 }
 
-TEST_CASE("R1a: sub-teto externo off e isencao de essencial") {
-	// Modo "off": sem sub-teto. O teto volta a ser o pool que existe - os dois
-	// setores leem o mesmo pool (nunca o dinheiro duas vezes, porque o
-	// pagamento sai do pool).
+TEST_CASE("R1a: sub-teto externo off (default) e isencao de essencial") {
+	// Modo "off" (default): sem teto por fatia. O teto e o sub-saldo do setor
+	// — os dois nunca leem o dinheiro um do outro.
 	{
 		ogs::test::PocketWorld world;
 		seed_cash(world, 50000.0, 30000.0);
-		world.core.set_regional_cash(true, 0);
+		world.core.set_regional_cash(true);
 		ogs::City& city = world.ws.cities[0];
 		CHECK(city.external_subceiling == 0);
-		CHECK(city.firm_external_room() == Approx(80000.0));
-		CHECK(city.service_external_room() == Approx(80000.0));
-		city.firm_external_pay(30000.0);
-		CHECK(city.private_cash == Approx(50000.0));
 		CHECK(city.firm_external_room() == Approx(50000.0));
-		CHECK(city.service_external_room() == Approx(50000.0));
+		CHECK(city.service_external_room() == Approx(30000.0));
+		const double paid = city.firm_external_pay(30000.0);
+		CHECK(paid == Approx(30000.0));
+		CHECK(city.private_cash == Approx(50000.0));
+		CHECK(city.firm_external_room() == Approx(20000.0));
+		CHECK(city.service_external_room() == Approx(30000.0));
+		check_sub_invariant(city);
 	}
 	// Modo "nonessential": pagamento comum usa a fatia; o pagamento da cesta
-	// alimentar (`essential=true`) usa o pool inteiro.
+	// alimentar (`essential=true`) usa o sub-saldo inteiro (nunca o pool).
 	{
 		ogs::test::PocketWorld world;
 		seed_cash(world, 50000.0, 30000.0);
@@ -215,20 +330,21 @@ TEST_CASE("R1a: sub-teto externo off e isencao de essencial") {
 		CHECK(city.external_subceiling == 2);
 		CHECK(city.firm_external_room(false) == Approx(50000.0));
 		CHECK(city.service_external_room(false) == Approx(30000.0));
-		CHECK(city.firm_external_room(true) == Approx(80000.0));
-		CHECK(city.service_external_room(true) == Approx(80000.0));
-		// O essencial consome o pool; o que sobra e o novo teto de todos.
+		CHECK(city.firm_external_room(true) == Approx(50000.0));
+		CHECK(city.service_external_room(true) == Approx(30000.0));
+		// O essencial consome o sub-saldo da firma; o servico segue intacto.
 		city.firm_external_pay(40000.0);
 		CHECK(city.private_cash == Approx(40000.0));
-		CHECK(city.firm_external_room(true) == Approx(40000.0));
-		CHECK(city.service_external_room(true) == Approx(40000.0));
+		CHECK(city.firm_external_room(true) == Approx(10000.0));
+		CHECK(city.service_external_room(true) == Approx(30000.0));
+		check_sub_invariant(city);
 	}
 }
 
 TEST_CASE("R1a: pendulo mensal da fatia usa a receita do dia") {
 	ogs::test::PocketWorld world;
 	seed_cash(world, 50000.0, 30000.0);
-	world.core.set_regional_cash(true);
+	world.core.set_regional_cash(true, 1);
 	ogs::City& city = world.ws.cities[0];
 	REQUIRE(world.ws.products > 0);
 	const int product = 0;
@@ -244,7 +360,7 @@ TEST_CASE("R1a: pendulo mensal da fatia usa a receita do dia") {
 	CHECK(city.service_external_paid_today == Approx(0.0));
 }
 
-TEST_CASE("R1a: base investivel da IA nao dobra com o pool") {
+TEST_CASE("R1a: base investivel da IA usa o sub-saldo, sem duplo desconto") {
 	ogs::test::PocketWorld world;
 	seed_cash(world, 50000.0, 30000.0);
 	world.core.set_regional_cash(true);
@@ -252,10 +368,9 @@ TEST_CASE("R1a: base investivel da IA nao dobra com o pool") {
 	ogs::snapshot_ai_view(world.ws, world.core, view, nullptr);
 	REQUIRE(view.city_rows.size() == world.ws.cities.size());
 	const ogs::AiCityRow& row = view.city_rows[0];
-	// A visao publica o pool e a fatia; a base efetiva do investidor e o
-	// produto (o antigo caixa das firmas), nunca o pool inteiro.
-	CHECK(row.firm_cash == Approx(80000.0));
-	CHECK(row.firm_revenue_share == Approx(0.625));
+	// A visao publica o sub-saldo das firmas (nao o pool); a fatia fica 1,0.
+	CHECK(row.firm_cash == Approx(50000.0));
+	CHECK(row.firm_revenue_share == Approx(1.0));
 	CHECK(row.firm_cash * row.firm_revenue_share == Approx(50000.0));
 
 	// Desligado, a visao e a base antiga (fatia 1, caixa das firmas).

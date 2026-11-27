@@ -2199,6 +2199,8 @@ Dictionary EconomySim::get_r1_diag_status() {
 		row["nation"] = String(city.nation.c_str());
 		row["unified"] = city.unified_cash;
 		row["private_cash"] = city.private_cash;
+		row["firm_sub"] = city.firm_sub;
+		row["service_sub"] = city.service_sub;
 		row["firm_cash"] = city.firm_cash;
 		row["service_cash"] = city.service_cash;
 		row["firm_in"] = city.r1_firm_in;
