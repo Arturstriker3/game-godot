@@ -29,8 +29,8 @@
 >
 > | # | rev2 dizia | rev3 passa a dizer |
 > | --- | --- | --- |
-> | 1 | seed público 2,0 M no dia 0 (piso 3 d) e total 5,6 M | **seed público = 0 no dia 0** (o Tesouro nasce vazio: dia 1 = 73.458,41); primeira capitalização no **fecho do 1º mês** (dia 30) = `min(alvo_restante, 0,10 × max(0, saldo − piso 3 d))`, com ticket mínimo de 25% do alvo restante; alvo público (4,05 M) completo no **dia 90** com os saldos medidos. Seed privado 3,6 M **inalterado** |
-> | 2 | convergência 5,6 M / ~0,4 ano; sem seed ~1,1 ano | com o seed público adiado: **~83–103 d (0,23–0,28 ano)** para `equity/loans ≥ 10%`; sem seed público algum o número é **0,73 ano** (QA confirmado: o `equity` do dia 0 é 0; o 0,857 M do rev2 era o resultado do dia 365 e encurtava a reta). Os 5,6 M / 0,4 ano ficam superados |
+> | 1 | seed público 2,0 M no dia 0 (piso 3 d) e total 5,6 M | **seed público = 0 no dia 0** (o Tesouro nasce vazio: dia 1 = 73.458,41); primeira capitalização no **fecho do 1º mês** (dia 30) = `min(alvo_restante, 0,10 × max(0, saldo − piso 3 d))`, com ticket mínimo de 25% do alvo restante; **medido**: 4,47 M no 1º fecho e 4,58 M até o dia 365 (alvo capitalizável 13,97 M). Seed privado **6,79 M** |
+> | 2 | convergência 5,6 M / ~0,4 ano; sem seed ~1,1 ano | **medido**: `equity/loans` 12,7% no dia 90 e 12,5% no dia 365 (meta 10% batida antes do dia 90) com o seed privado + o fluxo público; as projeções lineares (83–103 d, 0,73 ano) usavam o alvo 9,0 M e ficam superadas |
 > | 3 | saque no mesmo dia só em `private_liquidity`/`firm_liquidity` | **contrato único**: todo caminho que avalia capacidade de pagamento ou cobra lê **caixa + claim sacável no dia**, ordem **caixa primeiro, depósito depois**, saque atômico refletido em claim/ledger; `*_room`, servicing de grupo, safra e C6 incluídos — tabela de integração R2b1 (§4.6) |
 > | 4 | gate "M0 idêntico ao ledger" | gate compara **`M0_gross = T − ΣD_l`** (publicado) com **`M0_net = M0_gross − monetary_claims`** (campo do ledger) e a **ponte `monetary_claims`**; no LoLR, `M0_gross` sobe 20, `monetary_claims` sobe 20 e `M0_net` fica em 0 (§2.7) |
 >
@@ -271,8 +271,9 @@ Por que `M1_legacy` cai e `broad` fica constante no sweep: o caixa que virou
 reserva saiu do "dinheiro fora dos bancos" (−D_f) e o claim entrou (+D_f). O
 `m1` atual não enxerga o claim; por isso o rev1 não podia prometer M1 constante.
 O `m1` **publicado** continua sendo `M1_legacy` para não quebrar UI/save; o status
-ganha `broad_money`, `deposits_funding`, `m0_loan_deposits`, `m0_gross` e
-`monetary_claims`. O campo `Ledger.monetary_base` (e a chave `monetary_base` do
+ganha `broad_money`, `deposits_funding`, `m0_gross` e
+`monetary_claims`. `ΣD_l` **não** tem chave própria: é `T − m0_gross` (o nome
+`m0_loan_deposits` do rev2 saiu do contrato — o gate deriva da identidade). O campo `Ledger.monetary_base` (e a chave `monetary_base` do
 status) continua no save, mas é documentado como **`M0_net`**: ele sempre foi
 `M0_gross − monetary_claims` (`balance.cpp:123-125`), não a base bruta.
 
@@ -450,11 +451,11 @@ A rev2 **não** usa `gdp_ppp_bn` para o nível do seed.
 | Alvo | Fórmula | Valor medido | Papel |
 | --- | --- | ---: | --- |
 | **Alvo de referência** (dado real) | `capital_pct_gdp_i × PIB_anual_i` | **2,40 bi** (10% de 24,01 bi) | gap publicado (`reference_gap`); **não** é seed |
-| **Alvo do modelo** (convergência) | `capital_to_loans_target × carteira_steady_i` | **9,0 M** (10% de 89,9 M) | alvo do seed e da retenção |
+| **Alvo do modelo** (convergência) | `capital_to_loans_target × carteira_steady_i` | **14,15 M** (10% de 141,5 M); **13,97 M** capitalizáveis (7 nações sem papel `present`) | alvo do seed e da retenção |
 
 A referência real é 36,6% de todo o dinheiro do mundo (2,40/6,56) e 7,25× a
 arrecadação anual do Tesouro (331 M); a parte pública (1,08 bi) é 3,26×. O alvo
-do modelo é 0,14% do dinheiro. O R2
+do modelo é **0,22%** do dinheiro. O R2
 capitaliza para o alvo do modelo; a referência fica como **gap honesto** no status,
 não como injeção.
 
@@ -464,12 +465,12 @@ não como injeção.
 `present` (§10.4), com as shares renormalizadas. O seed é **realocação**: debita o
 dono e credita `bank.cash`/`bank.capital`; `money_total` antes = depois.
 
-| Papel | Share do alvo (9,0 M) | Fonte | Medida | Seed no dia 0 | Capitalização |
+| Papel | Share do alvo (13,97 M capitalizáveis) | Fonte | Medida | Seed no dia 0 | Capitalização |
 | --- | ---: | --- | ---: | ---: | --- |
-| Público | 45% = 4,05 M | `nation_treasury` (`treasury::spend`) | saldo dia 1 = **73.458,41**; dia 29 = 13.794.732,24; gasto/dia ≈ 0,894 M; piso 3 d = 2,68 M | **0** | 1,11 M no dia 30; 2,61 M no dia 60; 0,33 M no dia 90 → **4,05 M** |
-| Privado | 40% = 3,60 M | `pop.savings` (`pay_from_households`) | caixa das famílias no dia 1 = 4,10 bi (365 d: 8,35 bi); 3,6 M = **0,088%** | **3,6 M** | inalterado |
-| Estrangeiro | 15% = 1,35 M | `foreign_cash` | posição **−7,26 bi** | **0** | 0 |
-| **Total** | 9,0 M | — | — | **3,6 M** (40% do alvo) | **7,65 M** (85%) até o dia 90 |
+| Público | 45% ≈ **4,58 M** | `nation_treasury` (`treasury::spend`) | saldo do Tesouro no 1º fecho; gasto/dia medido pelo próprio acumulado | **0** | **4,47 M no dia 30** e **4,58 M no dia 365** (medido no gate 365 d: 11.378.126 − 6.794.778) |
+| Privado | 40% ≈ **6,79 M** | `pop.savings` (`pay_from_households`) | famílias da própria nação; sem emissão | **6,79 M** | inalterado |
+| Estrangeiro | 15% ≈ **2,60 M** | `foreign_cash` | posição **−7,26 bi**; sem caixa de origem | **0** | 0 |
+| **Total** | **13,97 M** (14,15 M somados; 0,18 M em nações sem papel `present`) | — | — | **6,79 M** (49%) | **11,38 M** (81%) até o dia 365 |
 
 - **Seed público = 0 no dia 0.** `initialize_world` **não** capitaliza o papel
   público; o Tesouro nasce vazio (dia 1 = 73.458,41, QA t187). Qualquer valor
@@ -487,61 +488,50 @@ dono e credita `bank.cash`/`bank.capital`; `money_total` antes = depois.
   público roda **antes** de `treasury::start_month` (`treasury.cpp:81`, chamado em
   `city_gov.cpp:610`): o limite do mês
   enxerga o saldo pós-seed, então o corte é explícito e não cria despesa adiada.
-  Com os saldos medidos: 10% × (13,79 − 2,68) = **1,11 M** no dia 30 (8,1% do
-  orçamento do mês; o Tesouro fica com 12,68 M = 14,2 dias de gasto, acima do
-  piso de 3 d).
+  **Medido no gate 365 d ON-capital:** o 1º fecho (dia 30) pagou **4,47 M** dos
+  4,58 M do alvo público (97,5%, porque o Tesouro acumulado do mundo real é maior
+  que o modelo do rev3 previa) e o restante fechou até o dia 365. Os valores do
+  rev3 (1,11/2,61/0,33 M) vinham de saldos do R1b de outro baseline e ficam
+  **superados**.
 - Se o saldo do mês não passar de `piso + ticket mínimo`, a capitalização é
   **postergada** para o mês seguinte — estado declarado no status
   (`public_cap_deferred`), não falha do gate.
 - `seed_scale_i = semeado_i / alvo_modelo_i` (publicado por banco e agregado;
-  dia 0 = 0,40; dia 90 = 0,85). `reference_scale_i = capital_i /
-  alvo_referência_i` (publicado; será ~0,2%).
+  medido: dia 0 = **0,48** — só o privado — e dia 365 = **0,81**).
+  `reference_scale_i = capital_i / alvo_referência_i` (publicado; ~0,2%).
 - O seed público usa `treasury::spend` quando `national_treasury` está ON
   (`treasury.cpp:44-61`); **nunca** `government_budget` como caixa (o código atual
   faz isso em `bank.cpp:596` e em `pay_from_government`, `bank_crisis.cpp:81-84` —
   os dois têm de mudar no R2).
 - Piso do Tesouro = `floor_days × gasto_diário` (declarado; default 3 d); o dono
-  escolhe 0/3/7 d na P1. Os saldos acima são os medidos em `fix5_on365.json`
-  (R1b 365 d ON); **o gate do R2a remede dia 0/30/60/90 no baseline final
-  (`81eccf2a…`) antes de publicar `seed_scale`.**
+  escolhe 0/3/7 d na P1. Os números medidos são do gate do R2a (run 365 d
+  ON-capital, base `81eccf2a…`), não de `fix5_on365.json`.
 - Sem emissão para cobrir seed. Se o caixa do dono não basta, `seed_scale < 1` e o
   déficit fica publicado.
 
-### 3.4 Convergência (o número que fecha, com o seed público adiado)
+### 3.4 Convergência (medida no gate)
 
-**Ponto de partida corrigido — `equity` no dia 0 = 0.** Em mundo novo o banco
-nasce com `cash = loans = deposits = 0` (`r1b_on1.json`, dia 1; no dia 10 o
-`equity` já é 238). O **0,857 M do rev2 é o resultado do 365º dia**, não o ponto
-de partida; usá-lo como dia 0 encurtava a convergência em ~0,12 ano. O QA t187
-usou 0 implicitamente (`9,0 − 3,6 = 5,4 → 0,73 ano`) e está **certo** no modelo
-linear. Medido: alvo do modelo 9,0 M; lucro anual antes do dividendo = `dividends
-6,54 M + retained 0,86 M` = **7,40 M** (20,27 mil/dia, no steady state; no dia 0
-o lucro é 0 e sobe — a curva real é **mais lenta** que a reta, e o gate mede).
+**Ponto de partida corrigido — `equity` no dia 0 = 0 em mundo novo** (antes do
+seed; o banco nasce com `cash = loans = deposits = 0`). O seed privado entra no
+dia 0: **6,79 M** de `pop.savings` (49% do alvo capitalizável). O público entra
+pelo fluxo mensal (§3.3). O gate 365 d ON-capital mediu a curva real:
 
-Retendo 100% (o R2a não distribui abaixo da meta):
+| Dia | `equity` | carteira | `equity/loans` | capital pago |
+| ---: | ---: | ---: | ---: | ---: |
+| 0 | 6,79 M (seed privado) | 0 | — | 6,79 M |
+| 30 | 12,35 M | 4,64 M | 266% | 11,27 M |
+| 60 | 11,64 M | 31,01 M | 37,5% | 11,27 M |
+| 90 | 11,89 M | 93,59 M | **12,7%** | 11,27 M |
+| 365 | 18,59 M | 148,55 M | **12,5%** | 11,38 M |
 
-| Cenário | `equity` no dia 0 | Seed público | `equity/loans ≥ 10%` em | Anos |
-| --- | ---: | ---: | ---: | ---: |
-| Sem seed nenhum | 0 | 0 | dia 444 | **1,22** |
-| Só o seed privado (3,6 M) | 3,6 M | 0 | dia 266 | **0,73** |
-| **rev3** (privado 3,6 M + público pela regra §3.3) | 3,6 M | 1,11 M (d30) + 2,61 M (d60) + 0,33 M (d90) | **~dia 83** com os saldos medidos; até **~dia 103** se o saldo do 2º mês ficar no nível do 1º | **0,23–0,28** |
-
-- **QA confirmado:** o 0,73 ano do re-QA é o número correto para "só privado"
-  (`5,4 / 7,40 = 0,730`). O rev2 errava dos dois lados: 1,1 ano (sem seed) e
-  0,4 ano (com 5,6 M) usavam 0,857 M no dia 0, que é o **fim** do ano, não o
-  começo. Os 5,6 M / 0,4 ano ficam **superados**.
-- **rev3, com os saldos medidos:** dia 0 = 3,6; dia 30 = `3,6 + 0,608 + 1,111 =
-  5,319`; dia 60 = `5,319 + 0,608 + 2,610 = 8,537`; gap 0,463 → ~23 dias de
-  retenção → **~dia 83**. No dia 90 o alvo público completa (4,05 M) e o
-  `equity` chega a **9,47 M** (9,47 / 89,9 = 10,5%), com 0 emissão.
-- **Caso conservador** (2º mês com o saldo do 1º): dia 60 = `3,6 + 1,216 +
-  1,111 + 1,111 = 7,038`; dia 90 = `7,038 + 0,608 + 1,111 = 8,757`; gap 0,243 →
-  ~12 dias → **~dia 102** (0,28 ano).
-- O modelo é linear e usa o lucro de steady state desde o dia 0; os dois números
-  são **piso** de convergência. O gate do R2a mede a curva real e publica
-  `equity/loans` por mês; o alvo de ≤24 meses continua folgado.
-- **O seed não é o mecanismo principal**: mesmo sem público, a retenção fecha em
-  0,73 ano. O público encurta a primeira metade.
+- A meta de 10% (`equity/loans`) é atingida **antes do dia 90** com os números
+  medidos. O braço 90 d ON-capital+depósitos mede 14,1% no dia 90.
+- As projeções lineares do rev3 (83–103 d; 0,73 ano só com o privado; lucro de
+  steady state 7,40 M) usavam alvo 9,0 M e saldos de outro baseline — ficam
+  **superadas**; este quadro é a medição.
+- O seed não é o mecanismo principal: a retenção responde pela maior parte de
+  `equity`, e `seed_scale` mede 0,81 no dia 365 (o estrangeiro de 2,60 M não tem
+  caixa de origem e nunca é capitalizado).
 
 ### 3.5 Capitalização pública dentro do Tesouro real
 
@@ -551,16 +541,17 @@ Retendo 100% (o R2a não distribui abaixo da meta):
 - Fechos mensais medidos (`fix5_on365`, antes do limite do mês): dia 29 = 13,79 M;
   dia 59 = 28,79 M; dia 89 = 31,96 M; dia 119 = 32,00 M. Acima do piso de 3 d:
   11,11 M / 26,10 M / 29,27 M.
-- Pela regra §3.3 (X = 0,10): **1,11 M no dia 30** (27% do alvo público; 8,1% do
-  orçamento do mês), **2,61 M no dia 60** e **0,33 M no dia 90** → alvo público
-  de 4,05 M completo em 3 meses, sem emissão e sem vender título sem comprador.
-  O total público é **1,2% da receita anual**, diluído no fluxo; nunca é 86% de
-  um saldo que não existe.
+- Pela regra §3.3 (X = 0,10): **medido no gate 365 d ON-capital**, o 1º fecho
+  (dia 30) pagou **4,47 M** do alvo público de 4,58 M e o restante fechou até o
+  dia 365 — sem emissão e sem vender título sem comprador. O total público é
+  **~1,4% da receita anual**, diluído no fluxo; nunca é 86% de um saldo que não
+  existe. Os números do rev3 (1,11/2,61/0,33 M; 4,05 M) vinham de outro baseline
+  de Tesouro e ficam **superados**.
 - **Custo declarado:** cada capitalização corta o orçamento regional do mês em
-  `X × (saldo − piso)` (1,11 M de 13,79 M no 1º mês). O gate do R2a mede comida
-  contra o R1b; se piorar (>1 nação no portão), `X` cai para 0,05 ou o piso sobe
-  para 7 d — a capitalização **posterga**, não cancela, e `public_cap_deferred`
-  registra o motivo.
+  `X × (saldo − piso)`. O gate do R2a mediu comida e falências contra o R1b; se
+  piorar (>1 nação no portão), `X` cai para 0,05 ou o piso sobe para 7 d — a
+  capitalização **posterga**, não cancela, e `public_cap_deferred` registra o
+  motivo.
 - O alvo de referência público (1,08 bi) é **3,26× a receita anual**; está fora do
   R2 por decisão, não por falta de dado — é o `reference_gap`.
 
@@ -574,7 +565,7 @@ Retendo 100% (o R2a não distribui abaixo da meta):
 - **não** usar o saldo do dia 365 como base do dia 0 (o gate publica
   `treasury_balance` no dia do aporte e compara com o piso);
 - `equity/loans ≥ 10%` em ≤24 meses no mundo ON, com 0 violações (meta de
-  projeto: ≤120 d; medido 83–103 d);
+  projeto: ≤120 d; **medido 12,7% no dia 90** no gate 365 d ON-capital);
 - `reference_gap` publicado por nação; **não** é gate;
 - nenhum papel `none`/`no_data` capitalizado;
 - dividendo: caixa debitado, `Δdeposits = 0`, `T` constante.
@@ -596,15 +587,19 @@ colchão e depósito ilíquido repete o R1a**.
 ### 4.2 Colchão protegido = cesta de 6 meses + orçamento do mês
 
 ```
-protected_cash_i = 182,5 × food_cost_per_capita_i × população_i
+protected_cash_i = 182,5 × food_spend_avg30_i
                  + regional_budget_limit_month_i
 sweep_i = max(0, private_cash_i − protected_cash_i)
 ```
 
-- `food_cost_per_capita` = o gasto alimentar medido (`food_spend_per_capita`);
-  `182,5` = 6 meses. Medido: **2,89 bi** para as 91 nações com `food_chain`
-  (mundo completo a medir no R2b1); é ~44% do dinheiro do mundo (6,56 bi) — o
-  floor é grande de propósito, e o sweep só pega o excesso, que pode ser pequeno.
+- `food_spend_avg30` = **média móvel de 30 dias** do gasto alimentar diário da
+  cidade (`pop.food_spend`); `182,5` = 6 meses. Usar o valor do dia fazia um dia
+  de escassez encolher o piso e liberar caixa para o banco (QA B4, corrigido no
+  R2a). A média é estado derivado, não entra no save; depois de um load ela
+  recomeça com os dias disponíveis.
+- Medido: **2,89 bi** para as 91 nações com `food_chain` (mundo completo a medir
+  no R2b1); é ~44% do dinheiro do mundo (6,56 bi) — o floor é grande de propósito,
+  e o sweep só pega o excesso, que pode ser pequeno.
 - O `regional_budget_limit_month` é o limite do R1b (não caixa); somar o limite
   protege o mês de gasto regional.
 - O sweep é do **excesso**; a divisão entre `firm` e `service` é proporcional aos
@@ -793,8 +788,9 @@ status, como no R1):
   nenhuma soma muda, `money_total`, `m0`, `allocate_money` e o digest idênticos ao
   baseline da fase anterior (§6).
 
-Por que um bloco e não três flags soltas: o default do jogo é **um** (bancos do
-rework ligados), como o R1; as sub-flags existem para A/B de medição e para isolar
+Por que um bloco e não três flags soltas: o **default do jogo é DESLIGADO**
+(`banks.enabled = false`) até o merge do R2, a mesma política do R1 no seu
+período de laboratório; as sub-flags existem para A/B de medição e para isolar
 o risco de cada fase, não para virar três features. O `set_rework_params` recebe o
 bloco inteiro e o `get_status` publica `banks_config_error` (só quando há erro).
 
@@ -814,7 +810,7 @@ Escopo técnico:
    o ratio real é unitless. Builder/validator em `tools/`.
 2. `bank::seed_capital(WorldState&)` no fim de `initialize_world`, **só em mundo
    novo**; `load` de save v43 **não** semeia (§7.7). Semeia **só o papel privado
-   `present` (3,6 M)**; o **público fica em 0 no dia 0** e só recebe no papel
+   `present` (medido: 6,79 M)**; o **público fica em 0 no dia 0** e só recebe no papel
    `present`. A capitalização pública é um
    segundo gancho, `bank::capitalize_public_monthly(WorldState&)`, chamado no
    fecho mensal **antes** de `treasury::start_month` (`city_gov.cpp:610`; §3.3) e
@@ -828,7 +824,9 @@ Escopo técnico:
    `equity/loans` contra a meta e mantém o piso `capital.min_ratio` (0,1% dos
    ativos). **Não** usar `capital/loans` (capital pago é 0 no mundo real).
 4. Dividendo mensal: `retain = max(0, target × loans − equity)`; `payout =
-   min(max(0, profit − retain), max(0, bank.cash − liquidity_floor))`; debita
+   min(max(0, profit − retain), max(0, bank.cash − cash_floor))`, com
+   `cash_floor = dividend.cash_floor_ratio × D_t` (default 0,10, o mesmo do
+   `liquidity.min_reserve_ratio`; QA M2 — o knob deixou de ser morto); debita
    `bank.cash` e credita o dono (Tesouro real/famílias/exterior); nunca
    `bank.deposits +=`.
 5. **Transição:** o aperto da C6 continua lendo o piso atual (0,1% dos ativos) no
@@ -846,14 +844,14 @@ de comida ≤97/179, falências ≤3, drift <0,03, 0 violações; conservação 
 semeado (`money_total` antes = depois); `seed_scale` ∈ [0,1]; **seed público no
 dia 0 = 0** e aporte público só no fecho mensal, `≤ X × (saldo − piso)` com
 `public_cap_deferred` quando não couber; `equity/loans ≥ 10%` em ≤24 meses (meta
-de projeto ≤90 d com os saldos medidos); 0 papéis `none/no_data` capitalizados;
+de projeto ≤90 d; medido 12,7% no dia 90); 0 papéis `none/no_data` capitalizados;
 dividendo conserva caixa.
 
 Risco principal: **escala** (resolvida por dois alvos: referência 2,4 bi fica como
-gap; modelo 9 M é o alvo). O seed público é **0 no dia 0** e entra pelo fluxo
-mensal (1,11 M no 1º fecho, 4,05 M até o 3º), limitado por `X × (saldo − piso)`;
-o privado entra no dia 0 (3,6 M). Com a regra da §3.3 a meta fecha em **83–103 d**
-(0,23–0,28 ano); sem o seed público, a retenção sozinha levaria **0,73 ano**.
+gap; modelo 14,15 M / 13,97 M capitalizáveis é o alvo). O seed público é **0 no
+dia 0** e entra pelo fluxo mensal (medido: 4,47 M no 1º fecho e 4,58 M até o dia
+365), limitado por `X × (saldo − piso)`; o privado entra no dia 0 (**6,79 M**). A
+meta de 10% de `equity/loans` foi medida **antes do dia 90** (12,7% no dia 90).
 
 ### 5.3 R2b — Depósitos, alocação e competição
 
@@ -1062,7 +1060,8 @@ struct BanksRework {
     double seed_floor_days_treasury = 3.0;
     double seed_public_month_frac = 0.10;    // X da regra §3.3
     double seed_public_min_ticket_frac = 0.25;
-    double deposits_float_days = 5.0;       // legado do rev1; não é o floor
+    // deposits_float_days: NAO existe no struct. O float das empresas e' o
+    // literal 5 d no sweep (QA B3); o knob saiu do contrato.
     double protected_food_months = 6.0;
     double alloc_min_capital_ratio = 0.08;
     double alloc_pendulum_month = 0.10;
@@ -1079,7 +1078,7 @@ struct BanksRework {
 
 ### 7.6 Regras dinâmicas
 
-1. **Depósito (b1)**: `protected = 182,5 × food_cost_pc × pop + budget_month`;
+1. **Depósito (b1)**: `protected = 182,5 × food_spend_avg30 + budget_month`;
    `excess = max(0, private_cash − protected)`; sweep diário proporcional aos
    sub-saldos; retorno automático se o caixa do dia ficar abaixo do float/saque.
 2. **Alocação**: mensal, com pêndulo ±10% e normalização; score declarado
@@ -1113,6 +1112,10 @@ struct BanksRework {
   `seed_source = "loaded_save"`. Se o dono quiser o contrário, é uma decisão
   explícita (seed retroativo documentado, com débito do dono no dia do load) — a
   rev3 **não** faz.
+- **Reconfigurar depois do load não reabilita o seed (QA M1).** `set_banks_rework`
+  preserva `seed_source = "loaded_save"` (e `seeded` de mundo novo) quando recebe
+  um bloco novo; `set_rework_params` pode ser chamado a qualquer momento sem
+  devolver o gancho público ao mundo carregado. Coberto por teste C++.
 - Round-trip bit-exato por fase, como no R1.
 
 ---
@@ -1254,7 +1257,10 @@ regressão: um grupo com dois empréstimos de bancos diferentes paga cada um ao 
 3. **não** usar `gdp_ppp_bn` no nível; se o dono quiser share real, usar
    numerador e denominador **nominais** (ou ambos PPP) e declarar;
 4. `model_target_i = capital_to_loans_target × steady_loans_i` (baseline 365 d por
-   nação);
+   nação). **`capital_to_assets` (WDI) é INFORMATIVO** (QA B1): não entra no
+   alvo nem no seed. Os dois valores negativos publicados (GNQ −6,40%, TCD
+   −1,04%) são artefato do dado e entram como fallback declarado 0,10 — não
+   como 0, que era o clamp do núcleo e discordava do JSON;
 5. `seed_i = min(model_target_i, caixa_disponível_do_dono_i)` com os pisos;
    `seed_scale_i = seed_i / model_target_i`;
 6. sem harness, o seed **não roda** e o status declara `bank_seed: "no_model_gdp"`.
@@ -1335,29 +1341,31 @@ Nenhuma delas é pré-requisito para o R2a; P1 entra no R2a, P2 no R2c, P3 no R2
 cesta de 6 meses e o orçamento regional do mês; publicar `seed_scale` e a
 convergência por retenção; **nunca** emitir para cobrir seed.
 
-**Números (rev3):** alvo do modelo 9,0 M; **`equity` no dia 0 = 0**. No **dia 0**
-só o privado é semeado (3,6 M de `pop.savings`, 0,088% do caixa das famílias); o
-**público é 0** (o Tesouro nasce vazio) e entra pelo fluxo: **1,11 M no dia 30,
-2,61 M no dia 60, 0,33 M no dia 90** = 4,05 M (85% do alvo com o privado).
-Convergência `equity/loans ≥ 10%`: **~83 d** com os saldos medidos, até **~103 d**
-no caso conservador (0,23–0,28 ano); sem o público, **0,73 ano** — o número do QA
-está **confirmado** (o 0,857 M do rev2 era o `equity` do dia 365, não do dia 0).
-Alvo de referência 2,40 bi = 36,6% do dinheiro e 7,25× a receita do Tesouro (a
-parte pública, 1,08 bi, é 3,26×) → **não** é seed; é `reference_gap`.
+**Números (medidos no gate 365 d ON-capital):** alvo do modelo **14,15 M**;
+**13,97 M capitalizáveis** (7 nações sem papel `present`); **`equity` no dia 0 =
+0** antes do seed. No **dia 0** só o privado é semeado: **6,79 M** de
+`pop.savings` (49% do alvo capitalizável); o **público é 0** (o Tesouro nasce
+vazio) e entra pelo fluxo mensal: **4,47 M no 1º fecho** e **4,58 M** até o dia
+365. Convergência `equity/loans ≥ 10%`: **antes do dia 90** (12,7% no dia 90;
+12,5% no dia 365) — o quadro §3.4 é a medição. Alvo de referência 2,40 bi = 36,6%
+do dinheiro e 7,25× a receita do Tesouro (a parte pública, 1,08 bi, é 3,26×) →
+**não** é seed; é `reference_gap`.
 
 **Alternativas:**
-- A) **Sem seed** (só retenção): 0 de equity → 9,0 M em **1,22 ano**; zero
-  risco de distorção; bancos começam sem capital pago.
+- A) **Sem seed** (só retenção): bancos começam sem capital pago; risco zero de
+  distorção; a convergência medida já é folgada, mas o ponto de partida fica sem
+  patrimônio.
 - B) **Seed integral do alvo de referência** (2,40 bi): rejeitado — exigiria
   emissão ou expropriar 36,6% do dinheiro do mundo.
-- C) **Seed público com `X = 0,05` e piso 7 d**: o 1º mês não atinge o ticket
-  mínimo e posterga; o público completa em ~5 meses; com o privado de 3,6 M a
-  convergência fica em **~0,33 ano**.
+- C) **Seed público com `X = 0,05` e piso 7 d**: menos corte no orçamento do 1º
+  mês e capitalização mais lenta; não foi medida em 365 d.
 - D) **Seed público mensal `X = 0,10`, piso 3 d, antes do orçamento regional**
-  (recomendado): 1,11 M no 1º fecho; 4,05 M até o 3º; convergência **~83–103 d**;
-  corte de 8,1% no orçamento do 1º mês, medido pelo gate de comida.
+  (implementado no laboratório): primeira medição em 4,47 M no 1º fecho; comida
+  94/179 e 2 falências no gate 365 d ON-capital.
 
-**Decisão do dono:** _pendente_ (A/B/C/D).
+**Decisão do dono:** **pendente para a política** — o default do jogo fica
+**OFF até o merge do R2** (mesma política do R1); ligar no default é decisão do
+merge. O laboratório do R2a implementa D e o gate mede.
 
 ### P2 — Nações sem banco público real (52 papéis)
 
@@ -1405,9 +1413,9 @@ de grupo, safra e C6, com ordem caixa→depósito e efeito imediato no claim/led
 | Risco | Prob. | Impacto | Mitigação |
 | --- | --- | --- | --- |
 | Contrato contábil errado (M0/M1/broad, claim fora do ledger) | alta | alto | §2; gate `financial_sum=0` com claim; `M0_gross = T − ΣD_l` e `M0_net = M0_gross − monetary_claims`; broad publicado |
-| Escala do seed (alvo real 2,4 bi) | alta | alto | dois alvos; seed 7,65 M (privado 3,6 + público 4,05 via fluxo); `reference_gap` |
+| Escala do seed (alvo real 2,4 bi) | alta | alto | dois alvos; seed medido 11,38 M (privado 6,79 + público 4,58 via fluxo; estrangeiro 2,60 sem caixa); `reference_gap` |
 | Seed público sem caixa no Tesouro | alta | médio | **0 no dia 0**; aporte mensal `≤ 0,10 × (saldo − piso 3 d)`; `treasury::spend`; nunca emissão; `public_cap_deferred` |
-| Seed público corta o orçamento regional | média | médio | 8,1% no 1º mês; piso 3 d; aporte antes do limite; gate de comida; `X` cai para 0,05 se piorar |
+| Seed público corta o orçamento regional | média | médio | aporte de 10% do disponível no fecho; piso 3 d; aporte antes do limite; gate de comida (medido 94/179 e 2 falências); `X` cai para 0,05 se piorar |
 | Sweep enxuga liquidez e reabre R1a | alta | alto | floor 6 meses + orçamento; sweep só do excesso; saque no mesmo dia em **todos** os caminhos da §4.6; A/B 90 d |
 | Caminho de pagamento/cobrança escapa do claim | alta | alto | §4.3/§4.6; `liquid_now`/`pay_liquid`; grep de revisão; A/B claim vs caixa puro |
 | Bail-in cobra o tomador, não o depositante | alta | alto | D_f corta claim; D_l corta caixa do tomador (proxy); ordem definida |
