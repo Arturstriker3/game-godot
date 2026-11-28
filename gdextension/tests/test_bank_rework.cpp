@@ -14,8 +14,10 @@
 
 #include "sim/balance.h"
 #include "sim/bank.h"
+#include "sim/bank_crisis.h"
 #include "sim/save_state.h"
 #include "sim/sim_core.h"
+#include "sim/treasury.h"
 
 using doctest::Approx;
 
@@ -30,6 +32,10 @@ void enable_banks(ogs::test::PocketWorld& world, bool capital, bool deposits) {
 	world.core.set_banks_rework(cfg);
 }
 
+void enable_treasury(ogs::test::PocketWorld& world) {
+	world.core.set_national_treasury(true, 1.0, 0.5, 0.35, 0.5);
+}
+
 ogs::Bank& present(ogs::test::PocketWorld& world, int role) {
 	ogs::Bank& bank = ogs::bank::ensure(world.ws, "AAA", role);
 	bank.name = "AAA bank";
@@ -41,6 +47,25 @@ double stratum_total(const ogs::Pop& pop) {
 	double total = 0.0;
 	for (int s = 0; s < ogs::kIncomeStrata; ++s) {
 		total += std::max(0.0, pop.stratum_savings[s]);
+	}
+	return total;
+}
+
+// Soma dos claims de depositante (cidade + grupo) apontando para um banco.
+double claims_to(const ogs::WorldState& ws, const std::string& bank_id) {
+	double total = 0.0;
+	for (const ogs::City& city : ws.cities) {
+		for (const ogs::City::BankAccount& account : city.bank_accounts) {
+			if (account.bank_id == bank_id) {
+				total += std::max(0.0, account.firm)
+					+ std::max(0.0, account.service);
+			}
+		}
+	}
+	for (const ogs::Group& group : ws.groups) {
+		if (group.deposit_bank_id == bank_id) {
+			total += std::max(0.0, group.bank_deposit);
+		}
 	}
 	return total;
 }
@@ -336,4 +361,414 @@ TEST_CASE("R2a: funding do grupo entra no claim e o sweep e' conservativo") {
 			world.core.money_total());
 		CHECK(book.deposit_claims == Approx(book.bank_deposits_funding));
 	}
+}
+
+TEST_CASE("R2a: capitalizacao publica mensal (piso, ticket e deferral)") {
+	SUBCASE("publico = 0 no dia 0 e alvo vem do seed") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, false);
+		enable_treasury(world);
+		ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+		world.ws.bank_seed.loaded = true;
+		world.ws.bank_seed.capital_to_loans_target = 0.10;
+		ogs::BankSeedRow row;
+		row.steady_loans = 1000.0;
+		row.roles_present = {"public"};
+		world.ws.bank_seed.nations["AAA"] = row;
+
+		const double money_before = world.core.money_total();
+		ogs::bank::seed_capital(world.ws);
+		CHECK(pub.capital_target == Approx(100.0));
+		CHECK(pub.capital == Approx(0.0));
+		CHECK(pub.cash == Approx(0.0));
+		CHECK(world.core.money_total() == Approx(money_before));
+		// O gancho e' mensal: no dia 0 nao paga nada.
+		world.ws.day = 0;
+		ogs::bank::capitalize_public_monthly(world.ws);
+		CHECK(pub.capital == Approx(0.0));
+	}
+
+	SUBCASE("ticket = X * (saldo - piso 3 d), conservando T") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, false);
+		enable_treasury(world);
+		ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+		world.ws.bank_seed.loaded = true;
+		world.ws.bank_seed.capital_to_loans_target = 0.10;
+		ogs::BankSeedRow row;
+		row.steady_loans = 1000.0;
+		row.roles_present = {"public"};
+		world.ws.bank_seed.nations["AAA"] = row;
+		ogs::bank::seed_capital(world.ws);
+
+		world.ws.day = 30;
+		ogs::treasury::collect(world.ws, "AAA", 1000.0);
+		// Gasto/dia = 300/30 = 10 -> piso de 3 d = 30; disponivel 970.
+		world.ws.treasury_spent_total = 300.0;
+		const double money_before = world.core.money_total();
+		ogs::bank::capitalize_public_monthly(world.ws);
+		CHECK(pub.capital == Approx(97.0));
+		CHECK(pub.cash == Approx(97.0));
+		CHECK(pub.public_cap_deferred.empty());
+		CHECK(pub.seed_scale == Approx(0.97));
+		CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(903.0));
+		CHECK(world.core.money_total() == Approx(money_before));
+
+		// O restante (3) cabe no ticket do mesmo fecho: completa o alvo.
+		ogs::bank::capitalize_public_monthly(world.ws);
+		CHECK(pub.capital == Approx(100.0));
+		CHECK(pub.seed_scale == Approx(1.0));
+	}
+
+	SUBCASE("ticket abaixo do minimo posterga e declara") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, false);
+		enable_treasury(world);
+		ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+		world.ws.bank_seed.loaded = true;
+		world.ws.bank_seed.capital_to_loans_target = 0.10;
+		ogs::BankSeedRow row;
+		row.steady_loans = 1000.0;
+		row.roles_present = {"public"};
+		world.ws.bank_seed.nations["AAA"] = row;
+		ogs::bank::seed_capital(world.ws);
+
+		world.ws.day = 30;
+		ogs::treasury::collect(world.ws, "AAA", 100.0);
+		world.ws.treasury_spent_total = 300.0;
+		const double money_before = world.core.money_total();
+		ogs::bank::capitalize_public_monthly(world.ws);
+		// disponivel 70; ticket 7 < 25% de 100 -> posterga.
+		CHECK(pub.capital == Approx(0.0));
+		CHECK(pub.public_cap_deferred == "ticket_below_min");
+		CHECK(ogs::treasury::balance(world.ws, "AAA") == Approx(100.0));
+		CHECK(world.core.money_total() == Approx(money_before));
+	}
+
+	SUBCASE("Tesouro desligado e papel sem alvo declarados") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, false);
+		ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+		world.ws.bank_seed.loaded = true;
+		world.ws.bank_seed.capital_to_loans_target = 0.10;
+		ogs::BankSeedRow row;
+		row.steady_loans = 1000.0;
+		row.roles_present = {"public"};
+		world.ws.bank_seed.nations["AAA"] = row;
+		ogs::bank::seed_capital(world.ws);
+
+		world.ws.day = 30;
+		ogs::bank::capitalize_public_monthly(world.ws);
+		CHECK(pub.capital == Approx(0.0));
+		CHECK(pub.public_cap_deferred == "treasury_disabled");
+
+		ogs::test::PocketWorld empty;
+		enable_banks(empty, true, false);
+		ogs::Bank& no_target = present(empty, ogs::bank::kRolePublic);
+		empty.ws.day = 30;
+		ogs::bank::capitalize_public_monthly(empty.ws);
+		CHECK(no_target.capital == Approx(0.0));
+		CHECK(no_target.public_cap_deferred == "no_model_target");
+	}
+}
+
+TEST_CASE("R2a: bail-in pro rata entre D_f e D_l e reassign conserva claims") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+	ogs::Bank& failing = present(world, ogs::bank::kRolePrivate);
+	// O sorteio de tomador tem de cair no banco que quebra.
+	pub.share = 0.0;
+	failing.share = 1.0;
+
+	failing.capital = 0.0;
+	failing.cash = 0.0;
+	failing.loans = 0.0;
+	failing.arrears = 0.0;
+	failing.deposits = 1000.0;          // D_l
+	failing.deposits_funding = 1000.0;  // D_f
+	// Claim do depositante do funding, igual ao passivo.
+	ogs::City& city = world.ws.cities.front();
+	city.bank_accounts.clear();
+	ogs::City::BankAccount account;
+	account.bank_id = failing.id;
+	account.firm = 1000.0;
+	city.bank_accounts.push_back(account);
+	// Tomador do banco com caixa para o corte de D_l.
+	ogs::Group& group = world.ws.groups.front();
+	group.state_owned = false;
+	group.debt = 1000.0;
+	group.credit_arrears = 0.0;
+	group.cash = 400.0;
+	// Sem fundo/Tesouro: o residual chega a incorporacao pelo publico.
+	world.ws.bank_crisis.treasury_debt_rescue = false;
+	world.ws.bank_crisis.takeover_public = true;
+	world.ws.national_treasury = false;
+
+	const double money_before = world.core.money_total();
+	const double gap = ogs::bank_crisis::resolve(world.ws, failing.id);
+	// 0,4 * 2000 de passivo nao segurado = 800, metade em cada tipo.
+	CHECK(gap == Approx(2000.0));
+	CHECK(failing.bailin_cut == Approx(800.0));
+	CHECK(group.cash == Approx(0.0));
+	// O corte de D_l destroi caixa do tomador (a variacao fica registrada).
+	CHECK(world.core.money_total() == Approx(money_before - 400.0));
+
+	// Incorporacao pelo publico: passivo e claim andam juntos (o banco quebrado
+	// fica como casca zerada, com a ancora da resolucao).
+	REQUIRE(failing.absorbed_into == pub.id);
+	CHECK(failing.deposits == Approx(0.0));
+	CHECK(pub.deposits == Approx(600.0));
+	CHECK(pub.deposits_funding == Approx(600.0));
+	CHECK(claims_to(world.ws, pub.id) == Approx(pub.deposits_funding));
+	CHECK(claims_to(world.ws, failing.id) == Approx(0.0));
+	CHECK(ogs::bank::deposit_claims_total(world.ws)
+		== Approx(ogs::bank::totals(world.ws).deposits_funding));
+}
+
+TEST_CASE("R2a: sweep OFF (deposits=false) e' no-op") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, false);
+	present(world, ogs::bank::kRolePrivate);
+
+	ogs::City& city = world.ws.cities.front();
+	city.unified_cash = true;
+	city.pop.food_spend = 0.0;
+	city.firm_sub = 300.0;
+	city.service_sub = 200.0;
+	city.firm_cash = 300.0;
+	city.service_cash = 200.0;
+	city.private_cash = 500.0;
+
+	const double money_before = world.core.money_total();
+	const double m0_before = world.core.m0_total();
+	const double broad_before = world.core.broad_money();
+	ogs::bank::sweep_deposits(world.ws);
+
+	CHECK(city.private_cash == Approx(500.0));
+	CHECK(city.firm_sub == Approx(300.0));
+	CHECK(city.service_sub == Approx(200.0));
+	CHECK(city.claim_total() == Approx(0.0));
+	CHECK(city.protected_cash == Approx(0.0));
+	CHECK(ogs::bank::totals(world.ws).deposits_funding == Approx(0.0));
+	CHECK(world.core.money_total() == Approx(money_before));
+	CHECK(world.core.m0_total() == Approx(m0_before));
+	CHECK(world.core.broad_money() == Approx(broad_before));
+}
+
+TEST_CASE("R2a: load de v43 (sem bloco de politica) com flag ON nao capitaliza") {
+	ogs::test::PocketWorld source;
+	source.ws.regional_cash = true;
+	ogs::Bank& saved_bank = present(source, ogs::bank::kRolePrivate);
+	saved_bank.capital = 0.0;
+	saved_bank.cash = 0.0;
+	const ogs::save::Value saved = ogs::save::to_value(source.ws,
+		source.core);
+	const ogs::save::Value& banks = saved.get("banks", ogs::save::Value());
+	REQUIRE(banks.get_type() == ogs::save::Value::DICTIONARY);
+	REQUIRE_FALSE(banks.has("rework"));
+
+	ogs::test::PocketWorld target;
+	target.core.set_regional_cash(true);
+	ogs::BanksRework cfg;
+	cfg.enabled = true;
+	cfg.capital = true;
+	target.core.set_banks_rework(cfg);
+	ogs::save::from_value(target.ws, target.core, saved);
+
+	CHECK(target.ws.banks_rework.enabled);
+	CHECK(target.ws.banks_rework.capital);
+	CHECK(target.ws.banks_rework.seed_source == "loaded_save");
+	// O estado salvo (capital 0 do v43) nao e' re-semeado.
+	target.ws.bank_seed.loaded = true;
+	target.ws.bank_seed.capital_to_loans_target = 0.10;
+	ogs::BankSeedRow row;
+	row.steady_loans = 1000.0;
+	row.roles_present = {"private"};
+	target.ws.bank_seed.nations["AAA"] = row;
+	ogs::City& city = target.ws.cities.front();
+	city.pop.stratum_savings[ogs::kIncomeStrata - 1] = 1000.0;
+	city.pop.savings = stratum_total(city.pop);
+	const double money_before = target.core.money_total();
+	ogs::bank::seed_capital(target.ws);
+	const ogs::Bank* loaded = ogs::bank::find(target.ws, "AAA",
+		ogs::bank::kRolePrivate);
+	REQUIRE(loaded != nullptr);
+	CHECK(loaded->capital == Approx(0.0));
+	CHECK(target.core.money_total() == Approx(money_before));
+}
+
+TEST_CASE("R2a: reconfigurar depois do load nao reabilita a capitalizacao (M1)") {
+	ogs::test::PocketWorld source;
+	enable_banks(source, true, false);
+	present(source, ogs::bank::kRolePublic);
+	source.ws.bank_seed.loaded = true;
+	source.ws.bank_seed.capital_to_loans_target = 0.10;
+	ogs::BankSeedRow row;
+	row.steady_loans = 1000.0;
+	row.roles_present = {"public"};
+	source.ws.bank_seed.nations["AAA"] = row;
+	ogs::bank::seed_capital(source.ws);
+	const ogs::save::Value saved = ogs::save::to_value(source.ws,
+		source.core);
+
+	ogs::test::PocketWorld target;
+	ogs::save::from_value(target.ws, target.core, saved);
+	REQUIRE(target.ws.banks_rework.seed_source == "loaded_save");
+	const ogs::Bank* pub = ogs::bank::find(target.ws, "AAA",
+		ogs::bank::kRolePublic);
+	REQUIRE(pub != nullptr);
+	const double capital_before = pub->capital;
+
+	// O que o economy.gd faz ao reaplicar o rework.json: um cfg NOVO (sem
+	// seed_source). O estado do mundo carregado nao pode ser apagado.
+	ogs::BanksRework again;
+	again.enabled = true;
+	again.capital = true;
+	again.dividend_target_ratio = 0.2;
+	target.core.set_banks_rework(again);
+	CHECK(target.ws.banks_rework.enabled);
+	CHECK(target.ws.banks_rework.dividend_target_ratio == Approx(0.2));
+	CHECK(target.ws.banks_rework.seed_source == "loaded_save");
+
+	// Nem o gancho publico mensal nem o seed privado rodam no mundo carregado.
+	enable_treasury(target);
+	ogs::treasury::collect(target.ws, "AAA", 1000.0);
+	target.ws.day = 30;
+	target.ws.treasury_spent_total = 300.0;
+	const double money_before = target.core.money_total();
+	ogs::bank::capitalize_public_monthly(target.ws);
+	ogs::bank::seed_capital(target.ws);
+	CHECK(pub->capital == Approx(capital_before));
+	CHECK(target.core.money_total() == Approx(money_before));
+	CHECK(ogs::treasury::balance(target.ws, "AAA") == Approx(1000.0));
+}
+
+TEST_CASE("R2a: dividendo de familias/exterior e retencao pela rampa") {
+	SUBCASE("familia: caixa debitado e savings creditadas, T constante") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, false);
+		world.ws.day = 0;
+		ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
+		bank.owner_kind = "national";
+		bank.cash = 50.0;
+		bank.loans = 1000.0;
+		bank.deposits = 1000.0;
+		bank.deposits_funding = 0.0;
+		bank.capital = 0.0;
+		world.ws.banks_rework.dividend_cash_floor_ratio = 0.0;
+		ogs::City& city = world.ws.cities.front();
+		const double savings_before = city.pop.savings;
+		const double money_before = world.core.money_total();
+		ogs::bank::pay_dividends(world.ws);
+		// No dia 0 a rampa usa a razao atual (5%) -> nada a reter.
+		CHECK(bank.dividends == Approx(50.0));
+		CHECK(bank.cash == Approx(0.0));
+		CHECK(city.pop.savings == Approx(savings_before + 50.0));
+		CHECK(world.core.money_total() == Approx(money_before));
+	}
+
+	SUBCASE("exterior: credita a posicao externa, T constante") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, false);
+		world.ws.day = 0;
+		ogs::Bank& bank = present(world, ogs::bank::kRoleForeign);
+		bank.owner_kind = "foreign";
+		bank.cash = 50.0;
+		bank.loans = 1000.0;
+		bank.deposits = 1000.0;
+		bank.deposits_funding = 0.0;
+		bank.capital = 0.0;
+		world.ws.banks_rework.dividend_cash_floor_ratio = 0.0;
+		const double foreign_before = world.ws.foreign_cash;
+		const double money_before = world.core.money_total();
+		ogs::bank::pay_dividends(world.ws);
+		CHECK(bank.dividends == Approx(50.0));
+		CHECK(world.ws.foreign_cash == Approx(foreign_before + 50.0));
+		CHECK(bank.remittance == Approx(50.0));
+		CHECK(world.core.money_total() == Approx(money_before));
+	}
+
+	SUBCASE("rampa de 24 meses: no dia 730 a meta retem o lucro") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, false);
+		world.ws.day = 730;
+		ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
+		bank.owner_kind = "national";
+		bank.cash = 50.0;
+		bank.loans = 1000.0;
+		bank.deposits = 1000.0;
+		bank.deposits_funding = 0.0;
+		bank.capital = 0.0;
+		world.ws.banks_rework.dividend_cash_floor_ratio = 0.0;
+		const double money_before = world.core.money_total();
+		ogs::bank::pay_dividends(world.ws);
+		// equity = 50, carteira = 1000: 10% exige 100 de patrimonio > lucro 50.
+		CHECK(bank.dividends == Approx(0.0));
+		CHECK(bank.cash == Approx(50.0));
+		CHECK(world.core.money_total() == Approx(money_before));
+	}
+}
+
+TEST_CASE("R2a: broad constante e M1 caindo no sweep") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	world.ws.banks_rework.protected_food_months = 0.0;
+	present(world, ogs::bank::kRolePrivate);
+
+	ogs::City& city = world.ws.cities.front();
+	city.unified_cash = true;
+	city.regional_budget_limit_month = 0.0;
+	city.pop.food_spend = 0.0;
+	city.firm_sub = 300.0;
+	city.service_sub = 200.0;
+	city.firm_cash = 300.0;
+	city.service_cash = 200.0;
+	city.private_cash = 500.0;
+
+	const double money_before = world.core.money_total();
+	const double m0_before = world.core.m0_gross();
+	const double broad_before = world.core.broad_money();
+	const double banks_cash_before = ogs::bank::totals(world.ws).cash;
+	ogs::bank::sweep_deposits(world.ws);
+
+	CHECK(world.core.money_total() == Approx(money_before));
+	CHECK(world.core.m0_gross() == Approx(m0_before));
+	CHECK(world.core.broad_money() == Approx(broad_before));
+	// M1_legacy = T - S bank.cash: o sweep tira 500 do dinheiro fora dos bancos.
+	const double m1_before = money_before - banks_cash_before;
+	const double m1_after = world.core.money_total()
+		- ogs::bank::totals(world.ws).cash;
+	CHECK(m1_after == Approx(m1_before - 500.0));
+	CHECK(ogs::bank::totals(world.ws).deposits_funding == Approx(500.0));
+	CHECK(ogs::bank::deposit_claims_total(world.ws) == Approx(500.0));
+}
+
+TEST_CASE("R2a: colchao usa a media de 30 d do food_spend") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	world.ws.banks_rework.protected_food_months = 6.0;
+
+	ogs::City& city = world.ws.cities.front();
+	city.unified_cash = true;
+	city.regional_budget_limit_month = 0.0;
+	city.private_cash = 0.0;
+	city.food_spend_hist_n = 0;
+	city.food_spend_hist_pos = 0;
+	city.food_spend_hist_day = -1;
+	for (int day = 1; day <= 30; ++day) {
+		world.ws.day = day;
+		city.pop.food_spend = 1.0;
+		ogs::bank::sweep_deposits(world.ws);
+	}
+	const double full_month = 6.0 * 365.0 / 12.0;
+	CHECK(city.protected_cash == Approx(full_month));
+
+	// Dia de escassez (gasto instantaneo 0,1): o colchao NAO encolhe junto.
+	world.ws.day = 31;
+	city.pop.food_spend = 0.1;
+	ogs::bank::sweep_deposits(world.ws);
+	const double average = (29.0 * 1.0 + 0.1) / 30.0;
+	CHECK(city.protected_cash == Approx(full_month * average));
+	CHECK(city.protected_cash > 0.9 * full_month);
 }

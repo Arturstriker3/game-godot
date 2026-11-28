@@ -246,6 +246,13 @@ void SimCore::apply_firms_own_cash_after_load(bool saved_flag,
 }
 
 void SimCore::set_banks_rework(const BanksRework& cfg) {
+	// R2a (QA M1): reconfigurar depois de um load NAO pode reabilitar a
+	// capitalizacao retroativa. `seed_source = loaded_save` e `seeded` sao
+	// estado do MUNDO, nao da configuracao: a config nova (sem esses campos)
+	// nao os apaga. Sem isto, `set_rework_params` chamado depois do load
+	// devolvia o gancho mensal publico ao mundo carregado (plano 7.7).
+	const std::string prev_seed_source = ws_.banks_rework.seed_source;
+	const bool prev_seeded = ws_.banks_rework.seeded;
 	ws_.banks_rework = cfg;
 	BanksRework& br = ws_.banks_rework;
 	br.config_error.clear();
@@ -293,6 +300,15 @@ void SimCore::set_banks_rework(const BanksRework& cfg) {
 		br.deposits = false;
 		br.resolution = false;
 		br.seed_source = "disabled";
+	} else if (prev_seed_source == "loaded_save") {
+		// Mundo carregado: continua sem seed retroativo, qualquer que seja a
+		// chamada de configuracao que veio depois.
+		br.seed_source = "loaded_save";
+	} else if (prev_seeded) {
+		// Mundo novo ja semeado: a identidade e o "ja rodou" sobrevivem a uma
+		// reconfiguracao da mesma sessao.
+		br.seed_source = prev_seed_source;
+		br.seeded = true;
 	}
 }
 

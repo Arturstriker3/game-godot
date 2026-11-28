@@ -441,17 +441,25 @@ double resolve(WorldState& ws, const std::string& bank_id,
 		* clamp01(1.0 - pol.insured_share);
 	if (uninsured > kEps && gap > kEps) {
 		double cut_total = 0.0;
-		// R2a: o funding (D_f) corta o CLAIM do depositante, sem tocar em
-		// caixa; o depósito de crédito (D_l) mantém o caminho legado (corta o
-		// caixa do tomador). A soma dos dois respeita o alvo não segurado.
-		if (bank.deposits_funding > kEps) {
+		// R2a (QA M3, plano 9.2): o bail-in e' PRO RATA entre D_f e D_l. O
+		// alvo nao segurado se reparte pela fatia de cada tipo no passivo; o
+		// funding corta o claim do depositante (sem tocar em caixa) e o
+		// deposito de credito mantem o caminho legado (corta o caixa do
+		// tomador). O que o caixa do tomador nao cobrir continua no `gap` e vai
+		// ao fundo/Tesouro - nao se inventa caixa.
+		const double deposits_total = std::max(0.0, ind.deposits);
+		const double funding_share = deposits_total > kEps
+			? std::clamp(bank.deposits_funding / deposits_total, 0.0, 1.0)
+			: 0.0;
+		const double bailin_target = std::min(uninsured, gap);
+		if (funding_share > 0.0 && bank.deposits_funding > kEps) {
 			const double funding_cut = bank::cut_funding_claims(ws, bank.id,
-				std::min(uninsured, gap));
+				bailin_target * funding_share);
 			cut_total += funding_cut;
 			gap -= funding_cut;
 		}
 		const double legacy = std::min(
-			std::max(0.0, uninsured - cut_total), gap);
+			bailin_target * (1.0 - funding_share), gap);
 		if (legacy > kEps) {
 			const double cut = charge_depositors(ws, bank, legacy);
 			if (cut > kEps) {

@@ -2325,6 +2325,15 @@ struct Region {
 		};
 		std::vector<BankAccount> bank_accounts;
 		double protected_cash = 0.0;
+		// R2a (QA B4): media movel de 30 dias do `pop.food_spend`, usada pelo
+		// colchao do sweep. Guardar a serie evita que um dia de escassez (gasto
+		// instantaneo baixo) encolha o piso e libere caixa para o banco. O
+		// buffer e' estado derivado (nao entra no save); `last_day` evita
+		// amostrar duas vezes no mesmo dia.
+		double food_spend_hist[30] = {};
+		int food_spend_hist_pos = 0;
+		int food_spend_hist_n = 0;
+		int food_spend_hist_day = -1;
 		double claim_total() const {
 			double total = 0.0;
 			for (const BankAccount& account : bank_accounts) {

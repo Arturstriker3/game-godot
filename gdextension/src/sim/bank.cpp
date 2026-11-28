@@ -700,7 +700,11 @@ void distribute_dividends(WorldState& ws, const Policy& pol) {
 				current + (target - current) * day_frac);
 			const double retain = std::max(0.0, target_eff * assets
 				- equity(bank));
-			const double floor = br.liquidity_min_reserve_ratio
+			// R2a (QA M2): o piso de caixa do dividendo e o knob declarado
+			// `dividend.cash_floor_ratio` (fracao dos depositos totais, como o
+			// `liquidity.min_reserve_ratio`). Default 0,10 nos dois -> o
+			// caminho de jogo nao muda; o campo deixa de ser morto.
+			const double floor = br.dividend_cash_floor_ratio
 				* total_deposits(bank);
 			const double payout = std::min(
 				std::max(0.0, profit - retain),
@@ -1561,7 +1565,28 @@ void sweep_deposits(WorldState& ws) {
 		return;
 	}
 	for (City& city : ws.cities) {
-		const double food_daily = std::max(0.0, city.pop.food_spend);
+		// R2a (QA B4): colchao pela media de 30 dias do gasto com comida, nao
+		// pelo valor do dia. Um dia de escassez nao pode encolher o piso. A
+		// ultima amostra e' substituida se o sweep rodar de novo no mesmo dia
+		// (teste/chamada repetida nao duplica o dia).
+		const double sample = std::max(0.0, city.pop.food_spend);
+		if (city.food_spend_hist_day == ws.day && city.food_spend_hist_n > 0) {
+			city.food_spend_hist[
+				(city.food_spend_hist_pos + 29) % 30] = sample;
+		} else {
+			city.food_spend_hist[city.food_spend_hist_pos] = sample;
+			city.food_spend_hist_pos =
+				(city.food_spend_hist_pos + 1) % 30;
+			city.food_spend_hist_n = std::min(city.food_spend_hist_n + 1, 30);
+			city.food_spend_hist_day = ws.day;
+		}
+		double food_daily = 0.0;
+		for (int slot = 0; slot < city.food_spend_hist_n; ++slot) {
+			food_daily += city.food_spend_hist[slot];
+		}
+		food_daily = city.food_spend_hist_n > 0
+			? food_daily / static_cast<double>(city.food_spend_hist_n)
+			: 0.0;
 		const double budget = std::max(0.0,
 			city.regional_budget_limit_month);
 		city.protected_cash = std::max(0.0, br.protected_food_months)
