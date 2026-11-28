@@ -1509,3 +1509,34 @@ implementação do leilão depende dos claims por credor.
    `banks.deposits` reprovou o gate de falências (14 > 3, todas minas) porque o
    sweep deixa o depósito ilíquido: só liga depois do R2b1. Números em
    `docs/economy/rework/R2.md` §6.
+
+## 15. Decisões da implementação do R2c (t201)
+
+1. **Ordem do §5.4 respeitada**: acionistas → cascata pública (Tesouro) →
+   leilão do book → bail-in `D_f`/`D_l` → fundo → charter com teto/válvula →
+   liquidação/deserto. O leilão paga em **caixa** e leva o ativo **e** o claim de
+   dívida do tomador; o passivo fica com o falido.
+2. **Snapshot de `D_l` antes do leilão**: como o claim migra para o comprador,
+   o bail-in de `D_l` tem de cobrar quem devia a ESTE banco na quebra. O
+   resolvedor (não o teste) guarda a lista de tomadores antes do leilão; sem isso
+   o degrau de bail-in ficava inalcançável em todo caso com carteira vendida.
+3. **Conservação por degrau**: `D_f` corta claim (sem caixa), `D_l` corta o
+   caixa do tomador (`pay_cash`, dinheiro destruído com a redução de `D_t`),
+   fundo/Tesouro movem caixa existente; só a válvula cria dinheiro e o registra
+   em `emission_today` (`gov_bonds`, título na carteira do BC). A austeridade
+   corta **limites** regionais pro rata no valor pago e só com o Tesouro ON.
+4. **Charter com teto declarado**: `min(max_pct_gdp × PIB do modelo,
+   max_treasury_months × receita mensal)`; acima do teto (ou sem saldo) vira
+   **deserto** explícito. A reentrada é a alavanca A3 `charter_public_bank`
+   (fila de comandos → `action_charter_public_bank_from_treasury`), que valida o
+   saldo antes de tocar no banco.
+5. **Fixture para o deserto**: `PocketWorld(seed_public_bank=false)` monta a
+   nação sem papel público; o default (com banco) preserva os testes antigos bit
+   a bit.
+6. **Gates desta rodada** (`G:/opengs_tmp/r2/r2c_*`): unit **157/157** (1.806
+   asserções, 6 novos casos); 10 d OFF `bc687b9c…` bit a bit; 10 d ON
+   `362e6135…` idêntico ao R2b1; só-capital 365 `9746eb05…` bit a bit; **365 d
+   ON `resolution=1` REPROVADO no dia 82** (dinheiro não conservado, drift
+   20.622,56; 284 dias travados). O controle 90 d `resolution=0` não trava →
+   a regressão está no resolvedor novo, não na base. Sem merge; diagnóstico
+   aberto em `R2.md` §9.4.
