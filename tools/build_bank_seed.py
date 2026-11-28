@@ -96,7 +96,8 @@ def main() -> int:
     banks = load(args.banks)
 
     out_nations = {}
-    stats = {"wdi": 0, "fallback": 0, "no_loans": 0, "no_roles": 0}
+    stats = {"wdi": 0, "fallback": 0, "no_loans": 0, "no_roles": 0,
+             "clamped_negative": 0}
     known = set((banks.get("nations") or {}).keys())
     for iso in sorted(set(nations) & known):
         bank_row = nations.get(iso, {})
@@ -106,12 +107,17 @@ def main() -> int:
         capital_to_assets = None
         source_key = "declared_default"
         confidence = "estimated"
-        if iso in wdi and wdi[iso].get("value"):
-            capital_to_assets = float(wdi[iso]["value"]) / 100.0
+        wdi_value = (wdi.get(iso) or {}).get("value")
+        if wdi_value is not None and float(wdi_value) > 0.0:
+            capital_to_assets = float(wdi_value) / 100.0
             source_key = "wdi_fb_bnk_capa"
             confidence = "partial"  # ativos/PIB segue no_data
             stats["wdi"] += 1
         elif present:
+            # WDI negativo (GNQ/TCD) e' artefato do dado: o nucleo clampava a 0
+            # e JSON/nucleo discordavam. Fica o fallback declarado, contado.
+            if wdi_value is not None:
+                stats["clamped_negative"] += 1
             capital_to_assets = FALLBACK_CAPITAL_TO_ASSETS
             stats["fallback"] += 1
         else:
@@ -143,6 +149,12 @@ def main() -> int:
         "wdi_url": WDI_URL,
         "fallback_note": ("capital_to_assets sem WDI = 0,10 declarado (§10.6, "
                           "igual nas quatro faixas de renda); nao e medicao"),
+        "clamp_note": ("WDI FB.BNK.CAPA.ZS negativo (GNQ -6,40%, TCD -1,04%) "
+                       "e tratado como fallback declarado 0,10: capital/ativos "
+                       "negativo e' artefato do dado, e o nucleo clampava a 0 "
+                       "(JSON e nucleo discordavam). O campo e' INFORMATIVO no "
+                       "R2a: o alvo do modelo e' capital_to_loans_target x "
+                       "steady_loans, nunca capital_to_assets."),
         "reference_note": ("assets_pct_gdp/capital_pct_gdp/reference_target = "
                            "null (no_data): sem serie inequivoca de ativos/PIB; "
                            "nada digitado a mao"),

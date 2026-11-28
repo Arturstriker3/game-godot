@@ -2,12 +2,14 @@
  "artifact": "off365_banks.json",
  "capital_to_loans_target": 0.1,
  "counts": {
-  "fallback": 41,
+  "clamped_negative": 2,
+  "fallback": 43,
   "no_loans": 0,
   "no_roles": 7,
-  "wdi": 134
+  "wdi": 132
  },
  "fallback_note": "capital_to_assets sem WDI = 0,10 declarado (§10.6, igual nas quatro faixas de renda); nao e medicao",
+ "clamp_note": "WDI FB.BNK.CAPA.ZS negativo (GNQ -6,40%, TCD -1,04%) e tratado como fallback declarado 0,10: capital/ativos negativo e' artefato do dado, e o nucleo clampava a 0 (JSON e nucleo discordavam). O campo e' INFORMATIVO no R2a: o alvo do modelo e' capital_to_loans_target x steady_loans, nunca capital_to_assets.",
  "model_gdp_source": "harness tools/c1_world_ai_365.gd (baseline default, bancos desligados): PIB diario por cidade somado por nacao e anualizado x365",
  "nations": {
   "AFG": {
@@ -1091,8 +1093,8 @@
   "GNQ": {
    "assets_pct_gdp": null,
    "capital_pct_gdp": null,
-   "capital_to_assets": -0.0640252879823414,
-   "confidence": "partial",
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
    "foreign_share": null,
    "model_gdp_annual": 4277187.00990529,
    "private_share": null,
@@ -1101,7 +1103,7 @@
    "roles_present": [
     "public"
    ],
-   "source_key": "wdi_fb_bnk_capa",
+   "source_key": "declared_default",
    "steady_loans": 35681.2992023443
   },
   "GRC": {
@@ -2671,8 +2673,8 @@
   "TCD": {
    "assets_pct_gdp": null,
    "capital_pct_gdp": null,
-   "capital_to_assets": -0.010436273486247101,
-   "confidence": "partial",
+   "capital_to_assets": 0.1,
+   "confidence": "estimated",
    "foreign_share": null,
    "model_gdp_annual": 40424294.6279118,
    "private_share": null,
@@ -2681,7 +2683,7 @@
    "roles_present": [
     "public"
    ],
-   "source_key": "wdi_fb_bnk_capa",
+   "source_key": "declared_default",
    "steady_loans": 69268.293581192
   },
   "TGO": {
