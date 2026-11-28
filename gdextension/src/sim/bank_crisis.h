@@ -111,7 +111,7 @@ struct Policy {
 	double capital_flight_share = kCapitalFlightShareDefault;
 	double insolvency_tolerance = kInsolvencyToleranceDefault;
 	double insolvency_tolerance_ratio = kInsolvencyToleranceRatioDefault;
-	bool treasury_debt_rescue = true;
+	bool treasury_debt_rescue = false;
 	bool takeover_public = true;
 };
 Policy policy(const WorldState& ws);

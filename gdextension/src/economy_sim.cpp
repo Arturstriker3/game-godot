@@ -7863,7 +7863,7 @@ Dictionary EconomySim::set_bank_crisis(const Dictionary& raw_config) {
 	}
 	if (config.has("treasury_debt_rescue")) {
 		ws_.bank_crisis.treasury_debt_rescue = bool(
-			config.get("treasury_debt_rescue", true));
+			config.get("treasury_debt_rescue", false));
 	}
 	if (config.has("takeover_public")) {
 		ws_.bank_crisis.takeover_public = bool(

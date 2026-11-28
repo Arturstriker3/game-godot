@@ -1362,7 +1362,7 @@ void read_bank_crisis(WorldState& ws, const Dictionary& data) {
 			pol.insolvency_tolerance_ratio = std::max(0.0,
 				double(params.get("insolvency_tolerance_ratio", 0.0)));
 			pol.treasury_debt_rescue = bool(
-				params.get("treasury_debt_rescue", true));
+				params.get("treasury_debt_rescue", false));
 			pol.takeover_public = bool(
 				params.get("takeover_public", true));
 		}

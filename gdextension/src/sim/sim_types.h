@@ -1362,8 +1362,8 @@ struct WorldState;
 		// Tolerancia RELATIVA aos ativos (1e-6 = 1 parte por milhao): bancos
 		// grandes tem ruido de juro maior que bancos pequenos.
 		double insolvency_tolerance_ratio = 0.0;
-		// Alavancas de resolucao (laboratorio/teste; default de jogo = true).
-		bool treasury_debt_rescue = true; // Tesouro emite divida / BC carrega
+		// Alavancas de resolucao (laboratorio/teste; default de jogo = false no R2c).
+		bool treasury_debt_rescue = false; // Tesouro emite divida / BC carrega
 		bool takeover_public = true;      // residual vira banco publico
 	};
 
