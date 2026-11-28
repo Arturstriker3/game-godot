@@ -725,7 +725,10 @@ void EconomySim::set_rework_params(const Dictionary& values) {
 	BanksRework banks;
 	banks.enabled = bool(banks_block.get("enabled", false));
 	banks.capital = bool(banks_block.get("capital", false));
-	banks.deposits = bool(banks_block.get("deposits", false));
+	// R2b1: `deposits` ausente segue `capital` (o laboratorio que liga o
+	// capital liga o funding junto); `deposits=false` explicito continua
+	// reproduzindo o braco so-capital (gate 9746eb05).
+	banks.deposits = bool(banks_block.get("deposits", banks.capital));
 	banks.resolution = bool(banks_block.get("resolution", false));
 	const Dictionary dividend = banks_block.get("dividend", Dictionary());
 	banks.dividend_target_ratio = double(

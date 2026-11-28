@@ -188,6 +188,13 @@ void capitalize_public_monthly(WorldState& ws);
 // empresas. Move caixa para `bank.cash` e cria `deposits_funding` + claim;
 // `money_total`, `M0_gross` e o broad ficam constantes.
 void sweep_deposits(WorldState& ws);
+// R2b1: realocacao MENSAL dos claims de funding entre os bancos presentes da
+// nacao pelo score declarado (`deposits_alloc`: relacionamento/solidez/
+// pendulo). Move o claim e o caixa de lastro JUNTOS (Δclaim = ΔD_f =
+// Δbank.cash, `money_total` constante); `bank.deposits` (D_l) nao muda.
+// Determinista: cidades/grupos e contas em ordem de id. Sem a sub-flag
+// `deposits` e' no-op.
+void allocate_deposits_monthly(WorldState& ws);
 // Remove/reassocia claims quando um banco é absorvido (C6). Mantém
 // `Σ claims == Σ D_f`.
 void reassign_claims(WorldState& ws, const std::string& from_bank,
