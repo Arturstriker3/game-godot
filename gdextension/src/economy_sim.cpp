@@ -8292,6 +8292,13 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["policy_rate"] = ogs::monetary::rate_for_nation(ws_,
 			bank.nation);
 		entry["loan_rate"] = ogs::bank::loan_rate(ws_, bank.nation);
+		// R2b1/R2b2: oferta efetiva do banco (base + spread + desvio de
+		// solidez) e o piso de liquidez com o sinal da A3. Observabilidade.
+		entry["offer_rate"] = ogs::bank::offer_rate(ws_, bank);
+		entry["liquidity_floor"] = ogs::bank::liquidity_floor(ws_, bank);
+		entry["liquidity_floor_breaches"] = bank.liquidity_floor_breaches;
+		entry["last_liquidity_floor_breach_day"] =
+			bank.last_liquidity_floor_breach_day;
 		entry["loans"] = bank.loans;
 		entry["arrears"] = bank.arrears;
 		entry["bc_borrowing"] = bank.bc_borrowing;

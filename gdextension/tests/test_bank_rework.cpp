@@ -21,6 +21,8 @@
 #include "sim/treasury.h"
 
 #include <algorithm>
+#include <map>
+#include <string>
 #include <vector>
 
 using doctest::Approx;
@@ -896,31 +898,54 @@ TEST_CASE("R2b1: pagamento inteiro coberto pelo deposito") {
 	CHECK(bank.deposits_funding == Approx(50.0));
 }
 
-TEST_CASE("R2b1: grupo paga juro com o deposito sacavel") {
+TEST_CASE("R2b1: grupo paga juro com o deposito sacavel (pay_group_capped)") {
 	ogs::test::PocketWorld world;
 	enable_banks(world, true, true);
+	world.ws.day = 0;
+	world.ws.bank_credit_enabled = true;
+	world.ws.bank_default_days = 30;
+	world.ws.crisis.enabled = false;
 	ogs::bank::ensure(world.ws, "AAA",
 		ogs::bank::kRolePublic).name_status = "no_data";
 	ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
 	REQUIRE(!world.ws.groups.empty());
 	ogs::Group& group = world.ws.groups.front();
+
+	// O caminho REAL de producao e' `bank::phase` -> `pay_group_capped`
+	// (deposit::pay_group foi removido: so' o teste o chamava).
+	const double rate = ogs::bank::loan_rate(world.ws, "AAA");
+	const double interest = 400.0 * rate / ogs::bank::kDaysPerYear;
+	REQUIRE(interest > 1e-9);
+	group.cash = 0.0;
+	group.debt = 400.0;
+	group.credit_arrears = 0.0;
+	group.credit_rate_add = 0.0;
+	group.credit_default_days = 0;
+	group.debt_claims = {claim_to(bank.id, 400.0)};
 	group.bank_deposit = 400.0;
 	group.deposit_bank_id = bank.id;
-	group.cash = 0.0;
-	bank.cash = 400.0;
+	bank.cash = interest;
 	bank.deposits_funding = 400.0;
+	bank.loans = 400.0;
+	bank.deposits = 0.0;
 	ogs::deposit::link(world.ws);
 
-	double from_cash = -1.0;
-	double from_claim = -1.0;
-	const double paid = ogs::deposit::pay_group(world.ws, group, 120.0,
-		&from_cash, &from_claim);
-	CHECK(paid == Approx(120.0));
-	CHECK(from_cash == Approx(0.0));
-	CHECK(from_claim == Approx(120.0));
-	CHECK(group.bank_deposit == Approx(280.0));
-	CHECK(bank.cash == Approx(280.0));
-	CHECK(bank.deposits_funding == Approx(280.0));
+	const double money_before = world.core.money_total();
+	double money_delta = 0.0;
+	const int defaults = ogs::bank::phase(world.ws, &money_delta);
+
+	CHECK(defaults == 0);
+	// Juro pago pelo claim: sai do funding e volta ao caixa do banco; o
+	// principal e o agregado ficam (juro nao e' capitalizado).
+	CHECK(bank.interest_income == Approx(interest));
+	CHECK(group.bank_deposit == Approx(400.0 - interest));
+	CHECK(bank.deposits_funding == Approx(400.0 - interest));
+	CHECK(bank.cash == Approx(interest));
+	CHECK(group.debt == Approx(400.0));
+	CHECK(bank.loans == Approx(400.0));
+	// A parcela paga pelo claim nao destroi M0 (so' troca D_f por caixa).
+	CHECK(money_delta == Approx(0.0));
+	CHECK(world.core.money_total() == Approx(money_before));
 }
 
 // ---------------------------------------------------------------------------
@@ -1202,21 +1227,31 @@ TEST_CASE("R2b1: alocacao mensal move claim e lastro juntos") {
 
 	world.ws.day = 30;
 	ogs::bank::allocate_deposits_monthly(world.ws);
-	// O claim e o caixa de lastro foram juntos para o banco de maior solidez.
+	// R2b1 (fix B1): alocacao NORMALIZADA pelos scores (nao "tudo no
+	// melhor"): 0,30/(0,30+1,00) fica em A e 1,00/(0,30+1,00) vai para B.
+	const double total_score = 0.30 + 1.00;
+	const double keep_a = 100.0 * 0.30 / total_score;
+	const double move_b = 100.0 * 1.00 / total_score;
 	CHECK(city.claim_total() == Approx(100.0));
 	CHECK(city.bank_accounts.size() == 2);
+	const ogs::City::BankAccount* at_a = nullptr;
 	const ogs::City::BankAccount* at_b = nullptr;
 	for (const ogs::City::BankAccount& row : city.bank_accounts) {
+		if (row.bank_id == a.id) {
+			at_a = &row;
+		}
 		if (row.bank_id == b.id) {
 			at_b = &row;
 		}
 	}
+	REQUIRE(at_a != nullptr);
 	REQUIRE(at_b != nullptr);
-	CHECK(at_b->firm == Approx(100.0));
-	CHECK(a.deposits_funding == Approx(0.0));
-	CHECK(b.deposits_funding == Approx(100.0));
-	CHECK(a.cash == Approx(100.0));
-	CHECK(b.cash == Approx(600.0));
+	CHECK(at_a->firm == Approx(keep_a));
+	CHECK(at_b->firm == Approx(move_b));
+	CHECK(a.deposits_funding == Approx(keep_a));
+	CHECK(b.deposits_funding == Approx(move_b));
+	CHECK(a.cash == Approx(200.0 - move_b));
+	CHECK(b.cash == Approx(500.0 + move_b));
 	CHECK(world.core.money_total() == Approx(money_before));
 	CHECK(ogs::bank::deposit_claims_total(world.ws)
 		== Approx(ogs::bank::totals(world.ws).deposits_funding));

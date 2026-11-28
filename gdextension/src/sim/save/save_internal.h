@@ -25,6 +25,9 @@ String sim_str(const char* utf8);
 double safe_nonneg(double v);
 double safe_unit(double v);
 double read_sim_population(const Dictionary& data, double population);
+// R2b1 (fix A1): claims de divida por credor (ordenados por `bank_id`).
+void write_bank_claims(Array& out, const std::vector<BankLoan>& claims);
+void load_bank_claims(std::vector<BankLoan>& out, const Array& rows);
 
 Dictionary save_informal_block(double share, const double* labor_share,
 		const double* income, double wage_bill, double workers, double output,

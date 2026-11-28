@@ -325,6 +325,10 @@ void SimCore::apply_banks_rework_after_load(bool has_saved_flag) {
 	}
 	// R2b1: reconstroi o elo derivado cidade/grupo -> mundo.
 	deposit::link(ws_);
+	// R2b1 (fix A1): save sem `debt_claims` (v44 antigo/v43) tem a divida
+	// atribuida ao credor da regra de hoje. Sem isto a divida sem claim
+	// ficaria zumbi assim que um emprestimo novo acendesse o modo por claim.
+	bank::rebuild_claims_after_load(ws_);
 }
 
 void SimCore::phase_bank_deposits() {

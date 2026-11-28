@@ -173,6 +173,12 @@ double deposit_claims_total(const WorldState& ws);
 // Piso de liquidez do dividendo: min_reserve_ratio × D_t.
 double liquidity_floor(const WorldState& ws, const Bank& bank);
 
+// R2b1 (fix A1): migração do load. Save v44 antigo (sem `debt_claims` no
+// grupo/cidade) tem a dívida agregada atribuída ao credor da regra de hoje
+// (`lender()` para grupos, banco público para a cidade). Idempotente; só
+// roda com `banks.deposits` ligado.
+void rebuild_claims_after_load(WorldState& ws);
+
 // Semeia o capital PAGO do papel privado no dia 0 por realocação
 // (`pop.savings`), nunca por emissão. O papel público nasce com 0 e é
 // capitalizado no fecho mensal por `capitalize_public_monthly`; nenhum papel

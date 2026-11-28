@@ -3,6 +3,7 @@
 // C++ puro (STL): nada de godot_cpp aqui.
 #include "actions.h"
 
+#include "deposit.h"
 #include "efficiency.h"
 
 #include "sim_constants.h"
@@ -691,6 +692,10 @@ struct OwnerCash {
 	// R2b1: dono grupo - o pagamento passa por `Group::pay_cash` (caixa ->
 	// claim do banco de relacionamento) e o limite inclui o deposito sacavel.
 	Group* group = nullptr;
+	// R2b1 (fix contrato #23): dono privado da cidade - o pagamento passa por
+	// `City::firm_pay` (float -> claim sacavel), o mesmo primitivo do resto da
+	// cidade. `city` so' e' preenchido no caixa unico (R1a).
+	City* city = nullptr;
 };
 OwnerCash mine_owner_cash(SimCore& core, City& city, const Building& building,
 		std::string& commit_key) {
@@ -699,25 +704,34 @@ OwnerCash mine_owner_cash(SimCore& core, City& city, const Building& building,
 	const int kind = core.owner_kind(building.owner, &group_id, &origin_nation);
 	if (kind == 0) {
 		commit_key = "state";
-		return { &city.government_budget, nullptr, nullptr, nullptr };
+		return { &city.government_budget, nullptr, nullptr, nullptr, nullptr };
 	}
 	if (kind == 1 || kind == 2) {
 		commit_key = group_id;
 		Group* group = core.find_group(group_id);
 		return group == nullptr ? OwnerCash{}
-			: OwnerCash{ &group->cash, nullptr, nullptr, group };
+			: OwnerCash{ &group->cash, nullptr, nullptr, group, nullptr };
 	}
 	commit_key = "private";
 	if (city.unified_cash) {
 		return { &city.private_cash, &city.firm_cash, &city.firm_sub,
-			nullptr };
+			nullptr, &city };
 	}
-	return { &city.firm_cash, nullptr, nullptr, nullptr };
+	return { &city.firm_cash, nullptr, nullptr, nullptr, nullptr };
 }
-// Debita o dono com a ordem do R2b1 (grupo: caixa -> deposito).
-void owner_pay(OwnerCash& owner, double cost) {
+// Debita o dono com a ordem do R2b1 (grupo/cidade: caixa -> deposito).
+void owner_pay(WorldState& ws, OwnerCash& owner, double cost) {
 	if (owner.group != nullptr) {
 		owner.group->pay_cash(cost);
+		return;
+	}
+	if (owner.city != nullptr) {
+		// Contrato #23: a mina do dono privado usa o MESMO primitivo da cidade
+		// (float primeiro, saque do claim no mesmo dia se faltar).
+		if (owner.city->ws_link == nullptr) {
+			deposit::link(ws);
+		}
+		owner.city->firm_pay(cost);
 		return;
 	}
 	if (owner.cash == nullptr) {
@@ -783,10 +797,15 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 	}
 	const double committed = committed_construction(ws, city->id, commit_key);
 	// Com sub-saldos, o gasto das firmas e autorizado pelo `firm_sub`, nao
-	// pelo total armazenado.
+	// pelo total armazenado. Grupo e dono privado da cidade usam a LIQUIDEZ
+	// (float + claim sacavel do dia), como o resto das leituras do R2b1.
+	if (owner.city != nullptr && owner.city->ws_link == nullptr) {
+		deposit::link(ws);
+	}
 	const double budget = owner.group != nullptr
 		? owner.group->liquid_cash()
-		: (owner.sub != nullptr ? *owner.sub : *cash);
+		: (owner.city != nullptr ? owner.city->firm_liquidity()
+			: (owner.sub != nullptr ? *owner.sub : *cash));
 	if (committed + cost > budget) {
 		result.error = "capital insuficiente";
 		result.cost = cost;
@@ -802,7 +821,7 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 	if (instant_construction) {
 		// Hook de teste/laboratório: obra instantânea, custo integral debitado do
 		// dono e pago ao setor de construção doméstico (dinheiro conservado).
-		owner_pay(owner, cost);
+		owner_pay(ws, owner, cost);
 		city->service_receive(cost);
 		city->construction_revenue_pending += cost;
 		building->capacity += capacity_added;
@@ -840,7 +859,7 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 	project.total_cost = cost;
 	// Mesma regra do §15: o capital da obra é reservado no início.
 	project.reserved = cost;
-	owner_pay(owner, cost);
+	owner_pay(ws, owner, cost);
 	core.add_construction_project(project);
 	result.started = true;
 	result.project_id = project.id;

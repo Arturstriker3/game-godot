@@ -33,11 +33,5 @@ double liquid_group(const WorldState& ws, const Group& group);
 double withdraw_city(WorldState& ws, City& city, bool firm, double want);
 double withdraw_group(WorldState& ws, Group& group, double want);
 
-// Pagamento do grupo: caixa primeiro, deposito depois. `from_cash` e
-// `from_claim` (opcionais) registram a ORIGEM do dinheiro - o servicing usa
-// isso para debitar D_l so' na parcela que saiu do caixa de emprestimo.
-double pay_group(WorldState& ws, Group& group, double value,
-	double* from_cash = nullptr, double* from_claim = nullptr);
-
 } // namespace deposit
 } // namespace ogs

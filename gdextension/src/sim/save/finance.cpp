@@ -320,6 +320,12 @@ void write(Dictionary& data, const WorldState& ws) {
 			if (ws.banks_rework.enabled) {
 				// R2a: só no ON (save OFF byte-idêntico ao anterior).
 				entry["deposits_funding"] = bank.deposits_funding;
+				// R2b1 (fix A3): sinal de liquidez acendido pelo saque que
+				// deixa o caixa abaixo do piso (registro, nao bloqueio).
+				entry["liquidity_floor_breaches"] =
+					bank.liquidity_floor_breaches;
+				entry["last_liquidity_floor_breach_day"] =
+					bank.last_liquidity_floor_breach_day;
 				entry["capital_ratio_target"] = bank.capital_ratio_target;
 				entry["capital_target"] = bank.capital_target;
 				entry["seed_scale"] = bank.seed_scale;
@@ -958,6 +964,11 @@ void read_money(WorldState& ws, SimCore& core, const Dictionary& data) {
 				// retroativo).
 				bank.deposits_funding = std::max(0.0,
 					double(row.get("deposits_funding", 0.0)));
+				// R2b1 (fix A3): sinal de liquidez (ON; ausente = 0).
+				bank.liquidity_floor_breaches = std::max(0,
+					int(row.get("liquidity_floor_breaches", 0)));
+				bank.last_liquidity_floor_breach_day = int(
+					row.get("last_liquidity_floor_breach_day", -1));
 				bank.capital_ratio_target = std::max(0.0,
 					double(row.get("capital_ratio_target", 0.0)));
 				bank.capital_target = std::max(0.0,

@@ -33,22 +33,10 @@ double clamp01(double value) {
 	return std::clamp(value, 0.0, 1.0);
 }
 
-// R2b1: so ha servicing/C6 por claim quando o mundo JA atribuiu a divida a
-// credores (mundo novo com a sub-flag ou save v44 migrado). Sem nenhum claim
-// de divida o caminho antigo continua valendo (migracao/estado legado).
-bool has_debt_claims(const WorldState& ws) {
-	for (const Group& group : ws.groups) {
-		if (!group.debt_claims.empty()) {
-			return true;
-		}
-	}
-	for (const City& city : ws.cities) {
-		if (!city.firm_debt_claims.empty()) {
-			return true;
-		}
-	}
-	return false;
-}
+// R2b1 (fix A1): o gate de servicing/C6 e' POR TOMADOR (ver `bank::phase` e
+// `apply_loss`), nao global. Um mundo misto (save legado + emprestimo novo)
+// nao pode congelar a divida que ainda nao tem claim nem deixar a antiga fora
+// da C6. Por isso nao existe mais `has_debt_claims(ws)`.
 
 // Codigo da moeda da nacao (vazio = sem moeda no estado: ausencia declarada).
 std::string currency_of(const WorldState& ws, const std::string& nation) {
@@ -273,21 +261,24 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 		double debt = 0.0;
 		double arrears = 0.0;
 	};
-	// R2b1: com depositos o bail-in cobra quem deve A ESTE banco (claim por
-	// credor), nao o tomador que o hash `lender()` sorteia hoje.
-	const bool claims = ws.banks_rework.enabled && ws.banks_rework.deposits
-		&& has_debt_claims(ws);
+	// R2b1 (fix A1): o bail-in cobra quem deve A ESTE banco (claim por
+	// credor). O modo e' POR TOMADOR: grupo com claims e' cobrado pelo claim;
+	// grupo sem claim (save legado) continua no hash `lender()`, para a
+	// divida antiga nao sumir do servicing quando outro tomador cria claim.
+	const bool claims_mode = ws.banks_rework.enabled
+		&& ws.banks_rework.deposits;
 	std::vector<Row> rows;
 	double total = 0.0;
 	for (int index = 0; index < static_cast<int>(ws.groups.size());
 			++index) {
 		const Group& group = ws.groups[static_cast<std::size_t>(index)];
-		double claim = 0.0;
-		if (claims) {
+		double debt = 0.0;
+		double arrears = 0.0;
+		if (claims_mode && !group.debt_claims.empty()) {
 			for (const BankLoan& loan : group.debt_claims) {
 				if (loan.bank_id == bank.id) {
-					claim = std::max(0.0, loan.principal)
-						+ std::max(0.0, loan.arrears);
+					debt = std::max(0.0, loan.principal);
+					arrears = std::max(0.0, loan.arrears);
 					break;
 				}
 			}
@@ -296,14 +287,14 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 			if (lender == nullptr || lender->id != bank.id) {
 				continue;
 			}
-			claim = std::max(0.0, group.debt)
-				+ std::max(0.0, group.credit_arrears);
+			debt = std::max(0.0, group.debt);
+			arrears = std::max(0.0, group.credit_arrears);
 		}
+		const double claim = debt + arrears;
 		if (claim <= kEps) {
 			continue;
 		}
-		rows.push_back({index, claims ? claim : group.debt,
-			claims ? 0.0 : group.credit_arrears});
+		rows.push_back({index, debt, arrears});
 		total += claim;
 	}
 	if (rows.empty() || total <= kEps) {
@@ -356,29 +347,47 @@ double apply_loss(WorldState& ws, const std::string& bank_id, double amount) {
 		return 0.0;
 	}
 	Bank& bank = found->second;
-	// R2b1: com depositos a baixa e' POR CLAIM (o ativo do credor e' o claim
-	// de cada tomador, grupo ou cidade); sem depositos vale o caminho antigo
-	// (hash `lender()` + agregado do grupo), bit a bit.
-	const bool claims = ws.banks_rework.enabled && ws.banks_rework.deposits
-		&& has_debt_claims(ws);
+	// R2b1 (fix A1): com depositos a baixa e' POR CLAIM (o ativo do credor e'
+	// o claim de cada tomador, grupo ou cidade). O modo e' POR TOMADOR:
+	// tomador sem claim (save legado) continua no caminho antigo
+	// (hash `lender()` para grupo, banco publico para a cidade), bit a bit.
+	const bool claims_mode = ws.banks_rework.enabled
+		&& ws.banks_rework.deposits;
 	double book = 0.0;
-	if (claims) {
+	if (claims_mode) {
 		for (const Group& group : ws.groups) {
-			for (const BankLoan& claim : group.debt_claims) {
-				if (claim.bank_id == bank.id) {
-					book += std::max(0.0, claim.principal)
-						+ std::max(0.0, claim.arrears);
-					break;
+			if (!group.debt_claims.empty()) {
+				for (const BankLoan& claim : group.debt_claims) {
+					if (claim.bank_id == bank.id) {
+						book += std::max(0.0, claim.principal)
+							+ std::max(0.0, claim.arrears);
+						break;
+					}
 				}
+				continue;
+			}
+			const Bank* lender = bank::lender(ws, group);
+			if (lender != nullptr && lender->id == bank.id) {
+				book += std::max(0.0, group.debt)
+					+ std::max(0.0, group.credit_arrears);
 			}
 		}
 		for (const City& city : ws.cities) {
-			for (const BankLoan& claim : city.firm_debt_claims) {
-				if (claim.bank_id == bank.id) {
-					book += std::max(0.0, claim.principal)
-						+ std::max(0.0, claim.arrears);
-					break;
+			if (!city.firm_debt_claims.empty()) {
+				for (const BankLoan& claim : city.firm_debt_claims) {
+					if (claim.bank_id == bank.id) {
+						book += std::max(0.0, claim.principal)
+							+ std::max(0.0, claim.arrears);
+						break;
+					}
 				}
+				continue;
+			}
+			const Bank* public_bank = bank::find(ws, city.nation,
+				bank::kRolePublic);
+			if (public_bank != nullptr && public_bank->id == bank.id) {
+				book += std::max(0.0, city.firm_debt)
+					+ std::max(0.0, city.firm_credit_arrears);
 			}
 		}
 	} else {
@@ -396,7 +405,7 @@ double apply_loss(WorldState& ws, const std::string& bank_id, double amount) {
 		return 0.0;
 	}
 	double written = 0.0;
-	if (claims) {
+	if (claims_mode) {
 		// A proporcao e' sobre o book do CREDOR; principal e juros vencidos
 		// caem juntos na mesma razao do claim. `out_debt`/`out_arrears`
 		// devolvem a parcela para o agregado do tomador.
@@ -432,39 +441,84 @@ double apply_loss(WorldState& ws, const std::string& bank_id, double amount) {
 			*out_debt = take_debt;
 			*out_arrears = take_arrears;
 		};
+		// Tomador legado (sem claim): a baixa segue o agregado, na mesma
+		// proporcao do book.
+		const auto write_aggregate = [&](double& debt, double& arrears) {
+			const double total = std::max(0.0, debt)
+				+ std::max(0.0, arrears);
+			if (total <= kEps || written >= loss - kEps) {
+				return;
+			}
+			double take = std::min(total,
+				loss * (total / std::max(kEps, book)));
+			if (written + take > loss) {
+				take = loss - written;
+			}
+			if (take <= kEps) {
+				return;
+			}
+			const double share_arrears = arrears / total;
+			const double take_arrears = std::min(std::max(0.0, arrears),
+				take * share_arrears);
+			const double take_debt = std::min(std::max(0.0, debt),
+				take - take_arrears);
+			arrears = std::max(0.0, arrears - take_arrears);
+			debt = std::max(0.0, debt - take_debt);
+			bank.arrears = std::max(0.0, bank.arrears - take_arrears);
+			bank.loans = std::max(0.0, bank.loans - take_debt);
+			bank.writeoffs += take_arrears + take_debt;
+			bank.loss_today += take_arrears + take_debt;
+			written += take_arrears + take_debt;
+		};
 		for (Group& group : ws.groups) {
 			if (written >= loss - kEps) {
 				break;
 			}
-			for (BankLoan& claim : group.debt_claims) {
-				if (claim.bank_id != bank.id) {
-					continue;
+			if (!group.debt_claims.empty()) {
+				for (BankLoan& claim : group.debt_claims) {
+					if (claim.bank_id != bank.id) {
+						continue;
+					}
+					double take_debt = 0.0;
+					double take_arrears = 0.0;
+					write_claim(claim, &take_debt, &take_arrears);
+					group.debt = std::max(0.0, group.debt - take_debt);
+					group.credit_arrears = std::max(0.0,
+						group.credit_arrears - take_arrears);
+					break;
 				}
-				double take_debt = 0.0;
-				double take_arrears = 0.0;
-				write_claim(claim, &take_debt, &take_arrears);
-				group.debt = std::max(0.0, group.debt - take_debt);
-				group.credit_arrears = std::max(0.0,
-					group.credit_arrears - take_arrears);
-				break;
+				continue;
+			}
+			const Bank* lender = bank::lender(ws, group);
+			if (lender != nullptr && lender->id == bank.id) {
+				write_aggregate(group.debt, group.credit_arrears);
 			}
 		}
 		for (City& city : ws.cities) {
 			if (written >= loss - kEps) {
 				break;
 			}
-			for (BankLoan& claim : city.firm_debt_claims) {
-				if (claim.bank_id != bank.id) {
-					continue;
+			if (!city.firm_debt_claims.empty()) {
+				for (BankLoan& claim : city.firm_debt_claims) {
+					if (claim.bank_id != bank.id) {
+						continue;
+					}
+					double take_debt = 0.0;
+					double take_arrears = 0.0;
+					write_claim(claim, &take_debt, &take_arrears);
+					city.firm_debt = std::max(0.0,
+						city.firm_debt - take_debt);
+					city.firm_credit_arrears = std::max(0.0,
+						city.firm_credit_arrears - take_arrears);
+					break;
 				}
-				double take_debt = 0.0;
-				double take_arrears = 0.0;
-				write_claim(claim, &take_debt, &take_arrears);
-				city.firm_debt = std::max(0.0,
-					city.firm_debt - take_debt);
-				city.firm_credit_arrears = std::max(0.0,
-					city.firm_credit_arrears - take_arrears);
-				break;
+				continue;
+			}
+			const Bank* public_bank = bank::find(ws, city.nation,
+				bank::kRolePublic);
+			if (public_bank != nullptr && public_bank->id == bank.id) {
+				write_aggregate(city.firm_debt,
+					city.firm_credit_arrears);
 			}
 		}
 		return written;

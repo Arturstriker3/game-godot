@@ -51,6 +51,20 @@ double covered(const Bank& bank, double claim) {
 	return std::min(claim, cash * std::min(1.0, claim / funding));
 }
 
+// R2b1 (fix A3): o saque que deixa o caixa ABAIXO do piso de liquidez acende
+// o sinal da C6. Nao bloqueia/adia o pagamento (contrato 4.3/4.4: "nao
+// bloqueia o pagamento, registra"); conta no maximo uma violacao por dia.
+void signal_liquidity(WorldState& ws, Bank& bank) {
+	if (bank.cash + kEps >= bank::liquidity_floor(ws, bank)) {
+		return;
+	}
+	if (bank.last_liquidity_floor_breach_day == ws.day) {
+		return;
+	}
+	bank.liquidity_floor_breaches += 1;
+	bank.last_liquidity_floor_breach_day = ws.day;
+}
+
 } // namespace
 
 void link(WorldState& ws) {
@@ -125,6 +139,7 @@ double withdraw_city(WorldState& ws, City& city, bool firm, double want) {
 		city.private_cash += x;
 		left -= x;
 		paid += x;
+		signal_liquidity(ws, *bank);
 	}
 	return paid;
 }
@@ -149,35 +164,8 @@ double withdraw_group(WorldState& ws, Group& group, double want) {
 	bank->cash = std::max(0.0, bank->cash - x);
 	bank->deposits_funding = std::max(0.0, bank->deposits_funding - x);
 	group.cash += x;
+	signal_liquidity(ws, *bank);
 	return x;
-}
-
-double pay_group(WorldState& ws, Group& group, double value,
-		double* from_cash, double* from_claim) {
-	if (from_cash != nullptr) {
-		*from_cash = 0.0;
-	}
-	if (from_claim != nullptr) {
-		*from_claim = 0.0;
-	}
-	if (!(value > 0.0)) {
-		return 0.0;
-	}
-	const double cash_part = std::min(value, std::max(0.0, group.cash));
-	group.cash -= cash_part;
-	double claim_part = 0.0;
-	if (value - cash_part > kEps) {
-		claim_part = withdraw_group(ws, group, value - cash_part);
-		// withdraw_group credita o caixa do pagador; o pagamento debita.
-		group.cash = std::max(0.0, group.cash - claim_part);
-	}
-	if (from_cash != nullptr) {
-		*from_cash = cash_part;
-	}
-	if (from_claim != nullptr) {
-		*from_claim = claim_part;
-	}
-	return cash_part + claim_part;
 }
 
 } // namespace deposit

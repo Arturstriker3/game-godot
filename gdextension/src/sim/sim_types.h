@@ -1272,6 +1272,12 @@ struct WorldState;
 		std::string charter = "declared";
 		// Motivo publicado quando a capitalizacao publica do mes foi adiada.
 		std::string public_cap_deferred;
+		// R2b1 (fix A3): sinal de liquidez da C6 acendido quando um saque
+		// deixa `cash < liquidity_floor`. Nao bloqueia o pagamento (o plano
+		// 4.3/4.4 manda REGISTRAR); o contador e o dia da ultima violacao vao
+		// ao save v44 no ON. `breaches` conta a primeira violacao de cada dia.
+		int liquidity_floor_breaches = 0;
+		int last_liquidity_floor_breach_day = -1;
 	};
 
 	// C6 (D-114) - FUNDO DE SEGURO DE DEPOSITO por nacao. Entra no dinheiro
