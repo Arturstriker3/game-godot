@@ -228,6 +228,55 @@ TEST_CASE("R2c: charter publico com teto paga o Tesouro e corta orcamentos") {
 		== Approx(money_before - 400.0).epsilon(1e-9));
 }
 
+TEST_CASE("R2c: austeridade e' limite, nao despesa; reconcile nao cobra o corte") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true);
+	enable_treasury(world);
+	ogs::Bank& failing = present(world, ogs::bank::kRolePrivate);
+	failing.cash = 0.0;
+	failing.loans = 0.0;
+	failing.arrears = 0.0;
+	failing.deposits = 1000.0;
+	failing.deposits_funding = 0.0;
+	failing.capital = 0.0;
+	borrower(world, failing.id, 1000.0, 400.0);
+	set_charter_cap(world, 1000000000.0, 0.0);
+	world.ws.nation_treasury["AAA"] = 1000.0;
+	// Contadores e aberturas do intervalo coerentes: 600 de servicos + 400
+	// de obras por cidade (limite 1.000). O resgate de 600 corta 30 %. A
+	// fixture de bolso nao monta a camada urbana; o teste a cria como o load.
+	world.ws.city_gov.resize(world.ws.cities.size());
+	for (std::size_t index = 0; index < world.ws.cities.size(); ++index) {
+		ogs::City& city = world.ws.cities[index];
+		city.regional_budget_limit_month = 1000.0;
+		city.government_budget = 600.0;
+		city.regional_budget_open_services = 600.0;
+		city.regional_budget_open_works = 400.0;
+		world.ws.city_gov[index].cash = 400.0;
+	}
+	const double money_before = world.core.money_total();
+
+	ogs::bank_crisis::resolve(world.ws, failing.id);
+	// Tesouro paga o charter (600) e a austeridade corta 30 % dos limites.
+	CHECK(world.ws.nation_treasury["AAA"] == Approx(400.0).epsilon(1e-9));
+	for (const ogs::City& city : world.ws.cities) {
+		CHECK(city.regional_budget_limit_month == Approx(700.0));
+		CHECK(city.government_budget == Approx(420.0));
+		// A abertura acompanha o corte: o reconcile nao ve' despesa.
+		CHECK(city.regional_budget_open_services == Approx(420.0));
+		CHECK(city.regional_budget_open_works == Approx(280.0));
+	}
+	for (const ogs::CityGov& gov : world.ws.city_gov) {
+		CHECK(gov.cash == Approx(280.0));
+	}
+	// O corte do limite nao e' gasto: reconcile do intervalo cobra zero e o
+	// Tesouro nao paga duas vezes o resgate.
+	CHECK(ogs::treasury::reconcile(world.ws) == Approx(0.0));
+	CHECK(world.ws.nation_treasury["AAA"] == Approx(400.0).epsilon(1e-9));
+	CHECK(world.core.money_total()
+		== Approx(money_before - 400.0).epsilon(1e-9));
+}
+
 TEST_CASE("R2c: custo acima do teto = deserto; charter reabre o banco") {
 	ogs::test::PocketWorld world(false);
 	enable_banks(world, true);

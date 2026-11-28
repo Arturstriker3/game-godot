@@ -1228,8 +1228,12 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 	event.cause = cause;
 	event.gap = gap0;
 	std::vector<std::string> kinds;
-	// Sonda R2c: dinheiro do mundo antes e depois de cada degrau.
-	MoneyProbe probe = money_probe(ws);
+	// Sonda R2c: dinheiro do mundo antes e depois de cada degrau. Desligada
+	// (sem a env) nao calcula nada: custo zero e nenhum efeito no mundo.
+	MoneyProbe probe;
+	if (bank_trace_on()) {
+		probe = money_probe(ws);
+	}
 	const auto trace = [&](const char* step) {
 		if (!bank_trace_on()) {
 			return;
@@ -1675,8 +1679,10 @@ void phase(WorldState& ws, double m0_total) {
 		deposits_before += bank.deposits;
 		nation_deposits[bank.nation] += bank::total_deposits(bank);
 	}
-	const MoneyProbe phase_open = money_probe(ws);
-	MoneyProbe phase_mark = phase_open;
+	MoneyProbe phase_mark;
+	if (bank_trace_on()) {
+		phase_mark = money_probe(ws);
+	}
 
 	// 1. Premio do seguro de deposito: sai do caixa do banco, entra no fundo
 	// da nacao (conserva dinheiro). O fundo tem alvo declarado por nacao; sem

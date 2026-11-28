@@ -1341,7 +1341,10 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {
 		probe_money = money;
 		probe_bank = bank;
 	};
-	probe_money = bank_crisis::probe_money_total(ws);
+	// Sem a env a sonda nao calcula nada (custo zero, sem efeito no mundo).
+	if (std::getenv("OGS_BANK_TRACE") != nullptr) {
+		probe_money = bank_crisis::probe_money_total(ws);
+	}
 	// 1. Construções (inclui refinarias e fazendas), na ordem do save.
 	for (Building& building : ws.buildings) {
 		if (building.bankrupt || building.strategic) {
