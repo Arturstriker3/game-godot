@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 namespace ogs {
 
@@ -1539,6 +1541,71 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 		// é o patrimônio do banco, que pode ficar negativo).
 		const double loans_gap = book.bank_loans - book.group_debt;
 		const double arrears_gap = book.bank_arrears - book.group_arrears;
+		// R2b1 (diagnostico, so leitura): com o gap de juros, mostra a entidade
+		// cujo arrears nao bate com o claim (banco, grupo ou cidade).
+		if (std::getenv("OGS_R2B1_ARREARS_TRACE") != nullptr
+				&& (std::abs(loans_gap) > book_tolerance
+					|| std::abs(arrears_gap) > book_tolerance)) {
+			for (const auto& row : ws_.banks) {
+				double claims_debt = 0.0;
+				double claims_arrears = 0.0;
+				for (const Group& group : ws_.groups) {
+					for (const BankLoan& claim : group.debt_claims) {
+						if (claim.bank_id == row.first) {
+							claims_debt += claim.principal;
+							claims_arrears += claim.arrears;
+						}
+					}
+				}
+				for (const City& city : ws_.cities) {
+					for (const BankLoan& claim : city.firm_debt_claims) {
+						if (claim.bank_id == row.first) {
+							claims_debt += claim.principal;
+							claims_arrears += claim.arrears;
+						}
+					}
+				}
+				if (std::abs(row.second.loans - claims_debt) > 1e-6
+						|| std::abs(row.second.arrears - claims_arrears)
+							> 1e-6) {
+					std::fprintf(stderr,
+						"[arrears-trace] bank=%s loans=%.6f claims_debt=%.6f"
+						" arrears=%.6f claims_arrears=%.6f\n",
+						row.first.c_str(), row.second.loans, claims_debt,
+						row.second.arrears, claims_arrears);
+				}
+			}
+			for (const Group& group : ws_.groups) {
+				double sum = 0.0;
+				for (const BankLoan& claim : group.debt_claims) {
+					sum += claim.arrears;
+				}
+				if (std::abs(group.credit_arrears - sum) > 1e-6) {
+					std::fprintf(stderr,
+						"[arrears-trace] group=%s aggregate=%.6f claims=%.6f"
+						" debt=%.6f claims_debt=%.6f\n",
+						group.id.c_str(), group.credit_arrears, sum,
+						group.debt, [&group]() {
+							double total = 0.0;
+							for (const BankLoan& claim : group.debt_claims) {
+								total += claim.principal;
+							}
+							return total;
+						}());
+				}
+			}
+			for (const City& city : ws_.cities) {
+				double sum = 0.0;
+				for (const BankLoan& claim : city.firm_debt_claims) {
+					sum += claim.arrears;
+				}
+				if (std::abs(city.firm_credit_arrears - sum) > 1e-6) {
+					std::fprintf(stderr,
+						"[arrears-trace] city=%s aggregate=%.6f claims=%.6f\n",
+						city.id.c_str(), city.firm_credit_arrears, sum);
+				}
+			}
+		}
 		if (!std::isfinite(loans_gap)
 				|| std::abs(loans_gap) > book_tolerance
 				|| !std::isfinite(arrears_gap)

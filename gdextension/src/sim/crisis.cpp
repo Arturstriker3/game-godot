@@ -310,6 +310,83 @@ int choose_buyer(WorldState& ws, const City& city, double price,
 	return -1;
 }
 
+// R2b1: paga os credores do VENDEDOR com o produto do leilao e devolve o que
+// sobra para o caixa dele. Modo claims: paga por credor, na ordem do vetor
+// (`bank_id`), reduzindo claim, agregado do tomador e livro do banco juntos —
+// o mesmo par que o servicing le. Sem claims: caminho legado do `lender()`
+// (bit a bit no OFF).
+double pay_seller_creditors(WorldState& ws, Group& seller, double value,
+		double* bank_money_delta) {
+	double remainder = std::max(0.0, value);
+	if (remainder <= 1e-9) {
+		return 0.0;
+	}
+	const bool claims_mode = ws.banks_rework.enabled
+		&& ws.banks_rework.deposits;
+	if (claims_mode && !seller.debt_claims.empty()) {
+		for (BankLoan& claim : seller.debt_claims) {
+			if (remainder <= 1e-9) {
+				break;
+			}
+			const double total = std::max(0.0, claim.principal)
+				+ std::max(0.0, claim.arrears);
+			if (total <= 1e-9) {
+				continue;
+			}
+			const auto found = ws.banks.find(claim.bank_id);
+			if (found == ws.banks.end()) {
+				continue;
+			}
+			Bank& bank = found->second;
+			const double paid = std::min({ remainder, total,
+				std::max(0.0, bank.deposits) });
+			if (paid <= 1e-9) {
+				continue;
+			}
+			const double debt_paid = std::min(paid,
+				std::max(0.0, claim.principal));
+			const double arrears_paid = std::min(paid - debt_paid,
+				std::max(0.0, claim.arrears));
+			claim.principal = std::max(0.0, claim.principal - debt_paid);
+			claim.arrears = std::max(0.0, claim.arrears - arrears_paid);
+			seller.debt = std::max(0.0, seller.debt - debt_paid);
+			seller.credit_arrears = std::max(0.0,
+				seller.credit_arrears - arrears_paid);
+			bank.loans = std::max(0.0, bank.loans - debt_paid);
+			bank.arrears = std::max(0.0, bank.arrears - arrears_paid);
+			bank.deposits = std::max(0.0, bank.deposits - paid);
+			if (bank_money_delta != nullptr) {
+				*bank_money_delta -= paid;
+			}
+			remainder -= paid;
+		}
+		return remainder;
+	}
+	Bank* bank = bank::lender(ws, seller);
+	const double claim = std::max(0.0,
+		seller.debt + seller.credit_arrears);
+	if (bank != nullptr && claim > 0.0 && remainder > 0.0) {
+		const double paid = std::min({ remainder, claim,
+			std::max(0.0, bank->deposits) });
+		if (paid > 0.0) {
+			const double debt_paid = std::min(paid, seller.debt);
+			seller.debt -= debt_paid;
+			const double arrears_paid = std::min(
+				std::max(0.0, paid - debt_paid),
+				seller.credit_arrears);
+			seller.credit_arrears -= arrears_paid;
+			bank->loans = std::max(0.0, bank->loans - debt_paid);
+			bank->arrears = std::max(0.0, bank->arrears - arrears_paid);
+			bank->deposits -= paid;
+			if (bank_money_delta != nullptr) {
+				*bank_money_delta -= paid;
+			}
+			remainder -= paid;
+		}
+	}
+	return remainder;
+}
+
 void pay_auction_proceeds(WorldState& ws, SimCore& core, City& city,
 		Building& building, double price, double* bank_money_delta) {
 	double remainder = std::max(0.0, price);
@@ -325,30 +402,8 @@ void pay_auction_proceeds(WorldState& ws, SimCore& core, City& city,
 	}
 	Group* seller = owner_group(ws, building);
 	if (seller != nullptr) {
-		Bank* bank = bank::lender(ws, *seller);
-		const double claim = std::max(0.0,
-			seller->debt + seller->credit_arrears);
-		if (bank != nullptr && claim > 0.0 && remainder > 0.0) {
-			const double paid = std::min({ remainder, claim,
-				std::max(0.0, bank->deposits) });
-			if (paid > 0.0) {
-				const double debt_paid = std::min(paid, seller->debt);
-				seller->debt -= debt_paid;
-				const double arrears_paid = std::min(
-					std::max(0.0, paid - debt_paid),
-					seller->credit_arrears);
-				seller->credit_arrears -= arrears_paid;
-				bank->loans = std::max(0.0, bank->loans - debt_paid);
-				bank->arrears = std::max(0.0,
-					bank->arrears - arrears_paid);
-				bank->deposits -= paid;
-				if (bank_money_delta != nullptr) {
-					*bank_money_delta -= paid;
-				}
-				remainder -= paid;
-			}
-		}
-		seller->cash += remainder;
+		seller->cash += pay_seller_creditors(ws, *seller, remainder,
+			bank_money_delta);
 		return;
 	}
 	if (building.owner == "state") {
