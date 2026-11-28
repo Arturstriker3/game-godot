@@ -414,6 +414,15 @@ void write(Dictionary& data, const WorldState& ws) {
 			entry["capital_flight"] = event.capital_flight;
 			entry["lolr"] = event.lolr;
 			entry["emission"] = event.emission;
+			// R2c: episodio de resolucao (leilao/charter/austeridade/deserto).
+			entry["buyer"] = sim_str(event.buyer.c_str());
+			entry["auction_book"] = event.auction_book;
+			entry["auction_price"] = event.auction_price;
+			entry["charter_cost"] = event.charter_cost;
+			entry["charter_cap"] = event.charter_cap;
+			entry["austerity"] = event.austerity;
+			entry["desert"] = event.desert;
+			entry["recapitalized"] = event.recapitalized;
 			events.append(entry);
 		}
 		block["events"] = events;
@@ -816,7 +825,11 @@ void read_money(WorldState& ws, SimCore& core, const Dictionary& data) {
 			br.enabled = true;
 			br.capital = bool(rework.get("capital", true));
 			br.deposits = bool(rework.get("deposits", false));
-			br.resolution = bool(rework.get("resolution", false));
+			// R2c (QA t206): a config trata `resolution` ausente como
+			// "segue deposits" (definitions_loader); o load tem de fazer o
+			// mesmo, senao um save v44 sem a chave perde o resolvedor que a
+			// config ligou. Com a chave presente vale o valor gravado.
+			br.resolution = bool(rework.get("resolution", br.deposits));
 			br.dividend_target_ratio = double(
 				rework.get("dividend_target_ratio", 0.10));
 			br.dividend_cash_floor_ratio = double(
@@ -1402,6 +1415,20 @@ void read_bank_crisis(WorldState& ws, const Dictionary& data) {
 				row.get("capital_flight", 0.0));
 			event.lolr = double(row.get("lolr", 0.0));
 			event.emission = double(row.get("emission", 0.0));
+			event.buyer = std::string(
+				String(row.get("buyer", "")).utf8().get_data());
+			event.auction_book = double(
+				row.get("auction_book", 0.0));
+			event.auction_price = double(
+				row.get("auction_price", 0.0));
+			event.charter_cost = double(
+				row.get("charter_cost", 0.0));
+			event.charter_cap = double(
+				row.get("charter_cap", 0.0));
+			event.austerity = double(row.get("austerity", 0.0));
+			event.desert = bool(row.get("desert", false));
+			event.recapitalized = bool(
+				row.get("recapitalized", false));
 			ws.bank_crisis_events.push_back(event);
 		}
 		// O anel publicado tem tamanho fixo: um save adulterado (ou com mais

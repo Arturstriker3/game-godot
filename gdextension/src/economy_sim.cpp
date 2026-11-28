@@ -8471,6 +8471,23 @@ Dictionary EconomySim::get_bank_status() const {
 	}
 	for (const std::string& code : nation_order) {
 		Dictionary entry = by_nation[code];
+		// R2c (QA t206): `bank_desert` EXPLICITO por nacao, em vez de o
+		// chamador derivar de "nenhum papel presente". Nacao que nunca teve
+		// registro de banco nao e' deserto (nao havia banco para perder).
+		bool has_present = false;
+		for (const auto& row : ws_.banks) {
+			const ogs::Bank& bank = row.second;
+			if (bank.nation != code) {
+				continue;
+			}
+			if (bank.name_status == "present"
+					&& bank.absorbed_into.empty()) {
+				has_present = true;
+				break;
+			}
+		}
+		entry["bank_present"] = has_present;
+		entry["desert"] = !has_present;
 		const double assets = double(entry["loans"])
 			+ double(entry["arrears"]);
 		entry["equity_ratio"] = assets > 1e-9

@@ -16,6 +16,7 @@
 #include "sim/bank.h"
 #include "sim/bank_crisis.h"
 #include "sim/central_bank.h"
+#include "sim/save_state.h"
 #include "sim/state_levers.h"
 #include "sim/stock.h"
 #include "sim/treasury.h"
@@ -511,4 +512,161 @@ TEST_CASE("R2c: deserto nao deixa papel novo com acoes orfas") {
 	CHECK(ticker.holdings.banks.empty());
 	CHECK(ticker.holdings.total()
 		== Approx(ticker.shares).epsilon(1e-12));
+}
+
+TEST_CASE("QA R2c: liquidacao do publico com privado+estrangeiro preserva a soma") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true);
+	ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+	ogs::Bank& pri = present(world, ogs::bank::kRolePrivate);
+	ogs::Bank& fgn = present(world, ogs::bank::kRoleForeign);
+	pub.cash = 0.0;
+	pub.loans = 0.0;
+	pub.arrears = 0.0;
+	pub.deposits = 1000.0;
+	pub.deposits_funding = 0.0;
+	pub.capital = 0.0;
+	borrower(world, pub.id, 1000.0, 400.0);
+	set_charter_cap(world, 0.0, 0.0);
+	for (ogs::City& city : world.ws.cities) {
+		city.government_budget = 0.0;
+	}
+	const double m0 = world.core.m0_total();
+	ogs::bank_crisis::resolve(world.ws, pub.id, "equity_negative", m0);
+	CHECK(pub.name_status == "none");
+	CHECK(pub.share == Approx(0.0));
+	// Par privado+estrangeiro: pesos declarados 0,40/0,15 normalizados.
+	CHECK(pri.share + fgn.share == Approx(1.0).epsilon(1e-12));
+	CHECK(pri.share == Approx(0.40 / 0.55).epsilon(1e-12));
+	CHECK(fgn.share == Approx(0.15 / 0.55).epsilon(1e-12));
+
+	// Segunda liquidacao seguida: so o estrangeiro fica e fecha 100 %.
+	pri.cash = 0.0;
+	pri.loans = 0.0;
+	pri.arrears = 0.0;
+	pri.deposits = 1000.0;
+	pri.deposits_funding = 0.0;
+	pri.capital = 0.0;
+	borrower(world, pri.id, 1000.0, 400.0);
+	ogs::bank_crisis::resolve(world.ws, pri.id, "equity_negative", m0);
+	CHECK(pri.name_status == "none");
+	CHECK(pri.share == Approx(0.0));
+	CHECK(fgn.share == Approx(1.0).epsilon(1e-12));
+}
+
+TEST_CASE("QA R2c: liquidacao paga funding com pro rata de snapshot") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true);
+	// Sem bail-in: o corte nao segurado e' zero, o teste isola o pagamento
+	// do funding na liquidacao.
+	world.ws.bank_crisis.insured_share = 1.0;
+	ogs::Bank& failing = present(world, ogs::bank::kRolePrivate);
+	failing.cash = 150.0;              // 50 % de D_f
+	failing.loans = 0.0;
+	failing.arrears = 0.0;
+	failing.deposits = 0.0;            // D_l = 0
+	failing.deposits_funding = 300.0;  // D_f = 300
+	failing.capital = 0.0;
+	ogs::City& city = world.ws.cities.front();
+	city.bank_accounts.clear();
+	ogs::City::BankAccount account;
+	account.bank_id = failing.id;
+	account.firm = 100.0;
+	city.bank_accounts.push_back(account);
+	ogs::Group& group = world.ws.groups.front();
+	group.deposit_bank_id = failing.id;
+	group.bank_deposit = 200.0;
+	group.cash = 0.0;
+	set_charter_cap(world, 0.0, 0.0);
+	const double city_before = city.private_cash;
+	const double money_before = world.core.money_total();
+
+	ogs::bank_crisis::resolve(world.ws, failing.id);
+	// Razao fixa 150/300 = 0,50: cidade recebe 50, grupo recebe 100.
+	CHECK(city.private_cash - city_before == Approx(50.0).epsilon(1e-9));
+	CHECK(group.cash == Approx(100.0).epsilon(1e-9));
+	CHECK(city.bank_accounts.front().firm == Approx(0.0));
+	CHECK(group.bank_deposit == Approx(0.0));
+	CHECK(failing.deposits_funding == Approx(0.0));
+	CHECK(failing.cash == Approx(0.0));
+	CHECK(world.core.money_total() == Approx(money_before).epsilon(1e-9));
+}
+
+TEST_CASE("QA R2c: evento de resolucao sobrevive ao round-trip do save") {
+	ogs::test::PocketWorld source;
+	source.ws.bank_crisis_events.clear();
+	ogs::BankCrisisEvent event;
+	event.day = 77;
+	event.bank = "AAA/private";
+	event.nation = "AAA";
+	event.kind = "resolution";
+	event.cause = "equity_negative";
+	event.gap = 1234.5;
+	event.cost_shareholders = 10.0;
+	event.cost_depositors = 20.0;
+	event.cost_fund = 30.0;
+	event.cost_treasury = 40.0;
+	event.cost_takeover = 50.0;
+	event.capital_flight = 60.0;
+	event.lolr = 70.0;
+	event.emission = 80.0;
+	event.buyer = "BBB/private";
+	event.auction_book = 900.0;
+	event.auction_price = 630.0;
+	event.charter_cost = 110.0;
+	event.charter_cap = 120.0;
+	event.austerity = 130.0;
+	event.desert = true;
+	event.recapitalized = true;
+	source.ws.bank_crisis_events.push_back(event);
+	source.ws.bank_crisis_events_total = 5;
+
+	const ogs::save::Value saved = ogs::save::to_value(source.ws,
+		source.core);
+	ogs::test::PocketWorld target;
+	ogs::save::from_value(target.ws, target.core, saved);
+	REQUIRE(target.ws.bank_crisis_events.size() == 1);
+	const ogs::BankCrisisEvent& loaded = target.ws.bank_crisis_events.front();
+	CHECK(loaded.day == 77);
+	CHECK(loaded.bank == "AAA/private");
+	CHECK(loaded.nation == "AAA");
+	CHECK(loaded.kind == "resolution");
+	CHECK(loaded.cause == "equity_negative");
+	CHECK(loaded.gap == Approx(1234.5));
+	CHECK(loaded.cost_shareholders == Approx(10.0));
+	CHECK(loaded.cost_depositors == Approx(20.0));
+	CHECK(loaded.cost_fund == Approx(30.0));
+	CHECK(loaded.cost_treasury == Approx(40.0));
+	CHECK(loaded.cost_takeover == Approx(50.0));
+	CHECK(loaded.capital_flight == Approx(60.0));
+	CHECK(loaded.lolr == Approx(70.0));
+	CHECK(loaded.emission == Approx(80.0));
+	CHECK(loaded.buyer == "BBB/private");
+	CHECK(loaded.auction_book == Approx(900.0));
+	CHECK(loaded.auction_price == Approx(630.0));
+	CHECK(loaded.charter_cost == Approx(110.0));
+	CHECK(loaded.charter_cap == Approx(120.0));
+	CHECK(loaded.austerity == Approx(130.0));
+	CHECK(loaded.desert);
+	CHECK(loaded.recapitalized);
+	CHECK(target.ws.bank_crisis_events_total == 5);
+}
+
+TEST_CASE("QA R2c: juro da safra nao credita casca liquidada") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true);
+	ogs::Bank& dead = present(world, ogs::bank::kRolePrivate);
+	dead.name_status = "none";
+	dead.resolved = true;
+	dead.cash = 0.0;
+	// O publico tambem e' casca: nenhum papel ativo em AAA.
+	ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+	pub.name_status = "none";
+	pub.resolved = true;
+	pub.cash = 7.0;
+	const double before = pub.cash;
+	CHECK(ogs::bank::receive_harvest_interest(world.ws, "AAA", 100.0,
+		dead.id) == Approx(0.0));
+	CHECK(pub.cash == Approx(before));
+	CHECK(dead.cash == Approx(0.0));
 }

@@ -1570,6 +1570,14 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 	const bool desert = !has_other_present_bank(ws, bank.nation, bank.id);
 	if (ws.banks_rework.deposits) {
 		deposit::link(ws);
+		// R2c (QA t206): pro rata com SNAPSHOT. A razao de cobertura e' fixa
+		// no inicio da liquidacao (`cash / D_f`, teto 1) e cada claim recebe
+		// `claim x razao`. A formula sequencial antiga deixava um claim maior
+		// que D_f drenar o caixa inteiro e os seguintes ficarem sem nada.
+		const double start_cash = std::max(0.0, bank.cash);
+		const double start_funding = std::max(0.0, bank.deposits_funding);
+		const double cover_ratio = start_funding > kEps
+			? std::min(1.0, start_cash / start_funding) : 0.0;
 		for (City& city : ws.cities) {
 			for (City::BankAccount& account : city.bank_accounts) {
 				if (account.bank_id != bank.id) {
@@ -1577,12 +1585,11 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 				}
 				const auto pay_leg = [&](double& claim, bool firm) {
 					if (claim <= kEps || bank.cash <= kEps
-							|| bank.deposits_funding <= kEps) {
+							|| cover_ratio <= 0.0) {
 						return;
 					}
-					const double covered = std::min(claim,
-						bank.cash * std::min(1.0,
-							claim / bank.deposits_funding));
+					const double covered = std::min(claim * cover_ratio,
+						bank.cash);
 					if (covered <= kEps) {
 						return;
 					}
@@ -1608,10 +1615,8 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 					|| group.bank_deposit <= kEps) {
 				continue;
 			}
-			const double covered = std::min(group.bank_deposit,
-				bank.cash * std::min(1.0,
-					group.bank_deposit / std::max(kEps,
-						bank.deposits_funding)));
+			const double covered = std::min(group.bank_deposit * cover_ratio,
+				bank.cash);
 			if (covered <= kEps) {
 				continue;
 			}
@@ -1630,6 +1635,18 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 	// bank_money_today`; o banco fica como casca com patrimonio negativo
 	// (mesma convencao da liquidacao C6). O bail-in ja cortou a fatia nao
 	// segurada; o resto permanece como claim nao pago.
+	//
+	// R2c (QA t206): a sobra depois do funding NAO vai direto ao governo.
+	// Segue a ordem do plano (leilao -> bail-in -> fundo -> Tesouro): o
+	// fundo de seguro recupera primeiro o que pagou por ESTE banco
+	// (sub-rogacao); so o residual fica com o Tesouro, o credor residual.
+	if (bank.cash > kEps && bank.insured_payout > kEps) {
+		DepositInsurance& fund = ws.deposit_insurance[bank.nation];
+		const double back = std::min(bank.cash, bank.insured_payout);
+		fund.fund += back;
+		bank.insured_payout = std::max(0.0, bank.insured_payout - back);
+		bank.cash = std::max(0.0, bank.cash - back);
+	}
 	if (bank.cash > kEps) {
 		credit_government(ws, bank.nation, bank.cash);
 		bank.cash = 0.0;
@@ -1875,8 +1892,22 @@ void phase(WorldState& ws, double m0_total) {
 					* clamp01(pol.lolr_haircut);
 				const double cap = std::min(collateral,
 					ind.assets * clamp01(pol.lolr_max_assets));
-				const double headroom = std::max(0.0,
+				double headroom = std::max(0.0,
 					cap - std::max(0.0, bank.bc_borrowing));
+				// R2c (QA t206): o redesconto do C6 tambem e' emissao; fica
+				// limitado pela MESMA valvula de 1% do M0/dia usada na
+				// resolucao. Sem isso o LoLR contornava o teto.
+				const double m0 = m0_of_nation(ws, bank.nation, m0_total);
+				const double valve_cap =
+					monetary::kControlledEmissionShareOfM0 * m0;
+				MonetaryState* valve_state = monetary_of(ws,
+					currency_of(ws, bank.nation));
+				double valve_headroom = valve_cap;
+				if (valve_state != nullptr) {
+					valve_headroom = std::max(0.0, valve_cap
+						- std::max(0.0, valve_state->emission_today));
+				}
+				headroom = std::min(headroom, valve_headroom);
 				borrowed = std::min(need, headroom);
 				if (borrowed > kEps) {
 					bank.cash += borrowed;
@@ -1904,7 +1935,8 @@ void phase(WorldState& ws, double m0_total) {
 				bank::bank_id(bank.nation, bank::kRolePublic));
 			if (pub_found != ws.banks.end()
 					&& pub_found->second.id != bank.id
-					&& pub_found->second.absorbed_into.empty()) {
+					&& pub_found->second.absorbed_into.empty()
+					&& pub_found->second.name_status != "none") {
 				pub = &pub_found->second;
 			}
 			const double to_public = pub != nullptr

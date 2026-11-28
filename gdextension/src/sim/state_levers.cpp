@@ -24,6 +24,17 @@ bool treasury_levers_enabled(const WorldState& ws) {
 	return ws.firms_own_cash && treasury::enabled(ws);
 }
 
+namespace {
+
+// R2c (QA t206): o charter de banco publico e' alavanca bancaria, nao de
+// caixa proprio das firmas; exige o Tesouro real (regional_cash implicito)
+// e NAO `firms_own_cash`. O dinheiro continua saindo do Tesouro Nacional.
+bool charter_lever_enabled(const WorldState& ws) {
+	return ws.regional_cash && treasury::enabled(ws);
+}
+
+} // namespace
+
 TreasuryFundResult action_fund_group_from_treasury(WorldState& ws,
 		const std::string& group_id, double amount) {
 	TreasuryFundResult result;
@@ -113,7 +124,7 @@ TreasuryBankResult action_charter_public_bank_from_treasury(WorldState& ws,
 		result.error = "bancos/resolucao desligados";
 		return result;
 	}
-	if (!treasury_levers_enabled(ws)) {
+	if (!charter_lever_enabled(ws)) {
 		result.error = "Tesouro indisponivel (flags do rework invalidas)";
 		return result;
 	}

@@ -98,32 +98,31 @@ void renormalize(WorldState& ws, const std::string& nation) {
 	if (count == 0) {
 		return;
 	}
-	if (count == 3) {
-		pub->share = kSharePublic;
-		pri->share = kSharePrivate;
-		fgn->share = kShareForeign;
-		return;
-	}
 	if (count == 1) {
 		Bank* only = active(pub) ? pub : (active(pri) ? pri : fgn);
 		only->share = 1.0;
 		return;
 	}
-	if (active(pub) && active(pri)) {
-		pub->share = 0.55;
-		pri->share = 0.45;
-		return;
-	}
-	// Par público+estrangeiro (não acontece na prática; private sempre existe
-	// quando o par é criado): divide pelo peso declarado dos dois papéis.
-	const double wp = active(pub) ? kSharePublic : 0.0;
-	const double wf = active(fgn) ? kShareForeign : 0.0;
-	const double total = wp + wf;
+	// R2c (QA t206): TODOS os pares seguem o mesmo peso declarado, nao um
+	// caso a caso. Com o estrangeiro presente os pesos sao 0,45/0,40/0,15;
+	// sem ele, 0,55/0,45 (doc §3). Normalizar entre os papeis ATIVOS fecha 1
+	// em qualquer combinacao restante (publico+privado, publico+estrangeiro,
+	// privado+estrangeiro) e nunca deixa a share antiga do papel removido.
+	const bool with_foreign = active(fgn);
+	const double wp = active(pub)
+		? (with_foreign ? kSharePublic : 0.55) : 0.0;
+	const double wq = active(pri)
+		? (with_foreign ? kSharePrivate : 0.45) : 0.0;
+	const double wf = with_foreign ? kShareForeign : 0.0;
+	const double total = wp + wq + wf;
 	if (total <= 0.0) {
 		return;
 	}
 	if (active(pub)) {
 		pub->share = wp / total;
+	}
+	if (active(pri)) {
+		pri->share = wq / total;
 	}
 	if (active(fgn)) {
 		fgn->share = wf / total;
@@ -779,6 +778,13 @@ bool lend_city(WorldState& ws, const std::string& city_id, double amount,
 		// C4 (D-110): sem depositos, o credito de giro usa o banco PUBLICO
 		// que JA existe (caminho de hoje, bit a bit).
 		bank = find_mut(ws, city->nation, kRolePublic);
+		// R2c (QA t206): uma casca liquidada/absorvida nao pode receber
+		// credito novo. `no_data` continua valendo: e' o banco de dado
+		// ausente do C4 legado (nao uma casca pos-resolucao).
+		if (bank != nullptr && (!bank->absorbed_into.empty()
+				|| bank->name_status == "none")) {
+			bank = nullptr;
+		}
 	}
 	if (bank == nullptr) {
 		if (error != nullptr) {
@@ -950,7 +956,9 @@ double receive_harvest_interest(WorldState& ws, const std::string& nation,
 	Bank* bank = nullptr;
 	if (!bank_id.empty()) {
 		const auto found = ws.banks.find(bank_id);
-		if (found != ws.banks.end()) {
+		if (found != ws.banks.end()
+				&& found->second.absorbed_into.empty()
+				&& found->second.name_status != "none") {
 			bank = &found->second;
 		}
 	}
@@ -961,6 +969,11 @@ double receive_harvest_interest(WorldState& ws, const std::string& nation,
 	}
 	if (bank == nullptr) {
 		bank = find_mut(ws, nation, kRolePublic);
+		// R2c (QA t206): o juro da safra nao credita casca morta.
+		if (bank != nullptr && (!bank->absorbed_into.empty()
+				|| bank->name_status == "none")) {
+			bank = nullptr;
+		}
 	}
 	if (bank == nullptr) {
 		return 0.0;
