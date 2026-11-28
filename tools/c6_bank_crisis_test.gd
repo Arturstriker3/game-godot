@@ -334,6 +334,10 @@ func _test_dollarized_without_lender() -> void:
 # −valor e o tick seria revertido todo dia (mundo congelado).
 func _test_rescue_external_bond() -> void:
 	var sim = _stage(0.10, "private", true)
+	# R2c: o resgate por dívida pública é DESLIGADO por default (o
+	# `bank_crisis.json` grava false); este cenário é justamente o do caminho
+	# de dívida (dolarizado sem BC), então a alavanca é ligada explícita.
+	sim.set_bank_crisis({"treasury_debt_rescue": true})
 	# Alguns dias de prêmio antes do choque: o fundo de seguro tem saldo.
 	for day in 5:
 		sim.tick_day()
