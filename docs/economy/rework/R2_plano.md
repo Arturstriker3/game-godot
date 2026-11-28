@@ -760,7 +760,7 @@ compara o A/B claim vs caixa puro.
   "enabled": true,
   "capital": true,
   "deposits": true,
-  "resolution": true,
+  "resolution": false,
   "dividend": { "target_ratio": 0.10, "cash_floor_ratio": 0.10 },
   "seed": {
     "enabled": true, "target": "model_loans", "floor_days_treasury": 3.0,
@@ -783,6 +783,8 @@ status, como no R1):
 - `capital` e `deposits` exigem `enabled` e `rework.regional_cash.enabled`;
 - `deposits` exige `capital` (sem capital não há solidez para alocar);
 - `resolution` exige `enabled` (funciona sem depósitos, mas o efeito pleno é com eles);
+  **chave ausente segue `deposits`** (config e load, igual ao combo R2b1), nunca
+  liga sozinha: o default do jogo é DESLIGADO como as demais sub-flags;
 - `seed` exige `capital`; `deposits_alloc` exige `deposits`;
 - `banks.enabled = false` → **OFF bit-a-bit** em tudo: nenhum campo novo entra no save,
   nenhuma soma muda, `money_total`, `m0`, `allocate_money` e o digest idênticos ao
@@ -992,7 +994,9 @@ ON da fase anterior, bit a bit**; o `6287b12d…` só vale no combo tudo-Off.
   (R1-ON), porque o seed não roda.
 - `deposits=false` com `capital=true` **tem** de reproduzir R2a-ON.
 - `resolution=false` mantém o resolvedor C6 **legado** (o de hoje); `true` liga o
-  leilão/cascata. Assim R2a/R2b comparam com o C6 de sempre.
+  leilão/cascata. A **chave ausente segue `deposits`** (config e load; §5.1), então
+  o combo R2b1 (`deposits=true`, sem a chave) já liga o resolvedor — o default do
+  jogo continua DESLIGADO porque `rework.json` grava `resolution=false`.
 - Cada `<sha>` novo é medido no fecho da fase e gravado no `GAME_STATE.md`; o plano
   não inventa SHA.
 
@@ -1540,3 +1544,17 @@ implementação do leilão depende dos claims por credor.
    20.622,56; 284 dias travados). O controle 90 d `resolution=0` não trava →
    a regressão está no resolvedor novo, não na base. Sem merge; diagnóstico
    aberto em `R2.md` §9.4.
+7. **Fechamento pós-QA (t206/t207)**: `bank::renormalize` generalizado para
+   qualquer par de papéis (peso declarado: 0,45/0,40/0,15 com estrangeiro;
+   0,55/0,45 sem ele) — o par privado+estrangeiro somava 1,40; pagamento do
+   funding na liquidação usa **snapshot** `cash/D_f` do início (um claim maior
+   que `D_f` drenava o caixa); a sobra vai ao **fundo** (sub-rogação) antes do
+   Tesouro, credor residual; campos novos do `BankCrisisEvent` entram no save;
+   fuga/fallbacks não creditam casca (`name_status="none"`/`absorbed_into`);
+   `resolution` ausente segue `deposits` no load; o LoLR do C6 divide a válvula
+   de 1% M0/dia; `treasury_debt_rescue=false` no dado; `desert` é flag explícita
+   por nação no status; a alavanca A3 charter exige Tesouro real (não
+   `firms_own_cash`). Gates: unit **164/164** (1.881 asserções); 10 d OFF/ON bit
+   a bit; 365 d ON `resolution=1` **APROVADO** (`0f1f8271…`: 365/365, 0 viol.,
+   comida 95/179, drift 0,9430%, 3 falências, 24 resoluções, 0 desertos); 365 d
+   `resolution=0` reproduz `32f835d9…`; só-capital `9746eb05…`; OFF `81eccf2a…`.
