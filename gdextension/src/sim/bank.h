@@ -128,6 +128,14 @@ double credit_limit(const WorldState& ws, const Group& group,
 const Bank* lender(const WorldState& ws, const Group& group);
 Bank* lender(WorldState& ws, const Group& group);
 
+// R2b1/R2b2 - competicao: taxa ofertada pelo banco (base + spread da
+// politica + spread de solidez centrado na nacao, aditivo) e capacidade de
+// credito nova = min(folga de capital, folga de liquidez). Sem a sub-flag
+// `banks.deposits` a oferta e' exatamente `loan_rate` e a capacidade e'
+// irrestrita (caminho de hoje).
+double offer_rate(const WorldState& ws, const Bank& bank);
+double capacity(const WorldState& ws, const Bank& bank);
+
 // Empréstimo ao grupo, limitado pelo crédito disponível. Cria depósito
 // (dinheiro bancário) e não M0. Devolve `false` com `error` quando recusado;
 // `out_amount` é o concedido (pode ser menor).
@@ -154,10 +162,67 @@ double inject_capital(WorldState& ws, const std::string& nation, double amount,
 // debitado pelo chamador; credita o banco público da nação. Sem banco público
 // devolve 0 (o valor NÃO é cobrado; ausência declarada).
 double receive_harvest_interest(WorldState& ws, const std::string& nation,
+	double amount, const std::string& bank_id = std::string());
+
+// --- R2a (rework.banks) — capital, adequação, depósitos de funding --------
+// Depósito total (D_t = D_l + D_f): base da C6. `deposits` permanece só o
+// criado por empréstimo; M0 usa apenas ele.
+double total_deposits(const Bank& bank);
+// Claim de funding somado nas cidades + grupos (deve ser == Σ D_f).
+double deposit_claims_total(const WorldState& ws);
+// Piso de liquidez do dividendo: min_reserve_ratio × D_t.
+double liquidity_floor(const WorldState& ws, const Bank& bank);
+
+// R2b1 (fix A1): migração do load. Save v44 antigo (sem `debt_claims` no
+// grupo/cidade) tem a dívida agregada atribuída ao credor da regra de hoje
+// (`lender()` para grupos, banco público para a cidade). Idempotente; só
+// roda com `banks.deposits` ligado.
+void rebuild_claims_after_load(WorldState& ws);
+
+// Semeia o capital PAGO do papel privado no dia 0 por realocação
+// (`pop.savings`), nunca por emissão. O papel público nasce com 0 e é
+// capitalizado no fecho mensal por `capitalize_public_monthly`; nenhum papel
+// `none`/`no_data` é capitalizado. Só roda em mundo novo (o chamador garante).
+void seed_capital(WorldState& ws);
+// Fecho mensal: `pay = min(alvo_restante, X × max(0, saldo − piso))`, com
+// ticket mínimo; usa `treasury::spend` (nunca `government_budget` como caixa
+// quando o Tesouro está ligado). Deve rodar ANTES de `treasury::start_month`.
+void capitalize_public_monthly(WorldState& ws);
+
+// Sweep diário do EXCESSO sobre o colchão protegido (cesta de
+// `protected_food_months` + orçamento regional do mês) das regiões e das
+// empresas. Move caixa para `bank.cash` e cria `deposits_funding` + claim;
+// `money_total`, `M0_gross` e o broad ficam constantes.
+void sweep_deposits(WorldState& ws);
+// R2b1: realocacao MENSAL dos claims de funding entre os bancos presentes da
+// nacao pelo score declarado (`deposits_alloc`: relacionamento/solidez/
+// pendulo). Move o claim e o caixa de lastro JUNTOS (Δclaim = ΔD_f =
+// Δbank.cash, `money_total` constante); `bank.deposits` (D_l) nao muda.
+// Determinista: cidades/grupos e contas em ordem de id. Sem a sub-flag
+// `deposits` e' no-op.
+void allocate_deposits_monthly(WorldState& ws);
+// Remove/reassocia claims quando um banco é absorvido (C6). Mantém
+// `Σ claims == Σ D_f`.
+void reassign_claims(WorldState& ws, const std::string& from_bank,
+	const std::string& to_bank);
+// R2c: move os claims de DIVIDA (loans/arrears dos tomadores) do credor que
+// saiu para o comprador/charter, fundindo por tomador e mantendo a ordem por
+// `bank_id`. Sem isto a carteira muda de dono e o claim fica orfao (t200).
+void reassign_debt_claims(WorldState& ws, const std::string& from_bank,
+	const std::string& to_bank);
+// R2c: renormaliza as participacoes dos papeis ATIVOS (nao absorvidos) da
+// nacao depois de um charter/entrada privada. Nao move dinheiro.
+void refresh_shares(WorldState& ws, const std::string& nation);
+// Corte pro rata de `amount` nos claims de funding do banco (bail-in D_f):
+// reduz `D_f` e o claim na mesma proporção, sem tocar em caixa.
+double cut_funding_claims(WorldState& ws, const std::string& bank_id,
 	double amount);
 
-// Fase do dia: juros, atraso, amortização, calote e dividendo mensal.
-// Devolve o nº de calotes. `bank_money_delta` (opcional) recebe a criação/
+// Fecho mensal do dividendo (mesma regra da fase, exposta para o teste):
+// debita `bank.cash` e credita o dono; nunca cria depósito (ΔD = 0).
+void pay_dividends(WorldState& ws);
+
+// Fase do dia: juros, atraso, amortização, calote e dividendo mensal.// Devolve o nº de calotes. `bank_money_delta` (opcional) recebe a criação/
 // destruição de dinheiro bancário que o invariante soma ao `money_total`:
 // juro pago e amortização (−) e dividendo (+). O caixa tomado na execução
 // apenas troca depósito por caixa do banco e não entra nesse fluxo.
@@ -167,6 +232,11 @@ struct Totals {
 	double loans = 0.0;
 	double arrears = 0.0;
 	double deposits = 0.0;
+	// R2a: D_f, alvo do modelo, seed e adequacao.
+	double deposits_funding = 0.0;
+	double capital_target = 0.0;
+	double capital_ratio = 0.0;
+	double paid_in_ratio = 0.0;
 	double bc_borrowing = 0.0;
 	double cash = 0.0;
 	double capital = 0.0;

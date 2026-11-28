@@ -6,11 +6,17 @@
 #include "bank_crisis.h"
 
 #include "bank.h"
+#include "central_bank.h"
+#include "city_gov.h"
+#include "deposit.h"
 #include "monetary.h"
 #include "stock.h"
+#include "treasury.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <map>
 #include <string>
 #include <vector>
@@ -32,6 +38,11 @@ double clamp01(double value) {
 	}
 	return std::clamp(value, 0.0, 1.0);
 }
+
+// R2b1 (fix A1): o gate de servicing/C6 e' POR TOMADOR (ver `bank::phase` e
+// `apply_loss`), nao global. Um mundo misto (save legado + emprestimo novo)
+// nao pode congelar a divida que ainda nao tem claim nem deixar a antiga fora
+// da C6. Por isso nao existe mais `has_debt_claims(ws)`.
 
 // Codigo da moeda da nacao (vazio = sem moeda no estado: ausencia declarada).
 std::string currency_of(const WorldState& ws, const std::string& nation) {
@@ -143,6 +154,334 @@ std::string join_kind(const std::vector<std::string>& parts) {
 	return out.empty() ? "none" : out;
 }
 
+// --- R2c: resolucao com leilao, charter e cascata -------------------------
+bool resolution_enabled(const WorldState& ws) {
+	return ws.banks_rework.enabled && ws.banks_rework.resolution;
+}
+
+// PIB anual do MODELO por nacao (bank_seed) e receita mensal declarada das
+// regioes (CityGov.target_revenue_month). Ausencia = 0, nunca completada.
+double nation_gdp(const WorldState& ws, const std::string& nation) {
+	const auto found = ws.bank_seed.nations.find(nation);
+	if (found == ws.bank_seed.nations.end()) {
+		return 0.0;
+	}
+	return std::max(0.0, found->second.model_gdp_annual);
+}
+
+double nation_monthly_revenue(const WorldState& ws,
+		const std::string& nation) {
+	double total = 0.0;
+	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
+		if (ws.cities[index].nation != nation) {
+			continue;
+		}
+		if (index < ws.city_gov.size()) {
+			total += std::max(0.0,
+				ws.city_gov[index].target_revenue_month);
+		}
+	}
+	return total;
+}
+
+// Teto do charter: min(max_pct_gdp x PIB, max_treasury_months x receita
+// mensal). Uma perna ausente nao zera a outra; as duas ausentes = 0 (sem
+// charter). O numero e' declarado no bloco `banks` do rework.json.
+double charter_cap(const WorldState& ws, const std::string& nation) {
+	const BanksRework& br = ws.banks_rework;
+	bool has = false;
+	double cap = 0.0;
+	const double gdp = nation_gdp(ws, nation);
+	if (gdp > kEps && br.charter_max_pct_gdp > 0.0) {
+		cap = gdp * br.charter_max_pct_gdp;
+		has = true;
+	}
+	const double revenue = nation_monthly_revenue(ws, nation);
+	if (revenue > kEps && br.charter_max_treasury_months > 0.0) {
+		const double leg = revenue * br.charter_max_treasury_months;
+		cap = has ? std::min(cap, leg) : leg;
+		has = true;
+	}
+	return has ? std::max(0.0, cap) : 0.0;
+}
+
+double government_cash_available(const WorldState& ws,
+		const std::string& nation) {
+	if (treasury::enabled(ws)) {
+		return std::max(0.0, treasury::balance(ws, nation));
+	}
+	double total = 0.0;
+	for (const City& city : ws.cities) {
+		if (city.nation == nation) {
+			total += std::max(0.0, city.government_budget);
+		}
+	}
+	return total;
+}
+
+// Tesouro com caixa real quando a flag esta ON; sem ela, o orcamento
+// municipal (dinheiro real) do caminho legado.
+double pay_government(WorldState& ws, const std::string& nation,
+		double amount) {
+	if (!(amount > 0.0)) {
+		return 0.0;
+	}
+	if (treasury::enabled(ws)) {
+		return treasury::spend(ws, nation, amount);
+	}
+	return pay_from_government(ws, nation, amount);
+}
+
+// Austeridade do resgate: corta os LIMITES regionais (servicos + obras) pro
+// rata pelo valor pago. So com o Tesouro ON: os contadores sao limite, nao
+// caixa; no OFF eles sao dinheiro e cortar destruiria dinheiro.
+//
+// R2c: o corte do limite NAO e' despesa da cidade. `treasury::reconcile`
+// mede o gasto pela queda do contador contra a abertura do intervalo; cortar
+// o contador sem mover a abertura fazia a austeridade virar despesa fantasma
+// e o Tesouro pagava duas vezes (o resgate + o corte), destruindo dinheiro sem
+// contrapartida (dia 82 do gate de 365 d). A abertura acompanha o corte, entao
+// a austeridade continua valendo como limite e o reconcile nao a cobra.
+double apply_austerity(WorldState& ws, const std::string& nation,
+		double amount) {
+	if (!(amount > 0.0) || !treasury::enabled(ws)) {
+		return 0.0;
+	}
+	double total = 0.0;
+	for (const City& city : ws.cities) {
+		if (city.nation == nation) {
+			total += std::max(0.0, city.regional_budget_limit_month);
+		}
+	}
+	if (total <= kEps) {
+		return 0.0;
+	}
+	const double take = std::min(amount, total);
+	const double factor = 1.0 - take / total;
+	for (std::size_t index = 0; index < ws.cities.size(); ++index) {
+		City& city = ws.cities[index];
+		if (city.nation != nation) {
+			continue;
+		}
+		city.regional_budget_limit_month = std::max(0.0,
+			city.regional_budget_limit_month * factor);
+		const double services_before = std::max(0.0,
+			city.government_budget);
+		city.government_budget = std::max(0.0, services_before * factor);
+		city.regional_budget_open_services = std::max(0.0,
+			city.regional_budget_open_services
+				- (services_before - city.government_budget));
+		if (index < ws.city_gov.size()) {
+			CityGov& gov = ws.city_gov[index];
+			const double works_before = std::max(0.0, gov.cash);
+			gov.cash = std::max(0.0, works_before * factor);
+			city.regional_budget_open_works = std::max(0.0,
+				city.regional_budget_open_works
+					- (works_before - gov.cash));
+		}
+	}
+	return take;
+}
+
+// Sobra de caixa da liquidacao volta ao governo da nacao (nunca fica
+// estacionada numa casca morta). Conserva: o dinheiro muda de dono.
+void credit_government(WorldState& ws, const std::string& nation,
+		double amount) {
+	if (!(amount > 0.0)) {
+		return;
+	}
+	if (treasury::enabled(ws)) {
+		ws.nation_treasury[nation] += amount;
+		return;
+	}
+	City* best = nullptr;
+	for (City& city : ws.cities) {
+		if (city.nation != nation) {
+			continue;
+		}
+		if (best == nullptr
+				|| city.simulation_population > best->simulation_population
+				|| (city.simulation_population == best->simulation_population
+					&& city.id < best->id)) {
+			best = &city;
+		}
+	}
+	if (best != nullptr) {
+		best->government_budget += amount;
+	}
+}
+
+// M0 da moeda do banco (leitura por moeda; 0 = ausente).
+double m0_of_nation(const WorldState& ws, const std::string& nation,
+		double m0_total) {
+	if (!(m0_total > 0.0)) {
+		return 0.0;
+	}
+	const std::string code = currency_of(ws, nation);
+	if (code.empty()) {
+		return 0.0;
+	}
+	int index = -1;
+	for (std::size_t slot = 0; slot < ws.currencies.size(); ++slot) {
+		if (ws.currencies[slot].code == code) {
+			index = static_cast<int>(slot);
+			break;
+		}
+	}
+	if (index < 0) {
+		return 0.0;
+	}
+	const central_bank::MoneyAllocation money =
+		central_bank::allocate_money(ws, m0_total);
+	return index < static_cast<int>(money.by_currency.size())
+		? std::max(0.0, money.by_currency[static_cast<std::size_t>(index)])
+		: 0.0;
+}
+
+// Valvula de monetizacao <= 1% do M0/dia: mesma independencia e mesmo teto da
+// C2b1, descontando o que o BC ja emitiu no dia. Devolve o efetivamente
+// emitido; o titulo entra na carteira do BC e em `gov_bonds` (o
+// `Bank::gov_bonds` continua 0: gancho da fase politica).
+double rescue_with_valve(WorldState& ws, const std::string& nation,
+		double amount, double m0_total, bool* out_emitted) {
+	if (out_emitted != nullptr) {
+		*out_emitted = false;
+	}
+	if (!(amount > 0.0)) {
+		return 0.0;
+	}
+	const std::string code = currency_of(ws, nation);
+	if (code.empty()) {
+		return 0.0;
+	}
+	if (monetary::effective_independence(ws, code)
+			!= central_bank::kIndependenceControlled) {
+		return 0.0;
+	}
+	MonetaryState* state = monetary_of(ws, code);
+	if (state == nullptr) {
+		return 0.0;
+	}
+	const double m0 = m0_of_nation(ws, nation, m0_total);
+	const double cap = monetary::kControlledEmissionShareOfM0 * m0;
+	const double used = std::max(0.0, state->emission_today);
+	const double headroom = std::max(0.0, cap - used);
+	const double paid = std::min(amount, headroom);
+	if (paid <= kEps) {
+		return 0.0;
+	}
+	state->emission += paid;
+	state->emission_today += paid;
+	state->securities += paid;
+	ws.emission_today += paid;
+	ws.gov_bonds[nation] += paid;
+	if (out_emitted != nullptr) {
+		*out_emitted = true;
+	}
+	return paid;
+}
+
+bool has_other_present_bank(const WorldState& ws, const std::string& nation,
+		const std::string& exclude_id) {
+	for (const auto& row : ws.banks) {
+		const Bank& bank = row.second;
+		if (bank.id == exclude_id || bank.nation != nation) {
+			continue;
+		}
+		if (bank.name_status != "present" || !bank.absorbed_into.empty()) {
+			continue;
+		}
+		if (bank.resolved && bank.name_status != "present") {
+			continue;
+		}
+		return true;
+	}
+	return false;
+}
+
+// --- R2c: sonda de dinheiro (so diagnostico, env `OGS_BANK_TRACE`) ----------
+// Replica o `SimCore::money_total` termo a termo para medir o efeito de cada
+// degrau do resolvedor no dinheiro do mundo. Nao muda estado nem regra: sem a
+// variavel de ambiente nada e' calculado e nada e' impresso.
+struct MoneyProbe {
+	double total = 0.0;
+	double sector = 0.0;
+	double treasury = 0.0;
+	double cities = 0.0;
+	double groups = 0.0;
+	double banks = 0.0;
+	double fund = 0.0;
+	double projects = 0.0;
+	double citygov = 0.0;
+};
+
+bool bank_trace_on() {
+	static const bool on = std::getenv("OGS_BANK_TRACE") != nullptr;
+	return on;
+}
+
+MoneyProbe money_probe(const WorldState& ws) {
+	MoneyProbe out;
+	out.sector = ws.transport_cash + ws.foreign_cash + ws.construction_cash
+		+ ws.power_cash;
+	out.treasury = treasury::total_balance(ws);
+	for (const City& city : ws.cities) {
+		if (!ws.national_treasury) {
+			out.cities += city.pop.savings + city.firm_cash
+				+ city.service_cash + city.government_budget
+				+ city.capital_income_next + city.rent_income_next
+				+ city.region.cash;
+		} else {
+			out.cities += city.pop.savings + city.private_total()
+				+ city.capital_income_next + city.rent_income_next
+				+ city.region.cash;
+		}
+	}
+	for (const Group& group : ws.groups) {
+		out.groups += group.cash;
+	}
+	for (const auto& row : ws.banks) {
+		out.banks += row.second.cash;
+	}
+	for (const auto& row : ws.deposit_insurance) {
+		out.fund += row.second.fund;
+	}
+	for (const ConstructionProject& project : ws.construction_projects) {
+		out.projects += project.reserved;
+	}
+	out.citygov = city_gov::money_total(ws);
+	out.total = out.sector + out.treasury + out.cities + out.groups
+		+ out.banks + out.fund + out.projects + out.citygov;
+	return out;
+}
+
+void trace_step(const WorldState& ws, const std::string& bank,
+		const char* step, const MoneyProbe& before, const MoneyProbe& after) {
+	if (!bank_trace_on()) {
+		return;
+	}
+	std::fprintf(stdout,
+		"[bank-trace] day=%d bank=%s step=%s d_total=%.6f"
+		" d_sector=%.6f d_treasury=%.6f d_cities=%.6f d_groups=%.6f"
+		" d_banks=%.6f d_fund=%.6f d_projects=%.6f d_citygov=%.6f\n",
+		ws.day, bank.c_str(), step, after.total - before.total,
+		after.sector - before.sector, after.treasury - before.treasury,
+		after.cities - before.cities, after.groups - before.groups,
+		after.banks - before.banks, after.fund - before.fund,
+		after.projects - before.projects, after.citygov - before.citygov);
+}
+
+// Marca e mede um degrau; sem a env ligada nao calcula nada.
+void trace_probe_step(const WorldState& ws, const std::string& bank,
+		const char* step, MoneyProbe& mark) {
+	if (!bank_trace_on()) {
+		return;
+	}
+	const MoneyProbe now = money_probe(ws);
+	trace_step(ws, bank, step, mark, now);
+	mark = now;
+}
+
 } // namespace
 
 Policy policy(const WorldState& ws) {
@@ -192,7 +531,7 @@ Indicators indicators(const Bank& bank) {
 	out.loans = std::max(0.0, bank.loans);
 	out.arrears = std::max(0.0, bank.arrears);
 	out.cash = std::max(0.0, bank.cash);
-	out.deposits = std::max(0.0, bank.deposits);
+	out.deposits = bank::total_deposits(bank);
 	out.capital = std::max(0.0, bank.capital);
 	out.assets = out.cash + out.loans + out.arrears;
 	out.equity = bank::equity(bank);
@@ -244,34 +583,68 @@ void register_event(WorldState& ws, const BankCrisisEvent& event) {
 // --- Choque de perda -------------------------------------------------------
 namespace {
 
-// Charge o corte de deposito nao segurado nos grupos tomadores do banco,
-// proporcional a divida e limitado pelo caixa de cada um. Devolve o total
-// efetivamente cobrado (o que nao couber fica para o seguro/Tesouro).
-double charge_depositors(WorldState& ws, const Bank& bank, double target) {
-	if (!(target > 0.0)) {
-		return 0.0;
-	}
-	struct Row {
-		int index = -1;
-		double debt = 0.0;
-		double arrears = 0.0;
-	};
-	std::vector<Row> rows;
-	double total = 0.0;
+struct DepositRow {
+	int index = -1;
+	double debt = 0.0;
+	double arrears = 0.0;
+};
+
+// Tomadores do banco NESTE momento. R2b1 (fix A1): o bail-in cobra quem deve
+// A ESTE banco (claim por credor). O modo e' POR TOMADOR: grupo com claims e'
+// cobrado pelo claim; grupo sem claim (save legado) continua no hash
+// `lender()`, para a divida antiga nao sumir do servicing quando outro
+// tomador cria claim.
+//
+// R2c: o leilao (passo 3 do plano) migra o claim para o comprador ANTES do
+// bail-in. O snapshot e' tirado antes do leilao para que D_l continue
+// cobrando quem devia a ESTE banco na quebra: o deposito de credito segue
+// passivo do banco falido mesmo depois de vendida a carteira.
+std::vector<DepositRow> collect_deposit_rows(const WorldState& ws,
+		const Bank& bank) {
+	std::vector<DepositRow> rows;
+	const bool claims_mode = ws.banks_rework.enabled
+		&& ws.banks_rework.deposits;
 	for (int index = 0; index < static_cast<int>(ws.groups.size());
 			++index) {
 		const Group& group = ws.groups[static_cast<std::size_t>(index)];
-		const Bank* lender = bank::lender(ws, group);
-		if (lender == nullptr || lender->id != bank.id) {
-			continue;
+		double debt = 0.0;
+		double arrears = 0.0;
+		if (claims_mode && !group.debt_claims.empty()) {
+			for (const BankLoan& loan : group.debt_claims) {
+				if (loan.bank_id == bank.id) {
+					debt = std::max(0.0, loan.principal);
+					arrears = std::max(0.0, loan.arrears);
+					break;
+				}
+			}
+		} else {
+			const Bank* lender = bank::lender(ws, group);
+			if (lender == nullptr || lender->id != bank.id) {
+				continue;
+			}
+			debt = std::max(0.0, group.debt);
+			arrears = std::max(0.0, group.credit_arrears);
 		}
-		const double claim = std::max(0.0, group.debt)
-			+ std::max(0.0, group.credit_arrears);
+		const double claim = debt + arrears;
 		if (claim <= kEps) {
 			continue;
 		}
-		rows.push_back({index, group.debt, group.credit_arrears});
-		total += claim;
+		rows.push_back({index, debt, arrears});
+	}
+	return rows;
+}
+
+// Charge o corte de deposito nao segurado nos grupos tomadores, proporcional
+// a divida e limitado pelo caixa de cada um. Devolve o total efetivamente
+// cobrado (o que nao couber fica para o seguro/Tesouro).
+double charge_depositors(WorldState& ws, const Bank& bank, double target,
+		const std::vector<DepositRow>& rows) {
+	if (!(target > 0.0)) {
+		return 0.0;
+	}
+	double total = 0.0;
+	for (const DepositRow& row : rows) {
+		total += row.debt + row.arrears;
 	}
 	if (rows.empty() || total <= kEps) {
 		return 0.0;
@@ -282,36 +655,41 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 	for (int pass = 0; pass < 2 && charged < target - kEps; ++pass) {
 		double remaining = target - charged;
 		double weight = 0.0;
-		for (const Row& row : rows) {
+		for (const DepositRow& row : rows) {
 			const Group& group = ws.groups[static_cast<std::size_t>(
 				row.index)];
-			if (group.cash > kEps) {
+			if (group.liquid_cash() > kEps) {
 				weight += row.debt + row.arrears;
 			}
 		}
 		if (weight <= kEps) {
 			break;
 		}
-		for (const Row& row : rows) {
+		for (const DepositRow& row : rows) {
 			if (remaining <= kEps) {
 				break;
 			}
 			Group& group = ws.groups[static_cast<std::size_t>(row.index)];
-			if (group.cash <= kEps) {
+			if (group.liquid_cash() <= kEps) {
 				continue;
 			}
 			const double share = (row.debt + row.arrears) / weight;
 			const double take = std::min({ remaining * share,
-				std::max(0.0, group.cash) });
+				std::max(0.0, group.liquid_cash()) });
 			if (take <= kEps) {
 				continue;
 			}
-			group.cash -= take;
+			group.pay_cash(take);
 			charged += take;
 			remaining -= take;
 		}
 	}
 	return charged;
+}
+
+double charge_depositors(WorldState& ws, const Bank& bank, double target) {
+	return charge_depositors(ws, bank, target,
+		collect_deposit_rows(ws, bank));
 }
 
 } // namespace
@@ -323,12 +701,56 @@ double apply_loss(WorldState& ws, const std::string& bank_id, double amount) {
 		return 0.0;
 	}
 	Bank& bank = found->second;
+	// R2b1 (fix A1): com depositos a baixa e' POR CLAIM (o ativo do credor e'
+	// o claim de cada tomador, grupo ou cidade). O modo e' POR TOMADOR:
+	// tomador sem claim (save legado) continua no caminho antigo
+	// (hash `lender()` para grupo, banco publico para a cidade), bit a bit.
+	const bool claims_mode = ws.banks_rework.enabled
+		&& ws.banks_rework.deposits;
 	double book = 0.0;
-	for (Group& group : ws.groups) {
-		const Bank* lender = bank::lender(ws, group);
-		if (lender != nullptr && lender->id == bank.id) {
-			book += std::max(0.0, group.debt)
-				+ std::max(0.0, group.credit_arrears);
+	if (claims_mode) {
+		for (const Group& group : ws.groups) {
+			if (!group.debt_claims.empty()) {
+				for (const BankLoan& claim : group.debt_claims) {
+					if (claim.bank_id == bank.id) {
+						book += std::max(0.0, claim.principal)
+							+ std::max(0.0, claim.arrears);
+						break;
+					}
+				}
+				continue;
+			}
+			const Bank* lender = bank::lender(ws, group);
+			if (lender != nullptr && lender->id == bank.id) {
+				book += std::max(0.0, group.debt)
+					+ std::max(0.0, group.credit_arrears);
+			}
+		}
+		for (const City& city : ws.cities) {
+			if (!city.firm_debt_claims.empty()) {
+				for (const BankLoan& claim : city.firm_debt_claims) {
+					if (claim.bank_id == bank.id) {
+						book += std::max(0.0, claim.principal)
+							+ std::max(0.0, claim.arrears);
+						break;
+					}
+				}
+				continue;
+			}
+			const Bank* public_bank = bank::find(ws, city.nation,
+				bank::kRolePublic);
+			if (public_bank != nullptr && public_bank->id == bank.id) {
+				book += std::max(0.0, city.firm_debt)
+					+ std::max(0.0, city.firm_credit_arrears);
+			}
+		}
+	} else {
+		for (Group& group : ws.groups) {
+			const Bank* lender = bank::lender(ws, group);
+			if (lender != nullptr && lender->id == bank.id) {
+				book += std::max(0.0, group.debt)
+					+ std::max(0.0, group.credit_arrears);
+			}
 		}
 	}
 	const double loss = std::min({ amount, book,
@@ -337,6 +759,124 @@ double apply_loss(WorldState& ws, const std::string& bank_id, double amount) {
 		return 0.0;
 	}
 	double written = 0.0;
+	if (claims_mode) {
+		// A proporcao e' sobre o book do CREDOR; principal e juros vencidos
+		// caem juntos na mesma razao do claim. `out_debt`/`out_arrears`
+		// devolvem a parcela para o agregado do tomador.
+		const auto write_claim = [&](BankLoan& claim, double* out_debt,
+				double* out_arrears) {
+			*out_debt = 0.0;
+			*out_arrears = 0.0;
+			const double total = std::max(0.0, claim.principal)
+				+ std::max(0.0, claim.arrears);
+			if (total <= kEps || written >= loss - kEps) {
+				return;
+			}
+			double take = std::min(total,
+				loss * (total / std::max(kEps, book)));
+			if (written + take > loss) {
+				take = loss - written;
+			}
+			if (take <= kEps) {
+				return;
+			}
+			const double share_arrears = claim.arrears / total;
+			const double take_arrears = std::min(
+				std::max(0.0, claim.arrears), take * share_arrears);
+			const double take_debt = std::min(
+				std::max(0.0, claim.principal), take - take_arrears);
+			claim.arrears = std::max(0.0, claim.arrears - take_arrears);
+			claim.principal = std::max(0.0, claim.principal - take_debt);
+			bank.arrears = std::max(0.0, bank.arrears - take_arrears);
+			bank.loans = std::max(0.0, bank.loans - take_debt);
+			bank.writeoffs += take_arrears + take_debt;
+			bank.loss_today += take_arrears + take_debt;
+			written += take_arrears + take_debt;
+			*out_debt = take_debt;
+			*out_arrears = take_arrears;
+		};
+		// Tomador legado (sem claim): a baixa segue o agregado, na mesma
+		// proporcao do book.
+		const auto write_aggregate = [&](double& debt, double& arrears) {
+			const double total = std::max(0.0, debt)
+				+ std::max(0.0, arrears);
+			if (total <= kEps || written >= loss - kEps) {
+				return;
+			}
+			double take = std::min(total,
+				loss * (total / std::max(kEps, book)));
+			if (written + take > loss) {
+				take = loss - written;
+			}
+			if (take <= kEps) {
+				return;
+			}
+			const double share_arrears = arrears / total;
+			const double take_arrears = std::min(std::max(0.0, arrears),
+				take * share_arrears);
+			const double take_debt = std::min(std::max(0.0, debt),
+				take - take_arrears);
+			arrears = std::max(0.0, arrears - take_arrears);
+			debt = std::max(0.0, debt - take_debt);
+			bank.arrears = std::max(0.0, bank.arrears - take_arrears);
+			bank.loans = std::max(0.0, bank.loans - take_debt);
+			bank.writeoffs += take_arrears + take_debt;
+			bank.loss_today += take_arrears + take_debt;
+			written += take_arrears + take_debt;
+		};
+		for (Group& group : ws.groups) {
+			if (written >= loss - kEps) {
+				break;
+			}
+			if (!group.debt_claims.empty()) {
+				for (BankLoan& claim : group.debt_claims) {
+					if (claim.bank_id != bank.id) {
+						continue;
+					}
+					double take_debt = 0.0;
+					double take_arrears = 0.0;
+					write_claim(claim, &take_debt, &take_arrears);
+					group.debt = std::max(0.0, group.debt - take_debt);
+					group.credit_arrears = std::max(0.0,
+						group.credit_arrears - take_arrears);
+					break;
+				}
+				continue;
+			}
+			const Bank* lender = bank::lender(ws, group);
+			if (lender != nullptr && lender->id == bank.id) {
+				write_aggregate(group.debt, group.credit_arrears);
+			}
+		}
+		for (City& city : ws.cities) {
+			if (written >= loss - kEps) {
+				break;
+			}
+			if (!city.firm_debt_claims.empty()) {
+				for (BankLoan& claim : city.firm_debt_claims) {
+					if (claim.bank_id != bank.id) {
+						continue;
+					}
+					double take_debt = 0.0;
+					double take_arrears = 0.0;
+					write_claim(claim, &take_debt, &take_arrears);
+					city.firm_debt = std::max(0.0,
+						city.firm_debt - take_debt);
+					city.firm_credit_arrears = std::max(0.0,
+						city.firm_credit_arrears - take_arrears);
+					break;
+				}
+				continue;
+			}
+			const Bank* public_bank = bank::find(ws, city.nation,
+				bank::kRolePublic);
+			if (public_bank != nullptr && public_bank->id == bank.id) {
+				write_aggregate(city.firm_debt,
+					city.firm_credit_arrears);
+			}
+		}
+		return written;
+	}
 	for (Group& group : ws.groups) {
 		if (written >= loss - kEps) {
 			break;
@@ -352,8 +892,6 @@ double apply_loss(WorldState& ws, const std::string& bank_id, double amount) {
 		}
 		const double share = claim / book;
 		double take = std::min(claim, loss * share);
-		// Segunda passada cobre o arredondamento: o que sobrar vai para o
-		// ultimo tomador com divida (a soma fecha por construcao).
 		if (written + take > loss) {
 			take = loss - written;
 		}
@@ -385,7 +923,8 @@ double apply_loss_share(WorldState& ws, const std::string& bank_id,
 }
 
 // --- Resolucao -------------------------------------------------------------
-double resolve(WorldState& ws, const std::string& bank_id,
+// C6 legado: preservado bit a bit para `banks.resolution=false`.
+double resolve_c6(WorldState& ws, const std::string& bank_id,
 		const std::string& cause) {
 	const auto found = ws.banks.find(bank_id);
 	if (found == ws.banks.end()) {
@@ -440,13 +979,37 @@ double resolve(WorldState& ws, const std::string& bank_id,
 	const double uninsured = ind.deposits
 		* clamp01(1.0 - pol.insured_share);
 	if (uninsured > kEps && gap > kEps) {
-		const double cut = charge_depositors(ws, bank,
-			std::min(uninsured, gap));
-		if (cut > kEps) {
-			bank.deposits = std::max(0.0, bank.deposits - cut);
-			bank.bailin_cut += cut;
-			event.cost_depositors = cut;
-			gap -= cut;
+		double cut_total = 0.0;
+		// R2a (QA M3, plano 9.2): o bail-in e' PRO RATA entre D_f e D_l. O
+		// alvo nao segurado se reparte pela fatia de cada tipo no passivo; o
+		// funding corta o claim do depositante (sem tocar em caixa) e o
+		// deposito de credito mantem o caminho legado (corta o caixa do
+		// tomador). O que o caixa do tomador nao cobrir continua no `gap` e vai
+		// ao fundo/Tesouro - nao se inventa caixa.
+		const double deposits_total = std::max(0.0, ind.deposits);
+		const double funding_share = deposits_total > kEps
+			? std::clamp(bank.deposits_funding / deposits_total, 0.0, 1.0)
+			: 0.0;
+		const double bailin_target = std::min(uninsured, gap);
+		if (funding_share > 0.0 && bank.deposits_funding > kEps) {
+			const double funding_cut = bank::cut_funding_claims(ws, bank.id,
+				bailin_target * funding_share);
+			cut_total += funding_cut;
+			gap -= funding_cut;
+		}
+		const double legacy = std::min(
+			bailin_target * (1.0 - funding_share), gap);
+		if (legacy > kEps) {
+			const double cut = charge_depositors(ws, bank, legacy);
+			if (cut > kEps) {
+				bank.deposits = std::max(0.0, bank.deposits - cut);
+				cut_total += cut;
+				gap -= cut;
+			}
+		}
+		if (cut_total > kEps) {
+			bank.bailin_cut += cut_total;
+			event.cost_depositors = cut_total;
 			kinds.push_back("bailin");
 		}
 	}
@@ -522,6 +1085,13 @@ double resolve(WorldState& ws, const std::string& bank_id,
 			pub->loans += bank.loans;
 			pub->arrears += bank.arrears;
 			pub->deposits += bank.deposits;
+			pub->deposits_funding += bank.deposits_funding;
+			pub->capital_target += bank.capital_target;
+			if (bank.deposits_funding > kEps) {
+				// O claim do depositante acompanha o passivo: o dono passa a
+				// ser o banco público (Σ claims == Σ D_f continua valendo).
+				bank::reassign_claims(ws, bank.id, pub->id);
+			}
 			pub->bc_borrowing += bank.bc_borrowing;
 			pub->writeoffs += bank.writeoffs;
 			pub->defaults += bank.defaults;
@@ -540,6 +1110,8 @@ double resolve(WorldState& ws, const std::string& bank_id,
 			bank.loans = 0.0;
 			bank.arrears = 0.0;
 			bank.deposits = 0.0;
+			bank.deposits_funding = 0.0;
+			bank.capital_target = 0.0;
 			bank.bc_borrowing = 0.0;
 			bank.share = 0.0;
 			// Resolvido e absorvido: não está mais "em corrida hoje". O
@@ -618,8 +1190,511 @@ double resolve(WorldState& ws, const std::string& bank_id,
 	return gap0;
 }
 
+// R2c: resolvedor novo (banks.resolution=true). A ordem e' a do plano rev3:
+//   privado: leilao -> bail-in pro rata -> fundo -> charter com teto -> deserto;
+//   publico: Tesouro (austeridade) -> leilao/bail-in/fundo -> valvula 1% M0 ->
+//            liquidacao/deserto (sem charter).
+// Todo ramo conserva dinheiro; claims de divida e funding migram JUNTO com a
+// carteira/passivo (t200).
+double resolve_r2(WorldState& ws, const std::string& bank_id,
+		const std::string& cause, double m0_total) {
+	const auto found = ws.banks.find(bank_id);
+	if (found == ws.banks.end()) {
+		return 0.0;
+	}
+	Bank& bank = found->second;
+	if (!bank.absorbed_into.empty()) {
+		return 0.0;
+	}
+	// Banco ja liquidado/deserto nao se repete.
+	if (bank.resolved && (bank.resolution == "liquidation"
+			|| bank.name_status != "present")) {
+		return 0.0;
+	}
+	const Policy pol = policy(ws);
+	const Indicators ind = indicators(bank);
+	const double tolerance = std::max(pol.insolvency_tolerance,
+		ind.assets * pol.insolvency_tolerance_ratio);
+	if (ind.equity >= -tolerance) {
+		return 0.0;
+	}
+	const double gap0 = -ind.equity;
+	const bool is_public = bank.role == bank::kRolePublic;
+	BankCrisisEvent event;
+	event.day = ws.day;
+	event.bank = bank.id;
+	event.nation = bank.nation;
+	event.kind = "resolution";
+	event.cause = cause;
+	event.gap = gap0;
+	std::vector<std::string> kinds;
+	// Sonda R2c: dinheiro do mundo antes e depois de cada degrau. Desligada
+	// (sem a env) nao calcula nada: custo zero e nenhum efeito no mundo.
+	MoneyProbe probe;
+	if (bank_trace_on()) {
+		probe = money_probe(ws);
+	}
+	const auto trace = [&](const char* step) {
+		if (!bank_trace_on()) {
+			return;
+		}
+		const MoneyProbe now = money_probe(ws);
+		trace_step(ws, bank.id, step, probe, now);
+		probe = now;
+	};
+	if (bank_trace_on()) {
+		std::fprintf(stdout,
+			"[bank-trace] day=%d bank=%s resolve_start gap=%.6f public=%d"
+			" cash=%.6f loans=%.6f arrears=%.6f deposits=%.6f"
+			" funding=%.6f borrowing=%.6f capital=%.6f\n",
+			ws.day, bank.id.c_str(), gap0, is_public ? 1 : 0, bank.cash,
+			bank.loans, bank.arrears, bank.deposits,
+			bank.deposits_funding, bank.bc_borrowing, bank.capital);
+	}
+
+	// 1. Acionistas: capital do dono e' claim e ja vale zero.
+	event.cost_shareholders = std::max(0.0, bank.capital);
+	bank.capital = 0.0;
+	StockTicker* ticker = stock::find_ticker(ws, bank.id);
+	if (ticker != nullptr && ticker->listed) {
+		ticker->listed = false;
+		ticker->price = 0.0;
+		ticker->reason = "bank_resolution";
+		ticker->delisted_day = ws.day;
+	}
+
+	double treasury_paid = 0.0;
+	// D_l: snapshot dos tomadores ANTES do leilao (passo 3), que migra os
+	// claims da carteira vendida para o comprador. O bail-in (passo 4) tem de
+	// cobrar o caixa de quem devia a ESTE banco na quebra; reler o claim
+	// depois do leilao acharia zero (o vendedor nao tem mais a carteira).
+	const std::vector<DepositRow> bailin_rows =
+		collect_deposit_rows(ws, bank);
+	// 2. CASCATA PUBLICA: o Tesouro recapitaliza ate o saldo real, com a
+	// austeridade regional declarada. Isto vem ANTES do bail-in (plano 5.4).
+	if (is_public) {
+		const double open_gap = std::max(0.0, -bank::equity(bank));
+		if (open_gap > kEps) {
+			const double available = government_cash_available(ws,
+				bank.nation);
+			const double want = std::min(open_gap, available);
+			if (want > kEps) {
+				const double paid = pay_government(ws, bank.nation, want);
+				if (paid > kEps) {
+					bank.cash += paid;
+					bank.capital += paid;
+					bank.treasury_rescue += paid;
+					event.cost_treasury += paid;
+					event.recapitalized = true;
+					event.austerity += apply_austerity(ws, bank.nation,
+						paid);
+					treasury_paid += paid;
+					kinds.push_back("treasury");
+				}
+			}
+		}
+		if (-bank::equity(bank) <= tolerance) {
+			bank.resolved = true;
+			bank.resolution_day = ws.day;
+			bank.resolution = join_kind(kinds);
+			register_event(ws, event);
+			return gap0;
+		}
+	}
+	trace("cascade");
+
+	// 3. LEILAO da carteira (loans + arrears), book inteiro, comprador
+	// solvente por patrimonio decrescente. O comprador paga em CAIXA e herda
+	// o ativo e o claim de divida do tomador; o passivo fica com o falido.
+	const double book = std::max(0.0, bank.loans)
+		+ std::max(0.0, bank.arrears);
+	if (book > kEps) {
+		struct Candidate {
+			Bank* bank = nullptr;
+			double equity = 0.0;
+			std::string id;
+		};
+		std::vector<Candidate> candidates;
+		for (auto& row : ws.banks) {
+			Bank& buyer = row.second;
+			if (&buyer == &bank || !buyer.absorbed_into.empty()
+					|| buyer.resolved
+					|| buyer.name_status != "present"
+					|| buyer.role == bank::kRolePublic) {
+				continue;
+			}
+			const double eq = bank::equity(buyer);
+			if (eq <= kEps || buyer.cash <= kEps) {
+				continue;
+			}
+			candidates.push_back({&buyer, eq, buyer.id});
+		}
+		std::sort(candidates.begin(), candidates.end(),
+			[](const Candidate& a, const Candidate& b) {
+				if (a.equity != b.equity) {
+					return a.equity > b.equity;
+				}
+				return a.id < b.id;
+			});
+		const auto sell_to = [&](Bank& buyer, double discount,
+				bool public_buyer) {
+			const double price = book * (1.0 - discount);
+			buyer.cash = std::max(0.0, buyer.cash - price);
+			bank.cash += price;
+			buyer.loans += std::max(0.0, bank.loans);
+			buyer.arrears += std::max(0.0, bank.arrears);
+			bank.loans = 0.0;
+			bank.arrears = 0.0;
+			bank::reassign_debt_claims(ws, bank.id, buyer.id);
+			event.buyer = buyer.id;
+			event.auction_book = book;
+			event.auction_price = price;
+			kinds.push_back(public_buyer ? "auction_public" : "auction");
+		};
+		bool sold = false;
+		for (Candidate& candidate : candidates) {
+			const double price = book
+				* (1.0 - ws.banks_rework.auction_discount_private);
+			if (candidate.bank->cash + kEps >= price) {
+				sell_to(*candidate.bank,
+					ws.banks_rework.auction_discount_private, false);
+				sold = true;
+				break;
+			}
+		}
+		if (!sold && !is_public) {
+			// O publico compra por ULTIMO, com desagio maior.
+			Bank* pub = nullptr;
+			const auto pub_found = ws.banks.find(
+				bank::bank_id(bank.nation, bank::kRolePublic));
+			if (pub_found != ws.banks.end()
+					&& pub_found->second.id != bank.id
+					&& pub_found->second.absorbed_into.empty()
+					&& !pub_found->second.resolved
+					&& pub_found->second.name_status == "present") {
+				pub = &pub_found->second;
+			}
+			if (pub != nullptr) {
+				const double price = book
+					* (1.0 - ws.banks_rework.auction_discount_public);
+				if (pub->cash + kEps >= price) {
+					sell_to(*pub,
+						ws.banks_rework.auction_discount_public, true);
+					sold = true;
+				}
+			}
+		}
+		if (!sold) {
+			// Sem comprador: o book e' baixado (perda reconhecida). O claim de
+			// divida do tomador cai junto (apply_loss), nunca fica orfao.
+			apply_loss(ws, bank.id, book);
+		}
+	}
+	trace("auction");
+
+	// 4. Bail-in pro rata D_f/D_l do deposito NAO segurado, limitado ao
+	// rombo de caixa (o que o caixa nao cobre). D_f corta o claim; D_l corta
+	// o caixa do tomador (proxy do deposito de credito).
+	double shortfall = std::max(0.0, bank::total_deposits(bank)
+		+ std::max(0.0, bank.bc_borrowing) - std::max(0.0, bank.cash));
+	if (shortfall > kEps) {
+		const double uninsured = ind.deposits
+			* clamp01(1.0 - pol.insured_share);
+		const double target = std::min(uninsured, shortfall);
+		if (target > kEps) {
+			const double deposits_total = std::max(0.0, ind.deposits);
+			const double funding_share = deposits_total > kEps
+				? std::clamp(bank.deposits_funding / deposits_total,
+					0.0, 1.0)
+				: 0.0;
+			double cut_total = 0.0;
+			if (funding_share > 0.0 && bank.deposits_funding > kEps) {
+				const double cut = bank::cut_funding_claims(ws, bank.id,
+					target * funding_share);
+				cut_total += cut;
+				shortfall -= cut;
+				if (bank_trace_on()) {
+					std::fprintf(stdout,
+						"[bank-trace] day=%d bank=%s bailin_funding"
+						" cut=%.6f target=%.6f funding=%.6f\n",
+						ws.day, bank.id.c_str(), cut, target,
+						bank.deposits_funding);
+				}
+			}
+			const double legacy = std::min(
+				target * (1.0 - funding_share), shortfall);
+			if (legacy > kEps) {
+				const double cut = charge_depositors(ws, bank, legacy,
+					bailin_rows);
+				if (bank_trace_on()) {
+					std::fprintf(stdout,
+						"[bank-trace] day=%d bank=%s bailin_legacy"
+						" cut=%.6f legacy=%.6f deposits_before=%.6f"
+						" rows=%d\n",
+						ws.day, bank.id.c_str(), cut, legacy,
+						bank.deposits,
+						static_cast<int>(bailin_rows.size()));
+				}
+				if (cut > kEps) {
+					bank.deposits = std::max(0.0, bank.deposits - cut);
+					cut_total += cut;
+					shortfall -= cut;
+				}
+			}
+			if (cut_total > kEps) {
+				bank.bailin_cut += cut_total;
+				event.cost_depositors += cut_total;
+				kinds.push_back("bailin");
+			}
+		}
+	}
+	trace("bailin");
+
+	// 5. Fundo garantidor ate o saldo e o teto segurado.
+	if (shortfall > kEps) {
+		DepositInsurance& fund = ws.deposit_insurance[bank.nation];
+		const double insured = ind.deposits * clamp01(pol.insured_share);
+		const double pay = std::min({fund.fund, shortfall, insured});
+		if (pay > kEps) {
+			fund.fund -= pay;
+			fund.payouts += pay;
+			fund.last_payout_day = ws.day;
+			bank.cash += pay;
+			bank.insured_payout += pay;
+			event.cost_fund += pay;
+			shortfall -= pay;
+			kinds.push_back("insurance");
+		}
+	}
+	trace("insurance");
+
+	// 6. Privado: charter publico emergencial com TETO de custo pago pelo
+	// Tesouro. Acima do teto (ou sem caixa) = deserto. Publico: a valvula de
+	// monetizacao <= 1% M0/dia (nunca o `rescue_with_debt` sem limite).
+	if (shortfall > kEps && !is_public) {
+		const double cap = charter_cap(ws, bank.nation);
+		event.charter_cap = cap;
+		if (cap > kEps && shortfall <= cap + kEps) {
+			const double available = government_cash_available(ws,
+				bank.nation);
+			if (available + kEps >= shortfall) {
+				const double paid = pay_government(ws, bank.nation,
+					shortfall);
+				if (paid + kEps >= shortfall) {
+					bank.cash += paid;
+					bank.treasury_rescue += paid;
+					event.cost_treasury += paid;
+					event.charter_cost = paid;
+					event.austerity += apply_austerity(ws, bank.nation,
+						paid);
+					treasury_paid += paid;
+					shortfall = std::max(0.0, shortfall - paid);
+					kinds.push_back("charter");
+				}
+			}
+		}
+	} else if (shortfall > kEps && is_public) {
+		bool emitted = false;
+		const double paid = rescue_with_valve(ws, bank.nation, shortfall,
+			m0_total, &emitted);
+		if (paid > kEps) {
+			bank.cash += paid;
+			bank.treasury_rescue += paid;
+			event.cost_treasury += paid;
+			event.emission += emitted ? paid : 0.0;
+			shortfall = std::max(0.0, shortfall - paid);
+			kinds.push_back("valve");
+		}
+	}
+	trace("charter_valve");
+
+	// 7. Charter concretizado: banco privado recapitalizado pelo Tesouro
+	// passa ao banco publico (cria/reusa o papel), levando caixa, carteira e
+	// os DOIS tipos de claim juntos.
+	if (shortfall <= kEps && !is_public && treasury_paid > kEps) {
+		Bank& pub = bank::ensure(ws, bank.nation, bank::kRolePublic);
+		if (pub.id != bank.id) {
+			pub.cash += bank.cash;
+			pub.loans += std::max(0.0, bank.loans);
+			pub.arrears += std::max(0.0, bank.arrears);
+			pub.deposits += std::max(0.0, bank.deposits);
+			pub.deposits_funding += std::max(0.0, bank.deposits_funding);
+			pub.bc_borrowing += std::max(0.0, bank.bc_borrowing);
+			pub.capital_target += bank.capital_target;
+			pub.capital += treasury_paid;
+			bank::reassign_claims(ws, bank.id, pub.id);
+			bank::reassign_debt_claims(ws, bank.id, pub.id);
+			pub.name_status = "present";
+			pub.owner_kind = "state";
+			pub.charter = "chartered_in_crisis";
+			// Casca: saldos zerados, share 0; ancora da resolucao fica nela.
+			bank.cash = 0.0;
+			bank.loans = 0.0;
+			bank.arrears = 0.0;
+			bank.deposits = 0.0;
+			bank.deposits_funding = 0.0;
+			bank.bc_borrowing = 0.0;
+			bank.capital_target = 0.0;
+			bank.share = 0.0;
+			bank.name_status = "none";
+			bank.charter = "none";
+			bank.absorbed_into = pub.id;
+			bank.run_days = 0;
+			// R2c: renormaliza DEPOIS de marcar a casca como absorvida; a
+			// participacao do papel extinto sai do bolo e as restantes fecham 1
+			// (antes a casca ainda contava e a fatia de papel novo ficava orfa).
+			bank::refresh_shares(ws, bank.nation);
+		}
+	}
+
+	trace("charter_transfer");
+	if (shortfall <= kEps) {
+		bank.resolved = true;
+		bank.resolution_day = ws.day;
+		bank.resolution = join_kind(kinds);
+		register_event(ws, event);
+		if (bank_trace_on()) {
+			std::fprintf(stdout,
+				"[bank-trace] day=%d bank=%s resolve_done kinds=%s"
+				" shortfall=0 cash=%.6f deposits=%.6f"
+				" treasury_paid=%.6f\n",
+				ws.day, bank.id.c_str(), bank.resolution.c_str(),
+				bank.cash, bank.deposits, treasury_paid);
+		}
+		return gap0;
+	}
+
+	// 8. Nao ha socorro suficiente: liquidacao (e deserto se nao sobrar
+	// nenhum banco presente na nacao). Paga o funding com o caixa pro rata,
+	// corta o resto dos claims e baixa D_l: nada de dinheiro inventado.
+	const bool desert = !has_other_present_bank(ws, bank.nation, bank.id);
+	if (ws.banks_rework.deposits) {
+		deposit::link(ws);
+		// R2c (QA t206): pro rata com SNAPSHOT. A razao de cobertura e' fixa
+		// no inicio da liquidacao (`cash / D_f`, teto 1) e cada claim recebe
+		// `claim x razao`. A formula sequencial antiga deixava um claim maior
+		// que D_f drenar o caixa inteiro e os seguintes ficarem sem nada.
+		const double start_cash = std::max(0.0, bank.cash);
+		const double start_funding = std::max(0.0, bank.deposits_funding);
+		const double cover_ratio = start_funding > kEps
+			? std::min(1.0, start_cash / start_funding) : 0.0;
+		for (City& city : ws.cities) {
+			for (City::BankAccount& account : city.bank_accounts) {
+				if (account.bank_id != bank.id) {
+					continue;
+				}
+				const auto pay_leg = [&](double& claim, bool firm) {
+					if (claim <= kEps || bank.cash <= kEps
+							|| cover_ratio <= 0.0) {
+						return;
+					}
+					const double covered = std::min(claim * cover_ratio,
+						bank.cash);
+					if (covered <= kEps) {
+						return;
+					}
+					claim = std::max(0.0, claim - covered);
+					bank.cash = std::max(0.0, bank.cash - covered);
+					bank.deposits_funding = std::max(0.0,
+						bank.deposits_funding - covered);
+					if (firm) {
+						city.firm_sub += covered;
+						city.firm_cash = city.firm_sub;
+					} else {
+						city.service_sub += covered;
+						city.service_cash = city.service_sub;
+					}
+					city.private_cash += covered;
+				};
+				pay_leg(account.firm, true);
+				pay_leg(account.service, false);
+			}
+		}
+		for (Group& group : ws.groups) {
+			if (group.deposit_bank_id != bank.id
+					|| group.bank_deposit <= kEps) {
+				continue;
+			}
+			const double covered = std::min(group.bank_deposit * cover_ratio,
+				bank.cash);
+			if (covered <= kEps) {
+				continue;
+			}
+			group.bank_deposit = std::max(0.0,
+				group.bank_deposit - covered);
+			bank.cash = std::max(0.0, bank.cash - covered);
+			bank.deposits_funding = std::max(0.0,
+				bank.deposits_funding - covered);
+			group.cash += covered;
+		}
+	}
+	bank::cut_funding_claims(ws, bank.id, bank.deposits_funding);
+	trace("liquidation_cut_funding");
+	// D_l NAO e' zerado: o deposito de credito e' passivo/claim do tomador.
+	// Zerar a divida sem cobrar o caixa quebraria `money_total == antes +
+	// bank_money_today`; o banco fica como casca com patrimonio negativo
+	// (mesma convencao da liquidacao C6). O bail-in ja cortou a fatia nao
+	// segurada; o resto permanece como claim nao pago.
+	//
+	// R2c (QA t206): a sobra depois do funding NAO vai direto ao governo.
+	// Segue a ordem do plano (leilao -> bail-in -> fundo -> Tesouro): o
+	// fundo de seguro recupera primeiro o que pagou por ESTE banco
+	// (sub-rogacao); so o residual fica com o Tesouro, o credor residual.
+	if (bank.cash > kEps && bank.insured_payout > kEps) {
+		DepositInsurance& fund = ws.deposit_insurance[bank.nation];
+		const double back = std::min(bank.cash, bank.insured_payout);
+		fund.fund += back;
+		bank.insured_payout = std::max(0.0, bank.insured_payout - back);
+		bank.cash = std::max(0.0, bank.cash - back);
+	}
+	if (bank.cash > kEps) {
+		credit_government(ws, bank.nation, bank.cash);
+		bank.cash = 0.0;
+	}
+	bank.loans = 0.0;
+	bank.arrears = 0.0;
+	bank.bc_borrowing = 0.0;
+	bank.capital = 0.0;
+	bank.capital_target = 0.0;
+	bank.share = 0.0;
+	bank.name_status = "none";
+	bank.charter = "none";
+	// R2c: a participacao do papel liquidado nao pode ficar orfa. O dono do
+	// papel perde no banco quebrado; a fatia e' CANCELADA e os bancos que
+	// sobraram sao renormalizados para 1 (senao um papel criado depois aloca
+	// so `20 % x soma das shares` e sobram acoes sem dono). Nacao sem nenhum
+	// banco presente e' deserto: os 20 % vao para as familias em
+	// `stock::default_holdings`.
+	bank::refresh_shares(ws, bank.nation);
+	bank.resolved = true;
+	bank.resolution_day = ws.day;
+	bank.run_days = 0;
+	event.desert = desert;
+	event.cost_takeover = std::max(0.0, shortfall);
+	kinds.push_back(desert ? "desert" : "liquidation");
+	bank.resolution = join_kind(kinds);
+	register_event(ws, event);
+	trace("resolve_end");
+	if (bank_trace_on()) {
+		std::fprintf(stdout,
+			"[bank-trace] day=%d bank=%s resolve_done kinds=%s"
+			" shortfall=%.6f cash=%.6f deposits=%.6f treasury_paid=%.6f\n",
+			ws.day, bank.id.c_str(), bank.resolution.c_str(), shortfall,
+			bank.cash, bank.deposits, treasury_paid);
+	}
+	return gap0;
+}
+
+double resolve(WorldState& ws, const std::string& bank_id,
+		const std::string& cause, double m0_total) {
+	if (resolution_enabled(ws)) {
+		return resolve_r2(ws, bank_id, cause, m0_total);
+	}
+	return resolve_c6(ws, bank_id, cause);
+}
+
 // --- Fase do dia -----------------------------------------------------------
-void phase(WorldState& ws) {
+void phase(WorldState& ws, double m0_total) {
 	const Policy pol = policy(ws);
 	if (!pol.enabled) {
 		return;
@@ -629,7 +1704,11 @@ void phase(WorldState& ws) {
 	for (const auto& row : ws.banks) {
 		const Bank& bank = row.second;
 		deposits_before += bank.deposits;
-		nation_deposits[bank.nation] += std::max(0.0, bank.deposits);
+		nation_deposits[bank.nation] += bank::total_deposits(bank);
+	}
+	MoneyProbe phase_mark;
+	if (bank_trace_on()) {
+		phase_mark = money_probe(ws);
 	}
 
 	// 1. Premio do seguro de deposito: sai do caixa do banco, entra no fundo
@@ -638,7 +1717,7 @@ void phase(WorldState& ws) {
 	for (auto& row : ws.banks) {
 		Bank& bank = row.second;
 		if (bank.resolved || !bank.absorbed_into.empty()
-				|| bank.deposits <= kEps) {
+				|| bank::total_deposits(bank) <= kEps) {
 			continue;
 		}
 		DepositInsurance& fund = ws.deposit_insurance[bank.nation];
@@ -649,7 +1728,8 @@ void phase(WorldState& ws) {
 		// capital (o mundo base da C4) pagaria o premio com o proprio buraco
 		// e entraria em resolucao por centavos. Sem patrimonio nao ha premio
 		// (ausencia declarada) — o fundo so acumula do que o banco ganhou.
-		const double premium = std::min({ bank.deposits * pol.premium_daily,
+		const double premium = std::min({ bank::total_deposits(bank)
+				* pol.premium_daily,
 			room, std::max(0.0, bank.cash),
 			std::max(0.0, bank::equity(bank)) });
 		if (premium <= kEps) {
@@ -659,6 +1739,7 @@ void phase(WorldState& ws) {
 		fund.fund += premium;
 		fund.premiums += premium;
 	}
+	trace_probe_step(ws, "-", "phase_premium", phase_mark);
 
 	// 2. Indicadores, perdas recentes e confianca. Contagio usa a confianca
 	// do fecho ANTERIOR (duas passadas: leitura e atualizacao), para a ordem
@@ -672,7 +1753,8 @@ void phase(WorldState& ws) {
 			continue;
 		}
 		if (bank.loans <= kEps && bank.arrears <= kEps
-				&& bank.deposits <= kEps && bank.cash <= kEps) {
+				&& bank::total_deposits(bank) <= kEps
+				&& bank.cash <= kEps) {
 			continue;
 		}
 		confidence_before[bank.id] = bank.confidence;
@@ -810,8 +1892,22 @@ void phase(WorldState& ws) {
 					* clamp01(pol.lolr_haircut);
 				const double cap = std::min(collateral,
 					ind.assets * clamp01(pol.lolr_max_assets));
-				const double headroom = std::max(0.0,
+				double headroom = std::max(0.0,
 					cap - std::max(0.0, bank.bc_borrowing));
+				// R2c (QA t206): o redesconto do C6 tambem e' emissao; fica
+				// limitado pela MESMA valvula de 1% do M0/dia usada na
+				// resolucao. Sem isso o LoLR contornava o teto.
+				const double m0 = m0_of_nation(ws, bank.nation, m0_total);
+				const double valve_cap =
+					monetary::kControlledEmissionShareOfM0 * m0;
+				MonetaryState* valve_state = monetary_of(ws,
+					currency_of(ws, bank.nation));
+				double valve_headroom = valve_cap;
+				if (valve_state != nullptr) {
+					valve_headroom = std::max(0.0, valve_cap
+						- std::max(0.0, valve_state->emission_today));
+				}
+				headroom = std::min(headroom, valve_headroom);
 				borrowed = std::min(need, headroom);
 				if (borrowed > kEps) {
 					bank.cash += borrowed;
@@ -839,7 +1935,8 @@ void phase(WorldState& ws) {
 				bank::bank_id(bank.nation, bank::kRolePublic));
 			if (pub_found != ws.banks.end()
 					&& pub_found->second.id != bank.id
-					&& pub_found->second.absorbed_into.empty()) {
+					&& pub_found->second.absorbed_into.empty()
+					&& pub_found->second.name_status != "none") {
 				pub = &pub_found->second;
 			}
 			const double to_public = pub != nullptr
@@ -871,6 +1968,7 @@ void phase(WorldState& ws) {
 	// 3b. Juro de penalidade do redesconto (SO o spread: a taxa basica ja e'
 	// cobrada pela fase de credito da C3/C4). Mesma convencao do C3: pagar o
 	// BC destroi reserva e reduz a divida registrada no dia.
+	trace_probe_step(ws, "-", "phase_run", phase_mark);
 	for (auto& row : ws.banks) {
 		Bank& bank = row.second;
 		if (bank.bc_borrowing <= kEps || bank.cash <= kEps) {
@@ -888,6 +1986,7 @@ void phase(WorldState& ws) {
 		bank.lolr_interest += paid;
 		ws.emission_today -= paid;
 	}
+	trace_probe_step(ws, "-", "phase_lolr_interest", phase_mark);
 
 	// 4. Resolucao dos insolventes (patrimonio < 0). A casca absorvida nao
 	// volta para a fila; um banco por vez, ordem do mapa (deterministica).
@@ -905,10 +2004,15 @@ void phase(WorldState& ws) {
 				&& found->second.resolution == "liquidation") {
 			continue;
 		}
+		// R2c: banco deserto/liquidado nao volta para a fila.
+		if (resolution_enabled(ws) && found->second.resolved
+				&& found->second.name_status != "present") {
+			continue;
+		}
 		// `resolve` aplica a tolerancia de materialidade (absoluta + razao
 		// dos ativos); aqui so os negativos entram na fila.
 		if (indicators(found->second).equity < 0.0) {
-			resolve(ws, id, "equity_negative");
+			resolve(ws, id, "equity_negative", m0_total);
 		}
 	}
 
@@ -919,6 +2023,18 @@ void phase(WorldState& ws) {
 		deposits_after += row.second.deposits;
 	}
 	ws.bank_money_today += deposits_after - deposits_before;
+	trace_probe_step(ws, "-", "phase_end", phase_mark);
+	if (bank_trace_on()) {
+		std::fprintf(stdout,
+			"[bank-trace] day=%d phase_end deposits_delta=%.6f"
+			" bank_money_today=%.6f emission_today=%.6f\n",
+			ws.day, deposits_after - deposits_before,
+			ws.bank_money_today, ws.emission_today);
+	}
+}
+
+double probe_money_total(const WorldState& ws) {
+	return money_probe(ws).total;
 }
 
 Totals totals(const WorldState& ws) {
@@ -942,7 +2058,7 @@ Totals totals(const WorldState& ws) {
 			continue;
 		}
 		const bool any = bank.loans > kEps || bank.arrears > kEps
-			|| bank.deposits > kEps || bank.cash > kEps;
+			|| bank::total_deposits(bank) > kEps || bank.cash > kEps;
 		if (!any) {
 			continue;
 		}

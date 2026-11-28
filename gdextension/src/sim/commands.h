@@ -93,6 +93,8 @@ enum class CommandType : int {
 	// D-131 (fase C): crédito de INVESTIMENTO da cidade (o mesmo teto da
 	// D-126). Sempre pela fila A3, como todo comando de política.
 	CityBorrow,
+	// R2c: charter do banco publico pago pelo Tesouro (alavanca explicita).
+	CharterPublicBank,
 };
 
 // Nome estavel do tipo (log/replay em JSON). `nullptr` para tipo invalido.

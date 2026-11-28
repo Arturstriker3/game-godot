@@ -131,6 +131,16 @@ void SimCore::phase_labor() {
 			if (rate <= 0.0) {
 				continue;
 			}
+			// R2b1 (contrato #20): o juro da safra vai ao banco do claim de
+			// giro da cidade (o financiador do envelope). Sem claim de giro,
+			// `bank_id` fica vazio e a competicao/publico decide como antes.
+			std::string creditor;
+			for (const BankLoan& claim : city.firm_debt_claims) {
+				if (claim.principal + claim.arrears > 1e-9) {
+					creditor = claim.bank_id;
+					break;
+				}
+			}
 			for (const int bi : ws_.buildings_by_city[index]) {
 				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 				if (building.bankrupt) {
@@ -157,7 +167,7 @@ void SimCore::phase_labor() {
 					continue;
 				}
 				const double credited = bank::receive_harvest_interest(ws_,
-					city.nation, take);
+					city.nation, take, creditor);
 				if (credited <= 0.0) {
 					continue;
 				}

@@ -10,7 +10,9 @@
 #include "pocket_world.h"
 
 #include "sim/bank.h"
+#include "sim/balance.h"
 #include "sim/crisis.h"
+#include "sim/deposit.h"
 #include "sim/sim_core.h"
 #include "sim/sim_types.h"
 
@@ -246,6 +248,161 @@ TEST_CASE("D-126: leilao transfere o predio com conservacao") {
 	CHECK(world.core.money_total() == Approx(money_before));
 	CHECK(world.ws.crisis_auctions == 1);
 	CHECK(world.ws.crisis_auction_value == Approx(price));
+}
+
+// R2b1 (caso exato do 365 d ON): o comprador do leilao e' autorizado por
+// `liquid_cash()` (caixa + deposito sacavel) e pagava so' com `cash`, deixando
+// o caixa negativo (G-AUS-mining-11 no dia 118). O pagamento agora segue a
+// ordem caixa -> deposito do `Group::pay_cash`; aqui o preco cabe no deposito
+// e NAO no caixa.
+TEST_CASE("R2b1: leilao autorizado por liquid_cash nao deixa cash negativo") {
+	ogs::test::PocketWorld world;
+	world.ws.regional_cash = true;
+	ogs::BanksRework cfg;
+	cfg.enabled = true;
+	cfg.capital = true;
+	cfg.deposits = true;
+	world.core.set_banks_rework(cfg);
+	ogs::Bank& bank = ogs::bank::ensure(world.ws, "AAA",
+		ogs::bank::kRolePublic);
+	bank.name = "AAA bank";
+	bank.name_status = "present";
+	ogs::Building* mill = world.building("PORTUS_SAWMILL");
+	REQUIRE(mill != nullptr);
+	ogs::Group& seller = group_by_id(world, "AAA_WOOD");
+	ogs::Group& buyer = group_by_id(world, "AAA_FUEL");
+
+	// Unico candidato: o leilao escolhe o primeiro grupo com liquidez.
+	for (ogs::Group& group : world.ws.groups) {
+		group.cash = 0.0;
+		group.bank_deposit = 0.0;
+		group.deposit_bank_id.clear();
+	}
+	seller.debt = 0.0;
+	seller.credit_arrears = 0.0;
+	const double book = std::max(1.0,
+		std::max(0.0, mill->capital_per_capacity)
+			* std::max(0.0, mill->capacity));
+	const double price = book * (1.0 - std::clamp(
+		world.ws.crisis.auction_discount, 0.0, 1.0));
+	REQUIRE(price > 1.0);
+	buyer.cash = price * 0.25;           // so' um quarto em caixa
+	buyer.bank_deposit = price;          // o resto esta' no deposito
+	buyer.deposit_bank_id = bank.id;
+	bank.cash = price;                   // lastro do claim
+	bank.deposits_funding = price;
+	ogs::deposit::link(world.ws);
+	REQUIRE(buyer.liquid_cash() >= price);
+	REQUIRE(buyer.cash < price);
+
+	const double money_before = world.core.money_total();
+	std::string error;
+	const bool ok = ogs::crisis::auction(world.ws, world.core, "PORTUS",
+		"PORTUS_SAWMILL", &error);
+	CHECK_MESSAGE(ok, error);
+
+	// Caixa nunca negativo: a parcela que o caixa nao cobre sai do claim.
+	CHECK(buyer.cash >= 0.0);
+	CHECK(buyer.cash == Approx(0.0));
+	CHECK(buyer.bank_deposit == Approx(price * 0.25));
+	CHECK(bank.cash == Approx(price * 0.25));
+	CHECK(bank.deposits_funding == Approx(price * 0.25));
+	CHECK(seller.cash == Approx(price));
+	CHECK(world.core.money_total() == Approx(money_before));
+}
+
+// R2b1 (segundo defeito do dia 118): o produto do leilao reduzia o AGREGADO
+// do vendedor no `lender()` e deixava os claims de outro banco em aberto
+// (juros gap no invariante). Agora paga os claims POR CREDOR, na ordem do
+// vetor, e o par agregado<->claim<->banco fica exato.
+TEST_CASE("R2b1: leilao paga os claims do vendedor por credor") {
+	ogs::test::PocketWorld world;
+	world.ws.regional_cash = true;
+	ogs::BanksRework cfg;
+	cfg.enabled = true;
+	cfg.capital = true;
+	cfg.deposits = true;
+	world.core.set_banks_rework(cfg);
+	ogs::Bank& pub = ogs::bank::ensure(world.ws, "AAA",
+		ogs::bank::kRolePublic);
+	pub.name = "AAA public";
+	pub.name_status = "present";
+	ogs::Bank& pri = ogs::bank::ensure(world.ws, "AAA",
+		ogs::bank::kRolePrivate);
+	pri.name = "AAA private";
+	pri.name_status = "present";
+	for (auto& row : world.ws.banks) {
+		row.second.loans = 0.0;
+		row.second.arrears = 0.0;
+		row.second.deposits = 0.0;
+		row.second.deposits_funding = 0.0;
+		row.second.cash = 0.0;
+	}
+	ogs::Building* mill = world.building("PORTUS_SAWMILL");
+	REQUIRE(mill != nullptr);
+	ogs::Group& seller = group_by_id(world, "AAA_WOOD");
+	ogs::Group& buyer = group_by_id(world, "AAA_FUEL");
+	for (ogs::Group& group : world.ws.groups) {
+		group.cash = 0.0;
+		group.debt = 0.0;
+		group.credit_arrears = 0.0;
+		group.debt_claims.clear();
+		group.bank_deposit = 0.0;
+		group.deposit_bank_id.clear();
+	}
+	// Vendedor com DOIS credores: o agregado precisa espelhar os claims.
+	seller.debt_claims = {
+		ogs::BankLoan{pub.id, 800.0, 200.0, 0.0, 0},
+		ogs::BankLoan{pri.id, 500.0, 500.0, 0.0, 0},
+	};
+	std::sort(seller.debt_claims.begin(), seller.debt_claims.end(),
+		[](const ogs::BankLoan& a, const ogs::BankLoan& b) {
+			return a.bank_id < b.bank_id;
+		});
+	seller.debt = 1300.0;
+	seller.credit_arrears = 700.0;
+	pub.loans = 800.0;
+	pub.arrears = 200.0;
+	pub.deposits = 1000.0;
+	pri.loans = 500.0;
+	pri.arrears = 500.0;
+	pri.deposits = 1000.0;
+	const double book = std::max(1.0,
+		std::max(0.0, mill->capital_per_capacity)
+			* std::max(0.0, mill->capacity));
+	const double price = book * (1.0 - std::clamp(
+		world.ws.crisis.auction_discount, 0.0, 1.0));
+	REQUIRE(price > 2000.0);
+	buyer.cash = price;
+	ogs::deposit::link(world.ws);
+	REQUIRE(std::abs(ogs::balance::ledger(world.ws,
+		world.core.money_total()).financial_sum()) < 1e-6);
+
+	double bank_delta = 0.0;
+	std::string error;
+	const double money_before = world.core.money_total();
+	const bool ok = ogs::crisis::auction(world.ws, world.core, "PORTUS",
+		"PORTUS_SAWMILL", &error);
+	CHECK_MESSAGE(ok, error);
+
+	CHECK(seller.debt == Approx(0.0));
+	CHECK(seller.credit_arrears == Approx(0.0));
+	for (const ogs::BankLoan& claim : seller.debt_claims) {
+		CHECK(claim.principal + claim.arrears == Approx(0.0));
+	}
+	CHECK(pub.loans == Approx(0.0));
+	CHECK(pub.arrears == Approx(0.0));
+	CHECK(pub.deposits == Approx(0.0));
+	CHECK(pri.loans == Approx(0.0));
+	CHECK(pri.arrears == Approx(0.0));
+	CHECK(pri.deposits == Approx(0.0));
+	CHECK(seller.cash == Approx(price - 2000.0));
+	// A dívida paga destrói depósito (fora do money_total): o caixa do mundo
+	// cai exatamente pelo valor dos claims quitados.
+	CHECK(world.core.money_total() == Approx(money_before - 2000.0));
+	// O livro do mundo continua fechando: sem claim órfão no outro banco.
+	CHECK(std::abs(ogs::balance::ledger(world.ws,
+		world.core.money_total()).financial_sum()) < 1e-6);
 }
 
 TEST_CASE("D-126: hibernacao de usina respeita o pico x reserva") {

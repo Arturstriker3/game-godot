@@ -23,5 +23,28 @@
   "firms_own_cash": {
     "enabled": true,
     "note": "R1c (§1.2/§12): EMPRESAS OPERAM 100% DO CAIXA PROPRIO. Só vale com regional_cash.enabled=true (qualquer outra combinação é config inválida: a flag é tratada como desligada e o motivo vai para o log/status em firms_own_cash_config_error). Ligada, morrem os aportes PUBLICOS AUTOMATICOS a empresas/plantas: (1) o subsídio setorial ad valorem do incentivo (sector_incentive.subsidy), (2) a cobertura do prejuízo da planta estratégica do bootstrap industrial e (3) a cobertura do déficit tarifário do setor elétrico. Compras publicas legitimas continuam: alimentação/crise, obras e manutenção urbana, serviços, frota, armazenagem e aquisição em leilão. Investimento e operação seguem como hoje - grupo paga o capex do próprio caixa e a operação sai do pool privado regional (sub-saldos firm/service do R1a). A construção privada nunca debita orçamento público; a regra de falência/inadimplência (arrears 60 d) NÃO muda (bancos são R2)."
+  },
+  "banks": {
+    "enabled": true,
+    "capital": true,
+    "deposits": true,
+    "resolution": true,
+    "dividend": { "target_ratio": 0.10, "cash_floor_ratio": 0.10 },
+    "seed": {
+      "enabled": true,
+      "target": "model_loans",
+      "floor_days_treasury": 3.0,
+      "public_month_frac": 0.10,
+      "public_min_ticket_frac": 0.25
+    },
+    "deposits_alloc": {
+      "min_capital_ratio": 0.08,
+      "pendulum_month": 0.10,
+      "weights": { "rel": 0.50, "sol": 0.35, "pend": 0.15 }
+    },
+    "liquidity": { "min_reserve_ratio": 0.10, "protected_food_months": 6.0 },
+    "auction": { "discount_private": 0.30, "discount_public": 0.45 },
+    "charter": { "max_pct_gdp": 0.005, "max_treasury_months": 3.0 },
+    "note": "R2 (docs/economy/rework/R2_plano.md 5.1): bloco de bancos. Default do jogo LIGADO desde o merge do R2 (28/11/2026): enabled+capital+deposits+resolution juntos no laboratório viraram o mundo default; enabled=false volta ao comportamento anterior bit a bit (caminho legado, que o fallback compilado e o CLI ainda alcançam, como no ai_brain da D-131 fase C). `resolution` ausente segue `deposits` (o combo ON do laboratório liga o resolvedor novo junto). `auction` é o deságio do leilão de carteira (privado; público compra por último com deságio maior); `charter` é o teto do banco público emergencial em crise: min(max_pct_gdp × PIB anual do modelo, max_treasury_months × receita mensal declarada das regiões). Nenhum numero é dado observado; são defaults declarados."
   }
 }

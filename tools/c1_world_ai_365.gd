@@ -76,6 +76,8 @@ const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 # C4 (D-110): bancos com dono (nomes fictícios/genéricos; presença do estrangeiro).
 const BANKS_PATH := "res://data/definitions/economy/banks.json"
+# R2a: dado do seed por nacao (steady_loans medido + referencia real).
+const BANK_SEED_PATH := "res://data/definitions/economy/bank_seed.json"
 
 const GATE := 0.975
 const WINDOW := 30
@@ -143,6 +145,32 @@ var _national_treasury_set := false
 # enabled do rework.json (default do jogo = LIGADO desde o merge do R1).
 var _firms_own_cash_on := false
 var _firms_own_cash_set := false
+# R2a (rework.banks): flags do bloco de bancos. Sem override vale o que o
+# rework.json declara (default do jogo = DESLIGADO). So laboratorio:
+# `--banks=0/1` (enabled), `--banks-capital=0/1`, `--banks-deposits=0/1`,
+# `--banks-seed=0/1` (seed.enabled), `--bank-seed=<arquivo.json>` (dado do seed
+# por nacao) e `--banks-diag` (captura d0/30/60/90, so leitura).
+var _banks_on := false
+var _banks_set := false
+var _banks_capital_on := false
+var _banks_capital_set := false
+var _banks_deposits_on := false
+var _banks_deposits_set := false
+var _banks_resolution_on := false
+var _banks_resolution_set := false
+var _banks_seed_on := false
+var _banks_seed_set := false
+var _bank_seed_path := ""
+var _banks_diag := false
+# R2b1 (diagnostico, so leitura): `--group-probe=<id>` imprime a serie diaria
+# de caixa, deposito, claims e divida de UM grupo (cash/deposit/claims). Nao
+# altera o mundo; serve para achar o debito que cruza o caixa.
+var _group_probe_id := ""
+var _group_probe_rows: Array = []
+# R2a: PIB diario medido por nacao (soma) e os retratos dos bancos.
+var _banks_gdp: Dictionary = {}
+var _banks_gdp_days := 0
+var _banks_timeline: Array = []
 # R1a (diagnostico): serie diaria das entradas que o portao de comida e o
 # credito leem, para decompor o efeito do caixa unico. So medicao
 # (--r1-diag / OGS_C1_R1_DIAG=1): nao altera o mundo.
@@ -294,6 +322,29 @@ func _init() -> void:
 		_firms_own_cash_set = true
 	if OS.get_environment("OGS_C1_R1_DIAG") != "":
 		_r1_diag = OS.get_environment("OGS_C1_R1_DIAG") != "0"
+	# R2a (rework.banks): mesmas flags por ambiente, para o runner canonico.
+	if OS.get_environment("OGS_C1_BANKS") != "":
+		_banks_on = OS.get_environment("OGS_C1_BANKS") != "0"
+		_banks_set = true
+	if OS.get_environment("OGS_C1_BANKS_CAPITAL") != "":
+		_banks_capital_on = \
+			OS.get_environment("OGS_C1_BANKS_CAPITAL") != "0"
+		_banks_capital_set = true
+	if OS.get_environment("OGS_C1_BANKS_DEPOSITS") != "":
+		_banks_deposits_on = \
+			OS.get_environment("OGS_C1_BANKS_DEPOSITS") != "0"
+		_banks_deposits_set = true
+	if OS.get_environment("OGS_C1_BANKS_RESOLUTION") != "":
+		_banks_resolution_on = \
+			OS.get_environment("OGS_C1_BANKS_RESOLUTION") != "0"
+		_banks_resolution_set = true
+	if OS.get_environment("OGS_C1_BANKS_SEED") != "":
+		_banks_seed_on = OS.get_environment("OGS_C1_BANKS_SEED") != "0"
+		_banks_seed_set = true
+	if OS.get_environment("OGS_C1_BANK_SEED") != "":
+		_bank_seed_path = OS.get_environment("OGS_C1_BANK_SEED")
+	if OS.get_environment("OGS_C1_BANKS_DIAG") != "":
+		_banks_diag = OS.get_environment("OGS_C1_BANKS_DIAG") != "0"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--days="):
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
@@ -325,6 +376,28 @@ func _init() -> void:
 		elif arg.begins_with("--r1-diag"):
 			_r1_diag = not arg.contains("=") \
 				or arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--banks-capital="):
+			_banks_capital_on = arg.split("=", true, 1)[1] != "0"
+			_banks_capital_set = true
+		elif arg.begins_with("--banks-deposits="):
+			_banks_deposits_on = arg.split("=", true, 1)[1] != "0"
+			_banks_deposits_set = true
+		elif arg.begins_with("--banks-resolution="):
+			_banks_resolution_on = arg.split("=", true, 1)[1] != "0"
+			_banks_resolution_set = true
+		elif arg.begins_with("--banks-seed="):
+			_banks_seed_on = arg.split("=", true, 1)[1] != "0"
+			_banks_seed_set = true
+		elif arg.begins_with("--banks="):
+			_banks_on = arg.split("=", true, 1)[1] != "0"
+			_banks_set = true
+		elif arg.begins_with("--bank-seed="):
+			_bank_seed_path = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--banks-diag"):
+			_banks_diag = not arg.contains("=") \
+				or arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--group-probe="):
+			_group_probe_id = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--bootstrap="):
 			_bootstrap_on = arg.split("=", true, 1)[1] != "0"
 			_bootstrap_set = true
@@ -793,6 +866,24 @@ func _make_world() -> Object:
 					"firms_own_cash", {})
 				firms_block["enabled"] = _firms_own_cash_on
 				rework_params["firms_own_cash"] = firms_block
+			# R2a (rework.banks): A/B do capital/depositos. Sem override vale o
+			# rework.json (default do jogo = DESLIGADO).
+			if _banks_set or _banks_capital_set or _banks_deposits_set \
+					or _banks_resolution_set or _banks_seed_set:
+				var banks_block: Dictionary = rework_params.get("banks", {})
+				if _banks_set:
+					banks_block["enabled"] = _banks_on
+				if _banks_capital_set:
+					banks_block["capital"] = _banks_capital_on
+				if _banks_deposits_set:
+					banks_block["deposits"] = _banks_deposits_on
+				if _banks_resolution_set:
+					banks_block["resolution"] = _banks_resolution_on
+				if _banks_seed_set:
+					var seed_block: Dictionary = banks_block.get("seed", {})
+					seed_block["enabled"] = _banks_seed_on
+					banks_block["seed"] = seed_block
+				rework_params["banks"] = banks_block
 			sim.set_rework_params(rework_params)
 			var rc: Dictionary = rework_params.get("regional_cash", {})
 			print("[c1] R1a caixa unico regional: enabled=%s sub-teto=%s" % [
@@ -804,6 +895,13 @@ func _make_world() -> Object:
 			var fc: Dictionary = rework_params.get("firms_own_cash", {})
 			print("[c1] R1c empresas no caixa proprio: enabled=%s" % [
 				"1" if bool(fc.get("enabled", false)) else "0"])
+			var banks_cfg: Dictionary = rework_params.get("banks", {})
+			print("[c1] R2a bancos: enabled=%s capital=%s depositos=%s resolucao=%s"
+				% ["1" if bool(banks_cfg.get("enabled", false)) else "0",
+				"1" if bool(banks_cfg.get("capital", false)) else "0",
+				"1" if bool(banks_cfg.get("deposits", false)) else "0",
+				"1" if bool(banks_cfg.get("resolution",
+					banks_cfg.get("deposits", false))) else "0"])
 	if sim.has_method("set_bootstrap_industry"):
 		var bootstrap: Variant = _load(_bootstrap_path)
 		if bootstrap is Dictionary:
@@ -834,6 +932,20 @@ func _make_world() -> Object:
 	# mundo: a moeda de cada nação e o BC da C2a já existem.
 	if sim.has_method("set_bank_definitions"):
 		sim.set_bank_definitions(_load(BANKS_PATH))
+	# R2a: dado do seed por nacao DEPOIS de banks.json (os papeis `present`
+	# vem do dado) e antes do primeiro dia. Sem arquivo, o status declara
+	# `no_model_gdp` e nada e capitalizado.
+	if sim.has_method("set_bank_seed"):
+		var seed_path := _bank_seed_path
+		if seed_path.is_empty():
+			seed_path = BANK_SEED_PATH
+		if FileAccess.file_exists(seed_path):
+			var seed_data: Variant = _load(seed_path)
+			if seed_data is Dictionary:
+				sim.set_bank_seed(seed_data)
+				print("[c1] R2a seed dos bancos: " + seed_path)
+		elif _banks_diag or _banks_capital_set:
+			print("[c1] R2a seed dos bancos: ausente (" + seed_path + ")")
 	if sim.has_method("set_urban"):
 		sim.set_urban(_load(URBAN_LAND_PATH), _load(HOUSING_CITY_PATH),
 			_load(HOUSING_PATH), _load(MUNICIPAL_FINANCE_PATH))
@@ -2298,6 +2410,34 @@ func _balance_report(sim: Object, status: Dictionary) -> Dictionary:
 	}
 
 
+## R2b1 (diagnostico, so leitura): uma linha por dia para o grupo sondado. A
+## leitura e' depois do tick; quando o invariante reverte o dia, o caixa aqui
+## ja voltou ao valor de abertura — o debito exato aparece no trace
+## `[crisis-auction-buyer]` (OGS_CRISIS_TRACE=1).
+func _group_probe_row(sim, day_now: int) -> void:
+	if _group_probe_id.is_empty():
+		return
+	for group: Dictionary in sim.get_groups():
+		if String(group.get("id", "")) != _group_probe_id:
+			continue
+		var row := {
+			"day": day_now,
+			"cash": float(group.get("cash", 0.0)),
+			"bank_deposit": float(group.get("bank_deposit", 0.0)),
+			"liquid_cash": float(group.get("liquid_cash", 0.0)),
+			"debt": float(group.get("debt", 0.0)),
+			"credit_arrears": float(group.get("credit_arrears", 0.0)),
+			"claim_principal": float(group.get("claim_principal", 0.0)),
+			"claim_arrears": float(group.get("claim_arrears", 0.0)),
+		}
+		_group_probe_rows.append(row)
+		print("[probe] grupo=%s dia=%d cash=%.2f deposito=%.2f liquido=%.2f divida=%.2f atraso=%.2f claim=%.2f"
+			% [_group_probe_id, day_now, row["cash"], row["bank_deposit"],
+				row["liquid_cash"], row["debt"], row["credit_arrears"],
+				row["claim_principal"] + row["claim_arrears"]])
+		return
+
+
 func _run() -> void:
 	var sim = _make_world()
 	if sim == null:
@@ -2317,6 +2457,10 @@ func _run() -> void:
 		print("[c1] cenário C2b2: reservas = %d dias de importação no dia 30"
 			% _fx_seed_days)
 	var money_start := float(sim.get_status().get("money_total", 0.0))
+	# R2a: retrato do dia 0 (mundo novo, seed pendente) antes do primeiro tick.
+	if _banks_diag:
+		var status_d0: Dictionary = sim.get_status()
+		_banks_timeline.append(_banks_snapshot(sim, 0, status_d0))
 	var history: Array = []
 	var violation_count := 0
 	var violation_samples: Array = []
@@ -2384,6 +2528,7 @@ func _run() -> void:
 				violation_samples.append("dia %d: %s"
 					% [day + 1, String(violation)])
 		var day_now := int(summary.get("day", 0))
+		_group_probe_row(sim, day_now)
 		if day_now <= day_before:
 			stalled += 1
 		day_before = day_now
@@ -2394,6 +2539,11 @@ func _run() -> void:
 		var money := float(status.get("money_total", 0.0))
 		if money_start > 0.0:
 			max_drift = maxf(max_drift, absf(money - money_start) / money_start)
+		# R2a: PIB por nacao (anualizado no fim) e retratos d30/d60/d90.
+		if _banks_diag:
+			_banks_accumulate_gdp(status)
+			if [30, 60, 90].has(day_now):
+				_banks_timeline.append(_banks_snapshot(sim, day_now, status))
 		var ratio := _food_ratio(status)
 		history.append(ratio)
 		if history.size() > WINDOW:
@@ -2486,6 +2636,10 @@ func _run() -> void:
 
 	var status_final: Dictionary = sim.get_status()
 	var money_end := float(status_final.get("money_total", 0.0))
+	# R2a: retrato do fecho (depois do ultimo tick; nao altera o mundo).
+	if _banks_diag:
+		_banks_timeline.append(_banks_snapshot(sim, int(status_final.get("day",
+			0)), status_final))
 	if _fuel_diag:
 		# F0 (D-123): retrato do fecho (mesmo dia do portão, média de 30 d).
 		var fuel_final := _fuel_report(sim, status_final,
@@ -2607,6 +2761,13 @@ func _run() -> void:
 		out["profile"]["harness_summary_us_per_day"] = \
 			float(_prof_summary_us) / float(maxi(1, _days))
 		out["profile"]["perf_path"] = _perf_path
+	# R2a (rework.banks): retratos d0/30/60/90/fim (capital, seed_scale,
+	# funding, claim, adequacao e PIB anualizado por nacao). So com
+	# `--banks-diag`: sem a flag o JSON e exatamente o de antes.
+	if _banks_diag:
+		out["banks_diag"] = _banks_diag_block(sim)
+	if not _group_probe_id.is_empty():
+		out["group_probe"] = _group_probe_rows
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
 	if _cotton_diag:
@@ -2898,10 +3059,127 @@ func _banks_totals(sim) -> Dictionary:
 	var keys := ["cash", "capital", "equity", "deposits", "loans",
 		"interest_income", "interest_expense", "retained", "dividends",
 		"remittance", "remittance_origin", "harvest_interest",
-		"defaults", "writeoffs", "loans_count", "m0", "m1"]
+		"defaults", "writeoffs", "loans_count", "m0", "m1",
+		"deposits_funding", "deposits_total", "capital_target",
+		"capital_ratio", "paid_in_ratio"]
 	for key in keys:
 		out[key] = totals.get(key, 0.0)
 	return out
+
+
+## R2a (rework.banks): retrato por nacao dos bancos num dia — capital pago,
+## alvo do modelo, seeding, funding, claim, adequacao e o PIB anualizado
+## medido ate aqui. So leitura.
+func _banks_snapshot(sim, day: int, status: Dictionary) -> Dictionary:
+	if not sim.has_method("get_bank_status"):
+		return {"day": day}
+	var bank_status: Dictionary = sim.get_bank_status()
+	var totals: Dictionary = bank_status.get("totals", {})
+	var gdp_nations := _banks_gdp_annual()
+	var nations: Array = []
+	for row: Dictionary in (bank_status.get("nations", []) as Array):
+		var tag := String(row.get("nation", ""))
+		nations.append({
+			"nation": tag,
+			"banks": int(row.get("banks", 0)),
+			"capital": float(row.get("capital", 0.0)),
+			"capital_target": float(row.get("capital_target", 0.0)),
+			"seed_scale": float(row.get("seed_scale", 0.0)),
+			"equity": float(row.get("equity", 0.0)),
+			"loans": float(row.get("loans", 0.0)),
+			"equity_ratio": float(row.get("equity_ratio", 0.0)),
+			"deposits": float(row.get("deposits", 0.0)),
+			"deposits_funding": float(row.get("deposits_funding", 0.0)),
+			"model_gdp_annual": float(gdp_nations.get(tag, 0.0)),
+		})
+	# Papeis por banco (nome, charter, seed_scale) para o relatorio.
+	var roles: Array = []
+	for row: Dictionary in (bank_status.get("banks", []) as Array):
+		roles.append({
+			"id": String(row.get("id", "")),
+			"nation": String(row.get("nation", "")),
+			"role": String(row.get("role", "")),
+			"charter": String(row.get("charter", "")),
+			"status": String(row.get("name_status", "")),
+			"capital": float(row.get("capital", 0.0)),
+			"capital_target": float(row.get("capital_target", 0.0)),
+			"seed_scale": float(row.get("seed_scale", 0.0)),
+			"reference_scale": float(row.get("reference_scale", 0.0)),
+			"reference_gap": float(row.get("reference_gap", 0.0)),
+			"public_cap_deferred": String(row.get("public_cap_deferred", "")),
+		})
+	return {
+		"day": day,
+		"money_total": float(status.get("money_total", 0.0)),
+		"rework": sim.get_rework_params().get("banks", {})
+			if sim.has_method("get_rework_params") else {},
+		"totals": {
+			"capital": float(totals.get("capital", 0.0)),
+			"capital_target": float(totals.get("capital_target", 0.0)),
+			"paid_in_ratio": float(totals.get("paid_in_ratio", 0.0)),
+			"capital_ratio": float(totals.get("capital_ratio", 0.0)),
+			"loans": float(totals.get("loans", 0.0)),
+			"equity": float(totals.get("equity", 0.0)),
+			"deposits": float(totals.get("deposits", 0.0)),
+			"deposits_funding": float(totals.get("deposits_funding", 0.0)),
+			"deposit_claims": float(totals.get("deposit_claims", 0.0)),
+			"broad_money": float(totals.get("broad_money", 0.0)),
+			"m0_gross": float(totals.get("m0_gross", 0.0)),
+			"m0_net": float(totals.get("m0_net", 0.0)),
+			"m1": float(totals.get("m1", 0.0)),
+			"dividends": float(totals.get("dividends", 0.0)),
+			"retained": float(totals.get("retained", 0.0)),
+			"defaults": int(totals.get("defaults", 0)),
+			"banks": int(totals.get("banks", 0)),
+			"seed_source": String(totals.get("seed_source", "")),
+		},
+		"nations": nations,
+		"roles": roles,
+	}
+
+
+## R2a: acumula o PIB diario por nacao a partir do status (mesma unidade XGS
+## do resto do harness). Anualiza x365 no fim.
+func _banks_accumulate_gdp(status: Dictionary) -> void:
+	for city_row: Dictionary in (status.get("cities", []) as Array):
+		var tag := String(city_row.get("nation", ""))
+		if tag.is_empty():
+			continue
+		_banks_gdp[tag] = float(_banks_gdp.get(tag, 0.0)) \
+			+ float(city_row.get("gdp", 0.0))
+	_banks_gdp_days += 1
+
+
+func _banks_gdp_annual() -> Dictionary:
+	var out := {}
+	if _banks_gdp_days <= 0:
+		return out
+	var scale := 365.0 / float(_banks_gdp_days)
+	for tag: Variant in _banks_gdp:
+		out[String(tag)] = float(_banks_gdp[tag]) * scale
+	return out
+
+
+## R2a: bloco publicado no JSON (`--banks-diag`): flags efetivas, origem do
+## seed, retratos e o PIB anualizado medido por nacao.
+func _banks_diag_block(sim) -> Dictionary:
+	var banks_cfg: Dictionary = {}
+	if sim.has_method("get_rework_params"):
+		banks_cfg = sim.get_rework_params().get("banks", {})
+	return {
+		"requested": {
+			"enabled": _banks_on,
+			"capital": _banks_capital_on,
+			"deposits": _banks_deposits_on,
+			"seed": _banks_seed_on,
+			"seed_path": _bank_seed_path if not _bank_seed_path.is_empty() \
+				else BANK_SEED_PATH,
+		},
+		"effective": banks_cfg,
+		"seed_source": String(banks_cfg.get("seed_source", "")),
+		"gdp_annual": _banks_gdp_annual(),
+		"timeline": _banks_timeline,
+	}
 
 
 ## Percentil linear de uma lista JÁ ordenada (0..1); vazio = 0.

@@ -81,6 +81,28 @@ void write(Dictionary& data, const WorldState& ws, const SimCore& core) {
 			entry["regional_budget_deferred_month"] =
 				city.regional_budget_deferred_month;
 		}
+		// R2a (v44): conta do setor privado no banco (claim de funding). Só
+		// entra com a sub-flag `deposits`; OFF não ganha a chave.
+		if (ws.banks_rework.enabled && ws.banks_rework.deposits) {
+			entry["protected_cash"] = city.protected_cash;
+			Array bank_accounts = make_array();
+			for (const City::BankAccount& account : city.bank_accounts) {
+				Dictionary row = make_object();
+				row["bank_id"] = sim_str(account.bank_id.c_str());
+				row["firm"] = account.firm;
+				row["service"] = account.service;
+				bank_accounts.append(row);
+			}
+			entry["bank_accounts"] = bank_accounts;
+		}
+		// R2b1 (fix A1): divida da cidade POR CREDOR (chave aditiva do v44,
+		// ordenada por `bank_id`). ON somente; OFF continua byte-identico.
+		// `firm_debt` continua o agregado e a migracao do load reconcilia.
+		if (ws.banks_rework.enabled) {
+			Array claims = make_array();
+			detail::write_bank_claims(claims, city.firm_debt_claims);
+			entry["firm_debt_claims"] = claims;
+		}
 		entry["service_jobs"] = city.service_jobs;
 		entry["service_wage"] = city.service_wage;
 		entry["service_wage_bill"] = city.service_wage_bill;
@@ -636,6 +658,36 @@ void read(WorldState& ws, SimCore& core, const Dictionary& data, int version,
 			? std::max(0.0,
 				double(entry.get("service_external_paid_today", 0.0)))
 			: 0.0;
+		// R2a (v44): conta bancária do setor privado e piso do sweep. Sem as
+		// chaves (save anterior/OFF) a conta nasce vazia.
+		city.bank_accounts.clear();
+		city.protected_cash = std::max(0.0,
+			double(entry.get("protected_cash", 0.0)));
+		const Array bank_accounts = entry.get("bank_accounts", Array());
+		for (int index = 0; index < bank_accounts.size(); ++index) {
+			if (bank_accounts[index].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			const Dictionary row = bank_accounts[index];
+			const std::string bank_id(
+				String(row.get("bank_id", "")).utf8().get_data());
+			if (bank_id.empty()) {
+				continue;
+			}
+			City::BankAccount account;
+			account.bank_id = bank_id;
+			account.firm = safe_nonneg(double(row.get("firm", 0.0)));
+			account.service = safe_nonneg(double(row.get("service", 0.0)));
+			city.bank_accounts.push_back(account);
+		}
+		std::sort(city.bank_accounts.begin(), city.bank_accounts.end(),
+			[](const City::BankAccount& a, const City::BankAccount& b) {
+				return a.bank_id < b.bank_id;
+			});
+		// R2b1 (fix A1): claims de divida por credor da cidade. Save sem a
+		// chave chega vazio; a migracao do load reconstroi do agregado.
+		detail::load_bank_claims(city.firm_debt_claims,
+			entry.get("firm_debt_claims", Array()));
 		// D-126 (v41): crédito de giro da cidade. Lido pela PRESENÇA da chave,
 		// não pela versão: `banks[].loans` é lido em qualquer versão, e zerar a
 		// dívida de um save reconstruído/rebaixado abriria o gap crédito ×

@@ -340,6 +340,9 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 		case ogs::CommandType::CreateStateCompany:
 			return apply_create_state_company(String(cmd.s[0].c_str()),
 				String(cmd.s[1].c_str()), cmd.v[0]);
+		case ogs::CommandType::CharterPublicBank:
+			return apply_charter_public_bank(String(cmd.s[0].c_str()),
+				cmd.v[0]);
 		case ogs::CommandType::Privatize:
 			return apply_privatize(String(cmd.s[0].c_str()),
 				String(cmd.s[1].c_str()), String(cmd.s[2].c_str()));

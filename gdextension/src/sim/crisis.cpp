@@ -16,6 +16,7 @@
 
 #include "balance.h"
 #include "bank.h"
+#include "bank_crisis.h"
 #include "efficiency.h"
 #include "sim_core.h"
 
@@ -104,7 +105,7 @@ double owner_cash(const WorldState& ws, const City& city,
 	}
 	for (const Group& group : ws.groups) {
 		if (group.id == id) {
-			return std::max(0.0, group.cash);
+			return std::max(0.0, group.liquid_cash());
 		}
 	}
 	return 0.0;
@@ -132,8 +133,8 @@ double debit_owner(WorldState& ws, City& city, Building& building,
 	if (group == nullptr) {
 		return 0.0;
 	}
-	const double paid = std::min(amount, std::max(0.0, group->cash));
-	group->cash -= paid;
+	const double paid = std::min(amount, std::max(0.0, group->liquid_cash()));
+	group->pay_cash(paid);
 	return paid;
 }
 
@@ -298,7 +299,7 @@ int choose_buyer(WorldState& ws, const City& city, double price,
 		if (group.id == seller_group) {
 			continue;
 		}
-		if (group.cash + 1e-9 >= price) {
+		if (group.liquid_cash() + 1e-9 >= price) {
 			return static_cast<int>(index);
 		}
 	}
@@ -308,6 +309,83 @@ int choose_buyer(WorldState& ws, const City& city, double price,
 		*state_buyer = true;
 	}
 	return -1;
+}
+
+// R2b1: paga os credores do VENDEDOR com o produto do leilao e devolve o que
+// sobra para o caixa dele. Modo claims: paga por credor, na ordem do vetor
+// (`bank_id`), reduzindo claim, agregado do tomador e livro do banco juntos —
+// o mesmo par que o servicing le. Sem claims: caminho legado do `lender()`
+// (bit a bit no OFF).
+double pay_seller_creditors(WorldState& ws, Group& seller, double value,
+		double* bank_money_delta) {
+	double remainder = std::max(0.0, value);
+	if (remainder <= 1e-9) {
+		return 0.0;
+	}
+	const bool claims_mode = ws.banks_rework.enabled
+		&& ws.banks_rework.deposits;
+	if (claims_mode && !seller.debt_claims.empty()) {
+		for (BankLoan& claim : seller.debt_claims) {
+			if (remainder <= 1e-9) {
+				break;
+			}
+			const double total = std::max(0.0, claim.principal)
+				+ std::max(0.0, claim.arrears);
+			if (total <= 1e-9) {
+				continue;
+			}
+			const auto found = ws.banks.find(claim.bank_id);
+			if (found == ws.banks.end()) {
+				continue;
+			}
+			Bank& bank = found->second;
+			const double paid = std::min({ remainder, total,
+				std::max(0.0, bank.deposits) });
+			if (paid <= 1e-9) {
+				continue;
+			}
+			const double debt_paid = std::min(paid,
+				std::max(0.0, claim.principal));
+			const double arrears_paid = std::min(paid - debt_paid,
+				std::max(0.0, claim.arrears));
+			claim.principal = std::max(0.0, claim.principal - debt_paid);
+			claim.arrears = std::max(0.0, claim.arrears - arrears_paid);
+			seller.debt = std::max(0.0, seller.debt - debt_paid);
+			seller.credit_arrears = std::max(0.0,
+				seller.credit_arrears - arrears_paid);
+			bank.loans = std::max(0.0, bank.loans - debt_paid);
+			bank.arrears = std::max(0.0, bank.arrears - arrears_paid);
+			bank.deposits = std::max(0.0, bank.deposits - paid);
+			if (bank_money_delta != nullptr) {
+				*bank_money_delta -= paid;
+			}
+			remainder -= paid;
+		}
+		return remainder;
+	}
+	Bank* bank = bank::lender(ws, seller);
+	const double claim = std::max(0.0,
+		seller.debt + seller.credit_arrears);
+	if (bank != nullptr && claim > 0.0 && remainder > 0.0) {
+		const double paid = std::min({ remainder, claim,
+			std::max(0.0, bank->deposits) });
+		if (paid > 0.0) {
+			const double debt_paid = std::min(paid, seller.debt);
+			seller.debt -= debt_paid;
+			const double arrears_paid = std::min(
+				std::max(0.0, paid - debt_paid),
+				seller.credit_arrears);
+			seller.credit_arrears -= arrears_paid;
+			bank->loans = std::max(0.0, bank->loans - debt_paid);
+			bank->arrears = std::max(0.0, bank->arrears - arrears_paid);
+			bank->deposits -= paid;
+			if (bank_money_delta != nullptr) {
+				*bank_money_delta -= paid;
+			}
+			remainder -= paid;
+		}
+	}
+	return remainder;
 }
 
 void pay_auction_proceeds(WorldState& ws, SimCore& core, City& city,
@@ -325,30 +403,8 @@ void pay_auction_proceeds(WorldState& ws, SimCore& core, City& city,
 	}
 	Group* seller = owner_group(ws, building);
 	if (seller != nullptr) {
-		Bank* bank = bank::lender(ws, *seller);
-		const double claim = std::max(0.0,
-			seller->debt + seller->credit_arrears);
-		if (bank != nullptr && claim > 0.0 && remainder > 0.0) {
-			const double paid = std::min({ remainder, claim,
-				std::max(0.0, bank->deposits) });
-			if (paid > 0.0) {
-				const double debt_paid = std::min(paid, seller->debt);
-				seller->debt -= debt_paid;
-				const double arrears_paid = std::min(
-					std::max(0.0, paid - debt_paid),
-					seller->credit_arrears);
-				seller->credit_arrears -= arrears_paid;
-				bank->loans = std::max(0.0, bank->loans - debt_paid);
-				bank->arrears = std::max(0.0,
-					bank->arrears - arrears_paid);
-				bank->deposits -= paid;
-				if (bank_money_delta != nullptr) {
-					*bank_money_delta -= paid;
-				}
-				remainder -= paid;
-			}
-		}
-		seller->cash += remainder;
+		seller->cash += pay_seller_creditors(ws, *seller, remainder,
+			bank_money_delta);
 		return;
 	}
 	if (building.owner == "state") {
@@ -360,6 +416,23 @@ void pay_auction_proceeds(WorldState& ws, SimCore& core, City& city,
 
 // Venda imediata do prédio. Sem comprador marca `bankrupt` (remoção no
 // início do próximo tick, regra existente).
+// R2b1 (diagnostico, so leitura): comprador do leilao e os dois lados da
+// autorizacao. `choose_buyer` decide por `liquid_cash()` (caixa + deposito
+// sacavel); se o debito usar so `cash`, o caixa fica negativo. A linha mostra
+// price x cash x liquid x deposit no momento exato do debito.
+void trace_auction_buyer(const WorldState& ws, const char* kind,
+		const City& city, const Group& buyer, const std::string& asset,
+		double price) {
+	if (std::getenv("OGS_CRISIS_TRACE") == nullptr) {
+		return;
+	}
+	std::fprintf(stdout,
+		"[crisis-auction-buyer] day=%d kind=%s city=%s asset=%s group=%s "
+		"price=%.2f cash=%.2f liquid=%.2f deposit=%.2f\n",
+		ws.day, kind, city.id.c_str(), asset.c_str(), buyer.id.c_str(),
+		price, buyer.cash, buyer.liquid_cash(), buyer.bank_deposit);
+}
+
 // D-126 (lab): `OGS_CRISIS_TRACE=1` imprime o leilão SEM comprador com
 // cidade/nação e bem — só mede o mundo real; não muda estado nem regra.
 void trace_unsold_auction(const WorldState& ws, const char* kind,
@@ -391,8 +464,17 @@ bool auction_building(WorldState& ws, SimCore& core, Building& building,
 		ws.crisis.auction_discount, 0.0, 1.0));
 	const std::string seller = owner_group_id(building.owner);
 	bool state_buyer = false;
-	const int buyer_index = choose_buyer(ws, *city, price, seller,
+	int buyer_index = choose_buyer(ws, *city, price, seller,
 		&state_buyer);
+	// R2b1: a autorizacao e o debito tem de usar a MESMA fronteira
+	// (`liquid_cash` = caixa + deposito sacavel). O comprador sem liquido
+	// suficiente adia o leilao, como o "sem comprador" - nunca compra por
+	// menos do preco nem deixa o caixa negativo.
+	if (buyer_index >= 0
+			&& ws.groups[static_cast<std::size_t>(buyer_index)].liquid_cash()
+				+ 1e-9 < price) {
+		buyer_index = -1;
+	}
 	if (state_buyer && building.owner == "state") {
 		state_buyer = false;
 	}
@@ -418,15 +500,26 @@ bool auction_building(WorldState& ws, SimCore& core, Building& building,
 	std::string new_owner;
 	if (buyer_index >= 0) {
 		Group& buyer = ws.groups[static_cast<std::size_t>(buyer_index)];
-		buyer.cash -= price;
+		trace_auction_buyer(ws, "building", *city, buyer, building.id,
+			price);
+		// R2b1: mesmo primitivo dos outros caminhos (caixa -> deposito). O
+		// debito antigo (`cash -= price`) ignorava o deposito que a
+		// autorizacao contou e deixava o caixa negativo.
+		if (buyer.ws_link == nullptr) {
+			deposit::link(ws);
+		}
+		const double paid = buyer.pay_cash(price);
 		new_owner = buyer.origin_nation == city->nation
 			? std::string(kPrefixNational) + buyer.id
 			: std::string(kPrefixForeign) + buyer.id + "@" + city->nation;
+		pay_auction_proceeds(ws, core, *city, building, paid,
+			bank_money_delta);
 	} else {
 		city->government_budget -= price;
 		new_owner = "state";
+		pay_auction_proceeds(ws, core, *city, building, price,
+			bank_money_delta);
 	}
-	pay_auction_proceeds(ws, core, *city, building, price, bank_money_delta);
 	building.owner = new_owner;
 	building.local_share = 0.0;
 	building.partner_group.clear();
@@ -469,8 +562,14 @@ bool auction_power_plant(WorldState& ws, PowerPlant& plant,
 	const double price = book * (1.0 - std::clamp(
 		ws.crisis.auction_discount, 0.0, 1.0));
 	bool state_buyer = false;
-	const int buyer_index = choose_buyer(ws, city, price,
+	int buyer_index = choose_buyer(ws, city, price,
 		plant.owner_group, &state_buyer);
+	// R2b1: mesma fronteira da autorizacao e do debito (`liquid_cash`).
+	if (buyer_index >= 0
+			&& ws.groups[static_cast<std::size_t>(buyer_index)].liquid_cash()
+				+ 1e-9 < price) {
+		buyer_index = -1;
+	}
 	if (state_buyer && plant.owner_group.empty()) {
 		state_buyer = false;
 	}
@@ -487,7 +586,13 @@ bool auction_power_plant(WorldState& ws, PowerPlant& plant,
 	}
 	if (buyer_index >= 0) {
 		Group& buyer = ws.groups[static_cast<std::size_t>(buyer_index)];
-		buyer.cash -= price;
+		trace_auction_buyer(ws, "plant", city, buyer, plant.id, price);
+		// R2b1: caixa -> deposito (o mesmo `Group::pay_cash` dos outros
+		// caminhos); a autorizacao contou o deposito sacavel.
+		if (buyer.ws_link == nullptr) {
+			deposit::link(ws);
+		}
+		const double paid_price = buyer.pay_cash(price);
 		const std::string old = plant.owner_group;
 		plant.owner_group = buyer.id;
 		plant.owner_nation = buyer.origin_nation;
@@ -497,7 +602,7 @@ bool auction_power_plant(WorldState& ws, PowerPlant& plant,
 			const double claim = std::max(0.0,
 				seller->debt + seller->credit_arrears);
 			const double paid = bank == nullptr ? 0.0 : std::min({
-				price, claim, std::max(0.0, bank->deposits) });
+				paid_price, claim, std::max(0.0, bank->deposits) });
 			if (paid > 0.0) {
 				seller->debt = std::max(0.0, seller->debt - paid);
 				bank->loans = std::max(0.0, bank->loans - paid);
@@ -506,9 +611,9 @@ bool auction_power_plant(WorldState& ws, PowerPlant& plant,
 					*bank_money_delta -= paid;
 				}
 			}
-			seller->cash += std::max(0.0, price - paid);
+			seller->cash += std::max(0.0, paid_price - paid);
 		} else {
-			city.government_budget += price;
+			city.government_budget += paid_price;
 		}
 	} else {
 		city.government_budget -= price;
@@ -543,7 +648,7 @@ double plant_owner_cash(WorldState& ws, const City& city,
 		return std::max(0.0, city.government_budget);
 	}
 	Group* group = find_group(ws, plant.owner_group);
-	return group == nullptr ? 0.0 : std::max(0.0, group->cash);
+	return group == nullptr ? 0.0 : std::max(0.0, group->liquid_cash());
 }
 
 double debit_plant_owner(WorldState& ws, City& city, PowerPlant& plant,
@@ -561,8 +666,8 @@ double debit_plant_owner(WorldState& ws, City& city, PowerPlant& plant,
 	if (group == nullptr) {
 		return 0.0;
 	}
-	const double paid = std::min(amount, std::max(0.0, group->cash));
-	group->cash -= paid;
+	const double paid = std::min(amount, std::max(0.0, group->liquid_cash()));
+	group->pay_cash(paid);
 	return paid;
 }
 
@@ -1213,11 +1318,32 @@ bool auction(WorldState& ws, SimCore& core, const std::string& city_id,
 	return auction_building(ws, core, *building, nullptr, error);
 }
 
-void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.crisis.enabled) {
+void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {
+	if (!ws.crisis.enabled) {
 		return;
 	}
 	if (bank_money_delta != nullptr) {
 		*bank_money_delta = 0.0;
+	}
+	// R2c: sonda de dinheiro por secao (env `OGS_BANK_TRACE`). So leitura.
+	double probe_money = 0.0;
+	double probe_bank = 0.0;
+	const auto probe = [&](const char* name) {
+		if (std::getenv("OGS_BANK_TRACE") == nullptr) {
+			return;
+		}
+		const double money = bank_crisis::probe_money_total(ws);
+		const double bank = bank_money_delta != nullptr
+			? *bank_money_delta : 0.0;
+		std::fprintf(stdout,
+			"[bank-trace] day=%d crisis=%s d_money=%.6f d_bank=%.6f\n",
+			ws.day, name, money - probe_money, bank - probe_bank);
+		probe_money = money;
+		probe_bank = bank;
+	};
+	// Sem a env a sonda nao calcula nada (custo zero, sem efeito no mundo).
+	if (std::getenv("OGS_BANK_TRACE") != nullptr) {
+		probe_money = bank_crisis::probe_money_total(ws);
 	}
 	// 1. Construções (inclui refinarias e fazendas), na ordem do save.
 	for (Building& building : ws.buildings) {
@@ -1364,6 +1490,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 	}
 	// 2. Serviços: crédito de giro agregado quando o caixa do setor está sem
 	// fôlego e algum negócio acumulou prejuízo. Mesmo credor/limite da cidade.
+	probe("buildings");
 	for (std::size_t index = 0; index < ws.service_businesses.size();
 			++index) {
 		const ServiceBusiness& business = ws.service_businesses[index];
@@ -1402,6 +1529,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 	// leilão; sem estoque de produto para liquidar). D-126 (correção): a
 	// necessidade é calculada UMA vez por rede, antes do laço, e só a usina
 	// excedente ao pico × (1 + margem de reserva) é candidata.
+	probe("services");
 	const std::vector<char> power_needed = plant_necessity(ws);
 	for (std::size_t index = 0; index < ws.power_plants.size(); ++index) {
 		react_power(ws, core, ws.power_plants[index],
@@ -1416,6 +1544,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 		}
 		++it;
 	}
+	probe("power");
 }
 
 } // namespace crisis

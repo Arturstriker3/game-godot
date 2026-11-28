@@ -15,8 +15,11 @@
 #include <vector>
 
 #include "urban_types.h"
+#include "deposit.h"
 
 namespace ogs {
+
+struct WorldState;
 
 // ==== BLOCO DE TIPOS (extraído de economy_sim.h) ====
 	enum class TransportMode { Truck, Ship, Plane };
@@ -1067,6 +1070,20 @@ namespace ogs {
 		double rate = 0.0;
 	};
 
+	// R2b (servicing por banco): divida do tomador POR CREDOR. `Group::debt`
+	// e `City::firm_debt` continuam como AGREGADOS (compatibilidade e status),
+	// mas o servicing itera estes claims - juro/amortizacao/calote creditam e
+	// debitam o banco que efetivamente concedeu, nao um credor recalculado.
+	// `rate_add` guarda o spread do banco no momento da concessao (oferta -
+	// base+spread da politica) para a taxa nao depender do estado de hoje.
+	struct BankLoan {
+		std::string bank_id;
+		double principal = 0.0;
+		double arrears = 0.0;
+		double rate_add = 0.0;
+		int default_days = 0;
+	};
+
 	// F9: grupo/empresa com identidade. O nome vem do cliente (cultura de
 	// origem); o núcleo guarda só o que precisa para conservar dinheiro e
 	// publicar o status. `profit_by_host` acumula o lucro ainda não distribuído
@@ -1105,6 +1122,35 @@ namespace ogs {
 		double credit_rate_add = 0.0;
 		int credit_renegotiations = 0;
 		int credit_arrears_days = 0;
+		// R2a (rework.banks.deposits): deposito de funding do grupo no banco
+		// de relacionamento (o mesmo `lender()` da concessao). Nao e caixa:
+		// o caixa real correspondente e `Bank::cash`.
+		double bank_deposit = 0.0;
+		std::string deposit_bank_id;
+		// R2b1: deposito liquido - o caixa do grupo pode pagar com o claim do
+		// banco de relacionamento no mesmo dia (4.3). `ws_link` e' derivado
+		// (nao serializado); nullptr = caminho caixa puro (OFF/legado).
+		WorldState* ws_link = nullptr;
+		std::vector<BankLoan> debt_claims;
+		double liquid_cash() const {
+			return std::max(0.0, cash) + (ws_link == nullptr ? 0.0
+				: deposit::liquid_group(*ws_link, *this));
+		}
+		// Pagamento caixa->deposito (mesma ordem do contrato). Devolve pago.
+		double pay_cash(double value) {
+			if (!(value > 0.0)) {
+				return 0.0;
+			}
+			const double from_cash = std::min(value, std::max(0.0, cash));
+			cash -= from_cash;
+			double from_claim = 0.0;
+			if (value - from_cash > 1e-9 && ws_link != nullptr) {
+				from_claim = deposit::withdraw_group(*ws_link, *this,
+					value - from_cash);
+				cash = std::max(0.0, cash - from_claim);
+			}
+			return from_cash + from_claim;
+		}
 	};
 
 	// C4 (D-110) - BANCO COM DONO: a C3 tinha "1 banco agregado por nação";
@@ -1201,6 +1247,37 @@ namespace ogs {
 		double last_capital_ratio = 0.0;
 		double last_liquidity_ratio = 0.0;
 		double last_npl_ratio = 0.0;
+		// ------------------------------------------------------------------
+		// R2a (rework.banks) - CAPITAL + DEPOSITOS DE FUNDING.
+		//
+		// `deposits` continua sendo SO o deposito criado por emprestimo
+		// (D_l). `deposits_funding` e o CLAIM do depositante (cidade/grupo),
+		// lastreado pelo caixa do banco (D_f); `D_t = deposits +
+		// deposits_funding` e a base que a C6 usa. O sweep nunca cria M0:
+		// move caixa privado para o banco e cria o claim correspondente.
+		// ------------------------------------------------------------------
+		double deposits_funding = 0.0;
+		// Meta de adequacao da carteira (equity / loans). 0 = default do
+		// bloco `banks` (0,10); a rampa de 24 meses fica em `bank::phase`.
+		double capital_ratio_target = 0.0;
+		// Alvo do modelo (capital_to_loans_target x steady_loans) do PAPEL,
+		// publicado e usado pela capitalizacao publica mensal.
+		double capital_target = 0.0;
+		// Semeado / alvo do modelo e capital / alvo de referencia (dado real).
+		double seed_scale = 0.0;
+		double reference_scale = 0.0;
+		// Gancho da fase politica; 0 no R2.
+		double gov_bonds = 0.0;
+		// declared | chartered_in_crisis | none | no_data (deserto explicito).
+		std::string charter = "declared";
+		// Motivo publicado quando a capitalizacao publica do mes foi adiada.
+		std::string public_cap_deferred;
+		// R2b1 (fix A3): sinal de liquidez da C6 acendido quando um saque
+		// deixa `cash < liquidity_floor`. Nao bloqueia o pagamento (o plano
+		// 4.3/4.4 manda REGISTRAR); o contador e o dia da ultima violacao vao
+		// ao save v44 no ON. `breaches` conta a primeira violacao de cada dia.
+		int liquidity_floor_breaches = 0;
+		int last_liquidity_floor_breach_day = -1;
 	};
 
 	// C6 (D-114) - FUNDO DE SEGURO DE DEPOSITO por nacao. Entra no dinheiro
@@ -1234,6 +1311,18 @@ namespace ogs {
 		double capital_flight = 0.0;
 		double lolr = 0.0;
 		double emission = 0.0;
+		// R2c: episodio de resolucao (leilao/cascata) para a futura UI.
+		// `buyer` = banco que comprou a carteira; `auction_*` medem o leilao;
+		// `charter_*` o custo e o teto do charter publico; `austerity` a
+		// reducao dos orcamentos regionais; `desert` a nacao ficou sem banco.
+		std::string buyer;
+		double auction_book = 0.0;
+		double auction_price = 0.0;
+		double charter_cost = 0.0;
+		double charter_cap = 0.0;
+		double austerity = 0.0;
+		bool desert = false;
+		bool recapitalized = false;
 	};
 
 	// C6 (D-114) - REGRAS da crise (0 = default declarado em
@@ -1273,8 +1362,8 @@ namespace ogs {
 		// Tolerancia RELATIVA aos ativos (1e-6 = 1 parte por milhao): bancos
 		// grandes tem ruido de juro maior que bancos pequenos.
 		double insolvency_tolerance_ratio = 0.0;
-		// Alavancas de resolucao (laboratorio/teste; default de jogo = true).
-		bool treasury_debt_rescue = true; // Tesouro emite divida / BC carrega
+		// Alavancas de resolucao (laboratorio/teste; default de jogo = false no R2c).
+		bool treasury_debt_rescue = false; // Tesouro emite divida / BC carrega
 		bool takeover_public = true;      // residual vira banco publico
 	};
 
@@ -1898,21 +1987,32 @@ struct Region {
 		// Liquidez que cada setor pode gastar HOJE (leitura). Com o caixa
 		// unico, e o SUB-SALDO do setor (nunca o pool inteiro): cada um paga
 		// apenas o que arrecadou, como no caixa separado. Nunca somar as duas
-		// leituras.
+		// leituras. R2b1: soma o claim SACAVEL no dia (caixa + deposito).
+		double claim_liquid(bool firm) const {
+			return ws_link == nullptr ? 0.0
+				: deposit::liquid_city(*ws_link, *this, firm);
+		}
+		double claim_liquid_total() const {
+			return claim_liquid(true) + claim_liquid(false);
+		}
 		double firm_liquidity() const {
-			return unified_cash ? std::max(0.0, firm_sub) : firm_cash;
+			return std::max(0.0, unified_cash ? firm_sub : firm_cash)
+				+ claim_liquid(true);
 		}
 		double service_liquidity() const {
-			return unified_cash ? std::max(0.0, service_sub) : service_cash;
+			return std::max(0.0, unified_cash ? service_sub : service_cash)
+				+ claim_liquid(false);
 		}
 		// Dinheiro do setor privado (soma economica do que existe).
 		double private_total() const {
 			return unified_cash ? private_cash : firm_cash + service_cash;
 		}
-		// Liquidez agregada (nunca conta o mesmo dinheiro duas vezes).
+		// Liquidez agregada (nunca conta o mesmo dinheiro duas vezes). R2b1:
+		// caixa do pool + claim sacavel dos dois sub-saldos.
 		double private_liquidity() const {
-			return unified_cash ? std::max(0.0, private_cash)
-				: std::max(0.0, firm_cash) + std::max(0.0, service_cash);
+			return (unified_cash ? std::max(0.0, private_cash)
+				: std::max(0.0, firm_cash) + std::max(0.0, service_cash))
+				+ claim_liquid_total();
 		}
 		// Participacao MEDIDA do setor de firmas na receita privada, presa em
 		// [5%, 95%]. Sem medicao ainda (-1), deriva da razao dos sub-saldos.
@@ -1949,9 +2049,10 @@ struct Region {
 		// alimentar): no modo `nonessential` ele ignora a fatia.
 		double firm_external_room(bool essential = false) const {
 			if (!unified_cash) {
-				return std::max(0.0, firm_cash);
+				return std::max(0.0, firm_cash) + claim_liquid(true);
 			}
-			const double sub_room = std::max(0.0, firm_sub);
+			const double sub_room = std::max(0.0, firm_sub)
+				+ claim_liquid(true);
 			if (external_subceiling == kSubceilingOff
 					|| (external_subceiling == kSubceilingNonessential
 						&& essential)) {
@@ -1963,9 +2064,10 @@ struct Region {
 		}
 		double service_external_room(bool essential = false) const {
 			if (!unified_cash) {
-				return std::max(0.0, service_cash);
+				return std::max(0.0, service_cash) + claim_liquid(false);
 			}
-			const double sub_room = std::max(0.0, service_sub);
+			const double sub_room = std::max(0.0, service_sub)
+				+ claim_liquid(false);
 			if (external_subceiling == kSubceilingOff
 					|| (external_subceiling == kSubceilingNonessential
 						&& essential)) {
@@ -1983,7 +2085,8 @@ struct Region {
 		// so pelo sub-saldo do setor (desligada a flag, o proprio caixa - o
 		// caminho antigo).
 		double firm_internal_room() const {
-			return std::max(0.0, unified_cash ? firm_sub : firm_cash);
+			return std::max(0.0, unified_cash ? firm_sub : firm_cash)
+				+ claim_liquid(true);
 		}
 		// Leitura/pagamento da compra inter-cidade: `abroad` = vendedor fora
 		// do pais. So entao o experimento do sub-teto se aplica.
@@ -2158,8 +2261,14 @@ struct Region {
 				firm_cash = firm_sub;
 				return value;
 			}
-			const double paid = std::clamp(value, 0.0,
+			const double cash_paid = std::clamp(value, 0.0,
 				std::max(0.0, firm_sub));
+			double paid = cash_paid;
+			if (value - cash_paid > 1e-9 && ws_link != nullptr) {
+				// R2b1: float nao cobre -> saque atomico do claim (4.4).
+				paid += deposit::withdraw_city(*ws_link, *this, true,
+					value - cash_paid);
+			}
 			if (r1_diag) {
 				r1_firm_out[static_cast<int>(std::clamp(flow, 0,
 					static_cast<int>(kR1FlowCount) - 1))] += paid;
@@ -2203,8 +2312,14 @@ struct Region {
 				service_cash = service_sub;
 				return value;
 			}
-			const double paid = std::clamp(value, 0.0,
+			const double cash_paid = std::clamp(value, 0.0,
 				std::max(0.0, service_sub));
+			double paid = cash_paid;
+			if (value - cash_paid > 1e-9 && ws_link != nullptr) {
+				// R2b1: float nao cobre -> saque atomico do claim (4.4).
+				paid += deposit::withdraw_city(*ws_link, *this, false,
+					value - cash_paid);
+			}
 			if (r1_diag) {
 				r1_service_out[static_cast<int>(std::clamp(flow, 0,
 					static_cast<int>(kR1FlowCount) - 1))] += paid;
@@ -2283,6 +2398,40 @@ struct Region {
 		double regional_budget_deferred_month = 0.0;
 		double regional_budget_open_services = 0.0;
 		double regional_budget_open_works = 0.0;
+		// R2a (rework.banks.deposits): conta do setor privado no banco. O
+		// vetor e ordenado por `bank_id` (determinismo do save/status) e o
+		// claim de cada sub-saldo e o depositante do R2 (regiao). `protected`
+		// e o piso do sweep (cesta de 6 meses + orcamento do mes), recalculado
+		// todo dia; nao e saldo.
+		struct BankAccount {
+			std::string bank_id;
+			double firm = 0.0;
+			double service = 0.0;
+		};
+		std::vector<BankAccount> bank_accounts;
+		double protected_cash = 0.0;
+		// R2b1: elo com o WorldState (derivado, nao serializado) e a divida
+		// POR CREDOR (`firm_debt` continua o agregado). Sem o elo, as leituras
+		// de claim devolvem 0 e os pagamentos ficam no caixa puro.
+		WorldState* ws_link = nullptr;
+		std::vector<BankLoan> firm_debt_claims;
+		// R2a (QA B4): media movel de 30 dias do `pop.food_spend`, usada pelo
+		// colchao do sweep. Guardar a serie evita que um dia de escassez (gasto
+		// instantaneo baixo) encolha o piso e libere caixa para o banco. O
+		// buffer e' estado derivado (nao entra no save); `last_day` evita
+		// amostrar duas vezes no mesmo dia.
+		double food_spend_hist[30] = {};
+		int food_spend_hist_pos = 0;
+		int food_spend_hist_n = 0;
+		int food_spend_hist_day = -1;
+		double claim_total() const {
+			double total = 0.0;
+			for (const BankAccount& account : bank_accounts) {
+				total += std::max(0.0, account.firm)
+					+ std::max(0.0, account.service);
+			}
+			return total;
+		}
 		// Multiplicador da renda externa (PIB PPP per capita da nação,
 		// normalizado pela média mundial ponderada = 1,0). Ver
 		// set_external_income_index e §20 do balance_review.

@@ -1319,6 +1319,8 @@ public:
 	 */
 	Dictionary create_state_company(const String& nation,
 		const String& name, double capital);
+	/** R2c: charter do banco publico pago pelo Tesouro (A3). */
+	Dictionary charter_public_bank(const String& nation, double capital);
 
 	/**
 	 * Privatiza um ativo estatal: o comprador paga o valor contábil
@@ -1451,6 +1453,7 @@ private:
 		const String& sector, double tax_holiday, double subsidy);
 	Dictionary apply_create_state_company(const String& nation,
 		const String& name, double capital);
+	Dictionary apply_charter_public_bank(const String& nation, double capital);
 	Dictionary apply_privatize(const String& city_id, const String& building_id,
 		const String& buyer_group);
 	Dictionary apply_nationalize(const String& city_id, const String& building_id);
@@ -1986,6 +1989,15 @@ private:
 	 */
 	void set_rework_params(const Dictionary& values);
 	Dictionary get_rework_params() const;
+	/**
+	 * R2a - dado do seed por nacao (data/definitions/economy/bank_seed.json).
+	 * Formato `{capital_to_loans_target, nations: {ISO3: {steady_loans,
+	 * model_gdp_annual, capital_pct_gdp, capital_to_assets, reference_target,
+	 * confidence, roles_present}}}`. Nao inventa nivel: nacao sem o dado fica
+	 * `no_model_gdp` e nao recebe capital. Chamar DEPOIS de
+	 * `set_bank_definitions` (os papeis `present` vem de banks.json).
+	 */
+	void set_bank_seed(const Dictionary& values);
 	// F3: zera/redimensiona o estado de necessidades de uma POP (duráveis por
 	// produto, vetores dos 3 níveis) sem apagar estoque já acumulado.
 	void init_pop_needs(Pop& pop) const { sim_core_.init_pop_needs(pop); }

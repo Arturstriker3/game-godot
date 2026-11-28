@@ -35,6 +35,18 @@ struct TreasuryCompanyResult {
 	std::string warning;
 };
 
+// R2c: cria/reabre o banco PUBLICO da nacao (charter) com o capital debitado
+// do Tesouro. Falha limpa sem saldo (nada e criado/movido). E' a mesma
+// alavanca explicita da `create_state_company`, aplicada ao papel publico:
+// funciona em qualquer nacao, inclusive nas que nasceram sem banco publico.
+struct TreasuryBankResult {
+	bool created = false;
+	std::string id;
+	double capital = 0.0;
+	std::string error;
+	std::string warning;
+};
+
 // A flag das empresas-do-caixa-proprio esta ligada E o Tesouro e valido?
 bool treasury_levers_enabled(const WorldState& ws);
 
@@ -49,5 +61,8 @@ TreasuryFundResult action_fund_group_from_treasury(WorldState& ws,
 TreasuryCompanyResult action_create_state_company_from_treasury(
 		WorldState& ws, const std::string& nation, const std::string& name,
 		double capital);
+
+TreasuryBankResult action_charter_public_bank_from_treasury(WorldState& ws,
+		const std::string& nation, double capital);
 
 } // namespace ogs

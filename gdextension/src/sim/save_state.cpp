@@ -36,6 +36,69 @@ Dictionary make_object() { return Value::make_object(); }
 
 Array make_array() { return Value::make_array(); }
 
+// R2b1 (fix A1): claims de divida por credor (grupo e cidade). O vetor e'
+// ordenado por `bank_id` em todo o nucleo; a escrita ordena uma copia para o
+// save sair deterministico mesmo que uma entrada externa mude a ordem, e a
+// leitura funde `bank_id` repetido (um claim por credor).
+void write_bank_claims(Array& out, const std::vector<BankLoan>& claims) {
+	std::vector<BankLoan> ordered = claims;
+	std::sort(ordered.begin(), ordered.end(),
+		[](const BankLoan& a, const BankLoan& b) {
+			return a.bank_id < b.bank_id;
+		});
+	for (const BankLoan& claim : ordered) {
+		if (claim.bank_id.empty()) {
+			continue;
+		}
+		Dictionary row = make_object();
+		row["bank_id"] = sim_str(claim.bank_id.c_str());
+		row["principal"] = std::max(0.0, claim.principal);
+		row["arrears"] = std::max(0.0, claim.arrears);
+		row["rate_add"] = std::max(0.0, claim.rate_add);
+		row["default_days"] = std::max(0, claim.default_days);
+		out.append(row);
+	}
+}
+
+void load_bank_claims(std::vector<BankLoan>& out, const Array& rows) {
+	out.clear();
+	for (int index = 0; index < rows.size(); ++index) {
+		if (rows[index].get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary row = rows[index];
+		const std::string bank_id(
+			String(row.get("bank_id", "")).utf8().get_data());
+		if (bank_id.empty()) {
+			continue;
+		}
+		const double principal = std::max(0.0,
+			double(row.get("principal", 0.0)));
+		const double arrears = std::max(0.0,
+			double(row.get("arrears", 0.0)));
+		auto found = std::lower_bound(out.begin(), out.end(), bank_id,
+			[](const BankLoan& claim, const std::string& id) {
+				return claim.bank_id < id;
+			});
+		if (found != out.end() && found->bank_id == bank_id) {
+			found->principal += principal;
+			found->arrears += arrears;
+			found->rate_add = std::max(found->rate_add,
+				std::max(0.0, double(row.get("rate_add", 0.0))));
+			found->default_days = std::max(found->default_days,
+				std::max(0, int(row.get("default_days", 0))));
+			continue;
+		}
+		BankLoan claim;
+		claim.bank_id = bank_id;
+		claim.principal = principal;
+		claim.arrears = arrears;
+		claim.rate_add = std::max(0.0, double(row.get("rate_add", 0.0)));
+		claim.default_days = std::max(0, int(row.get("default_days", 0)));
+		out.insert(found, claim);
+	}
+}
+
 // C2c (D-108e) — MOEDAS EXTINTAS no cenário. A taxa irrevocável converte a
 // paridade LOCAL (unidades por 1 âncora); o dinheiro do núcleo é em XGS e não
 // se move. HRK não existe no cenário (a Croácia já nasce no EUR): a linha fica
@@ -583,6 +646,18 @@ Value to_value(const WorldState& ws, const SimCore& core,
 		entry["credit_rate_add"] = group.credit_rate_add;
 		entry["credit_renegotiations"] = group.credit_renegotiations;
 		entry["credit_arrears_days"] = group.credit_arrears_days;
+		if (ws.banks_rework.enabled) {
+			entry["bank_deposit"] = group.bank_deposit;
+			entry["deposit_bank_id"] = sim_str(group.deposit_bank_id.c_str());
+			// R2b1 (fix A1): divida POR CREDOR. Chave aditiva do v44,
+			// ordenada por `bank_id` (o vetor ja' e' mantido ordenado; a
+			// copia garante o save se um save antigo/entrada externa mudar a
+			// ordem). Sem claims (save legado) a chave sai vazia e a
+			// migracao do load reconstroi.
+			Array claims = make_array();
+			write_bank_claims(claims, group.debt_claims);
+			entry["debt_claims"] = claims;
+		}
 		Array by_host = make_array();
 		for (const auto& row : group.profit_by_host) {
 			Dictionary host = make_object();
@@ -995,6 +1070,16 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 			? std::max(0, int(entry.get("credit_renegotiations", 0))) : 0;
 		group.credit_arrears_days = version >= 41
 			? std::max(0, int(entry.get("credit_arrears_days", 0))) : 0;
+		// R2a (v44): depósito de funding do grupo. Save anterior chega com 0.
+		group.bank_deposit = std::max(0.0,
+			double(entry.get("bank_deposit", 0.0)));
+		group.deposit_bank_id = std::string(
+			String(entry.get("deposit_bank_id", "")).utf8().get_data());
+		// R2b1 (fix A1): claims de divida por credor (chave aditiva do v44).
+		// Save sem a chave chega vazio; `bank::rebuild_claims_after_load`
+		// reconstroi a atribuicao legada.
+		load_bank_claims(group.debt_claims,
+			entry.get("debt_claims", Array()));
 		const Array by_host = entry.get("profit_by_host", Array());
 		for (int host_index = 0; host_index < by_host.size(); ++host_index) {
 			const Dictionary host = by_host[host_index];
@@ -1413,6 +1498,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data,
 	core.apply_firms_own_cash_after_load(
 		bool(data.get("firms_own_cash", false)),
 		data.has("firms_own_cash"));
+	// R2a: bloco dos bancos. O save v44 traz a política; o v43 chega sem a
+	// chave e usa a configuração, sem seed retroativo (`loaded_save`).
+	const Variant banks_block = data.get("banks", Variant());
+	const bool banks_has_rework = banks_block.get_type() == Variant::DICTIONARY
+		&& Dictionary(banks_block).has("rework");
+	core.apply_banks_rework_after_load(banks_has_rework);
 	// G (v24) — estado da safra por (cidade, produto, safra). Save v23 e
 	// anteriores não têm o bloco: o estado nasce zerado (a safra do ano
 	// corrente recomeça do zero no dia do load; nada é inventado para trás).

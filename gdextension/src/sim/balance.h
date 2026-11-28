@@ -48,9 +48,13 @@ struct Sheet {
 	double equity_claims = 0.0;
 	// C4 (D-110): depósitos à vista do setor bancário (passivo).
 	double deposits = 0.0;
+	// R2a (rework.banks): claim do depositante de funding (cidade/grupo).
+	// Financeiro, NÃO caixa: entra em `financial_assets` e nunca em
+	// `cash_total` (senão o mesmo dinheiro seria contado duas vezes).
+	double deposit_claims = 0.0;
 
 	double financial_assets() const {
-		return cash + receivables + loans + equity_claims;
+		return cash + receivables + loans + equity_claims + deposit_claims;
 	}
 	double financial_liabilities() const { return payables + debt; }
 	// Ativos − passivos, com os ativos reais dentro (patrimônio líquido).
@@ -95,6 +99,11 @@ struct Ledger {
 	// C4 (D-110): depósitos à vista (passivo do banco, dinheiro bancário) e os
 	// claims de capital dos donos não-estatais (famílias e exterior).
 	double bank_deposits = 0.0;
+	// R2a (rework.banks): D_l (criado por empréstimo) e D_f (funding) separados;
+	// `deposit_claims` é o outro lado de D_f (cidade/grupo). Só D_l entra no M0.
+	double bank_deposits_loan = 0.0;
+	double bank_deposits_funding = 0.0;
+	double deposit_claims = 0.0;
 	double household_claims = 0.0;
 	double external_claims = 0.0;
 	// Claim de patrimônio do governo sobre o banco (capital pago). É ativo
@@ -123,10 +132,16 @@ struct Ledger {
 	// claims de capital das famílias e do exterior e o M0 líquido de depósitos.
 	// C5 (D-112): a ação aparece dos dois lados pelo mesmo valor.
 	double financial_sum() const {
-		return families + firms + government + government_claims
+		double sum = families + firms + government + government_claims
 			+ household_claims + external + external_claims + banking
 			+ stock_assets - stock_claims + insurance_fund
 			- government_debt - monetary_base;
+		// R2a: o claim de funding fecha o passivo do banco. Ausente (OFF), a
+		// expressão é a mesma do mundo anterior, termo a termo.
+		if (deposit_claims != 0.0) {
+			sum += deposit_claims;
+		}
+		return sum;
 	}
 	double cash_residual() const { return cash_total() - money_total; }
 };

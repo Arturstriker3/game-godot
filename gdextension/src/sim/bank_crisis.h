@@ -111,7 +111,7 @@ struct Policy {
 	double capital_flight_share = kCapitalFlightShareDefault;
 	double insolvency_tolerance = kInsolvencyToleranceDefault;
 	double insolvency_tolerance_ratio = kInsolvencyToleranceRatioDefault;
-	bool treasury_debt_rescue = true;
+	bool treasury_debt_rescue = false;
 	bool takeover_public = true;
 };
 Policy policy(const WorldState& ws);
@@ -151,13 +151,17 @@ double apply_loss_share(WorldState& ws, const std::string& bank_id,
 
 // --- Fase do dia: premio do seguro, indicadores, confianca, corrida,
 // redesconto, aperto e resolucao. Roda DEPOIS da bolsa (a confianca da C5
-// entra no sinal) e ANTES dos invariantes.
-void phase(WorldState& ws);
+// entra no sinal) e ANTES dos invariantes. `m0_total` (opcional) e' a base
+// monetaria do dia para a valvula de 1 %/dia do R2c; negativo = ausente
+// (valvula sem teto lido nao emite).
+void phase(WorldState& ws, double m0_total = -1.0);
 
 // Resolucao de UM banco insolvente (chamada pela fase; exposta para teste).
-// Devolve o rombo reconhecido (0 = nao estava insolvente).
+// Devolve o rombo reconhecido (0 = nao estava insolvente). Com
+// `banks.resolution` o caminho e' o do R2c (leilao/bail-in/fundo/charter ou
+// cascata do publico); sem ele, o C6 legado bit a bit.
 double resolve(WorldState& ws, const std::string& bank_id,
-	const std::string& cause = "insolvency");
+	const std::string& cause = "insolvency", double m0_total = -1.0);
 
 // Evento no anel (o total sempre incrementa).
 void register_event(WorldState& ws, const BankCrisisEvent& event);
@@ -198,6 +202,11 @@ struct Totals {
 	int banks = 0;
 };
 Totals totals(const WorldState& ws);
+
+// Diagnostico R2c (`OGS_BANK_TRACE`): soma dos caixas que compoem o
+// `SimCore::money_total` termo a termo. So leitura; serve para achar o degrau
+// de uma fase que solta dinheiro sem contrapartida.
+double probe_money_total(const WorldState& ws);
 
 } // namespace bank_crisis
 } // namespace ogs

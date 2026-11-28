@@ -112,6 +112,10 @@ const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 # C4 (D-110): bancos com dono (nomes fictícios/genéricos do dado).
 const BANKS_PATH := "res://data/definitions/economy/banks.json"
+## R2a (rework.banks): dado do seed por nação (steady_loans medido no
+## baseline + referência real, quando houver). Sem o arquivo, o seed não roda
+## e o status declara `no_model_gdp` (nada é inventado).
+const BANK_SEED_PATH := "res://data/definitions/economy/bank_seed.json"
 ## C2c (D-108): regime REAL por moeda (IMF AREAER 30/04/2026), âncora (moeda
 ## ou cesta), emissor e trava de união monetária. Ausente = o dado do F5 manda.
 const FX_REGIMES_PATH := "res://data/definitions/economy/fx_regimes_2026.json"
@@ -282,6 +286,12 @@ func _ready() -> void:
 	# bancos ficam sem nome (`no_data`) e só público/privado existem.
 	if sim.has_method("set_bank_definitions"):
 		sim.set_bank_definitions(_load_json_dict_optional(BANKS_PATH))
+	# R2a: seed por nação DEPOIS dos papéis `present` de banks.json. Só roda
+	# em mundo novo e com `banks.capital`; sem o arquivo, `no_model_gdp`.
+	if sim.has_method("set_bank_seed"):
+		var bank_seed := _load_json_dict_optional(BANK_SEED_PATH)
+		if not bank_seed.is_empty():
+			sim.set_bank_seed(bank_seed)
 	# C6 (D-114): os parâmetros da crise (bank_crisis.json) têm espelho
 	# compilado em `sim/bank_crisis.h`, que é o default do jogo e do CLI — o
 	# GDScript NÃO sobrescreve, para jogo e linha de comando verem o mesmo

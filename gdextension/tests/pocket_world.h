@@ -33,7 +33,10 @@ struct PocketWorld {
 	WorldState ws;
 	SimCore core{ws};
 
-	PocketWorld();
+	// `seed_public_bank=false` monta a nacao SEM banco publico. Os casos de
+	// resolucao/deserto precisam da nacao sem papel presente para o deserto
+	// ser derivado de verdade (o resto dos testes usa o default: com banco).
+	explicit PocketWorld(bool seed_public_bank = true);
 	PocketWorld(const PocketWorld&) = delete;
 	PocketWorld& operator=(const PocketWorld&) = delete;
 

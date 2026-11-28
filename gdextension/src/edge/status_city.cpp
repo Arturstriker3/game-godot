@@ -120,6 +120,11 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	// `firm_cash`/`service_cash` continuam publicados como estatistica por setor.
 	if (city.unified_cash) {
 		dict[StringName("private_cash")] = city.private_cash;
+		// R2b1 (§4.3): private_wealth = caixa + claims de funding. O claim
+		// por banco ja' e' publicado em `get_bank_status().banks[].deposits_funding`;
+		// aqui so' o total do setor privado (chave aditiva do ON).
+		dict[StringName("private_wealth")] =
+			city.private_cash + city.claim_total();
 		// R1a (continuacao): fatia medida das firmas na receita privada (teto
 		// externo e base do investidor). Diagnostico; chave aditiva do ON.
 		dict[StringName("firm_revenue_share")] =

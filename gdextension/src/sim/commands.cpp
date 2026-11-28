@@ -62,6 +62,8 @@ constexpr TypeName kTypeNames[] = {
 	{CommandType::SetBuildingEquipment, "set_building_equipment"},
 	// D-131 (fase C): crédito de investimento da cidade.
 	{CommandType::CityBorrow, "city_borrow"},
+	// R2c: charter do banco publico pago pelo Tesouro.
+	{CommandType::CharterPublicBank, "charter_public_bank"},
 };
 
 } // namespace

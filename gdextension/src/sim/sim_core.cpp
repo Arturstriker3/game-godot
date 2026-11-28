@@ -1,7 +1,9 @@
 #include "sim_core.h"
 
 #include "balance.h"
+#include "bank.h"
 #include "central_bank.h"
+#include "deposit.h"
 #include "monetary.h"
 #include "city_gov.h"
 #include "profiling.h"
@@ -13,6 +15,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 namespace ogs {
 
@@ -242,6 +246,102 @@ void SimCore::apply_firms_own_cash_after_load(bool saved_flag,
 	// aplicada (configuracao). A validacao com `regional_cash` e a mesma.
 	const bool enabled = has_saved_flag ? saved_flag : ws_.firms_own_cash;
 	set_firms_own_cash(enabled);
+}
+
+void SimCore::set_banks_rework(const BanksRework& cfg) {
+	// R2a (QA M1): reconfigurar depois de um load NAO pode reabilitar a
+	// capitalizacao retroativa. `seed_source = loaded_save` e `seeded` sao
+	// estado do MUNDO, nao da configuracao: a config nova (sem esses campos)
+	// nao os apaga. Sem isto, `set_rework_params` chamado depois do load
+	// devolvia o gancho mensal publico ao mundo carregado (plano 7.7).
+	const std::string prev_seed_source = ws_.banks_rework.seed_source;
+	const bool prev_seeded = ws_.banks_rework.seeded;
+	ws_.banks_rework = cfg;
+	BanksRework& br = ws_.banks_rework;
+	br.config_error.clear();
+	const auto add_error = [&br](const char* text) {
+		if (!br.config_error.empty()) {
+			br.config_error += "; ";
+		}
+		br.config_error += text;
+	};
+	if (br.enabled && !ws_.regional_cash) {
+		add_error("rework.banks requer rework.regional_cash");
+		br.enabled = false;
+	}
+	if (br.capital && !br.enabled) {
+		add_error("banks.capital requer banks.enabled");
+		br.capital = false;
+	}
+	if (br.deposits && (!br.enabled || !br.capital)) {
+		add_error("banks.deposits requer banks.enabled e banks.capital");
+		br.deposits = false;
+	}
+	if (br.resolution && !br.enabled) {
+		add_error("banks.resolution requer banks.enabled");
+		br.resolution = false;
+	}
+	br.dividend_target_ratio = std::clamp(
+		br.dividend_target_ratio > 0.0 ? br.dividend_target_ratio : 0.10,
+		0.0, 1.0);
+	br.dividend_cash_floor_ratio = std::clamp(
+		br.dividend_cash_floor_ratio, 0.0, 1.0);
+	br.seed_floor_days_treasury = std::max(0.0,
+		br.seed_floor_days_treasury);
+	br.seed_public_month_frac = std::clamp(br.seed_public_month_frac,
+		0.0, 1.0);
+	br.seed_public_min_ticket_frac = std::clamp(
+		br.seed_public_min_ticket_frac, 0.0, 1.0);
+	br.protected_food_months = std::max(0.0, br.protected_food_months);
+	br.alloc_min_capital_ratio = std::max(0.0, br.alloc_min_capital_ratio);
+	br.alloc_pendulum_month = std::clamp(br.alloc_pendulum_month, 0.0, 1.0);
+	br.liquidity_min_reserve_ratio = std::max(0.0,
+		br.liquidity_min_reserve_ratio);
+	br.auction_discount_private = std::clamp(
+		br.auction_discount_private, 0.0, 1.0);
+	br.auction_discount_public = std::clamp(
+		br.auction_discount_public, 0.0, 1.0);
+	br.charter_max_pct_gdp = std::max(0.0, br.charter_max_pct_gdp);
+	br.charter_max_treasury_months = std::max(0.0,
+		br.charter_max_treasury_months);
+	if (!br.enabled) {
+		// OFF: nenhuma sub-flag ligada e nenhum campo novo e escrito.
+		br.capital = false;
+		br.deposits = false;
+		br.resolution = false;
+		br.seed_source = "disabled";
+	} else if (prev_seed_source == "loaded_save") {
+		// Mundo carregado: continua sem seed retroativo, qualquer que seja a
+		// chamada de configuracao que veio depois.
+		br.seed_source = "loaded_save";
+	} else if (prev_seeded) {
+		// Mundo novo ja semeado: a identidade e o "ja rodou" sobrevivem a uma
+		// reconfiguracao da mesma sessao.
+		br.seed_source = prev_seed_source;
+		br.seeded = true;
+	}
+}
+
+void SimCore::apply_banks_rework_after_load(bool has_saved_flag) {
+	// O bloco salvo (ou a configuracao do rework.json quando o save e anterior
+	// ao v44) passa pela MESMA validacao. O seed NAO roda em save carregado:
+	// `seed_source = loaded_save` desliga o gancho privado e o mensal publico.
+	const BanksRework saved = ws_.banks_rework;
+	(void)has_saved_flag;
+	set_banks_rework(saved);
+	if (ws_.banks_rework.enabled) {
+		ws_.banks_rework.seed_source = "loaded_save";
+	}
+	// R2b1: reconstroi o elo derivado cidade/grupo -> mundo.
+	deposit::link(ws_);
+	// R2b1 (fix A1): save sem `debt_claims` (v44 antigo/v43) tem a divida
+	// atribuida ao credor da regra de hoje. Sem isto a divida sem claim
+	// ficaria zumbi assim que um emprestimo novo acendesse o modo por claim.
+	bank::rebuild_claims_after_load(ws_);
+}
+
+void SimCore::phase_bank_deposits() {
+	bank::sweep_deposits(ws_);
 }
 
 void SimCore::apply_national_treasury_after_load(bool saved_flag,
@@ -509,6 +609,26 @@ double SimCore::m0_total() const {
 	return money_total() - deposits;
 }
 
+double SimCore::m0_gross() const { return m0_total(); }
+
+double SimCore::monetary_claims() const {
+	const balance::Ledger book = balance::ledger(ws_, money_total());
+	return book.monetary_claims;
+}
+
+double SimCore::broad_money() const {
+	// broad = M1_legacy + Σ D_f = (T − Σ caixa dos bancos) + Σ D_f. O claim de
+	// funding entra no lugar do caixa que saiu do setor privado: o sweep
+	// conserva o agregado (R2, §2.2).
+	double vault = 0.0;
+	double funding = 0.0;
+	for (const auto& row : ws_.banks) {
+		vault += std::max(0.0, row.second.cash);
+		funding += std::max(0.0, row.second.deposits_funding);
+	}
+	return std::max(0.0, money_total() - vault) + funding;
+}
+
 void SimCore::snapshot_state(Snapshot& out) const {
 	out.cities = ws_.cities;
 	out.buildings = ws_.buildings;
@@ -606,6 +726,11 @@ void SimCore::prologue() {
 		snapshot_state(before);
 	}
 	money_before_ = money_total();
+	if (std::getenv("OGS_BANK_TRACE") != nullptr) {
+		std::fprintf(stdout,
+			"[bank-trace] day=%d prologue money_before=%.6f\n",
+			ws_.day, money_before_);
+	}
 	// Janela do déficit: abertura do mundo (dia 1) e, depois, o fecho de cada
 	// dia (`monetary::tick` refresca) — um gasto público entre dois dias conta.
 	if (ws_.gov_cash_open.empty()) {
@@ -1275,6 +1400,12 @@ void SimCore::phase_invariants() {
 	ws_.invariant_violations = check_invariants(money_before());
 	if (!ws_.invariant_violations.empty()) {
 		restore_state(ws_.snapshot_buffer);
+		if (std::getenv("OGS_BANK_TRACE") != nullptr) {
+			std::fprintf(stdout,
+				"[bank-trace] day=%d reverted money_after_restore=%.6f"
+				" money_before=%.6f\n",
+				ws_.day, money_total(), money_before_);
+		}
 	} else {
 		// D-126: dia válido - acumula a criação/destruição bancária registrada
 		// (crédito de giro da crise + fase C3/C4). Um tick revertido não conta.
@@ -1428,6 +1559,71 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 		// é o patrimônio do banco, que pode ficar negativo).
 		const double loans_gap = book.bank_loans - book.group_debt;
 		const double arrears_gap = book.bank_arrears - book.group_arrears;
+		// R2b1 (diagnostico, so leitura): com o gap de juros, mostra a entidade
+		// cujo arrears nao bate com o claim (banco, grupo ou cidade).
+		if (std::getenv("OGS_R2B1_ARREARS_TRACE") != nullptr
+				&& (std::abs(loans_gap) > book_tolerance
+					|| std::abs(arrears_gap) > book_tolerance)) {
+			for (const auto& row : ws_.banks) {
+				double claims_debt = 0.0;
+				double claims_arrears = 0.0;
+				for (const Group& group : ws_.groups) {
+					for (const BankLoan& claim : group.debt_claims) {
+						if (claim.bank_id == row.first) {
+							claims_debt += claim.principal;
+							claims_arrears += claim.arrears;
+						}
+					}
+				}
+				for (const City& city : ws_.cities) {
+					for (const BankLoan& claim : city.firm_debt_claims) {
+						if (claim.bank_id == row.first) {
+							claims_debt += claim.principal;
+							claims_arrears += claim.arrears;
+						}
+					}
+				}
+				if (std::abs(row.second.loans - claims_debt) > 1e-6
+						|| std::abs(row.second.arrears - claims_arrears)
+							> 1e-6) {
+					std::fprintf(stderr,
+						"[arrears-trace] bank=%s loans=%.6f claims_debt=%.6f"
+						" arrears=%.6f claims_arrears=%.6f\n",
+						row.first.c_str(), row.second.loans, claims_debt,
+						row.second.arrears, claims_arrears);
+				}
+			}
+			for (const Group& group : ws_.groups) {
+				double sum = 0.0;
+				for (const BankLoan& claim : group.debt_claims) {
+					sum += claim.arrears;
+				}
+				if (std::abs(group.credit_arrears - sum) > 1e-6) {
+					std::fprintf(stderr,
+						"[arrears-trace] group=%s aggregate=%.6f claims=%.6f"
+						" debt=%.6f claims_debt=%.6f\n",
+						group.id.c_str(), group.credit_arrears, sum,
+						group.debt, [&group]() {
+							double total = 0.0;
+							for (const BankLoan& claim : group.debt_claims) {
+								total += claim.principal;
+							}
+							return total;
+						}());
+				}
+			}
+			for (const City& city : ws_.cities) {
+				double sum = 0.0;
+				for (const BankLoan& claim : city.firm_debt_claims) {
+					sum += claim.arrears;
+				}
+				if (std::abs(city.firm_credit_arrears - sum) > 1e-6) {
+					std::fprintf(stderr,
+						"[arrears-trace] city=%s aggregate=%.6f claims=%.6f\n",
+						city.id.c_str(), city.firm_credit_arrears, sum);
+				}
+			}
+		}
 		if (!std::isfinite(loans_gap)
 				|| std::abs(loans_gap) > book_tolerance
 				|| !std::isfinite(arrears_gap)
@@ -1443,13 +1639,31 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 				|| book.bank_borrowing < -1e-6 || book.bank_cash < -1e-6
 				|| book.group_debt < -1e-6
 				|| book.group_arrears < -1e-6
-				|| book.bank_deposits < -1e-6) {
+				|| book.bank_deposits < -1e-6
+				|| book.bank_deposits_funding < -1e-6
+				|| book.deposit_claims < -1e-6) {
 			violations.push_back("posicao de credito negativa: dia="
 				+ std::to_string(ws_.day) + " banco="
 				+ std::to_string(book.bank_loans) + " reservas="
 				+ std::to_string(book.bank_borrowing) + " divida="
 				+ std::to_string(book.group_debt) + " depositos="
-				+ std::to_string(book.bank_deposits));
+				+ std::to_string(book.bank_deposits) + " funding="
+				+ std::to_string(book.bank_deposits_funding));
+		}
+		// R2a: `Σ claims == Σ D_f` ao centavo (só quando há funding; OFF não
+		// escreve nenhuma chave e a identidade é 0 = 0).
+		if (book.bank_deposits_funding > 1e-9
+				|| book.deposit_claims > 1e-9) {
+			const double claim_gap = book.deposit_claims
+				- book.bank_deposits_funding;
+			if (!std::isfinite(claim_gap)
+					|| std::abs(claim_gap) > book_tolerance) {
+				violations.push_back("claim de funding nao fecha: dia="
+					+ std::to_string(ws_.day) + " claims="
+					+ std::to_string(book.deposit_claims) + " D_f="
+					+ std::to_string(book.bank_deposits_funding) + " gap="
+					+ std::to_string(claim_gap));
+			}
 		}
 		// C5 (D-112) - BOLSA: a carteira dos detentores tem de fechar com as
 		// ações emitidas (senão haveria ação criada do nada) e o preço é um
@@ -1483,12 +1697,15 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 		for (const auto& row : ws_.banks) {
 			const Bank& bank = row.second;
 			if (!std::isfinite(bank.deposits) || bank.deposits < -1e-6
+					|| !std::isfinite(bank.deposits_funding)
+					|| bank.deposits_funding < -1e-6
 					|| !std::isfinite(bank.capital)
 					|| bank.capital < -1e-6
 					|| !std::isfinite(bank.cash) || bank.cash < -1e-6) {
 				violations.push_back("banco com posicao negativa: dia="
 					+ std::to_string(ws_.day) + " " + bank.id + " depositos="
-					+ std::to_string(bank.deposits) + " capital="
+					+ std::to_string(bank.deposits) + " funding="
+					+ std::to_string(bank.deposits_funding) + " capital="
 					+ std::to_string(bank.capital) + " caixa="
 					+ std::to_string(bank.cash));
 			}

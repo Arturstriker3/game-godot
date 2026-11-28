@@ -99,7 +99,9 @@ Ledger ledger(const WorldState& ws, double money_total) {
 		out.bank_arrears += bank.arrears;
 		out.bank_borrowing += bank.bc_borrowing;
 		out.bank_capital += bank.capital;
-		out.bank_deposits += bank.deposits;
+		out.bank_deposits_loan += bank.deposits;
+		out.bank_deposits_funding += bank.deposits_funding;
+		out.bank_deposits += bank.deposits + bank.deposits_funding;
 		if (bank.owner_kind == "state") {
 			out.government_claims += bank.capital;
 		} else if (bank.owner_kind == "foreign") {
@@ -108,8 +110,17 @@ Ledger ledger(const WorldState& ws, double money_total) {
 			out.household_claims += bank.capital;
 		}
 	}
+	// R2a: claim do depositante de funding (cidade/grupo) — o outro lado de
+	// D_f. A soma tem de ser igual a Σ D_f (gate de conservação).
+	for (const City& city : ws.cities) {
+		out.deposit_claims += city.claim_total();
+	}
+	for (const Group& group : ws.groups) {
+		out.deposit_claims += std::max(0.0, group.bank_deposit);
+	}
 	out.banking = out.bank_cash + out.bank_loans + out.bank_arrears
-		- out.bank_borrowing - out.bank_capital - out.bank_deposits;
+		- out.bank_borrowing - out.bank_capital - out.bank_deposits_loan
+		- out.bank_deposits_funding;
 	// C5 (D-112): a ação dos dois lados pelo mesmo valor de mercado. Se as
 	// carteiras não fecharem com os market caps, a diferença aparece aqui.
 	for (const auto& row : ws.stock_tickers) {
@@ -121,8 +132,11 @@ Ledger ledger(const WorldState& ws, double money_total) {
 		out.stock_claims += cap;
 	}
 	out.monetary_claims += out.bank_borrowing;
+	// R2a: M0 líquido subtrai SÓ o depósito criado por empréstimo (D_l). O
+	// funding (D_f) é claim lastreado por caixa e não entra no M0. Sem a flag,
+	// D_f = 0 e a expressão é a mesma da C4.
 	out.monetary_base = money_total - out.monetary_claims
-		- out.bank_deposits;
+		- out.bank_deposits_loan;
 	// C6 (D-114): fundo de seguro de depósito (caixa do mundo, sem passivo
 	// correspondente: o prêmio é transferência do banco).
 	for (const auto& row : ws.deposit_insurance) {
@@ -241,6 +255,8 @@ Sheet firms(const WorldState& ws, const std::string& nation) {
 		sheet.payables += city.service_wage_arrears + city.rural_wage_arrears;
 		// D-126: crédito de capital de giro da cidade.
 		sheet.debt += city.firm_debt + city.firm_credit_arrears;
+		// R2a: o claim de funding da região/empresa é ativo financeiro.
+		sheet.deposit_claims += city.claim_total();
 		// Estoque do mercado da cidade é do comerciante/firma local.
 		sheet.inventory += city_inventory_value(ws, city);
 	}
@@ -283,6 +299,8 @@ Sheet firms(const WorldState& ws, const std::string& nation) {
 		sheet.cash += group.cash;
 		// C3 (D-107): dívida de crédito do grupo (passivo) e juros vencidos.
 		sheet.debt += group.debt + group.credit_arrears;
+		// R2a: depósito de funding do grupo no banco de relacionamento.
+		sheet.deposit_claims += std::max(0.0, group.bank_deposit);
 	}
 	return sheet;
 }
@@ -489,8 +507,9 @@ Sheet banking(const WorldState& ws) {
 		const Bank& bank = row.second;
 		sheet.cash += bank.cash;
 		sheet.loans += bank.loans + bank.arrears;
-		sheet.debt += bank.bc_borrowing + bank.capital + bank.deposits;
-		sheet.deposits += bank.deposits;
+		sheet.debt += bank.bc_borrowing + bank.capital + bank.deposits
+			+ bank.deposits_funding;
+		sheet.deposits += bank.deposits + bank.deposits_funding;
 	}
 	return sheet;
 }
@@ -504,8 +523,9 @@ Sheet banking_nation(const WorldState& ws, const std::string& nation) {
 		const Bank& bank = row.second;
 		sheet.cash += bank.cash;
 		sheet.loans += bank.loans + bank.arrears;
-		sheet.debt += bank.bc_borrowing + bank.capital + bank.deposits;
-		sheet.deposits += bank.deposits;
+		sheet.debt += bank.bc_borrowing + bank.capital + bank.deposits
+			+ bank.deposits_funding;
+		sheet.deposits += bank.deposits + bank.deposits_funding;
 	}
 	return sheet;
 }
