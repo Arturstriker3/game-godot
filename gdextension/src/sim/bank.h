@@ -128,6 +128,14 @@ double credit_limit(const WorldState& ws, const Group& group,
 const Bank* lender(const WorldState& ws, const Group& group);
 Bank* lender(WorldState& ws, const Group& group);
 
+// R2b1/R2b2 - competicao: taxa ofertada pelo banco (base + spread da
+// politica + spread de solidez centrado na nacao, aditivo) e capacidade de
+// credito nova = min(folga de capital, folga de liquidez). Sem a sub-flag
+// `banks.deposits` a oferta e' exatamente `loan_rate` e a capacidade e'
+// irrestrita (caminho de hoje).
+double offer_rate(const WorldState& ws, const Bank& bank);
+double capacity(const WorldState& ws, const Bank& bank);
+
 // Empréstimo ao grupo, limitado pelo crédito disponível. Cria depósito
 // (dinheiro bancário) e não M0. Devolve `false` com `error` quando recusado;
 // `out_amount` é o concedido (pode ser menor).
@@ -154,7 +162,7 @@ double inject_capital(WorldState& ws, const std::string& nation, double amount,
 // debitado pelo chamador; credita o banco público da nação. Sem banco público
 // devolve 0 (o valor NÃO é cobrado; ausência declarada).
 double receive_harvest_interest(WorldState& ws, const std::string& nation,
-	double amount);
+	double amount, const std::string& bank_id = std::string());
 
 // --- R2a (rework.banks) — capital, adequação, depósitos de funding --------
 // Depósito total (D_t = D_l + D_f): base da C6. `deposits` permanece só o

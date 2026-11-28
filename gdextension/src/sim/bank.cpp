@@ -228,6 +228,140 @@ double loan_rate(const WorldState& ws, const std::string& nation) {
 	return monetary::rate_for_nation(ws, nation) + pol.spread;
 }
 
+namespace {
+
+bool credit_bank_present(const Bank& bank) {
+	return bank.name_status == "present" && bank.absorbed_into.empty();
+}
+
+double solvency_ratio(const Bank& bank) {
+	const double loans = std::max(0.0, bank.loans);
+	if (loans <= 1e-9) {
+		return 1.0;
+	}
+	return std::clamp(equity(bank) / loans, 0.0, 1.0);
+}
+
+// Claim de divida do tomador por credor (ordenado por bank_id).
+BankLoan& loan_claim(std::vector<BankLoan>& claims, const std::string& id) {
+	auto found = std::lower_bound(claims.begin(), claims.end(), id,
+		[](const BankLoan& claim, const std::string& bank_id) {
+			return claim.bank_id < bank_id;
+		});
+	if (found != claims.end() && found->bank_id == id) {
+		return *found;
+	}
+	BankLoan claim;
+	claim.bank_id = id;
+	return *claims.insert(found, claim);
+}
+
+const BankLoan* find_loan(const std::vector<BankLoan>& claims,
+		const std::string& id) {
+	const auto found = std::lower_bound(claims.begin(), claims.end(), id,
+		[](const BankLoan& claim, const std::string& bank_id) {
+			return claim.bank_id < bank_id;
+		});
+	return found != claims.end() && found->bank_id == id ? &*found : nullptr;
+}
+
+BankLoan* find_loan_mut(std::vector<BankLoan>& claims,
+		const std::string& id) {
+	auto found = std::lower_bound(claims.begin(), claims.end(), id,
+		[](const BankLoan& claim, const std::string& bank_id) {
+			return claim.bank_id < bank_id;
+		});
+	return found != claims.end() && found->bank_id == id ? &*found : nullptr;
+}
+
+bool claims_mode(const WorldState& ws) {
+	return ws.banks_rework.enabled && ws.banks_rework.deposits;
+}
+
+// Menor taxa ofertada com capacidade; desempate deterministico por
+// capacidade e id (nunca pela ordem de insercao do mapa).
+Bank* choose_credit_bank(WorldState& ws, const std::string& nation) {
+	Bank* best = nullptr;
+	double best_rate = 0.0;
+	double best_cap = 0.0;
+	for (auto& row : ws.banks) {
+		Bank& bank = row.second;
+		if (bank.nation != nation || !credit_bank_present(bank)) {
+			continue;
+		}
+		const double rate = offer_rate(ws, bank);
+		const double cap = capacity(ws, bank);
+		const bool better_rate = best == nullptr
+			|| rate < best_rate - 1e-12;
+		const bool same_rate = best != nullptr
+			&& std::fabs(rate - best_rate) <= 1e-12;
+		const bool better_cap = same_rate && (cap > best_cap + 1e-9
+			|| (std::fabs(cap - best_cap) <= 1e-9 && bank.id < best->id));
+		if (better_rate || better_cap) {
+			best = &bank;
+			best_rate = rate;
+			best_cap = cap;
+		}
+	}
+	return best;
+}
+
+void record_loan(WorldState& ws, std::vector<BankLoan>& claims, Bank& bank,
+		double amount) {
+	BankLoan& claim = loan_claim(claims, bank.id);
+	claim.principal += amount;
+	claim.rate_add = offer_rate(ws, bank) - loan_rate(ws, bank.nation);
+}
+
+} // namespace
+
+double offer_rate(const WorldState& ws, const Bank& bank) {
+	const Policy pol = effective_policy(ws);
+	const double base = monetary::rate_for_nation(ws, bank.nation)
+		+ pol.spread;
+	if (!claims_mode(ws)) {
+		return base;
+	}
+	// Spread ADITIVO por solidez, centrado na media dos bancos presentes da
+	// nacao: o nivel medio de juros nao muda (a soma dos desvios e' 0).
+	double sum = 0.0;
+	int count = 0;
+	for (const auto& row : ws.banks) {
+		const Bank& peer = row.second;
+		if (peer.nation != bank.nation || !credit_bank_present(peer)) {
+			continue;
+		}
+		sum += solvency_ratio(peer);
+		++count;
+	}
+	if (count < 2) {
+		return base;
+	}
+	constexpr double kSolvencySpread = 0.02;  // 2 p.p. de amplitude
+	const double mean = sum / static_cast<double>(count);
+	const double delta = kSolvencySpread * (mean - solvency_ratio(bank));
+	return std::max(0.0, base + delta);
+}
+
+double capacity(const WorldState& ws, const Bank& bank) {
+	const BanksRework& br = ws.banks_rework;
+	if (!br.enabled || !br.deposits) {
+		return 1e18;
+	}
+	const double target = bank.capital_ratio_target > 0.0
+		? bank.capital_ratio_target : br.dividend_target_ratio;
+	const double capital_headroom = target > 1e-9
+		? std::max(0.0, equity(bank) / target - std::max(0.0, bank.loans))
+		: 1e18;
+	const double min_reserve = std::max(0.0,
+		br.liquidity_min_reserve_ratio);
+	const double liquidity_headroom = min_reserve > 1e-9
+		? std::max(0.0, std::max(0.0, bank.cash) / min_reserve
+			- total_deposits(bank))
+		: 1e18;
+	return std::min(capital_headroom, liquidity_headroom);
+}
+
 Bank& ensure(WorldState& ws, const std::string& nation, int role) {
 	const std::string id = bank_id(nation, role);
 	Bank& bank = ws.banks[id];
@@ -426,6 +560,12 @@ bool lend(WorldState& ws, const std::string& group_id, double amount,
 		return false;
 	}
 	Bank* bank = lender(ws, *group);
+	if (claims_mode(ws)) {
+		const std::string nation = group->origin_nation;
+		if (Bank* chosen = choose_credit_bank(ws, nation)) {
+			bank = chosen;
+		}
+	}
 	if (bank == nullptr) {
 		if (error != nullptr) {
 			*error = "nacao sem banco";
@@ -447,6 +587,10 @@ bool lend(WorldState& ws, const std::string& group_id, double amount,
 	bank->loans += granted;
 	bank->deposits += granted;
 	bank->loans_count += 1;
+	if (claims_mode(ws)) {
+		// R2b1: grava o credor no claim do tomador (servicing por banco).
+		record_loan(ws, group->debt_claims, *bank, granted);
+	}
 	group->cash += granted;
 	group->debt += granted;
 	group->credit_total += granted;
@@ -487,11 +631,30 @@ bool lend_city(WorldState& ws, const std::string& city_id, double amount,
 		}
 		return false;
 	}
-	// C4 (D-110): o credito de giro usa o banco PUBLICO que JA existe. Sem banco
-	// na nacao nao ha credito de giro: nunca se cria um banco para emprestar
-	// (isso quebraria "sem banco => M1 = M0"). A escada da crise pula para o
-	// proximo degrau (liquidar/hibernar/leilao).
-	Bank* bank = find_mut(ws, city->nation, kRolePublic);
+	// R2b1: com depositos, o banco e' escolhido por taxa/capacidade entre os
+	// papeis PRESENTES da nacao (nao ha mais monopolio publico). Se a cidade
+	// ja tem divida com um credor, o novo desembolso continua nele para o par
+	// tomador<->banco seguir unico no servico; sem divida, compete.
+	Bank* bank = nullptr;
+	if (claims_mode(ws)) {
+		for (BankLoan& claim : city->firm_debt_claims) {
+			if (claim.principal + claim.arrears > 1e-9) {
+				const auto found = ws.banks.find(claim.bank_id);
+				if (found != ws.banks.end()) {
+					bank = &found->second;
+				}
+				break;
+			}
+		}
+		if (bank == nullptr) {
+			bank = choose_credit_bank(ws, city->nation);
+		}
+	}
+	if (bank == nullptr) {
+		// C4 (D-110): sem depositos, o credito de giro usa o banco PUBLICO
+		// que JA existe (caminho de hoje, bit a bit).
+		bank = find_mut(ws, city->nation, kRolePublic);
+	}
 	if (bank == nullptr) {
 		if (error != nullptr) {
 			*error = "nacao sem banco publico";
@@ -510,6 +673,9 @@ bool lend_city(WorldState& ws, const std::string& city_id, double amount,
 	bank->loans += granted;
 	bank->deposits += granted;
 	bank->loans_count += 1;
+	if (claims_mode(ws)) {
+		record_loan(ws, city->firm_debt_claims, *bank, granted);
+	}
 	city->firm_receive(granted);
 	city->firm_debt += granted;
 	city->firm_credit_total += granted;
@@ -648,11 +814,25 @@ double inject_capital(WorldState& ws, const std::string& nation, double amount,
 }
 
 double receive_harvest_interest(WorldState& ws, const std::string& nation,
-		double amount) {
+		double amount, const std::string& bank_id) {
 	if (!(amount > 0.0) || !std::isfinite(amount)) {
 		return 0.0;
 	}
-	Bank* bank = find_mut(ws, nation, kRolePublic);
+	Bank* bank = nullptr;
+	if (!bank_id.empty()) {
+		const auto found = ws.banks.find(bank_id);
+		if (found != ws.banks.end()) {
+			bank = &found->second;
+		}
+	}
+	if (bank == nullptr && claims_mode(ws)) {
+		// R2b1: o juro da safra vai ao banco escolhido pela competicao (o
+		// mesmo criterio de taxa/capacidade do credito), nao ao publico fixo.
+		bank = choose_credit_bank(ws, nation);
+	}
+	if (bank == nullptr) {
+		bank = find_mut(ws, nation, kRolePublic);
+	}
 	if (bank == nullptr) {
 		return 0.0;
 	}
@@ -800,6 +980,121 @@ double city_business_daily_cost(const WorldState& ws, std::size_t city_index) {
 	return cost;
 }
 
+// R2b1: paga o grupo ao banco com a ordem caixa -> deposito. A parcela de
+// caixa e' limitada por `cash_cap` (o D_l do credor, como no caminho legado);
+// a parcela de claim sai do banco de relacionamento e volta como caixa.
+struct GroupPaid {
+	double cash = 0.0;
+	double claim = 0.0;
+	double total() const { return cash + claim; }
+};
+
+GroupPaid pay_group_capped(WorldState& ws, Group& group, double value,
+		double cash_cap) {
+	GroupPaid out;
+	if (!(value > 0.0)) {
+		return out;
+	}
+	const double cash_room = std::min(std::max(0.0, group.cash),
+		std::max(0.0, cash_cap));
+	out.cash = std::min(value, cash_room);
+	group.cash -= out.cash;
+	const double need = value - out.cash;
+	if (need > 1e-9) {
+		out.claim = deposit::withdraw_group(ws, group, need);
+		// withdraw_group credita o caixa do pagador; o pagamento debita.
+		group.cash = std::max(0.0, group.cash - out.claim);
+	}
+	return out;
+}
+
+// Mesma ordem caixa -> deposito para um sub-saldo da cidade. `cash_cap` e' o
+// D_l do credor (a parcela de caixa que pode ser destruida como deposito).
+double pay_city_sub(WorldState& ws, City& city, bool firm, double value,
+		double cash_cap, double* cash_paid, double* claim_paid) {
+	if (cash_paid != nullptr) {
+		*cash_paid = 0.0;
+	}
+	if (claim_paid != nullptr) {
+		*claim_paid = 0.0;
+	}
+	if (!(value > 0.0)) {
+		return 0.0;
+	}
+	const double sub = firm ? std::max(0.0, city.firm_sub)
+		: std::max(0.0, city.service_sub);
+	const double cash = std::min({ value, sub, std::max(0.0, cash_cap) });
+	if (cash > 0.0) {
+		if (firm) {
+			city.firm_pay(cash, City::kR1Finance);
+		} else {
+			city.service_pay(cash, City::kR1Finance);
+		}
+	}
+	double claim = 0.0;
+	const double need = value - cash;
+	if (need > 1e-9) {
+		claim = deposit::withdraw_city(ws, city, firm, need);
+		if (claim > 0.0) {
+			if (firm) {
+				city.firm_pay(claim, City::kR1Finance);
+			} else {
+				city.service_pay(claim, City::kR1Finance);
+			}
+		}
+	}
+	if (cash_paid != nullptr) {
+		*cash_paid = cash;
+	}
+	if (claim_paid != nullptr) {
+		*claim_paid = claim;
+	}
+	return cash + claim;
+}
+
+// Paga um valor ao banco usando firmas e depois servicos (a mesma ordem do
+// caminho legado), devolvendo a ORIGEM do dinheiro.
+double pay_city_liquid(WorldState& ws, City& city, double value,
+		double cash_cap, double* cash_paid, double* claim_paid) {
+	double cash_total = 0.0;
+	double claim_total = 0.0;
+	double left = value;
+	double cap = std::max(0.0, cash_cap);
+	if (left > 0.0) {
+		const double firm_value = std::min(left,
+			std::max(0.0, city.firm_liquidity()));
+		if (firm_value > 0.0) {
+			double c = 0.0;
+			double k = 0.0;
+			const double paid = pay_city_sub(ws, city, true, firm_value, cap,
+				&c, &k);
+			cash_total += c;
+			claim_total += k;
+			cap = std::max(0.0, cap - c);
+			left -= paid;
+		}
+	}
+	if (left > 0.0) {
+		const double service_value = std::min(left,
+			std::max(0.0, city.service_liquidity()));
+		if (service_value > 0.0) {
+			double c = 0.0;
+			double k = 0.0;
+			pay_city_sub(ws, city, false, service_value, cap, &c, &k);
+			cash_total += c;
+			claim_total += k;
+			left -= c + k;
+		}
+	}
+	if (cash_paid != nullptr) {
+		*cash_paid = cash_total;
+	}
+	if (claim_paid != nullptr) {
+		*claim_paid = claim_total;
+	}
+	return cash_total + claim_total;
+}
+
 } // namespace
 
 // R2a: fecho mensal do dividendo pela MESMA regra que a fase usa. Exposto para
@@ -838,6 +1133,7 @@ int phase(WorldState& ws, double* bank_money_delta) {
 		return 0;
 	}
 	const Policy pol = effective_policy(ws);
+	const bool claims = claims_mode(ws);
 	const std::vector<balance::GroupSheet> sheets = balance::group_sheets(ws);
 	// Credor de cada grupo (regra declarada do §3), calculado uma vez.
 	std::vector<std::string> lenders(ws.groups.size());
@@ -858,29 +1154,60 @@ int phase(WorldState& ws, double* bank_money_delta) {
 		const double base_rate = monetary::rate_for_nation(ws, bank.nation);
 		for (std::size_t index = 0; index < ws.groups.size(); ++index) {
 			Group& group = ws.groups[index];
-			if (lenders[index] != bank.id) {
+			BankLoan* loan = claims
+				? find_loan_mut(group.debt_claims, bank.id) : nullptr;
+			if (claims) {
+				if (loan == nullptr
+						|| loan->principal + loan->arrears <= 1e-9) {
+					continue;
+				}
+			} else if (lenders[index] != bank.id) {
 				continue;
 			}
-			if (group.debt <= 0.0 && group.credit_arrears <= 0.0) {
+			if (loan == nullptr && group.debt <= 0.0
+					&& group.credit_arrears <= 0.0) {
 				group.credit_default_days = 0;
 				continue;
 			}
+			// R2b1: no modo claims o juro/amortizacao/calote recaem SOBRE a
+			// divida do credor visitado (o grupo pode ter dois bancos).
+			const double loan_principal = loan != nullptr
+				? std::max(0.0, loan->principal)
+				: std::max(0.0, group.debt);
+			const double loan_arrears = loan != nullptr
+				? std::max(0.0, loan->arrears)
+				: std::max(0.0, group.credit_arrears);
+			const double loan_add = loan != nullptr ? loan->rate_add : 0.0;
 			// 1. Juro do dia. O caixa do grupo É o depósito dele no banco:
 			// pagar juro destrói depósito e vira patrimônio do banco. O que o
 			// caixa não cobre vira juro VENCIDO dos dois lados — nunca
 			// capitalizado em silêncio. D-126: o capital de giro de crise paga
 			// a taxa do banco + o prêmio declarado do grupo.
-			const double group_rate = rate
+			const double group_rate = rate + loan_add
 				+ std::max(0.0, group.credit_rate_add);
-			const double interest = group.debt * group_rate / kDaysPerYear;
-			const double paid_interest = std::min({
-				std::max(0.0, group.cash), std::max(0.0, interest),
-				std::max(0.0, bank.deposits) });
-			if (paid_interest > 0.0) {
-				group.cash -= paid_interest;
-				bank.deposits -= paid_interest;
+			const double interest = loan_principal * group_rate
+				/ kDaysPerYear;
+			double paid_interest = 0.0;
+			if (claims) {
+				const GroupPaid paid = pay_group_capped(ws, group, interest,
+					std::max(0.0, bank.deposits));
+				paid_interest = paid.total();
+				bank.deposits = std::max(0.0, bank.deposits - paid.cash);
+				bank.cash += paid.claim;
 				bank.interest_income += paid_interest;
-				money_delta -= paid_interest;
+				money_delta -= paid.cash;
+			} else {
+				paid_interest = std::min({
+					std::max(0.0, group.cash), std::max(0.0, interest),
+					std::max(0.0, bank.deposits) });
+				if (paid_interest > 0.0) {
+					group.cash -= paid_interest;
+					bank.deposits -= paid_interest;
+					bank.interest_income += paid_interest;
+					money_delta -= paid_interest;
+				}
+			}
+			if (paid_interest > 0.0) {
 				// Reserva herdada da C3 (save migrado): se o banco ainda deve
 				// ao BC, paga a parcela da taxa básica em caixa — o M0
 				// correspondente é destruído e registrado na emissão do dia.
@@ -897,6 +1224,9 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			}
 			const double unpaid = std::max(0.0, interest - paid_interest);
 			if (unpaid > 0.0) {
+				if (loan != nullptr) {
+					loan->arrears += unpaid;
+				}
 				group.credit_arrears += unpaid;
 				bank.arrears += unpaid;
 				group.credit_arrears_days += 1;
@@ -908,28 +1238,49 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			// reclassificado em principal — nenhum dinheiro é criado.
 			if (ws.crisis.enabled
 					&& group.credit_arrears > 1e-9
+					&& (!claims || group.debt_claims.size() <= 1)
 					&& group.credit_renegotiations
 						< std::max(0, ws.crisis.credit_max_renegotiations)
 					&& group.credit_arrears_days
 						>= std::max(1, ws.crisis.credit_renegotiation_days)) {
-				const double base = group.debt + group.credit_arrears;
+				const double base = claims
+					? loan_principal + loan_arrears
+					: group.debt + group.credit_arrears;
 				const double fee = std::max(0.0,
 					ws.crisis.credit_penalty * base);
-				const double penalty = std::min({
-					std::max(0.0, group.cash), fee,
-					std::max(0.0, bank.deposits) });
-				if (penalty > 0.0) {
-					group.cash -= penalty;
-					bank.deposits -= penalty;
+				double penalty = 0.0;
+				if (claims) {
+					const GroupPaid paid = pay_group_capped(ws, group, fee,
+						std::max(0.0, bank.deposits));
+					penalty = paid.total();
+					bank.deposits = std::max(0.0,
+						bank.deposits - paid.cash);
+					bank.cash += paid.claim;
 					bank.interest_income += penalty;
-					money_delta -= penalty;
+					money_delta -= paid.cash;
+				} else {
+					penalty = std::min({
+						std::max(0.0, group.cash), fee,
+						std::max(0.0, bank.deposits) });
+					if (penalty > 0.0) {
+						group.cash -= penalty;
+						bank.deposits -= penalty;
+						bank.interest_income += penalty;
+						money_delta -= penalty;
+					}
 				}
 				// D-126: a parte da multa que o caixa não cobre é capitalizada
 				// no principal (o tomador deve os 5% a mais). Nenhum dinheiro é
 				// criado: só a dívida e o ativo do banco crescem juntos.
 				const double capitalized = std::max(0.0, fee - penalty);
-				group.debt += group.credit_arrears + capitalized;
-				bank.loans += group.credit_arrears + capitalized;
+				const double recap = group.credit_arrears + capitalized;
+				group.debt += recap;
+				bank.loans += recap;
+				if (loan != nullptr) {
+					loan->principal += recap;
+					loan->arrears = 0.0;
+					loan->default_days = 0;
+				}
 				bank.arrears = std::max(0.0,
 					bank.arrears - group.credit_arrears);
 				group.credit_arrears = 0.0;
@@ -945,16 +1296,43 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			// custo efetivamente pago) e na fração declarada. Destrói depósito.
 			const double working = kWorkingCapitalDays
 				* std::max(0.0, sheets[index].daily_cost);
-			const double excess = std::max(0.0, group.cash - working);
-			double repay = std::min({ group.debt,
-				pol.repay_share * excess, std::max(0.0, bank.deposits) });
-			if (repay > 0.0) {
-				group.cash -= repay;
-				group.debt -= repay;
-				group.credit_repaid += repay;
-				bank.loans -= repay;
-				bank.deposits -= repay;
-				money_delta -= repay;
+			const double excess = std::max(0.0,
+				(claims ? group.liquid_cash() : group.cash) - working);
+			if (claims) {
+				const double repay = std::min({ loan_principal,
+					pol.repay_share * excess,
+					std::max(0.0, bank.deposits)
+						+ (group.liquid_cash() - group.cash) });
+				if (repay > 0.0) {
+					const GroupPaid paid = pay_group_capped(ws, group, repay,
+						std::max(0.0, bank.deposits));
+					group.debt = std::max(0.0, group.debt - paid.total());
+					group.credit_repaid += paid.total();
+					bank.loans = std::max(0.0,
+						bank.loans - paid.total());
+					bank.deposits = std::max(0.0,
+						bank.deposits - paid.cash);
+					// A parcela do claim ja saiu do caixa e volta ao banco no
+					// pagamento do principal (nao destroi D_l).
+					bank.cash += paid.claim;
+					money_delta -= paid.cash;
+					if (loan != nullptr) {
+						loan->principal = std::max(0.0,
+							loan->principal - paid.total());
+					}
+				}
+			} else {
+				double repay = std::min({ group.debt,
+					pol.repay_share * excess,
+					std::max(0.0, bank.deposits) });
+				if (repay > 0.0) {
+					group.cash -= repay;
+					group.debt -= repay;
+					group.credit_repaid += repay;
+					bank.loans -= repay;
+					bank.deposits -= repay;
+					money_delta -= repay;
+				}
 			}
 			// 3. Insolvência: ativos reais + caixa não cobrem a dívida. Conta
 			// dias e, passado o prazo, o credor executa.
@@ -966,25 +1344,49 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			if (group.credit_default_days < pol.default_days) {
 				continue;
 			}
-			const double claim = group.debt + group.credit_arrears;
-			const double seized = std::min({ std::max(0.0, group.cash),
-				claim, std::max(0.0, bank.deposits) });
-			if (seized > 0.0) {
-				group.cash -= seized;
-				// O caixa tomado sai do depósito e vira caixa do banco: os dois
-				// lados já estão em `money_total`, então não há criação nem
-				// destruição de dinheiro (por isso `money_delta` não muda).
-				bank.deposits -= seized;
-				bank.cash += seized;
+			const double claim = claims
+				? loan_principal + loan_arrears
+				: group.debt + group.credit_arrears;
+			double seized = 0.0;
+			if (claims) {
+				GroupPaid paid = pay_group_capped(ws, group,
+					std::min(claim, group.liquid_cash()),
+					std::max(0.0, bank.deposits));
+				seized = paid.total();
+				// O caixa tomado sai do depósito e vira caixa do banco; a
+				// parcela do claim já foi retirada e devolvida.
+				bank.deposits = std::max(0.0, bank.deposits - paid.cash);
+				bank.cash += paid.cash;
+				bank.cash += paid.claim;
+			} else {
+				seized = std::min({ std::max(0.0, group.cash),
+					claim, std::max(0.0, bank.deposits) });
+				if (seized > 0.0) {
+					group.cash -= seized;
+					// O caixa tomado sai do depósito e vira caixa do banco: os dois
+					// lados já estão em `money_total`, então não há criação nem
+					// destruição de dinheiro (por isso `money_delta` não muda).
+					bank.deposits -= seized;
+					bank.cash += seized;
+				}
 			}
 			const double writeoff = std::max(0.0, claim - seized);
-			bank.loans = std::max(0.0, bank.loans - group.debt);
-			bank.arrears = std::max(0.0, bank.arrears - group.credit_arrears);
+			bank.loans = std::max(0.0,
+				bank.loans - (claims ? loan_principal : group.debt));
+			bank.arrears = std::max(0.0,
+				bank.arrears - (claims ? loan_arrears : group.credit_arrears));
 			bank.writeoffs += writeoff;
 			bank.defaults += 1;
 			bank.last_default_day = ws.day;
-			group.debt = 0.0;
-			group.credit_arrears = 0.0;
+			group.debt = claims ? std::max(0.0, group.debt - loan_principal)
+				: 0.0;
+			group.credit_arrears = claims
+				? std::max(0.0, group.credit_arrears - loan_arrears) : 0.0;
+			if (loan != nullptr) {
+				loan->principal = 0.0;
+				loan->arrears = 0.0;
+				loan->default_days = 0;
+			}
 			group.credit_default_days = 0;
 			group.credit_defaults += 1;
 			// Execução: as construções do grupo fecham (a mesma regra de
@@ -1023,7 +1425,21 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			city.firm_credit_default_days = 0;
 			continue;
 		}
-		Bank* city_bank = &ensure(ws, city.nation, kRolePublic);
+		Bank* city_bank = nullptr;
+		if (claims) {
+			for (const BankLoan& loan : city.firm_debt_claims) {
+				if (loan.principal + loan.arrears > 1e-9) {
+					const auto found = ws.banks.find(loan.bank_id);
+					if (found != ws.banks.end()) {
+						city_bank = &found->second;
+					}
+					break;
+				}
+			}
+		}
+		if (city_bank == nullptr) {
+			city_bank = &ensure(ws, city.nation, kRolePublic);
+		}
 		if (city_bank->id.empty()) {
 			city_bank = &ensure(ws, city.nation);
 		}
@@ -1032,54 +1448,96 @@ int phase(WorldState& ws, double* bank_money_delta) {
 		}
 		const double city_rate = loan_rate(ws, city.nation)
 			+ std::max(0.0, city.firm_credit_rate_add);
-		const double interest = std::min(
-			city.firm_debt * city_rate / kDaysPerYear,
-			std::max(0.0, city_bank->deposits));
-		double remaining = std::max(0.0, interest);
 		double paid_interest = 0.0;
-		const double from_firm = std::min(remaining,
-			city.firm_external_room_request(remaining));
-		if (from_firm > 0.0) {
-			city.firm_external_pay(from_firm, City::kR1Finance);
-			paid_interest += from_firm;
-			remaining -= from_firm;
-		}
-		if (remaining > 0.0) {
-			const double from_service = std::min(remaining,
-				city.service_external_room_request(remaining));
-			if (from_service > 0.0) {
-				city.service_external_pay(from_service, City::kR1Finance);
-				paid_interest += from_service;
-				remaining -= from_service;
-			}
-		}
-		if (paid_interest > 0.0) {
-			city_bank->deposits -= paid_interest;
+		double interest = 0.0;
+		if (claims) {
+			interest = city.firm_debt * city_rate / kDaysPerYear;
+			double cash_paid = 0.0;
+			double claim_paid = 0.0;
+			paid_interest = pay_city_liquid(ws, city, interest,
+				std::max(0.0, city_bank->deposits), &cash_paid, &claim_paid);
+			city_bank->deposits = std::max(0.0,
+				city_bank->deposits - cash_paid);
+			city_bank->cash += claim_paid;
 			city_bank->interest_income += paid_interest;
-			money_delta -= paid_interest;
-		}
-		if (remaining > 1e-12) {
-			city.firm_credit_arrears += remaining;
-			city_bank->arrears += remaining;
-			city.firm_credit_default_days += 1;
+			money_delta -= cash_paid;
+			if (interest - paid_interest > 1e-12) {
+				city.firm_credit_arrears += interest - paid_interest;
+				city_bank->arrears += interest - paid_interest;
+				city.firm_credit_default_days += 1;
+			} else {
+				city.firm_credit_default_days = 0;
+			}
 		} else {
-			city.firm_credit_default_days = 0;
+			interest = std::min(
+				city.firm_debt * city_rate / kDaysPerYear,
+				std::max(0.0, city_bank->deposits));
+			double remaining = std::max(0.0, interest);
+			const double from_firm = std::min(remaining,
+				city.firm_external_room_request(remaining));
+			if (from_firm > 0.0) {
+				city.firm_external_pay(from_firm, City::kR1Finance);
+				paid_interest += from_firm;
+				remaining -= from_firm;
+			}
+			if (remaining > 0.0) {
+				const double from_service = std::min(remaining,
+					city.service_external_room_request(remaining));
+				if (from_service > 0.0) {
+					city.service_external_pay(from_service, City::kR1Finance);
+					paid_interest += from_service;
+					remaining -= from_service;
+				}
+			}
+			if (paid_interest > 0.0) {
+				city_bank->deposits -= paid_interest;
+				city_bank->interest_income += paid_interest;
+				money_delta -= paid_interest;
+			}
+			if (remaining > 1e-12) {
+				city.firm_credit_arrears += remaining;
+				city_bank->arrears += remaining;
+				city.firm_credit_default_days += 1;
+			} else {
+				city.firm_credit_default_days = 0;
+			}
 		}
 		// Amortização só do excedente ao capital de giro protegido.
 		const double working = kWorkingCapitalDays
 			* city_business_daily_cost(ws, city_index);
 		const double excess = std::max(0.0, city.firm_liquidity() - working);
-		const double want_repay = std::min({ city.firm_debt,
-			pol.repay_share * excess,
-			std::max(0.0, city_bank->deposits) });
-		const double repay = std::min(want_repay,
-			city.firm_external_room_request(want_repay));
-		if (repay > 0.0) {
-			city.firm_external_pay(repay, City::kR1Finance);
-			city.firm_debt -= repay;
-			city_bank->loans -= repay;
-			city_bank->deposits -= repay;
-			money_delta -= repay;
+		if (claims) {
+			const double claim_room = std::max(0.0,
+				city.firm_liquidity() - city.private_total());
+			const double want_repay = std::min({ city.firm_debt,
+				pol.repay_share * excess,
+				std::max(0.0, city_bank->deposits) + claim_room });
+			double cash_paid = 0.0;
+			double claim_paid = 0.0;
+			const double repay = pay_city_liquid(ws, city, want_repay,
+				std::max(0.0, city_bank->deposits), &cash_paid, &claim_paid);
+			if (repay > 0.0) {
+				city.firm_debt = std::max(0.0, city.firm_debt - repay);
+				city_bank->loans = std::max(0.0,
+					city_bank->loans - repay);
+				city_bank->deposits = std::max(0.0,
+					city_bank->deposits - cash_paid);
+				city_bank->cash += claim_paid;
+				money_delta -= cash_paid;
+			}
+		} else {
+			const double want_repay = std::min({ city.firm_debt,
+				pol.repay_share * excess,
+				std::max(0.0, city_bank->deposits) });
+			const double repay = std::min(want_repay,
+				city.firm_external_room_request(want_repay));
+			if (repay > 0.0) {
+				city.firm_external_pay(repay, City::kR1Finance);
+				city.firm_debt -= repay;
+				city_bank->loans -= repay;
+				city_bank->deposits -= repay;
+				money_delta -= repay;
+			}
 		}
 		// Renegociação (máx. declarado): multa + atraso capitalizado.
 		if (ws.crisis.enabled
@@ -1091,33 +1549,58 @@ int phase(WorldState& ws, double* bank_money_delta) {
 			const double base = city.firm_debt + city.firm_credit_arrears;
 			const double fee = std::max(0.0,
 				ws.crisis.credit_penalty * base);
-			const double penalty = std::min({
-				std::max(0.0, city.private_total()),
-				fee,
-				std::max(0.0, city_bank->deposits) });
-			if (penalty > 0.0) {
-				double left = penalty;
-				const double p_firm = std::min(left,
-					city.firm_external_room_request(left));
-				city.firm_external_pay(p_firm, City::kR1Finance);
-				left -= p_firm;
-				if (left > 0.0) {
-					const double p_service = std::min(left,
-						city.service_external_room_request(left));
-					city.service_external_pay(p_service, City::kR1Finance);
-					left -= p_service;
+			if (claims) {
+				const double claim_room = std::max(0.0,
+					city.firm_liquidity() - city.private_total());
+				const double target = std::min({ fee,
+					city.firm_liquidity(),
+					std::max(0.0, city_bank->deposits) + claim_room });
+				double cash_paid = 0.0;
+				double claim_paid = 0.0;
+				const double paid = pay_city_liquid(ws, city, target,
+					std::max(0.0, city_bank->deposits), &cash_paid,
+					&claim_paid);
+				if (paid > 0.0) {
+					city_bank->deposits = std::max(0.0,
+						city_bank->deposits - cash_paid);
+					city_bank->cash += claim_paid;
+					city_bank->interest_income += paid;
+					money_delta -= cash_paid;
+					ws.crisis_penalty_paid += paid;
 				}
-				const double paid = penalty - left;
-				city_bank->deposits -= paid;
-				city_bank->interest_income += paid;
-				money_delta -= paid;
-				ws.crisis_penalty_paid += paid;
+				const double capitalized = std::max(0.0, fee - paid);
+				city.firm_debt += capitalized;
+				city_bank->loans += capitalized;
+			} else {
+				const double penalty = std::min({
+					std::max(0.0, city.private_total()),
+					fee,
+					std::max(0.0, city_bank->deposits) });
+				if (penalty > 0.0) {
+					double left = penalty;
+					const double p_firm = std::min(left,
+						city.firm_external_room_request(left));
+					city.firm_external_pay(p_firm, City::kR1Finance);
+					left -= p_firm;
+					if (left > 0.0) {
+						const double p_service = std::min(left,
+							city.service_external_room_request(left));
+						city.service_external_pay(p_service, City::kR1Finance);
+						left -= p_service;
+					}
+					const double paid = penalty - left;
+					city_bank->deposits -= paid;
+					city_bank->interest_income += paid;
+					money_delta -= paid;
+					ws.crisis_penalty_paid += paid;
+				}
+				// D-126: a parte da multa que o caixa não cobre é capitalizada
+				// no principal — dívida e ativo do banco crescem juntos, sem
+				// dinheiro.
+				const double capitalized = std::max(0.0, fee - penalty);
+				city.firm_debt += city.firm_credit_arrears + capitalized;
+				city_bank->loans += city.firm_credit_arrears + capitalized;
 			}
-			// D-126: a parte da multa que o caixa não cobre é capitalizada no
-			// principal — dívida e ativo do banco crescem juntos, sem dinheiro.
-			const double capitalized = std::max(0.0, fee - penalty);
-			city.firm_debt += city.firm_credit_arrears + capitalized;
-			city_bank->loans += city.firm_credit_arrears + capitalized;
 			city_bank->arrears = std::max(0.0,
 				city_bank->arrears - city.firm_credit_arrears);
 			city.firm_credit_arrears = 0.0;
