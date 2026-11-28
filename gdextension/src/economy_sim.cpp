@@ -4892,6 +4892,21 @@ Array EconomySim::get_groups() const {
 		entry["dividends_total"] = group.dividends_total;
 		entry["taxes_total"] = group.taxes_total;
 		entry["capex_total"] = group.capex_total;
+		// R2b1 (só leitura): o deposito de funding e os claims por credor, para
+		// a sonda de caixa e os testes verem a mesma fronteira que o servicing.
+		entry["bank_deposit"] = group.bank_deposit;
+		entry["deposit_bank_id"] = String(group.deposit_bank_id.c_str());
+		entry["debt"] = group.debt;
+		entry["credit_arrears"] = group.credit_arrears;
+		double claim_principal = 0.0;
+		double claim_arrears = 0.0;
+		for (const BankLoan& claim : group.debt_claims) {
+			claim_principal += claim.principal;
+			claim_arrears += claim.arrears;
+		}
+		entry["claim_principal"] = claim_principal;
+		entry["claim_arrears"] = claim_arrears;
+		entry["liquid_cash"] = group.liquid_cash();
 		entry["assets"] = row.assets;
 		entry["capacity"] = row.capacity;
 		entry["employed"] = row.employed;

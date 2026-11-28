@@ -11,6 +11,7 @@
 
 #include "sim/bank.h"
 #include "sim/crisis.h"
+#include "sim/deposit.h"
 #include "sim/sim_core.h"
 #include "sim/sim_types.h"
 
@@ -246,6 +247,67 @@ TEST_CASE("D-126: leilao transfere o predio com conservacao") {
 	CHECK(world.core.money_total() == Approx(money_before));
 	CHECK(world.ws.crisis_auctions == 1);
 	CHECK(world.ws.crisis_auction_value == Approx(price));
+}
+
+// R2b1 (caso exato do 365 d ON): o comprador do leilao e' autorizado por
+// `liquid_cash()` (caixa + deposito sacavel) e pagava so' com `cash`, deixando
+// o caixa negativo (G-AUS-mining-11 no dia 118). O pagamento agora segue a
+// ordem caixa -> deposito do `Group::pay_cash`; aqui o preco cabe no deposito
+// e NAO no caixa.
+TEST_CASE("R2b1: leilao autorizado por liquid_cash nao deixa cash negativo") {
+	ogs::test::PocketWorld world;
+	world.ws.regional_cash = true;
+	ogs::BanksRework cfg;
+	cfg.enabled = true;
+	cfg.capital = true;
+	cfg.deposits = true;
+	world.core.set_banks_rework(cfg);
+	ogs::Bank& bank = ogs::bank::ensure(world.ws, "AAA",
+		ogs::bank::kRolePublic);
+	bank.name = "AAA bank";
+	bank.name_status = "present";
+	ogs::Building* mill = world.building("PORTUS_SAWMILL");
+	REQUIRE(mill != nullptr);
+	ogs::Group& seller = group_by_id(world, "AAA_WOOD");
+	ogs::Group& buyer = group_by_id(world, "AAA_FUEL");
+
+	// Unico candidato: o leilao escolhe o primeiro grupo com liquidez.
+	for (ogs::Group& group : world.ws.groups) {
+		group.cash = 0.0;
+		group.bank_deposit = 0.0;
+		group.deposit_bank_id.clear();
+	}
+	seller.debt = 0.0;
+	seller.credit_arrears = 0.0;
+	const double book = std::max(1.0,
+		std::max(0.0, mill->capital_per_capacity)
+			* std::max(0.0, mill->capacity));
+	const double price = book * (1.0 - std::clamp(
+		world.ws.crisis.auction_discount, 0.0, 1.0));
+	REQUIRE(price > 1.0);
+	buyer.cash = price * 0.25;           // so' um quarto em caixa
+	buyer.bank_deposit = price;          // o resto esta' no deposito
+	buyer.deposit_bank_id = bank.id;
+	bank.cash = price;                   // lastro do claim
+	bank.deposits_funding = price;
+	ogs::deposit::link(world.ws);
+	REQUIRE(buyer.liquid_cash() >= price);
+	REQUIRE(buyer.cash < price);
+
+	const double money_before = world.core.money_total();
+	std::string error;
+	const bool ok = ogs::crisis::auction(world.ws, world.core, "PORTUS",
+		"PORTUS_SAWMILL", &error);
+	CHECK_MESSAGE(ok, error);
+
+	// Caixa nunca negativo: a parcela que o caixa nao cobre sai do claim.
+	CHECK(buyer.cash >= 0.0);
+	CHECK(buyer.cash == Approx(0.0));
+	CHECK(buyer.bank_deposit == Approx(price * 0.25));
+	CHECK(bank.cash == Approx(price * 0.25));
+	CHECK(bank.deposits_funding == Approx(price * 0.25));
+	CHECK(seller.cash == Approx(price));
+	CHECK(world.core.money_total() == Approx(money_before));
 }
 
 TEST_CASE("D-126: hibernacao de usina respeita o pico x reserva") {

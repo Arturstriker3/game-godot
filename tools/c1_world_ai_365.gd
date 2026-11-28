@@ -160,6 +160,11 @@ var _banks_seed_on := false
 var _banks_seed_set := false
 var _bank_seed_path := ""
 var _banks_diag := false
+# R2b1 (diagnostico, so leitura): `--group-probe=<id>` imprime a serie diaria
+# de caixa, deposito, claims e divida de UM grupo (cash/deposit/claims). Nao
+# altera o mundo; serve para achar o debito que cruza o caixa.
+var _group_probe_id := ""
+var _group_probe_rows: Array = []
 # R2a: PIB diario medido por nacao (soma) e os retratos dos bancos.
 var _banks_gdp: Dictionary = {}
 var _banks_gdp_days := 0
@@ -382,6 +387,8 @@ func _init() -> void:
 		elif arg.begins_with("--banks-diag"):
 			_banks_diag = not arg.contains("=") \
 				or arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--group-probe="):
+			_group_probe_id = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--bootstrap="):
 			_bootstrap_on = arg.split("=", true, 1)[1] != "0"
 			_bootstrap_set = true
@@ -2390,6 +2397,34 @@ func _balance_report(sim: Object, status: Dictionary) -> Dictionary:
 	}
 
 
+## R2b1 (diagnostico, so leitura): uma linha por dia para o grupo sondado. A
+## leitura e' depois do tick; quando o invariante reverte o dia, o caixa aqui
+## ja voltou ao valor de abertura — o debito exato aparece no trace
+## `[crisis-auction-buyer]` (OGS_CRISIS_TRACE=1).
+func _group_probe_row(sim, day_now: int) -> void:
+	if _group_probe_id.is_empty():
+		return
+	for group: Dictionary in sim.get_groups():
+		if String(group.get("id", "")) != _group_probe_id:
+			continue
+		var row := {
+			"day": day_now,
+			"cash": float(group.get("cash", 0.0)),
+			"bank_deposit": float(group.get("bank_deposit", 0.0)),
+			"liquid_cash": float(group.get("liquid_cash", 0.0)),
+			"debt": float(group.get("debt", 0.0)),
+			"credit_arrears": float(group.get("credit_arrears", 0.0)),
+			"claim_principal": float(group.get("claim_principal", 0.0)),
+			"claim_arrears": float(group.get("claim_arrears", 0.0)),
+		}
+		_group_probe_rows.append(row)
+		print("[probe] grupo=%s dia=%d cash=%.2f deposito=%.2f liquido=%.2f divida=%.2f atraso=%.2f claim=%.2f"
+			% [_group_probe_id, day_now, row["cash"], row["bank_deposit"],
+				row["liquid_cash"], row["debt"], row["credit_arrears"],
+				row["claim_principal"] + row["claim_arrears"]])
+		return
+
+
 func _run() -> void:
 	var sim = _make_world()
 	if sim == null:
@@ -2480,6 +2515,7 @@ func _run() -> void:
 				violation_samples.append("dia %d: %s"
 					% [day + 1, String(violation)])
 		var day_now := int(summary.get("day", 0))
+		_group_probe_row(sim, day_now)
 		if day_now <= day_before:
 			stalled += 1
 		day_before = day_now
@@ -2717,6 +2753,8 @@ func _run() -> void:
 	# `--banks-diag`: sem a flag o JSON e exatamente o de antes.
 	if _banks_diag:
 		out["banks_diag"] = _banks_diag_block(sim)
+	if not _group_probe_id.is_empty():
+		out["group_probe"] = _group_probe_rows
 	if _fx_seed_days > 0:
 		out["fx_scenario"] = _fx_report(sim, _fx_seed_days)
 	if _cotton_diag:
