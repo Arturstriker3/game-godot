@@ -253,6 +253,15 @@ void write(Dictionary& data, const WorldState& ws) {
 			rework["alloc_w_pend"] = ws.banks_rework.alloc_w_pend;
 			rework["liquidity_min_reserve_ratio"] =
 				ws.banks_rework.liquidity_min_reserve_ratio;
+			// R2c: parametros do leilao e do charter publico emergencial.
+			rework["auction_discount_private"] =
+				ws.banks_rework.auction_discount_private;
+			rework["auction_discount_public"] =
+				ws.banks_rework.auction_discount_public;
+			rework["charter_max_pct_gdp"] =
+				ws.banks_rework.charter_max_pct_gdp;
+			rework["charter_max_treasury_months"] =
+				ws.banks_rework.charter_max_treasury_months;
 			rework["seed_source"] =
 				sim_str(ws.banks_rework.seed_source.c_str());
 			block["rework"] = rework;
@@ -830,6 +839,16 @@ void read_money(WorldState& ws, SimCore& core, const Dictionary& data) {
 			br.alloc_w_pend = double(rework.get("alloc_w_pend", 0.15));
 			br.liquidity_min_reserve_ratio = double(
 				rework.get("liquidity_min_reserve_ratio", 0.10));
+			// R2c: save anterior (v44 sem as chaves) herda os defaults do
+			// bloco, nao desliga o leilao/charter por ausencia.
+			br.auction_discount_private = double(
+				rework.get("auction_discount_private", 0.30));
+			br.auction_discount_public = double(
+				rework.get("auction_discount_public", 0.45));
+			br.charter_max_pct_gdp = double(
+				rework.get("charter_max_pct_gdp", 0.005));
+			br.charter_max_treasury_months = double(
+				rework.get("charter_max_treasury_months", 3.0));
 			br.seed_source = std::string(
 				String(rework.get("seed_source", "loaded_save"))
 					.utf8().get_data());

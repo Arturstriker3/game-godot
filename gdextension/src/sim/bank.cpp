@@ -599,6 +599,12 @@ const Bank* lender(const WorldState& ws, const Group& group) {
 		if (bank == nullptr || !bank->absorbed_into.empty()) {
 			continue;
 		}
+		// R2c: um banco liquidado/deserto nao volta ao sorteio. So vale com o
+		// resolvedor novo: o C6 legado mantem a regra bit a bit.
+		if (ws.banks_rework.enabled && ws.banks_rework.resolution
+				&& bank->resolved) {
+			continue;
+		}
 		last = bank;
 		cumulative += bank->share * 10000.0;
 		if (static_cast<double>(roll) < cumulative) {
@@ -2695,6 +2701,42 @@ void reassign_claims(WorldState& ws, const std::string& from_bank,
 			group.deposit_bank_id = to_bank;
 		}
 	}
+}
+
+void reassign_debt_claims(WorldState& ws, const std::string& from_bank,
+		const std::string& to_bank) {
+	if (from_bank.empty() || to_bank.empty() || from_bank == to_bank) {
+		return;
+	}
+	const auto move = [&](std::vector<BankLoan>& claims) {
+		for (std::size_t index = 0; index < claims.size();) {
+			BankLoan& claim = claims[index];
+			if (claim.bank_id != from_bank) {
+				++index;
+				continue;
+			}
+			const double principal = std::max(0.0, claim.principal);
+			const double arrears = std::max(0.0, claim.arrears);
+			claims.erase(claims.begin()
+				+ static_cast<std::ptrdiff_t>(index));
+			if (principal <= 1e-9 && arrears <= 1e-9) {
+				continue;
+			}
+			BankLoan& target = loan_claim(claims, to_bank);
+			target.principal += principal;
+			target.arrears += arrears;
+		}
+	};
+	for (Group& group : ws.groups) {
+		move(group.debt_claims);
+	}
+	for (City& city : ws.cities) {
+		move(city.firm_debt_claims);
+	}
+}
+
+void refresh_shares(WorldState& ws, const std::string& nation) {
+	renormalize(ws, nation);
 }
 
 double cut_funding_claims(WorldState& ws, const std::string& bank_id,

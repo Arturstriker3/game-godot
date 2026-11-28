@@ -388,6 +388,12 @@ struct BanksRework {
 	double alloc_w_sol = 0.35;
 	double alloc_w_pend = 0.15;
 	double liquidity_min_reserve_ratio = 0.10;
+	// R2c: leilao de carteira (desagio privado/publico) e teto do charter
+	// publico emergencial (fracao do PIB anual e meses da receita mensal).
+	double auction_discount_private = 0.30;
+	double auction_discount_public = 0.45;
+	double charter_max_pct_gdp = 0.005;
+	double charter_max_treasury_months = 3.0;
 	// Diagnostico honesto: "world_new" | "loaded_save" | "no_model_gdp" |
 	// "disabled".
 	std::string seed_source = "disabled";

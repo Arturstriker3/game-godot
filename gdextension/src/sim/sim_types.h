@@ -1311,6 +1311,18 @@ struct WorldState;
 		double capital_flight = 0.0;
 		double lolr = 0.0;
 		double emission = 0.0;
+		// R2c: episodio de resolucao (leilao/cascata) para a futura UI.
+		// `buyer` = banco que comprou a carteira; `auction_*` medem o leilao;
+		// `charter_*` o custo e o teto do charter publico; `austerity` a
+		// reducao dos orcamentos regionais; `desert` a nacao ficou sem banco.
+		std::string buyer;
+		double auction_book = 0.0;
+		double auction_price = 0.0;
+		double charter_cost = 0.0;
+		double charter_cap = 0.0;
+		double austerity = 0.0;
+		bool desert = false;
+		bool recapitalized = false;
 	};
 
 	// C6 (D-114) - REGRAS da crise (0 = default declarado em

@@ -1319,6 +1319,8 @@ public:
 	 */
 	Dictionary create_state_company(const String& nation,
 		const String& name, double capital);
+	/** R2c: charter do banco publico pago pelo Tesouro (A3). */
+	Dictionary charter_public_bank(const String& nation, double capital);
 
 	/**
 	 * Privatiza um ativo estatal: o comprador paga o valor contábil
@@ -1451,6 +1453,7 @@ private:
 		const String& sector, double tax_holiday, double subsidy);
 	Dictionary apply_create_state_company(const String& nation,
 		const String& name, double capital);
+	Dictionary apply_charter_public_bank(const String& nation, double capital);
 	Dictionary apply_privatize(const String& city_id, const String& building_id,
 		const String& buyer_group);
 	Dictionary apply_nationalize(const String& city_id, const String& building_id);

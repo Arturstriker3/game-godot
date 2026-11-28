@@ -595,6 +595,9 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_state_company", "nation", "name",
 	                     "capital"),
 	                     &EconomySim::create_state_company);
+	ClassDB::bind_method(D_METHOD("charter_public_bank", "nation",
+	                     "capital"),
+	                     &EconomySim::charter_public_bank);
 	ClassDB::bind_method(D_METHOD("privatize", "city_id", "building_id",
 	                     "buyer_group"),
 	                     &EconomySim::privatize);
@@ -2288,6 +2291,15 @@ Dictionary EconomySim::get_r1_diag_status() {
 	banks_block["enabled"] = ws_.banks_rework.enabled;
 	banks_block["capital"] = ws_.banks_rework.capital;
 	banks_block["deposits"] = ws_.banks_rework.deposits;
+	banks_block["resolution"] = ws_.banks_rework.resolution;
+	banks_block["auction_discount_private"] =
+		ws_.banks_rework.auction_discount_private;
+	banks_block["auction_discount_public"] =
+		ws_.banks_rework.auction_discount_public;
+	banks_block["charter_max_pct_gdp"] =
+		ws_.banks_rework.charter_max_pct_gdp;
+	banks_block["charter_max_treasury_months"] =
+		ws_.banks_rework.charter_max_treasury_months;
 	banks_block["seed_source"] =
 		String(ws_.banks_rework.seed_source.c_str());
 	const ogs::bank::Totals bank_totals = ogs::bank::totals(ws_);
@@ -5215,6 +5227,27 @@ Dictionary EconomySim::apply_create_state_company(const String& nation,
 		result["warning"] = "nenhum orÃ§amento disponÃ­vel na naÃ§Ã£o";
 	}
 	return result;
+}
+
+Dictionary EconomySim::apply_charter_public_bank(const String& nation,
+		double capital) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const std::string tag(nation.utf8().get_data());
+	const ogs::TreasuryBankResult outcome =
+		ogs::action_charter_public_bank_from_treasury(ws_, tag, capital);
+	Dictionary created;
+	created["created"] = outcome.created;
+	created["error"] = String(outcome.error.c_str());
+	if (outcome.created) {
+		created["id"] = String(outcome.id.c_str());
+		created["capital"] = outcome.capital;
+		created["source"] = "treasury";
+		if (!outcome.warning.empty()) {
+			created["warning"] = String(outcome.warning.c_str());
+		}
+	}
+	status_invalidate();
+	return created;
 }
 
 Dictionary EconomySim::apply_privatize(const String& city_id,
@@ -8374,6 +8407,7 @@ Dictionary EconomySim::get_bank_status() const {
 		entry["resolved"] = bank.resolved;
 		entry["resolution"] = String(bank.resolution.c_str());
 		entry["resolution_day"] = bank.resolution_day;
+		entry["charter"] = String(bank.charter.c_str());
 		entry["absorbed_into"] = String(bank.absorbed_into.c_str());
 		banks.append(entry);
 	}
@@ -8520,6 +8554,14 @@ Dictionary EconomySim::get_bank_status() const {
 			entry["capital_flight"] = event.capital_flight;
 			entry["lolr"] = event.lolr;
 			entry["emission"] = event.emission;
+			entry["buyer"] = String(event.buyer.c_str());
+			entry["auction_book"] = event.auction_book;
+			entry["auction_price"] = event.auction_price;
+			entry["charter_cost"] = event.charter_cost;
+			entry["charter_cap"] = event.charter_cap;
+			entry["austerity"] = event.austerity;
+			entry["desert"] = event.desert;
+			entry["recapitalized"] = event.recapitalized;
 			events.append(entry);
 		}
 		out["events"] = events;
@@ -9643,6 +9685,15 @@ Dictionary EconomySim::create_state_company(const String& nation,
 	cmd.type = ogs::CommandType::CreateStateCompany;
 	cmd.s[0] = to_std(nation);
 	cmd.s[1] = to_std(name);
+	cmd.v[0] = capital;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::charter_public_bank(const String& nation,
+		double capital) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::CharterPublicBank;
+	cmd.s[0] = to_std(nation);
 	cmd.v[0] = capital;
 	return dispatch_command(cmd);
 }

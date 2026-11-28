@@ -184,7 +184,7 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// variação de depósitos da crise entra no dinheiro bancário do dia.
 	{
 		OGS_SIM_ZONE(kPhaseBankCrisis);
-		bank_crisis::phase(ws);
+		bank_crisis::phase(ws, core.m0_total());
 	}
 
 	// 9h. D-126: sobrevivência em crise. Reação determinística (corte já no

@@ -205,6 +205,14 @@ void allocate_deposits_monthly(WorldState& ws);
 // `Σ claims == Σ D_f`.
 void reassign_claims(WorldState& ws, const std::string& from_bank,
 	const std::string& to_bank);
+// R2c: move os claims de DIVIDA (loans/arrears dos tomadores) do credor que
+// saiu para o comprador/charter, fundindo por tomador e mantendo a ordem por
+// `bank_id`. Sem isto a carteira muda de dono e o claim fica orfao (t200).
+void reassign_debt_claims(WorldState& ws, const std::string& from_bank,
+	const std::string& to_bank);
+// R2c: renormaliza as participacoes dos papeis ATIVOS (nao absorvidos) da
+// nacao depois de um charter/entrada privada. Nao move dinheiro.
+void refresh_shares(WorldState& ws, const std::string& nation);
 // Corte pro rata de `amount` nos claims de funding do banco (bail-in D_f):
 // reduz `D_f` e o claim na mesma proporção, sem tocar em caixa.
 double cut_funding_claims(WorldState& ws, const std::string& bank_id,

@@ -729,7 +729,9 @@ void EconomySim::set_rework_params(const Dictionary& values) {
 	// capital liga o funding junto); `deposits=false` explicito continua
 	// reproduzindo o braco so-capital (gate 9746eb05).
 	banks.deposits = bool(banks_block.get("deposits", banks.capital));
-	banks.resolution = bool(banks_block.get("resolution", false));
+	// R2c: `resolution` ausente segue `deposits` (o combo ON do laboratorio
+	// liga o resolvedor novo junto); explicito `false` mantem o C6 legado.
+	banks.resolution = bool(banks_block.get("resolution", banks.deposits));
 	const Dictionary dividend = banks_block.get("dividend", Dictionary());
 	banks.dividend_target_ratio = double(
 		dividend.get("target_ratio", 0.10));
@@ -757,6 +759,17 @@ void EconomySim::set_rework_params(const Dictionary& values) {
 		liquidity.get("min_reserve_ratio", 0.10));
 	banks.protected_food_months = double(
 		liquidity.get("protected_food_months", 6.0));
+	// R2c: leilao (desagio) e teto do charter publico emergencial.
+	const Dictionary auction = banks_block.get("auction", Dictionary());
+	banks.auction_discount_private = double(
+		auction.get("discount_private", 0.30));
+	banks.auction_discount_public = double(
+		auction.get("discount_public", 0.45));
+	const Dictionary charter = banks_block.get("charter", Dictionary());
+	banks.charter_max_pct_gdp = double(
+		charter.get("max_pct_gdp", 0.005));
+	banks.charter_max_treasury_months = double(
+		charter.get("max_treasury_months", 3.0));
 	sim_core_.set_banks_rework(banks);
 	if (banks.enabled && !enabled) {
 		UtilityFunctions::push_error(

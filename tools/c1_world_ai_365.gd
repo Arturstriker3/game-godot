@@ -156,6 +156,8 @@ var _banks_capital_on := false
 var _banks_capital_set := false
 var _banks_deposits_on := false
 var _banks_deposits_set := false
+var _banks_resolution_on := false
+var _banks_resolution_set := false
 var _banks_seed_on := false
 var _banks_seed_set := false
 var _bank_seed_path := ""
@@ -332,6 +334,10 @@ func _init() -> void:
 		_banks_deposits_on = \
 			OS.get_environment("OGS_C1_BANKS_DEPOSITS") != "0"
 		_banks_deposits_set = true
+	if OS.get_environment("OGS_C1_BANKS_RESOLUTION") != "":
+		_banks_resolution_on = \
+			OS.get_environment("OGS_C1_BANKS_RESOLUTION") != "0"
+		_banks_resolution_set = true
 	if OS.get_environment("OGS_C1_BANKS_SEED") != "":
 		_banks_seed_on = OS.get_environment("OGS_C1_BANKS_SEED") != "0"
 		_banks_seed_set = true
@@ -376,6 +382,9 @@ func _init() -> void:
 		elif arg.begins_with("--banks-deposits="):
 			_banks_deposits_on = arg.split("=", true, 1)[1] != "0"
 			_banks_deposits_set = true
+		elif arg.begins_with("--banks-resolution="):
+			_banks_resolution_on = arg.split("=", true, 1)[1] != "0"
+			_banks_resolution_set = true
 		elif arg.begins_with("--banks-seed="):
 			_banks_seed_on = arg.split("=", true, 1)[1] != "0"
 			_banks_seed_set = true
@@ -860,7 +869,7 @@ func _make_world() -> Object:
 			# R2a (rework.banks): A/B do capital/depositos. Sem override vale o
 			# rework.json (default do jogo = DESLIGADO).
 			if _banks_set or _banks_capital_set or _banks_deposits_set \
-					or _banks_seed_set:
+					or _banks_resolution_set or _banks_seed_set:
 				var banks_block: Dictionary = rework_params.get("banks", {})
 				if _banks_set:
 					banks_block["enabled"] = _banks_on
@@ -868,6 +877,8 @@ func _make_world() -> Object:
 					banks_block["capital"] = _banks_capital_on
 				if _banks_deposits_set:
 					banks_block["deposits"] = _banks_deposits_on
+				if _banks_resolution_set:
+					banks_block["resolution"] = _banks_resolution_on
 				if _banks_seed_set:
 					var seed_block: Dictionary = banks_block.get("seed", {})
 					seed_block["enabled"] = _banks_seed_on
@@ -885,10 +896,12 @@ func _make_world() -> Object:
 			print("[c1] R1c empresas no caixa proprio: enabled=%s" % [
 				"1" if bool(fc.get("enabled", false)) else "0"])
 			var banks_cfg: Dictionary = rework_params.get("banks", {})
-			print("[c1] R2a bancos: enabled=%s capital=%s depositos=%s"
+			print("[c1] R2a bancos: enabled=%s capital=%s depositos=%s resolucao=%s"
 				% ["1" if bool(banks_cfg.get("enabled", false)) else "0",
 				"1" if bool(banks_cfg.get("capital", false)) else "0",
-				"1" if bool(banks_cfg.get("deposits", false)) else "0"])
+				"1" if bool(banks_cfg.get("deposits", false)) else "0",
+				"1" if bool(banks_cfg.get("resolution",
+					banks_cfg.get("deposits", false))) else "0"])
 	if sim.has_method("set_bootstrap_industry"):
 		var bootstrap: Variant = _load(_bootstrap_path)
 		if bootstrap is Dictionary:

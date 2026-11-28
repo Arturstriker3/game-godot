@@ -297,6 +297,13 @@ void SimCore::set_banks_rework(const BanksRework& cfg) {
 	br.alloc_pendulum_month = std::clamp(br.alloc_pendulum_month, 0.0, 1.0);
 	br.liquidity_min_reserve_ratio = std::max(0.0,
 		br.liquidity_min_reserve_ratio);
+	br.auction_discount_private = std::clamp(
+		br.auction_discount_private, 0.0, 1.0);
+	br.auction_discount_public = std::clamp(
+		br.auction_discount_public, 0.0, 1.0);
+	br.charter_max_pct_gdp = std::max(0.0, br.charter_max_pct_gdp);
+	br.charter_max_treasury_months = std::max(0.0,
+		br.charter_max_treasury_months);
 	if (!br.enabled) {
 		// OFF: nenhuma sub-flag ligada e nenhum campo novo e escrito.
 		br.capital = false;
