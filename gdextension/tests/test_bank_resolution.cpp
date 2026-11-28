@@ -145,7 +145,7 @@ TEST_CASE("R2c: leilao paga caixa e leva carteira + claim de divida juntos") {
 }
 
 TEST_CASE("R2c: bail-in pro rata D_f/D_l e deserto preservam o passivo") {
-	ogs::test::PocketWorld world;
+	ogs::test::PocketWorld world(false);
 	enable_banks(world, true);
 	ogs::Bank& failing = present(world, ogs::bank::kRolePrivate);
 	failing.cash = 0.0;
@@ -229,7 +229,7 @@ TEST_CASE("R2c: charter publico com teto paga o Tesouro e corta orcamentos") {
 }
 
 TEST_CASE("R2c: custo acima do teto = deserto; charter reabre o banco") {
-	ogs::test::PocketWorld world;
+	ogs::test::PocketWorld world(false);
 	enable_banks(world, true);
 	enable_treasury(world);
 	ogs::Bank& failing = present(world, ogs::bank::kRolePrivate);
@@ -292,8 +292,10 @@ TEST_CASE("R2c: cascata do publico recapitaliza pelo Tesouro com austeridade") {
 	failing.deposits = 1000.0;
 	failing.capital = 0.0;
 	world.ws.nation_treasury["AAA"] = 1000.0;
+	double budget_before = 0.0;
 	for (std::size_t index = 0; index < world.ws.cities.size(); ++index) {
 		world.ws.cities[index].regional_budget_limit_month = 1000.0;
+		budget_before += 1000.0;
 	}
 	const double money_before = world.core.money_total();
 
@@ -307,11 +309,12 @@ TEST_CASE("R2c: cascata do publico recapitaliza pelo Tesouro com austeridade") {
 	CHECK(failing.resolution == "treasury");
 	// Nao houve bail-in: o Tesouro cobriu o rombo antes do deposito.
 	CHECK(failing.bailin_cut == Approx(0.0));
+	// Austeridade: corta pro rata o valor pago (1000 dos 2000 de limite).
 	double budget_after = 0.0;
 	for (const ogs::City& city : world.ws.cities) {
 		budget_after += city.regional_budget_limit_month;
 	}
-	CHECK(budget_after == Approx(0.0).epsilon(1e-9));
+	CHECK(budget_after == Approx(budget_before - gap).epsilon(1e-9));
 	CHECK(world.core.money_total() == Approx(money_before));
 }
 
@@ -337,6 +340,9 @@ TEST_CASE("R2c: sem Tesouro a valvula emite <= 1 % do M0/dia") {
 	currency.bank_independence = ogs::central_bank::kIndependenceControlled;
 	world.ws.currencies.push_back(currency);
 	world.ws.currency_by_code["AAA"] = 0;
+	// O indice nacao->moeda e' derivado no rebuild_indexes; o teste insere a
+	// moeda DEPOIS do PocketWorld, entao alimenta o mapa como o load faz.
+	world.ws.nation_currency["AAA"] = 0;
 	world.ws.monetary["AAA"] = ogs::MonetaryState();
 	ogs::City& city = world.ws.cities.front();
 	city.firm_sub = 5000.0;

@@ -482,26 +482,27 @@ void register_event(WorldState& ws, const BankCrisisEvent& event) {
 // --- Choque de perda -------------------------------------------------------
 namespace {
 
-// Charge o corte de deposito nao segurado nos grupos tomadores do banco,
-// proporcional a divida e limitado pelo caixa de cada um. Devolve o total
-// efetivamente cobrado (o que nao couber fica para o seguro/Tesouro).
-double charge_depositors(WorldState& ws, const Bank& bank, double target) {
-	if (!(target > 0.0)) {
-		return 0.0;
-	}
-	struct Row {
-		int index = -1;
-		double debt = 0.0;
-		double arrears = 0.0;
-	};
-	// R2b1 (fix A1): o bail-in cobra quem deve A ESTE banco (claim por
-	// credor). O modo e' POR TOMADOR: grupo com claims e' cobrado pelo claim;
-	// grupo sem claim (save legado) continua no hash `lender()`, para a
-	// divida antiga nao sumir do servicing quando outro tomador cria claim.
+struct DepositRow {
+	int index = -1;
+	double debt = 0.0;
+	double arrears = 0.0;
+};
+
+// Tomadores do banco NESTE momento. R2b1 (fix A1): o bail-in cobra quem deve
+// A ESTE banco (claim por credor). O modo e' POR TOMADOR: grupo com claims e'
+// cobrado pelo claim; grupo sem claim (save legado) continua no hash
+// `lender()`, para a divida antiga nao sumir do servicing quando outro
+// tomador cria claim.
+//
+// R2c: o leilao (passo 3 do plano) migra o claim para o comprador ANTES do
+// bail-in. O snapshot e' tirado antes do leilao para que D_l continue
+// cobrando quem devia a ESTE banco na quebra: o deposito de credito segue
+// passivo do banco falido mesmo depois de vendida a carteira.
+std::vector<DepositRow> collect_deposit_rows(const WorldState& ws,
+		const Bank& bank) {
+	std::vector<DepositRow> rows;
 	const bool claims_mode = ws.banks_rework.enabled
 		&& ws.banks_rework.deposits;
-	std::vector<Row> rows;
-	double total = 0.0;
 	for (int index = 0; index < static_cast<int>(ws.groups.size());
 			++index) {
 		const Group& group = ws.groups[static_cast<std::size_t>(index)];
@@ -528,7 +529,21 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 			continue;
 		}
 		rows.push_back({index, debt, arrears});
-		total += claim;
+	}
+	return rows;
+}
+
+// Charge o corte de deposito nao segurado nos grupos tomadores, proporcional
+// a divida e limitado pelo caixa de cada um. Devolve o total efetivamente
+// cobrado (o que nao couber fica para o seguro/Tesouro).
+double charge_depositors(WorldState& ws, const Bank& bank, double target,
+		const std::vector<DepositRow>& rows) {
+	if (!(target > 0.0)) {
+		return 0.0;
+	}
+	double total = 0.0;
+	for (const DepositRow& row : rows) {
+		total += row.debt + row.arrears;
 	}
 	if (rows.empty() || total <= kEps) {
 		return 0.0;
@@ -539,7 +554,7 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 	for (int pass = 0; pass < 2 && charged < target - kEps; ++pass) {
 		double remaining = target - charged;
 		double weight = 0.0;
-		for (const Row& row : rows) {
+		for (const DepositRow& row : rows) {
 			const Group& group = ws.groups[static_cast<std::size_t>(
 				row.index)];
 			if (group.liquid_cash() > kEps) {
@@ -549,7 +564,7 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 		if (weight <= kEps) {
 			break;
 		}
-		for (const Row& row : rows) {
+		for (const DepositRow& row : rows) {
 			if (remaining <= kEps) {
 				break;
 			}
@@ -569,6 +584,11 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 		}
 	}
 	return charged;
+}
+
+double charge_depositors(WorldState& ws, const Bank& bank, double target) {
+	return charge_depositors(ws, bank, target,
+		collect_deposit_rows(ws, bank));
 }
 
 } // namespace
@@ -1120,6 +1140,12 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 	}
 
 	double treasury_paid = 0.0;
+	// D_l: snapshot dos tomadores ANTES do leilao (passo 3), que migra os
+	// claims da carteira vendida para o comprador. O bail-in (passo 4) tem de
+	// cobrar o caixa de quem devia a ESTE banco na quebra; reler o claim
+	// depois do leilao acharia zero (o vendedor nao tem mais a carteira).
+	const std::vector<DepositRow> bailin_rows =
+		collect_deposit_rows(ws, bank);
 	// 2. CASCATA PUBLICA: o Tesouro recapitaliza ate o saldo real, com a
 	// austeridade regional declarada. Isto vem ANTES do bail-in (plano 5.4).
 	if (is_public) {
@@ -1265,7 +1291,8 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 			const double legacy = std::min(
 				target * (1.0 - funding_share), shortfall);
 			if (legacy > kEps) {
-				const double cut = charge_depositors(ws, bank, legacy);
+				const double cut = charge_depositors(ws, bank, legacy,
+					bailin_rows);
 				if (cut > kEps) {
 					bank.deposits = std::max(0.0, bank.deposits - cut);
 					cut_total += cut;

@@ -77,7 +77,7 @@ const Building* PocketWorld::building(const std::string& id) const {
 	return nullptr;
 }
 
-PocketWorld::PocketWorld() {
+PocketWorld::PocketWorld(bool seed_public_bank) {
 	save::Value root;
 	std::string error;
 	if (!save::parse_json_file(fixture_path(), root, error)) {
@@ -218,11 +218,14 @@ PocketWorld::PocketWorld() {
 		ws.groups.push_back(std::move(group));
 	}
 
-	// 7. Banco publico da nacao (o credor do grupo estatal).
-	Bank& bank = bank::ensure(ws, "AAA", bank::kRolePublic);
-	bank.name = "AAA Public Bank";
-	bank.name_status = "present";
-	bank.share = 1.0;
+	// 7. Banco publico da nacao (o credor do grupo estatal). Opcional: os
+	// casos de deserto/charter montam a nacao sem papel publico presente.
+	if (seed_public_bank) {
+		Bank& bank = bank::ensure(ws, "AAA", bank::kRolePublic);
+		bank.name = "AAA Public Bank";
+		bank.name_status = "present";
+		bank.share = 1.0;
+	}
 
 	// 8. Indices derivados (cidade, tabela de nacoes, predios por cidade).
 	core.rebuild_indexes();
