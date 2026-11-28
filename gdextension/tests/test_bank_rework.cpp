@@ -21,6 +21,7 @@
 #include "sim/treasury.h"
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -936,13 +937,21 @@ TEST_CASE("R2b1: grupo paga juro com o deposito sacavel (pay_group_capped)") {
 
 	CHECK(defaults == 0);
 	// Juro pago pelo claim: sai do funding e volta ao caixa do banco; o
-	// principal e o agregado ficam (juro nao e' capitalizado).
+	// principal e o agregado ficam (juro nao e' capitalizado). O grupo do
+	// fixture ainda tem um excedente minimo ao capital de giro, entao a
+	// amortizacao do dia (fase 2 do servicing) roda; o teste mede a
+	// identidade exata em vez de fingir que ela nao existe.
+	const double repaid = group.credit_repaid;
+	CHECK(repaid >= 0.0);
 	CHECK(bank.interest_income == Approx(interest));
-	CHECK(group.bank_deposit == Approx(400.0 - interest));
-	CHECK(bank.deposits_funding == Approx(400.0 - interest));
+	CHECK(group.debt_claims[0].principal == Approx(400.0 - repaid));
+	CHECK(group.bank_deposit
+		== Approx(400.0 - interest - repaid));
+	CHECK(bank.deposits_funding
+		== Approx(400.0 - interest - repaid));
 	CHECK(bank.cash == Approx(interest));
-	CHECK(group.debt == Approx(400.0));
-	CHECK(bank.loans == Approx(400.0));
+	CHECK(group.debt == Approx(400.0 - repaid));
+	CHECK(bank.loans == Approx(400.0 - repaid));
 	// A parcela paga pelo claim nao destroi M0 (so' troca D_f por caixa).
 	CHECK(money_delta == Approx(0.0));
 	CHECK(world.core.money_total() == Approx(money_before));
@@ -1255,4 +1264,699 @@ TEST_CASE("R2b1: alocacao mensal move claim e lastro juntos") {
 	CHECK(world.core.money_total() == Approx(money_before));
 	CHECK(ogs::bank::deposit_claims_total(world.ws)
 		== Approx(ogs::bank::totals(world.ws).deposits_funding));
+}
+
+// ---------------------------------------------------------------------------
+// R2b1 (QA R2b1): A1 (claims no save + migracao por tomador), B4 (invariante
+// por tomador/credor), B1 (alocacao pro rata e pendulo deterministico), A3
+// (sinal de liquidez), A4 (renegociacao com claim zerado) e B2 (lend_city).
+// ---------------------------------------------------------------------------
+
+namespace {
+
+ogs::Group* group_by_id(ogs::WorldState& ws, const std::string& id) {
+	for (ogs::Group& group : ws.groups) {
+		if (group.id == id) {
+			return &group;
+		}
+	}
+	return nullptr;
+}
+
+ogs::City* city_by_id(ogs::WorldState& ws, const std::string& id) {
+	for (ogs::City& city : ws.cities) {
+		if (city.id == id) {
+			return &city;
+		}
+	}
+	return nullptr;
+}
+
+const ogs::BankLoan* city_claim(const ogs::City& city,
+		const std::string& bank_id) {
+	for (const ogs::BankLoan& claim : city.firm_debt_claims) {
+		if (claim.bank_id == bank_id) {
+			return &claim;
+		}
+	}
+	return nullptr;
+}
+
+// Soma principal/atraso dos claims de um tomador.
+void claim_sums(const std::vector<ogs::BankLoan>& claims, double* principal,
+		double* arrears) {
+	*principal = 0.0;
+	*arrears = 0.0;
+	for (const ogs::BankLoan& claim : claims) {
+		*principal += std::max(0.0, claim.principal);
+		*arrears += std::max(0.0, claim.arrears);
+	}
+}
+
+// B4: todo tomador com divida tem claims que somam o agregado, e todo banco
+// tem `loans`/`arrears` iguais aos claims dos seus tomadores.
+void check_claim_invariant(const ogs::WorldState& ws) {
+	for (const ogs::Group& group : ws.groups) {
+		if (group.debt + group.credit_arrears <= 1e-9) {
+			continue;
+		}
+		double principal = 0.0;
+		double arrears = 0.0;
+		claim_sums(group.debt_claims, &principal, &arrears);
+		CHECK(principal == Approx(group.debt));
+		CHECK(arrears == Approx(group.credit_arrears));
+	}
+	for (const ogs::City& city : ws.cities) {
+		if (city.firm_debt + city.firm_credit_arrears <= 1e-9) {
+			continue;
+		}
+		double principal = 0.0;
+		double arrears = 0.0;
+		claim_sums(city.firm_debt_claims, &principal, &arrears);
+		CHECK(principal == Approx(city.firm_debt));
+		CHECK(arrears == Approx(city.firm_credit_arrears));
+	}
+	for (const auto& row : ws.banks) {
+		const ogs::Bank& bank = row.second;
+		double principal = 0.0;
+		double arrears = 0.0;
+		for (const ogs::Group& group : ws.groups) {
+			for (const ogs::BankLoan& claim : group.debt_claims) {
+				if (claim.bank_id == bank.id) {
+					principal += std::max(0.0, claim.principal);
+					arrears += std::max(0.0, claim.arrears);
+				}
+			}
+		}
+		for (const ogs::City& city : ws.cities) {
+			for (const ogs::BankLoan& claim : city.firm_debt_claims) {
+				if (claim.bank_id == bank.id) {
+					principal += std::max(0.0, claim.principal);
+					arrears += std::max(0.0, claim.arrears);
+				}
+			}
+		}
+		CHECK(principal == Approx(std::max(0.0, bank.loans)));
+		CHECK(arrears == Approx(std::max(0.0, bank.arrears)));
+	}
+}
+
+} // namespace
+
+TEST_CASE("R2b1 (A1): claims de divida sobrevivem ao round-trip do save") {
+	ogs::test::PocketWorld source;
+	enable_banks(source, true, true);
+	source.ws.day = 42;
+	ogs::Bank& pub = present(source, ogs::bank::kRolePublic);
+	ogs::Bank& pri = present(source, ogs::bank::kRolePrivate);
+	REQUIRE(!source.ws.groups.empty());
+	ogs::Group& group = source.ws.groups.front();
+	group.debt = 1000.0;
+	group.credit_arrears = 30.0;
+	group.debt_claims = {claim_to(pub.id, 600.0, 20.0),
+		claim_to(pri.id, 400.0, 10.0)};
+	sort_claims(group.debt_claims);
+	// "AAA/private" < "AAA/public": [0] = privado, [1] = publico.
+	group.debt_claims[0].rate_add = 0.02;
+	group.debt_claims[0].default_days = 5;
+	group.debt_claims[1].rate_add = 0.01;
+	group.debt_claims[1].default_days = 3;
+	pub.loans = 600.0;
+	pub.arrears = 20.0;
+	pri.loans = 900.0;
+	pri.arrears = 35.0;
+	ogs::City& city = source.ws.cities.front();
+	city.firm_debt = 500.0;
+	city.firm_credit_arrears = 25.0;
+	city.firm_debt_claims = {claim_to(pri.id, 500.0, 25.0)};
+	const std::string group_id = group.id;
+	const std::string city_id = city.id;
+	const std::string pub_id = pub.id;
+	const std::string pri_id = pri.id;
+
+	const ogs::save::Value saved = ogs::save::to_value(source.ws,
+		source.core);
+	ogs::test::PocketWorld target;
+	ogs::save::from_value(target.ws, target.core, saved);
+
+	ogs::Group* loaded_group = group_by_id(target.ws, group_id);
+	REQUIRE(loaded_group != nullptr);
+	REQUIRE(loaded_group->debt_claims.size() == 2);
+	CHECK(loaded_group->ws_link == &target.ws);
+	CHECK(loaded_group->debt_claims[0].bank_id == pri_id);
+	CHECK(loaded_group->debt_claims[0].principal == Approx(400.0));
+	CHECK(loaded_group->debt_claims[0].arrears == Approx(10.0));
+	CHECK(loaded_group->debt_claims[0].rate_add == Approx(0.02));
+	CHECK(loaded_group->debt_claims[0].default_days == 5);
+	CHECK(loaded_group->debt_claims[1].bank_id == pub_id);
+	CHECK(loaded_group->debt_claims[1].principal == Approx(600.0));
+	CHECK(loaded_group->debt_claims[1].arrears == Approx(20.0));
+	CHECK(loaded_group->debt_claims[1].rate_add == Approx(0.01));
+	CHECK(loaded_group->debt_claims[1].default_days == 3);
+	CHECK(loaded_group->debt == Approx(1000.0));
+	CHECK(loaded_group->credit_arrears == Approx(30.0));
+
+	ogs::City* loaded_city = city_by_id(target.ws, city_id);
+	REQUIRE(loaded_city != nullptr);
+	REQUIRE(loaded_city->firm_debt_claims.size() == 1);
+	CHECK(loaded_city->firm_debt_claims[0].bank_id == pri_id);
+	CHECK(loaded_city->firm_debt_claims[0].principal == Approx(500.0));
+	CHECK(loaded_city->firm_debt_claims[0].arrears == Approx(25.0));
+	CHECK(loaded_city->firm_debt == Approx(500.0));
+	check_claim_invariant(target.ws);
+
+	// C6 usa os claims carregados: so' o credor baixado muda, pro rata no
+	// book dele (grupo 400+10 + cidade 500+25 = 935; 93,5 = 10%).
+	const double written = ogs::bank_crisis::apply_loss(target.ws, pri_id,
+		93.5);
+	CHECK(written == Approx(93.5));
+	CHECK(loaded_group->debt_claims[0].principal == Approx(360.0));
+	CHECK(loaded_group->debt_claims[0].arrears == Approx(9.0));
+	CHECK(loaded_group->debt_claims[1].principal == Approx(600.0));
+	CHECK(loaded_group->debt_claims[1].arrears == Approx(20.0));
+	CHECK(loaded_city->firm_debt_claims[0].principal == Approx(450.0));
+	CHECK(loaded_city->firm_debt_claims[0].arrears == Approx(22.5));
+	CHECK(loaded_group->debt == Approx(960.0));
+	CHECK(loaded_group->credit_arrears == Approx(29.0));
+	check_claim_invariant(target.ws);
+}
+
+TEST_CASE("R2b1 (A1): load sem claims atribui a divida legada ao credor") {
+	ogs::test::PocketWorld source;
+	enable_banks(source, true, true);
+	ogs::Bank& pub = present(source, ogs::bank::kRolePublic);
+	present(source, ogs::bank::kRolePrivate);
+	// Grupo legado: divida agregada sem nenhum claim (save v44 anterior ao
+	// fix). `state_owned` fixa o credor em `lender()` = banco publico.
+	ogs::Group legacy;
+	legacy.id = "AAA_LEGACY";
+	legacy.name = legacy.id;
+	legacy.origin_nation = "AAA";
+	legacy.state_owned = true;
+	legacy.debt = 1000.0;
+	legacy.credit_arrears = 50.0;
+	legacy.cash = 0.0;
+	source.ws.groups.push_back(legacy);
+	source.core.rebuild_indexes();
+	ogs::City& city = source.ws.cities.front();
+	city.firm_debt = 400.0;
+	city.firm_credit_arrears = 20.0;
+	city.firm_debt_claims.clear();
+	pub.loans = 1400.0;
+	pub.arrears = 70.0;
+	const std::string city_id = city.id;
+	const std::string pub_id = pub.id;
+
+	const ogs::save::Value saved = ogs::save::to_value(source.ws,
+		source.core);
+	ogs::test::PocketWorld target;
+	ogs::save::from_value(target.ws, target.core, saved);
+
+	ogs::Group* loaded = group_by_id(target.ws, "AAA_LEGACY");
+	REQUIRE(loaded != nullptr);
+	REQUIRE(loaded->debt_claims.size() == 1);
+	CHECK(loaded->debt_claims[0].bank_id == pub_id);
+	CHECK(loaded->debt_claims[0].principal == Approx(1000.0));
+	CHECK(loaded->debt_claims[0].arrears == Approx(50.0));
+	ogs::City* loaded_city = city_by_id(target.ws, city_id);
+	REQUIRE(loaded_city != nullptr);
+	REQUIRE(loaded_city->firm_debt_claims.size() == 1);
+	CHECK(loaded_city->firm_debt_claims[0].bank_id == pub_id);
+	CHECK(loaded_city->firm_debt_claims[0].principal == Approx(400.0));
+	CHECK(loaded_city->firm_debt_claims[0].arrears == Approx(20.0));
+	check_claim_invariant(target.ws);
+
+	// Idempotente: rodar a migracao de novo nao duplica claim nem dinheiro.
+	const double money_before = target.core.money_total();
+	ogs::bank::rebuild_claims_after_load(target.ws);
+	CHECK(loaded->debt_claims.size() == 1);
+	CHECK(loaded->debt_claims[0].principal == Approx(1000.0));
+	CHECK(loaded_city->firm_debt_claims.size() == 1);
+	CHECK(target.core.money_total() == Approx(money_before));
+
+	// Servicing roda no caminho por claim (sem divida zumbi).
+	target.ws.crisis.enabled = false;
+	ogs::Bank& target_pub = target.ws.banks[pub_id];
+	target_pub.deposits = 0.0;
+	target_pub.cash = 0.0;
+	ogs::bank::phase(target.ws);
+	CHECK(loaded->credit_arrears > 50.0);
+	CHECK(loaded->debt_claims[0].arrears
+		== Approx(loaded->credit_arrears));
+	check_claim_invariant(target.ws);
+}
+
+TEST_CASE("R2b1 (A1): mundo misto serve divida legada e por claim no mesmo dia") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	world.ws.crisis.enabled = false;
+	ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+	REQUIRE(!world.ws.groups.empty());
+	const std::string claim_group_id = world.ws.groups.front().id;
+	ogs::Group legacy;
+	legacy.id = "AAA_LEGACY";
+	legacy.name = legacy.id;
+	legacy.origin_nation = "AAA";
+	legacy.state_owned = true;
+	legacy.debt = 600.0;
+	legacy.cash = 0.0;
+	world.ws.groups.push_back(legacy);
+	world.core.rebuild_indexes();
+
+	ogs::Group& claim_group = *group_by_id(world.ws, claim_group_id);
+	claim_group.cash = 0.0;
+	claim_group.debt = 400.0;
+	claim_group.credit_arrears = 0.0;
+	claim_group.credit_rate_add = 0.0;
+	claim_group.debt_claims = {claim_to(pub.id, 400.0)};
+	pub.loans = 1000.0;
+	pub.deposits = 0.0;
+	pub.cash = 0.0;
+	pub.arrears = 0.0;
+
+	CHECK(ogs::bank::phase(world.ws) == 0);
+	ogs::Group& after_legacy = *group_by_id(world.ws, "AAA_LEGACY");
+	// A divida legada continua sendo servida pelo caminho antigo...
+	CHECK(after_legacy.credit_arrears > 0.0);
+	CHECK(after_legacy.debt_claims.empty());
+	// ...e a divida com claim paga/capitaliza pelo credor do claim.
+	CHECK(claim_group.debt_claims[0].arrears > 0.0);
+	CHECK(claim_group.credit_arrears
+		== Approx(claim_group.debt_claims[0].arrears));
+	// Por tomador: o claim soma o agregado do grupo com claim.
+	double principal = 0.0;
+	double arrears = 0.0;
+	claim_sums(claim_group.debt_claims, &principal, &arrears);
+	CHECK(principal == Approx(claim_group.debt));
+	CHECK(arrears == Approx(claim_group.credit_arrears));
+	CHECK(after_legacy.debt == Approx(600.0));
+
+	// C6 enxerga os dois: o book do credor e' claim + agregado legado.
+	const double book = 400.0 + claim_group.debt_claims[0].arrears
+		+ after_legacy.debt + after_legacy.credit_arrears;
+	const double marked = ogs::bank_crisis::apply_loss(world.ws, pub.id,
+		100.0);
+	CHECK(marked == Approx(100.0));
+	const double keep = 1.0 - 100.0 / book;
+	CHECK(claim_group.debt_claims[0].principal == Approx(400.0 * keep));
+	CHECK(after_legacy.debt == Approx(600.0 * keep));
+	claim_sums(claim_group.debt_claims, &principal, &arrears);
+	CHECK(principal == Approx(claim_group.debt));
+	CHECK(arrears == Approx(claim_group.credit_arrears));
+	// O ativo do credor cobre as duas rotas (claim + legado).
+	CHECK(claim_group.debt_claims[0].principal + after_legacy.debt
+		== Approx(pub.loans));
+}
+
+TEST_CASE("R2b1 (B4): S claims == agregado por tomador e book por credor") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	world.ws.crisis.enabled = false;
+	ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+	ogs::Bank& pri = present(world, ogs::bank::kRolePrivate);
+	REQUIRE(!world.ws.groups.empty());
+	ogs::Group& first = world.ws.groups.front();
+	first.cash = 0.0;
+	first.debt = 500.0;
+	first.credit_arrears = 10.0;
+	first.debt_claims = {claim_to(pub.id, 300.0, 7.0),
+		claim_to(pri.id, 200.0, 3.0)};
+	sort_claims(first.debt_claims);
+	ogs::Group second;
+	second.id = "AAA_SECOND";
+	second.name = second.id;
+	second.origin_nation = "AAA";
+	second.state_owned = true;
+	second.debt = 400.0;
+	second.cash = 0.0;
+	second.debt_claims = {claim_to(pri.id, 400.0)};
+	world.ws.groups.push_back(second);
+	world.core.rebuild_indexes();
+	ogs::City& city = world.ws.cities.front();
+	city.firm_cash = 0.0;
+	city.private_cash = 0.0;
+	city.firm_debt = 250.0;
+	city.firm_credit_arrears = 5.0;
+	city.firm_debt_claims = {claim_to(pub.id, 250.0, 5.0)};
+	pub.loans = 550.0;
+	pub.arrears = 12.0;
+	pub.deposits = 0.0;
+	pub.cash = 0.0;
+	pri.loans = 600.0;
+	pri.arrears = 3.0;
+	pri.deposits = 0.0;
+	pri.cash = 0.0;
+
+	check_claim_invariant(world.ws);
+	ogs::bank::phase(world.ws);
+	check_claim_invariant(world.ws);
+	ogs::bank_crisis::apply_loss(world.ws, pub.id, 55.0);
+	check_claim_invariant(world.ws);
+}
+
+TEST_CASE("R2b1 (B1): alocacao leva so' a cobertura pro rata do claim") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	ogs::Bank& a = present(world, ogs::bank::kRolePublic);
+	ogs::Bank& b = present(world, ogs::bank::kRolePrivate);
+	// Score = solidez pura; piso de solidez zerado.
+	world.ws.banks_rework.alloc_w_rel = 0.0;
+	world.ws.banks_rework.alloc_w_sol = 1.0;
+	world.ws.banks_rework.alloc_w_pend = 0.0;
+	world.ws.banks_rework.alloc_min_capital_ratio = 0.0;
+	a.loans = 1000.0;
+	a.deposits = 100.0;
+	a.cash = 50.0;       // equity 950 -> solidez 0,95
+	b.loans = 1000.0;
+	b.deposits = 950.0;
+	b.cash = 0.0;        // equity 50 -> solidez 0,05
+
+	ogs::City& city = world.ws.cities.front();
+	city.bank_accounts.clear();
+	ogs::City::BankAccount account;
+	account.bank_id = a.id;
+	account.firm = 100.0;
+	city.bank_accounts.push_back(account);
+	a.deposits_funding = 100.0;
+	const double money_before = world.core.money_total();
+	const double score_a = ogs::bank::equity(a) / a.loans;
+	const double score_b = ogs::bank::equity(b) / b.loans;
+
+	world.ws.day = 30;
+	ogs::bank::allocate_deposits_monthly(world.ws);
+
+	// Alvo normalizado: A fica com score_a/(score_a+score_b) e B com o resto.
+	// O excedente de A so' leva a cobertura pro rata do caixa
+	// (cash/D_f = 50/100 = 50%); o caminho antigo levaria todo o excedente.
+	const double target_b = 100.0 * score_b / (score_a + score_b);
+	const double excess = target_b;
+	const double moved = std::min(excess, 50.0 * (excess / 100.0));
+	CHECK(city.claim_total() == Approx(100.0));
+	CHECK(a.deposits_funding == Approx(100.0 - moved));
+	CHECK(b.deposits_funding == Approx(moved));
+	CHECK(a.cash == Approx(50.0 - moved));
+	CHECK(b.cash == Approx(moved));
+	// 2,78 < 5,56: a cobertura pro rata corta o excedente pela metade.
+	CHECK(moved < excess);
+	CHECK(world.core.money_total() == Approx(money_before));
+	CHECK(ogs::bank::deposit_claims_total(world.ws)
+		== Approx(ogs::bank::totals(world.ws).deposits_funding));
+}
+
+TEST_CASE("R2b1 (B1): pendulo mensal e' deterministico e muda com o mes") {
+	const auto setup = [](ogs::test::PocketWorld& world) {
+		enable_banks(world, true, true);
+		ogs::Bank& a = present(world, ogs::bank::kRolePublic);
+		ogs::Bank& b = present(world, ogs::bank::kRolePrivate);
+		// Score = pendulo puro; solidez igual (1,0) e relacionamento zerado.
+		world.ws.banks_rework.alloc_w_rel = 0.0;
+		world.ws.banks_rework.alloc_w_sol = 0.0;
+		world.ws.banks_rework.alloc_w_pend = 1.0;
+		world.ws.banks_rework.alloc_min_capital_ratio = 0.8;
+		a.loans = 1000.0;
+		a.deposits = 0.0;
+		a.cash = 100.0;
+		b.loans = 1000.0;
+		b.deposits = 0.0;
+		b.cash = 0.0;
+		ogs::City& city = world.ws.cities.front();
+		city.bank_accounts.clear();
+		ogs::City::BankAccount account;
+		account.bank_id = a.id;
+		account.firm = 100.0;
+		city.bank_accounts.push_back(account);
+		a.deposits_funding = 100.0;
+		world.ws.day = 30;
+	};
+
+	ogs::test::PocketWorld w1;
+	ogs::test::PocketWorld w2;
+	setup(w1);
+	setup(w2);
+	ogs::bank::allocate_deposits_monthly(w1.ws);
+	ogs::bank::allocate_deposits_monthly(w2.ws);
+
+	ogs::City& c1 = w1.ws.cities.front();
+	ogs::City& c2 = w2.ws.cities.front();
+	REQUIRE(c1.bank_accounts.size() == 2);
+	REQUIRE(c2.bank_accounts.size() == 2);
+	const auto share_of = [](const ogs::City& city, const std::string& id) {
+		for (const ogs::City::BankAccount& row : city.bank_accounts) {
+			if (row.bank_id == id) {
+				return row.firm;
+			}
+		}
+		return -1.0;
+	};
+	const std::string a_id = ogs::bank::bank_id("AAA",
+		ogs::bank::kRolePublic);
+	const double share_1 = share_of(c1, a_id);
+	const double share_2 = share_of(c2, a_id);
+	// Duas construcoes independentes dao o mesmo retrato (hash estavel).
+	CHECK(share_1 == Approx(share_2));
+	// O pendulo fica em 0,9..1,1: a fatia de A em 40%..62% com dois bancos.
+	CHECK(share_1 > 40.0);
+	CHECK(share_1 < 62.0);
+	CHECK(c1.claim_total() == Approx(100.0));
+
+	// Repetir no mesmo mes e' no-op (o alvo ja foi atingido).
+	ogs::bank::allocate_deposits_monthly(w1.ws);
+	CHECK(share_of(c1, a_id) == Approx(share_1));
+
+	// Mes seguinte: o hash muda e a fatia muda (procurado em 6 meses para
+	// nao depender de uma coincidencia do fixture).
+	bool changed = false;
+	double previous = share_1;
+	for (int day = 60; day <= 210 && !changed; day += 30) {
+		w1.ws.day = day;
+		ogs::bank::allocate_deposits_monthly(w1.ws);
+		const double share = share_of(c1, a_id);
+		CHECK(c1.claim_total() == Approx(100.0));
+		CHECK(share > 40.0);
+		CHECK(share < 62.0);
+		CHECK(ogs::bank::deposit_claims_total(w1.ws)
+			== Approx(ogs::bank::totals(w1.ws).deposits_funding));
+		changed = std::fabs(share - previous) > 1e-6;
+		previous = share;
+	}
+	REQUIRE(changed);
+	CHECK(w1.core.money_total() == Approx(w2.core.money_total()));
+}
+
+TEST_CASE("R2b1 (A3): saque abaixo do piso acende o sinal uma vez por dia") {
+	SUBCASE("abaixo do piso conta um evento por dia e persiste no save") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, true);
+		ogs::bank::ensure(world.ws, "AAA",
+			ogs::bank::kRolePublic).name_status = "no_data";
+		ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
+		REQUIRE(!world.ws.groups.empty());
+		ogs::Group& group = world.ws.groups.front();
+		group.cash = 0.0;
+		group.bank_deposit = 50.0;
+		group.deposit_bank_id = bank.id;
+		bank.deposits = 550.0;
+		bank.deposits_funding = 50.0;
+		bank.cash = 60.0;   // piso = 10% * (550+50) = 60
+		ogs::deposit::link(world.ws);
+		world.ws.day = 0;
+		CHECK(ogs::bank::liquidity_floor(world.ws, bank) == Approx(60.0));
+
+		// O pagamento NAO e' bloqueado; o saque deixa o caixa abaixo do piso.
+		CHECK(ogs::deposit::withdraw_group(world.ws, group, 10.0)
+			== Approx(10.0));
+		CHECK(bank.cash < ogs::bank::liquidity_floor(world.ws, bank));
+		CHECK(bank.liquidity_floor_breaches == 1);
+		CHECK(bank.last_liquidity_floor_breach_day == 0);
+		// Segundo saque no mesmo dia: conta uma vez.
+		CHECK(ogs::deposit::withdraw_group(world.ws, group, 10.0)
+			== Approx(10.0));
+		CHECK(bank.liquidity_floor_breaches == 1);
+		// Dia seguinte: novo evento.
+		world.ws.day = 1;
+		CHECK(ogs::deposit::withdraw_group(world.ws, group, 10.0)
+			== Approx(10.0));
+		CHECK(bank.liquidity_floor_breaches == 2);
+		CHECK(bank.last_liquidity_floor_breach_day == 1);
+
+		// O sinal vai ao save v44 no ON.
+		const std::string bank_id = bank.id;
+		const ogs::save::Value saved = ogs::save::to_value(world.ws,
+			world.core);
+		ogs::test::PocketWorld target;
+		ogs::save::from_value(target.ws, target.core, saved);
+		const ogs::Bank& loaded = target.ws.banks[bank_id];
+		CHECK(loaded.liquidity_floor_breaches == 2);
+		CHECK(loaded.last_liquidity_floor_breach_day == 1);
+	}
+
+	SUBCASE("caixa acima do piso nao acende nada") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, true);
+		ogs::bank::ensure(world.ws, "AAA",
+			ogs::bank::kRolePublic).name_status = "no_data";
+		ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
+		REQUIRE(!world.ws.groups.empty());
+		ogs::Group& group = world.ws.groups.front();
+		group.cash = 0.0;
+		group.bank_deposit = 10.0;
+		group.deposit_bank_id = bank.id;
+		bank.deposits = 500.0;
+		bank.deposits_funding = 10.0;
+		bank.cash = 100.0;  // piso = 10% * 510 = 51
+		ogs::deposit::link(world.ws);
+		world.ws.day = 3;
+		CHECK(ogs::deposit::withdraw_group(world.ws, group, 5.0)
+			== Approx(5.0));
+		CHECK(bank.cash >= ogs::bank::liquidity_floor(world.ws, bank));
+		CHECK(bank.liquidity_floor_breaches == 0);
+		CHECK(bank.last_liquidity_floor_breach_day == -1);
+	}
+}
+
+TEST_CASE("R2b1 (A4): claim zerado nao bloqueia a renegociacao") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+	present(world, ogs::bank::kRolePrivate);
+	ogs::Group group;
+	group.id = "AAA_RENEG";
+	group.name = group.id;
+	group.origin_nation = "AAA";
+	group.state_owned = true;
+	group.debt = 100000.0;
+	group.cash = 0.0;
+	group.credit_rate_add = world.ws.crisis.credit_rate_add;
+	group.credit_arrears_days =
+		std::max(1, world.ws.crisis.credit_renegotiation_days);
+	// Dois claims, mas so' UM em aberto: o zerado (quitado) nao pode travar
+	// a renegociacao (o gate antigo olhava `size()`).
+	const std::string zero_id = "AAA/private";
+	group.debt_claims = {claim_to(zero_id, 0.0),
+		claim_to(pub.id, 100000.0)};
+	sort_claims(group.debt_claims);
+	world.ws.groups.push_back(group);
+	world.core.rebuild_indexes();
+	pub.loans = 100000.0;
+	pub.deposits = 0.0;
+	pub.cash = 0.0;
+	pub.arrears = 0.0;
+
+	const double rate = ogs::bank::loan_rate(world.ws, "AAA")
+		+ world.ws.crisis.credit_rate_add;
+	const double interest = 100000.0 * rate / ogs::bank::kDaysPerYear;
+	const double fee = world.ws.crisis.credit_penalty * 100000.0;
+
+	CHECK(ogs::bank::phase(world.ws) == 0);
+	ogs::Group& after = *group_by_id(world.ws, "AAA_RENEG");
+	CHECK(after.credit_renegotiations == 1);
+	CHECK(after.credit_arrears == Approx(0.0));
+	CHECK(after.debt == Approx(100000.0 + interest + fee));
+	REQUIRE(after.debt_claims.size() == 2);
+	CHECK(after.debt_claims[0].bank_id == zero_id);
+	CHECK(after.debt_claims[0].principal == Approx(0.0));
+	CHECK(after.debt_claims[1].bank_id == pub.id);
+	CHECK(after.debt_claims[1].principal
+		== Approx(100000.0 + interest + fee));
+	check_claim_invariant(world.ws);
+}
+
+TEST_CASE("R2b1 (B2): lend_city so' mantem o credor com presenca e capacidade") {
+	SUBCASE("credor existente sem capacidade perde para quem tem") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, true);
+		world.ws.bank_credit_enabled = true;
+		ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+		ogs::Bank& pri = present(world, ogs::bank::kRolePrivate);
+		ogs::City& city = world.ws.cities.front();
+		city.firm_debt = 500.0;
+		city.firm_credit_arrears = 0.0;
+		city.firm_debt_claims = {claim_to(pri.id, 500.0)};
+		// Privado sem folga: equity 0 -> capacidade 0.
+		pri.loans = 1000.0;
+		pri.deposits = 1000.0;
+		pri.cash = 0.0;
+		// Publico com folga de capital e liquidez.
+		pub.loans = 1000.0;
+		pub.deposits = 1000.0;
+		pub.cash = 200.0;
+
+		double out = 0.0;
+		std::string error;
+		const bool ok = ogs::bank::lend_city(world.ws, city.id, 100.0,
+			&out, &error);
+		REQUIRE_MESSAGE(ok, error);
+		CHECK(out == Approx(100.0));
+		CHECK(city.firm_debt == Approx(600.0));
+		const ogs::BankLoan* kept = city_claim(city, pri.id);
+		const ogs::BankLoan* added = city_claim(city, pub.id);
+		REQUIRE(kept != nullptr);
+		REQUIRE(added != nullptr);
+		CHECK(kept->principal == Approx(500.0));
+		CHECK(added->principal == Approx(100.0));
+	}
+
+	SUBCASE("credor existente com capacidade continua o par tomador<->banco") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, true);
+		world.ws.bank_credit_enabled = true;
+		ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+		ogs::Bank& pri = present(world, ogs::bank::kRolePrivate);
+		ogs::City& city = world.ws.cities.front();
+		city.firm_debt = 500.0;
+		city.firm_credit_arrears = 0.0;
+		city.firm_debt_claims = {claim_to(pri.id, 500.0)};
+		// Privado presente e com capacidade: mantem o par.
+		pri.loans = 1000.0;
+		pri.deposits = 500.0;
+		pri.cash = 400.0;
+		// Publico mais solido (taxa menor), mas nao deve roubar o par.
+		pub.loans = 1000.0;
+		pub.deposits = 1000.0;
+		pub.cash = 1000.0;
+
+		double out = 0.0;
+		std::string error;
+		const bool ok = ogs::bank::lend_city(world.ws, city.id, 100.0,
+			&out, &error);
+		REQUIRE_MESSAGE(ok, error);
+		CHECK(out == Approx(100.0));
+		REQUIRE(city.firm_debt_claims.size() == 1);
+		CHECK(city.firm_debt_claims[0].bank_id == pri.id);
+		CHECK(city.firm_debt_claims[0].principal == Approx(600.0));
+		CHECK(city_claim(city, pub.id) == nullptr);
+		CHECK(pub.loans == Approx(1000.0));
+	}
+
+	SUBCASE("credor absorvido nao e' mantido: compete de novo") {
+		ogs::test::PocketWorld world;
+		enable_banks(world, true, true);
+		world.ws.bank_credit_enabled = true;
+		ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+		ogs::Bank& pri = present(world, ogs::bank::kRolePrivate);
+		ogs::City& city = world.ws.cities.front();
+		city.firm_debt = 500.0;
+		city.firm_credit_arrears = 0.0;
+		city.firm_debt_claims = {claim_to(pri.id, 500.0)};
+		pri.absorbed_into = pub.id;
+		pri.loans = 1000.0;
+		pri.deposits = 500.0;
+		pri.cash = 400.0;
+		pub.loans = 1000.0;
+		pub.deposits = 1000.0;
+		pub.cash = 200.0;
+
+		double out = 0.0;
+		std::string error;
+		const bool ok = ogs::bank::lend_city(world.ws, city.id, 100.0,
+			&out, &error);
+		REQUIRE_MESSAGE(ok, error);
+		CHECK(out == Approx(100.0));
+		const ogs::BankLoan* kept = city_claim(city, pri.id);
+		const ogs::BankLoan* added = city_claim(city, pub.id);
+		REQUIRE(kept != nullptr);
+		REQUIRE(added != nullptr);
+		CHECK(kept->principal == Approx(500.0));
+		CHECK(added->principal == Approx(100.0));
+	}
 }
