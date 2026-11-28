@@ -17,6 +17,7 @@
 #include "sim/bank_crisis.h"
 #include "sim/central_bank.h"
 #include "sim/state_levers.h"
+#include "sim/stock.h"
 #include "sim/treasury.h"
 
 #include <algorithm>
@@ -100,6 +101,34 @@ void set_charter_cap(ogs::test::PocketWorld& world, double gdp,
 				monthly_revenue;
 		}
 	}
+}
+
+// R2c: um papel (ticker) criado DEPOIS da resolucao. O grupo novo e' o unico
+// elegivel do fixture; `stock::seed` aloca a carteira padrao (55 % familias,
+// 20 % bancos pela participacao declarada, 15 % grupos, 10 % exterior). A
+// carteira tem de fechar 100 % das acoes mesmo com banco liquidado/deserto.
+const ogs::StockTicker& new_paper(ogs::test::PocketWorld& world,
+		const std::string& id) {
+	ogs::Group group;
+	group.id = id;
+	group.name = id;
+	group.origin_nation = "AAA";
+	group.sector = "manufacturing";
+	group.cash = 100.0;
+	group.revenue_total = 1000.0;
+	group.profit_total = 100.0;
+	world.ws.groups.push_back(group);
+	world.core.rebuild_indexes();
+	ogs::stock::seed(world.ws);
+	return world.ws.stock_tickers.at(id);
+}
+
+double bank_slice(const ogs::StockHoldings& holdings) {
+	double total = 0.0;
+	for (const auto& holder : holdings.banks) {
+		total += holder.second;
+	}
+	return total;
 }
 
 } // namespace
@@ -412,4 +441,74 @@ TEST_CASE("R2c: sem Tesouro a valvula emite <= 1 % do M0/dia") {
 	CHECK(failing.cash == Approx(600.0));
 	CHECK(failing.deposits == Approx(600.0));
 	CHECK(failing.resolution == "bailin+insurance+valve");
+}
+
+TEST_CASE("R2c: liquidacao cancela a participacao e renormaliza; papel novo fecha 100%") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true);
+	ogs::Bank& failing = present(world, ogs::bank::kRolePrivate);
+	ogs::Bank& pub = present(world, ogs::bank::kRolePublic);
+	ogs::Bank& fgn = present(world, ogs::bank::kRoleForeign);
+	// Tres papeis presentes: 0,45 publico / 0,40 privado / 0,15 estrangeiro.
+	REQUIRE(world.ws.banks.size() == 3);
+	CHECK(pub.share == Approx(0.45));
+	CHECK(failing.share == Approx(0.40));
+	CHECK(fgn.share == Approx(0.15));
+	failing.cash = 0.0;
+	failing.loans = 0.0;
+	failing.arrears = 0.0;
+	failing.deposits = 1000.0;
+	failing.deposits_funding = 0.0;
+	failing.capital = 0.0;
+	ogs::Group& group = borrower(world, failing.id, 1000.0, 400.0);
+	// Sem teto de charter (fixture sem PIB): o residual cai na liquidacao.
+	set_charter_cap(world, 0.0, 0.0);
+	const double money_before = world.core.money_total();
+
+	ogs::bank_crisis::resolve(world.ws, failing.id);
+	// O dono do papel perde: a participacao sai do bolo e os bancos que
+	// sobraram fecham 1 (0,45 e 0,15 -> 0,75 e 0,25).
+	CHECK(failing.name_status == "none");
+	CHECK(failing.share == Approx(0.0));
+	CHECK(failing.resolution.find("liquidation") != std::string::npos);
+	CHECK(pub.share == Approx(0.75));
+	CHECK(fgn.share == Approx(0.25));
+	CHECK(pub.share + fgn.share == Approx(1.0).epsilon(1e-12));
+	// Bail-in de D_l: 0,4 x 1000 = 400, limitado ao caixa do tomador.
+	CHECK(group.cash == Approx(0.0));
+	CHECK(world.core.money_total()
+		== Approx(money_before - 400.0).epsilon(1e-9));
+
+	// Papel criado DEPOIS da liquidacao: a fatia bancaria e' 20 % das acoes e
+	// a carteira fecha bit a bit com as acoes emitidas (nada de 8 % orfao).
+	const ogs::StockTicker& ticker = new_paper(world, "G-NEW-liquidation");
+	CHECK(ticker.holdings.banks.count(failing.id) == 0);
+	CHECK(bank_slice(ticker.holdings)
+		== Approx(ticker.shares * 0.20).epsilon(1e-12));
+	CHECK(ticker.holdings.total()
+		== Approx(ticker.shares).epsilon(1e-12));
+}
+
+TEST_CASE("R2c: deserto nao deixa papel novo com acoes orfas") {
+	ogs::test::PocketWorld world(false);
+	enable_banks(world, true);
+	ogs::Bank& failing = present(world, ogs::bank::kRolePrivate);
+	failing.cash = 0.0;
+	failing.loans = 0.0;
+	failing.arrears = 0.0;
+	failing.deposits = 1000.0;
+	failing.deposits_funding = 0.0;
+	failing.capital = 0.0;
+	borrower(world, failing.id, 1000.0, 400.0);
+	set_charter_cap(world, 0.0, 0.0);
+
+	ogs::bank_crisis::resolve(world.ws, failing.id);
+	REQUIRE(failing.name_status == "none");
+	CHECK(failing.share == Approx(0.0));
+	// Nacao sem banco presente: os 20 % da fatia bancaria vao para as
+	// familias, como quando a nacao nao tem papel nenhum.
+	const ogs::StockTicker& ticker = new_paper(world, "G-NEW-desert");
+	CHECK(ticker.holdings.banks.empty());
+	CHECK(ticker.holdings.total()
+		== Approx(ticker.shares).epsilon(1e-12));
 }

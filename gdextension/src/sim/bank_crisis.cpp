@@ -1527,7 +1527,6 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 			pub.name_status = "present";
 			pub.owner_kind = "state";
 			pub.charter = "chartered_in_crisis";
-			bank::refresh_shares(ws, bank.nation);
 			// Casca: saldos zerados, share 0; ancora da resolucao fica nela.
 			bank.cash = 0.0;
 			bank.loans = 0.0;
@@ -1541,6 +1540,10 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 			bank.charter = "none";
 			bank.absorbed_into = pub.id;
 			bank.run_days = 0;
+			// R2c: renormaliza DEPOIS de marcar a casca como absorvida; a
+			// participacao do papel extinto sai do bolo e as restantes fecham 1
+			// (antes a casca ainda contava e a fatia de papel novo ficava orfa).
+			bank::refresh_shares(ws, bank.nation);
 		}
 	}
 
@@ -1639,6 +1642,13 @@ double resolve_r2(WorldState& ws, const std::string& bank_id,
 	bank.share = 0.0;
 	bank.name_status = "none";
 	bank.charter = "none";
+	// R2c: a participacao do papel liquidado nao pode ficar orfa. O dono do
+	// papel perde no banco quebrado; a fatia e' CANCELADA e os bancos que
+	// sobraram sao renormalizados para 1 (senao um papel criado depois aloca
+	// so `20 % x soma das shares` e sobram acoes sem dono). Nacao sem nenhum
+	// banco presente e' deserto: os 20 % vao para as familias em
+	// `stock::default_holdings`.
+	bank::refresh_shares(ws, bank.nation);
 	bank.resolved = true;
 	bank.resolution_day = ws.day;
 	bank.run_days = 0;

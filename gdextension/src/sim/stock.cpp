@@ -298,16 +298,21 @@ StockHoldings default_holdings(const WorldState& ws, const Group& group,
 			banks.push_back(bank);
 		}
 	}
-	if (banks.empty()) {
-		households += kHoldBanks;
-	} else {
-		for (const Bank* bank : banks) {
-			const double share = bank::declared_share(ws, group.origin_nation,
-				bank->role);
-			if (share > 0.0) {
-				out.banks[bank->id] = shares * kHoldBanks * share;
-			}
+	// R2c: so conta o papel PRESENTE com participacao declarada. Banco
+	// liquidado/deserto fica como casca (`share = 0`) e nao recebe fatia de
+	// papel novo; numa nacao sem banco presente (deserto) os 20 % vao para as
+	// familias, como quando nao existe nenhum papel. A soma fecha 1 sempre.
+	double bank_weight = 0.0;
+	for (const Bank* bank : banks) {
+		const double share = bank::declared_share(ws, group.origin_nation,
+			bank->role);
+		if (share > 0.0) {
+			out.banks[bank->id] = shares * kHoldBanks * share;
+			bank_weight += kHoldBanks * share;
 		}
+	}
+	if (bank_weight <= 1e-12) {
+		households += kHoldBanks;
 	}
 	std::vector<const Group*> locals;
 	for (const Group& other : ws.groups) {

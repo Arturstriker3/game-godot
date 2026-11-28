@@ -80,17 +80,18 @@ void renormalize(WorldState& ws, const std::string& nation) {
 	// C6 (D-114): papel absorvido pelo banco publico fica como CASCA (share 0)
 	// e nao volta a participar do sorteio de tomador quando as definicoes sao
 	// reaplicadas depois de um save.
+	// R2c: o mesmo vale para o papel LIQUIDADO/DESERTO (`name_status="none"`,
+	// sem `absorbed_into`): a participacao sai do sorteio e a fatia restante e
+	// renormalizada entre os bancos presentes. Sem isso um papel criado depois
+	// aloca so `20 % x soma das shares` aos bancos e fica com acoes sem dono.
 	const auto active = [](Bank* bank) {
-		return bank != nullptr && bank->absorbed_into.empty();
+		return bank != nullptr && bank->absorbed_into.empty()
+			&& bank->name_status != "none";
 	};
-	if (pub != nullptr && !pub->absorbed_into.empty()) {
-		pub->share = 0.0;
-	}
-	if (pri != nullptr && !pri->absorbed_into.empty()) {
-		pri->share = 0.0;
-	}
-	if (fgn != nullptr && !fgn->absorbed_into.empty()) {
-		fgn->share = 0.0;
+	for (Bank* bank : {pub, pri, fgn}) {
+		if (bank != nullptr && !active(bank)) {
+			bank->share = 0.0;
+		}
 	}
 	const int count = (active(pub) ? 1 : 0) + (active(pri) ? 1 : 0)
 		+ (active(fgn) ? 1 : 0);
