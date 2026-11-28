@@ -855,6 +855,15 @@ meta de 10% de `equity/loans` foi medida **antes do dia 90** (12,7% no dia 90).
 
 ### 5.3 R2b — Depósitos, alocação e competição
 
+> **Status (2026-11-27): R2b1 implementado** no worktree `opengs-wt-r2`
+> (`78a58080` WIP + `41a61dc4`): saque no mesmo dia, servicing por credor,
+> execução multi-credor bloqueada, C6/`apply_loss` por claim, alocação mensal e
+> competição determinística. Gates: 365 d ON **0 falências**, comida **80/179**,
+> drift **0,53%**, 0 violações (`2843fe77…`); 365 d só-capital reproduz
+> `9746eb05…` com `--banks-deposits=0`. Detalhe em `R2.md` §8. Pendente:
+> serialização dos claims de dívida no save v44 (o b1 mediu mundos novos) e o
+> A/B do floor do sweep.
+
 **R2b1 — funding (estoque).** As regiões e as empresas passam a manter depósito:
 
 - sweep diário do **excesso** sobre `protected_cash` (§4.2), por sub-saldo
