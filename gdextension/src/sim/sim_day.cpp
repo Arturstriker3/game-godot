@@ -5,12 +5,28 @@
 #include "stock.h"
 #include "urban_land.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 namespace ogs {
 
 void tick_day(WorldState& ws, SimCore& core) {
 	// S5b: retrato, dinheiro antes, avanço do dia, obras de porto, remoção de
 	// falidos/esgotados, índices e preços de abertura.
 	core.prologue();
+	// R2c: sonda do dinheiro do mundo por fronteira de fase (env
+	// `OGS_BANK_TRACE`). So leitura: nao muda estado nem regra.
+	const auto trace_money = [&](const char* name) {
+		if (std::getenv("OGS_BANK_TRACE") == nullptr) {
+			return;
+		}
+		std::fprintf(stdout,
+			"[bank-trace] day=%d tick=%s money=%.6f emission=%.6f"
+			" bank_money=%.6f\n",
+			ws.day, name, core.money_total(), ws.emission_today,
+			ws.bank_money_today);
+	};
+	trace_money("prologue");
 
 	// 2a0. B2: mobilidade mensal entre quintis + patrimônio por estrato (A6).
 	// Roda ANTES do `phase_reset`: a renda que orienta o fluxo é a do dia
@@ -126,6 +142,7 @@ void tick_day(WorldState& ws, SimCore& core) {
 
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	core.phase_accounting();
+	trace_money("accounting");
 
 	// 7b. PARTE E (D-116): liquidação da energia — consumidor paga ao
 	// gerador, combustível sai do mercado, O&M/salários e lucro do dono.
@@ -137,6 +154,7 @@ void tick_day(WorldState& ws, SimCore& core) {
 
 	// 8. Preços reagem a estoque, oferta, demanda e custo de produção.
 	core.phase_prices();
+	trace_money("prices");
 
 	// 9. Limite diário único por mercado, aplicado depois de todas as regras
 	// de preço.
@@ -155,16 +173,19 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// R1b: antes, o gasto público já debitado do Tesouro no dia.
 	core.reconcile_regional_budget();
 	core.phase_monetary();
+	trace_money("monetary");
 
 	// 9e. C3 (D-107): crédito de empresa. Juro do dia, juros vencidos,
 	// amortização pelo excedente ao capital de giro e — se o grupo ficar
 	// insolvente além do prazo — o calote, com a perda no banco. Sem crédito
 	// (default) a fase não toca no estado.
 	core.phase_credit();
+	trace_money("credit");
 
 	// 9e-bis. R2a (rework.banks.deposits): sweep diario do excesso sobre o
 	// colchao protegido (regioes + empresas). Sem a sub-flag nao escreve nada.
 	core.phase_bank_deposits();
+	trace_money("bank_deposits");
 
 	// 9f. C5 (D-112): bolsa de valores. Lucro esperado e confiança (diários),
 	// preço convergente no fechamento SEMANAL e dividendo no fechamento
@@ -175,6 +196,7 @@ void tick_day(WorldState& ws, SimCore& core) {
 		OGS_SIM_ZONE(kPhaseStock);
 		stock::phase(ws);
 	}
+	trace_money("stock");
 
 	// 9g. C6 (D-114): crise bancária. Prêmio do seguro, indicadores e
 	// confiança do depositante (com a confiança da bolsa acima), corrida com
@@ -186,6 +208,7 @@ void tick_day(WorldState& ws, SimCore& core) {
 		OGS_SIM_ZONE(kPhaseBankCrisis);
 		bank_crisis::phase(ws, core.m0_total());
 	}
+	trace_money("bank_crisis");
 
 	// 9h. D-126: sobrevivência em crise. Reação determinística (corte já no
 	// accounting, demissão, crédito de giro, liquidação, hibernação e leilão)
@@ -195,6 +218,7 @@ void tick_day(WorldState& ws, SimCore& core) {
 		OGS_SIM_ZONE(kPhaseCrisis);
 		core.phase_crisis();
 	}
+	trace_money("crisis");
 
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra
@@ -202,6 +226,7 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// R1b: fecha o gasto/receita públicos do intervalo (crédito/crise) antes do
 	// invariante de conservação.
 	core.reconcile_regional_budget();
+	trace_money("reconcile");
 	core.phase_invariants();
 }
 

@@ -203,5 +203,10 @@ struct Totals {
 };
 Totals totals(const WorldState& ws);
 
+// Diagnostico R2c (`OGS_BANK_TRACE`): soma dos caixas que compoem o
+// `SimCore::money_total` termo a termo. So leitura; serve para achar o degrau
+// de uma fase que solta dinheiro sem contrapartida.
+double probe_money_total(const WorldState& ws);
+
 } // namespace bank_crisis
 } // namespace ogs

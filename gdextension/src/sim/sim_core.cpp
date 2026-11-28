@@ -726,6 +726,11 @@ void SimCore::prologue() {
 		snapshot_state(before);
 	}
 	money_before_ = money_total();
+	if (std::getenv("OGS_BANK_TRACE") != nullptr) {
+		std::fprintf(stdout,
+			"[bank-trace] day=%d prologue money_before=%.6f\n",
+			ws_.day, money_before_);
+	}
 	// Janela do déficit: abertura do mundo (dia 1) e, depois, o fecho de cada
 	// dia (`monetary::tick` refresca) — um gasto público entre dois dias conta.
 	if (ws_.gov_cash_open.empty()) {
@@ -1395,6 +1400,12 @@ void SimCore::phase_invariants() {
 	ws_.invariant_violations = check_invariants(money_before());
 	if (!ws_.invariant_violations.empty()) {
 		restore_state(ws_.snapshot_buffer);
+		if (std::getenv("OGS_BANK_TRACE") != nullptr) {
+			std::fprintf(stdout,
+				"[bank-trace] day=%d reverted money_after_restore=%.6f"
+				" money_before=%.6f\n",
+				ws_.day, money_total(), money_before_);
+		}
 	} else {
 		// D-126: dia válido - acumula a criação/destruição bancária registrada
 		// (crédito de giro da crise + fase C3/C4). Um tick revertido não conta.

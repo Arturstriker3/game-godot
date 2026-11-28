@@ -16,6 +16,7 @@
 
 #include "balance.h"
 #include "bank.h"
+#include "bank_crisis.h"
 #include "efficiency.h"
 #include "sim_core.h"
 
@@ -1317,12 +1318,30 @@ bool auction(WorldState& ws, SimCore& core, const std::string& city_id,
 	return auction_building(ws, core, *building, nullptr, error);
 }
 
-void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.crisis.enabled) {
+void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {
+	if (!ws.crisis.enabled) {
 		return;
 	}
 	if (bank_money_delta != nullptr) {
 		*bank_money_delta = 0.0;
 	}
+	// R2c: sonda de dinheiro por secao (env `OGS_BANK_TRACE`). So leitura.
+	double probe_money = 0.0;
+	double probe_bank = 0.0;
+	const auto probe = [&](const char* name) {
+		if (std::getenv("OGS_BANK_TRACE") == nullptr) {
+			return;
+		}
+		const double money = bank_crisis::probe_money_total(ws);
+		const double bank = bank_money_delta != nullptr
+			? *bank_money_delta : 0.0;
+		std::fprintf(stdout,
+			"[bank-trace] day=%d crisis=%s d_money=%.6f d_bank=%.6f\n",
+			ws.day, name, money - probe_money, bank - probe_bank);
+		probe_money = money;
+		probe_bank = bank;
+	};
+	probe_money = bank_crisis::probe_money_total(ws);
 	// 1. Construções (inclui refinarias e fazendas), na ordem do save.
 	for (Building& building : ws.buildings) {
 		if (building.bankrupt || building.strategic) {
@@ -1468,6 +1487,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 	}
 	// 2. Serviços: crédito de giro agregado quando o caixa do setor está sem
 	// fôlego e algum negócio acumulou prejuízo. Mesmo credor/limite da cidade.
+	probe("buildings");
 	for (std::size_t index = 0; index < ws.service_businesses.size();
 			++index) {
 		const ServiceBusiness& business = ws.service_businesses[index];
@@ -1506,6 +1526,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 	// leilão; sem estoque de produto para liquidar). D-126 (correção): a
 	// necessidade é calculada UMA vez por rede, antes do laço, e só a usina
 	// excedente ao pico × (1 + margem de reserva) é candidata.
+	probe("services");
 	const std::vector<char> power_needed = plant_necessity(ws);
 	for (std::size_t index = 0; index < ws.power_plants.size(); ++index) {
 		react_power(ws, core, ws.power_plants[index],
@@ -1520,6 +1541,7 @@ void phase(WorldState& ws, SimCore& core, double* bank_money_delta) {	if (!ws.cr
 		}
 		++it;
 	}
+	probe("power");
 }
 
 } // namespace crisis
