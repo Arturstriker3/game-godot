@@ -88,7 +88,7 @@ void SimCore::phase_fiscal() {
 			// Dividendo ao estrato dono: fração do lucro acumulado. O que sobra
 			// fica como capital para o próximo investimento.
 			double payable = group.distributable * kGroupDividendShare;
-			payable = std::min(payable, group.cash);
+			payable = std::min(payable, group.liquid_cash());
 			if (payable <= 1e-9) {
 				continue;
 			}
@@ -104,7 +104,7 @@ void SimCore::phase_fiscal() {
 					// arredondamento do último crédito acima de `payable`; o caixa
 					// do grupo não pode ficar negativo (o load normaliza em 0 e o
 					// round-trip deixaria de ser bit-exato).
-					group.cash = std::max(0.0, group.cash - credited);
+					group.pay_cash(credited);
 					group.distributable = std::max(0.0, group.distributable - credited);
 					group.dividends_total += credited;
 					ws_.group_flows[group.origin_nation].dividends += credited;
@@ -143,7 +143,7 @@ void SimCore::phase_fiscal() {
 			if (credited_total > 0.0) {
 				// C5 (D-112): mesma proteção do ramo acima (soma de créditos com
 				// arredondamento não deixa o caixa do grupo negativo).
-				group.cash = std::max(0.0, group.cash - credited_total);
+				group.pay_cash(credited_total);
 				group.distributable = std::max(0.0,
 					group.distributable - credited_total);
 				group.dividends_total += credited_total;

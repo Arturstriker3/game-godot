@@ -186,9 +186,11 @@ void SimCore::route_group_profit(int group_index,
 	} else if (profit < 0.0) {
 		// O grupo recapitaliza o ativo até o limite do caixa; o resto da perda
 		// continua na firma (pode levar a falência, como antes).
-		const double inject = std::min(-profit, group.cash);
+		// R2b1: o limite é caixa + claim sacável do dia (ordem caixa ->
+		// depósito); o sweep não pode estrangular a cobertura do prejuízo.
+		const double inject = std::min(-profit, group.liquid_cash());
 		if (inject > 0.0) {
-			group.cash -= inject;
+			group.pay_cash(inject);
 			city.firm_receive(inject);
 		}
 	}

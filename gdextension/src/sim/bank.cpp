@@ -7,6 +7,7 @@
 
 #include "balance.h"
 #include "bank_crisis.h"
+#include "deposit.h"
 #include "exchange.h"
 #include "monetary.h"
 #include "sim_constants.h"
@@ -812,6 +813,8 @@ int phase(WorldState& ws, double* bank_money_delta) {
 	if (bank_money_delta != nullptr) {
 		*bank_money_delta = 0.0;
 	}
+	// R2b1: servicing e pagamentos leem o claim sacavel do dia.
+	deposit::link(ws);
 	// Fluxo de dinheiro BANCÁRIO do dia (o que o invariante soma ao
 	// `money_total`): juro pago e amortização destroem depósito e caixa do
 	// tomador; o dividendo converte patrimônio do banco em depósito do dono.
@@ -1564,6 +1567,9 @@ void sweep_deposits(WorldState& ws) {
 	if (!br.enabled || !br.deposits) {
 		return;
 	}
+	// R2b1: o claim e' sacavel no mesmo dia - liga cidades/grupos ao mundo
+	// (o ponteiro e' derivado e nao entra no save).
+	deposit::link(ws);
 	for (City& city : ws.cities) {
 		// R2a (QA B4): colchao pela media de 30 dias do gasto com comida, nao
 		// pelo valor do dia. Um dia de escassez nao pode encolher o piso. A

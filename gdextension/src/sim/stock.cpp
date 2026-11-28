@@ -572,7 +572,8 @@ double pay_dividends(WorldState& ws) {
 		ticker.profit_at_last_dividend = group->profit_total;
 		const double requested = pol.payout_ratio
 			* std::max(0.0, period_profit);
-		const double paid = std::min(requested, std::max(0.0, group->cash));
+		const double paid = std::min(requested,
+			std::max(0.0, group->liquid_cash()));
 		ticker.dividend_last = paid;
 		ticker.dividend_day = ws.day;
 		ticker.dividend_limited += std::max(0.0, requested - paid);
@@ -633,7 +634,7 @@ double pay_dividends(WorldState& ws) {
 			credited += foreign;
 		}
 		// O emissor paga o que foi efetivamente distribuído.
-		group->cash = std::max(0.0, group->cash - credited);
+		group->pay_cash(credited);
 		exchange.dividends_paid += credited;
 		paid_total += credited;
 	}

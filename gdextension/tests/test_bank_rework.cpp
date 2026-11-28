@@ -15,6 +15,7 @@
 #include "sim/balance.h"
 #include "sim/bank.h"
 #include "sim/bank_crisis.h"
+#include "sim/deposit.h"
 #include "sim/save_state.h"
 #include "sim/sim_core.h"
 #include "sim/treasury.h"
@@ -771,4 +772,133 @@ TEST_CASE("R2a: colchao usa a media de 30 d do food_spend") {
 	const double average = (29.0 * 1.0 + 0.1) / 30.0;
 	CHECK(city.protected_cash == Approx(full_month * average));
 	CHECK(city.protected_cash > 0.9 * full_month);
+}
+
+TEST_CASE("R2b1: saque atomico movo claim/D_f/caixa juntos e conserva") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	world.ws.banks_rework.protected_food_months = 0.0;
+	ogs::bank::ensure(world.ws, "AAA",
+		ogs::bank::kRolePublic).name_status = "no_data";
+	ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
+
+	ogs::City& city = world.ws.cities.front();
+	city.unified_cash = true;
+	city.regional_budget_limit_month = 0.0;
+	city.pop.food_spend = 0.0;
+	city.firm_sub = 300.0;
+	city.service_sub = 200.0;
+	city.firm_cash = 300.0;
+	city.service_cash = 200.0;
+	city.private_cash = 500.0;
+	ogs::bank::sweep_deposits(world.ws);
+	REQUIRE(city.claim_total() == Approx(500.0));
+	REQUIRE(bank.cash == Approx(500.0));
+
+	const double money_before = world.core.money_total();
+	const double m0_before = world.core.m0_total();
+	const double broad_before = world.core.broad_money();
+	const double x = ogs::deposit::withdraw_city(world.ws, city, true, 200.0);
+
+	CHECK(x == Approx(200.0));
+	CHECK(city.firm_sub == Approx(200.0));
+	CHECK(city.service_sub == Approx(0.0));
+	CHECK(city.private_cash == Approx(200.0));
+	CHECK(city.claim_total() == Approx(300.0));
+	CHECK(bank.cash == Approx(300.0));
+	CHECK(bank.deposits_funding == Approx(300.0));
+	CHECK(world.core.money_total() == Approx(money_before));
+	CHECK(world.core.m0_total() == Approx(m0_before));
+	CHECK(world.core.broad_money() == Approx(broad_before));
+	const ogs::balance::Ledger book = ogs::balance::ledger(world.ws,
+		world.core.money_total());
+	CHECK(book.deposit_claims == Approx(book.bank_deposits_funding));
+}
+
+TEST_CASE("R2b1: pagamento usa caixa primeiro e deposito depois") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	world.ws.banks_rework.protected_food_months = 0.0;
+	ogs::bank::ensure(world.ws, "AAA",
+		ogs::bank::kRolePublic).name_status = "no_data";
+	ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
+
+	ogs::City& city = world.ws.cities.front();
+	city.unified_cash = true;
+	city.regional_budget_limit_month = 0.0;
+	city.pop.food_spend = 0.0;
+	city.firm_sub = 300.0;
+	city.service_sub = 200.0;
+	city.firm_cash = 300.0;
+	city.service_cash = 200.0;
+	city.private_cash = 500.0;
+	ogs::bank::sweep_deposits(world.ws);
+	REQUIRE(city.private_cash == Approx(0.0));
+	REQUIRE(city.claim_total() == Approx(500.0));
+
+	// Float de 100 na frente do deposito: 100 de caixa + 150 de claim.
+	city.firm_receive(100.0);
+	const double paid = city.firm_pay(250.0);
+	CHECK(paid == Approx(250.0));
+	CHECK(city.firm_sub == Approx(0.0));
+	CHECK(city.private_cash == Approx(0.0));
+	CHECK(city.claim_total() == Approx(350.0));
+	CHECK(bank.cash == Approx(350.0));
+	CHECK(bank.deposits_funding == Approx(350.0));
+}
+
+TEST_CASE("R2b1: pagamento inteiro coberto pelo deposito") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	world.ws.banks_rework.protected_food_months = 0.0;
+	ogs::bank::ensure(world.ws, "AAA",
+		ogs::bank::kRolePublic).name_status = "no_data";
+	ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
+
+	ogs::City& city = world.ws.cities.front();
+	city.unified_cash = true;
+	city.regional_budget_limit_month = 0.0;
+	city.pop.food_spend = 0.0;
+	city.firm_sub = 200.0;
+	city.service_sub = 0.0;
+	city.firm_cash = 200.0;
+	city.service_cash = 0.0;
+	city.private_cash = 200.0;
+	ogs::bank::sweep_deposits(world.ws);
+	REQUIRE(city.private_cash == Approx(0.0));
+
+	const double money_before = world.core.money_total();
+	const double paid = city.firm_pay(150.0);
+	CHECK(paid == Approx(150.0));
+	CHECK(city.private_cash == Approx(0.0));
+	CHECK(city.claim_total() == Approx(50.0));
+	CHECK(bank.cash == Approx(50.0));
+	CHECK(bank.deposits_funding == Approx(50.0));
+}
+
+TEST_CASE("R2b1: grupo paga juro com o deposito sacavel") {
+	ogs::test::PocketWorld world;
+	enable_banks(world, true, true);
+	ogs::bank::ensure(world.ws, "AAA",
+		ogs::bank::kRolePublic).name_status = "no_data";
+	ogs::Bank& bank = present(world, ogs::bank::kRolePrivate);
+	REQUIRE(!world.ws.groups.empty());
+	ogs::Group& group = world.ws.groups.front();
+	group.bank_deposit = 400.0;
+	group.deposit_bank_id = bank.id;
+	group.cash = 0.0;
+	bank.cash = 400.0;
+	bank.deposits_funding = 400.0;
+	ogs::deposit::link(world.ws);
+
+	double from_cash = -1.0;
+	double from_claim = -1.0;
+	const double paid = ogs::deposit::pay_group(world.ws, group, 120.0,
+		&from_cash, &from_claim);
+	CHECK(paid == Approx(120.0));
+	CHECK(from_cash == Approx(0.0));
+	CHECK(from_claim == Approx(120.0));
+	CHECK(group.bank_deposit == Approx(280.0));
+	CHECK(bank.cash == Approx(280.0));
+	CHECK(bank.deposits_funding == Approx(280.0));
 }

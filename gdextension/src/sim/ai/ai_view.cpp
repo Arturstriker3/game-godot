@@ -429,7 +429,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view,
 		row.origin_nation = group.origin_nation;
 		row.sector = group.sector;
 		row.state_owned = group.state_owned;
-		row.cash = group.cash;
+		row.cash = group.liquid_cash();
 		row.distributable = group.distributable;
 		row.revenue_total = group.revenue_total;
 	}

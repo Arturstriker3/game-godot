@@ -104,7 +104,7 @@ double owner_cash(const WorldState& ws, const City& city,
 	}
 	for (const Group& group : ws.groups) {
 		if (group.id == id) {
-			return std::max(0.0, group.cash);
+			return std::max(0.0, group.liquid_cash());
 		}
 	}
 	return 0.0;
@@ -132,8 +132,8 @@ double debit_owner(WorldState& ws, City& city, Building& building,
 	if (group == nullptr) {
 		return 0.0;
 	}
-	const double paid = std::min(amount, std::max(0.0, group->cash));
-	group->cash -= paid;
+	const double paid = std::min(amount, std::max(0.0, group->liquid_cash()));
+	group->pay_cash(paid);
 	return paid;
 }
 
@@ -298,7 +298,7 @@ int choose_buyer(WorldState& ws, const City& city, double price,
 		if (group.id == seller_group) {
 			continue;
 		}
-		if (group.cash + 1e-9 >= price) {
+		if (group.liquid_cash() + 1e-9 >= price) {
 			return static_cast<int>(index);
 		}
 	}
@@ -543,7 +543,7 @@ double plant_owner_cash(WorldState& ws, const City& city,
 		return std::max(0.0, city.government_budget);
 	}
 	Group* group = find_group(ws, plant.owner_group);
-	return group == nullptr ? 0.0 : std::max(0.0, group->cash);
+	return group == nullptr ? 0.0 : std::max(0.0, group->liquid_cash());
 }
 
 double debit_plant_owner(WorldState& ws, City& city, PowerPlant& plant,
@@ -561,8 +561,8 @@ double debit_plant_owner(WorldState& ws, City& city, PowerPlant& plant,
 	if (group == nullptr) {
 		return 0.0;
 	}
-	const double paid = std::min(amount, std::max(0.0, group->cash));
-	group->cash -= paid;
+	const double paid = std::min(amount, std::max(0.0, group->liquid_cash()));
+	group->pay_cash(paid);
 	return paid;
 }
 

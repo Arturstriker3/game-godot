@@ -285,7 +285,7 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 		for (const Row& row : rows) {
 			const Group& group = ws.groups[static_cast<std::size_t>(
 				row.index)];
-			if (group.cash > kEps) {
+			if (group.liquid_cash() > kEps) {
 				weight += row.debt + row.arrears;
 			}
 		}
@@ -297,16 +297,16 @@ double charge_depositors(WorldState& ws, const Bank& bank, double target) {
 				break;
 			}
 			Group& group = ws.groups[static_cast<std::size_t>(row.index)];
-			if (group.cash <= kEps) {
+			if (group.liquid_cash() <= kEps) {
 				continue;
 			}
 			const double share = (row.debt + row.arrears) / weight;
 			const double take = std::min({ remaining * share,
-				std::max(0.0, group.cash) });
+				std::max(0.0, group.liquid_cash()) });
 			if (take <= kEps) {
 				continue;
 			}
-			group.cash -= take;
+			group.pay_cash(take);
 			charged += take;
 			remaining -= take;
 		}

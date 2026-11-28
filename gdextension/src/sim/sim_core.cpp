@@ -3,6 +3,7 @@
 #include "balance.h"
 #include "bank.h"
 #include "central_bank.h"
+#include "deposit.h"
 #include "monetary.h"
 #include "city_gov.h"
 #include "profiling.h"
@@ -322,6 +323,8 @@ void SimCore::apply_banks_rework_after_load(bool has_saved_flag) {
 	if (ws_.banks_rework.enabled) {
 		ws_.banks_rework.seed_source = "loaded_save";
 	}
+	// R2b1: reconstroi o elo derivado cidade/grupo -> mundo.
+	deposit::link(ws_);
 }
 
 void SimCore::phase_bank_deposits() {
